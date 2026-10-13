@@ -122,9 +122,9 @@ function unlockScroll() {
 }
 
 /** Modal dialog built on <dialog>. Returns { el, close }. */
-export function openDialog({ title, body, actions = [], wide = false, onClose }) {
+export function openDialog({ title, body, actions = [], wide = false, onClose, cls = '' }) {
   const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
-  const dlg = h('dialog.dialog', { class: wide ? 'dialog--wide' : '', 'aria-labelledby': titleId },
+  const dlg = h('dialog.dialog', { class: `${wide ? 'dialog--wide' : ''} ${cls}`, 'aria-labelledby': titleId },
     h('div.dialog__head', h('h2.dialog__title', { id: titleId }, title), iconBtn('close', 'Close', () => close())),
     h('div.dialog__body', body),
     actions.length ? h('div.dialog__actions', actions) : null,

@@ -200,7 +200,7 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
       label ? h('p.label', label) : null,
       hint ? h('p.hint', hint) : null,
       h('div.photo__actions',
-        h('button.btn.btn--sm', { type: 'button', onclick: () => file.click() }, icon('upload', 16), ref ? 'Replace' : 'Upload'),
+        h('button.btn', { type: 'button', class: ref ? '' : 'btn--primary', onclick: () => file.click() }, icon('upload', 16), ref ? 'Replace photo' : 'Add a photo'),
         library ? h('button.btn.btn--sm', { type: 'button', onclick: async () => { const s = await pickLibrary(ctx); if (s) { m.set(path, s); render(); } } }, 'Library') : null,
         ref ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { m.set(path, null); render(); } }, 'Remove') : null,
       ),

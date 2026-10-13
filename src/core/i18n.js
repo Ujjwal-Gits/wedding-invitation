@@ -68,6 +68,13 @@ export const timeOf = (iso) => {
   };
 };
 export const timeRange = (a, b) => ({ en: `${timeOf(a).en} – ${timeOf(b).en}`, ne: `${timeOf(a).ne} – ${timeOf(b).ne}` });
+/**
+ * When an event happens, for display: "11:00 AM onwards" when the event has no fixed end
+ * (event.openEnded, set in the studio), otherwise the start–end range.
+ */
+export const timeLabel = (e) => (e?.openEnded || !e?.end
+  ? { en: `${timeOf(e.start).en} onwards`, ne: `${timeOf(e.start).ne}देखि` }
+  : timeRange(e.start, e.end));
 
 export const mapUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 

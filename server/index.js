@@ -4,9 +4,9 @@ import express from 'express';
 import { existsSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { IS_PROD, PORT, TRUST_PROXY, UPLOAD_DIR, DIST_DIR, INV_DIR, RSVP_DIR, assertConfigured, DEPTH_ENABLED } from './lib/env.js';
-import { SLUG_RE, getInvitation } from './lib/store.js';
+import { SLUG_RE, getInvitation, listInvitations } from './lib/store.js';
 import { securityHeaders } from './lib/security.js';
-import { loadSession, requireAdmin, login, logout, me } from './lib/auth.js';
+import { loadSession, requireAdmin, requireSession, requireEditor, clientSession, login, logout, me } from './lib/auth.js';
 import * as inv from './lib/invitations.js';
 import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
@@ -33,7 +33,8 @@ api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.s
 
 // Auth
 api.post('/auth/login', json('4kb'), wrap(login));
-api.post('/auth/logout', requireAdmin, logout);
+api.post('/auth/logout', requireSession, logout);
+api.post('/client/session', json('1kb'), wrap(clientSession(listInvitations)));
 api.get('/auth/me', me);
 
 // Public
@@ -41,22 +42,25 @@ api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
 // Admin
-api.get('/meta', requireAdmin, wrap(inv.meta));
+const editor = requireEditor(getInvitation);
+api.get('/meta', requireSession, wrap(inv.meta));
 
 api.get('/invitations', requireAdmin, wrap(inv.list));
 api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
-api.get('/invitations/:slug', requireAdmin, wrap(inv.read));
-api.put('/invitations/:slug', requireAdmin, json('768kb'), wrap(inv.update));
+api.get('/invitations/:slug', editor, wrap(inv.read));
+api.put('/invitations/:slug', editor, json('768kb'), wrap(inv.update));
 api.delete('/invitations/:slug', requireAdmin, json('2kb'), wrap(inv.remove));
-api.post('/invitations/:slug/publish', requireAdmin, wrap(inv.publish));
+api.post('/invitations/:slug/publish', editor, wrap(inv.publish));
+api.post('/invitations/:slug/client-link', requireAdmin, wrap(inv.createClientLink));
+api.delete('/invitations/:slug/client-link', requireAdmin, wrap(inv.deleteClientLink));
 api.post('/invitations/:slug/unpublish', requireAdmin, wrap(inv.unpublish));
-api.post('/invitations/:slug/uploads', requireAdmin, wrap(async (req, res) => {
+api.post('/invitations/:slug/uploads', editor, wrap(async (req, res) => {
   if (!existsSync(resolve(INV_DIR, `${req.params.slug}.json`))) return res.status(404).json({ error: 'No invitation with that link name.' });
   return handleUpload(req, res);
 }));
-api.get('/invitations/:slug/rsvps', requireAdmin, wrap(rsvp.listReplies));
-api.get('/invitations/:slug/rsvps.csv', requireAdmin, wrap(rsvp.exportCsv));
-api.delete('/invitations/:slug/rsvps/:id', requireAdmin, wrap(rsvp.deleteReply));
+api.get('/invitations/:slug/rsvps', editor, wrap(rsvp.listReplies));
+api.get('/invitations/:slug/rsvps.csv', editor, wrap(rsvp.exportCsv));
+api.delete('/invitations/:slug/rsvps/:id', editor, wrap(rsvp.deleteReply));
 
 api.use((req, res) => res.status(404).json({ error: 'Not found.' }));
 app.use('/api', api);

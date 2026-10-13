@@ -7,6 +7,7 @@ import { sanitizeInvitation, publishProblems } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
+import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions } from './auth.js';
 import { bsDateOf } from '../../src/core/i18n.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
 
@@ -33,8 +34,9 @@ function summary(doc, rsvpCount = 0) {
   };
 }
 
-const docOut = (doc) => ({
+const docOut = (doc, admin = true) => ({
   slug: doc.slug,
+  clientLink: admin && doc.clientAccess ? { createdAt: doc.clientAccess.createdAt } : null,
   version: doc.version,
   status: doc.status,
   changed: doc.status === 'published' && !same(doc.draft, doc.published),
@@ -154,7 +156,7 @@ export async function create(req, res) {
 }
 
 export async function read(req, res) {
-  res.json(docOut(await load(req.params.slug)));
+  res.json(docOut(await load(req.params.slug), isAdmin(req)));
 }
 
 export async function update(req, res) {
@@ -188,8 +190,8 @@ export async function publish(req, res) {
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
-  console.info(`[admin] publish slug=${slug}`);
-  res.json(docOut(doc));
+  console.info(`[admin] publish slug=${slug} by=${req.session.role}`);
+  res.json(docOut(doc, isAdmin(req)));
 }
 
 export async function unpublish(req, res) {
@@ -217,6 +219,35 @@ export async function remove(req, res) {
   res.json({ ok: true });
 }
 
+/** POST /api/invitations/:slug/client-link: a new link for the couple (the old one stops working). */
+export async function createClientLink(req, res) {
+  const { slug } = req.params;
+  const token = newClientToken();
+  const doc = await withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    cur.clientAccess = { tokenHash: hashToken(token), createdAt: new Date().toISOString() };
+    await writeJsonAtomic(invPath(slug), cur);
+    return cur;
+  });
+  revokeClientSessions(slug);
+  console.info(`[admin] client link created slug=${slug}`);
+  // The token is shown once; only its hash is stored.
+  res.status(201).json({ token, createdAt: doc.clientAccess.createdAt });
+}
+
+/** DELETE /api/invitations/:slug/client-link: turn the couple's link off. */
+export async function deleteClientLink(req, res) {
+  const { slug } = req.params;
+  await withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    delete cur.clientAccess;
+    await writeJsonAtomic(invPath(slug), cur);
+  });
+  revokeClientSessions(slug);
+  console.info(`[admin] client link removed slug=${slug}`);
+  res.json({ ok: true });
+}
+
 export async function meta(req, res) {
   let credits = [];
   try { credits = JSON.parse(readFileSync(resolve(ROOT_DIR, 'src', 'generated', 'credits.json'), 'utf8')); } catch { credits = []; }
@@ -241,12 +272,16 @@ export async function meta(req, res) {
 export async function publicData(req, res) {
   const { slug } = req.params;
   const doc = await getInvitation(slug);
-  const preview = Boolean(req.session) && doc;
+  const preview = Boolean(doc) && canEdit(req, slug); // planner, or the couple for their own invitation
   const src = preview ? doc.draft : doc?.status === 'published' ? doc.published : null;
   if (!src) throw httpError(404, 'Not found.');
   const out = structuredClone(src);
   out.rsvp.endpoint = `/api/invitations/${slug}/rsvp`;
   if (!out.music.tracks.length) out.music.tracks = [BUNDLED_TRACKS[0]];
+  // Ceremonies with no end time are "onwards": give older themes a sensible end too.
+  for (const e of out.events) {
+    if (e.start && !e.end) { e.end = new Date(Date.parse(e.start) + 5 * 3600e3).toISOString().replace(/\.\d{3}Z$/, '+00:00'); e.openEnded = true; }
+  }
   const hero = out.couple.portraits[0]?.photo;
   out.share.image = hero ? (typeof hero === 'object' ? hero.sm : hero.startsWith('https://') ? hero : `/photos/${hero}-sm.webp`) : '';
   out.share.siteUrl = PUBLIC_ORIGINS[0] || '';

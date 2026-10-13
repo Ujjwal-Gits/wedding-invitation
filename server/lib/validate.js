@@ -218,6 +218,8 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
     };
     if (ev.start && ev.end && Date.parse(ev.end) < Date.parse(ev.start)) c.fail(`${p}.end`, 'must be after the start');
     // Optional B.S. override (THEME-CONTRACT §12): only stored when the planner typed one.
+    // No fixed end time: shown as "11:00 AM onwards" (timeLabel in src/core/i18n.js).
+    if (e.openEnded === true) ev.openEnded = true;
     const bs = bi(c, e.dateBS, `${p}.dateBS`, 120);
     if (bs.en || bs.ne) ev.dateBS = bs;
     if (Array.isArray(e.rituals) && e.rituals.length) {
@@ -305,21 +307,15 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
   return out;
 }
 
-/** Human-readable list of what is missing before publishing. Empty = ready. */
+/** Human-readable list of what is missing before publishing. Only the names and the main date are required. */
 export function publishProblems(d) {
   const p = [];
   const has = (b) => b && (b.en || b.ne);
   if (!has(d.couple.bride.name)) p.push("The bride's name");
   if (!has(d.couple.groom.name)) p.push("The groom's name");
   if (!d.weddingDate) p.push('The wedding date');
-  if (!d.events.length) p.push('At least one ceremony');
   d.events.forEach((e, i) => {
-    const n = e.title.en || e.title.ne || `Ceremony ${i + 1}`;
-    if (!has(e.title)) p.push(`Ceremony ${i + 1}: a name`);
-    if (!e.start) p.push(`${n}: a start time`);
-    if (!e.end) p.push(`${n}: an end time`);
-    if (!has(e.venue)) p.push(`${n}: a venue`);
+    if (!e.start) p.push(`${e.title.en || e.title.ne || `Ceremony ${i + 1}`}: a date`);
   });
-  if (!d.music.tracks.length) p.push('At least one music track');
   return p;
 }

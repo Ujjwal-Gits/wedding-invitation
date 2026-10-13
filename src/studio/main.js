@@ -13,7 +13,34 @@ const S = { me: null, meta: null, editor: null };
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
 const coupleName = (b, g) => [label(b), label(g)].filter(Boolean).join(' & ') || 'Untitled invitation';
 
-whenSignedOut(() => { if (S.me) { S.me = null; toast('Please sign in again.', 'error'); } go('#/login'); });
+whenSignedOut(() => {
+  const wasCouple = S.me?.role === 'client';
+  S.me = null;
+  if (wasCouple) { renderLinkProblem(); return; }
+  toast('Please sign in again.', 'error');
+  go('#/login');
+});
+
+/** Remembers on this device that the studio was opened through a couple's link (convenience only). */
+function coupleFlag(set) {
+  try {
+    if (set === true) localStorage.setItem('sayapatri-couple', '1');
+    else if (set === false) localStorage.removeItem('sayapatri-couple');
+    else return localStorage.getItem('sayapatri-couple') === '1';
+  } catch { /* storage unavailable */ }
+  return false;
+}
+
+/** Shown to a couple whose link was turned off or replaced. */
+function renderLinkProblem(message = 'This link is no longer active. Please ask your wedding planner for a new one.', heading = 'This link has expired') {
+  document.title = 'Sayapatri';
+  clear(app).append(h('main.login.login--msg',
+    h('div.login__panel', h('div.login__inner',
+      h('span.brand.brand--lg', h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri')),
+      h('h1.login__title', heading),
+      h('p.login__lede', message),
+      h('button.link', { type: 'button', onclick: () => { coupleFlag(false); renderLogin(); } }, 'I am the planner: sign in')))));
+}
 
 // ── Routing ───────────────────────────────────────────────────────────────
 
@@ -22,6 +49,20 @@ window.addEventListener('hashchange', () => route());
 
 async function route() {
   const hash = location.hash || '#/';
+  // The couple's private link: trade the token for a session, then drop it from the address bar.
+  const cm = /^#\/c\/([A-Za-z0-9_-]{43})$/.exec(hash);
+  if (cm) {
+    try {
+      const s = await api('/client/session', { method: 'POST', body: { token: cm[1] } });
+      S.me = s;
+      setCsrf(s.csrf);
+      coupleFlag(true);
+      history.replaceState(null, '', `#/i/${s.slug}/couple`);
+    } catch (err) {
+      return err.status === 429 ? renderLinkProblem(err.message, 'Please wait a moment') : renderLinkProblem();
+    }
+    return route();
+  }
   if (S.editor && !hash.startsWith(`#/i/${S.editor.slug}/`)) {
     await S.editor.flush();
     S.editor.destroy();
@@ -33,9 +74,11 @@ async function route() {
       S.me = me;
       setCsrf(me.csrf);
     } catch {
-      return renderLogin();
+      // A couple whose link was turned off sees a plain message, not the planner's sign-in page.
+      return coupleFlag() ? renderLinkProblem() : renderLogin();
     }
   }
+  if (S.me.role === 'client' && !hash.startsWith(`#/i/${S.me.slug}/`)) return go(`#/i/${S.me.slug}/couple`);
   if (hash === '#/login') return go('#/');
   try { S.meta = await api('/meta'); } catch (err) { if (!S.meta) return fatal(err); } // theme list can grow at any time
   const m = /^#\/i\/([a-z0-9-]{3,64})\/([a-z-]+)$/.exec(hash);
@@ -55,7 +98,7 @@ function topbar(extra) {
     h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri'), h('span.brand__sub', 'Studio')),
     extra || null,
     h('div.topbar__right',
-      h('span.topbar__user', S.me.email),
+      S.me.role === 'admin' ? h('span.topbar__user', S.me.email) : null,
       h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out'),
     ),
   );
@@ -64,8 +107,10 @@ function topbar(extra) {
 async function signOut() {
   if (S.editor) { await S.editor.flush(); S.editor.destroy(); S.editor = null; }
   try { await api('/auth/logout', { method: 'POST' }); } catch { /* already gone */ }
+  const wasCouple = S.me?.role === 'client';
   S.me = null;
   setCsrf('');
+  if (wasCouple) { renderLinkProblem('You are signed out. Open your link again to continue.'); return; }
   location.hash = '#/login';
 }
 
@@ -89,6 +134,7 @@ function renderLogin() {
     btn.textContent = 'Signing in…';
     try {
       const me = await api('/auth/login', { method: 'POST', body: { email: fd.get('email'), password: fd.get('password') } });
+      coupleFlag(false);
       S.me = me;
       setCsrf(me.csrf);
       location.hash = '#/';
@@ -261,6 +307,7 @@ function createEditor(doc) {
         if (!pending) setSave('saved', 'Saved');
         title.textContent = names();
         ctx.onSaved?.();
+        schedulePreview();
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) {
           setSave('error', 'Not saved');
@@ -366,19 +413,53 @@ function createEditor(doc) {
   }
 
   // ── Layout
+  const isAdmin = S.me.role === 'admin';
   const title = h('span.ed2__names', names());
   const repliesLink = h('a.btn.btn--quiet.btn--sm', { href: `#/i/${slug}/replies` }, 'Replies');
   const head = h('div.ed2__head',
-    h('a.btn.btn--quiet.btn--sm.ed2__back', { href: '#/' }, icon('back', 16), h('span', 'All invitations')),
+    isAdmin ? h('a.btn.btn--quiet.btn--sm.ed2__back', { href: '#/' }, icon('back', 16), h('span', 'All invitations')) : null,
     title, saved, repliesLink);
   const progress = h('nav.steps', { 'aria-label': 'Steps' });
   const content = h('div.ed2__content', { id: 'main', tabindex: -1 });
   const foot = h('div.ed2__foot');
-  const root = h('div.ed2', topbar(), h('div.ed2__bar', head, progress), h('main.ed2__main', errorsEl, content, foot));
+
+  // Live preview: beside the editor on wide screens, one tap away (full screen) on phones.
+  // It loads only while visible: themes are full WebGL pages.
+  const wide = matchMedia('(min-width: 1100px)');
+  const previewSrc = () => `/${m.data.theme}/?id=${encodeURIComponent(slug)}&studio=${Date.now()}`;
+  const sideFrame = h('iframe.side__frame', { title: 'Live preview of the invitation' });
+  const sideDevice = h('div.side__device', sideFrame);
+  const side = h('aside.side', { 'aria-label': 'Live preview' },
+    h('div.side__stage', sideDevice),
+    h('div.side__bar', h('span.side__label', 'Live preview'),
+      h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: () => loadSide(true) }, icon('refresh', 14), 'Refresh')));
+  const fitSide = () => {
+    const r = sideDevice.parentElement.getBoundingClientRect();
+    if (!r.width) return;
+    const sc = Math.min((r.width - 24) / 390, (r.height - 24) / 844);
+    sideDevice.style.transform = `translate(-50%, -50%) scale(${sc})`;
+  };
+  new ResizeObserver(fitSide).observe(side);
+  const sideWanted = () => wide.matches && current !== 'publish' && current !== 'replies';
+  function loadSide(force) {
+    if (!sideWanted()) { if (sideFrame.getAttribute('src')) sideFrame.removeAttribute('src'); return; }
+    if (force || !sideFrame.getAttribute('src')) sideFrame.src = previewSrc();
+  }
+  let previewTimer;
+  function schedulePreview() { clearTimeout(previewTimer); previewTimer = setTimeout(() => loadSide(true), 1500); }
+  const onWide = () => { loadSide(false); requestAnimationFrame(fitSide); };
+  wide.addEventListener('change', onWide);
+  const openPreviewSheet = () => {
+    const frame = h('iframe.pv-sheet__frame', { title: 'Preview of the invitation', src: previewSrc() });
+    openDialog({ title: 'Preview', body: h('div.pv-sheet', frame), cls: 'dialog--sheet' });
+  };
+
+  const root = h('div.ed2', topbar(), h('div.ed2__bar', head, progress),
+    h('div.ed2__layout', h('main.ed2__main', errorsEl, content, foot), side));
 
   const ctx = {
-    m, slug, meta: S.meta, doc, names, publish, unpublish, remove,
-    onTheme: () => {},
+    m, slug, meta: S.meta, doc, names, publish, unpublish, remove, isAdmin,
+    onTheme: () => schedulePreview(),
   };
 
   function drawProgress() {
@@ -406,6 +487,9 @@ function createEditor(doc) {
     const idx = STEPS.indexOf(step);
     document.title = `${step ? step.title : 'Replies'} · ${names()} · Sayapatri Studio`;
     root.classList.toggle('is-replies', current === 'replies');
+    root.classList.toggle('no-side', !(current !== 'publish' && current !== 'replies'));
+    loadSide(false);
+    requestAnimationFrame(fitSide);
     repliesLink.setAttribute('aria-current', current === 'replies' ? 'page' : 'false');
     drawProgress();
     if (step) {
@@ -417,7 +501,8 @@ function createEditor(doc) {
       const next = STEPS[idx + 1];
       clear(foot).append(
         prev ? h('a.btn.btn--lg', { href: `#/i/${slug}/${prev.id}` }, icon('left', 16), 'Back') : h('span'),
-        next ? h('a.btn.btn--primary.btn--lg', { href: `#/i/${slug}/${next.id}` }, `Next: ${next.title}`, icon('right', 16)) : h('a.btn.btn--lg', { href: `#/i/${slug}/replies` }, 'See replies', icon('right', 16)),
+        current === 'publish' ? null : h('button.btn.btn--lg.foot__preview', { type: 'button', onclick: openPreviewSheet, 'aria-label': 'Preview the invitation' }, icon('eye', 18), h('span.foot__pv-t', 'Preview')),
+        next ? h('a.btn.btn--primary.btn--lg', { href: `#/i/${slug}/${next.id}`, 'aria-label': `Next: ${next.title}` }, h('span', 'Next'), h('span.foot__more', `: ${next.title}`), icon('right', 16)) : h('a.btn.btn--lg', { href: `#/i/${slug}/replies` }, 'See replies', icon('right', 16)),
       );
     } else {
       clear(content).append(responsesView(ctx));
@@ -432,7 +517,7 @@ function createEditor(doc) {
     slug,
     show,
     flush,
-    destroy() { window.removeEventListener('beforeunload', beforeUnload); },
+    destroy() { window.removeEventListener('beforeunload', beforeUnload); wide.removeEventListener('change', onWide); clearTimeout(previewTimer); },
   };
 }
 

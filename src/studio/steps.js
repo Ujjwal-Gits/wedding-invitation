@@ -55,18 +55,30 @@ const parts = (iso) => {
 const iso = (date, time) => `${date}T${time}:00+05:45`;
 const nextDay = (d) => { const t = new Date(`${d}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
 
-/** One date, a start and an end time (an end before the start means after midnight). */
+/**
+ * When a ceremony happens: a date and a start time, shown to guests as "11:00 AM onwards".
+ * An end time is optional (under "More"). Returns { main, end }.
+ */
 function whenField(m, p, idBase) {
   const s = parts(m.get([...p, 'start']));
   const e = parts(m.get([...p, 'end']));
   const date = h('input.input', { type: 'date', id: `${idBase}-d`, value: s.date, 'data-path': `${p[0]}[${p[1]}].start` });
-  const from = h('input.input', { type: 'time', id: `${idBase}-f`, value: s.time || '10:00', step: 300 });
-  const to = h('input.input', { type: 'time', id: `${idBase}-t`, value: e.time || '13:00', step: 300, 'data-path': `${p[0]}[${p[1]}].end` });
+  const from = h('input.input', { type: 'time', id: `${idBase}-f`, value: s.time || '11:00', step: 300 });
+  const hasEnd = () => !m.get([...p, 'openEnded']) && Boolean(m.get([...p, 'end']));
+  const endOn = h('input', { type: 'checkbox', id: `${idBase}-e`, checked: hasEnd() });
+  const to = h('input.input', { type: 'time', id: `${idBase}-t`, value: e.time || '', step: 300, 'data-path': `${p[0]}[${p[1]}].end`, disabled: !hasEnd() });
   const write = () => {
     if (!date.value) return;
-    m.set([...p, 'start'], iso(date.value, from.value || '10:00'));
-    m.set([...p, 'end'], iso(to.value && to.value < from.value ? nextDay(date.value) : date.value, to.value || from.value || '13:00'));
+    m.set([...p, 'start'], iso(date.value, from.value || '11:00'));
+    if (endOn.checked && to.value) {
+      m.set([...p, 'openEnded'], false);
+      m.set([...p, 'end'], iso(to.value < from.value ? nextDay(date.value) : date.value, to.value));
+    } else {
+      m.set([...p, 'openEnded'], true);
+      m.set([...p, 'end'], '');
+    }
   };
+  endOn.addEventListener('change', () => { to.disabled = !endOn.checked; if (endOn.checked && !to.value) to.value = '16:00'; write(); });
   const bsBox = h('div.bs');
   let editing = false;
   const drawBs = () => {
@@ -79,7 +91,7 @@ function whenField(m, p, idBase) {
     if (editing || hasOwn) {
       bsBox.append(
         biField(m, [...p, 'dateBS'], { label: 'Date in Bikram Sambat', max: 120, placeholderEn: auto.en, placeholderNe: auto.ne, hint: 'Only if your purohit’s patro shows a different date. Leave empty to use the date worked out for you (shown in grey).' }),
-        hasOwn ? h('button.link', { type: 'button', onclick: () => { m.set([...p, 'dateBS'], { en: '', ne: '' }); delete m.get(p).dateBS; m.touch(p); editing = false; drawBs(); } }, 'Use the worked-out date') : null,
+        hasOwn ? h('button.link', { type: 'button', onclick: () => { delete m.get(p).dateBS; m.touch(p); editing = false; drawBs(); } }, 'Use the worked-out date') : null,
       );
     } else {
       bsBox.append(h('p.bs__line', h('span.bs__k', 'B.S.'), h('span', auto.short.en), h('span', { lang: 'ne' }, auto.short.ne),
@@ -88,14 +100,16 @@ function whenField(m, p, idBase) {
   };
   [date, from, to].forEach((el) => el.addEventListener('change', () => { write(); drawBs(); }));
   drawBs();
-  return h('div.when-wrap',
-    h('div.when',
-      h('div.field', h('label.label', { for: date.id }, 'Date'), date),
-      h('div.field', h('label.label', { for: from.id }, 'From'), from),
-      h('div.field', h('label.label', { for: to.id }, 'Until'), to),
-    ),
-    bsBox,
-  );
+  return {
+    main: h('div.when-wrap',
+      h('div.when.when--2',
+        h('div.field', h('label.label', { for: date.id }, 'Date'), date),
+        h('div.field', h('label.label', { for: from.id }, 'Starts at'), from)),
+      bsBox),
+    end: h('div.field',
+      h('label.checkline', endOn, h('span', h('b', 'It has an end time'), h('small', 'Otherwise guests see “11:00 AM onwards”.'))),
+      h('div.field.field--narrow2', h('label.label', { for: to.id }, 'Ends at'), to)),
+  };
 }
 
 function weddingDay(ctx) {
@@ -145,6 +159,7 @@ function ceremonies(ctx) {
       const p = ['events', i];
       const move = (d) => { const j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; m.touch(['events']); render(j); };
       const nameEl = h('h3.cer__name', label(ev.title, 'New ceremony'));
+      const when = whenField(m, p, `ev${i}`);
       root.append(h('article.cer', { 'data-index': i, oninput: () => { nameEl.textContent = label(ev.title, 'New ceremony'); } },
         h('header.cer__head',
           h('span.cer__num', String(i + 1)),
@@ -159,10 +174,11 @@ function ceremonies(ctx) {
           ),
         ),
         biField(m, [...p, 'title'], { label: 'Name', max: 80, placeholderEn: 'Mehendi', placeholderNe: 'मेहन्दी' }),
-        whenField(m, p, `ev${i}`),
+        when.main,
         biField(m, [...p, 'venue'], { label: 'Place', max: 200, placeholderEn: 'Shanti Banquet, Jawalakhel' }),
+        photoSlot(m, [...p, 'photo'], ctx, { label: 'Photo for this ceremony', hint: 'Tap “Replace photo” to use your own.', shape: 'land', library: true }),
         more('More for this ceremony',
-          photoSlot(m, [...p, 'photo'], ctx, { label: 'Photo of the place', hint: 'Wide photos work best. You can also pick one from the library.', shape: 'land', library: true }),
+          when.end,
           biField(m, [...p, 'blurb'], { label: 'One line about it', max: 240 }),
           textField(m, [...p, 'mapQuery'], { label: 'What to search in Google Maps', max: 200, placeholder: 'Shanti Banquet Jawalakhel' }),
           colorsEditor(ctx, [...p, 'dress', 'colors']),
@@ -177,7 +193,7 @@ function ceremonies(ctx) {
         for (let n = 2; taken.includes(id); n++) id = `ceremony-${n}`;
         const day = (list.at(-1)?.start || m.get(['weddingDate']) || '').slice(0, 10);
         if (!m.get(['events'])) m.set(['events'], []);
-        m.get(['events']).push({ id, title: blank(), blurb: blank(), start: day ? iso(day, '10:00') : '', end: day ? iso(day, '13:00') : '', venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null });
+        m.get(['events']).push({ id, title: blank(), blurb: blank(), start: day ? iso(day, '11:00') : '', end: '', openEnded: true, venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null });
         m.touch(['events']);
         render(m.get(['events']).length - 1);
       } }, icon('plus', 16), 'Add a ceremony'));

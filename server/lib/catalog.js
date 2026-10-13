@@ -9,16 +9,16 @@ import { config as demo } from '../../src/config.js';
 const KNOWN = {
   dhoka: { name: 'Dhoka', concept: 'A printed ivory card with a golden door that opens' },
   ghar: { name: 'Ghar', concept: 'A lamplit evening walk through a Newar house' },
-  sayapatri: { name: 'Sayapatri', concept: 'Bright marigold daylight with drifting petals' },
+  sayapatri: { name: 'Sayapatri', concept: 'A floral wedding stage; the flower gate parts on a white card' },
   chitra: { name: 'Chitra', concept: 'An illustrated storybook in Mithila colours' },
-  mandap: { name: 'Mandap', concept: 'The mandap at night and seven rounds of the fire' },
-  bagaicha: { name: 'Bagaicha', concept: 'A garden venue with pavilion, waterfall and lanterns' },
-  dhaka: { name: 'Dhaka', concept: 'Bold modern type, woven pattern and photo collage' },
+  mandap: { name: 'Mandap', concept: 'A floral 3D mandap; garland exchange and seven rounds' },
+  bagaicha: { name: 'Bagaicha', concept: '3D garden wedding: rose arch and seven rounds of the fire' },
+  dhaka: { name: 'Dhaka', concept: 'Seal breaks, Dhaka band slides off, couple rise into flowers' },
   himal: { name: 'Himal', concept: 'Calm and photo-led, at mountain dawn' },
-  kham: { name: 'Kham', concept: '' },
-  durbar: { name: 'Durbar', concept: '' },
-  mala: { name: 'Mala', concept: '' },
-  gurans: { name: 'Gurans', concept: '' },
+  kham: { name: 'Kham', concept: 'Handmade-paper envelope that unfolds into a clear programme' },
+  durbar: { name: 'Durbar', concept: 'A 3D morning walk through Bhaktapur Durbar Square' },
+  mala: { name: 'Mala', concept: 'An arch of real roses, jasmine and marigold' },
+  gurans: { name: 'Phoolbari', concept: 'A flower gate with शुभ विवाह, then calm normal scrolling' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');

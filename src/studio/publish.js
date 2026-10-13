@@ -1,5 +1,6 @@
 // Step 6 "Preview & publish" and the share tools (also used from the home screen).
-import { h, icon, clear, copyText, openDialog } from './dom.js';
+import { h, icon, clear, copyText, openDialog, confirmDialog, toast, fmtDate } from './dom.js';
+import { api } from './api.js';
 
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
 
@@ -95,7 +96,7 @@ export function publishStep(ctx) {
         live && !d.changed
           ? h('button.btn.btn--done.btn--lg', { type: 'button', disabled: true }, icon('check', 18), 'Published')
           : h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: async () => { await ctx.publish(); drawStatus(); drawShare(); } }, live ? 'Publish changes' : 'Publish'),
-        live ? h('button.link', { type: 'button', onclick: async () => { await ctx.unpublish(); drawStatus(); drawShare(); } }, 'Unpublish') : null,
+        live && ctx.isAdmin ? h('button.link', { type: 'button', onclick: async () => { await ctx.unpublish(); drawStatus(); drawShare(); } }, 'Unpublish') : null,
       ),
     );
   };
@@ -118,9 +119,57 @@ export function publishStep(ctx) {
         h('a.btn.btn--sm', { href: `/${m.data.theme}/?id=${encodeURIComponent(ctx.slug)}`, target: '_blank', rel: 'noopener' }, icon('external', 16), 'Open full size')),
     ),
     h('section.card', h('h2.card__title', 'Share'), shareBox),
-    h('section.card.card--quiet',
+    ctx.isAdmin ? coupleLinkCard(ctx) : null,
+    !ctx.isAdmin ? null : h('section.card.card--quiet',
       h('h2.card__title', 'Delete this invitation'),
       h('p.card__help', 'Removes the invitation, its photos and replies. The link stops working.'),
       h('button.btn.btn--danger-ghost', { type: 'button', onclick: ctx.remove }, icon('trash', 16), 'Delete invitation')),
   ];
+}
+
+/** Planner only: a private link that lets the couple edit this one invitation and see its replies. */
+function coupleLinkCard(ctx) {
+  const box = h('section.card');
+  const url = (token) => `${location.origin}/studio/#/c/${token}`;
+  const draw = (fresh) => {
+    const link = ctx.doc.clientLink;
+    clear(box).append(
+      h('h2.card__title', 'Couple’s editing link'),
+      h('p.card__help', 'A private link for the couple: they can change their photos and words and see replies, for this invitation only.'),
+    );
+    if (fresh) {
+      const field = h('input.input.linkrow__field', { type: 'text', readonly: true, value: url(fresh), 'aria-label': 'Couple’s editing link', onfocus: (e) => e.target.select() });
+      box.append(
+        h('div.linkrow', field, h('div.linkrow__actions',
+          h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(field.value) }, icon('copy', 16), 'Copy link'),
+          h('a.btn', { href: `https://wa.me/?text=${encodeURIComponent(`Here is your private link to edit your wedding invitation: ${url(fresh)}`)}`, target: '_blank', rel: 'noopener' }, icon('send', 16), 'WhatsApp'))),
+        h('p.notice', 'Copy it now. For safety it is shown only once; you can always make a new one.'),
+      );
+    } else if (link) {
+      box.append(h('p', `A link is active (made ${fmtDate(link.createdAt)}).`));
+    }
+    box.append(h('div.linkrow__actions',
+      h('button.btn', { type: 'button', onclick: make }, icon('link', 16), link ? 'Make a new link' : 'Make a link'),
+      link ? h('button.btn.btn--quiet', { type: 'button', onclick: off }, 'Turn the link off') : null,
+    ));
+  };
+  async function make() {
+    if (ctx.doc.clientLink && !(await confirmDialog({ title: 'Make a new link?', message: 'The old link will stop working straight away.', confirm: 'Make a new link' }))) return;
+    try {
+      const out = await api(`/invitations/${ctx.slug}/client-link`, { method: 'POST' });
+      ctx.doc.clientLink = { createdAt: out.createdAt };
+      draw(out.token);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  async function off() {
+    if (!(await confirmDialog({ title: 'Turn the couple’s link off?', message: 'Anyone using it will be signed out straight away.', confirm: 'Turn off', danger: true }))) return;
+    try {
+      await api(`/invitations/${ctx.slug}/client-link`, { method: 'DELETE' });
+      ctx.doc.clientLink = null;
+      draw();
+      toast('Link turned off', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  draw();
+  return box;
 }

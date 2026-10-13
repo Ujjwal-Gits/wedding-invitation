@@ -157,6 +157,22 @@ const dhakaTex = () => canvasTex(256, 256, (g, w) => {
   }
 }, [5, 1]);
 
+/** Fabric for the groom: a fine plain weave, or a tone-on-tone brocade with small butis. */
+const fabricTex = (base, kind) => canvasTex(256, 256, (g, w) => {
+  g.fillStyle = base;
+  g.fillRect(0, 0, w, w);
+  if (kind === 'weave') {
+    for (let y = 0; y < w; y += 2) { g.fillStyle = `rgba(120,100,70,${0.03 + rand() * 0.04})`; g.fillRect(0, y, w, 1); }
+    for (let x = 0; x < w; x += 2) { g.fillStyle = `rgba(255,255,255,${0.03 + rand() * 0.04})`; g.fillRect(x, 0, 1, w); }
+  } else {
+    for (let y = 0; y < w; y += 3) { g.fillStyle = `rgba(255,255,255,${0.02 + rand() * 0.02})`; g.fillRect(0, y, w, 1); }
+    g.fillStyle = 'rgba(160,165,190,0.22)';
+    for (let y = 8; y < w; y += 32) for (let x = (y / 32) % 2 ? 8 : 24; x < w; x += 32) {
+      g.beginPath(); g.ellipse(x, y, 3.2, 5.5, 0.6, 0, Math.PI * 2); g.fill();
+    }
+  }
+}, [6, 6]);
+
 /** Canopy: deep red silk with a gold border and an eight-petal centre. */
 const canopyTex = () => canvasTex(1024, 1024, (g, w) => {
   g.fillStyle = '#6e0c1a';
@@ -373,6 +389,144 @@ class Mala {
   }
 }
 
+// ───────────── Roses, greenery and hanging florets ─────────────
+/**
+ * A garden rose: a tight centre bud wrapped in three rings of cupped petals that open
+ * outward, merged into one geometry. Vertex colours shade the heart darker.
+ */
+function roseGeometry(rings = 3) {
+  const parts = [];
+  const petal = (w, h, cup, tilt, rot, lift) => {
+    const g = new T.PlaneGeometry(w, h, 4, 4);
+    const P = g.attributes.position;
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), y = P.getY(i) + h / 2; // 0 at the base
+      const u = x / (w / 2);
+      P.setXYZ(i, x * (1 - 0.25 * (1 - y / h)), y, -cup * (1 - u * u) + 0.15 * cup * (y / h) ** 2);
+    }
+    g.rotateX(-tilt);
+    g.translate(0, lift, 0);
+    g.rotateY(rot);
+    return g;
+  };
+  // Bud
+  const bud = new T.SphereGeometry(0.28, 10, 8);
+  bud.scale(1, 1.15, 1);
+  bud.translate(0, 0.3, 0);
+  parts.push(bud.toNonIndexed());
+  const spec = [[5, 0.42, 0.5, 0.35, 0.12], [5, 0.55, 0.62, 0.75, 0.06], [6, 0.66, 0.66, 1.15, 0.0]].slice(0, rings);
+  spec.forEach(([n, w, h, tilt, lift], r) => {
+    for (let k = 0; k < n; k++) parts.push(petal(w, h, 0.12 + r * 0.04, tilt, (k / n) * Math.PI * 2 + r * 0.6, lift).toNonIndexed());
+  });
+  let count = 0;
+  parts.forEach((g) => { count += g.attributes.position.count; });
+  const pos = new Float32Array(count * 3), col = new Float32Array(count * 3);
+  let o = 0;
+  parts.forEach((g, gi) => {
+    const P = g.attributes.position.array;
+    pos.set(P, o * 3);
+    for (let i = 0; i < P.length / 3; i++) {
+      const y = P[i * 3 + 1];
+      const shade = gi === 0 ? 0.72 : 0.8 + 0.2 * Math.min(1, Math.max(0, y / 0.6));
+      col.set([shade, shade, shade], (o + i) * 3);
+    }
+    o += P.length / 3;
+  });
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.BufferAttribute(pos, 3));
+  g.setAttribute('color', new T.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  g.scale(1, 0.85, 1);
+  return g;
+}
+const ROSES = ['#f4c9cc', '#fbeeea', '#eaa1b1', '#f7d7c4', '#d9718a', '#fff6f2', '#f2b8c2'].map((c) => new T.Color(c));
+const GREENS = ['#4f6b3a', '#5f7d46', '#3f5a30', '#6e8a55'].map((c) => new T.Color(c));
+const FLORETS = ['#f7f1f6', '#e9d6ee', '#d9bfe6', '#fbeff3', '#c9a8dc'].map((c) => new T.Color(c));
+
+/** Instanced roses, leaves and small florets that can be added anywhere along paths or in clusters. */
+class Flowers {
+  constructor(n, mobile) {
+    const d = new T.Object3D();
+    this.d = d;
+    this.rose = new T.InstancedMesh(roseGeometry(mobile ? 2 : 3), new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, side: T.DoubleSide }), n);
+    const lg = new T.PlaneGeometry(1, 2.2, 1, 3);
+    const LP = lg.attributes.position;
+    for (let i = 0; i < LP.count; i++) { const y = LP.getY(i); LP.setX(i, LP.getX(i) * (1 - Math.abs(y) / 1.4)); LP.setZ(i, -0.15 * y * y); }
+    lg.translate(0, 1.1, 0);
+    lg.computeVertexNormals();
+    this.leaf = new T.InstancedMesh(lg, new T.MeshStandardMaterial({ roughness: 0.55, side: T.DoubleSide }), Math.round(n * 1.2));
+    this.floret = new T.InstancedMesh(new T.IcosahedronGeometry(1, 0), new T.MeshStandardMaterial({ roughness: 0.7, flatShading: false }), Math.round(n * 2.5));
+    [this.rose, this.leaf, this.floret].forEach((m) => { m.count = 0; m.frustumCulled = false; });
+  }
+  put(m, p, q, sc, col) {
+    if (m.count >= m.instanceMatrix.count) return;
+    this.d.position.copy(p);
+    if (q) this.d.quaternion.copy(q); else this.d.rotation.set(rand() * 6, rand() * 6, rand() * 6);
+    this.d.scale.setScalar(sc);
+    this.d.updateMatrix();
+    m.setMatrixAt(m.count, this.d.matrix);
+    m.setColorAt(m.count, col);
+    m.count++;
+  }
+  /** A rose facing outward along n (with some scatter). */
+  roseAt(p, n, size = 0.07, palette = ROSES) {
+    const dir = n.clone().add(V3((rand() - 0.5) * 0.7, (rand() - 0.5) * 0.7, (rand() - 0.5) * 0.7)).normalize();
+    const q = new T.Quaternion().setFromUnitVectors(V3(0, 1, 0), dir);
+    q.multiply(new T.Quaternion().setFromAxisAngle(V3(0, 1, 0), rand() * 6.28));
+    this.put(this.rose, p, q, size * (0.8 + rand() * 0.45), palette[(rand() * palette.length) | 0]);
+  }
+  leafAt(p, n, size = 0.05) {
+    const dir = n.clone().add(V3((rand() - 0.5) * 1.6, (rand() - 0.5) * 1.6, (rand() - 0.5) * 1.6)).normalize();
+    const q = new T.Quaternion().setFromUnitVectors(V3(0, 1, 0), dir);
+    q.multiply(new T.Quaternion().setFromAxisAngle(V3(0, 1, 0), rand() * 6.28));
+    this.put(this.leaf, p, q, size * (0.7 + rand() * 0.6), GREENS[(rand() * GREENS.length) | 0]);
+  }
+  /** A dense floral band along a polyline (a beam, a frame edge, a pillar). */
+  band(points, { radius = 0.12, density = 60, size = 0.07, palette = ROSES, leaves = 0.6 } = {}) {
+    const curve = new T.CatmullRomCurve3(points);
+    const L = curve.getLength();
+    const n = Math.max(2, Math.round(L * density));
+    for (let i = 0; i < n; i++) {
+      const t = rand();
+      const p = curve.getPointAt(t);
+      const tg = curve.getTangentAt(t);
+      const a = rand() * Math.PI * 2;
+      const side = V3(0, 1, 0).cross(tg);
+      if (side.lengthSq() < 1e-4) side.set(1, 0, 0);
+      side.normalize();
+      const up = V3().crossVectors(tg, side).normalize();
+      const nrm = side.multiplyScalar(Math.cos(a)).add(up.multiplyScalar(Math.sin(a))).normalize();
+      // Flowers favour the outward/downward faces a guest sees.
+      if (nrm.y > 0.6 && rand() < 0.5) nrm.y *= -0.3;
+      const q = p.clone().addScaledVector(nrm, radius * (0.6 + rand() * 0.4));
+      this.roseAt(q, nrm, size, palette);
+      if (rand() < leaves) this.leafAt(p.clone().addScaledVector(nrm, radius * 0.7), nrm, size * 0.75);
+    }
+  }
+  /** A round cluster (bouquet / corner burst). */
+  cluster(c, r, count, { size = 0.07, palette = ROSES, up = 0.4 } = {}) {
+    for (let i = 0; i < count; i++) {
+      const n = V3(rand() - 0.5, rand() * (1 + up) - 0.5, rand() - 0.5).normalize();
+      this.roseAt(c.clone().addScaledVector(n, r * (0.75 + rand() * 0.25)), n, size, palette);
+      if (rand() < 0.7) this.leafAt(c.clone().addScaledVector(n, r * 0.85), n, size * 0.8);
+    }
+  }
+  /** A hanging strand of small florets that thins toward the tip (wisteria-like). */
+  strand(top, len, { width = 0.07, count = 60, palette = FLORETS, size = 0.018 } = {}) {
+    for (let i = 0; i < count; i++) {
+      const t = Math.pow(rand(), 0.8);
+      const w = width * (1 - t * 0.75);
+      const p = top.clone().add(V3((rand() - 0.5) * w * 2, -t * len, (rand() - 0.5) * w * 2));
+      this.put(this.floret, p, null, size * (1 - t * 0.4) * (0.7 + rand() * 0.6), palette[(rand() * palette.length) | 0]);
+    }
+    for (let i = 0; i < 5; i++) this.leafAt(top.clone().add(V3((rand() - 0.5) * 0.08, -rand() * 0.12, (rand() - 0.5) * 0.08)), V3(0, -1, 0), 0.035);
+  }
+  finish() {
+    [this.rose, this.leaf, this.floret].forEach((m) => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  }
+  meshes() { return [this.rose, this.leaf, this.floret]; }
+}
+
 // ───────────── Small props ─────────────
 function leafGeo(len = 0.16, wid = 0.045, curl = 0.05) {
   const s = new T.Shape();
@@ -439,18 +593,98 @@ function panas(brass) {
 }
 
 /** A banana plant at the mandap corner (kera ko bot), as Nepali mandaps are dressed. */
+/** Banana leaf texture: veined green blade with a pale midrib and the wind-torn edges real leaves have. */
+let bananaTex = null;
+function bananaLeafTexture() {
+  if (bananaTex) return bananaTex;
+  bananaTex = canvasTex(256, 1024, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    const cx = w / 2;
+    // Blade outline (v: 0 at the stalk, 1 at the tip), widest a third of the way up.
+    const half = (v) => (v < 0.04 ? v / 0.04 * 0.25 : Math.sin(Math.min(1, (v - 0.02) / 0.98) * Math.PI) ** 0.55) * (w / 2 - 6);
+    const grd = g.createLinearGradient(0, 0, w, 0);
+    grd.addColorStop(0, '#3d6b2a'); grd.addColorStop(0.45, '#5f9440'); grd.addColorStop(0.5, '#cfdc9a'); grd.addColorStop(0.55, '#5f9440'); grd.addColorStop(1, '#3a6627');
+    g.fillStyle = grd;
+    g.beginPath();
+    g.moveTo(cx, h);
+    for (let y = h; y >= 0; y -= 4) g.lineTo(cx - half(1 - y / h), y);
+    for (let y = 0; y <= h; y += 4) g.lineTo(cx + half(1 - y / h), y);
+    g.fill();
+    // Parallel side veins, slanting toward the tip.
+    g.globalCompositeOperation = 'source-atop';
+    for (let y = 8; y < h; y += 7) {
+      g.strokeStyle = `rgba(${y % 21 ? '30,60,20' : '200,225,150'},${0.12 + rand() * 0.08})`;
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(cx, y); g.lineTo(0, y - 40); g.moveTo(cx, y); g.lineTo(w, y - 40); g.stroke();
+    }
+    // Wind tears: thin transparent cuts from the edge toward the midrib, following the veins.
+    g.globalCompositeOperation = 'destination-out';
+    for (let k = 0; k < 26; k++) {
+      const y = h * (0.12 + rand() * 0.85);
+      const side = rand() < 0.5 ? -1 : 1;
+      const depth = (0.35 + rand() * 0.55) * (w / 2 - 8);
+      g.lineWidth = 1.5 + rand() * 2.5;
+      g.beginPath();
+      g.moveTo(cx + side * (w / 2), y - 40 * (1 - 0));
+      g.lineTo(cx + side * (w / 2 - depth), y - 40 * (depth / (w / 2)) + 40 * 0);
+      g.stroke();
+    }
+    // A little brown drying at the very edge.
+    g.globalCompositeOperation = 'source-atop';
+    g.strokeStyle = 'rgba(120,95,40,0.35)';
+    g.lineWidth = 3;
+    g.beginPath();
+    for (let y = 0; y <= h; y += 6) g.lineTo(cx - half(1 - y / h) + 1, y);
+    g.stroke();
+    g.globalCompositeOperation = 'source-over';
+  });
+  return bananaTex;
+}
+
+/** A banana leaf: a long blade that arches out and droops, folded slightly along the midrib. */
+function bananaLeafGeometry(len, wid, droop) {
+  const g = new T.PlaneGeometry(wid, len, 4, 24);
+  g.translate(0, len / 2, 0);
+  const P = g.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i);
+    const t = y / len;
+    // Arc: rises then droops; fold along the midrib; a gentle twist toward the tip.
+    const ang = t * droop;
+    const r = len / Math.max(droop, 0.01);
+    const yy = Math.sin(ang) * r;
+    const zz = (1 - Math.cos(ang)) * r;
+    const fold = Math.abs(x) * 0.35;
+    const tw = t * 0.35;
+    P.setXYZ(i, x * Math.cos(tw), yy - fold * 0.2, zz + fold + x * Math.sin(tw) * 0.4);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** A banana plant at the mandap corner (kera ko bot), as Nepali mandaps are dressed. */
 function bananaPlant(rot) {
   const g = new T.Group();
-  const trunk = new T.Mesh(new T.CylinderGeometry(0.07, 0.1, 2.0, 12), new T.MeshStandardMaterial({ color: '#5f6b2c', roughness: 0.7 }));
+  // Pseudostem: overlapping sheaths, green streaked with brown, slightly tapered and leaning.
+  const stemTex = canvasTex(128, 256, (c, w, h) => {
+    c.fillStyle = '#7d8f45'; c.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 3) { c.fillStyle = `rgba(${rand() < 0.3 ? '110,80,40' : '60,90,30'},${0.15 + rand() * 0.25})`; c.fillRect(x, 0, 2, h); }
+    for (let y = 30; y < h; y += 55 + rand() * 30) { c.fillStyle = 'rgba(90,70,35,0.35)'; c.fillRect(0, y, w, 3); }
+  }, [3, 2]);
+  const trunk = new T.Mesh(new T.CylinderGeometry(0.075, 0.12, 2.0, 16, 4), new T.MeshStandardMaterial({ map: stemTex, roughness: 0.75 }));
   trunk.position.y = 1.0;
+  trunk.rotation.z = 0.04;
   g.add(trunk);
-  const lm = new T.MeshStandardMaterial({ color: '#2f5a1f', roughness: 0.65, side: T.DoubleSide });
-  const lg = leafGeo(1.25, 0.24, 0.35);
-  for (let i = 0; i < 7; i++) {
-    const l = new T.Mesh(lg, lm);
-    const a = (i / 7) * Math.PI * 2 + rot;
-    l.position.set(0, 1.85 + (i % 3) * 0.08, 0);
-    l.rotation.set(-0.5 - (i % 2) * 0.35, a, 0, 'YXZ');
+  const lm = new T.MeshStandardMaterial({ map: bananaLeafTexture(), alphaTest: 0.4, side: T.DoubleSide, roughness: 0.55 });
+  const n = 8;
+  for (let i = 0; i < n; i++) {
+    const young = i < 2;
+    const geo = bananaLeafGeometry(young ? 1.0 : 1.35 + rand() * 0.35, young ? 0.32 : 0.46, young ? 0.5 : 1.4 + rand() * 0.8);
+    const l = new T.Mesh(geo, lm);
+    const a = (i / n) * Math.PI * 2 + rot + rand() * 0.4;
+    l.position.set(0, 1.92 + (i % 3) * 0.06, 0);
+    l.rotation.set(young ? 0.12 : 0.45 + rand() * 0.3, a, 0, 'YXZ'); // lean outward, the same way the blade arches
+    l.castShadow = true;
     g.add(l);
   }
   return g;
@@ -1003,6 +1237,15 @@ class Figure {
     }
     smoothBorder(g, weld, 4);
     this.collide(P, clear, extra);
+    if (this.realistic) {
+      const SI = g.attributes.skinIndex.array, SW = g.attributes.skinWeight.array;
+      const BSI = this.body.attributes.skinIndex.array, BSW = this.body.attributes.skinWeight.array;
+      for (let i = 0; i < P.length / 3; i++) {
+        const j = this.grid.nearest(P[i * 3], P[i * 3 + 1], P[i * 3 + 2], null, 14);
+        if (j < 0) continue;
+        for (let q = 0; q < 4; q++) { SI[i * 4 + q] = BSI[j * 4 + q]; SW[i * 4 + q] = BSW[j * 4 + q]; }
+      }
+    }
     g.computeVertexNormals();
     return this.attach(g, mat, name);
   }
@@ -1142,16 +1385,19 @@ class Figure {
   dressGroom() {
     const W = this.W;
     const hipY = this.restPos.thL.y + 0.04;
-    const ivory = new T.MeshPhysicalMaterial({ color: '#ddd0b6', roughness: 0.7, sheen: 0.6, sheenColor: new T.Color('#fff4dc'), sheenRoughness: 0.55, side: T.DoubleSide });
-    const ivory2 = new T.MeshPhysicalMaterial({ color: '#d6c9ae', roughness: 0.75, sheen: 0.5, sheenColor: new T.Color('#fff4dc'), sheenRoughness: 0.6 });
-    const coat = new T.MeshPhysicalMaterial({ color: '#23262e', roughness: 0.62, sheen: 0.7, sheenColor: new T.Color('#6a7088'), sheenRoughness: 0.45 });
+    // Cotton-silk daura suruwal with a visible weave; a charcoal brocade istakot.
+    const weave = fabricTex('#ece3d0', 'weave');
+    const brocade = fabricTex('#2a2c34', 'brocade');
+    const ivory = new T.MeshPhysicalMaterial({ map: weave, roughness: 0.78, sheen: 0.7, sheenColor: new T.Color('#fff8e8'), sheenRoughness: 0.5, side: T.DoubleSide });
+    const ivory2 = new T.MeshPhysicalMaterial({ map: weave, color: '#f4efe6', roughness: 0.8, sheen: 0.6, sheenColor: new T.Color('#fff8e8'), sheenRoughness: 0.55 });
+    const coat = new T.MeshPhysicalMaterial({ map: brocade, roughness: 0.55, sheen: 0.8, sheenColor: new T.Color('#8a8fa8'), sheenRoughness: 0.4 });
     const shoe = new T.MeshPhysicalMaterial({ color: '#120d0b', roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.3 });
     // Suruwal: loose at the thigh, narrow at the calf.
     const legs = this.region((i, x, y) => (W.thigh[i] + W.calf[i] + W.pelvis[i] > 0.5 && W.foot[i] < 0.2 && y < hipY + 0.02 ? 0.006 + 0.016 * sstep(y, 0.35, 0.75) : -1));
     this.garment(legs, ivory2, 'suruwal', { iters: 8, clear: 0.01 });
     // Daura: long sleeves and a fitted body that continues as a skirt to the knee.
     const daura = this.region((i, x, y) => ((W.torso[i] + W.ua[i] + W.la[i] + W.pelvis[i] * (y > hipY ? 1 : 0) + W.neck[i] * 0.4 > 0.55) && W.hand[i] < 0.25 && y > hipY - 0.02 && y < this.restPos.neck.y + 0.02 ? 0.01 + W.la[i] * 0.006 : -1));
-    const dauraM = this.garment(daura, ivory, 'daura', { iters: 20, clear: this.realistic ? 0.026 : 0.02 });
+    const dauraM = this.garment(daura, ivory, 'daura', { iters: this.realistic ? 6 : 20, clear: this.realistic ? 0.012 : 0.02 });
     const kneeY = this.restPos.caL.y + 0.05;
     const dSkirt = this.skirt({ yTop: hipY + 0.06, yBot: kneeY, margin: 0.032, flare: 0.05, rows: 14, seg: 56, legInfluence: 0.5, material: ivory });
     const dSkirtM = this.attach(dSkirt.geometry, ivory, 'daura-skirt');
@@ -1187,7 +1433,7 @@ class Figure {
   /** Dhaka topi: a tall, slightly asymmetric cap that sits forward on the head. */
   buildTopi() {
     const hb = this.headBox;
-    const yB = hb.max.y - (this.realistic ? 0.1 : 0.085);
+    const yB = hb.max.y - (this.realistic ? 0.075 : 0.085);
     const s = this.section(yB, 0.012, []);
     const hairPos = this.hair?.geometry.attributes.position.array;
     let rx = s.rx, rz = s.rz;
@@ -1199,7 +1445,7 @@ class Figure {
     rx += this.realistic ? 0.012 : 0.008; rz += this.realistic ? 0.012 : 0.008;
     const seg = 48, rows = 6;
     const pos = [], uv = [], idx = [];
-    const heightAt = (a) => (this.realistic ? 0.088 : 0.1) + 0.028 * Math.cos(a - 0.5); // taller toward the front-left
+    const heightAt = (a) => (this.realistic ? 0.068 : 0.1) + 0.024 * Math.cos(a - 0.5); // taller toward the front-left
     for (let r = 0; r <= rows; r++) {
       const t = r / rows;
       for (let c = 0; c <= seg; c++) {
@@ -1507,7 +1753,7 @@ class Figure {
     this.idle.setEffectiveWeight(1 - w);
     this.mixer.update(0);
     // Calm the idle: relaxed hands, feet a little closer, softer shoulders.
-    for (const b of this.bones) if (FINGER.test(b.name)) b.quaternion.slerp(this.rest.get(b), 0.78);
+    if (!this.realistic) for (const b of this.bones) if (FINGER.test(b.name)) b.quaternion.slerp(this.rest.get(b), 0.78);
     const still = 1 - w;
     {
       // A calm, closed stance; the sari also keeps the bride's steps short.
@@ -1743,6 +1989,7 @@ export class MandapView {
 
     // Pillars, banana plants, kalash
     const garlands = new Garlands(1400, 2); // the mandap's own garlands: seen close, so rounder
+    const flowers = (this.flowers = new Flowers(mobile ? 2600 : 5200, mobile));
     const strandG = new Garlands(mobile ? 2600 : 6400, 1); // overhead strands: seen far
     const pillarGeo = lathe([[0.3, 0], [0.3, 0.14], [0.24, 0.16], [0.24, 0.26], [0.18, 0.3], [0.15, 0.38], [0.13, 0.46], [0.12, 0.6], [0.11, 2.3], [0.13, 2.38], [0.17, 2.5], [0.2, 2.64], [0.15, 2.7], [0.23, 2.78], [0.23, 2.95]], 32);
     const P = 1.9;
@@ -1764,7 +2011,9 @@ export class MandapView {
         const a = t * Math.PI * 2 * 4.5;
         return V3(x + Math.cos(a) * 0.17, 0.5 + t * 1.85, z + Math.sin(a) * 0.17);
       });
-      garlands.add(helix, 0.055, 0.075);
+      // Pillars wrapped in roses and greenery (a marigold collar at the base keeps it Nepali).
+      flowers.band(helix.slice(0, 66), { radius: 0.13, density: mobile ? 55 : 95, size: 0.06 });
+      garlands.add(helix.slice(0, 10), 0.05, 0.07);
       const k = kalash(brass);
       k.position.set(x * 0.8, PLAT, z * 0.8);
       s.add(k);
@@ -1790,12 +2039,14 @@ export class MandapView {
       const a = V3(x1, 3.08, z1);
       const b = V3(x2, 3.08, z2);
       const mid = V3().lerpVectors(a, b, 0.5);
-      garlands.add(catenary(a, mid, 0.38), 0.05, 0.075);
-      garlands.add(catenary(mid, b, 0.38), 0.05, 0.075);
-      for (let k = 1; k < 8; k++) {
-        const top = V3().lerpVectors(a, b, k / 8);
-        const lenS = 0.45 + (k % 2) * 0.4;
-        garlands.add([top, top.clone().add(V3(0, -lenS / 2, 0)), top.clone().add(V3(0, -lenS, 0))], 0.04, 0.068, [new T.Color('#f6a821'), new T.Color('#e2650f'), new T.Color('#f4e9d6')]);
+      // A deep rose bank along each beam, marigold swags below, and wisteria strands.
+      flowers.band([V3(x1, 3.3, z1), V3(x2, 3.3, z2)], { radius: 0.2, density: mobile ? 70 : 130, size: 0.075 });
+      flowers.cluster(V3(x1, 3.3, z1), 0.3, mobile ? 30 : 60, { size: 0.08 });
+      garlands.add(catenary(a, mid, 0.32), 0.045, 0.07);
+      garlands.add(catenary(mid, b, 0.32), 0.045, 0.07);
+      for (let k = 1; k < 10; k++) {
+        const top = V3().lerpVectors(a, b, k / 10).add(V3(0, 0.12, 0));
+        flowers.strand(top, 0.5 + (k % 3) * 0.25 + rand() * 0.15, { count: mobile ? 28 : 55 });
       }
     }
     const canopyGeo = new T.PlaneGeometry(4.6, 4.6, 40, 40);
@@ -1806,7 +2057,7 @@ export class MandapView {
       cp.setZ(i, (1 - x * x) * (1 - y * y) * 0.45);
     }
     canopyGeo.computeVertexNormals();
-    const canopy = new T.Mesh(canopyGeo, new T.MeshPhysicalMaterial({ map: canopyTex(), roughness: 0.6, sheen: 0.8, sheenColor: new T.Color('#ff7a5a'), side: T.DoubleSide }));
+    const canopy = new T.Mesh(canopyGeo, new T.MeshPhysicalMaterial({ color: '#f7efe6', roughness: 0.7, sheen: 1, sheenColor: new T.Color('#fff0f0'), side: T.DoubleSide }));
     canopy.rotation.x = Math.PI / 2;
     canopy.position.y = 3.36;
     s.add(canopy);
@@ -1822,10 +2073,37 @@ export class MandapView {
       strandG.add([V3(x, top, z), V3(x + (rand() - 0.5) * 0.05, (top + bottom) / 2, z), V3(x, bottom, z)], 0.045, 0.07,
         i % 5 ? MARIGOLD_COLS : [new T.Color('#f6e7c8'), new T.Color('#f2a33a'), new T.Color('#f6e7c8')]);
     }
+    // The welcome gate: a rose-and-wisteria arch over the lamp path, which the camera passes through.
+    {
+      const gz = 15.2, gw = 1.55, gh = 3.15;
+      const postMat = new T.MeshStandardMaterial({ color: '#efe6d8', roughness: 0.6 });
+      for (const sx of [-1, 1]) {
+        const post = new T.Mesh(new T.BoxGeometry(0.16, gh, 0.16), postMat);
+        post.position.set(sx * gw, gh / 2, gz);
+        s.add(post);
+        flowers.band([V3(sx * gw, 0.15, gz), V3(sx * gw, gh, gz)], { radius: 0.16, density: mobile ? 70 : 120, size: 0.075 });
+        flowers.cluster(V3(sx * gw, 0.25, gz), 0.35, mobile ? 30 : 60, { size: 0.09, up: 0.8 });
+      }
+      const beam = new T.Mesh(new T.BoxGeometry(gw * 2 + 0.3, 0.16, 0.16), postMat);
+      beam.position.set(0, gh, gz);
+      s.add(beam);
+      flowers.band([V3(-gw - 0.15, gh, gz), V3(gw + 0.15, gh, gz)], { radius: 0.24, density: mobile ? 90 : 150, size: 0.08 });
+      for (let k = 0; k < 13; k++) flowers.strand(V3(-gw + 0.12 + (k / 12) * (gw * 2 - 0.24), gh - 0.1, gz + (rand() - 0.5) * 0.15), 0.35 + rand() * 0.55, { count: mobile ? 25 : 45 });
+      this.gateZ = gz;
+    }
+    // Rose bouquets at the mandap steps.
+    flowers.cluster(V3(-0.95, 0.45, 3.25), 0.28, mobile ? 30 : 55, { size: 0.08, up: 0.9 });
+    flowers.cluster(V3(0.95, 0.45, 3.25), 0.28, mobile ? 30 : 55, { size: 0.08, up: 0.9 });
+    for (const sx of [-1, 1]) {
+      const urn = new T.Mesh(lathe([[0, 0], [0.14, 0], [0.18, 0.08], [0.12, 0.22], [0.1, 0.32], [0.2, 0.42], [0.18, 0.44], [0, 0.44]], 24), brass);
+      urn.position.set(sx * 0.95, 0, 3.25);
+      s.add(urn);
+    }
     garlands.finish();
     strandG.finish();
+    flowers.finish();
     garlands.mesh.castShadow = false;
-    s.add(garlands.mesh, strandG.mesh);
+    s.add(garlands.mesh, strandG.mesh, ...flowers.meshes());
 
     // Havan kund: stepped copper and brick, wood, a living fire
     const copper = new T.MeshStandardMaterial({ color: '#b0653a', metalness: 0.9, roughness: 0.35 });
@@ -2010,7 +2288,7 @@ export class MandapView {
 
   jantiPose(j) {
     // The groom walks the lamp path, climbs the step and comes to face the bride.
-    const pts = [V3(0.15, 0, 13.6), V3(0, 0, 9), V3(0.05, 0, 5), V3(0.1, 0, 3.75), V3(0.25, PLAT, 2.7), MandapView.SW.groom.clone()];
+    const pts = [V3(0.1, 0, 17.6), V3(0, 0, 13), V3(0, 0, 9), V3(0.05, 0, 5), V3(0.1, 0, 3.75), V3(0.25, PLAT, 2.7), MandapView.SW.groom.clone()];
     const curve = this.jantiCurve || (this.jantiCurve = new T.CatmullRomCurve3(pts));
     const t = clamp01(j / 0.94);
     const p = curve.getPointAt(Math.min(t, 0.999));

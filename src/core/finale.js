@@ -52,7 +52,7 @@ export function renderFinale(root, { credits = [] } = {}) {
     <div class="info__col">
       <p class="eyebrow">${bi({ en: 'What to wear', ne: 'पहिरन' })}</p>
       <ul class="dress">
-        ${events.map((e) => `
+        ${events.filter((e) => e.dress?.colors?.length || e.dress?.text?.en || e.dress?.text?.ne).map((e) => `
           <li>
             <span class="dress__sw" aria-hidden="true">${(e.dress?.colors || []).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>
             <span><b>${bi(e.title)}</b><small>${bi(e.dress?.text || { en: 'Festive traditional', ne: 'परम्परागत पहिरन' })}</small></span>
