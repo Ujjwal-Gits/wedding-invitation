@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photos, photoUrl, view } from '../../photos.js';
-import { bi, esc, dateOf, timeRange, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
@@ -232,7 +232,7 @@ async function start() {
           <p class="d-prog__k">${bi({ en: `${txt('events.label').en} ${ROMAN[i]}`, ne: `${NE_ORD[i] || neNum(i + 1)} ${txt('events.label').ne}` })}</p>
           <h3 class="d-prog__t" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
           <dl class="d-prog__dl">
-            <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+            <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeLabel(e))}</dd></div>
             <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="d-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
             ${e.dress?.text ? `<div><dt>${bi({ en: 'Dress', ne: 'पहिरन' })}</dt><dd>${colors ? `<span class="d-prog__dress" aria-hidden="true">${colors}</span>` : ''}${bi(e.dress.text)}</dd></div>` : ''}
           </dl>

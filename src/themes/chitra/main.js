@@ -30,7 +30,7 @@ if (new URLSearchParams(location.search).has('lab')) {
 
 async function start() {
   const { photoUrl, view } = photos;
-  const { bi, esc, biNodes, dateOf, dayNum, timeRange, timeOf, mapUrl, neNum } = i18n;
+  const { bi, esc, biNodes, dateOf, dayNum, timeLabel, timeOf, mapUrl, neNum } = i18n;
 
   const config = await loadInvitation();
   // ?debug&override: proves every slot is replaceable without touching src/config.js
@@ -54,7 +54,7 @@ async function start() {
 
   /* ───────── helpers ───────── */
   const ritual = (re) => wedding?.rituals?.find((r) => re.test(r.title?.en || ''));
-  const timeLabel = (r) => (r ? (typeof r.time === 'string' ? { en: r.time, ne: neNum(r.time) } : r.time) : null);
+  const ritualTime = (r) => (r ? (typeof r.time === 'string' ? { en: r.time, ne: neNum(r.time) } : r.time) : null);
   const venueLine = (e) => (e ? `<a class="cap__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi(e.venue)}<span aria-hidden="true"> ↗</span></a>` : '');
   const NUM = ['', '१', '२', '३', '४', '५', '६', '७'];
   const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
@@ -77,7 +77,7 @@ async function start() {
   };
   const jantiR = ritual(/janti/i), swayR = ritual(/swayamb/i), fireR = ritual(/saptapadi|kanyadan|sindoor/i);
   const wDate = wedding ? bi(dateOf(wedding.start)) : '';
-  const tl = (r) => (r ? `${bi(timeLabel(r))}` : '');
+  const tl = (r) => (r ? `${bi(ritualTime(r))}` : '');
 
   const PAGES = [
     { id: 'title', name: { en: 'The couple', ne: 'जोडी' } },
@@ -111,7 +111,7 @@ async function start() {
             <h3 class="day__title">${bi(e.title)}</h3>
             <p class="day__date">${bi(dateOf(e.start))}</p>
             ${bs ? `<p class="day__bs">${bi(bs)}</p>` : ''}
-            <p class="day__meta">${bi(timeRange(e.start, e.end))}</p>
+            <p class="day__meta">${bi(timeLabel(e))}</p>
             <p class="day__meta">${venueLine(e)}</p>
             ${e.dress?.colors?.length ? `<p class="day__dress"><span class="day__sw" aria-hidden="true">${e.dress.colors.map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text || { en: 'Festive', ne: 'उत्सव' })}</p>` : ''}
           </li>`;

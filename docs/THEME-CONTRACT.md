@@ -198,3 +198,19 @@ every joint connected in every frame.
 `{ en: 'Friday, 29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ माघ २९ गते, शुक्रबार', short: { en, ne } }`
 (library: nepali-date-converter, MIT). Show it for **every** ceremony next to the AD date. An event's optional
 `dateBS` override wins (for families matching their priest's patro). Do not hand-compute B.S. dates.
+
+## 13. Round 4 — real client, floral premium, simpler studio
+
+**Real client (private):** a live client invitation. Their photos are in `clients/<client>/originals/`
+(gitignored — never copy them into `public/`, `art-src/`, docs or screenshots that get committed). The studio agent
+creates their invitation (slug `<client-slug>`) through the API; every theme must look great with
+`/<theme>/?id=<client-slug>` (real phone portraits of the couple,
+mixed sizes and settings). Test with both the demo and the client id.
+
+**Direction from the client (see refs/14–16: floral wedding stages, rose/wisteria canopies, floral mandap):**
+- Real **flowers and floral decoration**: bouquets, rose and wisteria canopies, floral arches, garlands — not just
+  marigold accents. Use real CC-licensed flower photography (cut out cleanly) or genuinely realistic 3D flowers.
+- **A beautiful floral gate / welcome frame** that the guest *enters through* (a premium opening moment).
+- **Different frames and treatments for the couple's photos** (not one repeated frame).
+- It must feel like a proper invitation: premium, calm, readable (§11), clear "when is what" (§11–12).
+- Mobile must be perfect (390 and 360 widths first-class, not an afterthought).

@@ -9,7 +9,7 @@ import './kham.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
@@ -17,7 +17,7 @@ import { guestEvents } from '../../core/finale.js';
 import { downloadIcs, share } from '../../core/calendar.js';
 import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
-import { photos, photoUrl } from '../../photos.js';
+import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
 import { paperTiles, linerTile, deckle } from './paper.js';
@@ -254,9 +254,9 @@ main.innerHTML = `
             <p class="sr-only">${bi(ad.full)}. ${bi(bs.full)}</p>
             ${e.blurb ? `<p class="kh-event__blurb">${bi(e.blurb)}</p>` : ''}
             <dl class="kh-event__facts">
-              <div><dt>${bi(T.time)}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+              <div><dt>${bi(T.time)}</dt><dd>${bi(timeLabel(e))}</dd></div>
               <div><dt>${bi(T.venue)}</dt><dd>${bi(e.venue)}<a class="kh-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span><span class="sr-only"> (${esc(e.venue?.en || '')}, opens Google Maps)</span></a></dd></div>
-              ${e.dress ? `<div><dt>${bi(T.wear)}</dt><dd class="kh-dress">${sw.length ? `<span class="kh-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || T.wear)}</span></dd></div>` : ''}
+              ${(e.dress?.text?.en || e.dress?.text?.ne || sw.length) ? `<div><dt>${bi(T.wear)}</dt><dd class="kh-dress">${sw.length ? `<span class="kh-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || T.wear)}</span></dd></div>` : ''}
             </dl>
             ${e.rituals?.length ? `
             <div class="kh-order">

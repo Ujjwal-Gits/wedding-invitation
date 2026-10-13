@@ -4,7 +4,7 @@
 import '../../core/base.css';
 import './ghar.css';
 import { loadInvitation } from '../../core/data.js';
-import { bi, biNodes, esc, dateOf, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, biNodes, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
@@ -125,7 +125,7 @@ const programme = `
         <div class="pg__when">
           <p class="pg__day">${bi(d.first)}</p>
           <p class="pg__bs">${bi(d.second)}</p>
-          <p class="pg__time">${bi(timeRange(e.start, e.end))}</p>
+          <p class="pg__time">${bi(timeLabel(e))}</p>
         </div>
         <div class="pg__where">
           <p class="pg__venue">${bi(e.venue)}</p>
@@ -251,7 +251,7 @@ $('#finale-root').innerHTML = `
       <p class="card__p">${bi(config.invitation?.body || { en: '', ne: '' })}</p>
       <p class="card__p">${bi(config.invitation?.request || { en: '', ne: '' })}</p>
       <p class="card__sign">${bi(config.invitation?.signoff || { en: '', ne: '' })}<br /><b>${bi(config.hosts || { en: '', ne: '' })}</b></p>
-      <ul class="card__ev">${events.map((e) => `<li><b>${bi(e.title)}</b> ${bi(dateOf(e.start))}, ${bi(timeRange(e.start, e.end))}<br />${bi(e.venue)}</li>`).join('')}</ul>
+      <ul class="card__ev">${events.map((e) => `<li><b>${bi(e.title)}</b> ${bi(dateOf(e.start))}, ${bi(timeLabel(e))}<br />${bi(e.venue)}</li>`).join('')}</ul>
     </div>
   </div>
 
@@ -350,7 +350,7 @@ function beatHTML(b) {
     case 'event': {
       const e = b.event;
       const d = datesOf(e);
-      return `<div class="ev ev--${b.side}"><p class="ev__d">${bi(d.first)}</p><p class="ev__bs">${bi(d.second)}</p><h3 class="ev__t">${bi(e.title)}</h3><p class="ev__m">${bi(timeRange(e.start, e.end))}</p><p class="ev__m">${bi(e.venue)} <a class="ev__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p></div>`;
+      return `<div class="ev ev--${b.side}"><p class="ev__d">${bi(d.first)}</p><p class="ev__bs">${bi(d.second)}</p><h3 class="ev__t">${bi(e.title)}</h3><p class="ev__m">${bi(timeLabel(e))}</p><p class="ev__m">${bi(e.venue)} <a class="ev__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p></div>`;
     }
     case 'end':
       return `<div class="nm nm--end"><p class="nm__pair">${names()}</p><a class="nm__go" href="#rsvp">${bi(S.txt('end.ask'))}</a></div>`;

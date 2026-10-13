@@ -7,15 +7,15 @@ dashboard to create, customise, publish and track invitations.
 |---|---|---|
 | 01 | **Kham** `/kham/` | Handmade-paper envelope with an endless-knot wax seal; the card unfolds into a clear programme. |
 | 02 | **Dhoka** `/dhoka/` | White editorial print. The Golden Door of Patan opens in 3D. |
-| 03 | **Mala** `/mala/` | Real flower garlands frame the couple; the swayambar exchange on scroll. |
-| 04 | **Durbar** `/durbar/` | A 3D morning glide through Bhaktapur Durbar Square, past the Nyatapola. |
-| 05 | **Gurans** `/gurans/` | Natural Nepal: a lali gurans forest trail down to Phewa Lake. |
-| 06 | **Dhaka** `/dhaka/` | Heirloom envelope tied with a Palpali Dhaka band and a wax seal. |
-| 07 | **Sayapatri** `/sayapatri/` | Bright haldi daylight; "two hands, one promise". |
+| 03 | **Mala** `/mala/` | Walk through an arch of real roses, jasmine and marigold; the couple framed in flowers. |
+| 04 | **Durbar** `/durbar/` | A 3D morning walk through Bhaktapur Durbar Square, under flower arches, past the Nyatapola. |
+| 05 | **Phoolbari** `/gurans/` | A flower gate with शुभ विवाह opens onto a calm, normally scrolling invitation (no 3D). |
+| 06 | **Dhaka** `/dhaka/` | The seal breaks, the Dhaka band slides off and the couple's photo rises into a floral frame. |
+| 07 | **Sayapatri** `/sayapatri/` | A floral wedding stage: the flower gate parts on a crisp white card. |
 | 08 | **Himal** `/himal/` | Quiet luxury: Himalayan sunrise and a photo essay of the couple. |
 | 09 | **Chitra** `/chitra/` | Mithila picture book with illustrated characters: janti, swayambar, seven rounds, sindoor, dance. |
-| 10 | **Mandap** `/mandap/` | 3D mandap on a bright morning; realistic couple exchange garlands and walk seven rounds. |
-| 11 | **Bagaicha** `/bagaicha/` | 3D garden destination: pavilion, pool, waterfall, morning to night. |
+| 10 | **Mandap** `/mandap/` | 3D floral mandap on a bright morning; realistic couple exchange garlands and walk seven rounds. |
+| 11 | **Bagaicha** `/bagaicha/` | 3D garden wedding: through a rose arch, seven rounds of the fire, on to the reception. |
 | 12 | **Ghar** `/ghar/` | A lamplit film walking room by room through a Newar house. |
 
 The showroom at `/` links every theme and the studio.
@@ -80,7 +80,7 @@ docs/                     theme contract and photo library catalogue
 All photographs are real and openly licensed (Wikimedia Commons / Openverse; CC0, CC BY,
 CC BY-SA), listed with author, licence and source in `art-src/photos/credits.json` and
 `docs/PHOTO-LIBRARY.md`, and credited in each invitation's footer. CC BY-SA images must keep
-their licence and credit when redistributed. 3D characters: MakeHuman (CC0). Garden plants, textures and HDRIs: Poly Haven and ambientCG (CC0). Music credits are in `src/config.js`.
+their licence and credit when redistributed. 3D characters: MakeHuman (CC0). Garden plants, textures and HDRIs: Poly Haven and ambientCG (CC0). Flower cut-outs: Wikimedia Commons (CC0 / CC BY-SA), credited per theme in `flora-credits` files and the invitation footer. Music credits are in `src/config.js`.
 
 Original full-resolution images are not in the repository; re-download them from the
 `source_url` in `credits.json`, then run `node scripts/optimize-art.mjs` (and

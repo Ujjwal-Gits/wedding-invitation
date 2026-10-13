@@ -9,7 +9,7 @@ import './himal.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, dayNum, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, dayNum, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
@@ -262,7 +262,7 @@ main.innerHTML = `
           <div class="hm-event__body">
             <h3 class="hm-event__title">${bi(e.title)}</h3>
             <dl class="hm-facts">
-              <div><dt>${bi(T.when)}</dt><dd><b>${bi(timeRange(e.start, e.end))}</b><span>${bi(full)}</span>${bs ? `<span>${bi(bs)}</span>` : ''}</dd></div>
+              <div><dt>${bi(T.when)}</dt><dd><b>${bi(timeLabel(e))}</b><span>${bi(full)}</span>${bs ? `<span>${bi(bs)}</span>` : ''}</dd></div>
               <div><dt>${bi(T.where)}</dt><dd><b>${bi(e.venue)}</b><a class="hm-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.openMap)}<span aria-hidden="true"> ↗</span></a></dd></div>
               ${e.dress ? `<div><dt>${bi(T.wear)}</dt><dd class="hm-facts__wear">${sw.length ? `<span class="hm-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || T.wear)}</span></dd></div>` : ''}
             </dl>

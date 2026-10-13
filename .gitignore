@@ -53,3 +53,9 @@ desktop.ini
 
 # Client reference screenshots (third-party designs, not ours to publish)
 refs/
+
+# Real client data and photos (private; never commit)
+clients/
+
+# Client photo archives dropped in the project root
+*.zip
