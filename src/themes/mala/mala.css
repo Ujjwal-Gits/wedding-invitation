@@ -83,38 +83,56 @@
 }
 .ml-map .l-ne { font-size: 16px; }
 
-/* ───────── Gate ───────── */
+/* ───────── Gate: a floral arch the guest walks through ───────── */
 .ml-gate {
-  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; overflow: hidden;
+  position: fixed; inset: 0; z-index: 70; overflow: hidden; display: grid; place-items: center;
   background: var(--paper) url('/themes/mala/paper.webp') repeat; background-size: 640px 640px;
-  padding: calc(20px + var(--safe-t)) 20px calc(24px + var(--safe-b));
-  transition: opacity 600ms var(--ease);
 }
-.ml-gate.is-leaving { opacity: 0; pointer-events: none; }
-.ml-gate__inner { display: grid; grid-template-columns: auto minmax(0, 440px); gap: clamp(28px, 6vw, 96px); align-items: center; }
-.ml-gate__mala {
-  width: auto; height: min(72svh, 640px); filter: drop-shadow(10px 18px 22px rgba(60, 38, 8, 0.22));
-  transform-origin: 50% 0; animation: ml-hang 7s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+.ml-gate.is-entering { background-image: none; background-color: rgba(251, 248, 241, 1); pointer-events: none; }
+.ml-arch { position: absolute; inset: 0; transform-origin: 50% 46%; will-change: transform, opacity; }
+.ml-arch img { position: absolute; display: block; max-width: none; pointer-events: none; user-select: none; }
+/* pillar images carry a transparent organic margin (padding) on the inner side */
+.ml-arch__pl { left: calc(-1 * var(--pillar-hide)); top: -4svh; height: 112svh; width: auto; }
+.ml-arch__pr { right: calc(-1 * var(--pillar-hide)); top: -4svh; height: 112svh; width: auto; }
+.ml-arch__canopy { left: 50%; top: calc(-1 * var(--canopy-lift)); width: var(--canopy-w); height: auto; transform: translateX(-50%); }
+.ml-arch__ml { left: -4vw; bottom: -3svh; width: var(--mound-w); height: auto; }
+.ml-arch__mr { right: -4vw; bottom: -3svh; width: var(--mound-w); height: auto; transform: scaleX(-1); }
+.ml-arch__strands { position: absolute; inset: 0; }
+.ml-gate { --pillar-hide: 3vw; --canopy-w: max(1500px, 118vw); --canopy-lift: 70px; --mound-w: clamp(380px, 40vw, 720px); }
+.ml-gate__inner {
+  position: relative; z-index: 5; display: grid; justify-items: center; text-align: center; gap: 0;
+  max-width: min(560px, 62vw); padding: 18svh 0 10svh;
 }
-@keyframes ml-hang { from { transform: rotate(-1.4deg); } to { transform: rotate(1.4deg); } }
-.ml-gate__text { display: grid; justify-items: start; }
-.ml-gate__names { margin: 0 0 10px; font: 400 clamp(44px, 5.6vw, 76px)/1.05 var(--f-display); color: var(--ink); }
-.ml-gate__names .l-ne { font: 600 clamp(40px, 5vw, 66px)/1.35 var(--f-deva-display); }
-.ml-gate__hosts { margin: 0 0 34px; font-size: 18px; color: var(--ink-dim); }
-.ml-gate__hosts .l-ne { font-size: 19px; }
-.ml-gate__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-.ml-gate__text > * { animation: ml-rise 700ms var(--ease) both; }
-.ml-gate__text > :nth-child(2) { animation-delay: 90ms; }
-.ml-gate__text > :nth-child(3) { animation-delay: 180ms; }
-.ml-gate__text > :nth-child(4) { animation-delay: 270ms; }
+.ml-gate__names { margin: 6px 0 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.28em; font: 400 clamp(46px, 5.8vw, 86px)/1.04 var(--f-display); color: var(--ink); }
+.ml-gate__names .l-ne { font: 600 clamp(42px, 5vw, 74px)/1.35 var(--f-deva-display); }
+.ml-gate__names .ml-amp { font-size: 0.62em; }
+.ml-gate__date { margin: 0 0 4px; font: 400 clamp(19px, 1.6vw, 23px)/1.4 var(--f-display); }
+.ml-gate__date .l-ne { font: 600 20px/1.6 var(--f-deva-display); }
+.ml-gate__hosts { margin: 0 0 30px; font-size: 17px; color: var(--ink-dim); }
+.ml-gate__hosts .l-ne { font-size: 18px; }
+.ml-gate__actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 18px; }
+.ml-gate__inner > * { animation: ml-rise 800ms var(--ease) both; }
+.ml-gate__inner > :nth-child(2) { animation-delay: 100ms; }
+.ml-gate__inner > :nth-child(3) { animation-delay: 200ms; }
+.ml-gate__inner > :nth-child(4) { animation-delay: 260ms; }
+.ml-gate__inner > :nth-child(5) { animation-delay: 340ms; }
 @keyframes ml-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.ml-arch img { animation: ml-bloom 1100ms var(--ease) both; }
+@keyframes ml-bloom { from { opacity: 0; } to { opacity: 1; } }
+
+/* Corner sprays of real roses on a photo frame (the image carries ~21% transparent margin) */
+.ml-spray { position: absolute; z-index: 3; width: var(--spray, 46%); height: auto; max-width: none; pointer-events: none; }
+.ml-spray--tl { left: calc(var(--spray, 46%) * -0.27); top: calc(var(--spray, 46%) * -0.27); }
+.ml-spray--br { right: calc(var(--spray, 46%) * -0.27); bottom: calc(var(--spray, 46%) * -0.27); transform: rotate(180deg); }
+.ml-spray--tr { right: calc(var(--spray, 46%) * -0.27); top: calc(var(--spray, 46%) * -0.27); transform: scaleX(-1); }
+.ml-spray--bl { left: calc(var(--spray, 46%) * -0.27); bottom: calc(var(--spray, 46%) * -0.27); transform: scaleY(-1); }
 
 /* ───────── Plates: frames that take the photo's own proportions ───────── */
 .ml-plate { position: relative; display: block; aspect-ratio: var(--ar); background: var(--paper-2); overflow: hidden; }
 .ml-plate img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ───────── Hero ───────── */
-.ml-hero { position: relative; min-height: 100svh; padding: clamp(150px, 24vh, 230px) var(--gutter) 90px; overflow: hidden; }
+.ml-hero { position: relative; min-height: 100svh; padding: clamp(110px, 16vh, 170px) var(--gutter) 110px; overflow: hidden; display: grid; align-items: center; }
 .ml-hero__grid { position: relative; z-index: 4; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(30px, 6vw, 110px); align-items: center; max-width: 1320px; margin: 0 auto; }
 .ml-hero__text { padding-bottom: 4vh; }
 .ml-names { margin: 0 0 22px; font: 400 clamp(58px, 7.6vw, 120px)/0.98 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
@@ -128,7 +146,7 @@
 .ml-hero__date b .l-ne { font: 600 clamp(20px, 1.7vw, 24px)/1.6 var(--f-deva-display); }
 .ml-hero__date span { font-size: 17px; color: var(--ink-dim); }
 .ml-hero__date span .l-ne { font-size: 18px; }
-.ml-hero__fig { margin: 0; justify-self: center; width: min(100%, 440px); }
+.ml-hero__fig { position: relative; margin: 0; justify-self: center; width: min(100%, 440px); --spray: 80%; }
 .ml-hero__plate { width: min(100%, calc(66svh * var(--ar))); margin: 0 auto; box-shadow: 0 30px 60px -34px rgba(40, 30, 10, 0.45); }
 .ml-cue { position: absolute; left: var(--gutter); bottom: 26px; z-index: 4; display: grid; justify-items: start; gap: 8px; font: 600 12px/1 var(--f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-dim); }
 .ml-cue .l-ne { font-size: 14px; letter-spacing: 0; }
@@ -147,6 +165,22 @@
 .ml-fam__of .l-ne { font-size: 19px; line-height: 1.8; }
 .ml-fam__home { margin: 0; font-size: 16px; color: var(--ink-dim); }
 .ml-fam__home .l-ne { font-size: 17px; }
+
+/* ───────── Floral stage: rose canopy, hanging strands, rose pillars ───────── */
+.ml-stage { position: relative; padding: clamp(40px, 8vh, 90px) 0 clamp(60px, 10vh, 110px); overflow: hidden; }
+.ml-stage__set { position: relative; margin: 0 auto; width: min(1180px, 100vw); height: clamp(560px, 92svh, 900px); }
+.ml-stage__set img { position: absolute; display: block; max-width: none; pointer-events: none; }
+.ml-stage__canopy { left: 50%; top: 0; margin-top: -15%; width: 136%; height: auto; transform: translateX(-50%); z-index: 4; }
+.ml-stage__pl { left: 1%; top: 2%; height: 100%; width: auto; z-index: 2; }
+.ml-stage__pr { right: 1%; top: 2%; height: 100%; width: auto; z-index: 2; transform: scaleX(-1); }
+.ml-stage__ml { left: -4%; bottom: -4%; margin-bottom: -10%; width: 58%; height: auto; z-index: 5; }
+.ml-stage__mr { right: -4%; bottom: -4%; margin-bottom: -10%; width: 58%; height: auto; z-index: 5; transform: scaleX(-1); }
+.ml-stage__fig { position: absolute; z-index: 6; left: 50%; top: 26%; transform: translateX(-50%); margin: 0; width: min(44%, calc(50svh * var(--fig-ar, 0.8))); }
+.ml-stage__plate { width: 100%; box-shadow: 0 30px 60px -30px rgba(40, 30, 10, 0.5); outline: 10px solid #fff; }
+.ml-stage .ml-gl { z-index: 3; }
+.ml-stage__cap { text-align: center; padding: 0 var(--gutter); margin-top: clamp(10px, 3vh, 30px); display: grid; justify-items: center; }
+.ml-stage__when { margin: 12px 0 0; font-size: 19px; color: var(--ink-dim); line-height: 1.6; }
+.ml-stage__when .l-ne { font-size: 19px; line-height: 1.75; }
 
 /* ───────── Swayambar (signature) ───────── */
 .ml-sway { position: relative; }
@@ -233,10 +267,9 @@
 .ml-pic:hover img { transform: scale(1.025); }
 
 /* ───────── RSVP ───────── */
-.ml-rsvp { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr); gap: clamp(30px, 6vw, 100px); align-items: start; padding: clamp(80px, 13vh, 140px) var(--gutter); max-width: 1240px; margin: 0 auto; }
-.ml-rsvp__mala { position: sticky; top: 8vh; display: grid; justify-items: center; }
-.ml-rsvp__mala img { height: min(76svh, 720px); width: auto; filter: drop-shadow(10px 18px 22px rgba(60, 38, 8, 0.2)); }
-.ml-rsvp__col { max-width: 620px; }
+.ml-rsvp { display: grid; justify-items: center; padding: clamp(100px, 16vh, 170px) var(--gutter); max-width: 1240px; margin: 0 auto; overflow: hidden; }
+.ml-rsvp__col { position: relative; width: min(100%, 660px); padding: clamp(36px, 5vw, 60px) clamp(22px, 5vw, 60px); background: #FFFFFF; box-shadow: 0 30px 70px -40px rgba(40, 30, 10, 0.45); --spray: 62%; }
+.ml-rsvp__col > :not(.ml-spray) { position: relative; z-index: 4; }
 .ml-rsvp .ml-h2 { margin-bottom: 10px; }
 .ml-rsvp .ml-small { margin-bottom: 30px; }
 .ml-form .field > label, .ml-form .field > legend { font: 600 13px/1.4 var(--f-body); letter-spacing: 0.16em; color: var(--leaf); }
@@ -307,10 +340,21 @@
 /* ───────── Phones ───────── */
 @media (max-width: 760px) {
   .theme-mala { font-size: 17px; }
-  .ml-gate__inner { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 18px; }
-  .ml-gate__mala { height: min(40svh, 330px); }
-  .ml-gate__text { justify-items: center; }
-  .ml-gate__actions { justify-content: center; }
+  .ml-gate { --pillar-hide: 118px; --canopy-w: 860px; --canopy-lift: 34px; --mound-w: 300px; }
+  .ml-gate__inner { max-width: 70vw; padding: 22svh 0 18svh; }
+  .ml-gate .ml-kicker { letter-spacing: 0.14em; }
+  .ml-gate__names { flex-direction: column; align-items: center; }
+  .ml-gate__names .ml-amp { line-height: 0.9; }
+  .ml-hero__fig { --spray: 64%; margin-bottom: 26px; }
+  .ml-stage__set { height: clamp(520px, 88svh, 760px); width: 100vw; }
+  .ml-stage__canopy { width: 190%; margin-top: -22%; }
+  .ml-stage__pl { left: -27%; height: 88%; top: 10%; }
+  .ml-stage__pr { right: -27%; height: 88%; top: 10%; }
+  .ml-stage__ml, .ml-stage__mr { width: 92%; bottom: -2%; margin-bottom: -16%; }
+  .ml-stage__ml { left: -34%; } .ml-stage__mr { right: -34%; }
+  .ml-stage__fig { width: min(64%, calc(46svh * var(--fig-ar, 0.8))); top: 20%; }
+  .ml-stage__plate { outline-width: 6px; }
+  .ml-rsvp__col { --spray: 80%; }
   .ml-hero { padding: 104px 20px 80px; }
   .ml-hero__grid { grid-template-columns: 1fr; gap: 30px; }
   .ml-hero__fig { order: -1; width: min(74vw, 340px); }
@@ -339,8 +383,6 @@
   .ml-travel { grid-template-columns: 1fr; }
   .ml-travel__fig { position: static; margin: 0 -20px; }
   .ml-rsvp { grid-template-columns: 1fr; }
-  .ml-rsvp__mala { position: static; }
-  .ml-rsvp__mala img { height: 260px; }
   .ml-form__row { grid-template-columns: 1fr; }
   .ml-print { padding: 6px 6px 8px; }
   .ml-card { padding-top: 76px; }
@@ -348,6 +390,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ml-gate__mala, .ml-cue i { animation: none; }
+  .ml-cue i, .ml-arch img, .ml-gate__inner > * { animation: none; }
   .ml-in, .ml-pic { opacity: 1; transform: none; transition: none; }
 }

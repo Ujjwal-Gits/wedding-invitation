@@ -1,65 +1,77 @@
-// Sayapatri · "Haldi Daylight"
-// A bright, daytime scroll story about the marriage itself: the couple, their
-// families, two hands joining (the signature), the four celebrations as a
-// horizontal run of colour fields, the wedding-day rites in layered parallax,
-// the seven steps around the fire, then gallery and RSVP. A few hand-made 3D
-// marigold petals hang in the air and drift with the scroll; nothing else zooms.
+// Sayapatri · floral wedding stage.
+// The guest enters through a lush floral gate (real cut-out flower photography composed into
+// layers); the gate parts as the camera walks through it. Inside, a light page where floral
+// arrangements frame each section and the couple's photos sit in different premium frames
+// (floral arch, framed pair, edge-to-edge photo row, polaroid prints), then a crystal-clear
+// programme, photos and RSVP. Quiet motion everywhere else.
 import '../../core/base.css';
 import './sayapatri.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl, photos } from '../../photos.js';
-import { bi, esc, dateOf, timeRange, timeOf, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
-import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
+import credits from '../../generated/credits.json';
+import floraCredits from './flora-credits.json';
 import manifest from './slots.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
+const FLORA = '/themes/sayapatri/flora/';
 
 // ───────────────────────── helpers ─────────────────────────
-// Library photos whose stored focal point still shows clutter in tight frames.
-const FOCAL_FIX = { 'marigold-garland-alt': [0.5, 0.14], 'sindoor': [0.5, 0.7], 'diyo-lamps-alt': [0.5, 0.4] };
 const focalOf = (ref) => {
-  const f = (typeof ref === 'string' && (FOCAL_FIX[ref] || photos[ref]?.focal)) || (ref && typeof ref === 'object' && Array.isArray(ref.focal) && ref.focal) || [0.5, 0.5];
+  const f = (typeof ref === 'string' && photos[ref]?.focal) || (ref && typeof ref === 'object' && Array.isArray(ref.focal) && ref.focal) || [0.5, 0.5];
   const n = (v) => Math.min(100, Math.max(0, Number(v) * 100 || 50)).toFixed(1);
   return `${n(f[0])}% ${n(f[1])}%`;
 };
-/** Responsive <img> for any photo reference, focal point as object-position. */
+/** Responsive <img> for any photo reference. Known pixel size is passed on so layout never jumps. */
 const pic = (ref, alt = '', sizes = '50vw', extra = '') => {
   const sm = photoUrl(ref, 'sm');
   const lg = photoUrl(ref, 'lg');
   const set = sm && lg && sm !== lg ? ` srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w" sizes="${esc(sizes)}"` : '';
-  return `<img src="${esc(sm || lg)}"${set} alt="${esc(alt)}" style="object-position:${focalOf(ref)}" decoding="async" ${extra} />`;
+  const wh = ref && typeof ref === 'object' && ref.w && ref.h ? ` width="${Number(ref.w)}" height="${Number(ref.h)}"` : '';
+  return `<img src="${esc(sm || lg)}"${set}${wh} alt="${esc(alt)}" style="object-position:${focalOf(ref)}" decoding="async" ${extra} />`;
 };
-const TZ = 'Asia/Kathmandu';
-const timeObj = (t) => (typeof t === 'string' ? { en: t, ne: neNum(t) } : t || { en: '', ne: '' });
+/** Floral layer (transparent WebP with a half-size twin for phones). Decorative. */
+const flora = (name, cls, [w, sw, sizes]) => `<img class="fl ${cls}" src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp ${sw}w, ${FLORA}${name}.webp ${w}w" sizes="${sizes}" alt="" aria-hidden="true" decoding="async" />`;
+// [full width, small width, sizes] for each floral layer.
+const FW = {
+  'gate-left': [900, 450, '(max-width: 760px) 90vw, 32vw'], 'gate-right': [900, 450, '(max-width: 760px) 90vw, 32vw'],
+  'gate-top': [2000, 1200, '(max-width: 760px) 210vw, 118vw'], 'corner-l': [1100, 550, '(max-width: 760px) 62vw, 36vw'],
+  'corner-r': [1100, 550, '(max-width: 760px) 58vw, 34vw'], spray: [1400, 700, '(max-width: 760px) 80vw, 36vw'],
+  'frame-base': [1500, 750, '(max-width: 760px) 100vw, 46vw'],
+};
+const fl = (name, cls) => flora(name, cls, FW[name]);
 
-// Small hand-drawn marigold (vector, built here): rings of ruffled petals.
-const bloomSymbol = () => {
-  // Fills live inside the symbol: outer CSS cannot reach a <use> shadow tree.
-  const ring = (n, rx, ry, dist, fill, rot = 0) => Array.from({ length: n }, (_, i) =>
-    `<ellipse cx="0" cy="${-dist}" rx="${rx}" ry="${ry}" fill="${fill}" transform="rotate(${(360 / n) * i + rot})"/>`).join('');
-  return `<svg class="svg-defs" aria-hidden="true" focusable="false"><symbol id="sp-bloom" viewBox="-50 -50 100 100">
-    ${ring(18, 9, 16, 30, '#EE7F1B')}${ring(14, 8, 13, 21, '#F4B41A', 12)}${ring(10, 7, 10, 12, '#E8650C', 6)}<circle r="7" fill="#8A3A06"/>
-  </symbol></svg>`;
+const TZ = 'Asia/Kathmandu';
+/** Pieces of the AD date for the programme's date block. */
+const dateParts = (iso) => {
+  const d = new Date(iso);
+  const f = (o) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...o }).format(d);
+  const ne = dateOf(iso).ne.split(', '); // [weekday, "month day", year]
+  const [neMonth, neDay] = (ne[1] || '').split(' ');
+  return {
+    day: { en: f({ day: 'numeric' }), ne: neDay || '' },
+    month: { en: `${f({ month: 'long' })} ${f({ year: 'numeric' })}`, ne: `${neMonth || ''} ${ne[2] || ''}` },
+    weekday: { en: f({ weekday: 'long' }), ne: ne[0] || '' },
+  };
 };
+const timeObj = (t) => (typeof t === 'string' ? { en: t, ne: neNum(t) } : t || { en: '', ne: '' });
 
 async function main() {
   const config = await loadInvitation();
-  // ?debug&slots={"images":{...},"texts":{...}} previews studio overrides without touching config.js.
   if (DEBUG && params.get('slots')) {
     try { config.themeContent = { ...(config.themeContent || {}), sayapatri: JSON.parse(params.get('slots')) }; } catch (err) { console.warn('bad ?slots JSON', err); }
   }
   const { img, txt, alt } = useSlots(manifest);
-  /** Slot text with {placeholders} filled from plain or bilingual values (escaped later by bi). */
   const fill = (id, vars = {}) => {
     const t = txt(id);
     const sub = (str, lang) => String(str).replace(/\{(\w+)\}/g, (_, k) => {
@@ -68,218 +80,161 @@ async function main() {
     });
     return { en: sub(t.en, 'en'), ne: sub(t.ne, 'ne') };
   };
-  /** Bikram Sambat date beside the AD date (shared converter, contract §12; event.dateBS override wins). */
-  const bsOf = (e) => {
-    if (!e?.start) return null;
-    const b = bsDateOf(e.start, e.dateBS);
-    if (e.dateBS && (e.dateBS.en || e.dateBS.ne)) return { en: e.dateBS.en || e.dateBS.ne, ne: e.dateBS.ne || e.dateBS.en };
-    return { en: `${b.short.en} B.S.`, ne: `वि.सं. ${b.short.ne}` };
-  };
-  /** "Tue, 9 Feb" style short day for the programme overview. */
-  const shortDay = (iso) => {
-    const d = new Date(iso);
-    const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'short', day: 'numeric', month: 'short' }).format(d);
-    const ne = dateOf(iso).ne.split(', ').slice(0, 2).join(', ');
-    return { en, ne };
-  };
   const reduced = reducedMotion() || params.has('still');
   const mobile = isMobile();
   const c = config.couple;
-  const events = guestEvents();
-  const ev = Object.fromEntries(events.map((e) => [e.id, e]));
-
-  // Every photo comes from a slot (slots.js); couple slots default to the couple's own portraits.
-  const P = (c.portraits || []).filter((p) => p && p.photo);
-  const keyOf = (ref) => (typeof ref === 'string' ? ref : ref?.lg);
-  /** Alt for a slot photo: the portrait's own alt when it is one of the couple's photos. */
-  const altOf = (id, ref) => P.find((p) => keyOf(p.photo) === keyOf(ref))?.alt || alt(id);
-  const heroA = img('hero.photo');
-  const heroB = img('hero.photo2');
-  const joinPhoto = img('join.photo');
-
-  // ───────────────────────── markup ─────────────────────────
   const bride = c.bride;
   const groom = c.groom;
-  const namePair = (cls = '') => `
-    <span class="sp-names__a ${cls}">${bi(bride.name)}</span>
-    <span class="sp-names__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>
-    <span class="sp-names__b ${cls}">${bi(groom.name)}</span>`;
+  const events = guestEvents();
+  const P = (c.portraits || []).filter((p) => p && p.photo);
+  const keyOf = (ref) => (typeof ref === 'string' ? ref : ref?.lg);
+  const altOf = (id, ref) => P.find((p) => keyOf(p.photo) === keyOf(ref))?.alt || alt(id);
+  const used = new Set();
+  /** Slot photo, skipping one already shown elsewhere on the page when the couple has enough photos. */
+  const slot = (id) => {
+    let ref = img(id);
+    if (ref && used.has(keyOf(ref))) {
+      const spare = P.find((p) => !used.has(keyOf(p.photo)));
+      if (spare) ref = spare.photo;
+    }
+    if (ref) used.add(keyOf(ref));
+    return ref;
+  };
+  const bs = (e) => {
+    const b = bsDateOf(e.start, e.dateBS);
+    // Short form: the weekday is already on the AD line above it.
+    return e.dateBS && (e.dateBS.en || e.dateBS.ne) ? { en: e.dateBS.en || e.dateBS.ne, ne: e.dateBS.ne || e.dateBS.en } : { en: `${b.short.en} B.S.`, ne: `वि.सं. ${b.short.ne}` };
+  };
 
-  const hero = `
-  <section class="sp-hero" id="welcome" aria-labelledby="hero-names">
-    <div class="sp-hero__field" aria-hidden="true"><i class="sp-sun"></i></div>
-    <div class="sp-hero__art">
-      ${heroA ? `<figure class="sp-photo sp-hero__a" data-par="-8">${pic(heroA, altOf('hero.photo', heroA), '(max-width: 760px) 56vw, 28vw')}</figure>` : ''}
-      ${heroB && keyOf(heroB) !== keyOf(heroA) ? `<figure class="sp-photo sp-hero__b" data-par="-22">${pic(heroB, altOf('hero.photo2', heroB), '(max-width: 760px) 30vw, 15vw')}</figure>` : ''}
-      <svg class="sp-bloom sp-hero__bloom" data-par="-40" aria-hidden="true"><use href="#sp-bloom"/></svg>
-    </div>
-    <div class="sp-hero__text" data-par="12">
-      <p class="sp-kicker">${bi(txt('hero.kicker'))}</p>
-      <h1 class="sp-names" id="hero-names">${namePair()}</h1>
-      <p class="sp-hero__date">${bi(dateOf(config.weddingDate))}<span class="sp-dot" aria-hidden="true"></span>${bi(config.city)}</p>
-    <div class="sp-gate" id="gate">
-        <p class="sp-gate__guest" id="gate-guest" hidden></p>
-        <div class="sp-gate__choices">
-          <button type="button" class="sp-btn" id="enter-music">${bi(txt('gate.open'))}</button>
-          <button type="button" class="sp-quiet" id="enter-quiet">${bi(txt('gate.quiet'))}</button>
-        </div>
-      </div>
-    </div>
-    <p class="sp-cue" aria-hidden="true"><i></i>${bi(txt('hero.cue'))}</p>
-  </section>`;
+  const namePair = (tag = 'span') => `
+    <${tag} class="fl-names__a">${bi(bride.name)}</${tag}>
+    <span class="fl-names__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>
+    <${tag} class="fl-names__b">${bi(groom.name)}</${tag}>`;
+  const weddingDay = { start: config.weddingDate, dateBS: events.find((e) => e.id === 'wedding')?.dateBS };
 
-  // The couple and their families: a sticky stack of prints (bride, groom, then the two of them).
-  const deck = [
-    { id: 'couple.bride', cap: 0 }, { id: 'couple.groom', cap: 1 }, { id: 'couple.together1', cap: 2 }, { id: 'couple.together2', cap: 2 },
-  ].map((d) => ({ ...d, photo: img(d.id) })).filter((d) => d.photo);
-  deck.forEach((d) => { d.alt = altOf(d.id, d.photo); });
-  if (deck.length) deck[deck.length - 1].cap = 2;
-  const caps = [
-    { kicker: txt('couple.bride.kicker'), title: bride.fullName || bride.name, line: fill('couple.bride.line', { parents: bride.parents || '' }) },
-    { kicker: txt('couple.groom.kicker'), title: groom.fullName || groom.name, line: fill('couple.groom.line', { parents: groom.parents || '' }) },
-    { kicker: txt('couple.together.kicker'), title: txt('couple.together.title'), line: config.hosts, card: true },
-  ];
-  const capAt = (i) => deck[i].cap;
-  const tilt = [-4, 3.5, -2, 5, -3, 2];
-  const stack = `
-  <section class="sp-stack" id="couple" aria-labelledby="couple-title">
-    <h2 class="sr-only" id="couple-title">${bi({ en: 'The couple and their families', ne: 'जोडी र परिवार' })}</h2>
-    <div class="sp-stack__pin">
-      <div class="sp-stack__caps">
-        ${caps.map((k, i) => `
-          <div class="sp-cap" data-cap="${i}">
-            <p class="sp-kicker">${bi(k.kicker)}</p>
-            <p class="sp-cap__title">${bi(k.title)}</p>
-            <p class="sp-cap__line">${bi(k.line)}</p>
-            ${k.card ? `<button type="button" class="sp-link" data-open-card>${bi(txt('couple.card'))}</button>` : ''}
-          </div>`).join('')}
+  // ───────────────────────── gate ─────────────────────────
+  const gate = `
+  <div class="fl-gate" id="gate">
+    <div class="fl-gate__bloom fl-gate__bloom--l" aria-hidden="true">${fl('gate-left', 'fl-gate__col')}</div>
+    <div class="fl-gate__bloom fl-gate__bloom--r" aria-hidden="true">${fl('gate-right', 'fl-gate__col')}</div>
+    <div class="fl-gate__bloom fl-gate__bloom--t" aria-hidden="true">${fl('gate-top', 'fl-gate__canopy')}</div>
+    <div class="fl-gate__card">
+      <p class="fl-kicker">${bi(txt('gate.kicker'))}</p>
+      <p class="fl-names fl-names--gate">${namePair()}</p>
+      <p class="fl-gate__date">${bi(dateOf(config.weddingDate))}<br /><span>${bi(bs(weddingDay))}</span></p>
+      <p class="fl-gate__line">${bi(txt('gate.line'))}</p>
+      <p class="fl-gate__guest" id="gate-guest" hidden></p>
+      <div class="fl-gate__choices">
+        <button type="button" class="fl-btn" id="enter-music">${bi(txt('gate.open'))}</button>
+        <button type="button" class="fl-quiet" id="enter-quiet">${bi(txt('gate.quiet'))}</button>
       </div>
-      <div class="sp-stack__deck">
-        ${deck.map((d, i) => `<figure class="sp-print" data-card="${i}" data-cap-of="${capAt(i)}">${pic(d.photo, d.alt, '(max-width: 760px) 78vw, 34vw')}</figure>`).join('')}
-      </div>
-    </div>
-  </section>`;
-
-  // Signature: two halves of one photograph slide in and join.
-  const join = `
-  <section class="sp-join" id="join" aria-labelledby="join-title">
-    <div class="sp-join__pin">
-      <div class="sp-join__frame">
-        <div class="sp-join__half sp-join__half--l">${pic(joinPhoto, '', '(max-width: 760px) 92vw, 64vw')}</div>
-        <div class="sp-join__half sp-join__half--r">${pic(joinPhoto, '', '(max-width: 760px) 92vw, 64vw')}</div>
-        <span class="sr-only" role="img" aria-label="${esc(altOf('join.photo', joinPhoto))}"></span>
-      </div>
-      <h2 class="sp-join__title" id="join-title">
-        <span class="sp-join__w1">${bi(txt('join.line1'))}</span>
-        <span class="sp-join__w2">${bi(txt('join.line2'))}</span>
-      </h2>
-      <i class="sp-join__thread" aria-hidden="true"></i>
-    </div>
-  </section>`;
-
-  // The celebrations: horizontal run of colour fields.
-  const TONE = { mehendi: 'leaf', haldi: 'haldi', wedding: 'cream', reception: 'saffron' };
-  const TONES = ['leaf', 'haldi', 'cream', 'saffron'];
-  const days = `
-  <section class="sp-days" id="days" aria-labelledby="days-title">
-    <div class="sp-days__pin">
-      <div class="sp-days__track">
-        <div class="sp-days__intro">
-          <p class="sp-kicker">${bi(fill('days.kicker', { count: { en: ['One', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven'][events.length] || String(events.length), ne: neNum(events.length) } }))}</p>
-          <h2 class="sp-days__title" id="days-title">${bi(txt('days.title'))}</h2>
-          <ol class="sp-prog">
-            ${events.map((e, i) => `
-            <li><button type="button" class="sp-prog__row" data-panel="${i + 1}">
-              <span class="sp-prog__name">${bi(e.title)}</span>
-              <span class="sp-prog__day">${bi(shortDay(e.start))}</span>
-              <span class="sp-prog__time">${bi(timeOf(e.start))}</span>
-            </button></li>`).join('')}
-          </ol>
-        </div>
-        ${events.map((e, i) => {
-          const tone = TONE[e.id] || TONES[i % TONES.length];
-          const main = e.photo;
-          return `
-        <article class="sp-day sp-day--${tone}" aria-labelledby="day-${esc(e.id)}">
-          <div class="sp-day__media">
-            ${main ? `<figure class="sp-photo sp-day__photo">${pic(main, '', '(max-width: 760px) 70vw, 36vw')}</figure>` : ''}
-          </div>
-          <div class="sp-day__text">
-            <h3 class="sp-day__title" id="day-${esc(e.id)}">${bi(e.title)}</h3>
-            <p class="sp-day__when"><b>${bi(dateOf(e.start))}</b>${bsOf(e) ? `<span>${bi(bsOf(e))}</span>` : ''}</p>
-            <dl class="sp-day__facts">
-              <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
-              <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)} <a class="sp-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
-              ${e.dress?.text ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="sp-sw" aria-hidden="true">${(e.dress.colors || []).slice(0, 3).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
-            </dl>
-          </div>
-        </article>`;
-        }).join('')}
-      </div>
-    </div>
-  </section>`;
-
-  // Wedding-day rites in layered parallax rows.
-  const riteId = (i) => `rites.${(i % 6) + 1}.photo`;
-  const W = ev.wedding;
-  const rites = W?.rituals?.length ? `
-  <section class="sp-rites" id="wedding-day" aria-labelledby="rites-title">
-    <header class="sp-rites__head">
-      <p class="sp-kicker">${bi(dateOf(W.start))}${bsOf(W) ? ` · ${bi(bsOf(W))}` : ''}</p>
-      <h2 class="sp-rites__title" id="rites-title">${bi(txt('rites.title'))}</h2>
-      <p class="sp-rites__venue">${bi(W.venue)} <a class="sp-map" href="${esc(mapUrl(W.mapQuery || W.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p>
-    </header>
-    <ol class="sp-rites__list">
-      ${W.rituals.map((r, i) => `
-      <li class="sp-rite sp-rite--${i % 2 ? 'r' : 'l'}">
-        ${img(riteId(i)) ? `<figure class="sp-photo sp-rite__photo">${pic(img(riteId(i)), alt(riteId(i)), '(max-width: 760px) 86vw, 42vw', 'loading="lazy"')}</figure>` : ''}
-        <div class="sp-rite__text">
-          <p class="sp-rite__time">${bi(timeObj(r.time))}</p>
-          <h3 class="sp-rite__name">${bi(r.title)}</h3>
-        </div>
-      </li>`).join('')}
-    </ol>
-  </section>` : '';
-
-  // Saptapadi: seven steps around the fire.
-  const vows = config.saptapadi || [];
-  const seven = vows.length ? `
-  <section class="sp-seven" id="seven" aria-labelledby="seven-title">
-    <div class="sp-seven__pin">
-      <div class="sp-seven__head">
-        <p class="sp-kicker">${bi(txt('seven.kicker'))}</p>
-        <h2 class="sp-seven__title" id="seven-title">${bi(txt('seven.title'))}</h2>
-      </div>
-      <div class="sp-seven__ring">
-        <figure class="sp-seven__fire">${pic(img('seven.fire'), alt('seven.fire'), '(max-width: 760px) 50vw, 22vw', 'loading="lazy"')}</figure>
-        <ol class="sp-seven__steps" aria-hidden="true">
-          ${vows.map((_, i) => `<li style="--a:${(360 / vows.length) * i}deg"><span>${bi({ en: String(i + 1), ne: neNum(i + 1) })}</span><i>${bi({ en: String(i + 1), ne: neNum(i + 1) })}</i></li>`).join('')}
-        </ol>
-      </div>
-      <ol class="sp-seven__vows">
-        ${vows.map((v, i) => `<li data-vow="${i}">${bi(v)}</li>`).join('')}
-      </ol>
-    </div>
-  </section>` : '';
-
-  const inv = config.invitation || {};
-  const cardDialog = `
-  <div class="sp-card" id="inv-card" hidden role="dialog" aria-modal="true" aria-labelledby="inv-card-title" data-lenis-prevent>
-    <div class="sp-card__paper">
-      <button type="button" class="sp-card__close" data-close-card><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
-      <svg class="sp-bloom sp-card__bloom" aria-hidden="true"><use href="#sp-bloom"/></svg>
-      ${inv.shloka ? `<p class="sp-card__shloka" lang="sa">${esc(inv.shloka.sa)}</p><p class="sp-card__shloka-en">${esc(inv.shloka.en)}</p>` : ''}
-      <h2 class="sp-card__title" id="inv-card-title">${namePair()}</h2>
-      ${inv.salutation ? `<p class="sp-card__p sp-card__sal">${bi(inv.salutation)}</p>` : ''}
-      ${inv.body ? `<p class="sp-card__p">${bi(inv.body)}</p>` : ''}
-      ${inv.request ? `<p class="sp-card__p">${bi(inv.request)}</p>` : ''}
-      <p class="sp-card__date">${bi(dateOf(config.weddingDate))}<br /><small>${bi(config.weddingDateBS)}</small></p>
-      ${inv.signoff ? `<p class="sp-card__sign">${bi(inv.signoff)}<br /><b>${bi(config.hosts)}</b></p>` : ''}
     </div>
   </div>`;
 
-  document.body.insertAdjacentHTML('afterbegin', bloomSymbol());
-  document.getElementById('main').innerHTML = hero + stack + join + days + rites + seven + cardDialog;
+  // ───────────────────────── welcome: floral arch ─────────────────────────
+  const heroRef = slot('hero.photo');
+  const hero = `
+  <section class="fl-hero" id="welcome" aria-labelledby="hero-names">
+    ${fl('corner-l', 'fl-hero__corner')}
+    <div class="fl-hero__text">
+      <p class="fl-kicker">${bi(txt('hero.kicker'))}</p>
+      <h1 class="fl-names" id="hero-names">${namePair()}</h1>
+      <p class="fl-hero__date">${bi(dateOf(config.weddingDate))}<span class="fl-dot" aria-hidden="true"></span>${bi(config.city)}</p>
+      <p class="fl-hero__line">${bi(txt('hero.line'))}</p>
+    </div>
+    ${heroRef ? `
+    <figure class="fl-arch" data-reveal>
+      <div class="fl-arch__photo">${pic(heroRef, altOf('hero.photo', heroRef), '(max-width: 760px) 84vw, 36vw')}</div>
+      ${fl('frame-base', 'fl-arch__flowers')}
+    </figure>` : ''}
+  </section>`;
+
+  // ───────────────────────── couple: framed pair ─────────────────────────
+  const pairL = slot('pair.left');
+  const pairR = slot('pair.right');
+  const framed = (ref, id) => (ref ? `<figure class="fl-frame" data-reveal><span class="fl-frame__mat">${pic(ref, altOf(id, ref), '(max-width: 760px) 44vw, 26vw', 'loading="lazy"')}</span></figure>` : '');
+  const pair = `
+  <section class="fl-pair" id="couple" aria-labelledby="pair-title">
+    ${fl('spray', 'fl-pair__spray')}
+    <h2 class="fl-title" id="pair-title" data-reveal>${bi(txt('pair.title'))}</h2>
+    <div class="fl-pair__frames">${framed(pairL, 'pair.left')}${framed(pairR, 'pair.right')}</div>
+    <div class="fl-pair__families" data-reveal>
+      <div><p class="fl-pair__name">${bi(bride.fullName || bride.name)}</p><p class="fl-pair__line">${bi(fill('pair.bride.line', { parents: bride.parents || '' }))}</p></div>
+      <span class="fl-pair__amp" aria-hidden="true">&amp;</span>
+      <div><p class="fl-pair__name">${bi(groom.fullName || groom.name)}</p><p class="fl-pair__line">${bi(fill('pair.groom.line', { parents: groom.parents || '' }))}</p></div>
+    </div>
+    <p class="fl-pair__hosts" data-reveal>${bi(config.hosts)}</p>
+    <button type="button" class="fl-link" data-open-card>${bi(txt('pair.card'))}</button>
+  </section>`;
+
+  // ───────────────────────── photo row (edge to edge, no crop) ─────────────────────────
+  const band = ['band.1', 'band.2', 'band.3'].map((id) => ({ id, ref: slot(id) })).filter((b) => b.ref);
+  const bandHtml = band.length ? `
+  <section class="fl-band" aria-label="${esc('Photos of the couple')}">
+    <div class="fl-band__row">${band.map((b) => `<figure class="fl-band__item">${pic(b.ref, altOf(b.id, b.ref), '(max-width: 760px) 50vw, 34vw', 'loading="lazy"')}</figure>`).join('')}</div>
+  </section>` : '';
+
+  // ───────────────────────── polaroid prints ─────────────────────────
+  const prints = ['prints.1', 'prints.2', 'prints.3'].map((id) => ({ id, ref: slot(id) })).filter((b) => b.ref);
+  const printsHtml = prints.length ? `
+  <section class="fl-prints" aria-labelledby="prints-title">
+    ${fl('corner-r', 'fl-prints__corner')}
+    <h2 class="fl-title" id="prints-title" data-reveal>${bi(txt('prints.title'))}</h2>
+    <div class="fl-prints__row">
+      ${prints.map((p, i) => `<figure class="fl-print" style="--tilt:${[-4, 2.5, -1.5][i]}deg">${pic(p.ref, altOf(p.id, p.ref), '(max-width: 760px) 70vw, 26vw', 'loading="lazy"')}</figure>`).join('')}
+    </div>
+  </section>` : '';
+
+  // ───────────────────────── programme ─────────────────────────
+  const prog = `
+  <section class="fl-prog" id="programme" aria-labelledby="prog-title">
+    <header class="fl-prog__head" data-reveal>
+      <p class="fl-kicker">${bi(txt('prog.kicker'))}</p>
+      <h2 class="fl-title" id="prog-title">${bi(txt('prog.title'))}</h2>
+    </header>
+    <ol class="fl-events">
+      ${events.map((e) => {
+        const d = dateParts(e.start);
+        return `
+      <li class="fl-ev" data-reveal>
+        <div class="fl-ev__date" aria-hidden="true">
+          <span class="fl-ev__wd">${bi(d.weekday)}</span>
+          <span class="fl-ev__day">${bi(d.day)}</span>
+          <span class="fl-ev__mon">${bi(d.month)}</span>
+        </div>
+        <div class="fl-ev__body">
+          <h3 class="fl-ev__title">${bi(e.title)}</h3>
+          <p class="fl-ev__when"><b>${bi(dateOf(e.start))}</b><span>${bi(bs(e))}</span></p>
+          <dl class="fl-ev__facts">
+            <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeLabel(e))}</dd></div>
+            <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)} <a class="fl-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+            ${e.dress?.text?.en || e.dress?.text?.ne ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="fl-sw" aria-hidden="true">${(e.dress.colors || []).slice(0, 3).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
+          </dl>
+          ${e.rituals?.length ? `<ol class="fl-ev__rites">${e.rituals.map((r) => `<li><span>${bi(timeObj(r.time))}</span>${bi(r.title)}</li>`).join('')}</ol>` : ''}
+        </div>
+      </li>`;
+      }).join('')}
+    </ol>
+  </section>`;
+
+  const inv = config.invitation || {};
+  const cardDialog = `
+  <div class="fl-card" id="inv-card" hidden role="dialog" aria-modal="true" aria-labelledby="inv-card-title" data-lenis-prevent>
+    <div class="fl-card__paper">
+      <button type="button" class="fl-card__close" data-close-card><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+      ${fl('spray', 'fl-card__spray')}
+      ${inv.shloka ? `<p class="fl-card__shloka" lang="sa">${esc(inv.shloka.sa)}</p><p class="fl-card__shloka-en">${esc(inv.shloka.en)}</p>` : ''}
+      <h2 class="fl-card__title" id="inv-card-title">${namePair()}</h2>
+      ${inv.salutation ? `<p class="fl-card__p fl-card__sal">${bi(inv.salutation)}</p>` : ''}
+      ${inv.body ? `<p class="fl-card__p">${bi(inv.body)}</p>` : ''}
+      ${inv.request ? `<p class="fl-card__p">${bi(inv.request)}</p>` : ''}
+      <p class="fl-card__date">${bi(dateOf(config.weddingDate))}<br /><small>${bi(bs(weddingDay))}</small></p>
+      ${inv.signoff ? `<p class="fl-card__sign">${bi(inv.signoff)}<br /><b>${bi(config.hosts)}</b></p>` : ''}
+    </div>
+  </div>`;
+
+  document.getElementById('main').innerHTML = hero + pair + bandHtml + printsHtml + prog + cardDialog;
+  document.body.insertAdjacentHTML('afterbegin', gate);
 
   const to = params.get('to');
   if (to) {
@@ -288,16 +243,15 @@ async function main() {
     el.hidden = false;
   }
 
-  renderFinale(document.getElementById('finale-root'), { credits });
-  // Gallery: an invitation is sent before the wedding, so no "memories" wording; the couple's photos
-  // lead, and library photos (not the couple's) carry no captions.
+  renderFinale(document.getElementById('finale-root'), { credits: [...credits, ...floraCredits] });
+  // Gallery: neutral, forward-looking title; couple photos first; library photos uncaptioned.
   const gTitle = document.getElementById('gallery-title');
   if (gTitle) gTitle.innerHTML = bi(txt('gallery.title'));
   const gEyebrow = document.querySelector('.gallery__head .eyebrow');
   if (gEyebrow) gEyebrow.innerHTML = `${bi(bride.name)} &amp; ${bi(groom.name)}`;
   const isLib = (ref) => typeof ref === 'string' && !ref.startsWith('/') && !ref.startsWith('https://');
-  const coupleKeys = new Set([...P.map((p) => keyOf(p.photo)), ...deck.map((d) => keyOf(d.photo)), keyOf(heroA), keyOf(heroB)]);
-  const isCouple = (ref) => coupleKeys.has(keyOf(ref)) || (isLib(ref) && /^(couple|bride|groom)-/.test(ref));
+  const coupleKeys = new Set([...P.map((p) => keyOf(p.photo)), ...used]);
+  const isCouple = (ref) => coupleKeys.has(keyOf(ref)) || (isLib(ref) && /^(couple|bride|groom)-/.test(ref)) || !isLib(ref);
   const gTrack = document.querySelector('.gallery__track');
   if (gTrack) {
     const items = [...gTrack.children];
@@ -305,26 +259,39 @@ async function main() {
     items.sort((x, y) => Number(!isCouple(ref(x))) - Number(!isCouple(ref(y)))).forEach((li) => gTrack.append(li));
     items.forEach((li) => { if (isLib(ref(li))) li.querySelector('.gallery__cap')?.remove(); });
   }
-  // Light petal-shower canvas, mounted above the content but never interactive.
-  const petalCanvas = Object.assign(document.createElement('canvas'), { className: 'sp-petals', ariaHidden: 'true' });
+  // Hide guest-info columns the couple left empty (no dress notes, no travel text).
+  document.querySelectorAll('.info__col').forEach((col) => {
+    const text = [...col.querySelectorAll('li, .info__p')].map((n) => n.textContent.trim()).join('');
+    if (!text) col.hidden = true;
+  });
+  const dressItems = [...document.querySelectorAll('.dress li')];
+  dressItems.forEach((li) => { if (!li.querySelector('small')?.textContent.trim()) li.hidden = true; });
+  if (dressItems.length && dressItems.every((li) => li.hidden)) dressItems[0].closest('.info__col').hidden = true;
+  // Floral frame on the reply letter and a round photo above the blessing.
+  document.querySelector('.letter')?.insertAdjacentHTML('afterbegin', fl('corner-l', 'fl-letter__corner'));
+  const closing = slot('closing.photo');
+  const blessing = document.querySelector('.blessing');
+  if (blessing) {
+    blessing.insertAdjacentHTML('afterbegin', `${closing ? `<figure class="fl-closing"><span>${pic(closing, altOf('closing.photo', closing), '200px', 'loading="lazy"')}</span></figure>` : ''}${fl('spray', 'fl-blessing__spray')}`);
+  }
+
+  const petalCanvas = document.createElement('canvas');
+  petalCanvas.className = 'sp-petals';
   petalCanvas.setAttribute('aria-hidden', 'true');
   document.body.append(petalCanvas);
 
   const CH = [
     { id: 'welcome', name: txt('nav.welcome') },
     { id: 'couple', name: txt('nav.couple') },
-    { id: 'join', name: txt('nav.join') },
-    { id: 'days', name: txt('nav.days') },
-    rites && { id: 'wedding-day', name: txt('nav.rites') },
-    seven && { id: 'seven', name: txt('nav.seven') },
+    { id: 'programme', name: txt('nav.prog') },
     { id: 'gallery', name: txt('nav.gallery') },
     { id: 'rsvp', name: txt('nav.reply') },
-  ].filter(Boolean);
+  ];
   const { player, setChapter } = mountShell({ chapters: CH.map((x) => x.name) });
 
-  // Invitation card: core openModal locks the page (Lenis stopped, body fixed) so only the card scrolls.
+  // Invitation card: core openModal locks the page so only the card scrolls.
   const dlg = document.getElementById('inv-card');
-  const paper = dlg.querySelector('.sp-card__paper');
+  const paper = dlg.querySelector('.fl-card__paper');
   let closeCard = null;
   document.querySelectorAll('[data-open-card]').forEach((b) => b.addEventListener('click', () => {
     paper.scrollTop = 0;
@@ -334,126 +301,69 @@ async function main() {
     if (e.target === dlg || e.target.closest('[data-close-card]')) closeCard?.();
   });
 
+  // Arch frame: landscape photos get a soft rectangle instead of an arch (never crop a wide photo).
+  const archImg = document.querySelector('.fl-arch__photo img');
+  const markShape = () => { if (archImg?.naturalWidth) document.querySelector('.fl-arch').classList.toggle('is-land', archImg.naturalWidth > archImg.naturalHeight * 1.05); };
+  if (archImg?.complete) markShape(); else archImg?.addEventListener('load', markShape);
+
+  // Photo row: justified rows that fill the width exactly with every photo whole.
+  const row = document.querySelector('.fl-band__row');
+  const layoutBand = () => {
+    if (!row) return;
+    const figs = [...row.children];
+    const ratios = figs.map((f) => { const i = f.querySelector('img'); return i.naturalWidth ? i.naturalWidth / i.naturalHeight : (Number(i.getAttribute('width')) / Number(i.getAttribute('height'))) || 0.75; });
+    const per = window.innerWidth <= 760 ? 2 : 3;
+    const gap = window.innerWidth <= 760 ? 8 : 14;
+    const W = row.clientWidth;
+    for (let s = 0; s < figs.length; s += per) {
+      const grp = figs.slice(s, s + per);
+      const rs = ratios.slice(s, s + per);
+      const sum = rs.reduce((a, b) => a + b, 0);
+      let h = (W - gap * (grp.length - 1)) / sum;
+      h = Math.min(h, window.innerHeight * (grp.length === 1 ? 0.8 : 0.78));
+      grp.forEach((f, k) => { f.style.width = `${Math.floor(rs[k] * h)}px`; f.style.height = `${Math.floor(h)}px`; });
+    }
+  };
+  row?.querySelectorAll('img').forEach((i) => { if (!i.complete) i.addEventListener('load', () => { layoutBand(); ScrollTrigger.refresh(); }, { once: true }); });
+  layoutBand();
+  window.addEventListener('resize', layoutBand);
+
   // ───────────────────────── motion ─────────────────────────
   const lenis = DEBUG || reduced ? null : createSmooth();
   lenis?.stop();
-  const scrub = DEBUG ? true : mobile ? 0.5 : 0.8;
   if (reduced) document.body.classList.add('is-still');
 
-  // Quiet first impression: frames rise, names settle. Transform/opacity only.
   if (!reduced) {
-    gsap.from('.sp-hero__art > *', { y: 40, autoAlpha: 0, duration: 0.9, stagger: 0.09, ease: 'power3.out', delay: 0.1 });
-    gsap.from('.sp-hero__text > *', { y: 18, autoAlpha: 0, duration: 0.8, stagger: 0.07, ease: 'power3.out', delay: 0.3 });
+    gsap.from('.fl-gate__bloom--t', { yPercent: -18, autoAlpha: 0, duration: 1.1, ease: 'power3.out' });
+    gsap.from('.fl-gate__bloom--l', { xPercent: -14, autoAlpha: 0, duration: 1.1, ease: 'power3.out', delay: 0.05 });
+    gsap.from('.fl-gate__bloom--r', { xPercent: 14, autoAlpha: 0, duration: 1.1, ease: 'power3.out', delay: 0.05 });
+    gsap.from('.fl-gate__card > *', { y: 14, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out', delay: 0.35 });
   }
 
   let petals = null;
-  const sts = {};
   const buildMotion = () => {
     if (reduced) return;
-    // Hero: layered parallax (each layer has its own speed in data-par, % of its height).
-    document.querySelectorAll(mobile ? '.sp-hero__art [data-par]' : '.sp-hero [data-par]').forEach((el) => {
-      gsap.to(el, { yPercent: Number(el.dataset.par), ease: 'none', scrollTrigger: { trigger: '.sp-hero', start: 'top top', end: 'bottom top', scrub: true } });
+    gsap.utils.toArray('[data-reveal]').forEach((el) => {
+      gsap.from(el, { y: 28, autoAlpha: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' } });
     });
-    gsap.to('.sp-sun', { scale: 1.25, ease: 'none', scrollTrigger: { trigger: '.sp-hero', start: 'top top', end: 'bottom top', scrub: true } });
-
-    // Couple: prints are dealt onto the stack; captions follow.
-    const prints = gsap.utils.toArray('.sp-print');
-    const capsEl = gsap.utils.toArray('.sp-cap');
-    const tlS = gsap.timeline({ defaults: { ease: 'none' } });
-    // Phones deal from the side so an incoming print never crosses the caption.
-    const from = mobile ? { xPercent: 190, yPercent: -6 } : { xPercent: 0, yPercent: 230 };
-    gsap.set(prints[0], { rotate: tilt[0] });
-    gsap.set(prints.slice(1), { ...from, rotate: (i) => tilt[(i + 1) % tilt.length] * 3, autoAlpha: 1 });
-    gsap.set(capsEl, { autoAlpha: 0, y: 24 });
-    gsap.set(capsEl[capAt(0)], { autoAlpha: 1, y: 0 });
-    let shown = capAt(0);
-    prints.slice(1).forEach((p, k) => {
-      const i = k + 1;
-      tlS.to(p, { xPercent: 0, yPercent: 0, rotate: tilt[i % tilt.length], duration: 1, ease: 'power2.out' }, i);
-      tlS.to(prints.slice(0, i), { scale: '-=0.035', yPercent: '-=2.5', duration: 1 }, i);
-      const ci = capAt(i);
-      if (ci !== shown) {
-        tlS.to(capsEl[shown], { autoAlpha: 0, y: -20, duration: 0.35 }, i + 0.15);
-        tlS.to(capsEl[ci], { autoAlpha: 1, y: 0, duration: 0.45 }, i + 0.5);
-        shown = ci;
-      }
+    // Florals drift a little slower than the page: layered depth, not zoom.
+    gsap.utils.toArray('.fl-hero__corner, .fl-pair__spray, .fl-prints__corner, .fl-arch__flowers').forEach((el) => {
+      gsap.fromTo(el, { y: 30 }, { y: -30, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
     });
-    tlS.to({}, { duration: 0.6 });
-    sts.couple = ScrollTrigger.create({ trigger: '.sp-stack', start: 'top top', end: () => `+=${prints.length * window.innerHeight * 0.75}`, pin: '.sp-stack__pin', scrub, animation: tlS, anticipatePin: 1 });
-
-    // Signature: the two halves travel in from opposite sides and close the gap.
-    const tlJ = gsap.timeline({ defaults: { ease: 'none' } });
-    tlJ.fromTo('.sp-join__half--l', { xPercent: -88, rotate: -7, y: 30 }, { xPercent: 0, rotate: 0, y: 0, duration: 1, ease: 'power2.inOut' }, 0)
-      .fromTo('.sp-join__half--r', { xPercent: 88, rotate: 7, y: -30 }, { xPercent: 0, rotate: 0, y: 0, duration: 1, ease: 'power2.inOut' }, 0)
-      .fromTo('.sp-join__w1', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.35)
-      .fromTo('.sp-join__w2', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.3 }, 0.75)
-      .fromTo('.sp-join__thread', { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power2.out' }, 0.98)
-      .fromTo('.sp-join__frame', { scale: 0.94 }, { scale: 1, duration: 0.4, ease: 'power1.out' }, 1)
-      .to({}, { duration: 0.35 });
-    sts.join = ScrollTrigger.create({ trigger: '.sp-join', start: 'top top', end: () => `+=${window.innerHeight * 1.9}`, pin: '.sp-join__pin', scrub, animation: tlJ, anticipatePin: 1 });
-
-    // Celebrations: vertical scroll drives a horizontal run.
-    const track = document.querySelector('.sp-days__track');
-    const dist = () => Math.max(0, track.scrollWidth - window.innerWidth);
-    const tween = gsap.to(track, { x: () => -dist(), ease: 'none' });
-    // Settle on whole panels when the guest stops scrolling.
-    const stops = () => [...track.children].map((el) => Math.min(1, el.offsetLeft / (dist() || 1)));
-    sts.days = ScrollTrigger.create({
-      trigger: '.sp-days', start: 'top top', end: () => `+=${dist()}`, pin: '.sp-days__pin', scrub, animation: tween, invalidateOnRefresh: true, anticipatePin: 1,
-      snap: DEBUG ? false : { snapTo: (v) => stops().reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), 0), duration: { min: 0.25, max: 0.7 }, delay: 0.12, ease: 'power2.inOut' },
+    // Prints are dealt onto the table as they arrive.
+    gsap.utils.toArray('.fl-print').forEach((p, i) => {
+      gsap.from(p, { y: 80, rotate: (i - 1) * 9, autoAlpha: 0, duration: 0.9, ease: 'power3.out', delay: i * 0.12, scrollTrigger: { trigger: '.fl-prints__row', start: 'top 80%' } });
     });
-    gsap.utils.toArray('.sp-day').forEach((day) => {
-      const d = day.querySelector('.sp-day__drift');
-      if (d) gsap.fromTo(d, { xPercent: -8 }, { xPercent: 8, ease: 'none', scrollTrigger: { trigger: day, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } });
-      const a = day.querySelector('.sp-day__acc');
-      if (a) gsap.fromTo(a, { x: 60, rotate: -12 }, { x: -60, rotate: 10, ease: 'none', scrollTrigger: { trigger: day, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } });
-    });
-
-    // Rites: each row's photo floats at its own speed; text settles in.
-    gsap.utils.toArray('.sp-rite').forEach((row, i) => {
-      const ph = row.querySelector('.sp-rite__photo');
-      gsap.fromTo(ph, { y: 90 + (i % 3) * 30 }, { y: -(70 + (i % 3) * 30), ease: 'none', scrollTrigger: { trigger: row, start: 'top bottom', end: 'bottom top', scrub: true } });
-      gsap.from(row.querySelector('.sp-rite__text'), { y: 40, autoAlpha: 0, duration: 0.7, ease: 'power3.out', scrollTrigger: { trigger: row, start: 'top 72%', toggleActions: 'play none none reverse' } });
-    });
-    gsap.from('.sp-rites__head > *', { y: 30, autoAlpha: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: '.sp-rites__head', start: 'top 78%', toggleActions: 'play none none reverse' } });
-
-    // Saptapadi: steps light one by one around the fire.
-    const steps = gsap.utils.toArray('.sp-seven__steps li');
-    const vowEls = gsap.utils.toArray('.sp-seven__vows li');
-    if (steps.length) {
-      const tl7 = gsap.timeline({ defaults: { ease: 'none' } });
-      gsap.set(vowEls, { autoAlpha: 0, y: 16 });
-      tl7.to('.sp-seven__fire img', { rotate: 40, duration: steps.length + 1 }, 0);
-      gsap.set('.sp-seven__steps i', { autoAlpha: 0, scale: 0.4 });
-      steps.forEach((s, i) => {
-        tl7.to(s.querySelector('i'), { autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' }, i + 0.5);
-        tl7.to(vowEls[i], { autoAlpha: 1, y: 0, duration: 0.3 }, i + 0.5);
-        if (i < steps.length - 1) tl7.to(vowEls[i], { autoAlpha: 0, y: -16, duration: 0.3 }, i + 1.3);
-      });
-      tl7.to({}, { duration: 0.6 });
-      sts.seven = ScrollTrigger.create({ trigger: '.sp-seven', start: 'top top', end: () => `+=${steps.length * window.innerHeight * 0.45}`, pin: '.sp-seven__pin', scrub, animation: tl7, anticipatePin: 1 });
-    }
-
-    // Gallery collage: three speeds.
-    gsap.utils.toArray('.gallery__item').forEach((it, i) => {
-      const sp = [40, -30, 70][i % 3] * (mobile ? 0.5 : 1);
-      gsap.fromTo(it, { y: sp }, { y: -sp, ease: 'none', scrollTrigger: { trigger: it, start: 'top bottom', end: 'bottom top', scrub: true } });
-    });
-    gsap.utils.toArray('.sp-reveal, .gallery__head, .letter, .finale__count, .info__col, .blessing > *').forEach((el) => {
-      gsap.from(el, { y: 30, autoAlpha: 0, duration: 0.7, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' } });
+    gsap.from('.fl-band__item', { y: 40, autoAlpha: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.fl-band', start: 'top 82%' } });
+    gsap.utils.toArray('.letter, .finale__count, .info__col, .blessing > *').forEach((el) => {
+      gsap.from(el, { y: 26, autoAlpha: 0, duration: 0.7, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } });
     });
   };
 
-  // Chapters + petals visibility follow the scroll.
   const chapterOf = () => {
     const y = window.scrollY + window.innerHeight * 0.45;
     let idx = 0;
-    CH.forEach((ch, i) => {
-      const st = sts[ch.id];
-      const el = document.getElementById(ch.id);
-      const top = st ? st.start : el ? el.getBoundingClientRect().top + window.scrollY : Infinity;
-      if (y >= top) idx = i;
-    });
+    CH.forEach((ch, i) => { const el = document.getElementById(ch.id); if (el && y >= el.getBoundingClientRect().top + window.scrollY) idx = i; });
     return idx;
   };
   let lastCh = -1;
@@ -461,33 +371,19 @@ async function main() {
     const i = chapterOf();
     if (i !== lastCh) { lastCh = i; setChapter(i); }
     if (petals) {
-      const heroH = document.querySelector('.sp-hero').offsetHeight;
-      const blessing = document.querySelector('.blessing');
-      const nearEnd = blessing && blessing.getBoundingClientRect().top < window.innerHeight * 0.9;
-      petals.setVisible(window.scrollY < heroH * 0.85 || nearEnd ? 1 : 0);
+      const heroH = document.querySelector('.fl-hero').offsetHeight;
+      const end = document.querySelector('.blessing');
+      const nearEnd = end && end.getBoundingClientRect().top < window.innerHeight * 0.85;
+      petals.setVisible(window.scrollY < heroH * 0.7 || nearEnd ? 1 : 0);
     }
   };
   window.addEventListener('scroll', onScroll, { passive: true });
-
   document.querySelector('.chapters')?.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-chapter]');
     if (!b) return;
-    const ch = CH[Number(b.dataset.chapter)];
-    const st = sts[ch.id];
-    const el = document.getElementById(ch.id);
-    const y = st ? st.start + 2 : el.getBoundingClientRect().top + window.scrollY;
-    if (lenis) lenis.scrollTo(y, { duration: 1.6 }); else window.scrollTo(0, y);
-  });
-
-  document.querySelector('.sp-prog')?.addEventListener('click', (e) => {
-    const row = e.target.closest('[data-panel]');
-    const st = sts.days;
-    if (!row || !st) return;
-    const track = document.querySelector('.sp-days__track');
-    const el = track.children[Number(row.dataset.panel)];
-    const d = track.scrollWidth - window.innerWidth;
-    const y = st.start + (st.end - st.start) * Math.min(1, el.offsetLeft / (d || 1));
-    if (lenis) lenis.scrollTo(y, { duration: 1.2 }); else window.scrollTo(0, y);
+    const el = document.getElementById(CH[Number(b.dataset.chapter)].id);
+    const y = el.getBoundingClientRect().top + window.scrollY;
+    if (lenis) lenis.scrollTo(y, { duration: 1.4 }); else window.scrollTo(0, y);
   });
 
   const loadPetals = async () => {
@@ -495,63 +391,55 @@ async function main() {
     try {
       const { createPetals } = await import('./petals.js');
       petals = createPetals(petalCanvas, { mobile });
+      petals.burst(true);
       onScroll();
-    } catch (err) {
-      console.warn('Petals unavailable', err);
-    }
+    } catch (err) { console.warn('Petals unavailable', err); }
   };
 
   let opened = false;
+  const gateEl = document.getElementById('gate');
   const open = (withMusic) => {
     if (opened) return;
     opened = true;
     player.unlock();
-    ringBell(player.ctx, { when: 0.05, gain: 0.16 });
+    ringBell(player.ctx, { when: 0.05, gain: 0.14 });
     if (withMusic) setTimeout(() => player.start(true), 400);
+    window.scrollTo(0, 0);
     const done = () => {
+      gateEl.hidden = true;
+      document.body.classList.remove('is-opening');
       document.body.classList.remove('is-gated');
-      document.getElementById('gate').hidden = true;
       buildMotion();
       ScrollTrigger.refresh();
       lenis?.start();
       onScroll();
-      loadPetals();
+      document.getElementById('hero-names')?.focus?.({ preventScroll: true });
     };
     if (reduced) return done();
-    gsap.to('#gate', { autoAlpha: 0, y: 16, duration: 0.45, ease: 'power2.in', onComplete: done });
+    loadPetals();
+    document.body.classList.add('is-opening');
+    // Signature: the gate parts and the camera walks through it into the page.
+    gsap.timeline({ onComplete: done })
+      .to('.fl-gate__card', { autoAlpha: 0, scale: 0.96, duration: 0.45, ease: 'power2.in' }, 0)
+      .to('.fl-gate__bloom--l', { xPercent: -95, scale: 1.35, duration: 1.5, ease: 'power3.inOut' }, 0.2)
+      .to('.fl-gate__bloom--r', { xPercent: 95, scale: 1.35, duration: 1.5, ease: 'power3.inOut' }, 0.2)
+      .to('.fl-gate__bloom--t', { yPercent: -85, scale: 1.3, duration: 1.5, ease: 'power3.inOut' }, 0.2)
+      .to(gateEl, { '--veil': 0, duration: 0.9, ease: 'power2.out' }, 0.7)
+      .fromTo('.fl-hero', { scale: 0.94, transformOrigin: '50% 40%' }, { scale: 1, duration: 1.5, ease: 'power3.out', clearProps: 'transform' }, 0.25);
   };
   document.getElementById('enter-music').addEventListener('click', () => open(true));
   document.getElementById('enter-quiet').addEventListener('click', () => open(false));
   if (params.has('open')) open(false);
 
-  // Frames take each photo's own proportions, so layout settles as images arrive.
-  const joinFrame = document.querySelector('.sp-join__frame');
-  const joinImg = joinFrame?.querySelector('img');
-  const setAr = () => { if (joinImg?.naturalWidth) joinFrame.style.setProperty('--ar', (joinImg.naturalWidth / joinImg.naturalHeight).toFixed(4)); };
-  if (joinImg?.complete) setAr(); else joinImg?.addEventListener('load', setAr);
-  let refreshT;
-  const refreshSoon = () => { clearTimeout(refreshT); refreshT = setTimeout(() => { if (opened && !reduced) ScrollTrigger.refresh(); }, 250); };
-  document.querySelectorAll('#main img').forEach((im) => { if (!im.complete) im.addEventListener('load', refreshSoon, { once: true }); });
-
-  // Images inside pinned sections can change heights after load; refresh once fonts settle.
   document.fonts?.ready.then(() => { if (opened) ScrollTrigger.refresh(); });
-  window.addEventListener('load', () => { if (opened) ScrollTrigger.refresh(); });
+  window.addEventListener('load', () => { layoutBand(); if (opened) ScrollTrigger.refresh(); });
 
   if (DEBUG) {
     window.__sp = {
-      sts, ScrollTrigger, open,
-      /** Scroll to a chapter id at progress p (0..1 within a pinned section). */
-      panel(i) {
-        const st = sts.days;
-        const el = document.querySelector('.sp-days__track').children[i];
-        const d = document.querySelector('.sp-days__track').scrollWidth - window.innerWidth;
-        window.scrollTo(0, st.start + (st.end - st.start) * Math.min(1, el.offsetLeft / d));
-        ScrollTrigger.update();
-      },
+      ScrollTrigger, open,
       go(id, p = 0) {
-        const st = sts[id];
         const el = document.getElementById(id) || document.querySelector(id);
-        const y = st ? st.start + (st.end - st.start) * p : el.getBoundingClientRect().top + window.scrollY + (el.offsetHeight * p);
+        const y = el.getBoundingClientRect().top + window.scrollY + el.offsetHeight * p;
         window.scrollTo(0, y);
         ScrollTrigger.update();
         return y;

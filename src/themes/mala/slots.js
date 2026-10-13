@@ -18,6 +18,10 @@ export default {
       label: 'Opening photo (under the garlands)', kind: 'couple', default: { portrait: 0 },
       note: 'The couple together, portrait orientation works best. Two jasmine strands hang on either side of it; shown uncropped.',
     },
+    'stage.photo': {
+      label: 'Floral stage: photo under the rose canopy', kind: 'couple', default: { portrait: 5 },
+      note: 'The couple together. Shown uncropped beneath a rose canopy with hanging jasmine strands and rose pillars either side; portrait or landscape.',
+    },
     ...line,
     'swayambar.bride': {
       shared: 'rite.swayambar', label: 'Swayambar: the bride’s side', kind: 'bride', default: { portrait: 2 },
@@ -47,6 +51,7 @@ export default {
     'intro.son': { label: 'Families: “son of”', default: { en: 'Son of', ne: 'सुपुत्र' }, max: 20 },
     'intro.card': { shared: 'card.button', label: 'Families: open the full card', default: { en: 'Read the invitation card', ne: 'निमन्त्रणा पत्र पढ्नुहोस्' }, max: 36 },
     'card.title': { label: 'Invitation card: title', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 32 },
+    'stage.kicker': { label: 'Floral stage: small label', default: { en: 'Under one canopy', ne: 'एउटै मण्डपमुनि' }, max: 32 },
     'line.title': { shared: 'couple.title', label: 'Photo line: title', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 32 },
     'sway.title': { shared: 'rite.swayambar.title', label: 'Swayambar: title', default: { en: 'Swayambar', ne: 'स्वयम्बर' }, max: 28 },
     'sway.line': { shared: 'rite.swayambar.line', label: 'Swayambar: line', default: { en: 'Two garlands change hands, and two families become one.', ne: 'दुई माला साटिन्छन्, दुई परिवार एक हुन्छन्।' }, max: 80 },

@@ -2,6 +2,21 @@
 
 Port 5203 · `http://localhost:5203/mala/` · debug: `?debug&open` (also `&lang=ne`, `&still` for the reduced-motion version).
 
+## Round 4 (floral entrance)
+
+- **Gate:** a full floral arch built from real cut-out roses. A rose canopy sits across the top, rose pillars down both sides and rose mounds at the foot. Jasmine and marigold strands hang from the canopy and sway, ending in marigold tassels. Names, date and hosts sit in the arch. On "Open", the camera walks forward through the arch (it scales and fades) and the hero settles in behind it. That is the one signature motion; with reduced motion the gate simply fades.
+- **Hero:** the couple's photo framed by corner sprays of roses.
+- **Floral stage:** a new section (`stage.photo`, `stage.kicker`) like a decorated wedding stage. A rose canopy with hanging strands and rose pillars frame the couple's photo, and the caption gives the main ceremony's date and venue.
+- **Photo frames vary:** spray-framed (hero), stage (canopy and pillars), garland-exchange pair, prints hanging on a marigold rope, an uncropped album, and an RSVP card framed by sprays.
+- **Times:** shown with `timeLabel(e)`, so open-ended events read "onwards" / "देखि".
+- **Rose art:** `public/themes/mala/flora/*.webp` (canopy, canopy-stage, pillar-l/r, pillar-stage, mound, mound-stage, spray, each with a `-sm` version). Composed in Python from rose heads cut out (rembg isnet plus a colour key) of CC0 photos in the WordPress Photo Directory:
+  - wordpress.org/photos/photo/63368551ad
+  - wordpress.org/photos/photo/4176809faf
+  - wordpress.org/photos/photo/8096800bee
+  - wordpress.org/photos/photo/60169e7cac
+  - wordpress.org/photos/photo/236679902f
+  - wordpress.org/photos/photo/80266903ae
+
 ## Concept
 
 Real flower garlands are the frame of the invitation: marigold (सयपत्री) swags over jasmine (चमेली), rose bands, and

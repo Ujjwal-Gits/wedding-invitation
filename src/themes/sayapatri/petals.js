@@ -6,7 +6,8 @@ import {
   Object3D, PerspectiveCamera, Scene, Shape, ShapeGeometry, WebGLRenderer,
 } from 'three';
 
-const PALETTE = ['#F08A12', '#F6A80F', '#E8650C', '#FFC21F', '#F39A1C'];
+// Rose and peony petals in the stage palette, with the odd marigold petal.
+const PALETTE = ['#F4C9CF', '#EFB2BC', '#FBE3E4', '#E68A9A', '#F7D7D2', '#F08A12'];
 const FOV = 38;
 const CAM_Z = 12;
 
@@ -67,7 +68,7 @@ export function createPetals(canvas, { mobile = false } = {}) {
     return {
       x: 0, y: (Math.random() * 2 - 1) * h, z,
       // Petals keep to the margins (mostly the right, where the photos are), never over the words.
-      side: Math.random() < 0.8 ? 1 : -1,
+      side: Math.random() < 0.5 ? 1 : -1,
       rx: Math.random() * 6.28, ry: Math.random() * 6.28, rz: Math.random() * 6.28,
       vx: (Math.random() - 0.5) * 0.9, vy: (Math.random() - 0.5) * 0.9, vz: (Math.random() - 0.5) * 0.7,
       fall: 0.12 + Math.random() * 0.22,
@@ -81,7 +82,7 @@ export function createPetals(canvas, { mobile = false } = {}) {
   let aspect = 1;
   const placeX = (p) => {
     const w = halfH(p.z) * aspect;
-    p.x = p.side > 0 ? w * (0.52 + Math.random() * 0.52) : -w * (0.99 + Math.random() * 0.08);
+    p.x = p.side * w * (0.55 + Math.random() * 0.45);
   };
   const resize = () => {
     const w = window.innerWidth;

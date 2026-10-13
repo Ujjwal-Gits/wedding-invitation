@@ -9,7 +9,7 @@ import './mala.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, bsDateOf, timeRange, mapUrl, neNum, dayNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, neNum, dayNum } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile, getLenis } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
@@ -79,6 +79,7 @@ const plate = (ref, alt, sizes, cls = '', opts) => {
 const used = new Set();
 const take = (ref) => { if (ref) used.add(keyOf(ref)); return ref; };
 const heroRef = take(S.img('hero.photo'));
+const stageRef = take(S.img('stage.photo'));
 const brideRef = take(S.img('swayambar.bride'));
 const groomRef = take(S.img('swayambar.groom'));
 const fromSlots = (prefix, n) => {
@@ -132,17 +133,24 @@ const weekday = (iso) => ({
 
 // ───────────────────────── Gate ─────────────────────────
 const gate = document.getElementById('gate');
+const FL = (n) => `/themes/mala/flora/${n}${mobile ? '-sm' : ''}.webp`;
 gate.innerHTML = `
+  <div class="ml-arch" id="gate-arch" aria-hidden="true">
+    <img class="ml-arch__pl" src="${FL('pillar-l')}" alt="" decoding="async" />
+    <img class="ml-arch__pr" src="${FL('pillar-r')}" alt="" decoding="async" />
+    <div class="ml-arch__strands" id="gate-strands"></div>
+    <img class="ml-arch__ml" src="${FL('mound')}" alt="" decoding="async" />
+    <img class="ml-arch__mr" src="${FL('mound')}" alt="" decoding="async" />
+    <img class="ml-arch__canopy" src="${FL('canopy')}" alt="" decoding="async" />
+  </div>
   <div class="ml-gate__inner">
-    <img class="ml-gate__mala" src="/themes/mala/tex/varmala.webp" alt="" width="520" height="1805" decoding="async" />
-    <div class="ml-gate__text">
-      <p class="ml-kicker">${bi(txt('gate.from'))}</p>
-      <p class="ml-gate__names">${bi(c.bride.name)} <span class="ml-amp" aria-hidden="true">&amp;</span><span class="sr-only">${bi(T.and)}</span> ${bi(c.groom.name)}</p>
-      <p class="ml-gate__hosts">${bi(config.hosts)}</p>
-      <div class="ml-gate__actions">
-        <button class="ml-btn" type="button" id="enter" disabled>${bi(txt('gate.open'))}</button>
-        <button class="ml-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
-      </div>
+    <p class="ml-kicker">${bi(txt('gate.from'))}</p>
+    <p class="ml-gate__names"><span class="ml-gate__n">${bi(c.bride.name)}</span><span class="ml-amp" aria-hidden="true">&amp;</span><span class="sr-only">${bi(T.and)}</span><span class="ml-gate__n">${bi(c.groom.name)}</span></p>
+    <p class="ml-gate__date">${bi(dateOf(config.weddingDate))}</p>
+    <p class="ml-gate__hosts">${bi(config.hosts)}</p>
+    <div class="ml-gate__actions">
+      <button class="ml-btn" type="button" id="enter" disabled>${bi(txt('gate.open'))}</button>
+      <button class="ml-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
     </div>
   </div>`;
 
@@ -161,9 +169,9 @@ const eventRows = events.map((e, i) => {
       <h3 class="ml-ev__title">${bi(e.title)}</h3>
       <dl class="ml-ev__facts">
         <div><dt>${bi(T.date)}</dt><dd>${bi(dateOf(e.start))}<small>${bi(bs)}</small></dd></div>
-        <div><dt>${bi(T.time)}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+        <div><dt>${bi(T.time)}</dt><dd>${bi(timeLabel(e))}</dd></div>
         <div><dt>${bi(T.venue)}</dt><dd>${bi(e.venue)}<a class="ml-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span></a></dd></div>
-        ${e.dress ? `<div><dt>${bi(T.wear)}</dt><dd class="ml-ev__dress">${sw.length ? `<span class="ml-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || {})}</span></dd></div>` : ''}
+        ${e.dress && (e.dress.text?.en || e.dress.text?.ne || sw.length) ? `<div><dt>${bi(T.wear)}</dt><dd class="ml-ev__dress">${sw.length ? `<span class="ml-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || {})}</span></dd></div>` : ''}
       </dl>
       ${e.rituals?.length ? `
       <details class="ml-rituals">
@@ -174,6 +182,7 @@ const eventRows = events.map((e, i) => {
   </article>`;
 }).join('');
 
+const mainEvent = events.find((e) => e.id === 'wedding') || events[0];
 const main = document.getElementById('main');
 main.innerHTML = `
   <section class="ml-hero" id="top" aria-labelledby="hero-names">
@@ -188,7 +197,11 @@ main.innerHTML = `
         <p class="ml-hero__line ml-rv">${bi(txt('hero.line'))}</p>
         <p class="ml-hero__date ml-rv"><b>${bi(dateOf(config.weddingDate))}</b><span>${bi(bsDateOf(config.weddingDate, config.weddingDateBS?.en ? config.weddingDateBS : null))}</span><span>${bi(config.city)}</span></p>
       </div>
-      <figure class="ml-hero__fig" id="hero-fig">${plate(heroRef, altFor(heroRef, 'hero.photo'), '(max-width: 760px) 74vw, 34vw', 'ml-hero__plate', { eager: true })}</figure>
+      <figure class="ml-hero__fig" id="hero-fig">
+        ${plate(heroRef, altFor(heroRef, 'hero.photo'), '(max-width: 760px) 74vw, 34vw', 'ml-hero__plate', { eager: true })}
+        <img class="ml-spray ml-spray--tl" src="${FL('spray')}" alt="" aria-hidden="true" decoding="async" />
+        <img class="ml-spray ml-spray--br" src="${FL('spray')}" alt="" aria-hidden="true" decoding="async" />
+      </figure>
     </div>
     <span class="ml-cue" aria-hidden="true">${bi(T.scroll)}<i></i></span>
   </section>
@@ -211,6 +224,22 @@ main.innerHTML = `
       </div>
     </div>
     <button class="ml-btn ml-btn--ghost ml-in" type="button" id="open-card">${bi(txt('intro.card'))}</button>
+  </section>
+
+  <section class="ml-stage" id="stage" aria-labelledby="stage-title">
+    <div class="ml-stage__set" id="stage-set">
+      <img class="ml-stage__pl" src="${FL('pillar-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="ml-stage__pr" src="${FL('pillar-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <figure class="ml-stage__fig" id="stage-fig" style="--fig-ar:${(aspectOf(stageRef) || 0.8).toFixed(4)}">${plate(stageRef, altFor(stageRef, 'stage.photo'), '(max-width: 760px) 64vw, 36vw', 'ml-stage__plate')}</figure>
+      <img class="ml-stage__ml" src="${FL('mound-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="ml-stage__mr" src="${FL('mound-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="ml-stage__canopy" src="${FL('canopy-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+    </div>
+    <div class="ml-stage__cap">
+      <p class="ml-kicker ml-in">${bi(txt('stage.kicker'))}</p>
+      <h2 class="ml-h2 ml-in" id="stage-title">${bi(mainEvent?.title || txt('hero.kicker'))}</h2>
+      ${mainEvent ? `<p class="ml-stage__when ml-in">${bi(dateOf(mainEvent.start))}<br />${bi(mainEvent.venue)}</p>` : ''}
+    </div>
   </section>
 
   <section class="ml-sway" id="swayambar" aria-labelledby="sway-title">
@@ -270,8 +299,9 @@ main.innerHTML = `
   </section>` : ''}
 
   <section class="ml-rsvp" id="rsvp" aria-labelledby="rsvp-title">
-    <div class="ml-rsvp__mala" aria-hidden="true"><img src="/themes/mala/tex/varmala.webp" alt="" width="520" height="1805" loading="lazy" decoding="async" /></div>
     <div class="ml-rsvp__col">
+      <img class="ml-spray ml-spray--tr" src="${FL('spray')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="ml-spray ml-spray--bl" src="${FL('spray')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       <p class="ml-kicker ml-in">${bi(countLine)}</p>
       <h2 class="ml-h2 ml-in" id="rsvp-title">${bi(txt('rsvp.title'))}</h2>
       <p class="ml-small ml-in">${bi(config.rsvp.deadline)}</p>
@@ -334,7 +364,7 @@ main.innerHTML = `
     <details class="ml-credits">
       <summary>${bi(T.credits)}</summary>
       <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), jasmine strands and rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala and its tassel from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). Paper texture generated for this theme.</li>
+      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), jasmine strands and rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala and its tassel from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The rose canopies, pillars and sprays are composed from CC0 rose photographs in the WordPress Photo Directory. Paper texture generated for this theme.</li>
       ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
     </details>
   </footer>
@@ -447,56 +477,51 @@ const local = (el, host) => {
   return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height, cx: a.left - b.left + a.width / 2 };
 };
 const scenes = [];
-const heroEl = document.querySelector('.ml-hero');
+const gateStrands = document.getElementById('gate-strands');
+const stageSet = document.getElementById('stage-set');
 const swayStage = document.getElementById('sway-stage');
 const lineStage = document.getElementById('line-stage');
-const heroScene = new GarlandScene(heroEl, { reduced });
+const gateScene = new GarlandScene(gateStrands, { reduced, shadow: { x: 4, y: 9, opacity: 0.18 } });
+const stageScene = new GarlandScene(stageSet, { reduced, shadow: { x: 4, y: 9, opacity: 0.18 } });
 const swayScene = new GarlandScene(swayStage, { reduced });
 const lineScene = lineStage ? new GarlandScene(lineStage, { reduced, bleed: 0 }) : null;
-scenes.push(heroScene, swayScene); if (lineScene) scenes.push(lineScene);
+scenes.push(gateScene, stageScene, swayScene); if (lineScene) scenes.push(lineScene);
 
-/** The festoon across the top of the page: marigold swags over jasmine, drops with tassels, and two jasmine strands either side of the couple. */
-function buildHero() {
-  const s = heroScene; s.clear(); s.resize();
-  const W = s.w; const H = s.h;
-  const small = W < 760;
-  const K = W >= 1180 ? 4 : W >= 760 ? 3 : 2;
-  const rw = small ? 26 : 34;
-  const jy = small ? 18 : 24;
-  const joints = Array.from({ length: K + 1 }, (_, j) => [(W * j) / K, j === 0 || j === K ? -rw : jy]);
-  joints[0][0] = -rw * 0.6; joints[K][0] = W + rw * 0.6;
-  for (let j = 0; j < K; j++) {
-    const a = joints[j]; const b = joints[j + 1];
-    const span = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    s.add({ tex: 'rope-jasmine', width: rw * 0.86, length: span * 1.2, z: 1, stiff: 0.25, pins: [{ i: 0, at: () => a }, { i: 'end', at: () => b }] });
-    s.add({ tex: j % 2 ? 'rope-orange' : 'rope-alt', width: rw, length: span * 1.1, z: 3, pins: [{ i: 0, at: () => a }, { i: 'end', at: () => b }] });
-  }
-  const fig = local(document.getElementById('hero-fig'), heroEl);
-  const textTop = local(heroEl.querySelector('.ml-hero__text'), heroEl).y;
-  // Drops from the joints (not over the couple's photo).
-  for (let j = 1; j < K; j++) {
-    const [x, y] = joints[j];
-    const clearOfPhoto = x < fig.x - rw * 2 || x > fig.x + fig.w + rw * 2;
-    const L = clearOfPhoto ? Math.min(H * 0.2, 190, textTop - jy - rw * 2.2 - 28) : 0;
-    const orn = [{ tex: 'band-rose', f: 0, w: rw * 1.55, mode: 'center', zAdd: 2 }];
-    if (L > 40) {
-      orn.push({ tex: 'tassel', f: 1, w: rw * 1.9, mode: 'hang', overlap: rw * 0.55 });
-      s.add({ tex: 'rope-alt2', width: rw * 0.86, length: L, z: 4, pins: [{ i: 0, at: () => [x, y] }], ornaments: orn });
-    } else {
-      s.add({ tex: 'rope-alt2', width: rw * 0.86, length: rw * 1.2, z: 4, pins: [{ i: 0, at: () => [x, y] }], ornaments: orn });
-    }
-  }
-  // Jasmine strands either side of the photo, falling from above the festoon to the photo's foot.
-  const gap = small ? 14 : 30;
-  const len = fig.y + fig.h * 0.94;
-  for (const x of [fig.x - gap, fig.x + fig.w + gap]) {
-    s.add({
-      tex: 'rope-alt2', width: small ? 20 : 27, length: len, z: 2, stiff: 0.5,
-      pins: [{ i: 0, at: () => [x, -30] }],
-      ornaments: [{ tex: 'tassel', f: 1, w: small ? 38 : 50, mode: 'hang', overlap: 12 }],
+/** Strands hanging from a floral canopy: jasmine and marigold, each ending in a marigold tassel. */
+function strands(scene, host, canopyEl, spots) {
+  scene.clear(); scene.resize();
+  const cb = local(canopyEl, host);
+  const W = scene.w; const small = W < 760;
+  spots.forEach(([fx, len, tex, wScale, y0f], i) => {
+    const x = W * fx; const y0 = cb.y + cb.h * (y0f ?? 0.2);
+    const rw = (small ? 16 : 22) * (wScale || 1);
+    scene.add({
+      tex, width: rw, length: len, z: 2 + (i % 2), stiff: 0.5, vOffset: i * 0.37,
+      pins: [{ i: 0, at: () => [x, y0] }],
+      ornaments: [{ tex: 'tassel', f: 1, w: rw * 1.9, mode: 'hang', overlap: rw * 0.5 }],
     });
-  }
-  s.settle(420);
+  });
+  scene.settle(360);
+}
+function buildGate() {
+  if (!gateStrands.isConnected) return;
+  const H = gateStrands.clientHeight; const small = gateStrands.clientWidth < 760;
+  const spots = small
+    ? [[0.05, H * 0.2, 'rope-jasmine', 0.85], [0.12, H * 0.13, 'rope-alt2', 0.8], [0.88, H * 0.13, 'rope-alt2', 0.8], [0.95, H * 0.2, 'rope-jasmine', 0.85]]
+    : [[0.13, H * 0.46, 'rope-jasmine'], [0.18, H * 0.33, 'rope-alt2'], [0.225, H * 0.24, 'rope-jasmine', 0.9], [0.775, H * 0.24, 'rope-jasmine', 0.9], [0.82, H * 0.33, 'rope-alt2'], [0.87, H * 0.46, 'rope-jasmine']];
+  strands(gateScene, gateStrands, document.querySelector('.ml-arch__canopy'), spots);
+}
+function buildStage() {
+  const fig = local(document.getElementById('stage-fig'), stageSet);
+  const W = stageSet.clientWidth; const small = W < 760;
+  const fx = (x) => x / W;
+  const L = fig.y + fig.h * 0.4;
+  const spots = [
+    [fx(fig.x - (small ? 10 : 24)), L, 'rope-jasmine', 1, 0.5], [fx(fig.x + fig.w + (small ? 10 : 24)), L, 'rope-jasmine', 1, 0.5],
+    [fx(fig.x - (small ? 28 : 60)), L * 0.7, 'rope-alt2', 0.9, 0.5], [fx(fig.x + fig.w + (small ? 28 : 60)), L * 0.7, 'rope-alt2', 0.9, 0.5],
+  ];
+  if (!small) spots.push([fx(fig.x - 98), L * 0.52, 'rope-jasmine', 0.85, 0.5], [fx(fig.x + fig.w + 98), L * 0.52, 'rope-jasmine', 0.85, 0.5]);
+  strands(stageScene, stageSet, stageSet.querySelector('.ml-stage__canopy'), spots);
 }
 
 // ───────────────────────── The Swayambar: two garlands exchanged (signature) ─────────────────────────
@@ -607,7 +632,8 @@ function stepPrints(settled) {
 lineScene?.onStep.push(stepPrints);
 
 function relayout() {
-  buildHero();
+  buildGate();
+  buildStage();
   buildSway();
   buildLine();
   scenes.forEach((s) => { s.forceRender = true; });
@@ -617,7 +643,7 @@ function relayout() {
 // ───────────────────────── Gate & opening ─────────────────────────
 const enterBtn = document.getElementById('enter');
 const quietBtn = document.getElementById('enter-quiet');
-const heroImg = document.querySelector('.ml-hero__plate img');
+const heroImg = document.querySelector('.ml-arch__canopy');
 Promise.all([
   preload(['rope-orange', 'rope-alt', 'rope-alt2', 'rope-jasmine', 'band-rose', 'tassel']),
   heroImg?.decode?.().catch(() => {}),
@@ -632,20 +658,20 @@ function open(withMusic) {
   opened = true;
   player.unlock(); player.start(withMusic);
   document.body.classList.remove('is-gated');
-  gate.classList.add('is-leaving');
-  setTimeout(() => gate.remove(), 700);
   window.scrollTo(0, 0);
-  requestAnimationFrame(() => {
-    relayout();
-    setupScroll();
-    if (!reduced) {
-      gsap.fromTo('.ml-hero .ml-rv', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.12, delay: 0.25 });
-      gsap.fromTo('.ml-hero__fig', { opacity: 0 }, { opacity: 1, duration: 0.9, ease: 'power2.out', delay: 0.1 });
-      // The festoon is let go from slightly higher and settles into place.
-      heroScene.ropes.forEach((r) => { for (let k = 0; k < r.n; k++) r.py[k] = r.y[k] + 6; });
-      heroScene.breeze = 1.6; gsap.to(heroScene, { breeze: 1, duration: 3, ease: 'power2.out' });
-    }
-  });
+  relayout();
+  setupScroll();
+  const done = () => { gate.remove(); gateScene.active = false; };
+  if (reduced) { gsap.to(gate, { opacity: 0, duration: 0.4, onComplete: done }); return; }
+  // The entrance: the camera walks forward through the floral arch into the page.
+  gate.classList.add('is-entering');
+  const tl = gsap.timeline({ onComplete: done });
+  tl.to('.ml-gate__inner', { opacity: 0, y: -8, duration: 0.4, ease: 'power2.in' }, 0)
+    .to('#gate-arch', { scale: 2.6, duration: 1.8, ease: 'power2.inOut' }, 0.1)
+    .to(gate, { backgroundColor: 'rgba(251, 248, 241, 0)', duration: 0.8, ease: 'power1.inOut' }, 0.45)
+    .to('#gate-arch', { opacity: 0, duration: 0.55, ease: 'power1.in' }, 1.3)
+    .fromTo('.ml-hero__grid', { scale: 0.95 }, { scale: 1, duration: 1.5, ease: 'power2.out', clearProps: 'transform' }, 0.45)
+    .fromTo('.ml-hero .ml-rv', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 }, 1.0);
 }
 enterBtn.addEventListener('click', () => open(true));
 quietBtn.addEventListener('click', () => open(false));
@@ -653,15 +679,19 @@ quietBtn.addEventListener('click', () => open(false));
 // ───────────────────────── Scroll ─────────────────────────
 let lenis = null;
 let lastY = 0; let scrollV = 0;
+runScenes(scenes, gsap, {
+  getScrollV: () => {
+    const y = window.scrollY; const v = (y - lastY) * 60; lastY = y;
+    scrollV += (Math.max(-2400, Math.min(2400, v)) - scrollV) * 0.12;
+    return scrollV;
+  },
+});
+// The gate's strands hang and breathe while the guest decides to come in.
+const gateCanopy = document.querySelector('.ml-arch__canopy');
+const initGate = () => { buildGate(); gateScene.forceRender = true; };
+if (gateCanopy.complete) requestAnimationFrame(initGate); else gateCanopy.addEventListener('load', initGate, { once: true });
 function setupScroll() {
   lenis = createSmooth();
-  runScenes(scenes, gsap, {
-    getScrollV: () => {
-      const y = window.scrollY; const v = (y - lastY) * 60; lastY = y;
-      scrollV += (Math.max(-2400, Math.min(2400, v)) - scrollV) * 0.12;
-      return scrollV;
-    },
-  });
 
   // The exchange: the stage pins while the two garlands cross.
   if (!reduced) {

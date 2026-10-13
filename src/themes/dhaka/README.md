@@ -1,93 +1,99 @@
-# Dhaka (ढाका): heirloom stationery
+# Dhaka (ढाका): heirloom stationery among real flowers
 
-A calm, readable invitation built like a luxury stationery suite. The page is textured ivory card stock with ink and one sindoor accent. The real Palpali Dhaka cloth is used with restraint, as a woven ribbon around the envelope, as narrow bands on the card and section heads, and as the envelope lining.
+A calm, readable invitation built like a luxury stationery suite and set among real flowers. The page is textured ivory paper, with ink and one sindoor accent. Palpali Dhaka cloth appears with restraint: as the ribbon around the envelope, as the envelope lining, and as narrow bands on section headings.
 
-Page: `/dhaka/` (dev port 5187). Query parameters: `?id=<slug>` for studio data, `?lang=ne` for Nepali, `?debug` for the test hooks.
+Page: `/dhaka/` (dev port 5187).
+- `?id=<slug>`: studio data, e.g. `?id=<client-slug>`.
+- `?lang=ne`: Nepali.
+- `?debug`: test hooks.
 
-## Signature motion (the only one)
-The envelope rests on a dark table. It is tied with a Dhaka band and sealed with a wax seal pressed with the couple's Devanagari initials (आ·स).
+## The opening (signature motion)
+The envelope rests on the paper among two real bouquets (roses, marigolds, leaves) and a few loose blooms. It is tied with a Dhaka band and sealed with wax pressed with the couple's Devanagari initials.
 
-When the guest taps the seal (with music) or "Open without music":
-1. The seal lifts and the band slides apart.
-2. The flap opens, showing the Dhaka lining.
-3. The folded card rises out of the envelope, and the envelope falls away.
-4. The card moves into place and unfolds.
-5. The table fades, leaving the same card as the page's hero.
+When the guest taps the seal, each step reveals something:
+1. The seal breaks into two halves that fall away.
+2. The Dhaka band slides off both sides.
+3. The flap opens on the Dhaka lining.
+4. The couple's photo rises out of the envelope.
+5. The envelope drops away, and the photo travels to its place in the welcome frame.
+6. Meanwhile the flowers lift off the table and gather, bouquet by bouquet, into a floral frame around it.
+7. Finally the names, both dates and the place settle in.
 
-Only transform and opacity animate. With reduced motion the envelope simply fades out.
+Only transform and opacity are animated, and it takes about 3.3 seconds. The flowers are DOM elements of the welcome section and simply land in their frame positions, so there is no swap. With reduced motion the envelope just fades.
 
-Everything after that is quiet: sections fade up once as they arrive. There is no scroll-scrubbed motion, no kinetic type and no marquee.
+Phones and wide screens use separate frame and table layouts (`FRAME_TALL`/`FRAME_WIDE` and `TABLE_TALL`/`TABLE_WIDE` in `main.js`).
 
-## Sections
-1. **Card (hero)**: the open folded card.
-   - Top half: शुभ विवाह, a blessing line and the couple's names (Libre Caslon Display, or Eczar in Nepali).
-   - Bottom half: the invitation line, the AD date, the B.S. date and the city.
-   - A "Read the full invitation" button opens the complete wording as a letter dialog.
-2. **The two of us**: the couple's photos as mounted prints (mat border, soft shadow) in justified rows. Every photo keeps its proportions and is never cropped. Tapping a print opens a lightbox.
-3. **When and where**: one row per ceremony with:
-   - the name (large) and dress note with swatches;
-   - the day and AD date, plus the B.S. date from the shared `bsDateOf()`;
-   - the time;
-   - the venue with an "Open map" link;
-   - an optional "Order of the day".
+## The page
+1. **Welcome**: a floral frame (a heavy bouquet at top left and bottom right, light accents in the other corners). Inside it: शुभ विवाह, the welcome photo in a mat, the names, the invitation line, the AD and B.S. dates, the place, and "Read the invitation" (a letter dialog).
+2. **The two of us**, with different treatments:
+   - a tilted mounted print with a real rose tucked into its corner, next to one line;
+   - a framed pair (one dark frame, two windows, a Dhaka ribbon below);
+   - a full-width feature: the sharp photo over a soft blurred copy of itself, with floral borders;
+   - loose prints in justified rows, each slightly tilted.
 
-   On phones each ceremony stacks as label and value rows.
-4. **Our families**: bride's and groom's cards with full name, parents and home. Portraits show only if uploaded. The hosts line and the invitation button follow.
-5. **Reply card**: a days-to-go line and the RSVP form, using `core/rsvp.js` with the same IDs, honeypot and endpoint.
-6. **Guest info** (stay, travel, contacts) and the closing: closing line, names, calendar, share and credits.
+   Every photo keeps its proportions and opens in a lightbox.
+3. **When and where**: per ceremony, the name, an optional dress note, the day with the AD date and the B.S. date (shared `bsDateOf`), the time (shared `timeLabel`, which shows "onwards" for open-ended events), and the venue with a map link.
+4. **Our families**: name, parents and home, with portraits only if uploaded. Empty fields are hidden.
+5. **Reply card**: a small bouquet on its corner, plus the RSVP form (`core/rsvp.js`).
+6. **Guest info**: only the columns that have data.
+7. **Closing**: a flower garland, the closing line, names, calendar, share and credits.
+
+## Flowers
+The flowers are real Wikimedia Commons photographs (roses on black backgrounds, plus leaves), cut out for this theme. They live in `public/themes/dhaka/flowers/*.webp`.
+
+The marigolds are cut from the library photos `marigold-macro` and `marigold-macro-alt`.
+
+Credits are in `flowers.js` and are listed in the page footer. The licences are CC BY 2.0/4.0 and CC BY-SA 3.0/4.0.
 
 ## Readability
-- Body text is Libre Caslon Text at 17–18px with line height 1.55–1.65. Nepali uses Martel at 17–18px with line height 1.75–1.85.
-- Labels are at least 12.5px in English and 15px in Nepali.
-- Ink `#1F1B18` on ivory is about 15:1, and sindoor `#9C1C26` is about 7:1.
-- No script faces, no hairline type below 32px, and Devanagari is never letter-spaced or uppercased.
+- Body text is Libre Caslon Text at 17–18px. Nepali uses Martel at 17–18px with line height 1.75 or more. Names use Libre Caslon Display, or Eczar in Nepali.
+- Ink is about 15:1 on the paper, and sindoor is about 7:1.
+- Devanagari is never letter-spaced or uppercased.
 
-## Slots (`slots.js`)
-All slots are read through `useSlots`. Test them with `?debug&slots=demo`.
+## Slots (`slots.js`, read through `useSlots`)
+Test with `?debug&slots=demo`.
 
 Images:
-- `prints.1`–`prints.8` (couple, portraits 0–7; duplicates are skipped)
+- `welcome.photo` (portrait 0)
+- `print.photo` (1)
+- `pair.a`, `pair.b` (2, 3)
+- `feature.photo` (4)
+- `more.1`–`more.8` (5–12)
 - `fam.bride`, `fam.groom`
-- `envelope.lining` (optional photo of Dhaka cloth; empty means the woven pattern)
+- `envelope.lining`
+
+Every couple slot defaults to the couple's own portraits, and duplicates are skipped. A treatment with no photo is left out.
 
 Texts:
 - Envelope: `env.kicker`, `gate.line`, `gate.open`, `gate.quiet`
-- Card: `card.kicker`, `card.with`, `card.invite`, `card.button`, `card.cover`
-- Photos: `prints.title`, `prints.line` (empty means the last story line)
+- Welcome: `welcome.kicker`, `welcome.line`, `card.button`
+- Photos: `us.title`, `us.line`, `feature.line`
 - Programme: `prog.title`, `prog.note`
 - Families: `fam.title`, `fam.bride`, `fam.groom`
 - Reply: `reply.title`, `reply.send`
-- Closing: `closing.line` (empty means `config.closing`)
+- Closing: `closing.line`
 
-Shared keys:
+These texts have shared keys:
 
 | Dhaka slot | Shared key |
 |---|---|
 | `gate.line` | `gate.line` |
 | `gate.open` | `gate.open` |
 | `gate.quiet` | `gate.quiet` |
-| `card.kicker` | `hero.kicker` |
-| `card.invite` | `hero.line` |
+| `welcome.kicker` | `hero.kicker` |
+| `welcome.line` | `hero.line` |
 | `card.button` | `card.button` |
-| `prints.title` | `couple.title` |
-| `prints.line` | `couple.line` |
+| `us.title` | `couple.title` |
+| `us.line` | `couple.line` |
 | `prog.title` | `events.title` |
 | `reply.title` | `reply.title` |
 | `closing.line` | `closing.line` |
 
-The letter dialog and the lightbox use `openModal`. Only the dialog scrolls, and closing returns to the same place.
-
-## What the studio must supply
-- The couple's portraits: 3 or more, any orientation.
-- Names in English and Nepali (the seal and cover use the first letters).
-- Parents and homes.
-- Events with start and end, venue, `mapQuery` and `dress`. An optional `dateBS` overrides the computed B.S. date, so a family can match their priest's patro.
-- The RSVP deadline and the invitation wording.
+The letter dialog and the lightbox use `openModal`, so only the dialog scrolls.
 
 ## Files
-- `main.js`: markup, envelope timeline, dialogs
+- `main.js`: markup, frame and table layouts, the opening timeline
 - `dhaka.css`: styles
-- `weave.js`: the Palpali Dhaka pattern (`palpaliCell`, `palpaliTile`) and the woven-thread renderer
+- `weave.js`: the Palpali Dhaka pattern
+- `flowers.js`: flower credits
 - `slots.js`: the slot manifest
-
-Paper grain and mottle are generated SVG noise, so no image files are used.
