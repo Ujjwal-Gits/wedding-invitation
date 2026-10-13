@@ -392,3 +392,61 @@ export class Loom {
 }
 
 export const loomEase = { easeOut, easeIn, clamp01 };
+
+// ───────────────────────── Palpali Dhaka ─────────────────────────
+// The Palpali topi palette: white cotton ground with black sawtooth borders,
+// rose and salmon stepped diamonds and small green accents.
+export const PAL = {
+  black: '#2B2522',
+  rose: '#C0395A',
+  salmon: '#EC8667',
+  green: '#3B9262',
+  thread: '#FAF5EA',
+};
+const BAND = 22;
+
+/** One Palpali band (22 rows, repeat 16 cells). Returns a colour or null (white ground). */
+export function palpaliCell(x, y) {
+  const yy = ((y % BAND) + BAND) % BAND;
+  const band = Math.floor(y / BAND);
+  const lx = (((x + (band % 2 ? 8 : 0)) % 16) + 16) % 16;
+  if (yy === 0 || yy === BAND - 1) return PAL.black;
+  if (yy === 1 || yy === BAND - 2) return null;
+  // Black sawtooth teeth along both edges, as on the topi.
+  if (yy >= 2 && yy <= 4) return (lx % 4) <= 2 - (yy - 2) ? PAL.black : null;
+  if (yy >= BAND - 5 && yy <= BAND - 3) return (lx % 4) <= 2 - (BAND - 3 - yy) ? PAL.black : null;
+  const dx = Math.abs(lx - 7.5);
+  const dy = Math.abs(yy - 10.5);
+  const d = dx + dy;
+  if (d <= 1) return PAL.black;
+  if (d <= 3) return PAL.salmon;
+  if (d <= 4) return null;
+  if (d <= 5) return PAL.rose;
+  if (d <= 6) return null;
+  if (dy < 1 && dx >= 7) return PAL.green;
+  if (d >= 7 && (lx + yy) % 2 === 0 && dy >= 3) return PAL.green;
+  return null;
+}
+
+/** A repeating tile of Palpali cloth (both directions) as a data URL. */
+export function palpaliTile({ cell = 4, bands = 1 } = {}) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cols = 32;
+  const rows = BAND * bands;
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(cols * cell * dpr);
+  cv.height = Math.round(rows * cell * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = PAL.thread;
+  ctx.fillRect(0, 0, cols * cell, rows * cell);
+  // Fine plain-weave texture on the white ground.
+  ctx.fillStyle = 'rgba(120, 100, 80, 0.07)';
+  for (let y = 0; y < rows; y++) for (let x = (y % 2); x < cols; x += 2) ctx.fillRect(x * cell, y * cell, cell, cell);
+  for (let y = 0; y < rows; y++) {
+    const colors = [];
+    for (let x = 0; x < cols; x++) colors.push(palpaliCell(x, y));
+    paintRow(ctx, colors, y * cell, cell, 0, 3);
+  }
+  return { url: cv.toDataURL('image/png'), width: cols * cell, height: rows * cell };
+}

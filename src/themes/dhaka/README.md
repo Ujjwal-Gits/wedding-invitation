@@ -1,81 +1,93 @@
-# Dhaka Modern (ढाका)
+# Dhaka (ढाका): heirloom stationery
 
-A design-led invitation for a modern couple. It uses a Swiss grid, oversized Archivo type and the Dhaka weave of Palpa and Tehrathum, rebuilt as a generative system. No ornament images are used. Every Dhaka pattern on the page is woven in code (`weave.js`).
+A calm, readable invitation built like a luxury stationery suite. The page is textured ivory card stock with ink and one sindoor accent. The real Palpali Dhaka cloth is used with restraint, as a woven ribbon around the envelope, as narrow bands on the card and section heads, and as the envelope lining.
 
-Page: `/dhaka/` (dev port 5187). Data: `loadInvitation()`. Add `?id=<slug>` for studio data, `?lang=ne` for Nepali and `?debug` for test hooks.
+Page: `/dhaka/` (dev port 5187). Query parameters: `?id=<slug>` for studio data, `?lang=ne` for Nepali, `?debug` for the test hooks.
 
-## Concept
-Dhaka is a supplementary-weft inlay. Coloured threads float over a plain ground in stepped diamonds and chevrons, laid down band by band, with colours changing between bands. `dhakaCell(x, y)` returns the colour of one weft float. Because it works on a square grid with Manhattan-distance diamonds, it produces the stepped Dhaka look. `stitch()` and `paintRow()` draw each run as a thread with a tie every few cells.
+## Signature motion (the only one)
+The envelope rests on a dark table. It is tied with a Dhaka band and sealed with a wax seal pressed with the couple's Devanagari initials (आ·स).
 
-- Palette: crisp white ground `#FFFFFF` and ink `#121212`. Crimson `#C21F2E` is the UI accent and fills the moving phrase band. Mustard, teal and orange appear inside the weave only. Black fields carry the ceremonies and the footer.
-- Type: Archivo (variable width and weight) for the oversized display text, Brygada 1918 italic for the ampersand and short lines, IBM Plex Mono for labels and Noto Sans Devanagari for Nepali.
+When the guest taps the seal (with music) or "Open without music":
+1. The seal lifts and the band slides apart.
+2. The flap opens, showing the Dhaka lining.
+3. The folded card rises out of the envelope, and the envelope falls away.
+4. The card moves into place and unfolds.
+5. The table fades, leaving the same card as the page's hero.
 
-## Signature motion: the loom
-The `.loom` section is pinned for about 3.6 screens. Scrolling weaves the cloth from the bottom up, one row at a time. A shuttle runs the rows left and right in turn. The rows build Dhaka selvedge bands and the couple's initials. The initials are Latin by default and switch to Devanagari (आ / स) in Nepali. Next the cloth holds. Then each row is pulled out sideways, top first, to reveal the couple portrait and "Getting married". It is drawn on Canvas 2D: one pre-rendered cloth plus one `drawImage` per row each frame.
+Only transform and opacity animate. With reduced motion the envelope simply fades out.
+
+Everything after that is quiet: sections fade up once as they arrive. There is no scroll-scrubbed motion, no kinetic type and no marquee.
 
 ## Sections
-1. **Gate**: a woven band column, the names, and "Open with music" or "Open quietly".
-2. **Hero**: names fitted to the full grid width, the hero portrait (`portraits[0]`, never cropped on desktop) and one line. The name lines slide apart as you scroll.
-3. **Loom**: the signature scene, which reveals `portraits[1]`.
-4. **Marquee**: two rows of Nepali and English phrases that move with scroll, between woven borders.
-5. **The two of us**: a collage in justified rows. Each row shares one height and uses each photo's real aspect ratio, so nothing is cropped. Rows drift in opposite directions like weft. Clicking a photo opens a lightbox. Photos carry numbers, not narrative captions. The heading shows "Since {first story year}" and the last, forward-looking story line.
-6. **Ceremonies**: a pinned horizontal ribbon (on phones, one full ceremony per screen, snapping into place) with number, name, date, time, place, map link, dress swatches and an optional programme.
-7. **Two families**: bride and groom portraits. When there is no upload, a woven monogram shows instead. "Read the invitation card" opens a `<dialog>` with the full wording and the parents' names.
-8. **Reply**: countdown plus a clean RSVP form. It reuses `core/rsvp.js` (same IDs, honeypot, validation and endpoint).
-9. **Guest info** (wear, stay, questions) and a footer with credits for the photos actually shown.
+1. **Card (hero)**: the open folded card.
+   - Top half: शुभ विवाह, a blessing line and the couple's names (Libre Caslon Display, or Eczar in Nepali).
+   - Bottom half: the invitation line, the AD date, the B.S. date and the city.
+   - A "Read the full invitation" button opens the complete wording as a letter dialog.
+2. **The two of us**: the couple's photos as mounted prints (mat border, soft shadow) in justified rows. Every photo keeps its proportions and is never cropped. Tapping a print opens a lightbox.
+3. **When and where**: one row per ceremony with:
+   - the name (large) and dress note with swatches;
+   - the day and AD date, plus the B.S. date from the shared `bsDateOf()`;
+   - the time;
+   - the venue with an "Open map" link;
+   - an optional "Order of the day".
 
-## Slots (studio-replaceable, `slots.js`)
-All of these are read through `useSlots(manifest)`. Test with `?debug&slots=demo`, which applies a sample override.
+   On phones each ceremony stacks as label and value rows.
+4. **Our families**: bride's and groom's cards with full name, parents and home. Portraits show only if uploaded. The hosts line and the invitation button follow.
+5. **Reply card**: a days-to-go line and the RSVP form, using `core/rsvp.js` with the same IDs, honeypot and endpoint.
+6. **Guest info** (stay, travel, contacts) and the closing: closing line, names, calendar, share and credits.
+
+## Readability
+- Body text is Libre Caslon Text at 17–18px with line height 1.55–1.65. Nepali uses Martel at 17–18px with line height 1.75–1.85.
+- Labels are at least 12.5px in English and 15px in Nepali.
+- Ink `#1F1B18` on ivory is about 15:1, and sindoor `#9C1C26` is about 7:1.
+- No script faces, no hairline type below 32px, and Devanagari is never letter-spaced or uppercased.
+
+## Slots (`slots.js`)
+All slots are read through `useSlots`. Test them with `?debug&slots=demo`.
 
 Images:
-- `hero.photo` (couple, portrait 0)
-- `reveal.photo` (couple, portrait 1)
-- `us.1` to `us.8` (couple, portraits 2 to 9; duplicates are skipped)
-- `fam.bride` and `fam.groom` (bride and groom; empty shows the woven initial)
+- `prints.1`–`prints.8` (couple, portraits 0–7; duplicates are skipped)
+- `fam.bride`, `fam.groom`
+- `envelope.lining` (optional photo of Dhaka cloth; empty means the woven pattern)
 
 Texts:
-- Entry: `gate.kicker`, `gate.music`, `gate.quiet`
-- Hero: `hero.kicker`, `hero.line`, `hero.cue`
-- Weave and reveal: `loom.hint`, `loom.count`, `reveal.kicker`, `reveal.title`
-- Moving band: `marquee.1` to `marquee.3`, shown in both languages at once
-- Photos: `us.title`, `us.since` ({year}), `us.frames` ({n})
-- Ceremonies: `rib.title`, `rib.sub` ({n}), `rib.end`, `rib.cta`
-- Families: `fam.title`, `fam.bride`, `fam.groom`, `fam.card`
-- Card and reply: `card.title`, `reply.title`, `reply.send`
+- Envelope: `env.kicker`, `gate.line`, `gate.open`, `gate.quiet`
+- Card: `card.kicker`, `card.with`, `card.invite`, `card.button`, `card.cover`
+- Photos: `prints.title`, `prints.line` (empty means the last story line)
+- Programme: `prog.title`, `prog.note`
+- Families: `fam.title`, `fam.bride`, `fam.groom`
+- Reply: `reply.title`, `reply.send`
+- Closing: `closing.line` (empty means `config.closing`)
 
-Event photos, gallery, story, names, dates, venues and card wording are invitation data.
-
-Shared keys (`src/core/slot-vocab.js`), so content entered in another theme appears here too:
+Shared keys:
 
 | Dhaka slot | Shared key |
 |---|---|
-| `gate.kicker` | `gate.line` |
-| `gate.music` | `gate.open` |
+| `gate.line` | `gate.line` |
+| `gate.open` | `gate.open` |
 | `gate.quiet` | `gate.quiet` |
-| `hero.kicker` | `hero.kicker` |
-| `hero.line` | `hero.line` |
-| `us.title` | `couple.title` |
-| `rib.title` | `events.title` |
-| `fam.card` | `card.button` |
+| `card.kicker` | `hero.kicker` |
+| `card.invite` | `hero.line` |
+| `card.button` | `card.button` |
+| `prints.title` | `couple.title` |
+| `prints.line` | `couple.line` |
+| `prog.title` | `events.title` |
 | `reply.title` | `reply.title` |
+| `closing.line` | `closing.line` |
 
-The invitation card and photo lightbox are native `<dialog>`s opened through `core/modal.js` `openModal` (`data-lenis-prevent`). Only the dialog scrolls, the page stays still, and closing returns to the same position.
+The letter dialog and the lightbox use `openModal`. Only the dialog scrolls, and closing returns to the same place.
 
 ## What the studio must supply
-- `couple.portraits`, at least 3 and ideally 6 or more. `[0]` is the hero and `[1]` is the loom reveal. The rest, plus people photos from `gallery`, fill the collage.
-- Optional `couple.bride.photo` and `couple.groom.photo`. Without them the page weaves monograms.
-- Uploaded photos may carry `w`/`h` (used for exact justified rows) and `focal`.
-- Names in `en` and `ne`. The first letter or akshar of each name is woven.
-- Events with `photo`, `venue`, `mapQuery`, `dress`, and optionally `rituals`. Also `story[0]`, `invitation`, `rsvp` and `info`.
+- The couple's portraits: 3 or more, any orientation.
+- Names in English and Nepali (the seal and cover use the first letters).
+- Parents and homes.
+- Events with start and end, venue, `mapQuery` and `dress`. An optional `dateBS` overrides the computed B.S. date, so a family can match their priest's patro.
+- The RSVP deadline and the invitation wording.
 
-Hero and photo names are fitted to the real rendered box in both scripts: the width of the widest line and a height budget (Devanagari matras are tall).
+## Files
+- `main.js`: markup, envelope timeline, dialogs
+- `dhaka.css`: styles
+- `weave.js`: the Palpali Dhaka pattern (`palpaliCell`, `palpaliTile`) and the woven-thread renderer
+- `slots.js`: the slot manifest
 
-## Accessibility and motion
-Only transform and opacity are animated, plus canvas drawing. Lenis smooths the wheel only and touch keeps native momentum. There is no parallax on phones. With `prefers-reduced-motion`, nothing is pinned: the woven initials show as a still and the ribbon becomes a focusable sideways scroller. Devanagari is never letter-spaced or uppercased. Text and focus colours meet AA (crimson on the ground is about 5:1, the light crimson used on black is about 5.3:1).
-
-## Debug
-With `?debug`:
-- `__dk.enter()` opens the gate.
-- `__dk.loom(p)` sets the loom progress.
-- `__dk.scrollTo(y)` scrolls the page.
-- `__dkAll()` returns all ScrollTriggers.
+Paper grain and mottle are generated SVG noise, so no image files are used.
