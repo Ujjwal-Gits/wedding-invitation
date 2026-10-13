@@ -31,6 +31,9 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
 export default defineConfig({
   plugins: [shareMeta()],
   server: {
+    // A fixed port of its own, so it never silently lands on another project's dev server.
+    port: 5190,
+    strictPort: true,
     // The Python venv, server data and original art are huge and irrelevant to the front end.
     watch: { ignored: ['**/tools/**', '**/server/**', '**/art-src/**', '**/dist/**'] },
     proxy: {

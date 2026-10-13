@@ -25,11 +25,11 @@ npm install                      # front end
 cd server && npm install && cd ..  # studio API
 cp server/.env.example server/.env # then fill it in (see below)
 
-npm run dev                      # themes + showroom on http://localhost:5173
+npm run dev                      # themes + showroom on http://localhost:5190
 cd server && npm run dev         # API on http://localhost:8787 (Vite proxies /api and /uploads)
 ```
 
-Open the studio at `http://localhost:5173/studio/`.
+Open the studio at `http://localhost:5190/studio/`.
 
 ### Admin login (studio)
 
