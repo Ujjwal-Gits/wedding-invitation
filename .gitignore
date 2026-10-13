@@ -50,3 +50,6 @@ desktop.ini
 
 # Local design-review tool state
 .impeccable/
+
+# Client reference screenshots (third-party designs, not ours to publish)
+refs/

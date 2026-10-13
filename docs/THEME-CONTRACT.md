@@ -164,3 +164,37 @@ The client must be able to change **every image and every visible text** of ever
   same scroll position.
 - **Look at every screenshot you take**, describe to yourself what is wrong (crop, overlap, contrast, fake motion, broken
   joints, cheap-looking geometry) and fix it before reporting.
+
+## 11. Client round 3 — readability, calm, marriage-first (overrides earlier style rules)
+
+Reference images are in `refs/` (look at them): clean, quiet luxury — textured paper envelopes with a wax seal,
+embossed/pearl botanicals, one gold or sindoor accent, generous space, very little text, nothing flashy.
+
+**Readability is the #1 complaint across all themes.** Fix it before anything else:
+- Body text: English ≥ 17px desktop / 16px phone, line-height ≥ 1.55; Nepali (Devanagari) ≥ 18px / 17px,
+  line-height ≥ 1.75. Labels/eyebrows ≥ 12px English, ≥ 14px Nepali. Measure 45–70ch.
+- Contrast: body ≥ 7:1 where possible, never below 4.5:1 (check text over photos with a real scrim/panel).
+- **No script faces** (Pinyon etc.) for anything except, at most, a large monogram. Couple names must be set in a
+  legible serif or sans and read instantly in both languages.
+- **No hairline didones** (thin Bodoni) below 32px; avoid ultra-light weights for reading text.
+- Devanagari fonts: Unicode only, OFL (Google Fonts). Display: Tiro Devanagari Hindi, Noto Serif Devanagari,
+  Laila, Rozha One, Sura (Eczar, Kurale and Amita are BANNED: they render र्य as र्‍य, wrong for Nepali). Body: Mukta, Noto Sans Devanagari,
+  Noto Serif Devanagari, Martel. (Hind is banned for Nepali: it draws Devanagari digits as Latin numerals.) Never letter-space or uppercase Devanagari. Test every Nepali screen.
+  (The anepali.com "Durga Lal Shrestha" font is Preeti-encoded and unlicensed for web — do not use.)
+- **"When is what" must be instantly clear.** Every theme has one calm, scannable programme: per ceremony —
+  name (large), weekday + date (AD and B.S.), time, venue with a map link, dress note. One glance = the guest knows
+  where to be and when. No text-heavy screens.
+
+**Colour:** warm ivory *textured paper* (like the references) is allowed again when it has real paper/emboss texture
+and high-contrast ink. Flat, muddy beige backgrounds are still not allowed.
+
+**Daytime and realism:** no dark/horror moods for ceremonies; ceremonies are bright and warm (morning/golden hour).
+3D must look real (PBR materials, real textures, soft daylight, realistic vegetation); 2D characters must have
+every joint connected in every frame.
+
+## 12. B.S. dates — use the shared converter
+
+`bsDateOf(iso, event.dateBS)` from `src/core/i18n.js` returns the verified Bikram Sambat date in Nepal time:
+`{ en: 'Friday, 29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ माघ २९ गते, शुक्रबार', short: { en, ne } }`
+(library: nepali-date-converter, MIT). Show it for **every** ceremony next to the AD date. An event's optional
+`dateBS` override wins (for families matching their priest's patro). Do not hand-compute B.S. dates.
