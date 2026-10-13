@@ -16,6 +16,8 @@ import * as T from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
 
 const ASSETS = `${import.meta.env?.BASE_URL ?? '/'}themes/mandap/`;
 const PLAT = 0.222; // top of the raised platform (jagge)
@@ -671,9 +673,84 @@ function top4(entries) {
   return list.map(([b, w]) => [b, w / sum]);
 }
 
+/**
+ * Retarget a clip from the animation library's skeleton onto a figure with different proportions
+ * and rest pose. Each bone takes the source bone's change of world rotation from its rest pose;
+ * limb bones are then swung so they point the same way as the source limb (this removes the
+ * A-pose/T-pose difference). Sampled at 30 fps.
+ */
+function retargetClip(clip, srcScene, fig) {
+  const src = srcScene.clone(true);
+  const sb = new Map();
+  src.traverse((o) => { if (o.name) sb.set(o.name.toLowerCase(), o); });
+  src.updateMatrixWorld(true);
+  const tb = fig.bones;
+  const order = [];
+  const visit = (b) => { if (tb.includes(b)) order.push(b); b.children.forEach(visit); };
+  visit(tb[0].parent);
+  const q = () => new T.Quaternion();
+  const srcRest = new Map(), tgtRest = new Map();
+  for (const [n, o] of sb) srcRest.set(n, o.getWorldQuaternion(q()));
+  fig.root.updateMatrixWorld(true);
+  for (const b of tb) tgtRest.set(b, b.getWorldQuaternion(q()));
+  const parentRest = tb[0].parent.getWorldQuaternion(q());
+  const chain = { clavicle_l: 'upperarm_l', clavicle_r: 'upperarm_r', upperarm_l: 'lowerarm_l', upperarm_r: 'lowerarm_r', lowerarm_l: 'hand_l', lowerarm_r: 'hand_r', thigh_l: 'calf_l', thigh_r: 'calf_r', calf_l: 'foot_l', calf_r: 'foot_r', foot_l: 'ball_l', foot_r: 'ball_r', hand_l: 'middle_01_l', hand_r: 'middle_01_r' };
+  const childOf = (b, n) => b.children.find((c) => c.name.toLowerCase() === n);
+  const mixer = new T.AnimationMixer(src);
+  mixer.clipAction(clip).play();
+  const fps = 30;
+  const frames = Math.max(2, Math.round(clip.duration * fps) + 1);
+  const times = new Float32Array(frames);
+  const values = new Map(order.map((b) => [b, new Float32Array(frames * 4)]));
+  const pelvisPos = new Float32Array(frames * 3);
+  const sPel = sb.get('pelvis'), tPel = fig.bone.pelvis;
+  const sPelRest = sPel.getWorldPosition(V3());
+  const tPelRest = tPel.getWorldPosition(V3());
+  const ratio = tPelRest.y / Math.max(0.01, sPelRest.y);
+  const world = new Map();
+  const wp = V3(), wc = V3(), dS = V3(), dT = V3();
+  for (let f = 0; f < frames; f++) {
+    const t = Math.min(clip.duration, f / fps);
+    times[f] = t;
+    mixer.setTime(t);
+    src.updateMatrixWorld(true);
+    world.clear();
+    for (const b of order) {
+      const n = b.name.toLowerCase();
+      const s = sb.get(n);
+      const parentW = world.get(b.parent) || parentRest;
+      let qW;
+      if (s) {
+        qW = s.getWorldQuaternion(q()).multiply(srcRest.get(n).clone().invert()).multiply(tgtRest.get(b));
+        const cn = chain[n];
+        const sc = cn && sb.get(cn);
+        const tc = cn && childOf(b, cn);
+        if (sc && tc) {
+          s.getWorldPosition(wp); sc.getWorldPosition(wc);
+          dS.subVectors(wc, wp).normalize();
+          dT.copy(tc.position).normalize().applyQuaternion(qW);
+          qW = q().setFromUnitVectors(dT, dS).multiply(qW);
+        }
+      } else {
+        qW = parentW.clone().multiply(fig.rest.get(b));
+      }
+      world.set(b, qW);
+      const local = parentW.clone().invert().multiply(qW);
+      values.get(b).set([local.x, local.y, local.z, local.w], f * 4);
+    }
+    // Pelvis: the source's travel from its rest, scaled to this body, in the pelvis parent's frame.
+    const d = sPel.getWorldPosition(V3()).sub(sPelRest).multiplyScalar(ratio);
+    const lp = tPel.parent.worldToLocal(tPelRest.clone().add(d));
+    pelvisPos.set([lp.x, lp.y, lp.z], f * 3);
+  }
+  const tracks = order.map((b) => new T.QuaternionKeyframeTrack(`${b.name}.quaternion`, times, values.get(b)));
+  tracks.push(new T.VectorKeyframeTrack(`${tPel.name}.position`, times, pelvisPos));
+  return new T.AnimationClip(clip.name, clip.duration, tracks);
+}
+
 /** One of the couple: a rigged body, re-dressed in code, with walk/idle blending and arm IK. */
 class Figure {
-  constructor(gltf, clips, kind, mobile) {
+  constructor(gltf, anims, kind, mobile) {
     this.kind = kind;
     this.mobile = mobile;
     this.root = new T.Group();
@@ -682,10 +759,16 @@ class Figure {
     src.updateMatrixWorld(true);
     const meshes = [];
     src.traverse((o) => { if (o.isSkinnedMesh) meshes.push(o); });
-    const bodyMesh = meshes.find((m) => /hero/i.test(m.name));
+    // The body is the largest skinned mesh; the others are eyes, brows, lashes and hair.
+    const bodyMesh = meshes.reduce((a, m) => (m.geometry.attributes.position.count > a.geometry.attributes.position.count ? m : a));
     this.bones = bodyMesh.skeleton.bones;
+    // MakeHuman (MPFB) exports: realistic skin, eyes and hair. Older stylised bodies get smoothing.
+    this.realistic = this.bones.some((b) => b.name === 'head');
     const armature = this.bones[0].parent;
-    this.bone = Object.fromEntries(Object.entries(B).map(([k, n]) => [k, this.bones.find((b) => b.name === n)]));
+    const find = (n) => this.bones.find((b) => b.name.toLowerCase() === n.toLowerCase());
+    this.bone = Object.fromEntries(Object.entries(B).map(([k, n]) => [k, find(n)]));
+    this.findBone = find;
+    this.srcMats = Object.fromEntries(meshes.map((m) => [m.name, m.material]));
     // Bake every skinned part into rest-space geometry and share one fresh skeleton.
     const baked = Object.fromEntries(meshes.map((m) => [m.name, bakeSkinned(m)]));
     meshes.forEach((m) => m.removeFromParent());
@@ -697,28 +780,35 @@ class Figure {
     // The skeleton's bind pose is taken after prep(), which may move the shoulder joints.
     this.root.updateMatrixWorld(true);
     this.skeleton = new T.Skeleton(this.bones);
-    this.mats = this.materials();
+    this.mats = this.materials(bodyMesh.material);
     this.attach(this.body, this.mats.skin, 'body');
-    const hairMesh = meshes.find((m) => /hair/i.test(m.name));
-    if (hairMesh) this.hair = this.attach(baked[hairMesh.name], this.mats.hair, 'hair');
-    if (this.hair && kind === 'bride') this.hair.visible = false; // under the ghumto; its dark fringe read as a strip across the face
-    // Eyes and brows are left out on purpose: calm, featureless faces.
+    const role = (m) => (m === bodyMesh ? 'body' : /eyebrow/i.test(m.name) ? 'brows' : /eyelash/i.test(m.name) ? 'lashes' : /high-poly|low-poly|eye/i.test(m.name) ? 'eyes' : 'hair');
+    for (const m of meshes) {
+      const r = role(m);
+      if (r === 'body') continue;
+      if (!this.realistic && r !== 'hair') continue; // stylised bodies: calm, featureless faces
+      const mat = r === 'hair' ? this.mats.hair : this.cardMaterial(m.material, r);
+      const mesh = this.attach(baked[m.name], mat, r);
+      if (r === 'hair') this.hair = mesh;
+    }
+    if (this.hair && kind === 'bride' && !this.realistic) this.hair.visible = false;
     if (kind === 'bride') this.dressBride(); else this.dressGroom();
     this.buildMarkers();
     this.root.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = !mobile; } });
 
     // Animation: walk and idle, blended by speed; the walk phase follows distance travelled.
     this.mixer = new T.AnimationMixer(this.root);
+    const clips = anims.animations;
     const clean = (c) => new T.AnimationClip(c.name, c.duration, c.tracks.filter((t) => /\.quaternion$/.test(t.name) || t.name === 'pelvis.position'));
-    const get = (n) => clean(clips.find((c) => c.name === n));
+    const get = (n) => (this.realistic ? retargetClip(clean(clips.find((c) => c.name === n)), anims.scene, this) : clean(clips.find((c) => c.name === n)));
     this.walk = this.mixer.clipAction(get('Walk_Formal_Loop'));
     this.idle = this.mixer.clipAction(get('Idle_Loop'));
     [this.walk, this.idle].forEach((a) => { a.play(); a.setEffectiveWeight(0); });
     this.walkW = 0;
     this.dist = 0;
-    this.stride = kind === 'bride' ? 0.66 : 1.12; // metres per walk cycle at this scale
+    this.stride = kind === 'bride' ? 0.7 : 1.15; // metres per walk cycle at this scale
     this.last = null;
-    this.scale = kind === 'bride' ? 0.9 : 0.94;
+    this.scale = this.realistic ? (kind === 'bride' ? 1.0 : 1.0) : kind === 'bride' ? 0.9 : 0.94;
     this.root.scale.setScalar(this.scale);
     this.ik = { L: null, R: null };
     this.bow = 0;
@@ -731,7 +821,7 @@ class Figure {
     const P = g.attributes.position.array;
     const SI = g.attributes.skinIndex.array, SW = g.attributes.skinWeight.array;
     const n = P.length / 3;
-    const idx = (name) => this.bones.findIndex((b) => b.name === name);
+    const idx = (name) => this.bones.findIndex((b) => b.name.toLowerCase() === name.toLowerCase());
     const groups = {
       head: ['Head'], neck: ['neck_01'], torso: ['spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'], pelvis: ['pelvis'],
       ua: ['upperarm_l', 'upperarm_r'], la: ['lowerarm_l', 'lowerarm_r'], hand: this.bones.filter((b) => /hand_|index|middle|ring|pinky|thumb/.test(b.name)).map((b) => b.name),
@@ -749,11 +839,11 @@ class Figure {
     this.boneIndex = idx;
     const wp = (b) => b.getWorldPosition(V3());
     this.restPos = Object.fromEntries(Object.entries(this.bone).map(([k, b]) => [k, wp(b)]));
-    if (this.kind === 'groom') {
+    if (this.kind === 'groom' && !this.realistic) {
       this.narrowShoulders(0.032);
       this.restPos = Object.fromEntries(Object.entries(this.bone).map(([k, b]) => [k, wp(b)]));
     }
-    this.slim();
+    if (!this.realistic) this.slim();
     this.grid = new Grid(P, 0.035);
     // Head ellipsoid from head-weighted vertices.
     const box = new T.Box3();
@@ -761,7 +851,7 @@ class Figure {
     this.headBox = box;
     this.height = 0;
     for (let i = 0; i < n; i++) this.height = Math.max(this.height, P[i * 3 + 1]);
-    this.softenFace();
+    if (!this.realistic) this.softenFace();
   }
 
   /** Brings the shoulder joints and the arms in toward the spine (with the skin around them). */
@@ -865,10 +955,26 @@ class Figure {
     for (let i = 0; i < n; i++) if (wgt[i] < 0.02) { Nn[i * 3] = old[i * 3]; Nn[i * 3 + 1] = old[i * 3 + 1]; Nn[i * 3 + 2] = old[i * 3 + 2]; }
   }
 
-  materials() {
+  materials(src) {
+    if (this.realistic && src?.map) {
+      // The MakeHuman skin texture, with a soft sheen for living skin in daylight; the groom's is
+      // warmed toward the bride's tone.
+      const skin = new T.MeshPhysicalMaterial({ map: src.map, color: this.kind === 'groom' ? '#d8b49b' : '#ffffff', roughness: 0.55, sheen: 0.3, sheenColor: new T.Color('#ffc4a0'), sheenRoughness: 0.7 });
+      const hairSrc = Object.values(this.srcMats).find((m) => m !== src && /braid|short|bob|long|pony|hair/i.test(m.name));
+      const hair = new T.MeshStandardMaterial({ map: hairSrc?.map || null, color: '#2a1d18', roughness: 0.5, alphaTest: 0.45, transparent: false, side: T.DoubleSide });
+      return { skin, hair };
+    }
     const skin = new T.MeshPhysicalMaterial({ color: this.kind === 'bride' ? '#b27d5a' : '#9c6748', roughness: 0.5, sheen: 0.35, sheenColor: new T.Color('#ffb48a'), sheenRoughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5 });
     const hair = new T.MeshStandardMaterial({ color: '#16100e', roughness: 0.42 });
     return { skin, hair };
+  }
+
+  /** Eyes, brows and lashes keep their own textures; brows and lashes are cut-outs. */
+  cardMaterial(m, role) {
+    const mat = m.clone();
+    if (role === 'brows' || role === 'lashes') { mat.alphaTest = 0.5; mat.transparent = false; mat.depthWrite = true; mat.side = T.DoubleSide; }
+    if (role === 'eyes') { mat.transparent = false; mat.roughness = 0.2; }
+    return mat;
   }
 
   /** A garment from a body region: offset shell, relaxed so it drapes over the muscles, kept off the skin. */
@@ -1045,7 +1151,7 @@ class Figure {
     this.garment(legs, ivory2, 'suruwal', { iters: 8, clear: 0.01 });
     // Daura: long sleeves and a fitted body that continues as a skirt to the knee.
     const daura = this.region((i, x, y) => ((W.torso[i] + W.ua[i] + W.la[i] + W.pelvis[i] * (y > hipY ? 1 : 0) + W.neck[i] * 0.4 > 0.55) && W.hand[i] < 0.25 && y > hipY - 0.02 && y < this.restPos.neck.y + 0.02 ? 0.01 + W.la[i] * 0.006 : -1));
-    const dauraM = this.garment(daura, ivory, 'daura', { iters: 20, clear: 0.02 });
+    const dauraM = this.garment(daura, ivory, 'daura', { iters: 20, clear: this.realistic ? 0.026 : 0.02 });
     const kneeY = this.restPos.caL.y + 0.05;
     const dSkirt = this.skirt({ yTop: hipY + 0.06, yBot: kneeY, margin: 0.032, flare: 0.05, rows: 14, seg: 56, legInfluence: 0.5, material: ivory });
     const dSkirtM = this.attach(dSkirt.geometry, ivory, 'daura-skirt');
@@ -1081,19 +1187,19 @@ class Figure {
   /** Dhaka topi: a tall, slightly asymmetric cap that sits forward on the head. */
   buildTopi() {
     const hb = this.headBox;
-    const yB = hb.max.y - 0.085;
+    const yB = hb.max.y - (this.realistic ? 0.1 : 0.085);
     const s = this.section(yB, 0.012, []);
     const hairPos = this.hair?.geometry.attributes.position.array;
     let rx = s.rx, rz = s.rz;
     if (hairPos) {
-      for (let i = 0; i < hairPos.length / 3; i++) if (Math.abs(hairPos[i * 3 + 1] - yB) < 0.015) {
+      for (let i = 0; i < hairPos.length / 3; i++) if (hairPos[i * 3 + 1] > yB - 0.01) {
         rx = Math.max(rx, Math.abs(hairPos[i * 3] - s.cx)); rz = Math.max(rz, Math.abs(hairPos[i * 3 + 2] - s.cz));
       }
     }
-    rx += 0.008; rz += 0.008;
+    rx += this.realistic ? 0.012 : 0.008; rz += this.realistic ? 0.012 : 0.008;
     const seg = 48, rows = 6;
     const pos = [], uv = [], idx = [];
-    const heightAt = (a) => 0.1 + 0.03 * Math.cos(a - 0.5) ; // taller toward the front-left
+    const heightAt = (a) => (this.realistic ? 0.088 : 0.1) + 0.028 * Math.cos(a - 0.5); // taller toward the front-left
     for (let r = 0; r <= rows; r++) {
       const t = r / rows;
       for (let c = 0; c <= seg; c++) {
@@ -1583,16 +1689,39 @@ export class MandapView {
     const assets = loadAssets();
     const s = this.scene;
     const mobile = this.mobile;
-    s.background = new T.Color('#06050b');
-    s.fog = new T.FogExp2('#08060c', 0.045);
+    // A bright garden morning: CC0 HDRI (Poly Haven "Eilenriede Park") for sky, lawn and light.
+    s.background = new T.Color('#cfd9e3');
+    s.fog = new T.Fog('#dfe4e6', 30, 90);
+    this.envReady = new RGBELoader().loadAsync(`${ASSETS}env/garden_1k.hdr`).then((hdr) => {
+      hdr.mapping = T.EquirectangularReflectionMapping;
+      this.hdr = hdr;
+      const sky = new GroundedSkybox(hdr, 2.2, 60);
+      sky.position.y = 2.2 - 0.01;
+      sky.material.fog = false;
+      s.add(sky);
+      s.environment = hdr;
+      s.environmentIntensity = 0.9;
+    }).catch((e) => console.warn('HDRI unavailable', e));
     const brass = new T.MeshStandardMaterial({ color: '#c9963f', metalness: 1, roughness: 0.28 });
     this.brass = brass;
     const wood = new T.MeshStandardMaterial({ color: '#3f1e10', roughness: 0.5, metalness: 0.05 });
     this.flames = [];
 
     // Courtyard, platform, steps, rangoli
-    const ground = new T.Mesh(new T.PlaneGeometry(80, 80), new T.MeshStandardMaterial({ map: brickTex(), roughness: 0.92, color: '#8a6a60' }));
+    // Brick paving (CC0 Poly Haven "Brick Villa Floor") whose edge melts into the lawn.
+    const tl = new T.TextureLoader();
+    const tex = (n, srgb) => { const t = tl.load(`${ASSETS}env/brick_${n}.jpg`); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(9, 9); t.anisotropy = 8; if (srgb) t.colorSpace = T.SRGBColorSpace; return t; };
+    const fade = canvasTex(256, 256, (g, w) => {
+      const r = g.createRadialGradient(w / 2, w / 2, w * 0.36, w / 2, w / 2, w / 2);
+      r.addColorStop(0, '#fff'); r.addColorStop(1, '#000');
+      g.fillStyle = r; g.fillRect(0, 0, w, w);
+    }, null, false);
+    const ground = new T.Mesh(new T.CircleGeometry(16, 96), new T.MeshStandardMaterial({
+      map: tex('diff', true), normalMap: tex('nor_gl'), roughnessMap: tex('rough'), color: '#d9b49a', roughness: 1,
+      alphaMap: fade, transparent: true, depthWrite: true,
+    }));
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0.002;
     ground.receiveShadow = true;
     s.add(ground);
     const plat = new T.Mesh(new T.CylinderGeometry(3.1, 3.2, PLAT, 96), new T.MeshStandardMaterial({ color: '#3a0a12', roughness: 0.8 }));
@@ -1683,7 +1812,7 @@ export class MandapView {
     s.add(canopy);
 
     // Hanging marigold strands overhead: the camera cranes down through them.
-    const strands = mobile ? 36 : 84;
+    const strands = 0; // overhead strands belonged to the night version
     for (let i = 0; i < strands; i++) {
       let x, z;
       do { x = (rand() - 0.5) * 13; z = -5 + rand() * 17; } while (Math.hypot(x, z - 8.4) < 0.9 || (Math.abs(x) < 2.2 && Math.abs(z) < 2.2));
@@ -1760,6 +1889,7 @@ export class MandapView {
     bg.setAttribute('aSeed', new T.Float32BufferAttribute(bs, 2));
     this.bokeh = new T.Points(bg, new T.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uPR: { value: this.pr } }, vertexShader: bokehVert, fragmentShader: bokehFrag, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
     this.bokeh.frustumCulled = false;
+    this.bokeh.visible = false;
     s.add(this.bokeh);
     const SN = mobile ? 500 : 1100;
     const sp = new Float32Array(SN * 3);
@@ -1774,6 +1904,7 @@ export class MandapView {
     sg.setAttribute('aSeed', new T.Float32BufferAttribute(ss, 2));
     this.stars = new T.Points(sg, new T.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uPR: { value: this.pr } }, vertexShader: starVert, fragmentShader: starFrag, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
     this.stars.frustumCulled = false;
+    this.stars.visible = false;
     s.add(this.stars);
 
     // Seven diyos in an arc at the front of the platform
@@ -1803,25 +1934,25 @@ export class MandapView {
     });
 
     // Light
-    this.hemi = new T.HemisphereLight(0x8a90c8, 0x2a0c08, 0.32);
+    // Soft sky fill until the HDRI arrives, a warm morning sun with soft shadows, and the fire.
+    this.hemi = new T.HemisphereLight(0xdfeaf6, 0x9c7a5a, 0.6);
     s.add(this.hemi);
-    this.fireLight = new T.PointLight(0xff8a2a, 8, 12, 1.5);
+    this.envReady?.then(() => { this.hemi.intensity = 0.15; });
+    this.fireLight = new T.PointLight(0xff9a40, 2.5, 5, 2);
     this.fireLight.position.set(0, 1.1, 0);
     s.add(this.fireLight);
-    this.moon = new T.DirectionalLight(0x9aa6ff, 0.55);
-    this.moon.position.set(-5, 9, -6);
+    this.moon = new T.DirectionalLight(0xfff0d8, 2.6); // the sun (kept as .moon for the shadow code)
+    this.moon.position.set(6, 9, 7);
     this.moon.castShadow = !mobile;
     if (this.moon.castShadow) {
-      this.moon.shadow.mapSize.set(1024, 1024);
-      Object.assign(this.moon.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 24 });
-      this.moon.shadow.bias = -0.0006;
+      this.moon.shadow.mapSize.set(2048, 2048);
+      Object.assign(this.moon.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 30 });
+      this.moon.shadow.bias = -0.0004;
       this.moon.shadow.normalBias = 0.02;
+      this.moon.shadow.radius = 3;
     }
     s.add(this.moon);
-    this.key = new T.SpotLight(0xffd2a0, 18, 16, 0.45, 0.8, 1.4);
-    this.key.position.set(2.5, 6.5, 6.5);
-    this.key.target.position.set(0, 1, 0.8);
-    s.add(this.key, this.key.target);
+    this.key = new T.SpotLight(0xffffff, 0, 1);
     // A warm movable lantern light for the theme's stations (frames, plaques).
     this.lantern = new T.PointLight(0xffb366, 0, 4.5, 1.6);
     s.add(this.lantern);
@@ -1829,8 +1960,8 @@ export class MandapView {
     // The couple
     const [bride, groom, anims] = await assets;
     const t0 = performance.now();
-    this.bride = new Figure(bride, anims.animations, 'bride', mobile);
-    this.groom = new Figure(groom, anims.animations, 'groom', mobile);
+    this.bride = new Figure(bride, anims, 'bride', mobile);
+    this.groom = new Figure(groom, anims, 'groom', mobile);
     this.dressMs = Math.round(performance.now() - t0);
     s.add(this.bride.root, this.groom.root);
     const blob = new T.MeshBasicMaterial({ map: blobTex(), transparent: true, depthWrite: false, color: '#000', opacity: 0.85 });
@@ -1845,7 +1976,7 @@ export class MandapView {
     this.malaB = new Mala(64, 0.03, [new T.Color('#f6e7c8'), new T.Color('#f39318'), new T.Color('#e2650f'), new T.Color('#ffb52a')]);
     s.add(this.malaA.mesh, this.malaB.mesh);
     // Ganthbandhan
-    this.tie = new Ribbon(new T.MeshPhysicalMaterial({ color: '#f0d9a0', roughness: 0.6, sheen: 1, sheenColor: new T.Color('#fff2c0'), side: T.DoubleSide }));
+    this.tie = new Ribbon(new T.MeshPhysicalMaterial({ color: '#d9a441', roughness: 0.55, sheen: 1, sheenColor: new T.Color('#fff2c0'), side: T.DoubleSide }), 26, 0.035);
     s.add(this.tie.mesh);
 
     // Sindoor: a puff of vermilion
@@ -1869,6 +2000,7 @@ export class MandapView {
     this.sindoor.frustumCulled = false;
     s.add(this.sindoor);
 
+    await this.envReady;
     this.ready = true;
   }
 
@@ -1986,7 +2118,7 @@ export class MandapView {
         const reach = Math.sin(Math.PI * clamp01((sp - 0.28) / 0.4));
         const parting = br.sindoorLine.getWorldPosition(V3());
         const toGroom = gr.at('shR').sub(parting).normalize();
-        gr.ik.R = { p: parting.clone().addScaledVector(toGroom, 0.08).add(V3(0, 0.075, 0)), w: reach, pole: gr.side(-0.6, 0.9, -0.2) };
+        gr.ik.R = { p: parting.clone().addScaledVector(toGroom, 0.075).add(V3(0, -0.015, 0)), w: reach, pole: gr.side(-0.6, 0.9, -0.2) };
         const pote = Math.sin(Math.PI * clamp01((sp - 0.66) / 0.3));
         if (pote > 0) {
           // Both hands at the sides of her neck, fastening the pote.
@@ -2021,7 +2153,7 @@ export class MandapView {
     if (showTie) {
       const a = gr.sashLocal.getWorldPosition(V3());
       const b = br.sashLocal.getWorldPosition(V3());
-      this.tie.update(a, b, 0.12 + 0.1 * Math.max(0, 0.9 - a.distanceTo(b)), time);
+      this.tie.update(a, b, 0.2 + 0.12 * Math.max(0, 0.9 - a.distanceTo(b)), time);
     }
 
     // Contact shadows
@@ -2051,8 +2183,8 @@ export class MandapView {
     for (const l of this.lamps) { l.userData.glow.quaternion.copy(cam.quaternion); this.faceY(l.userData.flame, l); }
     for (const d of this.diyos) { d.userData.glow.quaternion.copy(cam.quaternion); this.faceY(d.userData.flame, d); }
     const flick = Math.sin(time * 9.3) * 0.8 + Math.sin(time * 23.1) * 0.6 + Math.sin(time * 4.1) * 0.7;
-    this.fireLight.intensity = 8 + flick * 0.8;
-    this.pathLights.forEach((L, k) => { L.intensity = 3.2 + Math.sin(time * 7 + k * 2) * 0.25; });
+    this.fireLight.intensity = 2.5 + flick * 0.3;
+    this.pathLights.forEach((L, k) => { L.intensity = 0.6 + Math.sin(time * 7 + k * 2) * 0.05; });
     this.embers.material.uniforms.uTime.value = time;
     this.bokeh.material.uniforms.uTime.value = time;
     this.stars.material.uniforms.uTime.value = time;

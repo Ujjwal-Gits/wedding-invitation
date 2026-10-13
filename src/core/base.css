@@ -22,7 +22,7 @@
   --f-display-weight: 500;
   --f-names: 'Pinyon Script', cursive;
   --names-scale: 1;
-  --f-deva: 'Tiro Devanagari Hindi', 'Mukta', serif;
+  --f-deva: 'Tiro Devanagari Hindi', 'Mukta', 'Noto Serif Devanagari', 'Martel', 'Laila', 'Noto Sans Devanagari', serif;
   --f-deva-display: 'Tiro Devanagari Hindi', serif;
   --f-body: 'Mukta', 'Segoe UI', sans-serif;
   --eyebrow-track: 0.32em;

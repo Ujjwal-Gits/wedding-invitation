@@ -1,5 +1,8 @@
 // Escaping, bilingual markup, Nepal-time dates and the language switch.
+import * as NepaliDateModule from 'nepali-date-converter';
+
 const TZ = 'Asia/Kathmandu';
+const NepaliDate = NepaliDateModule.default?.default || NepaliDateModule.default;
 
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -35,6 +38,22 @@ export const dateOf = (iso) => {
     ne: `${NE_DAYS[p.wd]}, ${NE_MONTHS[p.m]} ${neNum(p.day)}, ${neNum(p.y)}`,
   };
 };
+/**
+ * Bikram Sambat date of an ISO date-time (in Nepal time), e.g.
+ * { en: 'Friday, 29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ माघ २९ गते, शुक्रबार', short: { en: '29 Magh 2083', ne: 'माघ २९, २०८३' } }.
+ * An event's own `dateBS` ({en, ne}) always wins, so a family can match their priest's patro exactly.
+ */
+export const bsDateOf = (iso, override) => {
+  if (override && (override.en || override.ne)) return { ...override, short: override };
+  const p = npt(iso);
+  const n = new NepaliDate(new Date(p.y, p.m, p.day, 12));
+  return {
+    en: `${n.format('ddd')}, ${Number(n.format('D'))} ${n.format('MMMM')} ${n.format('YYYY')} B.S.`,
+    ne: `वि.सं. ${n.format('YYYY', 'np')} ${n.format('MMMM', 'np')} ${n.format('D', 'np')} गते, ${n.format('ddd', 'np')}`,
+    short: { en: `${Number(n.format('D'))} ${n.format('MMMM')} ${n.format('YYYY')}`, ne: `${n.format('MMMM', 'np')} ${n.format('D', 'np')}, ${n.format('YYYY', 'np')}` },
+  };
+};
+
 export const shortDate = (iso) => {
   const p = npt(iso);
   return { en: fmt(iso, { day: 'numeric', month: 'short' }), ne: `${NE_MONTHS[p.m]} ${neNum(p.day)}` };
