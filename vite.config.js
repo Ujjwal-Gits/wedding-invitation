@@ -41,5 +41,14 @@ export default defineConfig({
       '/uploads': 'http://localhost:8787',
     },
   },
+  // `vite preview` (the built site) needs the same forwarding, or the studio cannot reach the API.
+  preview: {
+    port: 4173,
+    strictPort: true,
+    proxy: {
+      '/api': 'http://localhost:8787',
+      '/uploads': 'http://localhost:8787',
+    },
+  },
   build: { target: 'es2022', assetsInlineLimit: 0, chunkSizeWarningLimit: 700, rollupOptions: { input: pages } },
 });
