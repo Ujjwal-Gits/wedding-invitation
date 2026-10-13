@@ -58,7 +58,7 @@ With `prefers-reduced-motion`, pages stack, nothing is pinned and every scene sh
 - `chitra.css`: tokens and layout. The page frame and cover border are a hand-drawn SVG `border-image`.
 - `lab.js`: the character sheet (`?lab`).
 
-Type: Rozha One (display, Latin + Devanagari) and Martel Sans (body, Latin + Devanagari).
+Type: Rozha One (display) and Mukta (body), both Latin + Devanagari OFL. Body is 17px+ (Nepali 18px+, line-height 1.75).
 Devanagari is never letter-spaced or uppercased.
 
 ## Studio slots (`slots.js`)

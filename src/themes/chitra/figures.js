@@ -168,9 +168,17 @@ class Figure {
       const ex = sx - Math.sin(up / RAD) * L1, ey = sy + Math.cos(up / RAD) * L1;
       return { up, ey, fore: angOf(sx + dx - ex, sy + dy - ey) - up };
     };
+    // An elbow only flexes forward (negative relative rotation). Reject the solution
+    // that would bend the arm backwards; prefer the requested side, else the lower elbow.
+    const norm = (v) => { while (v > 180) v -= 360; while (v < -180) v += 360; return v; };
+    const r1 = solve(1), r2 = solve(-1);
+    r1.fore = norm(r1.fore); r2.fore = norm(r2.fore);
+    const ok1 = r1.fore <= 4, ok2 = r2.fore <= 4;
     let r;
-    if (bend) r = solve(bend);
-    else { const r1 = solve(1), r2 = solve(-1); r = r1.ey >= r2.ey ? r1 : r2; } // elbow hangs low
+    if (ok1 && !ok2) r = r1;
+    else if (ok2 && !ok1) r = r2;
+    else if (bend) r = bend > 0 ? r1 : r2;
+    else r = r1.ey >= r2.ey ? r1 : r2;
     let fore = r.fore;
     while (fore > 180) fore -= 360;
     while (fore < -180) fore += 360;
@@ -606,20 +614,21 @@ export function play(fig, t) {
 export function dance(fig, t, ph = 0, k = 1) {
   const w = t * TAU * 0.32 + ph;          // one slow phrase every ~3 s
   const s = Math.sin(w), c = Math.cos(w);
-  const m = 0.5 - 0.5 * Math.cos(w);      // eased 0→1→0 (rests at both ends)
+  const m = 0.5 - 0.5 * Math.cos(w);      // eased 0→1→0, resting at both ends
   const R = fig.dims.upper - 3 + fig.dims.fore + 7;
-  const at = (side, ox, oy) => { const [x, y] = fig.at[`arm${side}`]; fig.reach(side, x + ox * R, y + oy * R); };
-  // weight shifts from foot to foot with a small step, hips sway
+  const at = (side, ox, oy) => { const [x, y] = fig.at[`arm${side}`]; fig.reach(side, x + ox * R, y + oy * R, 1); };
+  // weight shifts from foot to foot with a small step; the hips sway with it
   fig.walk(w / TAU, 0.22 * k, false);
-  fig.pose.bob = -2.2 * Math.abs(s) * k;
-  fig.pose.lean = (fig.rest.lean || 0) + 2.6 * s * k;
-  // arms: front hand travels from chest height up to eye level in an arc; back hand answers behind
-  at('F', 0.6 + 0.04 * m, 0.04 - 0.46 * m);
-  at('B', -0.5 - 0.1 * (1 - m), 0.3 - 0.4 * (1 - m));
-  // wrists turn (the hasta flourish), head follows the front hand
-  fig.pose.handF = -30 + 40 * m;
-  fig.pose.handB = 20 - 30 * (1 - m);
-  fig.pose.head = (fig.rest.head || 0) - 4 * m * k + 2;
+  fig.pose.bob = -2 * Math.abs(s) * k;
+  fig.pose.lean = (fig.rest.lean || 0) + 2.4 * s * k;
+  // both hands stay in front of the body, as in Nepali couple dances: one hand rises
+  // from the chest to the brow while the other settles to the waist, then they trade.
+  at('F', 0.6 - 0.06 * m, 0.16 - 0.52 * m);
+  at('B', 0.44 + 0.06 * m, -0.3 + 0.52 * m);
+  // soft wrist turns (the hasta), never past a natural range
+  fig.pose.handF = -18 + 30 * m;
+  fig.pose.handB = 12 - 30 * m;
+  fig.pose.head = (fig.rest.head || 0) + 2 - 4 * m * k;
   return fig.apply();
 }
 

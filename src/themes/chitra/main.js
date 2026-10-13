@@ -68,6 +68,13 @@ async function start() {
       ${extra}
     </div>`;
 
+  // Verified Bikram Sambat date (shared converter); an event's own dateBS wins.
+  const bsOf = (iso) => {
+    const e = events.find((x) => x.start === iso);
+    const b = i18n.bsDateOf(iso, e?.dateBS);
+    if (e?.dateBS && (e.dateBS.en || e.dateBS.ne)) return e.dateBS;
+    return { en: `${b.short.en} B.S.`, ne: `वि.सं. ${b.short.ne}` };
+  };
   const jantiR = ritual(/janti/i), swayR = ritual(/swayamb/i), fireR = ritual(/saptapadi|kanyadan|sindoor/i);
   const wDate = wedding ? bi(dateOf(wedding.start)) : '';
   const tl = (r) => (r ? `${bi(timeLabel(r))}` : '');
@@ -97,14 +104,18 @@ async function start() {
     <div class="days">
       <p class="days__kicker">${T('days.title')}</p>
       <ol class="days__list">
-        ${events.map((e) => `
+        ${events.map((e) => {
+          const bs = bsOf(e.start);
+          return `
           <li class="day">
-            <p class="day__date"><b>${bi(dayNum(e.start))}</b><span>${bi(dateOf(e.start))}</span></p>
             <h3 class="day__title">${bi(e.title)}</h3>
+            <p class="day__date">${bi(dateOf(e.start))}</p>
+            ${bs ? `<p class="day__bs">${bi(bs)}</p>` : ''}
             <p class="day__meta">${bi(timeRange(e.start, e.end))}</p>
             <p class="day__meta">${venueLine(e)}</p>
             ${e.dress?.colors?.length ? `<p class="day__dress"><span class="day__sw" aria-hidden="true">${e.dress.colors.map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text || { en: 'Festive', ne: 'उत्सव' })}</p>` : ''}
-          </li>`).join('')}
+          </li>`;
+        }).join('')}
       </ol>
       <a class="days__cta btn" href="#rsvp">${T('days.cta')}</a>
     </div>`;

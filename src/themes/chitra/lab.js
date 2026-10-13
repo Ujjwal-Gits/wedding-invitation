@@ -11,7 +11,7 @@ export function lab() {
   const cast = {
     couple: () => [createGroom(), createBride(), createBride({ sindoor: true }), createGroom()],
     family: () => [createElder('father'), createElder('mother'), createElder('grandfather'), createElder('grandmother'), createPriest(), createGuest(0), createGuest(1), createGuest(2), createGuest(3), createGuest(4), createGuest(5)],
-    dance: () => [0, 1, 2, 3, 4, 5].flatMap((k) => [createGroom(), createBride({ mala: true })]),
+    dance: () => Array.from({ length: Number(q.get('n') || 12) }, () => [createGroom(), createBride({ mala: true })]).flat(),
     band: () => ['narsingha', 'shehnai', 'damaha', 'tyamko', 'dholaki', 'jhyali'].map((k) => createMusician(k)),
   }[set]();
   const n = cast.length;
@@ -23,7 +23,12 @@ export function lab() {
     const ph = q.get('walk');
     if (ph !== null) fig.walk(Number(ph) + i * 0.13, 1, fig.kind !== 'musician');
     if (fig.instrument) play(fig, Number(q.get('t') || 0));
-    if (set === 'dance') { fig.place(((Math.floor(i / 2) + 0.5) / 6) * 1600 + (i % 2 ? 62 : -62), 860, 1.0, i % 2 ? -1 : 1); dance(fig, Math.floor(i / 2) * 0.55, i % 2 ? Math.PI * 0.85 : 0); }
+    if (set === 'dance') {
+      const nn = Number(q.get('n') || 12), from = Number(q.get('from') || 0), f = Math.floor(i / 2);
+      const T = 1 / 0.32;                          // one full phrase
+      fig.place(((f + 0.5) / nn) * 1600, i % 2 ? 880 : 430, 1.1, i % 2 ? -1 : 1);
+      dance(fig, ((from + f) / 24) * T, i % 2 ? Math.PI * 0.85 : 0);
+    }
   });
   window.cast = cast;
 }

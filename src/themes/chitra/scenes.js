@@ -227,13 +227,14 @@ export function pherasScene({ onRound } = {}) {
   const md = M.mandap(CX, 800, 680, 520);
   const diyos = Array.from({ length: 7 }, (_, k) => M.diyo(CX + (k - 3) * 96, 958 - (k - 3) ** 2 * 5, 1.35, false, k)).join('');
   const art = `
-    <rect width="1600" height="1000" fill="#1d2850"/>
-    ${stars(5, 90, 0, 1600, 20, 700, (x, y) => x > 380 && x < 1220 && y > 150)}
-    ${M.moon(170, 160, 44)}
-    <rect x="-4" y="770" width="1608" height="234" fill="#5c2416"/>
-    <rect x="-4" y="770" width="1608" height="234" fill="url(#ch-floor)" opacity=".7"/>
+    <rect width="1600" height="1000" fill="#ffffff"/>
+    ${M.sun(1360, 190, 50)}
+    ${birds([[1180, 130, 0.8], [1230, 104, 0.6], [300, 240, 0.7]])}
+    ${M.tree(150, 772, 0.7, { bird: true, fruit: true })}
+    <rect x="-4" y="770" width="1608" height="234" fill="${PAL.turmeric}"/>
+    <rect x="-4" y="770" width="1608" height="234" fill="url(#ch-floor)" opacity=".8"/>
     ${M.borderBand(-4, 760, 1608, 14, 'ch-tri-sm')}
-    <ellipse cx="${CX}" cy="${CY + 6}" rx="${RX + 70}" ry="${RY + 36}" fill="#7a3019" stroke="${PAL.turmeric}" stroke-width="3" stroke-dasharray="0.1 9" stroke-linecap="round"/>
+    <ellipse cx="${CX}" cy="${CY + 6}" rx="${RX + 70}" ry="${RY + 36}" fill="#c4502a" stroke="#ffffff" stroke-width="3" stroke-dasharray="0.1 9" stroke-linecap="round"/>
     <ellipse cx="${CX}" cy="${CY + 6}" rx="${RX + 50}" ry="${RY + 24}" fill="none" stroke="${INK}" stroke-width="1.6"/>
     ${md.back}
     ${M.banana(md.x1 - 44, 800, 0.95)}${M.banana(md.x2 + 44, 800, 0.95, true)}
