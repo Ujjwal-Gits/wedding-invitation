@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl, photos } from '../../photos.js';
-import { bi, esc, dateOf, timeRange, mapUrl, biNodes, neNum, dayNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeRange, timeOf, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
@@ -40,14 +40,6 @@ const pic = (ref, alt = '', sizes = '50vw', extra = '') => {
   return `<img src="${esc(sm || lg)}"${set} alt="${esc(alt)}" style="object-position:${focalOf(ref)}" decoding="async" ${extra} />`;
 };
 const TZ = 'Asia/Kathmandu';
-/** "February · Tuesday" (en) / "फेब्रुअरी · मङ्गलबार" (ne) for a day header. */
-const monthDay = (iso) => {
-  const d = new Date(iso);
-  const en = `${new Intl.DateTimeFormat('en-GB', { timeZone: TZ, month: 'long' }).format(d)} · ${new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'long' }).format(d)}`;
-  const parts = dateOf(iso).ne.split(', ');
-  const ne = `${(parts[1] || '').replace(/[०-९\d\s]+$/, '').trim()} · ${parts[0] || ''}`;
-  return { en, ne };
-};
 const timeObj = (t) => (typeof t === 'string' ? { en: t, ne: neNum(t) } : t || { en: '', ne: '' });
 
 // Small hand-drawn marigold (vector, built here): rings of ruffled petals.
@@ -75,6 +67,20 @@ async function main() {
       return (v && typeof v === 'object' ? v[lang] ?? v.en : v) ?? '';
     });
     return { en: sub(t.en, 'en'), ne: sub(t.ne, 'ne') };
+  };
+  /** Bikram Sambat date beside the AD date (shared converter, contract §12; event.dateBS override wins). */
+  const bsOf = (e) => {
+    if (!e?.start) return null;
+    const b = bsDateOf(e.start, e.dateBS);
+    if (e.dateBS && (e.dateBS.en || e.dateBS.ne)) return { en: e.dateBS.en || e.dateBS.ne, ne: e.dateBS.ne || e.dateBS.en };
+    return { en: `${b.short.en} B.S.`, ne: `वि.सं. ${b.short.ne}` };
+  };
+  /** "Tue, 9 Feb" style short day for the programme overview. */
+  const shortDay = (iso) => {
+    const d = new Date(iso);
+    const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+    const ne = dateOf(iso).ne.split(', ').slice(0, 2).join(', ');
+    return { en, ne };
   };
   const reduced = reducedMotion() || params.has('still');
   const mobile = isMobile();
@@ -181,7 +187,14 @@ async function main() {
         <div class="sp-days__intro">
           <p class="sp-kicker">${bi(fill('days.kicker', { count: { en: ['One', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven'][events.length] || String(events.length), ne: neNum(events.length) } }))}</p>
           <h2 class="sp-days__title" id="days-title">${bi(txt('days.title'))}</h2>
-          <svg class="sp-bloom sp-days__bloom" aria-hidden="true"><use href="#sp-bloom"/></svg>
+          <ol class="sp-prog">
+            ${events.map((e, i) => `
+            <li><button type="button" class="sp-prog__row" data-panel="${i + 1}">
+              <span class="sp-prog__name">${bi(e.title)}</span>
+              <span class="sp-prog__day">${bi(shortDay(e.start))}</span>
+              <span class="sp-prog__time">${bi(timeOf(e.start))}</span>
+            </button></li>`).join('')}
+          </ol>
         </div>
         ${events.map((e, i) => {
           const tone = TONE[e.id] || TONES[i % TONES.length];
@@ -192,11 +205,13 @@ async function main() {
             ${main ? `<figure class="sp-photo sp-day__photo">${pic(main, '', '(max-width: 760px) 70vw, 36vw')}</figure>` : ''}
           </div>
           <div class="sp-day__text">
-            <p class="sp-day__date"><span class="sp-day__num">${bi(dayNum(e.start))}</span><span class="sp-day__md">${bi(monthDay(e.start))}</span></p>
             <h3 class="sp-day__title" id="day-${esc(e.id)}">${bi(e.title)}</h3>
-            ${e.blurb ? `<p class="sp-day__blurb">${bi(e.blurb)}</p>` : ''}
-            <p class="sp-day__meta">${bi(timeRange(e.start, e.end))}</p>
-            <p class="sp-day__meta">${bi(e.venue)} <a class="sp-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p>
+            <p class="sp-day__when"><b>${bi(dateOf(e.start))}</b>${bsOf(e) ? `<span>${bi(bsOf(e))}</span>` : ''}</p>
+            <dl class="sp-day__facts">
+              <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+              <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)} <a class="sp-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+              ${e.dress?.text ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="sp-sw" aria-hidden="true">${(e.dress.colors || []).slice(0, 3).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
+            </dl>
           </div>
         </article>`;
         }).join('')}
@@ -210,7 +225,7 @@ async function main() {
   const rites = W?.rituals?.length ? `
   <section class="sp-rites" id="wedding-day" aria-labelledby="rites-title">
     <header class="sp-rites__head">
-      <p class="sp-kicker">${bi(dateOf(W.start))}</p>
+      <p class="sp-kicker">${bi(dateOf(W.start))}${bsOf(W) ? ` · ${bi(bsOf(W))}` : ''}</p>
       <h2 class="sp-rites__title" id="rites-title">${bi(txt('rites.title'))}</h2>
       <p class="sp-rites__venue">${bi(W.venue)} <a class="sp-map" href="${esc(mapUrl(W.mapQuery || W.venue?.en || ''))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p>
     </header>
@@ -462,6 +477,17 @@ async function main() {
     const el = document.getElementById(ch.id);
     const y = st ? st.start + 2 : el.getBoundingClientRect().top + window.scrollY;
     if (lenis) lenis.scrollTo(y, { duration: 1.6 }); else window.scrollTo(0, y);
+  });
+
+  document.querySelector('.sp-prog')?.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-panel]');
+    const st = sts.days;
+    if (!row || !st) return;
+    const track = document.querySelector('.sp-days__track');
+    const el = track.children[Number(row.dataset.panel)];
+    const d = track.scrollWidth - window.innerWidth;
+    const y = st.start + (st.end - st.start) * Math.min(1, el.offsetLeft / (d || 1));
+    if (lenis) lenis.scrollTo(y, { duration: 1.2 }); else window.scrollTo(0, y);
   });
 
   const loadPetals = async () => {

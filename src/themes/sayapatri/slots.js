@@ -36,7 +36,7 @@ export default {
     'join.line1': { label: '"Two hands" moment: first half of the line', default: { en: 'Two hands,', ne: 'दुई हात,' }, max: 30 },
     'join.line2': { label: '"Two hands" moment: second half (in red)', default: { en: 'one promise.', ne: 'एउटै वाचा।' }, max: 30 },
     'days.kicker': { label: 'Celebrations: small line ({count} = number of days)', default: { en: '{count} days of celebration', ne: 'उत्सवका दिनहरू' }, max: 40 },
-    'days.title': { shared: 'events.title', label: 'Celebrations: title', default: { en: 'Come for all of it', ne: 'सबै कार्यक्रममा पाल्नुहोस्' }, max: 40 },
+    'days.title': { shared: 'events.title', label: 'Celebrations: programme title', default: { en: 'The programme', ne: 'कार्यक्रम तालिका' }, max: 40 },
     'rites.title': { shared: 'rites.title', label: 'Wedding day: title', default: { en: 'The wedding day', ne: 'विवाहको दिन' }, max: 36 },
     'seven.kicker': { label: 'Seven steps: small line', default: { en: 'Saptapadi', ne: 'सप्तपदी' }, max: 24 },
     'seven.title': { shared: 'rite.saptapadi.title', label: 'Seven steps: title', default: { en: 'Seven steps around the fire', ne: 'अग्निको वरिपरि सात पाइला' }, max: 50 },

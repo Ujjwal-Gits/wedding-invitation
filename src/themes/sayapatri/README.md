@@ -11,8 +11,14 @@ wedding-day rites and the seven steps. Every photo keeps its own proportions. Fr
 rectangles that shrink-wrap the image, so no face or subject is ever cropped. There are no dark scrims, and
 nothing zooms into a photo.
 
-Type: Kalnia (a flared display serif, set light, never slanted; no other theme uses it), DM Sans for UI,
-Yatra One for Devanagari display and Mukta for Devanagari text.
+Type (contract §11, readability first):
+- Kalnia (weight 400–600) only for large display text of 40px and up: names and section titles.
+- Anything smaller uses DM Sans 500–600, with no hairlines. English body text is at least 17px on desktop
+  and 16px on phones, line-height 1.55+.
+- Devanagari uses Eczar 600 for display and Mukta for body, at least 18px (17px on phones), line-height
+  1.75+.
+- Small text on leaf green uses a light turmeric (6:1). The red half of "Two hands" uses a deep sindoor
+  (5.7:1 on turmeric).
 
 ## Signature motion
 **Two hands, one promise.** A pinned section on a turmeric field. One of the couple's own photos is cut into
@@ -33,9 +39,11 @@ The petals sit behind every photo frame and every word, so a petal never lands o
    a modal through core `openModal`. Only the card scrolls; the page stays locked and returns to the same
    place when the card closes.
 3. **Two hands**: the signature.
-4. **Celebrations**: vertical scroll drives a horizontal run, one colour field per event (Mehendi leaf, Haldi
-   turmeric, Wedding white, Reception saffron). Each shows the date, title, one line, time, venue and a map
-   link. It snaps to whole panels.
+4. **Celebrations / programme**: a full-screen overview first lists every ceremony with its day and start
+   time; tap a row to jump to it. Then one full-screen colour field per ceremony: the name (large), weekday
+   and date, the B.S. date, and a Time / Venue (+ map) / Wear list with swatches. It snaps to whole panels.
+   The B.S. date comes from the shared `bsDateOf(iso, event.dateBS)` (core i18n), so every ceremony shows it;
+   an event's `dateBS` override wins.
 5. **Wedding day**: the wedding event's `rituals`, as rows with whole photos that float at different speeds.
 6. **Saptapadi**: seven steps light up around the fire, one vow at a time.
 7. **Finale** (`core/finale.js`, restyled):
