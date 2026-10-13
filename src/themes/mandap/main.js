@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
-import { bi, esc, dateOf, timeRange, mapUrl, biNodes } from '../../core/i18n.js';
+import { bi, esc, dateOf, bsDateOf, timeRange, mapUrl, biNodes } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, animateGallery, guestEvents } from '../../core/finale.js';
@@ -98,7 +98,7 @@ main.innerHTML = `
         ${events.map((e, i) => `
           <article class="m-cap m-ev" data-i="${i}" aria-labelledby="ev-${esc(e.id)}">
             <h3 class="m-ev__title" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
-            <p class="m-ev__when">${bi(dateOf(e.start))}<br />${bi(timeRange(e.start, e.end))}</p>
+            <p class="m-ev__when">${bi(dateOf(e.start))}<br /><span class="m-bs">${bi(bsDateOf(e.start, e.dateBS))}</span><br />${bi(timeRange(e.start, e.end))}</p>
             <p class="m-ev__where">${bi(e.venue)} <a class="m-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })} <span aria-hidden="true">↗</span></a></p>
           </article>`).join('')}
         <div class="m-cap m-arrive" data-i="${events.length}">
@@ -146,12 +146,31 @@ main.innerHTML = `
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="m-prog" id="programme" aria-labelledby="prog-title">
+    <div class="m-prog__inner">
+      <p class="m-eyebrow">${bi(txt('prog.kicker'))}</p>
+      <h2 class="m-prog__title" id="prog-title">${bi(txt('prog.title'))}</h2>
+      <ol class="m-prog__list">
+        ${events.map((e) => `
+          <li class="m-prog__ev">
+            <h3 class="m-prog__name">${bi(e.title)}</h3>
+            <dl class="m-prog__facts">
+              <div><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd>${bi(dateOf(e.start))}<span class="m-prog__bs">${bi(bsDateOf(e.start, e.dateBS))}</span></dd></div>
+              <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+              <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)} <a class="m-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Open map', ne: 'नक्सा हेर्नुहोस्' })} <span aria-hidden="true">↗</span></a></dd></div>
+              ${e.dress?.text ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="m-prog__sw" aria-hidden="true">${(e.dress.colors || []).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
+            </dl>
+          </li>`).join('')}
+      </ol>
+    </div>
   </section>`;
 
 // Gate
 const gate = document.getElementById('gate');
 gate.innerHTML = `
-  <div class="m-gate__inner">
+  <div class="m-gate__inner m-paper">
     <p class="m-gate__om">${bi(txt('gate.invocation'))}</p>
     <p class="m-eyebrow" id="gate-guest" hidden></p>
     <p class="m-gate__names">${bi(c.bride.name)} <span class="m-amp">&amp;</span> ${bi(c.groom.name)}</p>
@@ -218,9 +237,10 @@ renderFinale(document.getElementById('finale-root'), { credits });
 }
 const CHAPTERS = [
   { en: 'Welcome', ne: 'स्वागत' }, { en: 'The two of us', ne: 'हामी' }, { en: 'Ceremonies', ne: 'कार्यक्रम' },
-  { en: 'Swayambar', ne: 'स्वयम्बर' }, { en: 'Seven rounds', ne: 'सप्तपदी' }, { en: 'Sindoor', ne: 'सिन्दूर' }, { en: 'RSVP', ne: 'जवाफ' },
+  { en: 'Swayambar', ne: 'स्वयम्बर' }, { en: 'Seven rounds', ne: 'सप्तपदी' }, { en: 'Sindoor', ne: 'सिन्दूर' },
+  { en: 'When & where', ne: 'कहिले, कहाँ' }, { en: 'RSVP', ne: 'जवाफ' },
 ];
-const SEC_IDS = ['hero', 'us', 'days', 'sway', 'seven', 'sindoor', 'finale'];
+const SEC_IDS = ['hero', 'us', 'days', 'sway', 'seven', 'sindoor', 'programme', 'finale'];
 const { player, setChapter } = mountShell({ chapters: CHAPTERS });
 
 // ───────────────────────── 3D ─────────────────────────
@@ -323,8 +343,8 @@ function measure() {
   const vh = window.innerHeight;
   st.vh = vh;
   st.secs = [...document.querySelectorAll('.m-sec')].map((el) => ({ id: el.dataset.sec, el, top: el.offsetTop, h: el.offsetHeight }));
-  const fin = document.getElementById('finale-root');
-  st.finaleTop = fin.offsetTop;
+  // The 3D stops rendering once the opaque programme covers the screen.
+  st.finaleTop = document.getElementById('programme').offsetTop;
 }
 
 const sstep = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -358,8 +378,8 @@ function shotFor(id, t) {
   switch (id) {
     case 'hero': {
       const back = pr ? 3.2 : 0;
-      out.pos = V(0, 1.85, 9.6 + back).lerp(V(1.1, 1.7, 7.6 + back * 0.8), t);
-      out.look = pr ? V(0, 0.55, 0).lerp(V(0, 0.6, 0.6), t) : V(0, 1.35, 0).lerp(V(0, 1.3, 0.6), t);
+      out.pos = V(0, 2.3, 9.6 + back).lerp(V(1.1, 2.1, 7.6 + back * 0.8), t);
+      out.look = pr ? V(0, 0.5, 0).lerp(V(0, 0.55, 0.6), t) : V(0, 0.95, 0).lerp(V(0, 0.9, 0.6), t);
       out.fov = FOV(34, 50);
       break;
     }
@@ -447,8 +467,8 @@ function shotFor(id, t) {
       out.janti = 1;
       out.swayambar = 1;
       out.progress = 0.86 + 0.14 * sstep(t, 0.05, 0.95);
-      const a = pr ? { pos: V(0.1, 1.5, 4.9), look: V(0, 1.22, 1.32), fov: 44 } : { pos: V(0.75, 1.62, 4.15), look: V(0.5, 1.3, 1.32), fov: 30 };
-      const b = pr ? { pos: V(0.05, 1.52, 4.5), look: V(0, 1.28, 1.32), fov: 40 } : { pos: V(0.6, 1.6, 3.85), look: V(0.48, 1.34, 1.32), fov: 28 };
+      const a = pr ? { pos: V(0.1, 1.6, 4.9), look: V(0, 1.3, 1.32), fov: 40 } : { pos: V(0.25, 1.65, 4.2), look: V(0.32, 1.38, 1.32), fov: 30 };
+      const b = pr ? { pos: V(0.05, 1.62, 4.5), look: V(0, 1.34, 1.32), fov: 38 } : { pos: V(0.2, 1.65, 3.9), look: V(0.3, 1.42, 1.32), fov: 28 };
       out.pos = a.pos.lerp(b.pos, t);
       out.look = a.look.lerp(b.look, t);
       out.fov = a.fov + (b.fov - a.fov) * t;
@@ -482,8 +502,9 @@ function frameOf(center, normal, w, h, o) {
 /** The crane from the night sky to the hero shot. */
 function crane(t, hero) {
   const pr = portrait();
-  const pts = [V(0.5, 15.5, 11.8 + (pr ? 2 : 0)), V(0.25, 10.5, 10.6 + (pr ? 2 : 0)), V(0.05, 5.6, 9.9 + (pr ? 2.5 : 0)), hero.pos];
-  const looks = [V(0, 0.6, 0), V(0, 0.9, 0), V(0, 1.2, 0), hero.look];
+  // Daylight: a gentle descent from above the lamp path to the hero view.
+  const pts = [V(0.6, 4.2, 18 + (pr ? 3 : 0)), V(0.35, 3.4, 15 + (pr ? 3 : 0)), V(0.1, 2.6, 12 + (pr ? 3 : 0)), hero.pos];
+  const looks = [V(0, 2.4, 0), V(0, 2.0, 0), V(0, 1.6, 0), hero.look];
   const curve = new T.CatmullRomCurve3(pts);
   const lc = new T.CatmullRomCurve3(looks);
   const e = 1 - Math.pow(1 - t, 2.2);
@@ -596,10 +617,18 @@ function enter(withMusic, instant = false) {
 }
 
 addEventListener('resize', () => { measure(); });
+// Chapters below the 3D story (the programme and the reply) follow the plain scroll.
+addEventListener('scroll', () => {
+  if (!st.vh) return;
+  const y = window.scrollY + st.vh * 0.5;
+  const rsvp = document.getElementById('rsvp');
+  const ci = rsvp && y >= rsvp.getBoundingClientRect().top + window.scrollY ? 7 : y >= st.finaleTop ? 6 : -1;
+  if (ci >= 0 && ci !== st.active) { st.active = ci; setChapter(ci); }
+}, { passive: true });
 document.querySelectorAll('.chapters button').forEach((b) => b.addEventListener('click', () => {
   const i = Number(b.dataset.chapter);
   const id = SEC_IDS[i];
-  const el = id === 'finale' ? document.getElementById('rsvp') : document.querySelector(`.m-sec[data-sec="${id}"]`);
+  const el = id === 'finale' ? document.getElementById('rsvp') : id === 'programme' ? document.getElementById('programme') : document.querySelector(`.m-sec[data-sec="${id}"]`);
   if (!el) return;
   if (lenis) lenis.scrollTo(el, { duration: 1.6 }); else el.scrollIntoView();
 }));

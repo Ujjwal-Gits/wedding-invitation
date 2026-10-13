@@ -33,6 +33,8 @@ export default {
     'rite.sindoor.kicker': { label: 'Sindoor: small line', default: { en: 'And then', ne: 'अनि' }, max: 24 },
     'rite.sindoor.title': { shared: 'rite.sindoor.title', label: 'Sindoor: title', default: { en: 'Sindoor & Pote', ne: 'सिन्दूर र पोते' }, max: 30 },
     'rite.sindoor.line': { shared: 'rite.sindoor.line', label: 'Sindoor: line', default: { en: 'Vermilion in her parting, green beads at her throat.', ne: 'सिउँदोमा सिन्दूर, गलामा पोते।' }, max: 70 },
+    'prog.kicker': { label: 'Programme: small line', default: { en: 'When & where', ne: 'कहिले, कहाँ' }, max: 30 },
+    'prog.title': { shared: 'events.title', label: 'Programme: title', default: { en: 'The programme', ne: 'कार्यक्रम तालिका' }, max: 40 },
     'gallery.kicker': { shared: 'gallery.kicker', label: 'Photo section: small line', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 40 },
     'gallery.title': { shared: 'gallery.title', label: 'Photo section: title', default: { en: 'Before the sacred fire', ne: 'अग्निसाक्षी हुनुअघि' }, max: 50 },
     'reply.title': { shared: 'reply.title', label: 'Reply card: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 40 },

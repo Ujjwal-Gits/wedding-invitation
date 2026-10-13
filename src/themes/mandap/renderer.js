@@ -8,7 +8,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 const GradeShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uAspect: { value: 1 }, uVignette: { value: 0.5 }, uGrain: { value: 0.035 }, uFade: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uAspect: { value: 1 }, uVignette: { value: 0.08 }, uGrain: { value: 0.035 }, uFade: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float uTime, uAspect, uVignette, uGrain, uFade; varying vec2 vUv;
@@ -19,7 +19,6 @@ const GradeShader = {
       c *= 1.0 - uVignette * dot(q, q) * 1.3;
       // Lift the deepest shadows toward night indigo; warm the highlights.
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-      c = mix(c, c + vec3(0.004, 0.003, 0.012), 1.0 - smoothstep(0.0, 0.08, l));
       c *= 1.0 - uFade;
       gl_FragColor = vec4(c, 1.0);
     }`,
@@ -35,7 +34,7 @@ const ClampShader = {
       gl_FragColor = vec4(min(v, vec3(12.0)), 1.0); }`,
 };
 const GrainShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.03 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.015 } },
   vertexShader: GradeShader.vertexShader,
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uGrain; varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -51,7 +50,7 @@ export class NightRenderer {
     const r = (this.renderer = new T.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' }));
     r.outputColorSpace = T.SRGBColorSpace;
     r.toneMapping = T.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.05;
+    r.toneMappingExposure = 1.0;
     r.shadowMap.enabled = !mobile;
     r.shadowMap.type = T.PCFSoftShadowMap;
     r.setPixelRatio(this.pr);
@@ -59,7 +58,7 @@ export class NightRenderer {
     this.composer = new EffectComposer(r, rt);
     this.composer.addPass(new RenderPass(view.scene, view.camera));
     this.composer.addPass(new ShaderPass(ClampShader));
-    this.bloom = new UnrealBloomPass(new T.Vector2(256, 256), mobile ? 0.45 : 0.55, 0.5, 0.92);
+    this.bloom = new UnrealBloomPass(new T.Vector2(256, 256), mobile ? 0.15 : 0.2, 0.4, 1.0);
     this.composer.addPass(this.bloom);
     this.grade = new ShaderPass(GradeShader);
     this.composer.addPass(this.grade);

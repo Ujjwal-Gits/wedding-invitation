@@ -1,14 +1,33 @@
-# Mandap · Sacred Fire (पवित्र अग्नि)
+# Mandap · Shubha Bibaha in daylight (शुभ विवाह)
 
-A full-screen 3D night diorama. A lit Nepali mandap stands in a dark brick courtyard
-under hanging marigold strands. The bride and groom are rigged human figures dressed
-in code. As the guest scrolls, they act out the wedding rites.
+A full-screen 3D diorama on a bright wedding morning. A marigold-dressed mandap stands on
+brick paving in an open garden, under a real sky. Two realistic rigged figures in Nepali wedding
+dress act out the rites as the guest scrolls. All text sits on handmade-paper cards with
+sindoor-red ink (§11). After the 3D story comes a calm, scannable programme, with AD and B.S.
+dates from the shared `bsDateOf`, then the shared finale.
 
 Page: `/mandap/` · code: `src/themes/mandap/` · 3D core: `src/core/mandap3d.js` · assets: `public/themes/mandap/`
 
+## Sources and licences (all redistributable)
+- **Figures:**
+  - Software: MakeHuman / MPFB2 2.0.18 (GPL-3 software; its output is free to use).
+  - Assets, all **CC0** from the MakeHuman Community asset packs
+    (static.makehumancommunity.org/assets/assetpacks.html): base mesh and targets,
+    "game_engine" rig, eyes, eyebrows, eyelashes, hair `braid01` and `short02`,
+    skins `cutoff3d_indian_female_skin` (bride) and `young_asian_male` (groom).
+  - Built headless in Blender 4.2 by `tools/make-human.py`, compressed by
+    `tools/pack-humans.mjs` (WebP 1024 px, meshopt): ~590 KB each.
+- **Motion:** Quaternius "Universal Animation Library" (CC0). Retargeted at load
+  (`retargetClip`) onto the MakeHuman skeleton: world-space rotation deltas plus limb-direction
+  matching.
+- **Sky and light:** Poly Haven HDRI "Eilenriede Park" 1k (CC0), projected as a grounded skybox
+  and used as environment light.
+- **Paving:** Poly Haven "Brick Villa Floor" 1k diffuse/normal/roughness (CC0).
+- **Paper texture:** `paper.jpg`, generated procedurally for this theme (no third-party content).
+
 ## Signature motion
-**The crane.** After the entry tap the camera cranes down from the night sky through
-hanging marigold strands to the lit mandap, and the names kindle letter by letter.
+**The descent.** After the entry tap the camera glides down from above the lamp-lined path to the
+mandap, and the names set letter by letter on a paper card.
 After that, scrolling moves the story forward. Each section is a camera station, and
 long moves arc up over the mandap rather than cutting through it.
 
@@ -56,8 +75,8 @@ long moves arc up over the mandap rather than cutting through it.
 ## Look
 - Type: **Marcellus SC / Marcellus** (engraved inscriptional capitals), **Spectral**
   (body), **Martel** (Devanagari). No Pinyon Script, no Cormorant.
-- Palette: night indigo `#07060c`, fire gold `#e8a64a` / `#f6d79c`. Sindoor red appears
-  only in the scene.
+- Palette: handmade ivory paper `#f6efe2` with real fibre texture, sindoor ink `#8a1f14`
+  (8.6:1), deep sindoor `#6e170f` for display type, and a gold `#a87a2a` used only for hairlines.
 - Marigolds are UV spheres with a canvas petal texture and bump, rounder in the mandap
   garlands and malas, lighter in the far overhead strands.
 - Renderer (`renderer.js`): MSAA, a NaN/spike clamp before the bloom, HDR bloom on
@@ -117,9 +136,19 @@ long moves arc up over the mandap rather than cutting through it.
 `?still` forces the reduced-motion path: no crane, camera cuts between stations.
 Without WebGL, the page falls back to stacked text over a photograph.
 
+## Readability (§11)
+- **Sizes:** body 17–23 px (Spectral 400); Devanagari 17–20 px (Martel) at line-height
+  1.75–1.85; labels 13 px English, 15 px Nepali.
+- **Names:** Marcellus SC, a legible inscriptional serif. No script faces.
+- **Contrast:** every caption sits on an opaque paper card, ≥ 7:1.
+- **Programme section:** each ceremony gets name, weekday + AD date, B.S. date, time, venue
+  with a map link, and a dress note with colour swatches.
+
 ## Known gaps
-- The figures come from a stylised base mesh. Bodies, walks and clothes read as real
-  people, but the groom's shoulders are still broad, and the cloth is shaped
-  procedurally, not simulated.
+- Bodies, skin, eyes and hair are realistic MakeHuman assets. The garments are still
+  generated in code as skinned shells: silk sheen and zari borders, but no simulated drape.
+  Up close, the daura shoulders look simplified.
+- Faces are real MakeHuman faces seen at a respectful distance. The ghumto and head angles
+  keep the bride's face soft.
 - Dressing the figures takes about 1–3 s of CPU on a phone. It runs behind the gate's
   loading bar.
