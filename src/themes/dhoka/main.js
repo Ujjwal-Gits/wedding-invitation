@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photos, photoUrl, view } from '../../photos.js';
-import { bi, esc, dateOf, dayNum, timeRange, mapUrl, biNodes, neNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeRange, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
@@ -27,6 +27,16 @@ const DOOR = 'door';
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const NE_DAYS = ['आइतबार', 'सोमबार', 'मङ्गलबार', 'बुधबार', 'बिहीबार', 'शुक्रबार', 'शनिबार'];
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const NE_MONTHS = ['जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन', 'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'];
+/** Weekday, day and month of an ISO date-time in Nepal time, both languages. */
+const dayParts = (iso) => {
+  const t = new Date(new Date(iso).getTime() + 345 * 60000);
+  const [wd, d, m, y] = [t.getUTCDay(), t.getUTCDate(), t.getUTCMonth(), t.getUTCFullYear()];
+  return { wd: { en: EN_DAYS[wd], ne: NE_DAYS[wd] }, d: { en: String(d), ne: neNum(d) }, my: { en: `${EN_MONTHS[m]} ${y}`, ne: `${NE_MONTHS[m]} ${neNum(y)}` } };
+};
 const NE_ORD = ['पहिलो', 'दोस्रो', 'तेस्रो', 'चौथो', 'पाँचौँ', 'छैटौँ', 'सातौँ', 'आठौँ'];
 
 // ───────────────────────── Photo helpers ─────────────────────────
@@ -203,21 +213,34 @@ async function start() {
       ${folio(5, txt('events.kicker'))}
       <h2 class="d-h2" id="events-title">${T('events.title')}</h2>
     </header>
-    ${events.map((e, i) => `
-      <article class="d-day ${i % 2 ? 'd-day--r' : ''}" aria-labelledby="ev-${esc(e.id)}">
-        <div class="d-day__plate">
-          <span class="d-day__num" aria-hidden="true">${bi(dayNum(e.start))}</span>
-          ${e.photo ? `<div class="d-day__frame">${pic(e.photo, { sizes: '(max-width: 760px) 92vw, 48vw' })}</div>` : ''}
-        </div>
-        <div class="d-day__body">
-          <p class="d-day__kicker">${bi({ en: `${txt('events.label').en} ${ROMAN[i]}`, ne: `${NE_ORD[i] || neNum(i + 1)} ${txt('events.label').ne}` })}</p>
-          <h3 class="d-day__title" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
-          <dl class="d-day__dl">
-            <div><dt>${bi({ en: 'When', ne: 'मिति' })}</dt><dd>${bi(dateOf(e.start))}<small>${bi(timeRange(e.start, e.end))}</small></dd></div>
-            <div><dt>${bi({ en: 'Where', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="d-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Open map', ne: 'नक्सा हेर्नुहोस्' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+    <ol class="d-prog">
+    ${events.map((e, i) => {
+      const p = dayParts(e.start);
+      // B.S. date from the shared converter; an event's own dateBS (the family's patro) wins.
+      const bsd = bsDateOf(e.start, e.dateBS);
+      const bs = e.dateBS ? bsd : { en: `${bsd.short.en} B.S.`, ne: `वि.सं. ${bsd.short.ne}` };
+      const colors = (e.dress?.colors || []).slice(0, 4).map((col) => `<i style="background:${esc(col)}"></i>`).join('');
+      return `
+      <li class="d-prog__row" aria-labelledby="ev-${esc(e.id)}">
+        <p class="d-prog__date">
+          <span class="d-prog__wd">${bi(p.wd)}</span>
+          <span class="d-prog__d">${bi(p.d)}</span>
+          <span class="d-prog__m">${bi(p.my)}</span>
+          ${bs ? `<span class="d-prog__bs">${bi(bs)}</span>` : ''}
+        </p>
+        <div class="d-prog__main">
+          <p class="d-prog__k">${bi({ en: `${txt('events.label').en} ${ROMAN[i]}`, ne: `${NE_ORD[i] || neNum(i + 1)} ${txt('events.label').ne}` })}</p>
+          <h3 class="d-prog__t" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
+          <dl class="d-prog__dl">
+            <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+            <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="d-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+            ${e.dress?.text ? `<div><dt>${bi({ en: 'Dress', ne: 'पहिरन' })}</dt><dd>${colors ? `<span class="d-prog__dress" aria-hidden="true">${colors}</span>` : ''}${bi(e.dress.text)}</dd></div>` : ''}
           </dl>
         </div>
-      </article>`).join('')}
+        ${e.photo ? `<figure class="d-prog__photo">${pic(e.photo, { sizes: '(max-width: 1100px) 40vw, 26vw' })}</figure>` : ''}
+      </li>`;
+    }).join('')}
+    </ol>
   </section>
 
   ${gallery.length ? `
@@ -543,13 +566,6 @@ async function start() {
       });
     }
 
-    // No. V · Day numerals and photos move at different speeds (layered parallax).
-    gsap.utils.toArray('.d-day').forEach((d) => {
-      const num = d.querySelector('.d-day__num');
-      const im = d.querySelector('.d-day__frame img');
-      if (num) gsap.fromTo(num, { yPercent: 12 }, { yPercent: -12, ease: 'none', scrollTrigger: { trigger: d, start: 'top bottom', end: 'bottom top', scrub: true } });
-      if (im) gsap.fromTo(im, { yPercent: -5 }, { yPercent: 5, ease: 'none', scrollTrigger: { trigger: d, start: 'top bottom', end: 'bottom top', scrub: true } });
-    });
 
     // No. VI · Album columns drift at three speeds.
     if (!mobile) {
@@ -560,7 +576,7 @@ async function start() {
     }
 
     // Plates arrive like ink settling: a short rise and fade, once.
-    gsap.utils.toArray('.d-day__body, .d-album__col li, .d-cover, .d-reply__card').forEach((el) => {
+    gsap.utils.toArray('.d-prog__row, .d-album__col li, .d-cover, .d-reply__card').forEach((el) => {
       gsap.from(el, { autoAlpha: 0, y: 28, duration: 0.9, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
     });
     ScrollTrigger.refresh();

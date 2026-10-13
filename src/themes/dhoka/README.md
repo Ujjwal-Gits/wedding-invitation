@@ -1,9 +1,13 @@
 # Dhoka (ढोका) · "Ivory Press"
 
 A luxury printed invitation, experienced on screen. Crisp white stock (#FFFFFF) with a fine static
-grain, deep ink (#111016) in high-contrast Bodoni Moda, Hanken Grotesk for labels (12px minimum),
-Noto Serif Devanagari, and one accent: sindoor red (`--gold #A3161F` text, `--gold-rule #B8323A` rules).
-One confident colour field: the invitation-card section sits on deep sindoor (`--field #7E0F17`).
+grain, deep ink (#111016) and one accent, sindoor red (`#A3161F` text, `#B8323A` rules); the
+invitation-card section sits on a deep sindoor field (`#7E0F17`).
+
+Type is set for reading (contract §11): **Newsreader 500** (optical-size serif, no hairlines) for names,
+headings and dates; **Hanken Grotesk** for labels and body; **Eczar** (display) + **Mukta** (body) for
+Devanagari. English body ≥ 17px desktop / 16px phone, Nepali ≥ 18 / 17px with line-height ≥ 1.75,
+labels ≥ 12.5px English / 15–16px Nepali, body contrast ≈ 10:1.
 Real photographs are set like plates in a fine book, with magazine folios ("No. I" … "No. VII")
 and a running head.
 
@@ -33,7 +37,7 @@ Any wheel, touch or key during the intro fast-forwards it (x3.2).
 | II | "Two families, one home": bride and groom with parents; **sticky stack of prints** (other portraits + bride/groom photos) | each print is laid over the last; snaps so one print is whole at rest |
 | III | The marriage: Swayambar (couple photo), Kanyadan (karuwa), Sindoor, Saptapadi (fire) as plates | pinned **horizontal sequence** on desktop; a vertical list on phones (no half-cut photos at rest) |
 | IV | The invitation, on a deep sindoor field: card cover and "Read the invitation card" | opens the full bilingual card through `openModal` (page locked, only the card scrolls) |
-| V | Ceremonies as numbered plates: big Bodoni day numeral, photo, name, date, time, venue, map | **layered parallax** (numeral vs photo) |
+| V | **The programme** ("when is what"): one row per ceremony with weekday, day, month + year, B.S. date, ceremony name, time, venue + map, dress note with colour swatches, and a small photo (hidden on phones) | rows settle in once |
 | VI | Album "Soon, together": couple photos first, library details last and uncaptioned; lightbox via `openModal` | columns drift at three speeds (desktop) |
 | VII | Reply card (RSVP via `core/rsvp.js`), days to go, calendar, share, family contacts | sticky aside |
 | — | Colophon: closing line, names, hashtag, photo and music credits | |
@@ -50,6 +54,11 @@ Couple photos keep their own proportions everywhere (no cropping); scene photos 
   `events[]` (`title`, `start`, `end`, `venue`, `mapQuery`, `photo`), `gallery[]`, `rsvp`, `info.contacts`, `closing`, `music`.
 - Not used by this theme: `story`, `saptapadi` vow text, event `blurb`/`dress`/`rituals`, `info.stays`
   (kept minimal on purpose; the card dialog carries the long wording).
+
+## B.S. dates
+
+Every ceremony shows its B.S. date from the shared `bsDateOf(iso, event.dateBS)` (`core/i18n.js`); an event's own
+`dateBS: { en, ne }` (the family's patro) wins.
 
 ## Slots (`slots.js`, read through `useSlots`)
 
