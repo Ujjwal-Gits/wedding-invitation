@@ -1,0 +1,53 @@
+// Sayapatri · studio-replaceable images and texts (plain data, no imports).
+// Read through useSlots(manifest) in src/core/slots.js. Every photo frame takes the photo's own
+// proportions, so nothing is cropped; the notes say what reads best.
+// Text placeholders: {parents} (couple lines) and {count} (number of celebrations, as a word).
+// `shared` points an entry at src/core/slot-vocab.js so content entered in any theme appears here too.
+export default {
+  theme: 'sayapatri',
+  images: {
+    'hero.photo': { label: 'Opening: main couple photo', kind: 'couple', default: { portrait: 0 }, note: 'The couple together. Portrait reads best on the turmeric arch.' },
+    'hero.photo2': { label: 'Opening: second, smaller couple photo', kind: 'couple', default: { portrait: 4 }, note: 'Another couple photo or a detail of the two of them. Bright photos read best; any shape.' },
+    'couple.bride': { label: 'Couple stack: first print (the bride)', kind: 'bride', default: { portrait: 3 }, note: 'The bride alone. Portrait.' },
+    'couple.groom': { label: 'Couple stack: second print (the groom)', kind: 'groom', default: { portrait: 5 }, note: 'The groom alone. Portrait.' },
+    'couple.together1': { label: 'Couple stack: third print', kind: 'couple', default: { portrait: 2 }, note: 'The couple together. Any shape.' },
+    'couple.together2': { label: 'Couple stack: top print', kind: 'couple', default: { portrait: 6 }, note: 'The couple together; this one stays on top. Any shape.' },
+    'join.photo': { label: '"Two hands" moment: the photo that splits and joins', kind: 'couple', default: { portrait: 1 }, note: 'Landscape, the couple’s hands meeting near the centre (the photo is cut down the middle).' },
+    'rites.1.photo': { label: 'Wedding day, row 1 photo', kind: 'detail', default: 'marigold-garland', alt: 'Marigold garlands ready for the welcome', note: 'A detail for the first rite (Janti welcome). Any shape.' },
+    'rites.2.photo': { shared: 'rite.swayambar', label: 'Wedding day, row 2 photo', kind: 'detail', default: 'wedding-nepali-alt', alt: 'Hands among marigold garlands', note: 'A detail for the second rite (Swayambar).' },
+    'rites.3.photo': { label: 'Wedding day, row 3 photo', kind: 'detail', default: 'mandap', alt: 'A wedding mandap in daylight', note: 'A detail or the venue for the third rite.' },
+    'rites.4.photo': { shared: 'rite.kanyadan', label: 'Wedding day, row 4 photo', kind: 'detail', default: 'wedding-nepali-alt2', alt: 'Hands holding the sacred thread', note: 'A detail for the fourth rite (Kanyadan, Sindoor, Saptapadi).' },
+    'rites.5.photo': { label: 'Wedding day, row 5 photo', kind: 'detail', default: 'couple-9', alt: 'Hennaed hands and feet among marigolds', note: 'Only shown when the wedding has five or more rites.' },
+    'rites.6.photo': { shared: 'rite.sindoor', label: 'Wedding day, row 6 photo', kind: 'detail', default: 'sindoor-alt', alt: 'Red sindoor powder', note: 'Only shown when the wedding has six rites.' },
+    'seven.fire': { shared: 'rite.fire', label: 'Seven steps: the fire in the centre', kind: 'detail', default: 'fire-havan', alt: 'The sacred fire', note: 'Shown in a circle: a fire or lamp, centred.' },
+  },
+  texts: {
+    'hero.kicker': { shared: 'hero.kicker', label: 'Opening: small line above the names', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 40 },
+    'gate.open': { shared: 'gate.open', label: 'Opening: main button', default: { en: 'Open the invitation', ne: 'निमन्त्रणा खोल्नुहोस्' }, max: 28 },
+    'gate.quiet': { shared: 'gate.quiet', label: 'Opening: quiet button', default: { en: 'Without music', ne: 'संगीतबिना' }, max: 24 },
+    'hero.cue': { label: 'Opening: scroll hint', default: { en: 'Scroll', ne: 'तल जानुहोस्' }, max: 20 },
+    'couple.bride.kicker': { label: 'Couple stack: label over the bride', default: { en: 'The bride', ne: 'दुलही' }, max: 24 },
+    'couple.bride.line': { shared: 'bride.line', label: 'Couple stack: line under the bride ({parents} = her parents)', default: { en: 'Daughter of {parents}', ne: '{parents}की सुपुत्री' }, max: 120 },
+    'couple.groom.kicker': { label: 'Couple stack: label over the groom', default: { en: 'The groom', ne: 'दुलहा' }, max: 24 },
+    'couple.groom.line': { shared: 'groom.line', label: 'Couple stack: line under the groom ({parents} = his parents)', default: { en: 'Son of {parents}', ne: '{parents}का सुपुत्र' }, max: 120 },
+    'couple.together.kicker': { label: 'Couple stack: label for the last prints', default: { en: 'Together', ne: 'सँगै' }, max: 24 },
+    'couple.together.title': { shared: 'couple.title', label: 'Couple stack: title for the last prints', default: { en: 'Two families, one sacred fire', ne: 'दुई परिवार, एउटै अग्नि' }, max: 50 },
+    'couple.card': { shared: 'card.button', label: 'Couple stack: link to the full card wording', default: { en: 'Read the invitation card', ne: 'निमन्त्रणा पत्र पढ्नुहोस्' }, max: 36 },
+    'join.line1': { label: '"Two hands" moment: first half of the line', default: { en: 'Two hands,', ne: 'दुई हात,' }, max: 30 },
+    'join.line2': { label: '"Two hands" moment: second half (in red)', default: { en: 'one promise.', ne: 'एउटै वाचा।' }, max: 30 },
+    'days.kicker': { label: 'Celebrations: small line ({count} = number of days)', default: { en: '{count} days of celebration', ne: 'उत्सवका दिनहरू' }, max: 40 },
+    'days.title': { shared: 'events.title', label: 'Celebrations: title', default: { en: 'Come for all of it', ne: 'सबै कार्यक्रममा पाल्नुहोस्' }, max: 40 },
+    'rites.title': { shared: 'rites.title', label: 'Wedding day: title', default: { en: 'The wedding day', ne: 'विवाहको दिन' }, max: 36 },
+    'seven.kicker': { label: 'Seven steps: small line', default: { en: 'Saptapadi', ne: 'सप्तपदी' }, max: 24 },
+    'seven.title': { shared: 'rite.saptapadi.title', label: 'Seven steps: title', default: { en: 'Seven steps around the fire', ne: 'अग्निको वरिपरि सात पाइला' }, max: 50 },
+    'gallery.title': { shared: 'gallery.title', label: 'Photos: title', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 40 },
+    'nav.welcome': { label: 'Side menu: opening', default: { en: 'Welcome', ne: 'स्वागत' }, max: 20 },
+    'nav.couple': { label: 'Side menu: couple', default: { en: 'The couple', ne: 'जोडी' }, max: 20 },
+    'nav.join': { label: 'Side menu: two hands', default: { en: 'Two hands', ne: 'दुई हात' }, max: 20 },
+    'nav.days': { label: 'Side menu: celebrations', default: { en: 'Celebrations', ne: 'कार्यक्रम' }, max: 20 },
+    'nav.rites': { label: 'Side menu: wedding day', default: { en: 'Wedding day', ne: 'विवाहको दिन' }, max: 20 },
+    'nav.seven': { label: 'Side menu: seven steps', default: { en: 'Seven steps', ne: 'सप्तपदी' }, max: 20 },
+    'nav.gallery': { label: 'Side menu: photos', default: { en: 'Photos', ne: 'तस्बिर' }, max: 20 },
+    'nav.reply': { label: 'Side menu: reply', default: { en: 'Reply', ne: 'जवाफ' }, max: 20 },
+  },
+};
