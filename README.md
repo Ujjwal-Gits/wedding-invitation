@@ -1,18 +1,22 @@
 # Sayapatri — premium Nepali wedding invitations
 
-Eight cinematic, bilingual (English / नेपाली) wedding-invitation themes and a studio
+Twelve bilingual (English / नेपाली) wedding-invitation themes and a studio
 dashboard to create, customise, publish and track invitations.
 
 | # | Theme | Concept |
 |---|---|---|
-| 01 | **Dhoka** `/dhoka/` | White editorial print. The Golden Door of Patan opens in 3D. |
-| 02 | **Ghar** `/ghar/` | A night film walking room by room through a lamplit Newar house. |
-| 03 | **Sayapatri** `/sayapatri/` | Bright haldi daylight; "two hands, one promise". |
-| 04 | **Chitra** `/chitra/` | Mithila picture book with illustrated characters: janti, swayambar, seven rounds, sindoor, dance. |
-| 05 | **Mandap** `/mandap/` | 3D night mandap; rigged couple exchange garlands and walk the seven rounds. |
-| 06 | **Bagaicha** `/bagaicha/` | 3D garden destination: pavilion, pool, waterfall, morning to night. |
-| 07 | **Dhaka** `/dhaka/` | Modern graphic design; a live Dhaka weave forms the couple's initials. |
+| 01 | **Kham** `/kham/` | Handmade-paper envelope with an endless-knot wax seal; the card unfolds into a clear programme. |
+| 02 | **Dhoka** `/dhoka/` | White editorial print. The Golden Door of Patan opens in 3D. |
+| 03 | **Mala** `/mala/` | Real flower garlands frame the couple; the swayambar exchange on scroll. |
+| 04 | **Durbar** `/durbar/` | A 3D morning glide through Bhaktapur Durbar Square, past the Nyatapola. |
+| 05 | **Gurans** `/gurans/` | Natural Nepal: a lali gurans forest trail down to Phewa Lake. |
+| 06 | **Dhaka** `/dhaka/` | Heirloom envelope tied with a Palpali Dhaka band and a wax seal. |
+| 07 | **Sayapatri** `/sayapatri/` | Bright haldi daylight; "two hands, one promise". |
 | 08 | **Himal** `/himal/` | Quiet luxury: Himalayan sunrise and a photo essay of the couple. |
+| 09 | **Chitra** `/chitra/` | Mithila picture book with illustrated characters: janti, swayambar, seven rounds, sindoor, dance. |
+| 10 | **Mandap** `/mandap/` | 3D mandap on a bright morning; realistic couple exchange garlands and walk seven rounds. |
+| 11 | **Bagaicha** `/bagaicha/` | 3D garden destination: pavilion, pool, waterfall, morning to night. |
+| 12 | **Ghar** `/ghar/` | A lamplit film walking room by room through a Newar house. |
 
 The showroom at `/` links every theme and the studio.
 
@@ -76,8 +80,7 @@ docs/                     theme contract and photo library catalogue
 All photographs are real and openly licensed (Wikimedia Commons / Openverse; CC0, CC BY,
 CC BY-SA), listed with author, licence and source in `art-src/photos/credits.json` and
 `docs/PHOTO-LIBRARY.md`, and credited in each invitation's footer. CC BY-SA images must keep
-their licence and credit when redistributed. 3D characters: Quaternius (CC0). Garden textures
-and HDRI: Poly Haven (CC0). Music credits are in `src/config.js`.
+their licence and credit when redistributed. 3D characters: MakeHuman (CC0). Garden plants, textures and HDRIs: Poly Haven and ambientCG (CC0). Music credits are in `src/config.js`.
 
 Original full-resolution images are not in the repository; re-download them from the
 `source_url` in `credits.json`, then run `node scripts/optimize-art.mjs` (and
