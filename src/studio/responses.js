@@ -63,7 +63,7 @@ export function responsesView(ctx) {
 
     clear(root).append(
       h('header.sec__head.sec__head--row',
-        h('div', h('h2.sec__title', 'Responses'), h('p.sec__intro', 'Replies from the invitation’s RSVP form, newest first.')),
+        h('div', h('h1.sec__title', 'Replies'), h('p.sec__intro', 'Everyone who has answered the invitation, newest first.')),
         h('div.sec__actions',
           iconBtn('refresh', 'Refresh replies', load),
           h('a.btn', { href: `/api/invitations/${encodeURIComponent(ctx.slug)}/rsvps.csv`, download: `rsvps-${ctx.slug}.csv` }, icon('download', 16), 'Export CSV'),

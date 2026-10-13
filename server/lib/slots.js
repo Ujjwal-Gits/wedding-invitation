@@ -5,7 +5,7 @@ import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT_DIR } from './env.js';
-import { THEMES } from './catalog.js';
+import { listThemes, isTheme } from './catalog.js';
 
 const cache = new Map(); // theme -> { mtime, manifest }
 let vocabCache = { mtime: -1, vocab: { images: {}, texts: {} } };
@@ -54,12 +54,14 @@ function clean(raw, theme) {
       shared: typeof s.shared === 'string' && ID_RE.test(s.shared) ? s.shared : null,
     };
   }
-  return { theme, images, texts };
+  const name = typeof m.name === 'string' ? m.name.slice(0, 40) : '';
+  const description = typeof m.description === 'string' ? m.description.slice(0, 160) : '';
+  return { theme, name, description, images, texts };
 }
 
 /** The manifest for a theme, or null while the theme has not published one. Reloaded when the file changes. */
 export async function loadManifest(theme) {
-  if (!THEMES.some((t) => t.slug === theme)) return null;
+  if (!isTheme(theme)) return null;
   const file = resolve(ROOT_DIR, 'src', 'themes', theme, 'slots.js');
   let mtime;
   try { mtime = statSync(file).mtimeMs; } catch { cache.delete(theme); return null; }
@@ -83,7 +85,7 @@ export async function loadManifest(theme) {
  */
 export async function slotInfo() {
   const manifests = {};
-  for (const t of THEMES) manifests[t.slug] = await loadManifest(t.slug);
+  for (const t of listThemes()) manifests[t.slug] = await loadManifest(t.slug);
   const vocab = await loadVocab();
   const sharedMax = {};
   for (const m of Object.values(manifests)) {

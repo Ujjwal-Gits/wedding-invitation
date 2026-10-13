@@ -61,23 +61,27 @@ $hash = $env:CLIENT_PASSWORD | npm run --silent hash-password -- --raw
 Two terminals, from the project root:
 
 ```bash
-cd server && npm start                       # API on :8787
-npx vite --port 5190 --strictPort            # studio at http://localhost:5190/studio/
+cd server && npm start         # API on :8787
+npx vite                       # studio at http://localhost:5190/studio/ (port pinned in vite.config.js)
 ```
 
 Every Vite dev server proxies `/api` and `/uploads` to :8787, so any theme page can load
 `/<theme>/?id=<slug>`.
 
-On Windows the root Vite config watches the whole project, including `tools/.venv` (tens of
-thousands of files). That can make a fresh Vite server unresponsive for minutes. If it happens, use
-the studio config, which skips those folders:
+## The studio
 
-```bash
-npx vite --config src/studio/vite.studio.config.js --port 5190 --strictPort
-```
+A guided tool for wedding planners: a home screen of invitation cards (Edit / Share), then six
+short steps with a progress bar and autosave: **Couple & photos**, **Dates & ceremonies**, **Choose a
+theme**, **Customise** (the theme's own photos and words as click-to-change cards; rarer details under
+"More details"), **Music**, **Preview & publish** (phone + computer preview, Publish, Copy link,
+WhatsApp, personal guest links). Replies have their own page with totals, a table and CSV export.
 
-(A permanent fix is to add `server.watch.ignored: ['**/tools/**', '**/server/**', '**/art-src/**']`
-to the root `vite.config.js`.)
+- **Themes** are discovered on disk: every `src/themes/<slug>/slots.js`, with the thumbnail
+  `public/themes/<slug>/thumb.jpg`. A theme is selectable once its page `<slug>/index.html` exists
+  ("Coming soon" before that). A manifest may carry `name` and `description` for the picker.
+- **B.S. dates** come from `bsDateOf()` in `src/core/i18n.js` (THEME-CONTRACT §12). The studio shows
+  them as suggestions; `weddingDateBS` and `events[].dateBS` are stored only when the planner types
+  their own. The public payload fills an empty `weddingDateBS` from the wedding date.
 
 ## How it fits together
 

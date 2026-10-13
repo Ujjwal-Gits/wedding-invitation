@@ -1,9 +1,11 @@
-// Sayapatri Studio: sign in, list invitations, edit, preview, publish, share, read replies.
-import { h, icon, iconBtn, clear, append, toast, openDialog, confirmDialog, fmtDate, fmtRelative } from './dom.js';
+// Sayapatri Studio: a simple, guided tool for wedding planners.
+// Home (invitation cards) → a six-step editor (autosaved) → replies.
+import { h, icon, clear, toast, openDialog, confirmDialog, fmtDate } from './dom.js';
 import { api, setCsrf, whenSignedOut, ApiError } from './api.js';
-import { createModel, pathStr } from './fields.js';
-import { SECTIONS } from './sections.js';
+import { createModel } from './fields.js';
+import { STEPS } from './steps.js';
 import { responsesView } from './responses.js';
+import { shareDialog } from './publish.js';
 import { photoUrl } from '../photos.js';
 
 const app = document.getElementById('app');
@@ -11,7 +13,7 @@ const S = { me: null, meta: null, editor: null };
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
 const coupleName = (b, g) => [label(b), label(g)].filter(Boolean).join(' & ') || 'Untitled invitation';
 
-whenSignedOut(() => { if (S.me) { S.me = null; toast('Your session ended. Please sign in again.', 'error'); } go('#/login'); });
+whenSignedOut(() => { if (S.me) { S.me = null; toast('Please sign in again.', 'error'); } go('#/login'); });
 
 // ── Routing ───────────────────────────────────────────────────────────────
 
@@ -35,27 +37,23 @@ async function route() {
     }
   }
   if (hash === '#/login') return go('#/');
-  if (!S.meta) {
-    try { S.meta = await api('/meta'); } catch (err) { return fatal(err); }
-  }
+  try { S.meta = await api('/meta'); } catch (err) { if (!S.meta) return fatal(err); } // theme list can grow at any time
   const m = /^#\/i\/([a-z0-9-]{3,64})\/([a-z-]+)$/.exec(hash);
   if (m) {
     if (S.editor?.slug === m[1]) return S.editor.show(m[2]);
     return openEditor(m[1], m[2]);
   }
-  return renderList();
+  return renderHome();
 }
 
 function fatal(err) {
   clear(app).append(h('div.center', h('p.notice.notice--error', err.message), h('button.btn', { type: 'button', onclick: () => location.reload() }, 'Try again')));
 }
 
-// ── Shell ─────────────────────────────────────────────────────────────────
-
-function topbar(crumb) {
+function topbar(extra) {
   return h('header.topbar',
     h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri'), h('span.brand__sub', 'Studio')),
-    crumb ? h('nav.crumbs', { 'aria-label': 'Breadcrumb' }, h('a', { href: '#/' }, 'Invitations'), h('span', { 'aria-hidden': 'true' }, '/'), h('span', { 'aria-current': 'page' }, crumb)) : null,
+    extra || null,
     h('div.topbar__right',
       h('span.topbar__user', S.me.email),
       h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out'),
@@ -71,7 +69,7 @@ async function signOut() {
   location.hash = '#/login';
 }
 
-// ── Login ─────────────────────────────────────────────────────────────────
+// ── Sign in ───────────────────────────────────────────────────────────────
 
 function renderLogin() {
   document.title = 'Sign in · Sayapatri Studio';
@@ -110,7 +108,7 @@ function renderLogin() {
       h('div.login__inner',
         h('a.brand.brand--lg', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri'), h('span.brand__sub', 'Studio')),
         h('h1.login__title', 'Welcome back'),
-        h('p.login__lede', 'Sign in to make and manage wedding invitations.'),
+        h('p.login__lede', 'Sign in to make and share wedding invitations.'),
         form,
       ),
     ),
@@ -118,11 +116,11 @@ function renderLogin() {
   form.querySelector('#email').focus();
 }
 
-// ── Invitations list ──────────────────────────────────────────────────────
+// ── Home ──────────────────────────────────────────────────────────────────
 
-async function renderList() {
+async function renderHome() {
   document.title = 'Invitations · Sayapatri Studio';
-  const body = h('main.page', { id: 'main' }, h('p.boot', 'Loading invitations…'));
+  const body = h('main.home', { id: 'main' }, h('p.boot', 'Loading…'));
   clear(app).append(topbar(), body);
   let items;
   try {
@@ -132,134 +130,118 @@ async function renderList() {
     return;
   }
   const themeName = Object.fromEntries(S.meta.themes.map((t) => [t.slug, t.name]));
-  const live = items.filter((i) => i.status === 'published').length;
-  const replies = items.reduce((n, i) => n + i.rsvpCount, 0);
-
-  const head = h('header.page__head',
-    h('div',
-      h('h1.page__title', 'Invitations'),
-      h('p.page__meta', items.length ? `${items.length} invitation${items.length === 1 ? '' : 's'} · ${live} live · ${replies} repl${replies === 1 ? 'y' : 'ies'}` : 'Nothing here yet.'),
-    ),
-    h('button.btn.btn--primary', { type: 'button', onclick: newInvitation }, icon('plus', 16), 'New invitation'),
+  const head = h('header.home__head',
+    h('div', h('h1.home__title', 'Invitations'), h('p.home__meta', items.length ? `${items.length} invitation${items.length === 1 ? '' : 's'}` : '')),
+    h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: newInvitation }, icon('plus', 18), 'New invitation'),
   );
+  const status = (i) => (i.status === 'published'
+    ? h('span.pill', { class: i.changed ? 'pill--warn' : 'pill--ok' }, i.changed ? 'Live · unpublished changes' : 'Live')
+    : h('span.pill.pill--muted', 'Draft'));
 
-  const status = (i) => i.status === 'published'
-    ? h('span.pill', { class: i.changed ? 'pill--warn' : 'pill--ok' }, i.changed ? 'Live · edits not published' : 'Live')
-    : h('span.pill.pill--muted', 'Draft');
-
-  const list = items.length
-    ? h('ul.invlist', items.map((i) => h('li.inv',
-      h('a.inv__link', { href: `#/i/${i.slug}/couple` },
-        h('span.inv__thumb', i.hero ? h('img', { src: photoUrl(i.hero, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : null),
-        h('span.inv__main', h('span.inv__names', coupleName(i.bride, i.groom)), h('span.inv__slug', `/${i.slug}`)),
-        h('span.inv__col', h('span.inv__k', 'Wedding'), h('span.inv__v', fmtDate(i.weddingDate))),
-        h('span.inv__col', h('span.inv__k', 'Theme'), h('span.inv__v', themeName[i.theme] || i.theme)),
-        h('span.inv__col', h('span.inv__k', 'Replies'), h('span.inv__v', String(i.rsvpCount))),
-        h('span.inv__col.inv__col--status', status(i), h('span.inv__time', `Edited ${fmtRelative(i.updatedAt)}`)),
+  const cards = items.map((i) => {
+    const names = coupleName(i.bride, i.groom);
+    return h('article.icard',
+      h('a.icard__photo', { href: `#/i/${i.slug}/couple`, tabindex: -1, 'aria-hidden': 'true' },
+        i.hero ? h('img', { src: photoUrl(i.hero, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : h('span.icard__ph', icon('image', 28)),
+        h('span.icard__status', status(i))),
+      h('div.icard__body',
+        h('h2.icard__names', names),
+        h('p.icard__date', fmtDate(i.weddingDate, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })),
+        h('p.icard__meta', h('span', `${themeName[i.theme] || i.theme} theme`), h('span', { 'aria-hidden': 'true' }, '·'),
+          h('a', { href: `#/i/${i.slug}/replies` }, `${i.rsvpCount} repl${i.rsvpCount === 1 ? 'y' : 'ies'}`)),
+        h('div.icard__actions',
+          h('a.btn.btn--primary', { href: `#/i/${i.slug}/couple` }, 'Edit'),
+          h('button.btn', { type: 'button', onclick: async () => {
+            const doc = await api(`/invitations/${i.slug}`).catch(() => null);
+            shareDialog({ meta: S.meta, slug: i.slug, theme: i.theme, names, events: doc?.data.events || [], live: i.status === 'published' });
+          } }, icon('send', 16), 'Share'),
+        ),
       ),
-    )))
-    : h('div.empty',
-      h('h2.empty__title', 'Make the first invitation'),
-      h('p', 'Start from sample wording and swap in the couple’s names, ceremonies and photos. Nothing is public until you publish.'),
-      h('button.btn.btn--primary', { type: 'button', onclick: newInvitation }, icon('plus', 16), 'New invitation'),
     );
-  clear(body).append(head, list);
+  });
+  clear(body).append(head, items.length
+    ? h('div.icards', cards)
+    : h('div.empty',
+      h('h2.empty__title', 'Make your first invitation'),
+      h('p', 'Six short steps: the couple, the dates, a theme, your own touches, music, and share.'),
+      h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: newInvitation }, icon('plus', 18), 'New invitation')));
 }
 
-function slugify(s) {
-  return s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
-}
+const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
 
 function newInvitation() {
   let slugTouched = false;
   const err = h('p.form-error', { role: 'alert' });
   const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Aarati' });
   const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Sameer' });
-  const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, pattern: '[a-z0-9-]{3,64}', 'aria-describedby': 'n-slug-hint', spellcheck: 'false' });
-  const theme = h('select.input', { id: 'n-theme' }, S.meta.themes.map((t) => h('option', { value: t.slug }, `${t.name}: ${t.concept.split(':')[0]}`)));
-  const sample = h('input', { type: 'checkbox', id: 'n-sample', checked: true });
-  const auto = () => { if (!slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim().replace(/\s+/g, ' ')).replace(/^(.+)-(.+)$/, '$1-$2'); };
+  const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, spellcheck: 'false' });
+  const auto = () => { if (!slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
   bride.addEventListener('input', auto);
   groom.addEventListener('input', auto);
   slug.addEventListener('input', () => { slugTouched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'); });
-
-  const submit = h('button.btn.btn--primary', { type: 'submit', form: 'new-inv' }, 'Create invitation');
+  const submit = h('button.btn.btn--primary', { type: 'submit', form: 'new-inv' }, 'Start');
   const form = h('form#new-inv.stack', { novalidate: true },
-    h('div.split',
+    h('div.pair',
       h('div.field', h('label.label', { for: 'n-bride' }, 'Bride’s first name'), bride),
-      h('div.field', h('label.label', { for: 'n-groom' }, 'Groom’s first name'), groom),
-    ),
-    h('div.field', h('label.label', { for: 'n-slug' }, 'Link name'), h('p.hint', { id: 'n-slug-hint' }, 'Part of the web address. Lowercase letters, numbers and hyphens; cannot be changed later.'),
-      h('div.prefix', h('span.prefix__text', `${location.host}/…/?id=`), slug)),
-    h('div.field', h('label.label', { for: 'n-theme' }, 'Theme'), theme),
-    h('label.checkline', sample, h('span', h('b', 'Start with sample wording'), h('small', 'Traditional card text, four ceremonies and placeholder photos to replace.'))),
+      h('div.field', h('label.label', { for: 'n-groom' }, 'Groom’s first name'), groom)),
+    h('details.more.more--inline', h('summary', h('span', 'Web address'), icon('down', 16)),
+      h('div.more__body', h('div.field', h('label.label', { for: 'n-slug' }, 'Short name in the link'), h('p.hint', 'Lowercase letters, numbers and hyphens. It cannot be changed later.'), slug))),
     err,
   );
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
     if (!bride.value.trim() || !groom.value.trim()) { err.textContent = 'Please enter both first names.'; return; }
-    if (!/^[a-z0-9-]{3,64}$/.test(slug.value)) { err.textContent = 'The link name needs 3 to 64 lowercase letters, numbers or hyphens.'; slug.focus(); return; }
+    if (!/^[a-z0-9-]{3,64}$/.test(slug.value)) { err.textContent = 'The web address needs 3 to 64 lowercase letters, numbers or hyphens.'; return; }
     submit.disabled = true;
     try {
-      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme: theme.value, sample: sample.checked } });
+      const theme = S.meta.themes.find((t) => t.ready)?.slug;
+      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme, sample: true } });
       d.close();
-      toast('Invitation created', 'success');
       go(`#/i/${doc.slug}/couple`);
     } catch (ex) {
-      err.textContent = ex.message;
+      err.textContent = ex.status === 409 ? 'That web address is taken. Open “Web address” and change it.' : ex.message;
     } finally {
       submit.disabled = false;
     }
   });
-  const d = openDialog({ title: 'New invitation', body: form, actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), submit] });
+  const d = openDialog({ title: 'New invitation', body: [h('p.card__help', 'Start with the couple’s first names. Everything else comes step by step.'), form], actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), submit] });
   bride.focus();
 }
 
 // ── Editor ────────────────────────────────────────────────────────────────
 
-const SECTION_OF = [
-  [/^couple|^hosts/, 'couple'], [/^weddingDate|^city/, 'date'], [/^events/, 'ceremonies'], [/^story/, 'story'],
-  [/^gallery/, 'gallery'], [/^invitation|^closing|^saptapadi/, 'wording'], [/^music/, 'music'], [/^themeContent/, 'content'], [/^theme$/, 'theme'],
-  [/^info/, 'info'], [/^rsvp/, 'rsvp'], [/^share/, 'share'],
-];
-const sectionFor = (p) => SECTION_OF.find(([re]) => re.test(p))?.[1] || 'couple';
-
-async function openEditor(slug, sectionId) {
-  clear(app).append(topbar('…'), h('main.page', h('p.boot', 'Opening the invitation…')));
+async function openEditor(slug, stepId) {
+  clear(app).append(topbar(), h('main.home', h('p.boot', 'Opening…')));
   let doc;
   try {
     doc = await api(`/invitations/${slug}`);
   } catch (err) {
-    clear(app).append(topbar('Not found'), h('main.page', h('p.notice.notice--error', err.message), h('a.btn', { href: '#/' }, 'Back to invitations')));
+    clear(app).append(topbar(), h('main.home', h('p.notice.notice--error', err.message), h('a.btn', { href: '#/' }, 'Back to invitations')));
     return;
   }
   S.editor = createEditor(doc);
-  S.editor.show(sectionId);
+  S.editor.show(stepId);
 }
 
 function createEditor(doc) {
   const slug = doc.slug;
   let version = doc.version;
-  let current = 'couple';
+  let current = null;
   let saveTimer = null;
   let inflight = null;
   let pending = false;
   let lastErrors = [];
-  let device = 'phone';
-  let autoRefresh = true;
-  let refreshTimer = null;
 
-  // ── Save status
-  const saveState = h('span.savestate', { 'aria-live': 'polite' }, 'All changes saved');
-  const setSave = (kind, text) => { saveState.dataset.state = kind; saveState.textContent = text; };
+  const saved = h('span.saved', { 'aria-live': 'polite', 'data-state': 'saved' }, icon('check', 14), h('span', 'Saved'));
+  const setSave = (state, text) => { saved.dataset.state = state; saved.lastChild.textContent = text; };
+  const names = () => coupleName(m.data.couple.bride.name, m.data.couple.groom.name);
 
-  const m = createModel(doc.data, (path) => {
+  const m = createModel(doc.data, () => {
     pending = true;
-    setSave('dirty', 'Unsaved changes');
+    setSave('dirty', 'Saving…');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(save, 700);
-    if (path[0] === 'couple' && path[2] === 'name') titleEl.textContent = coupleName(m.data.couple.bride.name, m.data.couple.groom.name);
   });
 
   async function save() {
@@ -274,25 +256,24 @@ function createEditor(doc) {
         const out = await api(`/invitations/${slug}`, { method: 'PUT', body: { version, data: m.data } });
         version = out.version;
         doc.changed = out.changed;
-        doc.updatedAt = out.updatedAt;
         mergeDepth(m.data, out.data);
-        if (lastErrors.length) { lastErrors = []; renderErrors(); }
-        if (!pending) setSave('saved', 'All changes saved');
-        renderStatus();
-        if (autoRefresh) { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refreshPreview(), 900); }
+        if (lastErrors.length) { lastErrors = []; showErrors(); }
+        if (!pending) setSave('saved', 'Saved');
+        title.textContent = names();
+        ctx.onSaved?.();
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) {
-          setSave('error', 'Changed elsewhere');
-          openDialog({ title: 'This invitation changed in another tab', body: h('p.dialog__text', 'To avoid overwriting those changes, reload to get the latest version.'), actions: [h('button.btn.btn--primary', { type: 'button', onclick: () => location.reload() }, 'Reload')] });
+          setSave('error', 'Not saved');
+          openDialog({ title: 'Changed in another window', body: h('p.dialog__text', 'This invitation was changed somewhere else. Reload to get the latest version.'), actions: [h('button.btn.btn--primary', { type: 'button', onclick: () => location.reload() }, 'Reload')] });
         } else if (err instanceof ApiError && err.status === 400 && err.body.errors) {
           lastErrors = err.body.errors;
-          setSave('error', 'Some fields need attention');
-          renderErrors();
+          setSave('error', 'Please check the highlighted field');
+          showErrors();
         } else if (err instanceof ApiError && err.status === 401) {
           pending = true;
         } else {
           pending = true;
-          setSave('error', 'Not saved · retrying');
+          setSave('error', 'Offline · retrying');
           saveTimer = setTimeout(save, 4000);
         }
       } finally {
@@ -302,7 +283,6 @@ function createEditor(doc) {
     await inflight;
   }
 
-  /** Server adds depth maps to uploaded photos in the background; keep them in the local copy. */
   function mergeDepth(local, remote) {
     if (!local || !remote || typeof local !== 'object' || typeof remote !== 'object') return;
     if (local.lg && local.lg === remote.lg && remote.depth && !local.depth) local.depth = remote.depth;
@@ -313,185 +293,24 @@ function createEditor(doc) {
   const beforeUnload = (e) => { if (pending || inflight) { e.preventDefault(); e.returnValue = ''; } };
   window.addEventListener('beforeunload', beforeUnload);
 
-  // ── Header
-  const titleEl = h('h1.ed__title', coupleName(doc.data.couple.bride.name, doc.data.couple.groom.name));
-  const statusEl = h('span.ed__status');
-  const actionsEl = h('div.ed__actions');
+  const stepOfPath = (p) => (/^couple|^hosts/.test(p) ? 'couple'
+    : /^weddingDate|^city|^events/.test(p) ? 'dates'
+      : /^theme$/.test(p) ? 'theme'
+        : /^music/.test(p) ? 'music' : 'customise');
 
-  function renderStatus() {
-    clear(statusEl).append(doc.status === 'published'
-      ? h('span.pill', { class: doc.changed ? 'pill--warn' : 'pill--ok' }, doc.changed ? 'Live · edits not published' : 'Live')
-      : h('span.pill.pill--muted', 'Draft'));
-    append(clear(actionsEl), [
-      h('button.btn.ed__preview-toggle', { type: 'button', onclick: () => togglePreview(!root.classList.contains('show-preview')), 'aria-controls': 'preview' }, icon('eye', 16), 'Preview'),
-      h('a.btn', { href: `#/i/${slug}/share` }, icon('link', 16), 'Share'),
-      doc.status === 'published'
-        ? h('button.btn.btn--quiet', { type: 'button', onclick: unpublish }, 'Unpublish')
-        : null,
-      doc.status === 'published' && !doc.changed
-        ? h('button.btn.btn--done', { type: 'button', disabled: true }, icon('check', 16), 'Published')
-        : h('button.btn.btn--primary', { type: 'button', onclick: publish }, doc.status !== 'published' ? 'Publish' : 'Publish changes'),
-    ]);
-  }
-
-  async function publish() {
-    await flush();
-    if (lastErrors.length) { toast('Fix the highlighted fields first.', 'error'); return; }
-    try {
-      const out = await api(`/invitations/${slug}/publish`, { method: 'POST' });
-      Object.assign(doc, { status: out.status, changed: out.changed, publishedAt: out.publishedAt });
-      version = out.version;
-      renderStatus();
-      toast('Published. The invitation is live.', 'success');
-      if (current === 'share') show('share', true);
-    } catch (err) {
-      if (err.body?.problems) {
-        openDialog({
-          title: 'Almost ready to publish',
-          body: [h('p.dialog__text', 'Please add these first:'), h('ul.problems', err.body.problems.map((p) => h('li', p)))],
-          actions: [h('button.btn.btn--primary', { type: 'button', onclick: (e) => e.target.closest('dialog').close() }, 'OK')],
-        });
-      } else toast(err.message, 'error');
-    }
-  }
-
-  async function unpublish() {
-    const ok = await confirmDialog({ title: 'Unpublish this invitation?', message: 'Guests opening the link will see “not found” until you publish again. Replies already received are kept.', confirm: 'Unpublish', danger: true });
-    if (!ok) return;
-    try {
-      const out = await api(`/invitations/${slug}/unpublish`, { method: 'POST' });
-      Object.assign(doc, { status: out.status, changed: false });
-      version = out.version;
-      renderStatus();
-      toast('Unpublished', 'success');
-    } catch (err) { toast(err.message, 'error'); }
-  }
-
-  async function deleteInvitation() {
-    const input = h('input.input', { id: 'del-confirm', autocomplete: 'off', spellcheck: 'false' });
-    const err = h('p.form-error', { role: 'alert' });
-    const btn = h('button.btn.btn--danger', { type: 'button', onclick: async () => {
-      if (input.value !== slug) { err.textContent = 'The link name does not match.'; return; }
-      try {
-        await api(`/invitations/${slug}`, { method: 'DELETE', body: { confirm: slug } });
-        pending = false;
-        d.close();
-        toast('Invitation deleted', 'success');
-        go('#/');
-      } catch (ex) { err.textContent = ex.message; }
-    } }, 'Delete invitation');
-    const d = openDialog({
-      title: 'Delete this invitation?',
-      body: [h('p.dialog__text', 'The invitation, its photos and its replies are moved to the server’s trash folder and the link stops working.'),
-        h('div.field', h('label.label', { for: 'del-confirm' }, `Type ${slug} to confirm`), input), err],
-      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), btn],
-    });
-    input.focus();
-  }
-
-  // ── Layout
-  const nav = h('nav.ed__nav', { 'aria-label': 'Sections' });
-  const form = h('div.ed__form', { id: 'main', tabindex: -1 });
-  const errorsEl = h('div.ed__errors', { hidden: true, role: 'alert' });
-
-  // Preview
-  const iframe = h('iframe.preview__frame', { title: 'Live preview of the invitation', loading: 'lazy' });
-  const deviceEl = h('div.preview__device', iframe);
-  const stage = h('div.preview__stage', deviceEl);
-  const devBtn = (d, name) => h('button.seg__btn', { type: 'button', 'aria-pressed': String(device === d), onclick: (e) => { device = d; e.target.closest('.seg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget))); fit(); } }, icon(d, 16), name);
-  const previewUrl = () => `/${m.data.theme}/?id=${encodeURIComponent(slug)}`;
-  const openLink = h('a.btn.btn--icon', { href: previewUrl(), target: '_blank', rel: 'noopener', 'aria-label': 'Open preview in a new tab', title: 'Open preview in a new tab' }, icon('external'));
-  const preview = h('aside.preview', { id: 'preview', 'aria-label': 'Preview' },
-    h('div.preview__bar',
-      h('div.seg', { role: 'group', 'aria-label': 'Preview size' }, devBtn('phone', 'Phone'), devBtn('desktop', 'Desktop')),
-      h('label.preview__auto', h('input', { type: 'checkbox', checked: autoRefresh, onchange: (e) => { autoRefresh = e.target.checked; } }), 'Auto-refresh'),
-      iconBtn('refresh', 'Refresh preview', () => refreshPreview()),
-      openLink,
-      iconBtn('close', 'Close preview', () => togglePreview(false), 'preview__close'),
-    ),
-    stage,
-    h('p.preview__note', 'Preview shows your latest saved edits. Guests see the published version.'),
-  );
-
-  // The preview runs a full theme (often WebGL), so it only loads while it is actually on screen.
-  let previewVer = 0;
-  const narrow = matchMedia('(max-width: 1199px)');
-  const previewVisible = () => current !== 'responses' && (!narrow.matches || root.classList.contains('show-preview'));
-  function refreshPreview() {
-    openLink.href = previewUrl();
-    if (!previewVisible()) {
-      if (iframe.getAttribute('src') !== 'about:blank') iframe.src = 'about:blank';
-      return;
-    }
-    previewVer += 1;
-    iframe.src = `${previewUrl()}&studio=${previewVer}`;
-  }
-  const togglePreview = (on) => {
-    root.classList.toggle('show-preview', on);
-    refreshPreview();
-    requestAnimationFrame(fit);
-  };
-  const onNarrow = () => refreshPreview();
-  narrow.addEventListener('change', onNarrow);
-
-  function fit() {
-    const W = device === 'phone' ? 390 : 1440;
-    const H = device === 'phone' ? 844 : 900;
-    const r = stage.getBoundingClientRect();
-    if (!r.width) return;
-    const s = Math.min((r.width - 24) / W, (r.height - 24) / H, 1);
-    deviceEl.style.width = `${W}px`;
-    deviceEl.style.height = `${H}px`;
-    deviceEl.style.transform = `translate(-50%, -50%) scale(${s})`;
-    deviceEl.dataset.device = device;
-  }
-  const ro = new ResizeObserver(fit);
-  ro.observe(stage);
-
-  const root = h('div.ed',
-    topbar(coupleName(doc.data.couple.bride.name, doc.data.couple.groom.name)),
-    h('div.ed__grid',
-      nav,
-      h('div.ed__center',
-        h('header.ed__head',
-          h('div.ed__id', titleEl, h('div.ed__sub', statusEl, h('span.ed__slug', `/${slug}`), saveState)),
-          actionsEl,
-        ),
-        errorsEl,
-        form,
-      ),
-      preview,
-    ),
-  );
-
-  function renderNav() {
-    clear(nav).append(
-      h('ul.ed__navlist',
-        SECTIONS.map((s) => h('li', h('a.ed__navlink', { href: `#/i/${slug}/${s.id}`, 'aria-current': current === s.id ? 'page' : undefined, class: lastErrors.some((e) => sectionFor(e.path) === s.id) ? 'has-error' : '' }, s.name))),
-        h('li.ed__navsep', { 'aria-hidden': 'true' }),
-        h('li', h('a.ed__navlink', { href: `#/i/${slug}/responses`, 'aria-current': current === 'responses' ? 'page' : undefined }, 'Responses')),
-      ),
-      h('button.btn.btn--quiet.btn--sm.ed__delete', { type: 'button', onclick: deleteInvitation }, icon('trash', 14), 'Delete invitation'),
-    );
-    nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
-
-  function renderErrors() {
-    form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
-    form.querySelectorAll('.field__err').forEach((el) => el.remove());
-    renderNav();
+  const errorsEl = h('div.ed2__errors', { hidden: true, role: 'alert' });
+  function showErrors() {
+    content.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+    content.querySelectorAll('.field__err').forEach((el) => el.remove());
     if (!lastErrors.length) { errorsEl.hidden = true; return; }
     errorsEl.hidden = false;
-    clear(errorsEl).append(
-      h('p', h('b', 'Not saved: '), 'some fields need attention.'),
-      h('ul', lastErrors.slice(0, 6).map((e) => h('li', h('a', { href: `#/i/${slug}/${sectionFor(e.path)}`, onclick: () => setTimeout(() => markErrors(), 50) }, `${e.path.replace(/\[(\d+)\]/g, (_, n) => ` ${Number(n) + 1}`).replace(/\./g, ' › ')}: ${e.message}`)))),
-    );
-    markErrors();
-  }
-
-  function markErrors() {
+    clear(errorsEl).append(h('p', h('b', 'Not saved yet. '), 'One or more fields need a change:'),
+      h('ul', lastErrors.slice(0, 5).map((e) => {
+        const st = STEPS.find((s) => s.id === stepOfPath(e.path));
+        return h('li', `${e.message}${st && st.id !== current ? ` (in “${st.title}”)` : ''}`, st && st.id !== current ? [' ', h('a', { href: `#/i/${slug}/${st.id}` }, 'Go there')] : null);
+      })));
     for (const e of lastErrors) {
-      const el = form.querySelector(`[data-path="${CSS.escape(e.path)}"]`);
+      const el = content.querySelector(`[data-path="${CSS.escape(e.path)}"]`);
       if (!el) continue;
       el.setAttribute('aria-invalid', 'true');
       const host = el.closest('.bi__col, .field, .photo') || el.parentElement;
@@ -499,51 +318,121 @@ function createEditor(doc) {
     }
   }
 
+  async function publish() {
+    await flush();
+    if (lastErrors.length) { toast('Please fix the highlighted field first.', 'error'); return; }
+    try {
+      const out = await api(`/invitations/${slug}/publish`, { method: 'POST' });
+      Object.assign(doc, { status: out.status, changed: out.changed, publishedAt: out.publishedAt });
+      version = out.version;
+      toast('Published. Your invitation is live.', 'success');
+    } catch (err) {
+      if (err.body?.problems) {
+        openDialog({ title: 'Almost there', body: [h('p.dialog__text', 'Please add these first:'), h('ul.problems', err.body.problems.map((p) => h('li', p)))], actions: [h('button.btn.btn--primary', { type: 'button', onclick: (e) => e.target.closest('dialog').close() }, 'OK')] });
+      } else toast(err.message, 'error');
+    }
+  }
+
+  async function unpublish() {
+    if (!(await confirmDialog({ title: 'Take the invitation offline?', message: 'Guests opening the link will see “not found” until you publish again. Replies are kept.', confirm: 'Unpublish', danger: true }))) return;
+    try {
+      const out = await api(`/invitations/${slug}/unpublish`, { method: 'POST' });
+      Object.assign(doc, { status: out.status, changed: false });
+      version = out.version;
+      toast('Unpublished', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  async function remove() {
+    const input = h('input.input', { id: 'del-confirm', autocomplete: 'off', spellcheck: 'false' });
+    const err = h('p.form-error', { role: 'alert' });
+    const btn = h('button.btn.btn--danger', { type: 'button', onclick: async () => {
+      if (input.value !== slug) { err.textContent = 'That does not match.'; return; }
+      try {
+        await api(`/invitations/${slug}`, { method: 'DELETE', body: { confirm: slug } });
+        pending = false;
+        d.close();
+        toast('Invitation deleted', 'success');
+        go('#/');
+      } catch (ex) { err.textContent = ex.message; }
+    } }, 'Delete');
+    const d = openDialog({
+      title: 'Delete this invitation?',
+      body: [h('p.dialog__text', 'The invitation, its photos and its replies are removed and the link stops working.'),
+        h('div.field', h('label.label', { for: 'del-confirm' }, `Type ${slug} to confirm`), input), err],
+      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), btn],
+    });
+    input.focus();
+  }
+
+  // ── Layout
+  const title = h('span.ed2__names', names());
+  const repliesLink = h('a.btn.btn--quiet.btn--sm', { href: `#/i/${slug}/replies` }, 'Replies');
+  const head = h('div.ed2__head',
+    h('a.btn.btn--quiet.btn--sm.ed2__back', { href: '#/' }, icon('back', 16), h('span', 'All invitations')),
+    title, saved, repliesLink);
+  const progress = h('nav.steps', { 'aria-label': 'Steps' });
+  const content = h('div.ed2__content', { id: 'main', tabindex: -1 });
+  const foot = h('div.ed2__foot');
+  const root = h('div.ed2', topbar(), h('div.ed2__bar', head, progress), h('main.ed2__main', errorsEl, content, foot));
+
   const ctx = {
-    m, slug, meta: S.meta, doc,
-    onTheme: () => { refreshPreview(); },
-    shareUrl: () => {
-      const base = S.meta.publicOrigin || location.origin;
-      // Production serves /i/<slug>, which always redirects to the current theme.
-      return S.meta.shortLinks ? `${base}/i/${slug}` : `${base}/${m.data.theme}/?id=${slug}`;
-    },
+    m, slug, meta: S.meta, doc, names, publish, unpublish, remove,
+    onTheme: () => {},
   };
 
-  function show(id, force = false) {
-    const valid = id === 'responses' || SECTIONS.some((s) => s.id === id);
-    if (!valid) { go(`#/i/${slug}/couple`); return; }
-    if (!app.contains(root)) {
-      clear(app).append(root);
-      renderStatus();
-      refreshPreview();
-      requestAnimationFrame(fit);
+  function drawProgress() {
+    const idx = STEPS.findIndex((s) => s.id === current);
+    clear(progress).append(
+      h('div.steps__track', { 'aria-hidden': 'true' }, h('span.steps__fill', { style: { transform: `scaleX(${idx < 0 ? 1 : (idx + 1) / STEPS.length})` } })),
+      h('ol.steps__list', STEPS.map((s, i) => h('li', h('a.steps__item', {
+        href: `#/i/${slug}/${s.id}`, 'aria-current': s.id === current ? 'step' : undefined, class: i < idx ? 'is-done' : '',
+      }, h('span.steps__n', i < idx ? icon('check', 12) : String(i + 1)), h('span.steps__t', s.title))))),
+    );
+  }
+
+  function show(id) {
+    if (id === 'replies') {
+      current = 'replies';
+    } else if (STEPS.some((s) => s.id === id)) {
+      current = id;
+    } else {
+      go(`#/i/${slug}/couple`);
+      return;
     }
-    if (current === id && form.firstChild && !force) return;
-    current = id;
-    const sec = SECTIONS.find((s) => s.id === id);
-    document.title = `${sec ? sec.name : 'Responses'} · ${coupleName(m.data.couple.bride.name, m.data.couple.groom.name)} · Studio`;
-    clear(form).append(id === 'responses' ? responsesView(ctx) : sec.render(ctx));
-    const wasResponses = root.classList.contains('is-responses');
-    root.classList.toggle('is-responses', id === 'responses');
-    if (wasResponses !== (id === 'responses')) refreshPreview();
-    renderNav();
-    markErrors();
-    form.scrollTop = 0;
+    if (!app.contains(root)) clear(app).append(root);
+    ctx.onSaved = null;
+    const step = STEPS.find((s) => s.id === current);
+    const idx = STEPS.indexOf(step);
+    document.title = `${step ? step.title : 'Replies'} · ${names()} · Sayapatri Studio`;
+    root.classList.toggle('is-replies', current === 'replies');
+    repliesLink.setAttribute('aria-current', current === 'replies' ? 'page' : 'false');
+    drawProgress();
+    if (step) {
+      clear(content).append(
+        h('header.ed2__intro', h('p.ed2__kicker', `Step ${idx + 1} of ${STEPS.length}`), h('h1.ed2__title', step.title), h('p.ed2__lede', step.intro)),
+        ...[step.render(ctx)].flat(),
+      );
+      const prev = STEPS[idx - 1];
+      const next = STEPS[idx + 1];
+      clear(foot).append(
+        prev ? h('a.btn.btn--lg', { href: `#/i/${slug}/${prev.id}` }, icon('left', 16), 'Back') : h('span'),
+        next ? h('a.btn.btn--primary.btn--lg', { href: `#/i/${slug}/${next.id}` }, `Next: ${next.title}`, icon('right', 16)) : h('a.btn.btn--lg', { href: `#/i/${slug}/replies` }, 'See replies', icon('right', 16)),
+      );
+    } else {
+      clear(content).append(responsesView(ctx));
+      clear(foot);
+    }
+    showErrors();
     window.scrollTo({ top: 0 });
-    requestAnimationFrame(fit);
+    content.focus({ preventScroll: true });
   }
 
   return {
     slug,
     show,
     flush,
-    destroy() {
-      ro.disconnect();
-      narrow.removeEventListener('change', onNarrow);
-      iframe.src = 'about:blank';
-      clearTimeout(refreshTimer);
-      window.removeEventListener('beforeunload', beforeUnload);
-    },
+    destroy() { window.removeEventListener('beforeunload', beforeUnload); },
   };
 }
 

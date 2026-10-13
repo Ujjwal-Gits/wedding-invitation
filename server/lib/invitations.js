@@ -4,9 +4,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, withLock, invPath, getInvitation, listInvitations, writeJsonAtomic, trashInvitation, uploadDir, readJson, rsvpPath } from './store.js';
 import { sanitizeInvitation, publishProblems } from './validate.js';
-import { demoConfig, BUNDLED_TRACKS, THEME_SLUGS, THEMES, librarySlugs } from './catalog.js';
+import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
-import { slotInfo } from './slots.js';
+import { slotInfo, loadManifest } from './slots.js';
+import { bsDateOf } from '../../src/core/i18n.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -72,6 +73,7 @@ function starter({ bride, groom, theme, sample }) {
     rsvp: { ...demo.rsvp, deadline: { ...blank } },
     music: { volume: 0.75, tracks: [BUNDLED_TRACKS[0]] },
   };
+  base.weddingDateBS = { en: '', ne: '' }; // worked out from the date (see publicData)
   base.couple.bride.photo = null;
   base.couple.groom.photo = null;
   if (bride) base.couple.bride.name = { en: bride, ne: '' };
@@ -94,7 +96,7 @@ function starter({ bride, groom, theme, sample }) {
     base.info.contacts = [];
   }
   base.couple.hashtag = bride && groom ? `#${bride.replace(/\s+/g, '')}Weds${groom.replace(/\s+/g, '')}` : '';
-  base.theme = THEME_SLUGS.has(theme) ? theme : 'dhoka';
+  base.theme = isTheme(theme) ? theme : (listThemes().find((t) => t.ready)?.slug || 'dhoka');
   base.share = { title: bride && groom ? `${bride} & ${groom} · Shubha Bibaha` : '', description: 'You are warmly invited to our wedding.', image: '', siteUrl: '' };
   return base;
 }
@@ -215,14 +217,18 @@ export async function remove(req, res) {
   res.json({ ok: true });
 }
 
-export function meta(req, res) {
+export async function meta(req, res) {
   let credits = [];
   try { credits = JSON.parse(readFileSync(resolve(ROOT_DIR, 'src', 'generated', 'credits.json'), 'utf8')); } catch { credits = []; }
   const lib = [...librarySlugs()].sort().map((slug) => {
     const c = credits.find((x) => x.file && x.file.replace(/\.jpe?g$/i, '') === slug);
     return { slug, title: c?.title || slug, focal: c && c.focal_x != null ? [c.focal_x, c.focal_y] : [0.5, 0.5] };
   });
-  res.json({ themes: THEMES, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
+  const themes = await Promise.all(listThemes().map(async (t) => {
+    const m = await loadManifest(t.slug);
+    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept };
+  }));
+  res.json({ themes, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
 
 
@@ -244,6 +250,11 @@ export async function publicData(req, res) {
   const hero = out.couple.portraits[0]?.photo;
   out.share.image = hero ? (typeof hero === 'object' ? hero.sm : hero.startsWith('https://') ? hero : `/photos/${hero}-sm.webp`) : '';
   out.share.siteUrl = PUBLIC_ORIGINS[0] || '';
+  // The B.S. wedding date is worked out from the date unless the planner typed their own (§12).
+  if (out.weddingDate && !out.weddingDateBS?.en && !out.weddingDateBS?.ne) {
+    const bs = bsDateOf(out.weddingDate);
+    out.weddingDateBS = { en: bs.en, ne: bs.ne };
+  }
   // Only the selected theme's content overrides are needed by the page.
   const tc = out.themeContent?.[out.theme];
   out.themeContent = tc ? { [out.theme]: tc } : {};

@@ -4,17 +4,51 @@ import { resolve } from 'node:path';
 import { ROOT_DIR } from './env.js';
 import { config as demo } from '../../src/config.js';
 
-export const THEMES = [
-  { slug: 'dhoka', name: 'Dhoka', concept: 'Ivory Press: a printed-card editorial with a golden door that opens' },
-  { slug: 'ghar', name: 'Ghar', concept: 'Lamplight Cinema: a dark film walk through a Newar house' },
-  { slug: 'sayapatri', name: 'Sayapatri', concept: 'Haldi Daylight: a bright marigold journey with drifting petals' },
-  { slug: 'chitra', name: 'Chitra', concept: 'Illustrated storybook with Mithila-inspired characters' },
-  { slug: 'mandap', name: 'Mandap', concept: 'Night diorama: the mandap and seven rounds of the fire in 3D' },
-  { slug: 'bagaicha', name: 'Bagaicha', concept: 'Garden venue in 3D: pavilion, waterfall and lanterns' },
-  { slug: 'dhaka', name: 'Dhaka', concept: 'Dhaka Modern: kinetic type, woven pattern, photo collage' },
-  { slug: 'himal', name: 'Himal', concept: 'Himalayan minimal luxury: calm, photo-led, mountain dawn' },
-];
-export const THEME_SLUGS = new Set(THEMES.map((t) => t.slug));
+// Themes are discovered on disk: every src/themes/<slug>/slots.js (plus the original eight).
+// A theme is "ready" once its page exists (<slug>/index.html in dev, dist/<slug>/index.html built).
+const KNOWN = {
+  dhoka: { name: 'Dhoka', concept: 'A printed ivory card with a golden door that opens' },
+  ghar: { name: 'Ghar', concept: 'A lamplit evening walk through a Newar house' },
+  sayapatri: { name: 'Sayapatri', concept: 'Bright marigold daylight with drifting petals' },
+  chitra: { name: 'Chitra', concept: 'An illustrated storybook in Mithila colours' },
+  mandap: { name: 'Mandap', concept: 'The mandap at night and seven rounds of the fire' },
+  bagaicha: { name: 'Bagaicha', concept: 'A garden venue with pavilion, waterfall and lanterns' },
+  dhaka: { name: 'Dhaka', concept: 'Bold modern type, woven pattern and photo collage' },
+  himal: { name: 'Himal', concept: 'Calm and photo-led, at mountain dawn' },
+  kham: { name: 'Kham', concept: '' },
+  durbar: { name: 'Durbar', concept: '' },
+  mala: { name: 'Mala', concept: '' },
+  gurans: { name: 'Gurans', concept: '' },
+};
+const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
+const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
+let themeCache = { at: 0, list: [] };
+
+/** [{ slug, name, concept, ready, thumb }] in a stable order (the originals first). */
+export function listThemes() {
+  if (Date.now() - themeCache.at < 10_000) return themeCache.list;
+  const dir = resolve(ROOT_DIR, 'src', 'themes');
+  const found = new Set();
+  if (existsSync(dir)) {
+    for (const d of readdirSync(dir, { withFileTypes: true })) {
+      if (d.isDirectory() && THEME_RE.test(d.name) && existsSync(resolve(dir, d.name, 'slots.js'))) found.add(d.name);
+    }
+  }
+  for (const slug of Object.keys(KNOWN)) if (existsSync(resolve(ROOT_DIR, slug, 'index.html'))) found.add(slug);
+  const order = Object.keys(KNOWN);
+  const list = [...found]
+    .sort((a, b) => ((order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)) || a.localeCompare(b))
+    .map((slug) => ({
+      slug,
+      name: KNOWN[slug]?.name || titleCase(slug),
+      concept: KNOWN[slug]?.concept || '',
+      ready: existsSync(resolve(ROOT_DIR, slug, 'index.html')) || existsSync(resolve(ROOT_DIR, 'dist', slug, 'index.html')),
+      thumb: existsSync(resolve(ROOT_DIR, 'public', 'themes', slug, 'thumb.jpg')) ? `/themes/${slug}/thumb.jpg` : '',
+    }));
+  themeCache = { at: Date.now(), list };
+  return list;
+}
+export const isTheme = (slug) => typeof slug === 'string' && listThemes().some((t) => t.slug === slug);
 
 /** The bundled tracks (from the demo config). Their src paths are the only non-upload audio allowed. */
 export const BUNDLED_TRACKS = demo.music.tracks.map((t) => structuredClone(t));

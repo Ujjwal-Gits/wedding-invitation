@@ -1,9 +1,8 @@
 // The editor's sections. Each returns a DOM node bound to ctx.m (the invitation model).
-import { h, icon, iconBtn, clear, toast, copyText, confirmDialog } from './dom.js';
-import { textField, biField, dateTimeField, photoSlot, repeater, section, group, uploadImage, checkImageFile, pathStr } from './fields.js';
+import { h, icon, iconBtn, clear, toast } from './dom.js';
+import { textField, biField, repeater, section, group, uploadImage, checkImageFile, pathStr } from './fields.js';
 import { upload } from './api.js';
 import { photoUrl } from '../photos.js';
-import { contentSection, carryOver } from './content.js';
 
 const blank = () => ({ en: '', ne: '' });
 const label = (v, fallback = '') => (v && (v.en || v.ne)) || fallback;
@@ -11,35 +10,8 @@ const openItems = new WeakSet();
 
 // ── Couple & families ─────────────────────────────────────────────────────
 
-function personBlock(ctx, who, title) {
-  const m = ctx.m;
-  const p = ['couple', who];
-  return group(title,
-    photoSlot(m, [...p, 'photo'], ctx, { label: `${title}'s portrait`, hint: 'A single portrait, ideally upright (portrait orientation).', shape: 'port' }),
-    biField(m, [...p, 'name'], { label: 'First name', max: 60, placeholderEn: who === 'bride' ? 'Aarati' : 'Sameer', placeholderNe: who === 'bride' ? 'आरती' : 'समीर' }),
-    biField(m, [...p, 'fullName'], { label: 'Full name as printed on the card', hint: 'Nepali cards often prefix सौ.का. for the bride and चि. for the groom.', max: 120 }),
-    biField(m, [...p, 'parents'], { label: 'Parents', max: 240, placeholderEn: 'Mr. … & Mrs. …', placeholderNe: 'श्री … तथा श्रीमती …' }),
-    biField(m, [...p, 'home'], { label: 'Family home', max: 160, placeholderEn: 'Baluwatar, Kathmandu' }),
-  );
-}
-
-export function coupleSection(ctx) {
-  const m = ctx.m;
-  return section('Couple & families', 'Names, families and the photos guests will see most.',
-    h('div.split', personBlock(ctx, 'bride', 'Bride'), personBlock(ctx, 'groom', 'Groom')),
-    group('Couple photos',
-      h('p.hint', 'The first photo is the hero of the invitation. Themes show the couple in at least three places, so add three or more.'),
-      portraitsEditor(ctx),
-    ),
-    group('Signing the card',
-      biField(m, ['hosts'], { label: 'Hosts (who is inviting)', max: 200, placeholderEn: 'The Thapa & Shrestha families' }),
-      textField(m, ['couple', 'hashtag'], { label: 'Hashtag', max: 60, placeholder: '#AaratiWedsSameer' }),
-    ),
-  );
-}
-
 /** Couple photos: multi-upload, reorder, alt text. Stored as couple.portraits = [{ photo, alt }]. */
-function portraitsEditor(ctx) {
+export function portraitsEditor(ctx) {
   const m = ctx.m;
   const path = ['couple', 'portraits'];
   const root = h('div.media');
@@ -63,7 +35,7 @@ function portraitsEditor(ctx) {
 }
 
 /** A thumbnail tile in a photo grid, with move/remove and alt text. */
-function mediaTile(ctx, path, i, { onChange, badge, altPath, extra }) {
+export function mediaTile(ctx, path, i, { onChange, badge, altPath, extra }) {
   const m = ctx.m;
   const arr = m.get(path);
   const item = arr[i];
@@ -109,7 +81,7 @@ function mediaTile(ctx, path, i, { onChange, badge, altPath, extra }) {
 }
 
 /** Drop zone + multi-file picker. Uploads sequentially and reports each photo. */
-function dropZone(ctx, { label: text, onPhoto, max = 60, multiple = true }) {
+export function dropZone(ctx, { label: text, onPhoto, max = 60, multiple = true }) {
   const input = h('input', { type: 'file', accept: 'image/*', multiple, hidden: true });
   const status = h('span.drop__status', { 'aria-live': 'polite' });
   const bar = h('span.progress__bar');
@@ -146,27 +118,9 @@ function dropZone(ctx, { label: text, onPhoto, max = 60, multiple = true }) {
 
 // ── Date & place ──────────────────────────────────────────────────────────
 
-export function dateSection(ctx) {
-  const m = ctx.m;
-  return section('Date & place', 'The main wedding day. Each ceremony has its own times in Ceremonies.',
-    group(null,
-      dateTimeField(m, ['weddingDate'], { label: 'Wedding day and auspicious time', hint: 'Used for the countdown. Nepal time.' }),
-      biField(m, ['weddingDateBS'], { label: 'Date in Bikram Sambat', hint: 'Please have the family purohit check this date.', max: 120, placeholderEn: '29 Magh 2083 B.S.', placeholderNe: 'वि.सं. २०८३ साल माघ २९ गते, शुक्रबार' }),
-      biField(m, ['city'], { label: 'City', max: 120, placeholderEn: 'Kathmandu, Nepal', placeholderNe: 'काठमाडौं, नेपाल' }),
-    ),
-  );
-}
-
 // ── Ceremonies ────────────────────────────────────────────────────────────
 
-const eventId = (title, taken) => {
-  const base = (title || 'ceremony').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'ceremony';
-  let id = base.length >= 2 ? base : `${base}-1`;
-  for (let n = 2; taken.includes(id); n++) id = `${base}-${n}`;
-  return id;
-};
-
-function colorsEditor(ctx, path) {
+export function colorsEditor(ctx, path) {
   const m = ctx.m;
   const root = h('div.colors');
   const render = () => {
@@ -186,69 +140,6 @@ function colorsEditor(ctx, path) {
   };
   render();
   return h('fieldset.field', h('legend.label', 'Dress code colours'), h('p.hint', 'Up to six swatches guests can match.'), root);
-}
-
-function eventBody(ctx, i) {
-  const m = ctx.m;
-  const p = ['events', i];
-  const ev = m.get(p);
-  return [
-    h('div.split.split--photo',
-      photoSlot(m, [...p, 'photo'], ctx, { label: 'Venue or ceremony photo', hint: 'Landscape works best. Use the library if you have none yet.', shape: 'land', library: true }),
-      h('div',
-        biField(m, [...p, 'title'], { label: 'Ceremony name', max: 80, placeholderEn: 'Mehendi', placeholderNe: 'मेहन्दी' }),
-        biField(m, [...p, 'blurb'], { label: 'One line about it', max: 240 }),
-      ),
-    ),
-    h('div.split',
-      dateTimeField(m, [...p, 'start'], { label: 'Starts' }),
-      dateTimeField(m, [...p, 'end'], { label: 'Ends' }),
-    ),
-    biField(m, [...p, 'venue'], { label: 'Venue', max: 200, placeholderEn: 'Shanti Banquet, Jawalakhel, Lalitpur' }),
-    textField(m, [...p, 'mapQuery'], { label: 'Map search', hint: 'What to search in Google Maps, e.g. the venue name and area.', max: 200 }),
-    h('div.split',
-      colorsEditor(ctx, [...p, 'dress', 'colors']),
-      biField(m, [...p, 'dress', 'text'], { label: 'Dress code', max: 120, placeholderEn: 'Shades of green' }),
-    ),
-    group('Programme (optional)',
-      repeater(m, [...p, 'rituals'], {
-        itemName: 'programme item', addLabel: 'Add programme item', max: 12, empty: 'No programme items.',
-        title: (r) => `${typeof r.time === 'object' ? label(r.time) : r.time || ''} ${label(r.title)}`.trim(),
-        create: () => ({ time: '', title: blank() }),
-        render: (j) => {
-          const r = ev.rituals[j];
-          return h('div.ritual',
-            typeof r.time === 'object'
-              ? biField(m, [...p, 'rituals', j, 'time'], { label: 'Time', max: 40 })
-              : textField(m, [...p, 'rituals', j, 'time'], { label: 'Time', max: 40, placeholder: '10:30' }),
-            biField(m, [...p, 'rituals', j, 'title'], { label: 'What happens', max: 120 }),
-          );
-        },
-      }),
-    ),
-  ];
-}
-
-export function ceremoniesSection(ctx) {
-  const m = ctx.m;
-  return section('Ceremonies', 'Every event guests are invited to, in order. Personalised links can show a guest only some of them.',
-    repeater(m, ['events'], {
-      itemName: 'ceremony', addLabel: 'Add ceremony', max: 12, collapsible: true, open: openItems,
-      title: (e) => [label(e.title, 'New ceremony'), e.start ? new Date(e.start).toLocaleDateString('en-GB', { timeZone: 'Asia/Kathmandu', day: 'numeric', month: 'short' }) : ''].filter(Boolean).join(' · '),
-      confirmRemove: (e) => confirmDialog({ title: 'Remove this ceremony?', message: `“${label(e.title, 'This ceremony')}” and its details will be removed. Replies already received keep their answers.`, confirm: 'Remove', danger: true }),
-      create: () => {
-        const taken = (m.get(['events']) || []).map((e) => e.id);
-        const last = (m.get(['events']) || []).at(-1);
-        const day = (last?.start || m.get(['weddingDate']) || '').slice(0, 10);
-        return {
-          id: eventId('ceremony', taken), title: blank(), blurb: blank(),
-          start: day ? `${day}T10:00:00+05:45` : '', end: day ? `${day}T13:00:00+05:45` : '',
-          venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null,
-        };
-      },
-      render: (i) => eventBody(ctx, i),
-    }),
-  );
 }
 
 // ── Story ─────────────────────────────────────────────────────────────────
@@ -391,7 +282,7 @@ export function musicSection(ctx) {
 
     const customs = tracks.map((t, idx) => ({ t, idx })).filter(({ t }) => t.src.startsWith('/uploads/'));
     root.append(
-      group('Bundled tracks', h('p.hint', 'Guests can switch between the tracks you include. Music never plays until a guest taps to open the invitation.'),
+      group('Choose from our music', h('p.hint', 'Tick the songs to include. Guests can switch between them; music only starts when a guest opens the invitation.'),
         h('ul.tracks', bundled.map((t) => row(t)))),
       group('Your own music',
         customs.length ? h('ul.tracks', customs.map(({ t, idx }) => row(t, { custom: true, idx }))) : h('p.rep__empty', 'No uploaded music.'),
@@ -430,52 +321,6 @@ function mp3Upload(ctx, onDone) {
     }
   };
   return h('div.drop', h('button.btn', { type: 'button', onclick: () => input.click() }, icon('music', 16), 'Upload an MP3'), h('span.drop__hint', 'MP3 only · up to 15 MB'), progress, input);
-}
-
-// ── Theme ─────────────────────────────────────────────────────────────────
-
-export function themeSection(ctx) {
-  const m = ctx.m;
-  const list = h('div.themes', { role: 'radiogroup', 'aria-label': 'Theme' });
-  const render = () => {
-    clear(list);
-    const cur = m.get(['theme']);
-    ctx.meta.themes.forEach((t, i) => {
-      const id = `theme-${t.slug}`;
-      const thumb = h('span.theme__thumb', h('span.theme__ph', { 'aria-hidden': 'true' }, t.name));
-      const img = h('img', { src: `/themes/${t.slug}/thumb.jpg`, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => e.target.remove(), onload: (e) => e.target.classList.add('is-loaded') });
-      thumb.prepend(img);
-      list.append(h('label.theme', { for: id, class: cur === t.slug ? 'is-on' : '' },
-        h('input.sr-only', { type: 'radio', name: 'theme', id, value: t.slug, checked: cur === t.slug, onchange: () => { m.set(['theme'], t.slug); ctx.onTheme?.(t.slug); render(); showCarry(); list.querySelector(`#${id}`)?.focus(); } }),
-        thumb,
-        h('span.theme__text', h('b', t.name, cur === t.slug ? h('span.theme__on', icon('check', 14), 'Selected') : null), h('small', t.concept)),
-      ));
-      void i;
-    });
-  };
-  const carry = h('div.carry', { 'aria-live': 'polite' });
-  const name = (t) => ctx.meta.themes.find((x) => x.slug === t)?.name || t;
-  const showCarry = async () => {
-    const t = m.get(['theme']);
-    const c = await carryOver(ctx, t);
-    if (m.get(['theme']) !== t) return;
-    const li = (ok, text) => h('li', { class: ok ? 'is-yes' : 'is-no' }, h('span.carry__mark', { 'aria-hidden': 'true' }, ok ? '✓' : '–'), text);
-    clear(carry).append(
-      h('h3.group__title', `What carries over to ${name(t)}`),
-      h('ul.carry__list',
-        li(true, 'Names, families, dates, ceremonies, story, card wording, gallery, guest info, music and RSVP settings'),
-        li(c.portraits > 0, `${c.portraits} couple photo${c.portraits === 1 ? '' : 's'}${c.bride || c.groom ? ', plus the bride and groom portraits' : ''}: used wherever ${name(t)} shows the couple`),
-        c.shown.length ? li(true, `Shared content shown here: ${c.shown.join(', ')}`) : null,
-        c.notShown.length ? li(false, `Kept but not shown by ${name(t)}: ${c.notShown.join(', ')}`) : null,
-        c.others.length ? li(false, `Changes made only for ${c.others.map(name).join(', ')} stay saved and return if you switch back`) : null,
-        c.hasManifest ? null : li(false, `${name(t)} has not published its editable content list yet, so its own photos and lines use the theme defaults for now`),
-      ),
-      h('a.btn.btn--sm', { href: `#/i/${ctx.slug}/content` }, `Edit ${name(t)} content`),
-    );
-  };
-  render();
-  showCarry();
-  return section('Theme', 'Eight designs. Switching keeps every word and photo; the preview updates straight away.', carry, list);
 }
 
 // ── Guest info ────────────────────────────────────────────────────────────
@@ -526,60 +371,3 @@ export function rsvpSection(ctx) {
   );
 }
 
-// ── Sharing ───────────────────────────────────────────────────────────────
-
-export function shareSection(ctx) {
-  const m = ctx.m;
-  const live = ctx.doc.status === 'published';
-  const events = m.get(['events']) || [];
-  const linkOut = h('input.input.link__out', { type: 'text', readonly: true, 'aria-label': 'Personalised link', onfocus: (e) => e.target.select() });
-  const nameIn = h('input.input', { type: 'text', id: 'to-name', maxlength: 60, placeholder: 'e.g. Maiju & family', autocomplete: 'off' });
-  const picks = events.map((e) => h('input', { type: 'checkbox', value: e.id, checked: true }));
-  const update = () => {
-    const u = new URL(ctx.shareUrl());
-    const name = nameIn.value.trim();
-    if (name) u.searchParams.set('to', name);
-    const chosen = picks.filter((p) => p.checked).map((p) => p.value);
-    if (chosen.length && chosen.length < events.length) u.searchParams.set('e', chosen.join(','));
-    linkOut.value = u.href;
-  };
-  nameIn.addEventListener('input', update);
-  picks.forEach((p) => p.addEventListener('change', update));
-  update();
-  const main = ctx.shareUrl();
-  return section('Sharing', 'The link guests open, and how it looks when pasted into WhatsApp or Viber.',
-    live ? null : h('p.notice', 'This invitation is not published yet. Links will show “not found” to guests until you publish.'),
-    group('Invitation link',
-      h('div.link', h('input.input.link__out', { type: 'text', readonly: true, value: main, 'aria-label': 'Invitation link', onfocus: (e) => e.target.select() }),
-        h('button.btn', { type: 'button', onclick: () => copyText(main) }, icon('copy', 16), 'Copy'),
-        h('a.btn', { href: main, target: '_blank', rel: 'noopener' }, icon('external', 16), 'Open')),
-    ),
-    group('Personalised link',
-      h('p.hint', 'Greets one guest by name, and can show them only the ceremonies they are invited to.'),
-      h('div.field', h('label.label', { for: 'to-name' }, 'Guest name'), nameIn),
-      events.length > 1 ? h('fieldset.field', h('legend.label', 'Ceremonies shown'),
-        h('div.chips', events.map((e, i) => h('label.chip', picks[i], h('span', label(e.title, e.id)))))) : null,
-      h('div.link', linkOut, h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(linkOut.value) }, icon('copy', 16), 'Copy link')),
-    ),
-    group('Link preview',
-      textField(m, ['share', 'title'], { label: 'Preview title', max: 140, placeholder: 'Aarati & Sameer · Shubha Bibaha' }),
-      textField(m, ['share', 'description'], { label: 'Preview text', max: 300, multiline: true, rows: 2 }),
-      h('p.hint', 'The first couple photo is used as the preview image.'),
-    ),
-  );
-}
-
-export const SECTIONS = [
-  { id: 'couple', name: 'Couple & families', render: coupleSection },
-  { id: 'date', name: 'Date & place', render: dateSection },
-  { id: 'ceremonies', name: 'Ceremonies', render: ceremoniesSection },
-  { id: 'story', name: 'Story', render: storySection },
-  { id: 'gallery', name: 'Gallery', render: gallerySection },
-  { id: 'wording', name: 'Card wording', render: wordingSection },
-  { id: 'music', name: 'Music', render: musicSection },
-  { id: 'theme', name: 'Theme', render: themeSection },
-  { id: 'content', name: 'Theme content', render: contentSection },
-  { id: 'info', name: 'Guest info', render: infoSection },
-  { id: 'rsvp', name: 'RSVP settings', render: rsvpSection },
-  { id: 'share', name: 'Sharing', render: shareSection },
-];

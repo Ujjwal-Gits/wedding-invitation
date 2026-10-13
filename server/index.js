@@ -41,7 +41,8 @@ api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
 // Admin
-api.get('/meta', requireAdmin, inv.meta);
+api.get('/meta', requireAdmin, wrap(inv.meta));
+
 api.get('/invitations', requireAdmin, wrap(inv.list));
 api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
 api.get('/invitations/:slug', requireAdmin, wrap(inv.read));

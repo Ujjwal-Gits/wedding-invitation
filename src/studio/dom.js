@@ -61,6 +61,8 @@ const ICONS = {
   music: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  send: '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4 18-7z"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
   dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
 };
 

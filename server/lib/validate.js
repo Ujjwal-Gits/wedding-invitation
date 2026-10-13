@@ -2,7 +2,7 @@
 // sanitizeInvitation(): types, lengths, formats and enums. Unknown keys are dropped.
 //   Drafts may be incomplete, so empty strings are allowed here.
 // publishProblems(): what is still missing before an invitation can go live.
-import { THEME_SLUGS, BUNDLED_SRCS, librarySlugs } from './catalog.js';
+import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -155,7 +155,7 @@ function themeContentOf(c, v, manifests) {
   if (v == null) return out;
   if (typeof v !== 'object' || Array.isArray(v)) return c.fail('themeContent', 'must be an object') ?? {};
   for (const [theme, tc] of Object.entries(v)) {
-    if (!THEME_SLUGS.has(theme) || !tc || typeof tc !== 'object') continue;
+    if (!isTheme(theme) || !tc || typeof tc !== 'object') continue;
     const man = manifests[theme] || null;
     const p = `themeContent.${theme}`;
     const imgIn = tc.images && typeof tc.images === 'object' ? Object.entries(tc.images) : [];
@@ -217,6 +217,9 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
       photo: photoRef(c, e.photo, `${p}.photo`),
     };
     if (ev.start && ev.end && Date.parse(ev.end) < Date.parse(ev.start)) c.fail(`${p}.end`, 'must be after the start');
+    // Optional B.S. override (THEME-CONTRACT §12): only stored when the planner typed one.
+    const bs = bi(c, e.dateBS, `${p}.dateBS`, 120);
+    if (bs.en || bs.ne) ev.dateBS = bs;
     if (Array.isArray(e.rituals) && e.rituals.length) {
       ev.rituals = list(c, e.rituals, `${p}.rituals`, 12, (r, rp) => ({
         time: r.time && typeof r.time === 'object' ? bi(c, r.time, `${rp}.time`, 40) : text(c, r.time, `${rp}.time`, 40),
@@ -287,7 +290,7 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
       })),
     },
     closing: bi(c, d.closing, 'closing', 400, { multiline: true }),
-    theme: THEME_SLUGS.has(d.theme) ? d.theme : c.fail('theme', 'unknown theme') ?? 'dhoka',
+    theme: isTheme(d.theme) ? d.theme : c.fail('theme', 'unknown theme') ?? 'dhoka',
     content: sharedContentOf(c, d.content, slots),
     themeContent: themeContentOf(c, d.themeContent, slots.manifests),
     share: {
