@@ -1,0 +1,46 @@
+// Durbar · every image and visible text the studio can replace.
+// Plain data (no imports): the server and the studio load this file directly.
+export default {
+  theme: 'durbar',
+  images: {
+    // The couple's photographs, hung in gilt frames on the palace wall (3 to 5, plus bride/groom portraits).
+    'frame.1': { label: 'Palace portrait 1', kind: 'couple', default: { portrait: 0 }, note: 'The two of you; any orientation. The frame takes the photo’s own shape, nothing is cropped.' },
+    'frame.2': { label: 'Palace portrait 2', kind: 'couple', default: { portrait: 1 }, note: 'The two of you; any orientation, shown whole.' },
+    'frame.3': { label: 'Palace portrait 3', kind: 'couple', default: { portrait: 2 }, note: 'The two of you; any orientation, shown whole.' },
+    'frame.4': { label: 'Palace portrait 4', kind: 'couple', default: { portrait: 3 }, note: 'Optional fourth frame (shown when the couple has four or more photos, or when set).' },
+    'frame.5': { label: 'Palace portrait 5', kind: 'couple', default: { portrait: 4 }, note: 'Optional fifth frame (shown when the couple has five or more photos, or when set).' },
+    'frame.bride': { label: 'Bride portrait frame', kind: 'bride', default: null, note: 'Shown only when the bride has her own portrait. Portrait orientation.' },
+    'frame.groom': { label: 'Groom portrait frame', kind: 'groom', default: null, note: 'Shown only when the groom has his own portrait. Portrait orientation.' },
+    // Real photographs of the square: used when 3D is unavailable or the guest prefers reduced motion.
+    'still.arrival': { shared: 'place.courtyard', label: 'Square photo (still version)', kind: 'scene', default: 'bhaktapur-square', alt: 'Bhaktapur Durbar Square in daylight', note: 'Landscape view of the square or venue; shown whole.' },
+    'still.names': { label: 'Nyatapola photo (still version)', kind: 'scene', default: 'bhaktapur-nyatapola', alt: 'The Nyatapola temple above its stepped plinth', note: 'Portrait or landscape landmark photo behind the names.' },
+    'still.portraits': { label: 'Palace photo (still version)', kind: 'scene', default: 'bhaktapur-palace', alt: 'The palace of fifty-five windows', note: 'Landscape photo of the palace or venue.' },
+    'still.mandap': { label: 'Chyasilin Mandap photo (still version)', kind: 'scene', default: 'bhaktapur-chyasilin', alt: 'Chyasilin Mandap, the octagonal pavilion', note: 'Shown with the first ceremony.' },
+    'still.shikhara': { label: 'Vatsala Durga photo (still version)', kind: 'scene', default: 'bhaktapur-vatsala', alt: 'The stone shikhara of Vatsala Durga', note: 'Shown with the second ceremony.' },
+    'still.gate': { shared: 'place.entrance', label: 'Golden Gate photo (still version)', kind: 'scene', default: 'bhaktapur-golden-gate', alt: 'The Golden Gate, Sun Dhoka', note: 'Shown with the wedding day.' },
+    'still.bhairab': { label: 'Bhairabnath photo (still version)', kind: 'scene', default: 'bhaktapur-bhairabnath', alt: 'Bhairabnath temple in Taumadhi Square', note: 'Shown with the reception.' },
+  },
+  texts: {
+    'gate.kicker': { label: 'Small line above the names on the entry screen', default: { en: 'Shubha Bibaha · Bhaktapur', ne: 'शुभ विवाह · भक्तपुर' }, max: 40 },
+    'gate.line': { shared: 'gate.line', label: 'Invitation line on the entry screen', default: { en: 'Join us in the old royal square', ne: 'पुरानो दरबार क्षेत्रमा हामीसँगै हुनुहोस्' }, max: 70 },
+    'gate.enter': { shared: 'gate.open', label: 'Entry button', default: { en: 'Enter the square', ne: 'दरबार क्षेत्रभित्र' }, max: 28 },
+    'gate.quiet': { shared: 'gate.quiet', label: 'Enter without music button', default: { en: 'Enter without music', ne: 'संगीतबिना' }, max: 28 },
+    'arrival.line': { label: 'Line at the entrance gate (after entering)', default: { en: 'A morning in Bhaktapur', ne: 'भक्तपुरको एक शुभ बिहानी' }, max: 40 },
+    'arrival.cue': { label: 'Scroll hint', default: { en: 'Scroll to walk into the square', ne: 'दरबार क्षेत्रभित्र जान तल सार्नुहोस्' }, max: 40 },
+    'hero.kicker': { shared: 'hero.kicker', label: 'Small heading above the names', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 32 },
+    'frame.title': { shared: 'couple.title', label: 'Label beside the palace portraits', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 32 },
+    'frame.line.1': { label: 'Portrait 1 line', default: { en: 'Soon, side by side.', ne: 'छिट्टै, सँगसँगै।' }, max: 48 },
+    'frame.line.2': { label: 'Portrait 2 line', default: { en: 'Two families, one square.', ne: 'दुई परिवार, एउटै चोक।' }, max: 48 },
+    'frame.line.3': { label: 'Portrait 3 line', default: { en: 'Walk the old city with us.', ne: 'पुरानो सहरमा हामीसँगै हिँड्नुहोस्।' }, max: 48 },
+    'frame.line.4': { label: 'Portrait 4 line', default: { en: 'Every step, together.', ne: 'हरेक पाइला, सँगसँगै।' }, max: 48 },
+    'frame.line.5': { label: 'Portrait 5 line', default: { en: 'See you at the Golden Gate.', ne: 'सुनढोकामा भेटौँला।' }, max: 48 },
+    'frame.line.bride': { shared: 'bride.line', label: 'Bride portrait line', default: { en: 'The bride', ne: 'दुलही' }, max: 48 },
+    'frame.line.groom': { shared: 'groom.line', label: 'Groom portrait line', default: { en: 'The groom', ne: 'दुलहा' }, max: 48 },
+    'events.kicker': { shared: 'events.title', label: 'Label on each ceremony card', default: { en: 'Ceremony', ne: 'कार्यक्रम' }, max: 24 },
+    'wedding.kicker': { label: 'Label on the wedding-day card', default: { en: 'The wedding day', ne: 'विवाहको दिन' }, max: 32 },
+    'card.button': { shared: 'card.button', label: 'Button that opens the full card', default: { en: 'Read the invitation card', ne: 'निमन्त्रणा पत्र पढ्नुहोस्' }, max: 32 },
+    'card.title': { label: 'Title on the invitation card', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 32 },
+    'gallery.title': { shared: 'gallery.title', label: 'Gallery title', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 40 },
+    'reply.title': { shared: 'reply.title', label: 'RSVP title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 40 },
+  },
+};
