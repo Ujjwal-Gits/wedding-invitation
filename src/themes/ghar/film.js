@@ -286,7 +286,7 @@ export function buildFilm(world, { config, events, mobile, S }) {
   shots.push(A);
 
   // ── Shot B: tikijhyah ──
-  const B = { id: 'B', sets: ['lattice'], keys: [], t0: T, ambient: [0.012, 0.014, 0.024], fog: 0.04 };
+  const B = { id: 'B', sets: ['lattice'], keys: [], t0: T, ambient: [0.05, 0.04, 0.036], fog: 0.03 };
   B.keys.push(K(T, [XB, 1.62, 1.1], 0, 1), K(T + 1.6, [XB, 1.6, 0.3], 0, 1));
   chapter(T + 0.95, '04', 'ch4.title');
   T += 1.6;
@@ -309,7 +309,7 @@ export function buildFilm(world, { config, events, mobile, S }) {
   shots.push(B);
 
   // ── Shot C: sanjhyah ──
-  const C = { id: 'C', sets: ['window'], keys: [], t0: T, ambient: [0.02, 0.022, 0.034], fog: 0.03 };
+  const C = { id: 'C', sets: ['window'], keys: [], t0: T, ambient: [0.075, 0.062, 0.052], fog: 0.02 };
   const wf = [XC - 2.5, 1.5, -2.2];
   const cf = [XC + 2.5, 1.5, -2.2];
   const c0 = [XC + 0.4, 1.6, 0.9];

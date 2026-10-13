@@ -4,7 +4,7 @@
 import '../../core/base.css';
 import './ghar.css';
 import { loadInvitation } from '../../core/data.js';
-import { bi, biNodes, esc, dateOf, timeRange, mapUrl, neNum } from '../../core/i18n.js';
+import { bi, biNodes, esc, dateOf, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
@@ -38,12 +38,24 @@ const $ = (s, r = document) => r.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+/**
+ * The two date lines for a ceremony, from the shared converter (core/i18n.js, verified B.S.).
+ * English leads with the AD date; Nepali leads with the B.S. date. An event's own dateBS wins.
+ */
+function datesOf(e) {
+  const ad = dateOf(e.start);
+  const bs = bsDateOf(e.start, e.dateBS);
+  return {
+    first: { en: ad.en, ne: bs.ne },
+    second: { en: `${bs.short?.en || bs.en}${/B\.S\./.test(bs.short?.en || bs.en) ? '' : ' B.S.'}`, ne: ad.ne },
+  };
+}
 
 /** Letterbox: about 2.15:1 on landscape screens, slim bars on phones. Bars animate on transform only. */
 function letterbox() {
   const w = window.innerWidth;
   const h = window.innerHeight;
-  const lb = w / h < 0.9 ? Math.round(h * 0.085) : Math.round(clamp((h - w / 2.15) / 2, 52, h * 0.13));
+  const lb = w / h < 0.9 ? Math.round(h * 0.1) : Math.round(clamp((h - w / 2.15) / 2, 52, h * 0.13));
   const st = document.body.style;
   st.setProperty('--lb', `${lb}px`);
   st.setProperty('--half', `${Math.ceil(h / 2) + 1}px`);
@@ -97,23 +109,47 @@ const gallery = (() => {
   return out.slice(0, Math.max(lead, Math.min(out.length, lead + 4, 12)));
 })();
 const roleLine = (p) => `<p class="cr__role">${bi(p)}</p>`;
-const evRow = (e) => `<li><b>${bi(e.title)}</b><span>${bi(dateOf(e.start))}</span><span>${bi(timeRange(e.start, e.end))}</span><span>${bi(e.venue)} <a href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></span>${e.dress?.text ? `<small>${bi(e.dress.text)}</small>` : ''}</li>`;
 const daysLeft = Math.ceil((new Date(config.weddingDate).getTime() - Date.now()) / 86400000);
 const info = config.info || {};
 
+const programme = `
+  <section class="pg" id="programme" aria-labelledby="pg-title">
+    <header class="pg__head">
+      <p class="tc__num" aria-hidden="true">07</p>
+      <h2 class="pg__title" id="pg-title">${tpair('events.title')}</h2>
+    </header>
+    <ol class="pg__list">
+      ${events.map((e) => { const d = datesOf(e); return `
+      <li class="pg__row">
+        <h3 class="pg__name">${bi(e.title)}</h3>
+        <div class="pg__when">
+          <p class="pg__day">${bi(d.first)}</p>
+          <p class="pg__bs">${bi(d.second)}</p>
+          <p class="pg__time">${bi(timeRange(e.start, e.end))}</p>
+        </div>
+        <div class="pg__where">
+          <p class="pg__venue">${bi(e.venue)}</p>
+          <a class="pg__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Open map', ne: 'नक्सा हेर्नुहोस्' })}<span aria-hidden="true"> ↗</span></a>
+          ${e.dress?.text ? `<p class="pg__dress"><span class="pg__sw" aria-hidden="true">${(e.dress.colors || []).slice(0, 3).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span><span>${bi(e.dress.text)}</span></p>` : ''}
+        </div>
+      </li>`; }).join('')}
+    </ol>
+  </section>`;
+
 $('#finale-root').innerHTML = `
+  ${programme}
   ${gallery.length ? `
   <section class="stills" id="stills" aria-labelledby="stills-title">
     <div class="stills__pin">
       <header class="stills__head">
-        <p class="tc__num" aria-hidden="true">07</p>
+        <p class="tc__num" aria-hidden="true">08</p>
         <h2 class="stills__title" id="stills-title">${tpair('stills.title')}</h2>
       </header>
       <div class="stills__vp"><ol class="stills__track">
         ${gallery.map((g, i) => `
           <li class="still still--${g.shape || 'land'}">
             <button type="button" class="still__btn" data-idx="${i}">
-              <img src="${esc(photoUrl(g.photo, 'sm'))}" alt="${esc(g.alt || '')}" loading="lazy" decoding="async" />
+              <img src="${esc(photoUrl(g.photo, 'sm'))}" alt="${esc(g.alt || '')}" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" />
             </button>
             <p class="still__cap" aria-hidden="true"><span class="still__n">${String(i + 1).padStart(2, '0')}</span></p>
           </li>`).join('')}
@@ -123,7 +159,7 @@ $('#finale-root').innerHTML = `
 
   <section class="reply" id="rsvp" aria-labelledby="rsvp-title">
     <div class="reply__head">
-      <p class="tc__num" aria-hidden="true">08</p>
+      <p class="tc__num" aria-hidden="true">09</p>
       <h2 class="reply__title" id="rsvp-title">${tpair('reply.title')}</h2>
       <p class="reply__when">${bi(longDate)}${daysLeft > 0 ? ` <span aria-hidden="true">·</span> ${bi({ en: `in ${daysLeft} days`, ne: `${neNum(daysLeft)} दिनपछि` })}` : ''}</p>
       <p class="reply__deadline">${bi(config.rsvp?.deadline || { en: '', ne: '' })}</p>
@@ -176,9 +212,8 @@ $('#finale-root').innerHTML = `
       <button type="button" class="link" data-open-card>${bi({ en: 'Read the invitation card', ne: 'निम्तो पत्र पढ्नुहोस्' })}</button>
     </div>
     <details class="guide">
-      <summary>${bi({ en: 'Times, places and help for guests', ne: 'समय, स्थान र पाहुनाका लागि जानकारी' })}</summary>
+      <summary>${bi({ en: 'Travel, stays and family contacts', ne: 'यात्रा, बसाइ र सम्पर्क' })}</summary>
       <div class="guide__body">
-        <ul class="guide__events">${events.map(evRow).join('')}</ul>
         ${info.travel ? `<p class="guide__p">${bi(info.travel)}</p>` : ''}
         ${(info.stays || []).length ? `<ul class="guide__list">${info.stays.map((s) => `<li><b>${bi(s.name)}</b> ${bi(s.note)} <a href="${esc(mapUrl(s.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></li>`).join('')}</ul>` : ''}
         ${(info.contacts || []).length ? `<ul class="guide__list">${info.contacts.map((p) => { const tel = String(p.phone || '').replace(/[^\d+]/g, ''); return `<li><b>${bi(p.name)}</b> ${bi(p.role)} <a href="tel:${esc(tel)}">${bi({ en: 'Call', ne: 'फोन' })}</a> <a href="https://wa.me/${esc(tel.replace('+', ''))}" target="_blank" rel="noopener">WhatsApp</a></li>`; }).join('')}</ul>` : ''}
@@ -314,7 +349,8 @@ function beatHTML(b) {
       return `<div class="nm"><p class="nm__pair">${names()}</p><p class="nm__date">${bi(longDate)}<span class="nm__bs">${bi(config.weddingDateBS || { en: '', ne: '' })}</span></p></div>`;
     case 'event': {
       const e = b.event;
-      return `<div class="ev ev--${b.side}"><p class="ev__d">${bi(dateOf(e.start))}</p><h3 class="ev__t">${bi(e.title)}</h3><p class="ev__m">${bi(timeRange(e.start, e.end))}</p><p class="ev__m">${bi(e.venue)} <a class="ev__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p></div>`;
+      const d = datesOf(e);
+      return `<div class="ev ev--${b.side}"><p class="ev__d">${bi(d.first)}</p><p class="ev__bs">${bi(d.second)}</p><h3 class="ev__t">${bi(e.title)}</h3><p class="ev__m">${bi(timeRange(e.start, e.end))}</p><p class="ev__m">${bi(e.venue)} <a class="ev__map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p></div>`;
     }
     case 'end':
       return `<div class="nm nm--end"><p class="nm__pair">${names()}</p><a class="nm__go" href="#rsvp">${bi(S.txt('end.ask'))}</a></div>`;

@@ -27,7 +27,7 @@ forward.
 | 04 | तिकिझ्याः lattice window | pre-wedding events as framed stills with lower-third cards (date, time, venue, map) |
 | 05 | सँझ्याः great window | wedding card and couple still; Saptapadi: seven diyos light one by one, one vow per subtitle |
 | 06 | कौसी rooftop | `kathmandu-night` beyond a parapet of lamps; reception card; closing line |
-| after | stills, reply, credits | horizontal pan of `gallery`; dark RSVP (core `initRsvp`); guest details; invitation card dialog; end-credits roll with photo credits |
+| after | programme, stills, reply, credits | **programme** (कार्यक्रम): per ceremony the name, weekday + date, B.S. date, time, venue + map, dress note with colour swatches; then a horizontal pan of `gallery`; dark RSVP (core `initRsvp`); guest details; invitation card dialog; end-credits roll with photo credits |
 
 ## What the studio needs to supply
 
@@ -68,3 +68,13 @@ Uploaded room photos have no depth map and render flat. An uploaded door opens f
 - Depth tears: the photo vertex shader measures the depth cliff around each vertex (2-step kernel) and fades
   stretched triangles into the night (`vTear`), so roof/sky edges stay soft. The distant rooftop panorama is
   rendered flat (parallax there comes from the parapet and lamps); the great-window photo uses a low displacement.
+
+## Readability (client round 3)
+
+- Text is roman, never thin or italic: EB Garamond 500 for subtitles, names and body; Marcellus for titles and labels (13px or more);
+  Nepali body in Mukta (17 to 19px, line-height 1.75 or more), Nepali display in Tiro Devanagari Hindi.
+- Subtitles sit in the solid black letterbox bar (about 17:1 contrast). Event cards are solid panels (86% ink, amber hairline);
+  title cards and names have a soft scrim behind them.
+- B.S. dates come from the shared `bsDateOf(iso, event.dateBS)` (core/i18n.js) for every ceremony: English leads with
+  the AD date and shows B.S. beneath; Nepali leads with the B.S. date. An event's `dateBS` override wins.
+- The ceremony rooms (lattice window, great window) are lit warmer and brighter than the night rooms.

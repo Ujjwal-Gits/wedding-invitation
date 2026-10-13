@@ -72,6 +72,7 @@ export default {
     'window.line': { label: 'Subtitle at the couple picture', default: { en: 'Two families, one sacred fire.', ne: 'दुई परिवार, एउटै पवित्र अग्नि।' }, max: 80, shared: 'couple.line' },
     'window.vows': { label: 'Subtitle before the seven vows', default: { en: 'Seven steps around the sacred fire.', ne: 'अग्निसाक्षी सप्तपदी, सात पाइला।' }, max: 80, shared: 'rite.saptapadi.line' },
     'end.ask': { label: 'Question under the names at the end', default: { en: 'Will you come?', ne: 'हजुर आउनुहुन्छ?' }, max: 30 },
+    'events.title': { label: 'Programme title (big / small)', default: { ne: 'कार्यक्रम', en: 'The programme' }, max: 30, shared: 'events.title' },
     'stills.title': { label: 'Stills title (big word / small line)', default: { ne: 'चित्रहरू', en: 'Stills' }, max: 30, shared: 'gallery.title' },
     'reply.title': { label: 'Reply title (big / small)', default: { ne: 'हजुर आउनुहुन्छ?', en: 'Will you come?' }, max: 40, shared: 'reply.title' },
     'reply.send': { label: 'Send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 30 },
