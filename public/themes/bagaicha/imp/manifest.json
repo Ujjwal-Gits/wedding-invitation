@@ -1,0 +1,83 @@
+{
+ "shrub_a": {
+  "size": 0.6070377963781357,
+  "height": 0.21919968025758862,
+  "radius": 0.29184509441256523,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "shrub_04"
+ },
+ "flower_pink": {
+  "size": 0.4271502379253434,
+  "height": 0.4107213826205225,
+  "radius": 0.11556826531887054,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "periwinkle_plant#periwinkle_plant_02_LOD0"
+ },
+ "tree_a": {
+  "size": 4.376055126190185,
+  "height": 3.4066057968884706,
+  "radius": 2.1038726568222046,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "island_tree_02"
+ },
+ "tree_b": {
+  "size": 4.739010604321956,
+  "height": 4.556740965694189,
+  "radius": 2.1462385654449463,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "tree_small_02"
+ },
+ "tree_c": {
+  "size": 5.228544465601445,
+  "height": 5.02744660153985,
+  "radius": 2.4088398218154907,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "island_tree_01"
+ },
+ "column": {
+  "size": 2.6901278078556063,
+  "height": 0.39597428869456053,
+  "radius": 1.2933306768536568,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "shrub_01"
+ },
+ "bush_a": {
+  "size": 4.376055126190185,
+  "height": 1.8736331882886588,
+  "radius": 2.1038726568222046,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "island_tree_02"
+ },
+ "bush_b": {
+  "size": 5.010386829376221,
+  "height": 2.9159190288931134,
+  "radius": 2.4088398218154907,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "island_tree_01"
+ },
+ "flower_orange": {
+  "size": 0.21978918942093414,
+  "height": 0.09943540059092226,
+  "radius": 0.10566787952929525,
+  "views": 8,
+  "cols": 4,
+  "rows": 2,
+  "source": "flower_gazania#flower_gazania_a_LOD0"
+ }
+}

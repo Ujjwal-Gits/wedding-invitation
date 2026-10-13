@@ -9,6 +9,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { coupleCanvases } from './figures.js';
 import { loadFloraAssets, crownGeometry, leafMaterial, plantSpecies, trunkGeometry, grassField, lawnMask } from './flora.js';
+import { loadImpostors, plantImpostors, impostorLight } from './impostor.js';
 import { WATER_FALL, PLUNGE, POOL_REFLECT, SKY, BACKPLATE, GLOW, MIST, FLAME, PETALS } from './shaders.js';
 
 const { Vector3, Color, MathUtils } = THREE;
@@ -97,8 +98,8 @@ function canvasTex(w, h, draw, { repeat, srgb = true } = {}) {
 const KEYS = [
   { t: 0, top: '#93B9D6', hor: '#F2EBDD', sun: '#FFF1DA', sunI: 2.3, dir: [0.62, 0.7, 0.36], hemS: '#E3ECEF', hemG: '#8C9A6C', hemI: 1.25, fog: '#E6E4D8', fogN: 70, fogF: 420, exp: 1.0, lan: 0, haze: 0.22, plate: '#E9EEF2', plateAmt: 0.22, plateB: 1.1, night: 0, couple: '#FFFFFF', water: '#6E9EA3', stars: 0 },
   { t: 1, top: '#6C8DB6', hor: '#F5C089', sun: '#FFB062', sunI: 2.9, dir: [0.3, 0.2, -1], hemS: '#F2D3A8', hemG: '#6E6A3E', hemI: 1.08, fog: '#EEC394', fogN: 60, fogF: 400, exp: 1.12, lan: 0.35, haze: 0.12, plate: '#FFD7A6', plateAmt: 0.0, plateB: 1.0, night: 0, couple: '#FFE7CE', water: '#C9A47C', stars: 0 },
-  { t: 1.5, top: '#2A3A66', hor: '#D7876A', sun: '#FF8A5C', sunI: 0.8, dir: [0.4, 0.06, -1], hemS: '#7A6F8F', hemG: '#3A3530', hemI: 0.55, fog: '#7A6478', fogN: 50, fogF: 340, exp: 1.12, lan: 0.8, haze: 0.2, plate: '#C88A84', plateAmt: 0.3, plateB: 0.62, night: 0.35, couple: '#E4B996', water: '#6A5A70', stars: 0.25 },
-  { t: 2, top: '#060C1C', hor: '#1B2A4C', sun: '#9DB2E2', sunI: 0.62, dir: [-0.35, 0.62, 0.3], hemS: '#3E5688', hemG: '#1A2030', hemI: 0.95, fog: '#15223F', fogN: 45, fogF: 300, exp: 1.25, lan: 1, haze: 0.35, plate: '#3A4C78', plateAmt: 0.92, plateB: 0.5, night: 1, couple: '#D9B08C', water: '#1A2848', stars: 1 },
+  { t: 1.5, top: '#35477A', hor: '#E39A78', sun: '#FF9A66', sunI: 1.1, dir: [0.4, 0.08, -1], hemS: '#9C8EAA', hemG: '#4A4236', hemI: 0.9, fog: '#7A6478', fogN: 50, fogF: 340, exp: 1.12, lan: 0.8, haze: 0.2, plate: '#C88A84', plateAmt: 0.3, plateB: 0.62, night: 0.35, couple: '#E4B996', water: '#6A5A70', stars: 0.25 },
+  { t: 2, top: '#11214A', hor: '#3A4F7A', sun: '#AFC2EC', sunI: 0.8, dir: [-0.35, 0.62, 0.3], hemS: '#6479A8', hemG: '#2A3040', hemI: 1.2, fog: '#26365A', fogN: 45, fogF: 300, exp: 1.32, lan: 1, haze: 0.35, plate: '#3A4C78', plateAmt: 0.92, plateB: 0.5, night: 1, couple: '#D9B08C', water: '#1A2848', stars: 1 },
 ];
 const COLOR_KEYS = ['top', 'hor', 'sun', 'hemS', 'hemG', 'fog', 'plate', 'couple', 'water'];
 function lightAt(tod) {
@@ -395,6 +396,15 @@ export async function createGarden(canvas, opts) {
   const leafA = leafMaterial(FL.leaves);
   const leafB = leafMaterial(FL.fronds);
   const leafMats = [leafA, leafB];
+  // Real CC0 plants (Poly Haven island_tree_01/02, tree_small_02, periwinkle, gazania) baked to impostors.
+  const IMP = await loadImpostors(['tree_a', 'tree_b', 'tree_c', 'bush_a', 'bush_b', 'flower_pink', 'flower_orange']);
+  onProgress(0.3);
+  const aoSpots = []; // [x, z, radius] soft contact shade under canopies
+  const plant = (name, items, opts = {}) => {
+    const m = plantImpostors(scene, IMP[name], items, opts);
+    if (opts.ao && m) items.forEach(([x, , z, , sc = 1]) => aoSpots.push([x, z, opts.ao * sc]));
+    return m;
+  };
   const anim = []; // per-frame updaters (time, light)
 
   // Lights
@@ -464,7 +474,35 @@ export async function createGarden(canvas, opts) {
   ridge(200, 6, 22, '#5B7356', 7.7, [-Math.PI / 2, 0.3]);
 
   // Ground
-  const lawnMat = new THREE.MeshLambertMaterial({ map: tile(FL.lawn, 150, 150) || lawnTexture(), color: '#FFFFFF' });
+  const lawnMat = new THREE.MeshStandardMaterial({ color: '#D2DCC2', roughness: 0.95, metalness: 0 });
+  {
+    const tl = new THREE.TextureLoader();
+    const lt = (f, srgb) => { const t = tl.load('/themes/bagaicha/tex/' + f); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const lawnA = lt('lawn_a.webp', true), lawnB = lt('lawn_b.webp', true), lawnN = lt('lawn_a_n.webp', false);
+    lawnMat.normalMap = lawnN; lawnN.repeat.set(360, 360); lawnMat.normalScale.set(0.7, 0.7);
+    lawnMat.onBeforeCompile = (sh) => {
+      sh.uniforms.lawnA = { value: lawnA }; sh.uniforms.lawnB = { value: lawnB };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vWXZ;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWXZ = (modelMatrix * vec4(position, 1.0)).xz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        uniform sampler2D lawnA, lawnB;
+        varying vec2 vWXZ;
+        float lh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float ln(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(lh(i), lh(i + vec2(1, 0)), f.x), mix(lh(i + vec2(0, 1)), lh(i + vec2(1, 1)), f.x), f.y); }`)
+        .replace('#include <map_fragment>', `
+        vec2 w = vWXZ;
+        vec3 a1 = texture2D(lawnA, w / 2.5).rgb;
+        vec3 a2 = texture2D(lawnA, mat2(0.8, -0.6, 0.6, 0.8) * w / 3.3 + 0.37).rgb;
+        vec3 g = mix(a1, a2, smoothstep(0.3, 0.7, ln(w * 0.09)));
+        vec3 b = texture2D(lawnB, w / 7.0).rgb;
+        g = mix(g, b * 1.05, smoothstep(0.45, 0.8, ln(w * 0.035 + 7.0)) * 0.45);
+        g *= 0.9 + 0.2 * ln(w * 0.22 + 3.0);
+        // the faintest mowing stripes along the garden's axis
+        g *= 0.97 + 0.04 * smoothstep(-0.2, 0.2, sin(w.x * 0.9));
+        diffuseColor.rgb *= g;`);
+    };
+  }
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), lawnMat);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -511,21 +549,12 @@ export async function createGarden(canvas, opts) {
   for (let z = 9; z <= 37; z += 5.3) { cyp.push([-7.6, 0, z, R() * TAU, 0, 0, 0.92 + R() * 0.16]); cyp.push([7.6, 0, z, R() * TAU, 0, 0, 0.92 + R() * 0.16]); }
   // flanking the pavilion
   [[-11, -27], [11, -27], [-12.5, -36], [12.5, -36], [-9, -43], [9, -43]].forEach(([x, z]) => cyp.push([x, 0, z, R() * TAU, 0, 0, 1.15 + R() * 0.15]));
-  // a dark core so the column never reads hollow, wrapped in fronds
-  scene.add(instanced(cypressGeo(), new THREE.MeshLambertMaterial({ color: '#2F4429', vertexColors: false }), cyp, { shadow: false }));
-  plantSpecies(scene, {
-    crown: crownGeometry({ n: Math.round(90 * LOD), rx: 0.95, ry: 4.0, cy: 4.5, size: 1.35, seed: 21 }), leaf: leafB,
-    items: cyp.map(([x, y, z, yaw, , , s]) => [x, y, z, yaw, s, s]), tints: ['#6F8E5E', '#64835A', '#7A9867'],
-  });
+  // an avenue of real trees along the pool walks
+  plant('tree_b', cyp.map(([x, y, z, yaw, , , s]) => [x, y, z, yaw, s, s * (0.95 + hash3(x, z, 2) * 0.12)]), { height: 7.4, ao: 2.6 });
 
   const topiary = [];
   for (let z = 11.6; z <= 38; z += 5.3) { topiary.push([-7.6, 0.55, z, 0, 0, 0, 0.62]); topiary.push([7.6, 0.55, z, 0, 0, 0, 0.62]); }
-  const topiaryGeo = soft(new THREE.IcosahedronGeometry(1, 3), 0.05, 9);
-  scene.add(instanced(topiaryGeo, new THREE.MeshLambertMaterial({ color: '#34492E' }), topiary.map(([x, y, z]) => [x, y, z, 0, 0, 0, 0.55]), { shadow: false }));
-  plantSpecies(scene, {
-    crown: crownGeometry({ n: Math.round(46 * LOD), rx: 0.66, ry: 0.62, cy: 0, size: 0.55, seed: 23 }), leaf: leafA,
-    items: topiary.map(([x, y, z]) => [x, y, z, R() * TAU, 1, 1]), tints: ['#8FA878', '#86A070'],
-  });
+  plant('bush_a', topiary.map(([x, , z]) => [x, 0, z, R() * TAU, 0.95 + R() * 0.15]), { height: 0.75, ao: 0.9 });
 
   // Hedges framing the lawns (rounded boxes, deep sage).
   const hedgeGeo = new RoundedBoxGeometry(1, 1, 1, 5, 0.35);
@@ -534,17 +563,20 @@ export async function createGarden(canvas, opts) {
     [-9.6, 0.45, -2, 0, 0, 0, [0.9, 0.9, 16]], [9.6, 0.45, -2, 0, 0, 0, [0.9, 0.9, 16]],
     [-6.5, 0.4, 42.5, 0, 0, 0, [7, 0.8, 0.9]], [6.5, 0.4, 42.5, 0, 0, 0, [7, 0.8, 0.9]],
   ];
-  scene.add(instanced(hedgeGeo, new THREE.MeshLambertMaterial({ color: '#4B6438' }), hedges.map((h) => { const k = h.slice(); k[6] = h[6].map((v) => v * 0.94); return k; })));
-  hedges.forEach(([x, y, z, , , , [sx, sy, sz]], i) => {
-    const area = 2 * (sx * sy + sz * sy) + sx * sz;
-    const g = crownGeometry({ n: Math.round(area * 7.5 * Math.max(LOD, 0.85)), rx: sx / 2, ry: sy / 2, rz: sz / 2, cy: 0, size: 1.05, seed: 31 + i, shape: 'box' });
-    const m = new THREE.Mesh(g, leafA.material);
-    m.customDepthMaterial = leafA.depth;
-    m.position.set(x, y, z);
-    m.material = leafA.material;
-    m.castShadow = true; m.receiveShadow = true;
-    scene.add(m);
-  });
+  // hedges are rows of real shrubs, not boxes
+  {
+    const rows = [];
+    hedges.forEach(([x, y, z, , , , [sx, sy, sz]]) => {
+      const alongX = sx > sz, len = alongX ? sx : sz, n = Math.max(2, Math.round(len / 1.15));
+      for (let k = 0; k < n; k++) {
+        const t = (k + 0.5) / n - 0.5;
+        const sc = Math.max(0.9, (sy * 1.1 + 0.25) / 1.2) * (0.9 + R() * 0.2);
+        rows.push([x + (alongX ? t * len : (R() - 0.5) * 0.3), 0, z + (alongX ? (R() - 0.5) * 0.3 : t * len), R() * TAU, sc]);
+      }
+    });
+    plant('bush_a', rows.filter((_, i) => i % 2 === 0), { height: 1.2 });
+    plant('bush_b', rows.filter((_, i) => i % 2 === 1), { height: 1.2 });
+  }
 
   // Flowers: one instanced mesh for every bloom in the garden.
   const bloomGeo = jitter(new THREE.IcosahedronGeometry(0.1, 1), 0.025, 2).scale(1, 0.78, 1);
@@ -682,13 +714,18 @@ export async function createGarden(canvas, opts) {
   const flame = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3), flameMat);
   flame.position.set(P.x, P.y + 1.5, P.z);
   scene.add(flame);
-  // flower beds around the pavilion steps
-  for (let i = 0; i < 260; i++) {
-    const a = R() * TAU;
-    if (Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.35) continue; // keep the front steps clear
-    const r = 7.9 + R() * 0.9;
-    addBloom(P.x + Math.cos(a) * r, 0.25 + R() * 0.25, P.z + Math.sin(a) * r, 1.3);
-    if (i % 2) addLeaf(P.x + Math.cos(a) * r, 0.2, P.z + Math.sin(a) * r, 1.4);
+  // flower beds around the pavilion steps: periwinkle and gazania, densely planted
+  {
+    const pink = [], orange = [];
+    for (let i = 0; i < (mobile ? 260 : 520); i++) {
+      const a = R() * TAU;
+      if (Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.35) continue; // keep the front steps clear
+      const r = 7.8 + R() * 1.2;
+      const it = [P.x + Math.cos(a) * r, 0, P.z + Math.sin(a) * r, R() * TAU, 0.8 + R() * 0.5];
+      (hash3(Math.cos(a) * 3, Math.sin(a) * 3, 1) > 0.45 ? pink : orange).push(it);
+    }
+    plant('flower_pink', pink, { height: 0.42, shadow: false });
+    plant('flower_orange', orange, { height: 0.28, shadow: false });
   }
 
   // ── Waterfall on a rocky cliff ──
@@ -742,6 +779,7 @@ export async function createGarden(canvas, opts) {
       const x = (R() - 0.5) * 44;
       if (Math.abs(x) < 3.2) continue;
       const yy = 1 + R() * (cliffTop(x) - 2);
+      if (x > 5 && yy < 4) continue; // keep shrubs off the haldi deck
       const edge = Math.abs(x) / (W / 2);
       const notch = notchAt(x);
       let z = (fbm(x * 0.1, yy * 0.1) - 0.5) * 6 + (fbm(x * 0.3 + 9, yy * 0.3) - 0.5) * 2.2;
@@ -750,11 +788,7 @@ export async function createGarden(canvas, opts) {
       shrubs.push([x, yy, z + 0.5, R() * TAU, 0, 0, 0.45 + R() * 0.5]);
     }
     cliff.updateMatrixWorld(true);
-    plantSpecies(scene, {
-      crown: crownGeometry({ n: Math.round(20 * LOD), rx: 1.3, ry: 0.7, cy: 0.3, size: 1.1, seed: 41 }), leaf: leafA,
-      items: shrubs.map(([x, y, z, yaw, , , s]) => { const w = cliffToWorld(x, y, z); return [w.x, w.y, w.z, yaw, s * 1.4, s * 1.2]; }),
-      tints: ['#9DB283', '#8CA474', '#A9BC8C'],
-    });
+    plant('bush_b', shrubs.map(([x, y, z, yaw, , , s]) => { const w = cliffToWorld(x, y - 0.2, z); return [w.x, w.y, w.z, yaw, s * 1.6]; }), { height: 1.2 });
     // trees along the top
     const tops = [];
     for (let i = 0; i < 30; i++) {
@@ -762,12 +796,9 @@ export async function createGarden(canvas, opts) {
       if (Math.abs(x) < 2.5) continue;
       tops.push([x, cliffTop(x) - 0.6, -1.5 - R() * 2.5 + Math.pow(Math.abs(x) / 28, 2) * 8, R() * TAU, 0, 0, 1.0 + R() * 0.7]);
     }
-    plantSpecies(scene, {
-      trunk: trunkGeometry({ h: 4.2, r: 0.2, limbs: 3, seed: 7 }), trunkMat: M.bark,
-      crown: crownGeometry({ n: Math.round(70 * LOD), rx: 2.7, ry: 2.3, cy: 5, size: 2.4, seed: 43 }), leaf: leafA,
-      items: tops.map(([x, y, z, yaw, , , s]) => { const w = cliffToWorld(x, y, z); return [w.x, w.y, w.z, yaw, s, s]; }),
-      tints: ['#B3C496', '#A5B888', '#C2CFA4'],
-    });
+    const topItems = tops.map(([x, y, z, yaw, , , s]) => { const w = cliffToWorld(x, y, z); return [w.x, w.y, w.z, yaw, s]; });
+    plant('tree_a', topItems.filter((_, i) => i % 2 === 0), { height: 6.5 });
+    plant('tree_c', topItems.filter((_, i) => i % 2 === 1), { height: 7.5 });
     // boulders in and around the plunge pool
     const bould = [];
     for (let i = 0; i < 26; i++) {
@@ -828,41 +859,86 @@ export async function createGarden(canvas, opts) {
     mist.renderOrder = 3;
     cliff.add(mist);
   }
-  // Haldi canopy on a stone deck beside the plunge pool.
+  // Haldi: a turmeric-yellow canopy on a stone deck beside the plunge pool, set for the ceremony:
+  // low wooden chaukis, cushions in a ring, brass bowls of haldi paste, a kalash, marigolds everywhere.
   const HALDI = { x: 11.5, z: 11 };
   {
-    const deck = new THREE.Mesh(new RoundedBoxGeometry(7, 0.3, 6, 2, 0.08), M.stoneWarm);
+    const H0 = 0.3; // deck top
+    const deck = new THREE.Mesh(new RoundedBoxGeometry(9, 0.3, 7.6, 2, 0.08), M.stoneWarm);
     deck.position.set(HALDI.x, 0.15, HALDI.z); deck.receiveShadow = true; deck.castShadow = true;
     cliff.add(deck);
-    const poles = [[-2.8, -2.3], [2.8, -2.3], [-2.8, 2.3], [2.8, 2.3]];
+    const poles = [[-3.6, -3.0], [3.6, -3.0], [-3.6, 3.0], [3.6, 3.0]];
     poles.forEach(([x, z]) => {
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 3.4, 8), M.woodLight);
-      m.position.set(HALDI.x + x, 1.95, HALDI.z + z); m.castShadow = true;
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 3.6, 10), M.woodLight);
+      m.position.set(HALDI.x + x, H0 + 1.8, HALDI.z + z); m.castShadow = true;
       cliff.add(m);
     });
-    const cg = new THREE.PlaneGeometry(6, 5, 16, 16);
+    const cg = new THREE.PlaneGeometry(7.6, 6.4, 18, 18);
     const cp = cg.attributes.position;
-    for (let i = 0; i < cp.count; i++) {
-      const x = cp.getX(i) / 3, y = cp.getY(i) / 2.5;
-      cp.setZ(i, -(1 - x * x) * (1 - y * y) * 0.5);
+    for (let k = 0; k < cp.count; k++) {
+      const x = cp.getX(k) / 3.8, y = cp.getY(k) / 3.2;
+      cp.setZ(k, -(1 - x * x) * (1 - y * y) * 0.55);
     }
     cg.computeVertexNormals();
     const canopy = new THREE.Mesh(cg, M.haldi);
-    canopy.rotation.x = -Math.PI / 2; canopy.position.set(HALDI.x, 3.6, HALDI.z); canopy.castShadow = true;
+    canopy.rotation.x = -Math.PI / 2; canopy.position.set(HALDI.x, H0 + 3.55, HALDI.z); canopy.castShadow = true;
     cliff.add(canopy);
-    // marigold fringe and a brass urli of floating flowers
-    const fringe = (a, b) => catenary(a, b, 0.25, 18).forEach((p) => {
-      const w = cliffToWorld(p.x, p.y, p.z);
-      addBloom(w.x, w.y, w.z, 1.25, ['#E89A26', '#F2BF45', '#D9741C']);
+    const rugTex = canvasTex(512, 512, (g, w, h) => {
+      g.fillStyle = '#E6A21F'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#B5321F'; g.lineWidth = 16; g.strokeRect(14, 14, w - 28, h - 28);
+      g.strokeStyle = '#F6D36A'; g.lineWidth = 4; g.strokeRect(40, 40, w - 80, h - 80);
+      g.fillStyle = '#C8541B';
+      for (let y = 80; y < h - 60; y += 46) for (let x = 80; x < w - 60; x += 46) { g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fill(); }
     });
-    const c4 = poles.map(([x, z]) => v3(HALDI.x + x, 3.55, HALDI.z + z));
+    const rug = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 4.4), new THREE.MeshLambertMaterial({ map: rugTex }));
+    rug.rotation.x = -Math.PI / 2; rug.position.set(HALDI.x, H0 + 0.012, HALDI.z); rug.receiveShadow = true;
+    cliff.add(rug);
+    // two low chaukis (wooden stools) where bride and groom sit for the haldi
+    const chauki = merge([
+      place(new THREE.BoxGeometry(1.1, 0.08, 0.75), 0, 0.3, 0),
+      ...[[-0.48, -0.3], [0.48, -0.3], [-0.48, 0.3], [0.48, 0.3]].map(([x, z]) => place(new THREE.BoxGeometry(0.08, 0.28, 0.08), x, 0.14, z)),
+    ]);
+    cliff.add(instanced(chauki, M.wood, [[HALDI.x - 0.9, H0, HALDI.z - 0.3, 0.15], [HALDI.x + 0.9, H0, HALDI.z - 0.3, -0.15]]));
+    cliff.add(instanced(new RoundedBoxGeometry(0.95, 0.1, 0.65, 2, 0.04), new THREE.MeshLambertMaterial({ color: '#D9481E' }),
+      [[HALDI.x - 0.9, H0 + 0.39, HALDI.z - 0.3, 0.15], [HALDI.x + 0.9, H0 + 0.39, HALDI.z - 0.3, -0.15]], { shadow: false }));
+    const ring = [];
+    for (let k = 0; k < 9; k++) {
+      const a = Math.PI * (0.15 + (k / 8) * 0.7) + Math.PI;
+      ring.push([HALDI.x + Math.cos(a) * 2.3, H0 + 0.11, HALDI.z + 0.9 - Math.sin(a) * 1.8, -a]);
+    }
+    cliff.add(instanced(new RoundedBoxGeometry(0.75, 0.22, 0.75, 2, 0.08), new THREE.MeshLambertMaterial({ color: '#FFFFFF' }), ring, { shadow: false, colors: ['#F2C232', '#E9862A', '#F6D86A'] }));
+    // brass: a tray of katoras with haldi paste, an urli of floating marigolds, a kalash with mango leaves
+    const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.5, 0.04, 40), M.brass);
+    tray.position.set(HALDI.x, H0 + 0.03, HALDI.z + 0.7); tray.castShadow = true; cliff.add(tray);
+    const katora = lathe([[0, 0], [0.06, 0], [0.11, 0.035], [0.13, 0.08], [0.125, 0.085], [0, 0.085]], 24);
+    const kItems = [[0, 0], [0.25, 0.12], [-0.25, 0.12], [0.18, -0.22], [-0.18, -0.22]].map(([x, z]) => [HALDI.x + x, H0 + 0.05, HALDI.z + 0.7 + z]);
+    cliff.add(instanced(katora, M.brass, kItems));
+    cliff.add(instanced(new THREE.CircleGeometry(0.11, 20).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#E7B21B' }), kItems.map(([x, y, z]) => [x, y + 0.07, z]), { shadow: false }));
+    const urli = new THREE.Mesh(lathe([[0, 0], [0.5, 0], [0.75, 0.12], [0.85, 0.24], [0.8, 0.26], [0, 0.26]], 40), M.brass);
+    urli.position.set(HALDI.x + 2.6, H0, HALDI.z + 2.2); urli.castShadow = true; cliff.add(urli);
+    for (let k = 0; k < 22; k++) { const a = R() * TAU, r = R() * 0.62; const w = cliffToWorld(HALDI.x + 2.6 + Math.cos(a) * r, H0 + 0.25, HALDI.z + 2.2 + Math.sin(a) * r); addBloom(w.x, w.y, w.z, 1.25, ['#F2BF45', '#E89A26', '#D9741C']); }
+    const kalash = new THREE.Mesh(lathe([[0, 0], [0.12, 0], [0.2, 0.08], [0.24, 0.2], [0.2, 0.33], [0.1, 0.4], [0.12, 0.46], [0, 0.46]], 28), M.brass);
+    kalash.position.set(HALDI.x - 2.5, H0, HALDI.z + 2.1); kalash.castShadow = true; cliff.add(kalash);
+    const coco = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12).scale(1, 1.15, 1), new THREE.MeshLambertMaterial({ color: '#8A5A2E' }));
+    coco.position.set(HALDI.x - 2.5, H0 + 0.6, HALDI.z + 2.1); cliff.add(coco);
+    for (let k = 0; k < 7; k++) { const a = (k / 7) * TAU; const w = cliffToWorld(HALDI.x - 2.5 + Math.cos(a) * 0.17, H0 + 0.5, HALDI.z + 2.1 + Math.sin(a) * 0.17); addLeaf(w.x, w.y, w.z, 1.6); }
+    const fringe = (a, b) => catenary(a, b, 0.3, 26).forEach((p) => {
+      const w = cliffToWorld(p.x, p.y, p.z);
+      addBloom(w.x, w.y, w.z, 1.2, ['#E89A26', '#F2BF45', '#D9741C']);
+    });
+    const c4 = poles.map(([x, z]) => v3(HALDI.x + x, H0 + 3.5, HALDI.z + z));
     fringe(c4[0], c4[1]); fringe(c4[2], c4[3]); fringe(c4[0], c4[2]); fringe(c4[1], c4[3]);
-    const urli = new THREE.Mesh(lathe([[0, 0], [0.5, 0], [0.75, 0.12], [0.85, 0.24], [0.8, 0.26], [0, 0.26]], 32), M.brass);
-    urli.position.set(HALDI.x, 0.3, HALDI.z); cliff.add(urli);
-    for (let i = 0; i < 14; i++) { const a = R() * TAU, r = R() * 0.6; const w = cliffToWorld(HALDI.x + Math.cos(a) * r, 0.58, HALDI.z + Math.sin(a) * r); addBloom(w.x, w.y, w.z, 1.4, ['#F2BF45', '#E89A26']); }
-    const cush = instanced(new RoundedBoxGeometry(0.9, 0.22, 0.9, 2, 0.08), new THREE.MeshLambertMaterial({ color: '#E9B949' }),
-      [[-1.6, 0.41, -1.2], [1.6, 0.41, -1.2], [-1.6, 0.41, 1.4], [1.6, 0.41, 1.4]].map(([x, y, z]) => [HALDI.x + x, y, HALDI.z + z]), { shadow: false });
-    cliff.add(cush);
+    poles.forEach(([x, z], k) => {
+      for (let y = 0; y < 3.2; y += 0.09) { const w = cliffToWorld(HALDI.x + x + 0.1, H0 + 3.4 - y, HALDI.z + z + 0.1); addBloom(w.x, w.y, w.z, 0.85, k % 2 ? ['#F2BF45', '#E89A26'] : ['#E89A26', '#D9741C']); }
+    });
+    const petalsH = [];
+    for (let k = 0; k < 160; k++) petalsH.push([HALDI.x + (R() - 0.5) * 5, H0 + 0.02, HALDI.z + (R() - 0.5) * 4.2, 0, -Math.PI / 2, 0, 0.7 + R() * 0.6]);
+    cliff.add(instanced(new THREE.CircleGeometry(0.04, 6), new THREE.MeshLambertMaterial({ color: '#FFFFFF', side: THREE.DoubleSide }), petalsH, { shadow: false, colors: ['#F2A51E', '#E46F15', '#F6CC3D'] }));
+    cliff.updateMatrixWorld(true);
+    const edgePots = [];
+    for (let k = 0; k < 26; k++) { const t = k / 25; const w = cliffToWorld(HALDI.x - 4.2 + t * 8.4, 0, HALDI.z + 3.95); edgePots.push([w.x, 0.3, w.z, R() * TAU, 0.9 + R() * 0.4]); }
+    for (let k = 0; k < 18; k++) { const t = k / 17; const w = cliffToWorld(HALDI.x + 4.6, 0, HALDI.z - 3.4 + t * 6.8); edgePots.push([w.x, 0, w.z, R() * TAU, 1 + R() * 0.4]); }
+    plant('flower_orange', edgePots, { height: 0.32, shadow: false });
   }
 
   // ── Mehendi swing (jhulā) on the east lawn ──
@@ -917,23 +993,7 @@ export async function createGarden(canvas, opts) {
     const plat = new THREE.Mesh(merge([place(new RoundedBoxGeometry(6.4, 0.55, 6.4, 2, 0.06), 0, 0.27, 0), place(new RoundedBoxGeometry(4.6, 0.5, 4.6, 2, 0.06), 0, 0.8, 0)]), M.stoneWarm);
     plat.position.copy(T); plat.castShadow = true; plat.receiveShadow = true;
     scene.add(plat);
-    const trunk = new THREE.Mesh(merge([
-      place(new THREE.CylinderGeometry(0.55, 0.95, 5.6, 10), 0, 3.6, 0),
-      place(new THREE.CylinderGeometry(0.25, 0.4, 4, 8), 1.2, 6.2, 0.2, 0, 0, -0.6),
-      place(new THREE.CylinderGeometry(0.25, 0.4, 4, 8), -1.1, 6.0, -0.3, 0, 0, 0.65),
-      place(new THREE.CylinderGeometry(0.2, 0.35, 3.5, 8), 0.2, 6.3, 1.2, 0.6, 0, 0),
-    ]), M.bark);
-    trunk.position.copy(T); trunk.castShadow = true;
-    scene.add(trunk);
-    const crown = [];
-    for (let i = 0; i < 22; i++) {
-      const a = R() * TAU, r = R() * 5.2;
-      crown.push([T.x + Math.cos(a) * r, 7.6 + R() * 2.6 - r * 0.25, T.z + Math.sin(a) * r, R() * TAU, 0, 0, 2.2 + R() * 1.3]);
-    }
-    plantSpecies(scene, {
-      crown: crownGeometry({ n: Math.round(300 * LOD), rx: 6.4, ry: 3.1, cy: 8.4, size: 3.0, seed: 51, flat: 0.4 }), leaf: leafA,
-      items: [[T.x, 0, T.z, 0.4, 1, 1]], tints: ['#A9BC8E'],
-    });
+    plant('tree_c', [[T.x, 1.0, T.z, 0.4, 1]], { height: 12.5, ao: 7 });
     // lanterns hanging from the canopy
     for (let i = 0; i < 34; i++) {
       const a = R() * TAU, r = 2.2 + R() * 5;
@@ -1050,7 +1110,7 @@ export async function createGarden(canvas, opts) {
   catenary(v3(1.15, 3.3, LAYOUT.arches.at(-1)), v3(4.5, 6.0, -26.5), 0.4, 20).forEach((p) => fairy.push(p));
   (opts._strands || []).forEach(([a, b]) => catenary(a, b, 0.9, 30).forEach((p) => fairy.push(p)));
   // Cypress fairy wraps along the pool
-  cyp.slice(0, 14).forEach(([x, , z]) => { for (let k = 0; k < 18; k++) { const t = k / 18, a = t * 11; fairy.push(v3(x + Math.cos(a) * 0.7 * (1 - t * 0.7), 0.6 + t * 6.6, z + Math.sin(a) * 0.7 * (1 - t * 0.7))); } });
+  cyp.slice(0, 14).forEach(([x, , z]) => { for (let k = 0; k < 12; k++) { const t = k / 12, a = t * 9; fairy.push(v3(x + Math.cos(a) * 0.32, 0.5 + t * 2.4, z + Math.sin(a) * 0.32)); } });
   fairy.forEach((p) => lanternGlow.push([p.x, p.y, p.z, 0.32, 1, 0.82, 0.55]));
   const fairyLines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: '#4C4438', transparent: true, opacity: 0.28 }));
   scene.add(fairyLines);
@@ -1081,34 +1141,33 @@ export async function createGarden(canvas, opts) {
     for (let i = 0; i < k; i++) trees.push([gx + (R() - 0.5) * 9, 0, gz + (R() - 0.5) * 9, R() * TAU, 0, 0, 0.75 + R() * 0.6]);
   });
   const nearN = nearTrees.length;
-  const species = [
-    { trunk: trunkGeometry({ h: 4.6, r: 0.24, limbs: 4, seed: 5 }), crown: crownGeometry({ n: Math.round(100 * LOD), rx: 3.1, ry: 2.5, cy: 5.4, size: 2.4, seed: 11 }), leaf: leafA, tints: ['#AFC292', '#A1B784', '#BACB9C', '#98AE7E'] },
-    { trunk: trunkGeometry({ h: 5.2, r: 0.22, limbs: 3, seed: 8, spread: 0.7 }), crown: crownGeometry({ n: Math.round(90 * LOD), rx: 2.2, ry: 3.6, cy: 6.4, size: 2.2, seed: 12 }), leaf: leafA, tints: ['#9FB585', '#AABD8E', '#93AA7A'] },
-    { trunk: trunkGeometry({ h: 5, r: 0.26, limbs: 5, seed: 6, spread: 1.4 }), crown: crownGeometry({ n: Math.round(95 * LOD), rx: 4.0, ry: 2.0, cy: 6.0, size: 2.8, seed: 13, flat: 0.5 }), leaf: leafB, tints: ['#B9C79A', '#C4CDA0', '#B0C091'] },
-  ];
-  const far = { crown: crownGeometry({ n: 36, rx: 3.2, ry: 2.7, cy: 5.4, size: 3.4, seed: 14 }), leaf: leafA };
-  const buckets = [[], [], []], farItems = [];
+  const kinds = ['tree_a', 'tree_c', 'tree_b'];
+  const byKind = { tree_a: [], tree_b: [], tree_c: [] }, farByKind = { tree_a: [], tree_b: [], tree_c: [] };
+  const haldiW = cliffToWorld(11.5, 0, 11);
   trees.forEach(([x, y, z, yaw, , , s], i) => {
-    const d = Math.hypot(x, z + 5);
-    const sp = i < nearN ? i % 3 : Math.floor(hash3(x, z, 3) * 3);
-    if (d > 70) farItems.push([x, y, z, yaw, s, s * (0.85 + hash3(z, x, 1) * 0.35)]);
-    else buckets[sp].push([x, y, z, yaw, s, s * (0.85 + hash3(z, x, 1) * 0.35)]);
+    if (Math.hypot(x - haldiW.x, z - haldiW.z) < 13) return; // keep the haldi view open
+    const kind = kinds[i < nearN ? i % 3 : Math.floor(hash3(x, z, 3) * 3)];
+    const it = [x, y, z, yaw, s, s * (0.88 + hash3(z, x, 1) * 0.3)];
+    (Math.hypot(x, z + 5) > 70 ? farByKind : byKind)[kind].push(it);
   });
-  species.forEach((sp, k) => plantSpecies(scene, { ...sp, trunkMat: M.bark, items: buckets[k] }));
-  plantSpecies(scene, { ...far, items: farItems, shadow: false, tints: ['#9DB083', '#A7B98C', '#8FA478'] });
-  // jacaranda in bloom behind the pavilion (lavender-tinted fronds)
-  plantSpecies(scene, {
-    trunk: species[2].trunk, trunkMat: M.bark, crown: species[2].crown, leaf: leafB,
-    items: [[-16, 0, -46, 0.3, 1.0, 0.9], [17, 0, -45, 1.2, 0.9, 0.85], [-4, 0, -54, 2.2, 1.1, 0.95]], tints: ['#C9B3E6', '#BFA7E0', '#D3C0EC'],
-  });
-  // understory: shrubs at the feet of the specimen trees and along the hedges
+  const TREE_H = { tree_a: 8.5, tree_b: 9, tree_c: 9.5 };
+  for (const k of kinds) {
+    plant(k, byKind[k], { height: TREE_H[k], ao: 3.2 });
+    plant(k, farByKind[k], { height: TREE_H[k] * 1.1, shadow: false });
+  }
+  // understory: shrubs at the feet of the specimen trees and in front of the easel wall
   const under = [];
-  trees.slice(0, nearN).forEach(([x, , z]) => { for (let k = 0; k < 3; k++) { const a = R() * TAU, r = 1.8 + R() * 2.4; under.push([x + Math.cos(a) * r, 0, z + Math.sin(a) * r, R() * TAU, 0.7 + R() * 0.6, 0.6 + R() * 0.5]); } });
-  for (let z = -16; z < 44; z += 3.2) under.push([-16.3 - R() * 0.8, 0, z + R(), R() * TAU, 0.8 + R() * 0.5, 0.9 + R() * 0.4]);
-  plantSpecies(scene, {
-    crown: crownGeometry({ n: Math.round(24 * LOD), rx: 1.4, ry: 0.8, cy: 0.7, size: 1.1, seed: 61 }), leaf: leafA,
-    items: under, tints: ['#9FB585', '#AFC394', '#90A878', '#B8C99C'],
-  });
+  trees.slice(0, nearN).forEach(([x, , z]) => { if (Math.hypot(x - haldiW.x, z - haldiW.z) < 13) return; for (let k = 0; k < 3; k++) { const a = R() * TAU, r = 1.8 + R() * 2.4; under.push([x + Math.cos(a) * r, 0, z + Math.sin(a) * r, R() * TAU, 0.8 + R() * 0.6]); } });
+  for (let z = -16; z < 44; z += 2.2) under.push([-16.6 - R() * 1.2, 0, z + R(), R() * TAU, 1.3 + R() * 0.6]);
+  plant('bush_b', under.filter((_, i) => i % 2 === 0), { height: 1.5, ao: 1.2 });
+  plant('bush_a', under.filter((_, i) => i % 2 === 1), { height: 1.4, ao: 1.2 });
+  // soft contact shade under every canopy (ambient occlusion on the lawn)
+  if (aoSpots.length) {
+    const ao = instanced(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, opacity: 0.75, color: '#ffffff' }),
+      aoSpots.map(([x, z, r]) => [x, 0.045, z, 0, 0, 0, [r * 2, 1, r * 2]]), { shadow: false });
+    ao.receiveShadow = false;
+    scene.add(ao);
+  }
 
   // ── Glow sprites (lanterns, diyas, fairy lights, candles) ──
   let glowPoints = null, fireflies = null, petalPoints = null;
@@ -1172,10 +1231,10 @@ export async function createGarden(canvas, opts) {
     hedges.forEach(([x, , z, , , , [sx, , sz]]) => g.fillRect(x - sx / 2, z - sz / 2, sx, sz));
     g.save(); g.translate(S.x, S.z); g.rotate(0.6); g.fillRect(-2.6, -1.2, 5.2, 4.3); g.restore(); // swing rug
     g.save(); g.translate(LAYOUT.cliff.pos.x, LAYOUT.cliff.pos.z); g.rotate(-LAYOUT.cliff.rot);
-    g.fillRect(-29, -14, 58, 15.5); g.beginPath(); g.ellipse(0, 5.6, 9, 6.2, 0, 0, TAU); g.fill(); g.fillRect(7.8, 7.8, 7.4, 6.4);
+    g.fillRect(-29, -14, 58, 15.5); g.beginPath(); g.ellipse(0, 5.6, 9, 6.2, 0, 0, TAU); g.fill(); g.fillRect(6.9, 7.1, 9.2, 7.8);
     g.restore();
   });
-  const grassN = opts.grass ?? (lowPower ? 0 : mobile ? 20000 : 72000);
+  const grassN = opts.grass ?? (lowPower ? 0 : mobile ? 24000 : 70000);
   const grass = grassField({ count: Math.max(grassN, 1), field: mobile || lowPower ? 18 : 28, mask: maskTex, maskRect: MASK });
   grass.visible = grassN > 0;
   if (mobile || lowPower) scene.traverse((o) => { if (o.isInstancedMesh && o.customDepthMaterial) o.castShadow = false; });
@@ -1205,7 +1264,12 @@ export async function createGarden(canvas, opts) {
   // ───────────────────────── Stations ─────────────────────────
   const spots = {
     swing: { target: S.clone().add(v3(0, 1.5, 0)), yaw: -0.25, pitch: 0.07, fit: [7.2, 4.6], fitNarrow: [5.6, 5.4] },
-    falls: (() => { const c = cliffToWorld(4, 8.5, 6); return { target: c, yaw: 0.36, pitch: 0.04, fit: [24, 19], fitNarrow: [13, 21] }; })(),
+    falls: (() => {
+      // the haldi setting in the middle, the waterfall behind it a little to one side
+      const c = cliffToWorld(11.5, 1.3, 11), w = cliffToWorld(0, 0, 0.4);
+      const yaw = Math.atan2(c.x - w.x, c.z - w.z) - 0.32;
+      return { target: c, yaw, pitch: 0.2, fit: [11, 7], fitNarrow: [7.4, 7.6], fov: [50, 44, 40] };
+    })(),
     aisle: { target: v3(0, 4.4, -24), yaw: 0, pitch: -0.105, dist: 19.2, fov: [52, 46, 42] },
     lanterns: { target: T.clone().add(v3(-2.5, 3.0, 4.5)), yaw: 0.14, pitch: 0.08, fit: [17, 10], fitNarrow: [8.5, 10] },
   };
@@ -1230,7 +1294,7 @@ export async function createGarden(canvas, opts) {
   function layoutOf(st, aspect) {
     const narrow = aspect < 0.9;
     if (st.layout === 'top') return narrow ? { sx: 0, sy: -0.22, wf: 0.95, hf: 0.5 } : { sx: 0, sy: -0.16, wf: 0.9, hf: 0.62 };
-    if (narrow) return { sx: 0, sy: aspect < 0.5 ? 0.38 : 0.32, wf: 0.94, hf: aspect < 0.5 ? 0.44 : 0.5 };
+    if (narrow) return { sx: 0, sy: aspect < 0.5 ? 0.47 : 0.4, wf: 0.94, hf: aspect < 0.5 ? 0.38 : 0.44 };
     const side = st.layout === 'left' ? 1 : -1; // card on the left → subject to the right
     return { sx: 0.3 * side, sy: 0, wf: 0.58, hf: 0.84 };
   }
@@ -1257,12 +1321,12 @@ export async function createGarden(canvas, opts) {
       }
       if (s.kind === 'spot') {
         const sp = spots[s.spot];
-        const tod = { swing: 0.3, falls: 0.55, aisle: 0.94, lanterns: 2 }[s.spot];
+        const tod = { swing: 0.3, falls: 0.42, aisle: 0.9, lanterns: 1.82 }[s.spot];
         const cs = { swing: 3, falls: 7, aisle: coupleAt.aisleMid, lanterns: coupleAt.chautari }[s.spot];
         const face = s.spot === 'lanterns' ? 0.3 : Math.PI;
         return { ...s, ...sp, layout: s.layout, tod, couple: { s: cs, face } };
       }
-      if (s.kind === 'vows') return { ...s, target: v3(0, 2.4, -30.5), yaw: 0, pitch: 0.06, fit: [9.5, 7.2], fitNarrow: [6.2, 7.4], layout: s.layout, tod: 1.35, couple: { s: coupleAt.altar, face: 0 } };
+      if (s.kind === 'vows') return { ...s, target: v3(0, 2.4, -30.5), yaw: 0, pitch: 0.06, fit: [9.5, 7.2], fitNarrow: [5.2, 5.6], layout: s.layout, tod: 1.08, couple: { s: coupleAt.altar, face: 0 } };
       if (s.kind === 'finale') return { ...s, target: v3(10, 1, -26), yaw: -0.5, pitch: 0.42, dist: 62, distNarrow: 80, layout: 'top', tod: 2, couple: { s: coupleAt.chautari, face: 0.3 } };
       return s;
     });
@@ -1310,6 +1374,11 @@ export async function createGarden(canvas, opts) {
     sun.position.copy(sun.target.position).addScaledVector(light.dir, 160);
     scene.fog.color.copy(light.fog); scene.fog.near = light.fogN; scene.fog.far = light.fogF;
     renderer.toneMappingExposure = light.exp;
+    impostorLight.sunDir.value.copy(light.dir);
+    impostorLight.sunColor.value.copy(light.sun).multiplyScalar(light.sunI * 0.62);
+    impostorLight.skyColor.value.copy(light.hemS);
+    impostorLight.groundColor.value.copy(light.hemG);
+    impostorLight.ambient.value = light.hemI * 0.95;
     scene.environmentIntensity = 0.55 * (1 - light.night * 0.85) * (tod > 1 ? 0.75 : 1);
     grass.userData.uniforms.uTip.value.set(tod > 1.2 ? '#86A05A' : '#93AC5C');
     const su = sky.material.uniforms;
@@ -1406,6 +1475,7 @@ export async function createGarden(canvas, opts) {
     for (const m of [fallMat, plungeMat, mistMat, glowMat, fireflyMat, petalMat, flameMat]) m.uniforms.time.value = time;
     poolU.time.value = time;
     for (const L of leafMats) L.uniforms.uTime.value = time;
+    impostorLight.time.value = time;
     grass.userData.uniforms.uTime.value = time;
     renderer.render(scene, camera);
   }

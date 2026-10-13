@@ -27,9 +27,11 @@ else (cards, lines) is a quiet fade.
 2. **Portraits**: the couple's photos on gilt easels against a hedge wall, one stop each
    (3 to 5). The first is a welcome board with their names. Short forward-looking lines
    (slots), no narrative captions. "View photograph" opens the uncropped photo.
-3. **Ceremonies**, each at its own spot with a small arched card (date, time, venue + map,
-   dress colours; the wedding card has the programme behind a disclosure):
-   mehendi at a flower swing, haldi under a turmeric-yellow canopy beside the waterfall,
+3. **Ceremonies**, each at its own spot with one calm programme card: name, weekday + AD date,
+   B.S. date (shared `bsDateOf`, the event's `dateBS` override wins), time, venue + map, what to wear
+   (the wedding card has the programme of rites behind a disclosure):
+   mehendi at a flower swing, haldi under a turmeric-yellow canopy (chaukis, cushions, brass
+   katoras of haldi, kalash, urli of marigolds) with the waterfall behind it,
    Janti & Shubha Bibaha down the aisle of arches (the couple seen from behind).
 4. **Vows**: the couple face the guests beside the havan fire in the pavilion; the seven
    Saptapadi promises appear one at a time as you scroll; blush petals fall.
@@ -59,6 +61,30 @@ so they stop when the guest stops scrolling. Billboards turn to the camera on Y 
 - `saptapadi[]` the seven vows; easel lines and other wording are studio slots.
 - Everything else comes from the shared data shape; no markup changes needed.
 
+## Vegetation: real plants as impostors (round 3)
+
+Trees, shrubs, hedges and flower beds are **billboard impostors of real high-poly CC0 plants**
+(the standard way to get photoreal vegetation cheaply). `tools/bake.js` (dev only, open
+`/src/themes/bagaicha/tools/bake.html`) renders each Poly Haven glTF from 8 directions into a
+colour atlas (with baked self-shadow / sky occlusion) and a world-normal atlas; at runtime
+`impostor.js` draws one camera-facing quad per plant, blends the two nearest views and relights
+them with the scene's sun and sky plus leaf translucency (sun through the canopy). Contact shade
+(AO) is laid under every canopy. Atlases are in `public/themes/bagaicha/imp/` (about 5.6 MB).
+
+| impostor | CC0 source (polyhaven.com) | used for |
+|---|---|---|
+| `tree_a` | `island_tree_02` | groves, cliff top |
+| `tree_b` | `tree_small_02` | avenue along the pool |
+| `tree_c` | `island_tree_01` | groves, chautari tree, cliff top |
+| `bush_a`, `bush_b` | crowns of `island_tree_02` / `island_tree_01` | hedges, topiary, understory, cliff shrubs |
+| `flower_pink` | `periwinkle_plant` | beds around the pavilion |
+| `flower_orange` | `flower_gazania` | beds, haldi deck edge |
+
+Lawn: CC0 **ambientCG `Grass005`** (colour + normal) and **`Grass001`**, blended at two scales and
+rotations with noise so it never tiles, plus a fine layer of wind-blown blades (70k desktop,
+24k phone, none on low-power devices). Source models (220 MB) are not shipped; re-download with
+the Poly Haven API to re-bake.
+
 ## Planting and materials (CC0, Poly Haven)
 
 All downloaded from polyhaven.com (CC0, no attribution required), converted to small WebP in
@@ -75,11 +101,8 @@ All downloaded from polyhaven.com (CC0, no attribution required), converted to s
 | `bark.webp` | texture `bark_brown_02` | trunks and limbs |
 | `sky.hdr` | HDRI `kloofendal_48d_partly_cloudy_puresky` (1k) | soft environment light (scaled by time of day) |
 
-Trees are not imported meshes (Poly Haven's trees are 0.3–17 M triangles): they are leaf cards
-arranged in crown volumes with outward normals, instanced, with wind sway and cut-out shadows.
-Three species plus far-forest LOD, varied heights and groves; jacaranda in bloom behind the pavilion.
-The lawn is a camera-following field of grass blades (56k desktop, 15k phone) masked to the lawns,
-with a wind shader. Phones use about 60% of the leaf cards and no leaf shadows.
+The leaf cards (`fronds`, `leaves`) are now used only for greenery inside the florals; the trees and
+shrubs are the impostors above.
 
 ## Studio slots (`slots.js`)
 

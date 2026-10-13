@@ -8,7 +8,7 @@ import '../../core/base.css';
 import './bagaicha.css';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
-import { bi, biNodes, esc, dateOf, timeRange, shortDate, mapUrl, neNum } from '../../core/i18n.js';
+import { bi, biNodes, esc, dateOf, timeRange, shortDate, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
@@ -101,19 +101,24 @@ const photoBtn = (i) => `<button type="button" class="b-link" data-photo="${i}">
 function eventCard(st) {
   const e = st.event;
   const night = st.spot === 'lanterns';
+  const bs = bsDateOf(e.start, e.dateBS);
   const rituals = e.rituals?.length ? `
     <details class="b-more">
       <summary>${bi({ en: 'The programme', ne: 'कार्यक्रम तालिका' })}</summary>
       <ul>${e.rituals.map((r) => `<li><span>${bi(typeof r.time === 'string' ? { en: r.time, ne: r.time } : r.time)}</span>${bi(r.title)}</li>`).join('')}</ul>
     </details>` : '';
-  const dress = e.dress?.colors?.length ? `<p class="b-dress"><span class="b-dress__sw" aria-hidden="true">${e.dress.colors.map((x) => `<i style="background:${esc(x)}"></i>`).join('')}</span>${bi(e.dress.text || { en: '', ne: '' })}</p>` : '';
+  const dress = e.dress ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd class="b-dress">${e.dress.colors?.length ? `<span class="b-dress__sw" aria-hidden="true">${e.dress.colors.map((x) => `<i style="background:${esc(x)}"></i>`).join('')}</span>` : ''}${bi(e.dress.text || { en: '', ne: '' })}</dd></div>` : '';
+  // One calm programme: name, weekday + date (AD and B.S.), time, venue with a map, what to wear.
   return `
     <article class="b-card ${night ? 'b-card--night' : ''}" aria-labelledby="t-${esc(e.id)}">
-      <p class="b-eyebrow">${bi({ en: `Ceremony ${ROMAN[st.n] || st.n + 1}`, ne: `${NE_ORD[st.n] || ''} कार्यक्रम` })} · ${bi(shortDate(e.start))}</p>
+      <p class="b-eyebrow">${bi({ en: `Ceremony ${ROMAN[st.n] || st.n + 1}`, ne: `${NE_ORD[st.n] || ''} कार्यक्रम` })}</p>
       <h2 class="b-title" id="t-${esc(e.id)}">${bi(e.title)}</h2>
-      <p class="b-meta">${bi(timeRange(e.start, e.end))}</p>
-      <p class="b-meta b-meta--venue">${bi(e.venue)} <a class="b-link" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></p>
-      ${dress}${rituals}
+      <dl class="b-prog">
+        <div><dt>${bi({ en: 'When', ne: 'कहिले' })}</dt><dd><b>${bi(dateOf(e.start))}</b><span class="b-bs">${bi({ en: `${bs.short.en} B.S.`, ne: `वि.सं. ${bs.short.ne}` })}</span><span>${bi(timeRange(e.start, e.end))}</span></dd></div>
+        <div><dt>${bi({ en: 'Where', ne: 'कहाँ' })}</dt><dd>${bi(e.venue)} <a class="b-link" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+        ${dress}
+      </dl>
+      ${rituals}
     </article>`;
 }
 
@@ -354,7 +359,7 @@ let started = false;
 let lenis = null;
 
 async function welcomeSign() {
-  try { await Promise.all([document.fonts.load('60px Italiana'), document.fonts.load('20px Figtree'), document.fonts.load('300 40px Martel', 'आरती')]); } catch { /* fonts optional */ }
+  try { await Promise.all([document.fonts.load('60px Italiana'), document.fonts.load('20px Figtree'), document.fonts.load('600 40px Laila', 'आरती')]); } catch { /* fonts optional */ }
   const cv = document.createElement('canvas');
   cv.width = 1024; cv.height = 256;
   const g = cv.getContext('2d');
@@ -366,11 +371,11 @@ async function welcomeSign() {
   if ('letterSpacing' in g) g.letterSpacing = '8px';
   const ne = document.documentElement.dataset.lang === 'ne';
   const sign = slots.txt('welcome.sign');
-  if (ne) { if ('letterSpacing' in g) g.letterSpacing = '0px'; g.font = '400 30px Martel, serif'; g.fillText(sign.ne, 512, 74); }
+  if (ne) { if ('letterSpacing' in g) g.letterSpacing = '0px'; g.font = '500 32px Laila, serif'; g.fillText(sign.ne, 512, 76); }
   else g.fillText(sign.en.toUpperCase(), 512, 70);
   if ('letterSpacing' in g) g.letterSpacing = '0px';
   g.fillStyle = '#2E3F33';
-  g.font = ne ? '300 64px Martel, serif' : '86px Italiana, serif';
+  g.font = ne ? '600 66px Laila, serif' : '86px Italiana, serif';
   g.fillText(ne ? `${c.bride.name.ne} र ${c.groom.name.ne}` : `${c.bride.name.en} & ${c.groom.name.en}`, 512, 168);
   g.fillStyle = '#6A6250';
   g.font = '500 24px Figtree, sans-serif';

@@ -208,7 +208,7 @@ function mergeAll(list) {
  * A field of grass blades that wraps around the camera (fixed count), masked
  * to the lawns, fading at the field's edge, bending in the wind.
  */
-export function grassField({ count, field, mask, maskRect, colorBase = '#4C6A2E', colorTip = '#93AC5C', seed = 9 }) {
+export function grassField({ count, field, mask, maskRect, colorBase = '#3F6A24', colorTip = '#86AE4A', seed = 9 }) {
   const R = rngF(seed);
   const blade = new THREE.PlaneGeometry(1, 1, 1, 3).translate(0, 0.5, 0);
   const geo = new THREE.InstancedBufferGeometry();
@@ -220,7 +220,7 @@ export function grassField({ count, field, mask, maskRect, colorBase = '#4C6A2E'
   for (let i = 0; i < count; i++) {
     off[i * 4] = (R() - 0.5) * field;
     off[i * 4 + 1] = (R() - 0.5) * field;
-    off[i * 4 + 2] = 0.09 + R() * R() * 0.12; // height (a kept lawn)
+    off[i * 4 + 2] = 0.05 + R() * R() * 0.07; // height (a kept lawn)
     off[i * 4 + 3] = R() * Math.PI * 2; // facing
   }
   geo.setAttribute('aOff', new THREE.InstancedBufferAttribute(off, 4));
@@ -252,7 +252,7 @@ export function grassField({ count, field, mask, maskRect, colorBase = '#4C6A2E'
         float t = position.y;
         vT = t;
         vVar = fract(sin(dot(aOff.xy, vec2(12.9898, 78.233))) * 43758.5453);
-        float w = 0.02 * (1.0 - t * 0.9);
+        float w = 0.008 * (1.0 - t * 0.9);
         vec3 p = vec3(position.x * w * 2.0, t * hh, 0.0);
         float wind = sin(uTime * 1.7 + wpos.x * 0.45 + wpos.y * 0.3) * 0.6 + sin(uTime * 3.1 + wpos.x * 1.7 + wpos.y * 0.9) * 0.25;
         p.z += wind * t * t * hh * 0.55;
