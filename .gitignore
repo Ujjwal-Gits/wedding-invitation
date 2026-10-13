@@ -47,3 +47,6 @@ desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Local design-review tool state
+.impeccable/
