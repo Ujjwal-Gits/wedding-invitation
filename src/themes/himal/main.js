@@ -9,7 +9,7 @@ import './himal.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeRange, mapUrl, neNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, dayNum, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
@@ -138,6 +138,9 @@ const album = [...albumCouple, ...albumGallery];
 const T = {
   map: { en: 'Map', ne: 'नक्सा' },
   wear: { en: 'Wear', ne: 'पहिरन' },
+  when: { en: 'When', ne: 'कहिले' },
+  where: { en: 'Where', ne: 'कहाँ' },
+  openMap: { en: 'Open map', ne: 'नक्सा हेर्नुहोस्' },
   call: { en: 'Call', ne: 'फोन' },
   live: { en: 'Watch the ceremony live', ne: 'प्रत्यक्ष हेर्नुहोस्' },
   calendar: { en: 'Add to calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
@@ -151,6 +154,13 @@ const countLine = daysLeft > 1
   ? { en: `${daysLeft} days to go`, ne: `${neNum(daysLeft)} दिन बाँकी` }
   : daysLeft === 1 ? { en: 'Tomorrow', ne: 'भोलि' } : { en: 'With love', ne: 'मायासहित' };
 
+/** "Feb · Tue" / "फेब्रुअरी · मङ्गलबार" for the programme's date column. */
+const monthDay = (iso) => {
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', month: 'short', weekday: 'short' }).formatToParts(new Date(iso));
+  const get = (t) => en.find((x) => x.type === t)?.value || '';
+  const ne = dateOf(iso).ne.split(', ');
+  return { en: `${get('month')} · ${get('weekday')}`, ne: `${(ne[1] || '').split(' ')[0]} · ${ne[0] || ''}` };
+};
 const pad = (n) => String(n + 1).padStart(2, '0');
 const tel = (p) => String(p).replace(/[^\d+]/g, '');
 
@@ -240,23 +250,30 @@ main.innerHTML = `
         <p class="hm-eyebrow hm-in">${bi(txt('days.eyebrow'))}</p>
         <h2 class="hm-h2 hm-in" id="days-title">${bi(txt('days.title'))}</h2>
       </header>
-      <ol class="hm-timeline">
-        <li class="hm-timeline__rail" aria-hidden="true"><i id="rail"></i></li>
-        ${events.map((e, i) => `
+      <ol class="hm-programme">
+        ${events.map((e, i) => {
+          const full = dateOf(e.start);
+          const b = bsDateOf(e.start, e.dateBS).short;
+          const bs = { en: /B\.?S/.test(b.en) ? b.en : `${b.en} B.S.`, ne: /वि\.?सं/.test(b.ne) ? b.ne : `वि.सं. ${b.ne}` };
+          const sw = (e.dress?.colors || []).map(safeColor).filter(Boolean);
+          return `
         <li class="hm-event" data-i="${i}">
-          <span class="hm-event__dot" aria-hidden="true"></span>
-          ${e.photo ? `<div class="hm-event__pic">${eventPic(e)}</div>` : ''}
-          <p class="hm-event__date">${bi(dateOf(e.start))}</p>
-          <h3 class="hm-event__title">${bi(e.title)}</h3>
-          <p class="hm-event__meta">${bi(timeRange(e.start, e.end))}</p>
-          <p class="hm-event__meta">${bi(e.venue)} <a class="hm-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span></a></p>
-          ${e.dress ? `<p class="hm-event__dress"><span class="hm-sw" aria-hidden="true">${(e.dress.colors || []).map(safeColor).filter(Boolean).map((col) => `<i style="background:${col}"></i>`).join('')}</span>${bi(e.dress.text || T.wear)}</p>` : ''}
-          ${e.rituals?.length ? `
-          <details class="hm-rituals">
-            <summary>${bi(txt('days.order'))}</summary>
-            <ol>${e.rituals.map((r) => `<li><span>${bi(r.time)}</span>${bi(r.title)}</li>`).join('')}</ol>
-          </details>` : ''}
-        </li>`).join('')}
+          <p class="hm-event__day" aria-hidden="true"><b>${bi(dayNum(e.start))}</b><span>${bi(monthDay(e.start))}</span></p>
+          <div class="hm-event__body">
+            <h3 class="hm-event__title">${bi(e.title)}</h3>
+            <dl class="hm-facts">
+              <div><dt>${bi(T.when)}</dt><dd><b>${bi(timeRange(e.start, e.end))}</b><span>${bi(full)}</span>${bs ? `<span>${bi(bs)}</span>` : ''}</dd></div>
+              <div><dt>${bi(T.where)}</dt><dd><b>${bi(e.venue)}</b><a class="hm-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.openMap)}<span aria-hidden="true"> ↗</span></a></dd></div>
+              ${e.dress ? `<div><dt>${bi(T.wear)}</dt><dd class="hm-facts__wear">${sw.length ? `<span class="hm-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text || T.wear)}</span></dd></div>` : ''}
+            </dl>
+            ${e.rituals?.length ? `
+            <details class="hm-rituals">
+              <summary>${bi(txt('days.order'))}</summary>
+              <ol>${e.rituals.map((r) => `<li><span>${bi(r.time)}</span>${bi(r.title)}</li>`).join('')}</ol>
+            </details>` : ''}
+          </div>
+        </li>`;
+        }).join('')}
       </ol>
     </div>
   </section>
@@ -563,6 +580,7 @@ enterBtn.addEventListener('click', () => open(true));
 quietBtn.addEventListener('click', () => open(false));
 
 /** The one signature moment: the sun comes up behind the peak. */
+let introTweens = [];
 function sunrise() {
   const names = gsap.utils.toArray('.hm-hero__names .hm-rv');
   if (reduced) {
@@ -573,8 +591,10 @@ function sunrise() {
   }
   if (dawn) gsap.to(dawn.state, { rise: 1, duration: 7.2, ease: 'power1.inOut' });
   else document.body.classList.add('is-risen');
-  gsap.fromTo(names, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.6, ease: 'power3.out', stagger: 0.35, delay: 2.6 });
-  gsap.fromTo('.hm-hero__cue', { opacity: 0 }, { opacity: 1, duration: 1, delay: 5 });
+  introTweens = [
+    gsap.fromTo(names, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.6, ease: 'power3.out', stagger: 0.35, delay: 2.6 }),
+    gsap.fromTo('.hm-hero__cue', { opacity: 0 }, { opacity: 1, duration: 1, delay: 5 }),
+  ];
 }
 
 // ───────────────────────── Scroll ─────────────────────────
@@ -649,7 +669,7 @@ function essayScroll() {
   tl.to({}, { duration: 0.4 }); // a breath on the last photo before releasing the pin
 }
 
-/** Ceremonies: a hairline that draws as you read, and a sticky photo stack beside it. */
+/** Ceremonies: the sticky photo beside the programme follows the ceremony you are reading. */
 function daysScroll() {
   const items = gsap.utils.toArray('.hm-event');
   const figs = gsap.utils.toArray('.hm-days__fig');
@@ -659,12 +679,9 @@ function daysScroll() {
   };
   setActive(0);
   items.forEach((el, i) => ScrollTrigger.create({
-    trigger: el, start: 'top 62%', end: 'bottom 62%',
+    trigger: el, start: 'top 60%', end: 'bottom 60%',
     onEnter: () => setActive(i), onEnterBack: () => setActive(i),
   }));
-  if (!reduced) {
-    gsap.fromTo('#rail', { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: '.hm-timeline', start: 'top 62%', end: 'bottom 62%', scrub: true } });
-  } else gsap.set('#rail', { scaleY: 1 });
 }
 
 /** Travel & stay: three plates that rise in turn on wide screens, a calm stack on phones. */
@@ -699,7 +716,7 @@ if (DEBUG) {
   window.__hm = {
     dawn, ScrollTrigger, gsap,
     open: () => open(false),
-    rise: (v = 1) => { gsap.killTweensOf(dawn?.state); dawn?.set({ rise: v }); gsap.set('.hm-hero__names .hm-rv, .hm-hero__cue', { opacity: 1, y: 0 }); },
+    rise: (v = 1) => { gsap.killTweensOf(dawn?.state); introTweens.forEach((t) => t.kill()); dawn?.set({ rise: v }); gsap.set('.hm-hero__names .hm-rv, .hm-hero__cue', { opacity: 1, y: 0 }); },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;
