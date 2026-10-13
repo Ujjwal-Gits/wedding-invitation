@@ -7,7 +7,8 @@ import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import { coupleCanvases } from './figures.js';
+import { Figure, Mala, Ribbon, loadAssets as loadCoupleAssets, placeMala, marigoldGeometry, marigoldMaterial } from './couple3d.js';
+import { roseGeometry, wisteriaGeometry, ROSE_MAT, WISTERIA_MAT, scatter, aroundCurve, faceEuler } from './florals.js';
 import { loadFloraAssets, crownGeometry, leafMaterial, plantSpecies, trunkGeometry, grassField, lawnMask } from './flora.js';
 import { loadImpostors, plantImpostors, impostorLight } from './impostor.js';
 import { WATER_FALL, PLUNGE, POOL_REFLECT, SKY, BACKPLATE, GLOW, MIST, FLAME, PETALS } from './shaders.js';
@@ -121,6 +122,7 @@ function lightAt(tod) {
 export const LAYOUT = {
   pool: { x0: -3, x1: 3, z0: 8, z1: 38 },
   pavilion: v3(0, 0, -32),
+  entrance: 80,
   platformY: 0.75,
   arches: [5, -4, -13],
   cliff: { pos: v3(-34, 0, -58), rot: 0.5 },
@@ -130,13 +132,13 @@ export const LAYOUT = {
   easelZ: [33, 26.5, 20, 13.5, 7],
 };
 // The couple's path: aisle → pavilion → down the side steps → the chautari.
-const COUPLE_PATH = [v3(0, 0, 7.5), v3(0, 0, -24.4), v3(-1.45, 0, -29.4), v3(4.2, 0, -27.2), v3(9, 0, -23.5), v3(20.5, 0, -27.5), v3(22.2, 0, -30.4)];
+const COUPLE_PATH = [v3(0, 0, 7.5), v3(0, 0, -24.4), v3(0, 0, -30.2), v3(4.2, 0, -27.2), v3(9, 0, -23.5), v3(20.5, 0, -27.5), v3(22.2, 0, -30.4)];
 
 function groundY(x, z) {
   const r = Math.hypot(x - LAYOUT.pavilion.x, z - LAYOUT.pavilion.z);
+  // the steps as a gentle ramp, so the figures never pop up a riser
   if (r < 6.6) return 0.75;
-  if (r < 7.05) return 0.5;
-  if (r < 7.5) return 0.25;
+  if (r < 7.55) return 0.75 * (1 - (r - 6.6) / 0.95);
   return 0;
 }
 function pathPoint(s) {
@@ -588,8 +590,19 @@ export async function createGarden(canvas, opts) {
   }
   const blooms = [];
   const bloomCols = [];
-  const BLUSH = ['#F2CFC6', '#E7B2A8', '#F8E9E2', '#FFFFFF', '#DFA49B', '#F6DCC8'];
-  const addBloom = (x, y, z, s = 1, palette = BLUSH) => { blooms.push([x, y, z, R() * TAU, R() * TAU, 0, s * (0.8 + R() * 0.5)]); bloomCols.push(palette[Math.floor(R() * palette.length)]); };
+  const BLUSH = ['#F4CFC7', '#E9AFA6', '#FBEAE4', '#FFFFFF', '#E39A95', '#F7DCCB', '#C9475A', '#FFFFFF'];
+  const marigolds = [], marigoldCols = [];
+  const isMarigold = (hex) => { const c = col(hex); const hsl = {}; c.getHSL(hsl); return hsl.s > 0.55 && hsl.h > 0.06 && hsl.h < 0.16; };
+  const addBloom = (x, y, z, s = 1, palette = BLUSH) => {
+    const c = palette[Math.floor(R() * palette.length)];
+    if (isMarigold(c)) { marigolds.push([x, y, z, R() * TAU, R() * TAU, R() * TAU, s * (0.8 + R() * 0.4)]); marigoldCols.push(c); return; }
+    // roses turn their faces outward and a little up
+    const dir = v3(R() - 0.5, 0.7 + R() * 0.6, R() - 0.5).normalize();
+    blooms.push([x, y, z, ...faceEuler(dir, R() * TAU), s * (0.75 + R() * 0.5)]);
+    bloomCols.push(c);
+  };
+  const wisteria = []; // [x, y, z, ry, scale]
+  const addWisteria = (x, y, z, s = 1) => wisteria.push([x, y, z, (R() - 0.5) * 0.25, R() * TAU, (R() - 0.5) * 0.25, s * (0.75 + R() * 0.5)]);
   const leaves = [];
   const addLeaf = (x, y, z, s = 1) => leaves.push([x, y, z, R() * TAU, R() * TAU, R() * TAU, s * (0.7 + R() * 0.6)]);
   // planters at the pool corners
@@ -648,6 +661,7 @@ export async function createGarden(canvas, opts) {
       addLeaf(-AW * s + (R() - 0.5) * 0.4, y + 0.2, z + (R() - 0.5) * 0.35);
     }
     for (let i = 0; i < 18; i++) addBloom(AW * s * Math.cos(0.4 + R() * 0.3) + (R() - 0.5) * 0.2, AH + 0.6 + R() * 0.3, z, 0.9);
+    for (let i = 0; i < 12; i++) { const a = Math.PI * (0.15 + R() * 0.7); addWisteria(Math.cos(a) * AW * 0.95, AH + Math.sin(a) * AW * 0.9 - 0.04, z + (R() - 0.5) * 0.25, 1.1); }
   };
   LAYOUT.arches.forEach((z, i) => archFloral(z, i % 2 === 1));
 
@@ -706,6 +720,67 @@ export async function createGarden(canvas, opts) {
     // marigold strands under the swag
     catenary(p0.clone().setY(5.95), p1.clone().setY(5.95), 1.1, 22).forEach((p, k) => { if (k % 1 === 0) addBloom(P.x + p.x, P.y + p.y, P.z + p.z, 1.15, ['#E89A26', '#F2BF45', '#D9741C']); });
   }
+  // floral canopy: wisteria hanging all round under the entablature (inside and out), roses along
+  // the cornice and clustered on every capital
+  for (let k = 0; k < (mobile ? 130 : 240); k++) {
+    const a = R() * TAU, r = 4.85 + R() * 1.3;
+    addWisteria(P.x + Math.cos(a) * r, P.y + 6.15, P.z + Math.sin(a) * r, 1.15 + R() * 0.6);
+  }
+  for (let k = 0; k < (mobile ? 260 : 460); k++) {
+    const a = R() * TAU;
+    addBloom(P.x + Math.cos(a) * (6.2 + R() * 0.25), P.y + 6.25 + R() * 0.75, P.z + Math.sin(a) * (6.2 + R() * 0.25), 1.6);
+    if (k % 3 === 0) addLeaf(P.x + Math.cos(a) * 6.3, P.y + 6.3 + R() * 0.6, P.z + Math.sin(a) * 6.3, 1.4);
+  }
+  cols.forEach(([cx, , cz]) => {
+    for (let k = 0; k < 34; k++) {
+      const a = R() * TAU, h = R();
+      addBloom(P.x + cx + Math.cos(a) * 0.42, P.y + 0.75 + 4.7 + h * 0.8, P.z + cz + Math.sin(a) * 0.42, 1.5);
+      if (k % 2) addLeaf(P.x + cx + Math.cos(a) * 0.48, P.y + 5.3 + h * 0.6, P.z + cz + Math.sin(a) * 0.48, 1.5);
+    }
+    // a spiral of roses and greenery down each column
+    for (let k = 0; k < 26; k++) {
+      const t = k / 26, a = t * TAU * 2.2;
+      addBloom(P.x + cx + Math.cos(a) * 0.36, P.y + 0.9 + (1 - t) * 4.2, P.z + cz + Math.sin(a) * 0.36, 1.05);
+      if (k % 2) addLeaf(P.x + cx + Math.cos(a + 0.3) * 0.38, P.y + 0.95 + (1 - t) * 4.2, P.z + cz + Math.sin(a + 0.3) * 0.38, 1.2);
+    }
+  });
+
+  // ── The entrance: a deep floral arch the guest passes through at the start ──
+  {
+    const EZ = LAYOUT.entrance, EW = 3.3, EH = 4.0, depth = 1.4;
+    const frame = new THREE.CurvePath();
+    frame.add(new THREE.LineCurve3(v3(-EW, 0, 0), v3(-EW, EH, 0)));
+    frame.add(new THREE.CatmullRomCurve3(new THREE.EllipseCurve(0, EH, EW, EW * 0.62, Math.PI, 0, true).getPoints(28).map((q) => v3(q.x, q.y, 0))));
+    frame.add(new THREE.LineCurve3(v3(EW, EH, 0), v3(EW, 0, 0)));
+    const tubeGeo = new THREE.TubeGeometry(frame, 140, 0.07, 8, false);
+    scene.add(instanced(tubeGeo, M.gold, [[0, 0, EZ - depth / 2], [0, 0, EZ + depth / 2]]));
+    // dense roses over the whole frame, both faces and the soffit
+    const RE = rng(77);
+    for (let layer = 0; layer < 5; layer++) {
+      const zz = EZ - depth / 2 + (layer / 4) * depth;
+      const curve = frame.getPoints(200);
+      const cr = new THREE.CatmullRomCurve3(curve.map((q) => v3(q.x, q.y, zz)));
+      aroundCurve(cr, mobile ? 150 : 300, 0.34, RE).forEach(({ pos, dir }) => {
+        const c = BLUSH[Math.floor(RE() * BLUSH.length)];
+        blooms.push([pos.x, pos.y, pos.z, ...faceEuler(dir, RE() * TAU), 1.25 + RE() * 0.7]);
+        bloomCols.push(c);
+        if (RE() < 0.22) addLeaf(pos.x, pos.y, pos.z, 1.7);
+      });
+    }
+    // wisteria cascading from the crown of the arch, inside the passage
+    for (let k = 0; k < (mobile ? 50 : 90); k++) {
+      const a = Math.PI * (0.18 + RE() * 0.64);
+      addWisteria(Math.cos(a) * EW * 0.92, EH + Math.sin(a) * EW * 0.58 - 0.1, EZ + (RE() - 0.5) * depth, 1.3 + RE() * 0.6);
+    }
+    // two urns of roses either side of the entrance
+    [-EW - 1.1, EW + 1.1].forEach((x) => {
+      const urn = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [0.34, 0], [0.38, 0.1], [0.24, 0.24], [0.3, 0.6], [0.56, 0.98], [0.6, 1.06], [0, 1.06]].map(([a, b]) => new THREE.Vector2(a, b)), 28), M.stone);
+      urn.position.set(x, 0, EZ); urn.castShadow = true; scene.add(urn);
+      for (let k = 0; k < 70; k++) { const a = RE() * TAU, r = RE() * 0.55; addBloom(x + Math.cos(a) * r, 1.1 + RE() * 0.45 + (0.55 - r) * 0.5, EZ + Math.sin(a) * r, 1.5); if (k % 2) addLeaf(x + Math.cos(a) * r, 1.2, EZ + Math.sin(a) * r, 1.6); }
+    });
+    flat(3.4, 64, 0, EZ - 14, gravelMat, 0.02); // the approach
+  }
+
   // havan kunda + fire at the centre
   const kunda = new THREE.Mesh(merge([place(new THREE.BoxGeometry(1.3, 0.22, 1.3), 0, 0.11, 0), place(new THREE.BoxGeometry(0.95, 0.2, 0.95), 0, 0.32, 0)]), M.brick);
   kunda.position.y = 0.75; kunda.castShadow = true;
@@ -1116,7 +1191,14 @@ export async function createGarden(canvas, opts) {
   scene.add(fairyLines);
 
   // All flowers and leaves in two instanced draws.
-  scene.add(instanced(bloomGeo, M.flowers, blooms, { colors: bloomCols, shadow: false }));
+  const flowerMeshes = [];
+  flowerMeshes.push(scatter(scene, roseGeometry(), ROSE_MAT(), blooms, bloomCols));
+  {
+    const mg = marigoldGeometry(mobile ? 1 : 2);
+    mg.scale(0.068, 0.068, 0.068);
+    flowerMeshes.push(scatter(scene, mg, marigoldMaterial({ emissiveIntensity: 0.25 }), marigolds, marigoldCols));
+    flowerMeshes.push(scatter(scene, wisteriaGeometry(), WISTERIA_MAT(), wisteria, null));
+  }
   const leafGeo = new THREE.BufferGeometry();
   leafGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.065, 0.025, 0.11, 0, 0.01, 0.26, 0, 0, 0, 0, 0.01, 0.26, -0.065, 0.025, 0.11], 3));
   leafGeo.computeVertexNormals();
@@ -1130,10 +1212,12 @@ export async function createGarden(canvas, opts) {
   const trees = [];
   const nearTrees = [[19.6, 8.4], [-22, 34], [-24, 16], [-21, 2], [-24, -6], [19, 30], [23, 20], [27, 4], [31, -12], [35, -30], [15, -48], [-12, -52], [3, -55], [24, 40], [-28, 30], [-30, 14], [32, 26]];
   nearTrees.forEach(([x, z]) => trees.push([x, 0, z, R() * TAU, 0, 0, 1 + R() * 0.5]));
+  const inApproach = (x, z) => z > 40 && Math.abs(x) < 13;
   for (let i = 0; i < (mobile ? 90 : 160); i++) {
     const a = R() * TAU, r = 58 + R() * 70;
     const x = Math.cos(a) * r, z = Math.sin(a) * r * 0.9;
     if (z < -40 && Math.abs(x + 34) < 30 && z > -80) continue; // behind the cliff
+    if (inApproach(x, z)) continue;
     trees.push([x, 0, z, R() * TAU, 0, 0, 1.2 + R() * 1.1]);
   }
   // extra groves so the edges have layered depth instead of a ring
@@ -1227,6 +1311,7 @@ export async function createGarden(canvas, opts) {
     g.fillRect(LAYOUT.easelX - 0.8, -1.2, 4.2, 46.4); // easel walk
     g.beginPath(); g.arc(0, -32, 10.7, 0, TAU); g.fill(); // pavilion
     g.fillRect(-0.9, -25.6, 1.8, 31.8); // aisle runner
+    g.fillRect(-1.8, 42, 3.6, 66); // approach to the entrance
     g.fillRect(T.x - 3.3, T.z - 3.3, 6.6, 6.6); // chautari platform
     hedges.forEach(([x, , z, , , , [sx, , sz]]) => g.fillRect(x - sx / 2, z - sz / 2, sx, sz));
     g.save(); g.translate(S.x, S.z); g.rotate(0.6); g.fillRect(-2.6, -1.2, 5.2, 4.3); g.restore(); // swing rug
@@ -1242,23 +1327,48 @@ export async function createGarden(canvas, opts) {
   // the pool's reflection pass skips the grass (cheaper, and it would be hidden by the coping anyway)
   {
     const orig = reflector.onBeforeRender;
-    reflector.onBeforeRender = function (...a) { const v = grass.visible; grass.visible = false; orig.apply(this, a); grass.visible = v; };
+    reflector.onBeforeRender = function (...a) {
+      // grass and the small flowers stay out of the mirror pass (cheaper; mirrored double-sided petals shade dark)
+      const hide = [grass, ...flowerMeshes].filter(Boolean), was = hide.map((m) => m.visible);
+      hide.forEach((m) => { m.visible = false; });
+      orig.apply(this, a);
+      hide.forEach((m, k) => { m.visible = was[k]; });
+    };
   }
 
-  // ── The couple ──
+  // ── The couple: rigged, dressed figures (CC0 MakeHuman bodies + Quaternius animations) ──
   onProgress(0.7);
-  const frames = await coupleCanvases(mobile || lowPower ? 640 : 960);
-  const mkTex = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
-  const coupleTex = { front: frames.front.map(mkTex), back: frames.back.map(mkTex) };
-  const coupleMat = new THREE.MeshBasicMaterial({ map: coupleTex.front[0], transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, toneMapped: false });
-  const CH = 2.02, CW = CH * 0.8;
-  const coupleGeo = new THREE.PlaneGeometry(CW, CH).translate(0, CH / 2 - 0.03, 0);
-  const couple = new THREE.Mesh(coupleGeo, coupleMat);
-  couple.renderOrder = 1;
-  scene.add(couple);
-  const blob = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.9), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false }));
-  blob.rotation.x = -Math.PI / 2;
-  scene.add(blob);
+  const [brideGltf, groomGltf, animsGltf] = await loadCoupleAssets();
+  const bride = new Figure(brideGltf, animsGltf, 'bride', mobile || lowPower);
+  const groom = new Figure(groomGltf, animsGltf, 'groom', mobile || lowPower);
+  scene.add(bride.root, groom.root);
+  const malaA = new Mala(70, 0.032); // the bride's garland, worn by the groom
+  const malaB = new Mala(64, 0.03, [new Color('#f6e7c8'), new Color('#f39318'), new Color('#e2650f'), new Color('#ffb52a')]);
+  scene.add(malaA.mesh, malaB.mesh);
+  const tie = new Ribbon(new THREE.MeshPhysicalMaterial({ color: '#d9a441', roughness: 0.55, sheen: 1, sheenColor: new Color('#fff2c0'), side: THREE.DoubleSide }), 26, 0.035);
+  scene.add(tie.mesh);
+  const blobMat = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, opacity: 0.9 });
+  const blobs = [bride, groom].map(() => { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), blobMat); m.rotation.x = -Math.PI / 2; scene.add(m); return m; });
+  // Seven diyos around the havan kunda, one lit for each round walked.
+  const diyos = [];
+  {
+    const dg = new THREE.LatheGeometry([[0, 0], [0.05, 0], [0.075, 0.02], [0.08, 0.04], [0.07, 0.042], [0, 0.03]].map(([x, y]) => new THREE.Vector2(x, y)), 18);
+    const clay = new THREE.MeshStandardMaterial({ color: '#9a4a24', roughness: 0.85 });
+    const diyoFlame = new THREE.ShaderMaterial({ ...FLAME(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    diyoFlame.uniforms.intensity.value = 1.1;
+    for (let k = 0; k < 7; k++) {
+      const a = Math.PI + (k / 7) * TAU;
+      const d = new THREE.Mesh(dg, clay);
+      d.position.set(LAYOUT.pavilion.x + Math.sin(a) * 2.45, 0.755, LAYOUT.pavilion.z + Math.cos(a) * 2.45);
+      d.castShadow = true;
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.17).translate(0, 0.085, 0), diyoFlame);
+      f.position.copy(d.position).add(v3(0, 0.035, 0));
+      f.visible = false;
+      scene.add(d, f);
+      diyos.push({ d, f });
+    }
+    diyos.mat = diyoFlame;
+  }
   onProgress(0.9);
 
   // ───────────────────────── Stations ─────────────────────────
@@ -1273,6 +1383,8 @@ export async function createGarden(canvas, opts) {
     aisle: { target: v3(0, 4.4, -24), yaw: 0, pitch: -0.105, dist: 19.2, fov: [52, 46, 42] },
     lanterns: { target: T.clone().add(v3(-2.5, 3.0, 4.5)), yaw: 0.14, pitch: 0.08, fit: [17, 10], fitNarrow: [8.5, 10] },
   };
+  const RR = 1.55; // radius of the seven rounds around the fire
+  const ROUND_LEN = 7 * TAU * RR;
   const coupleAt = {
     start: pathLen(0) + 0.0,
     aisleMid: 22,
@@ -1287,7 +1399,8 @@ export async function createGarden(canvas, opts) {
   let p = 0; // continuous station index
   let intro = 0; // 1 = crane-high gate view
   let paused = false;
-  let lastCoupleS = 0, walkPhase = 0, faceState = 'back';
+  let hold = 0; // 0..1 through the current station's resting zone (drives the seven rounds)
+  let story = null; // smoothed choreography distance
   const cam = { target: v3(), yaw: 0, pitch: 0, dist: 10, shiftX: 0, shiftY: 0, fov: 40 };
   const smoothCam = { pos: v3(), target: v3(), shiftX: 0, shiftY: 0, fov: 40, init: false };
 
@@ -1326,7 +1439,7 @@ export async function createGarden(canvas, opts) {
         const face = s.spot === 'lanterns' ? 0.3 : Math.PI;
         return { ...s, ...sp, layout: s.layout, tod, couple: { s: cs, face } };
       }
-      if (s.kind === 'vows') return { ...s, target: v3(0, 2.4, -30.5), yaw: 0, pitch: 0.06, fit: [9.5, 7.2], fitNarrow: [5.2, 5.6], layout: s.layout, tod: 1.08, couple: { s: coupleAt.altar, face: 0 } };
+      if (s.kind === 'vows') return { ...s, target: v3(0, 1.0, -31.8), yaw: 0.0, pitch: 0.5, dist: 8.4, distNarrow: 9.6, fov: [54, 46, 42], layout: s.layout, tod: 1.08, couple: { s: coupleAt.altar, face: 0 } };
       if (s.kind === 'finale') return { ...s, target: v3(10, 1, -26), yaw: -0.5, pitch: 0.42, dist: 62, distNarrow: 80, layout: 'top', tod: 2, couple: { s: coupleAt.chautari, face: 0.3 } };
       return s;
     });
@@ -1358,10 +1471,10 @@ export async function createGarden(canvas, opts) {
     out.dist *= 1 + out.lift * 0.35;
     if (intro > 0) {
       const k = smoother(intro);
-      out.pitch = MathUtils.lerp(out.pitch, 0.22, k);
-      out.dist *= 1 + 0.4 * k;
-      out.target.y += 6 * k;
-      out.sy = MathUtils.lerp(out.sy, -0.3, k);
+      out.pitch = MathUtils.lerp(out.pitch, 0.012, k);
+      out.dist *= 1 + 0.78 * k;
+      out.target.y += 0.2 * k;
+      out.sy = MathUtils.lerp(out.sy, aspect < 0.9 ? 0.16 : -0.26, k);
     }
     return out;
   }
@@ -1402,29 +1515,101 @@ export async function createGarden(canvas, opts) {
     mistMat.uniforms.tint.value.copy(light.hor).lerp(col('#FFFFFF'), 0.6);
     mistMat.uniforms.alpha.value = 0.26 - light.night * 0.14;
     flameMat.uniforms.intensity.value = 0.55 + lan * 0.6;
-    coupleMat.color.copy(light.couple);
   }
 
-  function updateCouple(st, camPos, dt) {
-    const { p: pos, dir } = pathPoint(st.cs);
-    pos.y = groundY(pos.x, pos.z);
-    const moved = st.cs - lastCoupleS;
-    lastCoupleS = st.cs;
-    walkPhase += Math.abs(moved);
-    const walking = Math.abs(moved) > 0.0008;
-    const frame = walking || (walkPhase % 0.9) > 0.05 ? Math.floor(walkPhase / 0.45) % 4 : 0;
-    // facing: along the path while walking, else the station's facing
-    const walkYaw = Math.atan2(dir.x, dir.z);
-    const faceYaw = walking ? walkYaw : st.face;
-    const to = camPos.clone().sub(pos);
-    const dot = Math.sin(faceYaw) * to.x + Math.cos(faceYaw) * to.z;
-    if (dot > 0.6) faceState = 'front'; else if (dot < -0.6) faceState = 'back';
-    const tex = coupleTex[faceState][reduced ? 0 : frame];
-    if (coupleMat.map !== tex) { coupleMat.map = tex; coupleMat.needsUpdate = false; }
-    const bob = walking && !reduced ? Math.abs(Math.sin(walkPhase * Math.PI / 0.9)) * 0.03 : 0;
-    couple.position.set(pos.x, pos.y + bob, pos.z);
-    couple.rotation.set(0, Math.atan2(to.x, to.z), walking && !reduced ? Math.sin(walkPhase * Math.PI / 0.9) * 0.012 : 0);
-    blob.position.set(pos.x, pos.y + 0.035, pos.z);
+  // The whole choreography as one distance walked: along the aisle to the fire, seven rounds
+  // around it (the fire on their right, the groom leading, tied by the ganthbandhan), then on to
+  // the chautari. Scroll sets where the story should be; the couple walk there at a natural pace,
+  // and the walk cycle follows distance travelled, so the feet never slide.
+  const altarS = () => coupleAt.altar;
+  function storyTarget(st) {
+    const vi = stations.findIndex((x) => x.kind === 'vows');
+    const pc = Math.min(Math.max(p, 0), stations.length - 1);
+    const rounds = vi < 0 ? 1 : pc < vi ? 0 : pc > vi ? 1 : clamp01((hold - 0.06) / 0.86);
+    const cs = st.cs;
+    if (cs <= altarS()) return rounds > 0 ? altarS() + rounds * ROUND_LEN : cs;
+    return altarS() + rounds * ROUND_LEN + (rounds >= 1 ? cs - altarS() : 0);
+  }
+  function decode(D) {
+    const A = altarS();
+    if (D <= A) return { mode: 'path', d: D };
+    if (D <= A + ROUND_LEN) return { mode: 'rounds', s: D - A };
+    return { mode: 'path', d: D - ROUND_LEN };
+  }
+  const sideBySide = (d, faceOverride) => {
+    const { p: c, dir } = pathPoint(d);
+    const f = faceOverride != null ? v3(Math.sin(faceOverride), 0, Math.cos(faceOverride)) : dir;
+    const left = v3(f.z, 0, -f.x);
+    return { b: c.clone().addScaledVector(left, 0.31), g: c.clone().addScaledVector(left, -0.31), yaw: Math.atan2(f.x, f.z) };
+  };
+  const onCircle = (th) => v3(LAYOUT.pavilion.x + Math.sin(th) * RR, 0, LAYOUT.pavilion.z + Math.cos(th) * RR);
+  const yawB = { v: Math.PI }, yawG = { v: Math.PI };
+  function updateCouple(st, dt) {
+    const want = storyTarget(st);
+    if (!story || reduced || !dt) story = want;
+    else {
+      const lag = want - story;
+      if (Math.abs(lag) > 26) story = want; // a chapter jump: cut, don't run
+      else {
+        const rate = 1.25 * (1 + 2.2 * clamp01(Math.abs(lag) / 10));
+        story += Math.sign(lag) * Math.min(Math.abs(lag), rate * dt);
+      }
+    }
+    const S = decode(story);
+    const atRest = Math.abs(want - story) < 0.02;
+    let pb, pg, yb, yg;
+    let roundsDone = 0;
+    if (S.mode === 'path') {
+      const resting = atRest && st.face != null;
+      const sb = sideBySide(S.d, resting ? st.face : null);
+      pb = sb.b; pg = sb.g; yb = yg = sb.yaw;
+      roundsDone = story > altarS() ? 7 : 0;
+    } else {
+      // single file on the circle, blending in from (and back out to) standing side by side
+      const s0 = S.s;
+      const th = -(s0 / RR);
+      const gap = 0.95 / RR;
+      const cb = onCircle(th + gap / 2), cg = onCircle(th - gap / 2);
+      const tang = (t) => Math.atan2(-Math.cos(t), Math.sin(t));
+      const entry = sideBySide(altarS(), Math.PI), exit = sideBySide(altarS(), 0);
+      const kIn = smooth(clamp01(s0 / 1.6)), kOut = smooth(clamp01((ROUND_LEN - s0) / 1.6));
+      const k = Math.min(kIn, kOut);
+      const from = s0 < ROUND_LEN / 2 ? entry : exit;
+      pb = from.b.clone().lerp(cb, k); pg = from.g.clone().lerp(cg, k);
+      yb = angLerp(from.yaw, tang(th + gap / 2), k);
+      yg = angLerp(from.yaw, tang(th - gap / 2), k);
+      roundsDone = Math.min(7, Math.floor((s0 + 0.4) / (TAU * RR)));
+    }
+    pb.y = groundY(pb.x, pb.z); pg.y = groundY(pg.x, pg.z);
+    // turn smoothly (people turn in a beat, not a frame)
+    const kt = !dt || reduced ? 1 : 1 - Math.exp(-dt * 6);
+    yawB.v = angLerp(yawB.v, yb, kt); yawG.v = angLerp(yawG.v, yg, kt);
+    const walking = !atRest;
+    bride.ik.L = bride.ik.R = groom.ik.L = groom.ik.R = null;
+    bride.pose(pb, yawB.v, dt, time, { look: walking ? null : groom.bone.head.getWorldPosition(v3()) });
+    groom.pose(pg, yawG.v, dt, time, { look: walking ? null : bride.bone.head.getWorldPosition(v3()) });
+    // the bride walks with her hands joined in front
+    if (walking) {
+      const fB = bride.forward(), sB = v3(fB.z, 0, -fB.x), hands = bride.local(0, 1.02, 0.26);
+      bride.ik.L = { p: hands.clone().addScaledVector(sB, 0.05), w: 0.8 };
+      bride.ik.R = { p: hands.clone().addScaledVector(sB, -0.05), w: 0.8 };
+      bride.solveArms();
+    }
+    const up = v3(0, 1, 0);
+    placeMala(malaA, bride, groom, 'worn', 1, up, 0.34);
+    placeMala(malaB, groom, bride, 'worn', 1, up, 0.3);
+    // ganthbandhan from the aisle's end onwards
+    const tied = story > altarS() - 1.2;
+    tie.mesh.visible = tied;
+    if (tied) {
+      const a = groom.sashLocal.getWorldPosition(v3()), b = bride.sashLocal.getWorldPosition(v3());
+      tie.update(a, b, 0.2 + 0.12 * Math.max(0, 0.9 - a.distanceTo(b)), time);
+    }
+    blobs[0].position.set(pb.x, pb.y + 0.03, pb.z);
+    blobs[1].position.set(pg.x, pg.y + 0.03, pg.z);
+    // one diyo lit per completed round
+    diyos.forEach(({ f }, k) => { f.visible = k < roundsDone; if (f.visible) f.lookAt(camera.position.x, f.position.y, camera.position.z); });
+    diyos.mat.uniforms.time.value = time;
   }
 
   function resize() {
@@ -1466,7 +1651,7 @@ export async function createGarden(canvas, opts) {
     camera.projectionMatrix.elements[9] = -smoothCam.shiftY;
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
     sky.position.copy(camera.position);
-    updateCouple(st, camera.position, dt);
+    updateCouple(st, dt);
     flame.lookAt(camera.position.x, flame.position.y, camera.position.z);
     // petals fall only around the vows
     const vowIdx = stations.findIndex((s) => s.kind === 'vows');
@@ -1496,6 +1681,8 @@ export async function createGarden(canvas, opts) {
     setStations,
     get stations() { return stations; },
     setProgress(v) { p = v; },
+    setHold(v) { hold = v; },
+    get couple() { return { bride, groom, story, altar: coupleAt.altar, roundLen: ROUND_LEN }; },
     get progress() { return p; },
     setIntro(v) { intro = v; },
     snap() { firstFrame = true; },

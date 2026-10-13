@@ -176,7 +176,7 @@ body:not(.is-in) .b-cue { opacity: 0; }
 body:not(.is-in) .b-hero .b-btn { visibility: hidden; }
 
 /* ───────── Gate ───────── */
-.b-gate { align-content: end; padding-bottom: calc(max(9vh, 40px) + var(--safe-b)); background: linear-gradient(0deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.93) 30%, rgba(255, 255, 255, 0.6) 44%, rgba(255, 255, 255, 0) 60%); transition: opacity 1000ms var(--ease-b); color: var(--b-ink); }
+.b-gate { align-content: end; padding-bottom: calc(max(4vh, 24px) + var(--safe-b)); background: linear-gradient(0deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.82) 15%, rgba(255, 255, 255, 0.3) 24%, rgba(255, 255, 255, 0) 32%); transition: opacity 1000ms var(--ease-b); color: var(--b-ink); }
 .b-gate.is-leaving { opacity: 0; pointer-events: none; }
 .b-gate__inner { display: grid; justify-items: center; gap: 18px; }
 .b-gate__guest { margin: 0; }

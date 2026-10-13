@@ -23,9 +23,10 @@ function quad(w, h, z = 0, y0 = 0) {
 export function newarWindow(B, m, { w = 1.1, h = 1.3, door = false, torana = false, ears = 0.3, depth = 0.2, lattice = !door } = {}) {
   const fw = door ? 0.2 : 0.13;
   // the dark opening behind
-  B.add('window', xf(quad(w, h, -0.18), m), { uv: 'keep' });
-  if (lattice) B.add('lattice', xf(quad(w, h, -0.02), m), { uv: 'keep' });
-  else B.add('dark', xf(box(w, h, 0.3, 0, 0, -0.32), m), { color: '#3A2A20' });
+  // opening and lattice sit proud of the wall plane (never coplanar: no z-fighting at distance)
+  B.add('window', xf(quad(w, h, 0.012), m), { uv: 'keep' });
+  if (lattice) B.add('lattice', xf(quad(w, h, 0.05), m), { uv: 'keep' });
+  else B.add('dark', xf(box(w, h, 0.03, 0, 0, 0.025), m), { color: '#3A2A20' });
   // jambs, sill and lintel with the characteristic projecting ears
   for (const s of [-1, 1]) B.add('wood', xf(box(fw, h, depth, s * (w / 2 + fw / 2), 0, -depth / 2 + 0.06), m));
   B.add('wood', xf(box(w + 2 * fw + 2 * ears, 0.15, depth + 0.04, 0, -0.15, -depth / 2 + 0.08), m));
@@ -247,18 +248,19 @@ export function pagoda(B, { x = 0, y = 0, z = 0, tiers, pitch = 30, topPitch = 3
         cornice(B, mm, T.w + 0.2, { h: 0.3, depth: 0.36 });
       }
     } else {
-      B.add('brick', box(T.w, T.h, T.w, x, yb, z, ry), { color: '#F2DCD0' });
+      if (T.wood) B.add('woodPaint', box(T.w, T.h, T.w, x, yb, z, ry), { color: '#5A3E2C', dark: { top: 0.5 } });
+      else B.add('brick', box(T.w, T.h, T.w, x, yb, z, ry), { color: '#F2DCD0', dark: { top: 0.45 } });
       for (let k = 0; k < 4; k++) {
         const [nrm, tan, a] = dir(k);
         const p = center.clone().addScaledVector(nrm, half);
         cornice(B, m4(p.x, yb, p.z, a), T.w + 0.24, { h: 0.26, depth: 0.26, beads: false });
         cornice(B, m4(p.x, yb + T.h - 0.36, p.z, a), T.w + 0.24, { h: 0.36, depth: 0.3 });
         const wins = T.windows ?? 1;
-        const ww = Math.min(0.95, (T.w - 1.2) / (wins * 1.7));
+        const ww = T.wood ? (T.w - 1.0) / wins - 0.3 : Math.min(0.95, (T.w - 1.2) / (wins * 1.7));
         for (let j = 0; j < wins; j++) {
           const s = (j - (wins - 1) / 2) * (T.w / (wins + 0.6));
           const q = p.clone().addScaledVector(tan, s);
-          newarWindow(B, m4(q.x, yb + Math.max(0.42, T.h * 0.28), q.z, a), { w: ww, h: Math.min(1.05, T.h * 0.42), ears: 0.18 });
+          newarWindow(B, m4(q.x, yb + Math.max(0.42, T.h * 0.28), q.z, a), { w: ww, h: Math.min(1.05, T.h * (T.wood ? 0.46 : 0.42)), ears: T.wood ? 0.06 : 0.18 });
         }
       }
     }
@@ -301,7 +303,7 @@ export function pagoda(B, { x = 0, y = 0, z = 0, tiers, pitch = 30, topPitch = 3
 // ───────────────────────── Nyatapola ─────────────────────────
 export const NYATAPOLA = {
   sizes: [25, 21.4, 17.8, 14.2, 10.8],
-  th: 1.72,
+  th: 1.95,
   stairW: 3.5,
 };
 /** Terraces + stair + temple. Front faces +z. Returns guardian placements and key heights. */
@@ -310,7 +312,7 @@ export function nyatapola(B, { x = 0, z = 0 }) {
   const top = th * sizes.length;
   sizes.forEach((s, k) => {
     const y = k * th;
-    B.add('plinth', box(s, th - 0.16, s, x, y, z), { color: '#F4D8CA' });
+    B.add('plinth', box(s, th - 0.16, s, x, y, z), { color: '#E9C2B4', dark: { base: 0.3 } });
     // stone coping on each terrace edge
     B.add('step', box(s + 0.12, 0.16, s + 0.12, x, y + th - 0.16, z));
     // a dark base course
@@ -332,11 +334,11 @@ export function nyatapola(B, { x = 0, z = 0 }) {
     const yk = (k + 1) * th; // top of terrace k
     const zf = z + sizes[k] / 2; // its front edge
     for (const s of [-1, 1]) {
-      const px = x + s * (stairW / 2 + 0.75);
+      const px = x + s * (stairW / 2 + 0.85);
       // pedestal: brick block with stone cap, on the terrace below the guardian
-      B.add('plinth', box(1.4, 0.9, 1.6, px, yk - th, zf + run / 2 + 0.05), { color: '#E9C9B9' });
-      B.add('step', box(1.55, 0.14, 1.75, px, yk - th + 0.9, zf + run / 2 + 0.05));
-      guards.push({ level: k, side: s, pos: v3(px, yk - th + 1.04, zf + run / 2 + 0.05) });
+      B.add('step', box(1.6, 0.9, 1.75, px, yk - th, zf + run / 2 + 0.05), { color: '#C4BBAD' });
+      B.add('step', box(1.75, 0.14, 1.9, px, yk - th + 0.9, zf + run / 2 + 0.05));
+      guards.push({ level: k, side: s, pos: v3(px + s * 0.05, yk - th + 1.04, zf + run / 2 + 0.05) });
     }
     // stair cheek walls along this flight segment
     for (const s of [-1, 1]) {
@@ -351,12 +353,14 @@ export function nyatapola(B, { x = 0, z = 0 }) {
 }
 
 /** Tiers of the Nyatapola temple above the terraces. */
+// proportions taken from frontal photographs: a deep first roof, short carved-wood storeys between
+// shallow roofs, and a low top roof with a modest pinnacle
 export const NYATAPOLA_TIERS = [
-  { w: 9.4, h: 3.5, eave: 14.4, struts: 6, colonnade: 1.15, pillars: 6, drop: 0.35 },
-  { w: 7.2, h: 2.5, eave: 12.0, struts: 5, windows: 3 },
-  { w: 6.0, h: 2.2, eave: 10.2, struts: 4, windows: 3 },
-  { w: 5.0, h: 1.95, eave: 8.6, struts: 4, windows: 1 },
-  { w: 4.1, h: 1.75, eave: 7.1, struts: 3, windows: 1 },
+  { w: 9.4, h: 3.3, eave: 16.2, struts: 7, colonnade: 1.15, pillars: 6, drop: 0.25 },
+  { w: 7.2, h: 1.7, eave: 13.2, struts: 6, windows: 5, wood: true },
+  { w: 6.1, h: 1.5, eave: 11.2, struts: 5, windows: 5, wood: true },
+  { w: 5.2, h: 1.4, eave: 9.4, struts: 4, windows: 3, wood: true },
+  { w: 4.4, h: 1.3, eave: 7.8, struts: 4, windows: 3, wood: true },
 ];
 
 // ───────────────────────── palace of 55 windows ─────────────────────────
@@ -371,8 +375,8 @@ export function palace55(B, { fx, z0, z1, depth = 13 }) {
   const plinthH = 0.7, g0 = plinthH, g1 = g0 + 3.7, f1 = g1 + 0.36, f2 = f1 + 3.3, gal0 = f2 + 0.42, gal1 = gal0 + 2.75;
   const bx = fx - depth / 2;
   B.add('step', box(depth + 1.0, plinthH, L + 0.6, bx + 0.5, 0, zc));
-  B.add('brick', box(depth, g1 - g0, L, bx, g0, zc));
-  B.add('brick', box(depth, f2 - f1, L, bx, f1, zc));
+  B.add('brick', box(depth, g1 - g0, L, bx, g0, zc), { dark: { top: 0.25, base: 0.3 } });
+  B.add('brick', box(depth, f2 - f1, L, bx, f1, zc), { dark: { top: 0.4 } });
   B.add('wood', box(depth - 1.5, gal1 - f2 + 0.4, L - 0.2, bx - 0.5, f2, zc));
   // cornices
   cornice(B, m4(fx, g1, zc, a), L + 0.2, { h: 0.36, depth: 0.38 });
@@ -388,43 +392,55 @@ export function palace55(B, { fx, z0, z1, depth = 13 }) {
     newarWindow(B, m4(fx + 0.02, g0 + 0.1, dz, a), small ? { w: 0.9, h: 1.1, ears: 0.2 } : { w: 1.05, h: 2.15, door: true, ears: 0.2 });
   });
   for (let i = 0; i < bays; i++) spots.push((doorZ[i] + doorZ[i + 1]) / 2);
-  // first floor: windows with carved toranas
+  // first floor: carved windows with their hoods, photographed from the real palace (alpha cut-outs)
   const nw = 11;
   for (let i = 0; i < nw; i++) {
     const wz = z0 - 1.6 - i * ((L - 3.2) / (nw - 1));
-    newarWindow(B, m4(fx + 0.02, f1 + 0.85, wz, a), { w: 1.0, h: 1.25, torana: true, ears: 0.26 });
+    const g = new THREE.PlaneGeometry(2.95, 2.2);
+    g.rotateY(Math.PI / 2);
+    g.translate(fx + 0.03, f1 + 0.2 + 1.1, wz);
+    B.add('carved', g, { uv: 'keep' });
   }
-  // the gallery of 55 windows: projecting floor, carved band, posts, lattice
+  // the gallery of 55 windows: projecting floor on corbels, and the carved gallery face itself
+  // (rectified from a photograph of the real gallery, repeated along the façade)
   const proj = 0.95;
   const gx = fx + proj;
-  B.add('wood', box(proj + 0.4, 0.3, L + 0.4, fx + proj / 2 - 0.2 + 0.2, gal0 - 0.3, zc));
-  cornice(B, m4(gx, gal0 - 0.62, zc, a), L + 0.5, { h: 0.34, depth: 0.3 });
-  // corbels under the gallery
+  B.add('wood', box(proj + 0.4, 0.3, L + 0.4, fx + proj / 2, gal0 - 0.95, zc));
   for (let i = 0; i < 28; i++) {
     const cz = z0 - 0.5 - i * ((L - 1) / 27);
-    const g = new THREE.BoxGeometry(proj + 0.2, 0.42, 0.18);
-    g.translate(fx + (proj + 0.2) / 2 - 0.05, gal0 - 0.85, cz);
+    const g = new THREE.BoxGeometry(proj + 0.2, 0.4, 0.18);
+    g.translate(fx + (proj + 0.2) / 2 - 0.05, gal0 - 1.25, cz);
     B.add('wood', g);
   }
-  const N = 55;
-  const bay = (L - 0.4) / N;
-  for (let i = 0; i <= N; i++) {
-    const pz = z0 - 0.2 - i * bay;
-    B.add('wood', box(0.12, gal1 - gal0, 0.13, gx, gal0, pz));
+  {
+    const gy0 = gal0 - 0.65, gh = gal1 - gy0;
+    const rep = gh * (1792 / 640);
+    const g = new THREE.PlaneGeometry(L + 0.4, gh);
+    g.rotateY(Math.PI / 2);
+    g.translate(gx + 0.02, gy0 + gh / 2, zc);
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * ((L + 0.4) / rep));
+    B.add('galleryFace', g, { uv: 'keep' });
+    // dark returns at the gallery's two ends and its soffit
+    B.add('wood', box(proj + 0.1, gh, 0.12, fx + proj / 2, gy0, z0 + 0.2));
+    B.add('wood', box(proj + 0.1, gh, 0.12, fx + proj / 2, gy0, z1 - 0.2));
+    B.add('dark', box(proj, 0.06, L + 0.3, fx + proj / 2, gal1 - 0.05, zc), { color: '#2A1E17' });
   }
-  for (let i = 0; i < N; i++) {
-    const pz = z0 - 0.2 - (i + 0.5) * bay;
-    const mm = m4(gx + 0.02, gal0 + 0.28, pz, a);
-    B.add('lattice', xf(quad(bay - 0.12, gal1 - gal0 - 0.75), mm), { uv: 'keep' });
-    B.add('window', xf(quad(bay - 0.1, gal1 - gal0 - 0.7, -0.25), mm), { uv: 'keep' });
-  }
-  B.add('wood', box(0.2, 0.28, L + 0.4, gx, gal0, zc)); // sill rail
-  B.add('wood', box(0.24, 0.4, L + 0.4, gx, gal1 - 0.4, zc)); // top beam
   // roof over the whole building, deep eave with struts
   const eaveOut = 2.5;
   const eaveY = gal1 - 0.15;
   const ridgeY = eaveY + (depth / 2 + eaveOut) * Math.tan(THREE.MathUtils.degToRad(29));
   hipRoof(B, { x: bx, z: zc, y: eaveY, h: ridgeY - eaveY, w0: depth + 2 * eaveOut, d0: L + 2 * eaveOut, w1: 0.6, d1: L - 4, key: 'roofMoss', fascia: 'paint', fasciaColor: '#7E2A22', under: true });
+  {
+    // cloth fringe along the façade eave
+    const len = L + 2 * eaveOut;
+    const g = new THREE.PlaneGeometry(len, 0.5);
+    g.rotateY(Math.PI / 2);
+    g.translate(fx + eaveOut + 0.06, eaveY - 0.32, zc);
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * (len / 2));
+    B.add('fringe', g, { uv: 'keep' });
+  }
   for (let i = 0; i < 30; i++) {
     const sz = z0 - 0.8 - i * ((L - 1.6) / 29);
     strut(B, v3(gx + 0.1, gal1 - 0.9, sz), v3(fx + eaveOut - 0.65, eaveY + 0.08, sz), 0.15, 0.12);
@@ -445,7 +461,7 @@ export function goldenGate(B, { x, z, ry = 0 }) {
   // the photographed face, as 4 pieces around the door opening
   const face = (u0, u1, v0, v1) => {
     const g = new THREE.PlaneGeometry((u1 - u0) * W, (v1 - v0) * H);
-    g.translate(((u0 + u1) / 2 - 0.5) * W, ((v0 + v1) / 2) * H, D / 2 + 0.01);
+    g.translate(((u0 + u1) / 2 - 0.5) * W, ((v0 + v1) / 2) * H, D / 2 + 0.025);
     const uv = g.attributes.uv;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) * (u1 - u0), v0 + uv.getY(i) * (v1 - v0));
     B.add('gateFace', xf(g, m), { uv: 'keep' });
@@ -655,7 +671,7 @@ export function stuccoWing(B, { x, z, ry = 0, w = 16, d = 10, h = 11.5 }) {
   for (let f = 0; f < 3; f++) for (let i = 0; i < 5; i++) {
     const px = -w / 2 + (i + 0.5) * (w / 5);
     const mm = new Matrix4().multiplyMatrices(m, m4(px, 1.3 + f * 3.7, d / 2 + 0.01));
-    B.add('window', xf(quad(1.1, 2.0, 0.0), mm), { uv: 'keep' });
+    B.add('window', xf(quad(1.1, 2.0, 0.035), mm), { uv: 'keep' });
     for (const s of [-1, 1]) B.add('woodPaint', xf(box(0.52, 2.0, 0.06, s * 0.82, 0, 0.06), mm), { color: '#4E3B2C' });
     B.add('stucco', xf(box(1.6, 0.18, 0.2, 0, 2.05, 0.08), mm), { color: '#DCD5C9' });
   }
@@ -685,15 +701,15 @@ export function newarHouse(B, { x, z, ry, w, d, floors, R, lod = 1 }) {
   const style = R();
   const wall = style < 0.68 ? 'house' : 'stucco';
   const color = wall === 'stucco' ? (style < 0.84 ? '#F1E7D6' : '#E9D2B3') : (R() < 0.5 ? '#FFFFFF' : '#F0D6C8');
-  B.add(wall, xf(box(w, H, d, 0, 0, -d / 2), m), { color });
+  B.add(wall, xf(box(w, H, d, 0, 0, -d / 2), m), { color, dark: { top: 0.35, base: 0.25 } });
   // ground floor: shop fronts with wooden shutters
   const shops = Math.max(1, Math.round(w / 2.6));
   for (let i = 0; i < shops; i++) {
     const px = -w / 2 + (i + 0.5) * (w / shops);
     const sw = w / shops - 0.7;
-    B.add('dark', xf(box(sw, 2.1, 0.4, px, 0.15, -0.38), m), { color: '#3A2C22' });
+    B.add('dark', xf(box(sw, 2.1, 0.03, px, 0.15, 0.02), m), { color: '#3A2C22' });
     B.add('woodPaint', xf(box(sw + 0.3, 0.16, 0.14, px, 2.25, 0.04), m), { color: '#5C4433' });
-    if (R() < 0.6) for (let k = 0; k < 4; k++) B.add('woodPaint', xf(box(sw / 4 - 0.04, 2.1, 0.05, px - sw / 2 + (k + 0.5) * (sw / 4), 0.15, -0.16), m), { color: R() < 0.5 ? '#6B4B35' : '#57402F' });
+    if (R() < 0.6) for (let k = 0; k < 4; k++) B.add('woodPaint', xf(box(sw / 4 - 0.04, 2.1, 0.04, px - sw / 2 + (k + 0.5) * (sw / 4), 0.15, 0.06), m), { color: R() < 0.5 ? '#6B4B35' : '#57402F' });
   }
   cornice(B, new Matrix4().multiplyMatrices(m, m4(0, g - 0.1, 0)), w, { h: 0.22, depth: 0.22, beads: lod > 0.7 });
   // upper floors: carved windows, the top floor a wider window (tikijhyal)
@@ -705,7 +721,7 @@ export function newarHouse(B, { x, z, ry, w, d, floors, R, lod = 1 }) {
       const px = -w / 2 + (i + 0.5) * (w / nwin);
       const mm = new Matrix4().multiplyMatrices(m, m4(px, y + 0.55, 0.02));
       if (lod < 0.7) {
-        B.add('window', xf(quad(0.9, 1.15, 0.01), mm), { uv: 'keep' });
+        B.add('window', xf(quad(0.9, 1.15, 0.03), mm), { uv: 'keep' });
         B.add('wood', xf(box(1.5, 0.12, 0.16, 0, -0.12, 0), mm));
         B.add('wood', xf(box(1.5, 0.12, 0.16, 0, 1.15, 0), mm));
       } else newarWindow(B, mm, { w: top ? 1.2 : 0.85, h: top ? 1.0 : 1.15, ears: 0.22, torana: !top && R() < 0.25 });

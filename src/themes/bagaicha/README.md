@@ -9,7 +9,7 @@ lanterns for the reception. Machhapuchhre stands behind it all.
 - Page: `/bagaicha/` (port 5186 in development)
 - Code: `main.js` (page, scroll, overlays), `garden.js` (Three.js scene), `shaders.js`
   (sky, Himalaya backplate, pool reflection, waterfall, plunge pool, mist, glows, petals,
-  havan flame), `figures.js` (the paper-cut couple), `bagaicha.css`
+  havan flame), `couple3d.js` (the rigged couple, copied from `core/mandap3d.js`), `florals.js` (roses, wisteria), `impostor.js`, `bagaicha.css`
 - Thumbnail: `public/themes/bagaicha/thumb.jpg`
 
 ## Signature motion
@@ -33,8 +33,8 @@ else (cards, lines) is a quiet fade.
    mehendi at a flower swing, haldi under a turmeric-yellow canopy (chaukis, cushions, brass
    katoras of haldi, kalash, urli of marigolds) with the waterfall behind it,
    Janti & Shubha Bibaha down the aisle of arches (the couple seen from behind).
-4. **Vows**: the couple face the guests beside the havan fire in the pavilion; the seven
-   Saptapadi promises appear one at a time as you scroll; blush petals fall.
+4. **Vows**: seven rounds around the havan fire, scroll-driven (one diyo and one Saptapadi vow
+   per round), then the couple face the guests; blush petals fall.
 5. **Reception**: night under the peepal, paper lanterns, string lights, fireflies.
 6. **Finale** (shared `core/finale.js`, restyled for night): gallery as an uncropped
    masonry grid (white mats, no masks, couple photos first), guest info, countdown, RSVP
@@ -44,14 +44,18 @@ else (cards, lines) is a quiet fade.
 Event-to-spot mapping is by id (`mehendi → swing`, `haldi → falls`, `wedding → aisle`,
 `reception → lanterns`); unknown events take the free spots in order. `?e=` filtering works.
 
-## The couple
+## The couple (round 4)
 
-Original vector drawings (no external models, no AI images), layered like cut card with
-soft shadows and a paper grain. Faceless. Groom: Dhaka topi, red tika, daura suruwal with
-its diagonal overlap and ties, waistcoat, marigold mala. Bride: red sari with gold zari
-border and butta, ghumto over the head, tilhari and gold necklaces, red chura, mehendi.
-Front and back views, four walk frames each; the frame advances with distance walked,
-so they stop when the guest stops scrolling. Billboards turn to the camera on Y only.
+Realistic rigged figures, reused from the mandap theme: CC0 MakeHuman bride and groom bodies
+(`public/themes/mandap/bride.glb`, `groom.glb`) with the Quaternius Universal Animation Library
+walk/idle (CC0), dressed in code (red sari with zari, ghumto, pallu, tilhari, chura; daura suruwal,
+istakot, Dhaka topi; marigold malas). The figure, garment and IK code is copied from
+`src/core/mandap3d.js` into `couple3d.js` (core is read-only for this theme). The bride walks on the
+groom's left. Their whole journey is one smoothed "distance walked" driven by scroll: down the aisle,
+**seven rounds (phera) around the havan fire** with the fire on their right, the groom leading, tied
+by the ganthbandhan, one diyo lit and one Saptapadi vow shown per round, then on to the chautari.
+The walk cycle advances with distance travelled, so feet never slide; fast scrolling makes them
+walk briskly, a chapter jump cuts.
 
 ## What the studio needs to supply
 
@@ -60,6 +64,14 @@ so they stop when the guest stops scrolling. Billboards turn to the camera on Y 
 - Names, dates, `events[]` with venue, `mapQuery`, dress colours, optional `rituals`.
 - `saptapadi[]` the seven vows; easel lines and other wording are studio slots.
 - Everything else comes from the shared data shape; no markup changes needed.
+
+## Floral decor (round 4)
+
+`florals.js` builds real 3D flowers, instanced: garden roses (four rings of cupped, colour-graded
+petals) in blush, ivory and deep rose, and hanging wisteria racemes (lavender to white). They form
+a **deep floral entrance arch** the camera glides through when the guest enters, a rose-and-wisteria
+canopy on the pavilion (cornice, capitals, spirals down the columns), wisteria on every aisle arch,
+and rose urns. Marigolds (from the mandap code) stay for the Nepali accents.
 
 ## Vegetation: real plants as impostors (round 3)
 

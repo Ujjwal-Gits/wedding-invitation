@@ -14,7 +14,8 @@ import { Builder, box, cyl, place, v3, rng, catenary, smoother, smooth, clamp01,
 import { loadMaterials, TILES } from './materials.js';
 import { QUALITY, pagoda, nyatapola, NYATAPOLA_TIERS, NYATAPOLA, palace55, goldenGate, GATE, shikhara, bellPavilion, chyasilin, bhairabnath, stuccoWing, houseRow, hipRoof, gajur } from './architecture.js';
 import { buildSculpts, loadElephant } from './statues.js';
-import { createPigeons, createMarigolds, createBunting } from './life.js';
+import { createPigeons, createBunting } from './life.js';
+import { Flowers } from './flowers.js';
 
 const { MathUtils } = THREE;
 
@@ -39,9 +40,11 @@ const SUN_TEX_ANGLE = Math.atan2(Math.sin((SKY_U - 0.5) * TAU), Math.cos((SKY_U 
 // light azimuth (atan2(z, x)) and elevation through the day: morning from the south-east, evening from the west
 const SUN_MORNING = { az: 0.78, el: THREE.MathUtils.degToRad(46) };
 const SUN_EVENING = { az: Math.PI - 0.62, el: THREE.MathUtils.degToRad(24) };
+const SHADOW_C = v3(8, 0, 4), SHADOW_HALF = 98;
 
 export async function createSquare(canvas, opts) {
-  const { mobile, lowPower, reduced, frames = [], onProgress = () => {}, debug = false, ao = !mobile && !lowPower } = opts;
+  // GTAO is opt-in (?ao): native MSAA without a post chain keeps 60 fps and stable edges; walls carry baked occlusion instead
+  const { mobile, lowPower, reduced, frames = [], onProgress = () => {}, debug = false, ao = false } = opts;
   const dprCap = lowPower ? 1 : mobile ? 1.5 : 1.75;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowPower && !ao, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
@@ -50,9 +53,11 @@ export async function createSquare(canvas, opts) {
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = !lowPower || debug;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // the square is static: the shadow map is drawn only when the sun moves (never per frame, so it cannot shimmer)
+  renderer.shadowMap.autoUpdate = false;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.25, 2600);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.6, 3000);
   const { M, env, sky } = await loadMaterials(renderer, { mobile, lowPower, onProgress: (k) => onProgress(k * 0.6) });
 
   if (sky) { sky.mapping = THREE.EquirectangularReflectionMapping; scene.background = sky; }
@@ -65,9 +70,10 @@ export async function createSquare(canvas, opts) {
   sun.castShadow = renderer.shadowMap.enabled;
   const SM = mobile || lowPower ? 2048 : 4096;
   sun.shadow.mapSize.set(SM, SM);
-  sun.shadow.bias = -0.0004;
-  sun.shadow.normalBias = 0.05;
-  sun.shadow.camera.near = 1; sun.shadow.camera.far = 420;
+  sun.shadow.bias = -0.00035;
+  sun.shadow.normalBias = 0.09;
+  Object.assign(sun.shadow.camera, { near: 20, far: 460, left: -SHADOW_HALF, right: SHADOW_HALF, top: SHADOW_HALF, bottom: -SHADOW_HALF });
+  sun.shadow.camera.updateProjectionMatrix();
   scene.add(hemi, sun, sun.target);
   const sunDir = v3(0, 1, 0);
 
@@ -94,7 +100,7 @@ export async function createSquare(canvas, opts) {
   // Nyatapola
   const N = PLAN.nyatapola;
   const ny = nyatapola(B, { x: N.x, z: N.z });
-  const nyTop = pagoda(B, { x: N.x, y: ny.top, z: N.z, tiers: NYATAPOLA_TIERS, pitch: 31, topPitch: 40, gajurScale: 1.15 });
+  const nyTop = pagoda(B, { x: N.x, y: ny.top, z: N.z, tiers: NYATAPOLA_TIERS, pitch: 25, topPitch: 27, gajurScale: 0.8 });
   onProgress(0.64);
 
   // the palace of 55 windows, the Golden Gate and the white wing
@@ -120,20 +126,6 @@ export async function createSquare(canvas, opts) {
   B.add('plinth', box(7.5, 1.2, 7.5, PLAN.shrine.x, 0, PLAN.shrine.z), { color: '#EAC8B6' });
   B.add('step', box(7.7, 0.14, 7.7, PLAN.shrine.x, 1.2, PLAN.shrine.z));
   pagoda(B, { x: PLAN.shrine.x, y: 1.34, z: PLAN.shrine.z, ry: 0, tiers: [{ w: 4.4, h: 2.6, eave: 7.6, struts: 3, windows: 1 }, { w: 3.2, h: 1.6, eave: 5.4, struts: 2, windows: 1 }], gajurScale: 0.6 });
-
-  // low brick platforms (dabali), small stone chaityas and lamp pillars: the square's furniture
-  const R = rng(77);
-  for (const [x, z, w, d] of [[-4, 10, 7, 5], [30, 26, 6, 6], [-26, 32, 5, 4], [36, -26, 8, 5], [2, -30, 6, 6]]) {
-    B.add('plinth', box(w, 0.75, d, x, 0, z), { color: '#E6C3B1' });
-    B.add('step', box(w + 0.16, 0.12, d + 0.16, x, 0.75, z));
-  }
-  for (const [x, z] of [[-9, 22], [24, 30], [33, 14], [-27, -14], [6, 20], [-11, -6]]) {
-    const s = 0.7 + R() * 0.5;
-    B.add('step', box(1.6 * s, 0.4 * s, 1.6 * s, x, 0, z));
-    B.add('stone', box(1.0 * s, 1.3 * s, 1.0 * s, x, 0.4 * s, z), { color: '#CFC7B9' });
-    B.add('stone', cyl(0.05, 0.62 * s, 1.0 * s, 4, x, 1.7 * s, z), { color: '#CFC7B9' });
-    gajur(B, x, 2.65 * s, z, 0.18 * s);
-  }
 
   // the lion gate (Simha Dhoka): whitewashed, arched, under a tiled roof
   const G = PLAN.gate;
@@ -189,14 +181,14 @@ export async function createSquare(canvas, opts) {
   scene.add(hills, earth);
 
   // statues
-  const sculpt = buildSculpts({ res: mobile || lowPower ? 50 : 68 });
+  const sculpt = buildSculpts({ res: mobile || lowPower ? 48 : 58 });
   const ele = await loadElephant();
   const addStatue = (g, p, ry = 0, s = 1, key = 'statue') => { if (g) B.add(key, place(g.clone(), p.x, p.y, p.z, 0, ry, 0, s), key === 'elephant' ? { uv: 'keep' } : {}); };
   const order = ['guardian', 'elephant', 'lion', 'griffin', 'goddess'];
-  const scale = { guardian: 1.0, elephant: 1.0, lion: 0.98, griffin: 0.95, goddess: 0.92 };
+  const scale = { guardian: 1.3, elephant: 1.2, lion: 1.2, griffin: 1.12, goddess: 1.05 };
   for (const g of ny.guards) {
     const kind = order[g.level];
-    if (kind === 'elephant') addStatue(ele, g.pos, 0, 0.95, 'elephant');
+    if (kind === 'elephant') addStatue(ele, g.pos, 0, scale.elephant, 'elephant');
     else addStatue(sculpt[kind], g.pos, 0, scale[kind]);
   }
   for (const s of [-1, 1]) {
@@ -231,36 +223,66 @@ export async function createSquare(canvas, opts) {
   const FB = new Builder(TILES);
   const spots = pal.spots;
   const marigoldCurves = [];
+  const FL = new Flowers({ density: mobile || lowPower ? 0.55 : 1 });
+  const ROSES = FL.palette(['blush', 'pink', 'white']);
+  // Four treatments, so no two neighbouring portraits share a frame:
+  // 0 gilt moulding with a white mat, 1 carved Newar wood under a small torana,
+  // 2 a slim brass frame wrapped in roses, 3 a deep ivory mat in a black frame with a garland.
   texs.forEach((t, i) => {
     const z = spots[Math.min(i, spots.length - 1)];
+    const kind = i % 4;
     const asp = t?.image ? t.image.width / t.image.height : 0.8;
     let h = 2.2, w = h * asp;
     if (w > 3.3) { w = 3.3; h = w / asp; }
-    const mat = 0.13, rim = 0.11;
+    const mat = [0.13, 0.1, 0.06, 0.3][kind], rim = [0.11, 0.2, 0.05, 0.06][kind];
     const cy = pal.wallY + 0.35 + 3.05 / 2 + 0.05;
     const fx = P.fx + 0.06;
     const W = w + 2 * (mat + rim), H = h + 2 * (mat + rim);
-    FB.add('gilt', box(0.09, H, W, fx + 0.045, cy - H / 2, z));
-    FB.add('woodPaint', box(0.1, H - 2 * rim + 0.02, W - 2 * rim + 0.02, fx + 0.06, cy - H / 2 + rim - 0.01, z), { color: '#3C2A1E' });
-    FB.add('paper', box(0.02, h + 2 * mat, w + 2 * mat, fx + 0.115, cy - h / 2 - mat, z));
+    const outer = kind === 1 ? 'woodPaint' : kind === 3 ? 'dark' : 'gilt';
+    const outerCol = kind === 1 ? '#4A3020' : kind === 3 ? '#1E1A17' : undefined;
+    FB.add(outer, box(0.1, H, W, fx + 0.05, cy - H / 2, z), { color: outerCol });
+    if (kind === 1) FB.add('gilt', box(0.11, H - 2 * rim + 0.06, W - 2 * rim + 0.06, fx + 0.06, cy - H / 2 + rim - 0.03, z));
+    else FB.add('woodPaint', box(0.11, H - 2 * rim + 0.02, W - 2 * rim + 0.02, fx + 0.06, cy - H / 2 + rim - 0.01, z), { color: '#3C2A1E' });
+    // white mat well in front of the moulding, photo well in front of the mat: no coplanar faces
+    FB.add('paper', box(0.03, h + 2 * mat, w + 2 * mat, fx + 0.135, cy - h / 2 - mat, z));
     const ph = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, color: t ? '#FFFFFF' : '#DDD', envMapIntensity: 0.4 }));
-    ph.position.set(fx + 0.128, cy, z);
+    ph.position.set(fx + 0.175, cy, z);
     ph.rotation.y = Math.PI / 2;
     ph.receiveShadow = true;
     scene.add(ph);
     FB.add('bronze', box(0.05, 0.08, 0.08, fx + 0.06, pal.groundTop - 0.25, z));
-    for (const s of [-1, 1]) {
-      const g = new THREE.CylinderGeometry(0.008, 0.008, 1, 4);
-      const a = v3(fx + 0.07, cy + H / 2 - 0.04, z + s * (W / 2 - 0.25)), b = v3(fx + 0.07, pal.groundTop - 0.22, z);
-      const d = b.clone().sub(a);
-      g.translate(0, 0.5, 0); g.scale(1, d.length(), 1);
-      g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(v3(0, 1, 0), d.clone().normalize()));
-      g.translate(a.x, a.y, a.z);
-      FB.add('dark', g);
+    if (kind === 1) {
+      // a small carved torana over the frame
+      const r = Math.min(0.9, W * 0.32);
+      const g = new THREE.CylinderGeometry(r, r, 0.08, 20, 1, false, -Math.PI / 2, Math.PI);
+      g.rotateX(Math.PI / 2); g.rotateY(Math.PI / 2);
+      g.translate(fx + 0.1, cy + H / 2 + 0.02, z);
+      FB.add('woodPaint', g, { color: '#6A4A33' });
+      FB.add('gilt', cyl(0, 0.07, 0.26, 6, fx + 0.12, cy + H / 2 + r - 0.04, z));
+    } else {
+      for (const s of [-1, 1]) {
+        const g = new THREE.CylinderGeometry(0.008, 0.008, 1, 4);
+        const a = v3(fx + 0.07, cy + H / 2 - 0.04, z + s * (W / 2 - 0.25)), b = v3(fx + 0.07, pal.groundTop - 0.22, z);
+        const d = b.clone().sub(a);
+        g.translate(0, 0.5, 0); g.scale(1, d.length(), 1);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(v3(0, 1, 0), d.clone().normalize()));
+        g.translate(a.x, a.y, a.z);
+        FB.add('dark', g);
+      }
     }
-    marigoldCurves.push(catenary(v3(fx + 0.16, cy + H / 2 + 0.02, z - W / 2 - 0.05), v3(fx + 0.16, cy + H / 2 + 0.02, z + W / 2 + 0.05), 0.3, 24));
-    for (const s of [-1, 1]) marigoldCurves.push([v3(fx + 0.16, cy + H / 2 + 0.02, z + s * (W / 2 + 0.05)), v3(fx + 0.18, cy + H / 2 - 0.55, z + s * (W / 2 + 0.07))]);
-    frameInfo.push({ center: v3(fx + 0.13, cy, z), w: W, h: H });
+    const ox = fx + 0.22;
+    if (kind === 0 || kind === 3) {
+      marigoldCurves.push(catenary(v3(ox, cy + H / 2 + 0.02, z - W / 2 - 0.05), v3(ox, cy + H / 2 + 0.02, z + W / 2 + 0.05), kind === 3 ? 0.45 : 0.3, 24));
+      for (const s of [-1, 1]) marigoldCurves.push([v3(ox, cy + H / 2 + 0.02, z + s * (W / 2 + 0.05)), v3(ox + 0.02, cy + H / 2 - (kind === 3 ? 0.9 : 0.55), z + s * (W / 2 + 0.07))]);
+      if (kind === 3) FL.rope(catenary(v3(ox + 0.04, cy + H / 2 + 0.06, z - W / 2), v3(ox + 0.04, cy + H / 2 + 0.06, z + W / 2), 0.42, 16), { cols: FL.palette(['red', 'blush']), rose: 0.06, thick: 0.05, per: 0.09 });
+    }
+    if (kind === 2) {
+      const e = 0.04, x = fx + 0.16;
+      const c = [v3(x, cy - H / 2 - e, z - W / 2 - e), v3(x, cy + H / 2 + e, z - W / 2 - e), v3(x, cy + H / 2 + e, z + W / 2 + e), v3(x, cy - H / 2 - e, z + W / 2 + e), v3(x, cy - H / 2 - e, z - W / 2 - e)];
+      FL.rope(c, { cols: ROSES, rose: 0.075, thick: 0.07, per: 0.06, leafRatio: 0.3 });
+      FL.strands(v3(x + 0.05, cy + H / 2, z), { count: 22, spread: v3(0, 0, W / 2), len: [0.4, 1.0], cols: ['#F3EEF7', '#E2D6EE', '#C7B2E0'], size: 0.022 });
+    }
+    frameInfo.push({ center: v3(fx + 0.18, cy, z), w: W, h: H });
   });
   scene.add(FB.build(M, { shadows: renderer.shadowMap.enabled }));
 
@@ -268,7 +290,6 @@ export async function createSquare(canvas, opts) {
   {
     const gx = PLAN.golden.x + GATE.D / 2 + 0.2, gz = PLAN.golden.z;
     const top = GATE.H - 0.25;
-    marigoldCurves.push(catenary(v3(gx, top, gz - 3.1), v3(gx, top, gz), 0.7, 30), catenary(v3(gx, top, gz), v3(gx, top, gz + 3.1), 0.7, 30));
     for (const dz of [-3.1, -1.6, 1.6, 3.1]) marigoldCurves.push([v3(gx, top, gz + dz), v3(gx + 0.02, top - 2.4, gz + dz)]);
     for (const s of [-1, 1]) {
       const pts = [];
@@ -287,7 +308,49 @@ export async function createSquare(canvas, opts) {
     }
     marigoldCurves.push(catenary(bh.door.clone().add(v3(-0.6, 3.2, -1.2)), bh.door.clone().add(v3(-0.6, 3.2, 1.2)), 0.45, 24));
   }
-  createMarigolds(scene, marigoldCurves, { detail: mobile || lowPower ? 0 : 1 });
+  // marigold strings: ruffled flower heads (not beads), threaded densely on each strand
+  const MARI = FL.palette(['marigold']);
+  for (const c of marigoldCurves) FL.rope(c, { cols: MARI, rose: 0.065, thick: 0.03, per: 0.065, leafRatio: 0.05 });
+  // ── wedding flowers: the welcome arch on the lane, an arch at the Nyatapola stair, rose swags and urns ──
+  {
+    const UB = new Builder(TILES);
+    const urn = (x, z, s = 1) => {
+      UB.add('bronze', place(new THREE.LatheGeometry([[0, 0], [0.26, 0], [0.3, 0.08], [0.2, 0.22], [0.3, 0.55], [0.38, 0.78], [0.3, 0.98], [0.34, 1.04], [0, 1.04]].map(([r, y]) => new THREE.Vector2(r * s, y * s)), 18), x, 0, z));
+      FL.ball(v3(x, 1.04 * s + 0.36 * s, z), 0.42 * s, { cols: ROSES, rose: 0.1, perM2: 60 });
+    };
+    // 1 · the welcome arch the guest walks through, just outside the lion gate
+    const az = 73, ax = G.x;
+    const blush = FL.palette(['blush', 'white', 'pink', 'peach']);
+    for (const s of [-1, 1]) FL.cushion(v3(ax + s * 3.3, 2.6, az), v3(0.45, 2.6, 0.45), 0, { cols: blush, rose: 0.125, perM2: 34, faces: ['+x', '-x', '+z', '-z'] });
+    FL.cushion(v3(ax, 5.55, az), v3(3.75, 0.5, 0.55), 0, { cols: blush, rose: 0.125, perM2: 34, faces: ['+z', '-z', '-y', '+x', '-x'] });
+    FL.strands(v3(ax, 5.05, az), { count: 90, spread: v3(2.9, 0, 0.4), len: [0.5, 1.5] });
+    for (const s of [-1, 1]) { urn(ax + s * 4.6, az + 0.8, 1); UB.add('gilt', box(0.16, 5.2, 0.16, ax + s * 3.3, 0, az)); }
+    // 2 · a floral arch at the foot of the Nyatapola stair
+    const nz = ny.stairFront + 0.9;
+    const reds = FL.palette(['red', 'blush', 'white']);
+    for (const s of [-1, 1]) FL.cushion(v3(N.x + s * 2.65, 2.25, nz), v3(0.36, 2.25, 0.36), 0, { cols: reds, rose: 0.115, perM2: 34, faces: ['+x', '-x', '+z', '-z'] });
+    FL.cushion(v3(N.x, 4.85, nz), v3(3.0, 0.38, 0.42), 0, { cols: reds, rose: 0.115, perM2: 34, faces: ['+z', '-z', '-y', '+x', '-x'] });
+    FL.strands(v3(N.x, 4.47, nz), { count: 70, spread: v3(2.4, 0, 0.3), len: [0.4, 1.2], cols: ['#FBF8F2', '#F3EEE6', '#EDE4F2'] });
+    // 3 · rose swags on the lion gate's arch, both faces
+    for (const sz of [-1, 1]) {
+      const pts = [];
+      for (let k = 0; k <= 24; k++) { const a = Math.PI * (k / 24); pts.push(v3(G.x + Math.cos(a) * 2.35, 4.6 + Math.sin(a) * 2.35, G.z + sz * 1.85)); }
+      FL.rope(pts, { cols: blush, rose: 0.09, thick: 0.1, per: 0.075 });
+    }
+    // 4 · the Golden Gate: rose swags over the doorway and two urns of roses
+    {
+      const gx = PLAN.golden.x + GATE.D / 2 + 0.32, gz = PLAN.golden.z, top = GATE.H - 0.1;
+      FL.rope(catenary(v3(gx, top, gz - 3.15), v3(gx, top, gz), 0.75, 18), { cols: reds, rose: 0.09, thick: 0.09, per: 0.075 });
+      FL.rope(catenary(v3(gx, top, gz), v3(gx, top, gz + 3.15), 0.75, 18), { cols: reds, rose: 0.09, thick: 0.09, per: 0.075 });
+      for (const s of [-1, 1]) urn(gx + 0.9, gz + s * 3.9, 1.05);
+    }
+    // 5 · urns at Chyasilin's south steps and at Bhairabnath's door
+    for (const s of [-1, 1]) urn(PLAN.mandap.x + s * 3.5, PLAN.mandap.z + 7.9, 0.95);
+    for (const s of [-1, 1]) urn(bh.door.x - 2.6, bh.door.z + s * 2.2, 1.0);
+    scene.add(UB.build(M, { shadows: renderer.shadowMap.enabled }));
+  }
+  // flowers receive light and shadow but cast none (thousands of small casters cost a full shadow pass)
+  FL.build(scene, { shadows: false, receive: renderer.shadowMap.enabled });
   const bunting = createBunting(scene, [
     catenary(v3(G.x - 6.2, 7.6, 76), v3(G.x + 6.2, 7.4, 79), 1.1, 18),
     catenary(v3(G.x - 6.2, 7.2, 90), v3(G.x + 6.2, 7.6, 88), 1.0, 18),
@@ -316,7 +379,7 @@ export async function createSquare(canvas, opts) {
     mandap: { target: v3(PLAN.mandap.x, 4.6, PLAN.mandap.z), yaw: 0.2, pitch: 0.05, dist: 26, distNarrow: 34, fov: [56, 46, 42] },
     shikhara: { target: v3(PLAN.vatsala.x - 2, 7.2, PLAN.vatsala.z - 4), yaw: 1.2, pitch: 0.0, dist: 31, distNarrow: 42, fov: [56, 46, 42] },
     gate: { target: v3(PLAN.golden.x + 1.3, 4.7, PLAN.golden.z), yaw: Math.PI / 2 + 0.16, pitch: 0.0, dist: 16.5, distNarrow: 23, fov: [56, 46, 42] },
-    bhairab: { target: v3(PLAN.bhairab.x - 3, 7.5, PLAN.bhairab.z), yaw: -1.2, pitch: -0.02, dist: 34, distNarrow: 46, fov: [56, 46, 42] },
+    bhairab: { target: v3(PLAN.bhairab.x - 3, 7.5, PLAN.bhairab.z), yaw: -1.0, pitch: -0.02, dist: 34, distNarrow: 46, fov: [56, 46, 42] },
     finale: { target: v3(8, 4, 4), yaw: 0.5, pitch: 0.5, dist: 118, distNarrow: 150, fov: [56, 46, 42], layout: 'none' },
   };
   // Waypoints so long moves go round the temples (and over the roofs), never through them.
@@ -327,15 +390,14 @@ export async function createSquare(canvas, opts) {
     'gate>bhairab': { at: 0.5, target: v3(N.x, 12, 8), yaw: 0.25, pitch: 0.26, dist: 40 },
     'shikhara>bhairab': { at: 0.5, target: v3(N.x, 12, 8), yaw: 0.25, pitch: 0.26, dist: 40 },
   };
-  const SPOT_TOD = { mandap: 0.12, shikhara: 0.2, gate: 0.3, bhairab: 0.9 };
+  const SPOT_TOD = { mandap: 0, shikhara: 0, gate: 0, bhairab: 1 };
 
   function setStations(list) {
     stations = list.map((s) => {
       if (s.kind === 'frame') {
         const f = frameAt(s.index);
-        const t = f.center.clone(); t.y += 1.9;
-        const tN = f.center.clone(); tN.y += 0.9;
-        return { ...s, pose: { target: t, targetNarrow: tN, yaw: Math.PI / 2 - 0.42, pitch: -0.1, fit: [f.w + 3.2, f.h + 6.4], fitNarrow: [f.w + 0.5, f.h + 1.6], fov: [52, 46, 42] }, family: 'frame', tod: 0.08 };
+        // close and nearly square-on: the portrait fills about 60% of the screen height
+        return { ...s, pose: { target: f.center.clone(), yaw: Math.PI / 2 - 0.12, pitch: 0, frame: true, fit: [f.w * 1.25, (f.h / 0.62) * 0.86], fitNarrow: [f.w * 1.12, f.h * 1.1], fov: [52, 46, 42] }, family: 'frame', tod: 0 };
       }
       if (s.kind === 'spot') return { ...s, pose: POSES[s.spot], family: s.spot, tod: SPOT_TOD[s.spot] ?? 0.2 };
       return { ...s, pose: POSES[s.kind], family: s.kind, tod: s.kind === 'finale' ? 1 : 0 };
@@ -358,7 +420,7 @@ export async function createSquare(canvas, opts) {
     const P0 = st.pose;
     const F = P0.fov || [56, 46, 42];
     const fov = aspect < 0.9 ? F[0] : aspect < 1.4 ? F[1] : F[2];
-    const L = layoutOf(st.wed ? (st.layout === 'left' ? 'tall-left' : 'tall') : (st.layout || P0.layout || 'left'), aspect);
+    const L = P0.frame && aspect < 0.9 ? { sx: 0, sy: 0.2, wf: 0.9, hf: 0.62 } : layoutOf(st.wed ? (st.layout === 'left' ? 'tall-left' : 'tall') : (st.layout || P0.layout || 'left'), aspect);
     const t = Math.tan(MathUtils.degToRad(fov / 2));
     let dist = P0.dist;
     if (P0.fit) {
@@ -440,7 +502,9 @@ export async function createSquare(canvas, opts) {
   // ───────────────────────── Ambient occlusion (desktop) ─────────────────────────
   let composer = null;
   if (ao) {
-    composer = new EffectComposer(renderer);
+    // multisampled target: the composer path keeps 4x MSAA (no shimmering edges)
+    const rt = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+    composer = new EffectComposer(renderer, rt);
     composer.addPass(new RenderPass(scene, camera));
     const gtao = new GTAOPass(scene, camera, 1, 1);
     gtao.output = GTAOPass.OUTPUT.Default;
@@ -457,8 +521,12 @@ export async function createSquare(canvas, opts) {
   let time = 0;
   let debugPose = null;
   const shadowCenter = v3();
+  let lastW = 0, lastH = 0;
   function resize() {
-    const w = window.innerWidth, h = window.innerHeight;
+    // size from the canvas (100lvh): the phone address bar never resizes the drawing buffer mid-scroll
+    const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
+    if (w === lastW && h === lastH) return;
+    lastW = w; lastH = h;
     renderer.setSize(w, h, false);
     composer?.setSize(w, h);
     camera.aspect = w / h;
@@ -472,7 +540,6 @@ export async function createSquare(canvas, opts) {
     applyLight(pose.tod);
     const pos = camFrom(pose);
     pos.y = Math.max(pos.y, 1.2);
-    if (!reduced) { pos.x += Math.sin(time * 0.21) * 0.05; pos.y += Math.sin(time * 0.17 + 1) * 0.035; }
     const k = firstFrame ? 1 : 1 - Math.exp(-dt * 6);
     firstFrame = false;
     smoothCam.pos.lerp(pos, k); smoothCam.target.lerp(pose.target, k);
@@ -485,20 +552,15 @@ export async function createSquare(canvas, opts) {
     camera.projectionMatrix.elements[8] = -smoothCam.sx;
     camera.projectionMatrix.elements[9] = -smoothCam.sy;
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
-    // shadows follow what the camera looks at, snapped to texels so edges never crawl
-    const dist = smoothCam.pos.distanceTo(smoothCam.target);
-    const half = MathUtils.clamp(dist * 1.05, 28, 120);
-    const sc = sun.shadow.camera;
-    if (Math.abs(sc.right - half) > 0.5) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix(); }
-    const texel = (2 * sc.right) / SM;
-    shadowCenter.copy(smoothCam.target).lerp(smoothCam.pos, 0.35);
-    shadowCenter.x = Math.round(shadowCenter.x / texel) * texel;
-    shadowCenter.z = Math.round(shadowCenter.z / texel) * texel;
-    shadowCenter.y = 0;
-    sun.target.position.copy(shadowCenter);
-    sun.position.copy(shadowCenter).addScaledVector(sunDir, 200);
-    sun.target.updateMatrixWorld();
-    pigeons.update(time, dist < 90);
+    // one fixed shadow frustum over the whole square: no per-frame resizing or re-centring, so shadow edges never crawl
+    if (sun.userData.dir !== lastTod) {
+      sun.userData.dir = lastTod;
+      sun.target.position.copy(SHADOW_C);
+      sun.position.copy(SHADOW_C).addScaledVector(sunDir, 220);
+      sun.target.updateMatrixWorld();
+      renderer.shadowMap.needsUpdate = true;
+    }
+    pigeons.update(time, true);
     bunting.update(time);
     if (composer) composer.render(); else renderer.render(scene, camera);
   }

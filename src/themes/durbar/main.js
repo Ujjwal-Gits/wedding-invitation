@@ -10,7 +10,7 @@ import '../../core/base.css';
 import './durbar.css';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
-import { bi, biNodes, esc, dateOf, timeRange, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, biNodes, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
@@ -131,7 +131,7 @@ function eventCard(st) {
       <h2 class="d-title" id="t-${esc(e.id)}">${bi(e.title)}</h2>
       <dl class="d-facts">
         <div class="d-row"><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd><b>${bi(dateOf(e.start))}</b><span class="d-bs">${bi(bs)}</span></dd></div>
-        <div class="d-row"><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+        <div class="d-row"><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeLabel(e))}</dd></div>
         <div class="d-row"><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="d-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Open map', ne: 'नक्सा हेर्नुहोस्' })}<span aria-hidden="true"> ↗</span></a></dd></div>
         ${dress}
       </dl>
@@ -364,7 +364,7 @@ async function boot() {
   const lowPower = (DEBUG && !params.has('hq')) || (navigator.hardwareConcurrency || 8) <= 4;
   const { createSquare } = await import('./square.js');
   square = await createSquare(canvas, {
-    mobile, lowPower, reduced, debug: DEBUG,
+    mobile, lowPower, reduced, debug: DEBUG, ...(params.has('ao') ? { ao: true } : {}),
     frames: framePhotos.map((f) => ({ url: photoUrl(f.photo, mobile ? 'sm' : 'lg') })),
     onProgress: setBar,
   });

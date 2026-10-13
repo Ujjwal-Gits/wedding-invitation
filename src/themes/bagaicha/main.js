@@ -8,7 +8,7 @@ import '../../core/base.css';
 import './bagaicha.css';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
-import { bi, biNodes, esc, dateOf, timeRange, shortDate, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, biNodes, esc, dateOf, timeLabel, shortDate, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
@@ -73,7 +73,7 @@ const stations = [{ kind: 'arrival', id: 'arrival', hold: 0.75, travel: 1.0 }];
 easelPhotos.forEach((e, i) => stations.push({ kind: 'easel', id: `easel-${i}`, index: i, hold: 0.45, travel: i === easelPhotos.length - 1 ? 1.2 : 0.65, photo: e }));
 let side = 0;
 let vowsAdded = false;
-const addVows = () => { if (!vowsAdded) { stations.push({ kind: 'vows', id: 'vows', hold: 2.2, travel: 1.3, layout: 'left' }); vowsAdded = true; } };
+const addVows = () => { if (!vowsAdded) { stations.push({ kind: 'vows', id: 'vows', hold: 4.2, travel: 1.3, layout: 'left' }); vowsAdded = true; } };
 events.forEach((e, k) => {
   const spot = spotOf.get(e);
   if (!spot) return;
@@ -107,14 +107,15 @@ function eventCard(st) {
       <summary>${bi({ en: 'The programme', ne: 'कार्यक्रम तालिका' })}</summary>
       <ul>${e.rituals.map((r) => `<li><span>${bi(typeof r.time === 'string' ? { en: r.time, ne: r.time } : r.time)}</span>${bi(r.title)}</li>`).join('')}</ul>
     </details>` : '';
-  const dress = e.dress ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd class="b-dress">${e.dress.colors?.length ? `<span class="b-dress__sw" aria-hidden="true">${e.dress.colors.map((x) => `<i style="background:${esc(x)}"></i>`).join('')}</span>` : ''}${bi(e.dress.text || { en: '', ne: '' })}</dd></div>` : '';
+  const hasDress = e.dress && ((e.dress.text && (e.dress.text.en || e.dress.text.ne)) || e.dress.colors?.length);
+  const dress = hasDress ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd class="b-dress">${e.dress.colors?.length ? `<span class="b-dress__sw" aria-hidden="true">${e.dress.colors.map((x) => `<i style="background:${esc(x)}"></i>`).join('')}</span>` : ''}${bi(e.dress.text || { en: '', ne: '' })}</dd></div>` : '';
   // One calm programme: name, weekday + date (AD and B.S.), time, venue with a map, what to wear.
   return `
     <article class="b-card ${night ? 'b-card--night' : ''}" aria-labelledby="t-${esc(e.id)}">
       <p class="b-eyebrow">${bi({ en: `Ceremony ${ROMAN[st.n] || st.n + 1}`, ne: `${NE_ORD[st.n] || ''} कार्यक्रम` })}</p>
       <h2 class="b-title" id="t-${esc(e.id)}">${bi(e.title)}</h2>
       <dl class="b-prog">
-        <div><dt>${bi({ en: 'When', ne: 'कहिले' })}</dt><dd><b>${bi(dateOf(e.start))}</b><span class="b-bs">${bi({ en: `${bs.short.en} B.S.`, ne: `वि.सं. ${bs.short.ne}` })}</span><span>${bi(timeRange(e.start, e.end))}</span></dd></div>
+        <div><dt>${bi({ en: 'When', ne: 'कहिले' })}</dt><dd><b>${bi(dateOf(e.start))}</b><span class="b-bs">${bi({ en: `${bs.short.en} B.S.`, ne: `वि.सं. ${bs.short.ne}` })}</span><span>${bi(timeLabel(e))}</span></dd></div>
         <div><dt>${bi({ en: 'Where', ne: 'कहाँ' })}</dt><dd>${bi(e.venue)} <a class="b-link" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
         ${dress}
       </dl>
@@ -335,7 +336,7 @@ function updateOverlays(r) {
   // vows: one promise at a time across the hold
   const vi = stations.findIndex((s) => s.kind === 'vows');
   if (vi >= 0 && vowEls.length) {
-    const k = r.i === vi ? Math.min(vowEls.length - 1, Math.floor(r.hold * vowEls.length * 0.999)) : r.i < vi ? 0 : vowEls.length - 1;
+    const k = r.i === vi ? Math.min(vowEls.length - 1, Math.max(0, Math.floor(((r.hold - 0.06) / 0.86) * vowEls.length * 0.999))) : r.i < vi ? 0 : vowEls.length - 1;
     if (k !== lastVow) {
       vowEls.forEach((el, j) => el.classList.toggle('is-now', j === k));
       stepDots.forEach((el, j) => el.classList.toggle('is-done', j <= k));
@@ -416,6 +417,7 @@ function frame() {
   let ro = r;
   if (debugP !== null) ro = { i: Math.floor(debugP), f: debugP % 1, hold: debugHold };
   else if (reduced && r.f > 0) ro = r.f > 0.5 ? { i: r.i + 1, f: 0, hold: 0 } : { i: r.i, f: 0, hold: 1 };
+  garden?.setHold(ro.hold ?? 1);
   updateOverlays(ro);
   requestAnimationFrame(frame);
 }

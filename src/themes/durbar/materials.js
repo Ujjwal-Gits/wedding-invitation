@@ -40,10 +40,12 @@ export async function loadMaterials(renderer, { mobile, lowPower, onProgress = (
   const skyP = load(small ? 'sky-2k.webp' : 'sky-4k.webp');
   const gateP = load('gate-face.webp');
   const eleNorP = load('elephant_nor.webp', false);
+  const galP = load('palace_gallery.webp');
+  const winP = load('palace_window.webp');
 
-  const [brick, pave, brickOld, roof, wood, stone, stucco, envTex, sky, gate, eleNor] = await Promise.all([
-    set('large_red_bricks', true), set('herringbone_brick', true), set('medieval_red_brick'), set('roof_tiles_14'),
-    set('rough_wood'), set('large_sandstone_blocks_01'), set('white_stucco'), env, skyP, gateP, eleNorP,
+  const [brick, pave, brickOld, roof, wood, stone, stucco, envTex, sky, gate, eleNor, galTex, winTex] = await Promise.all([
+    set('newar_brick', true), set('herringbone_brick', true), set('medieval_red_brick'), set('roof_tiles_14'),
+    set('rough_wood'), set('large_sandstone_blocks_01'), set('white_stucco'), env, skyP, gateP, eleNorP, galP, winP,
   ]);
 
   const std = (maps, { ns, ...opts } = {}) => {
@@ -57,19 +59,19 @@ export async function loadMaterials(renderer, { mobile, lowPower, onProgress = (
   };
 
   const M = {
-    brick: std(brick, { color: '#E2AFBE', ns: [0.9, 0.9] }),
-    plinth: std(brick, { color: '#DCA7B4', ns: [0.9, 0.9] }),
-    house: std(brickOld, { color: '#E6BCA6' }),
+    brick: std(brick, { color: '#FFFFFF', ns: [1, 1] }),
+    plinth: std(brick, { color: '#F1DDD6', ns: [1, 1] }),
+    house: std(brick, { color: '#E2CEC6' }),
     brickOld: std(brickOld, { color: '#DDB4A0' }),
     pave: std(pave, { color: '#FFFFFF', ns: [0.8, 0.8] }),
     stone: std(stone, { color: '#C9C1B3', ns: [1.1, 1.1] }),
-    step: std(stone, { color: '#BDB4A6' }),
+    step: std(stone, { color: '#E6DFD4' }),
     statue: std(stone, { color: '#AEA89C', ns: [1.3, 1.3] }),
     elephant: std([stone[0], eleNor || stone[1], stone[2]], { color: '#B3ADA1', ns: [1.2, 1.2] }),
     wood: std(wood, { color: '#6E4C36', ns: [1.2, 1.2] }),
     woodPaint: std(wood, { color: '#FFFFFF', ns: [1, 1] }),
-    roof: std(roof, { color: '#8E7A68', ns: [1.2, 1.2] }),
-    roofMoss: std(roof, { color: '#8E8A64', ns: [1.2, 1.2] }),
+    roof: std(roof, { color: '#B48C76', ns: [1.2, 1.2] }),
+    roofMoss: std(roof, { color: '#98846E', ns: [1.2, 1.2] }),
     houseRoof: std(roof, { color: '#A88F75' }),
     stucco: std(stucco, { color: '#F6F2EA', ns: [0.6, 0.6] }),
     gilt: new THREE.MeshStandardMaterial({ color: '#E8B652', metalness: 1, roughness: 0.24, vertexColors: true }),
@@ -78,6 +80,10 @@ export async function loadMaterials(renderer, { mobile, lowPower, onProgress = (
     paper: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.92, vertexColors: true }),
     paint: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.75, vertexColors: true }),
     gateFace: new THREE.MeshStandardMaterial({ map: gate, roughness: 0.62, metalness: 0.0, vertexColors: true }),
+    // rectified from a CC BY-SA photograph of the real palace (Shadow Ayush): the carved gallery and window hoods
+    galleryFace: new THREE.MeshStandardMaterial({ map: galTex, roughness: 0.82, vertexColors: true }),
+    carved: new THREE.MeshStandardMaterial({ map: winTex, alphaTest: 0.5, alphaToCoverage: true, roughness: 0.8, vertexColors: true }),
+    fringe: fringeMaterial(),
     lattice: latticeMaterial(),
     strut: strutMaterial(wood),
     window: new THREE.MeshStandardMaterial({ color: '#15100C', roughness: 0.55, vertexColors: true }),
@@ -87,13 +93,38 @@ export async function loadMaterials(renderer, { mobile, lowPower, onProgress = (
   return { M, env: envTex, sky };
 }
 
+/** The pleated red-and-white cloth fringe that hangs from palace and temple eaves. */
+function fringeMaterial() {
+  const W = 256, H = 64;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, W, H);
+  const n = 16, pw = W / n;
+  for (let i = 0; i < n; i++) {
+    const x = i * pw;
+    const grd = g.createLinearGradient(x, 0, x + pw, 0);
+    grd.addColorStop(0, '#6E1A16'); grd.addColorStop(0.5, '#B7362B'); grd.addColorStop(1, '#6E1A16');
+    g.fillStyle = grd;
+    g.beginPath(); g.moveTo(x, 0); g.lineTo(x + pw, 0); g.lineTo(x + pw, H * 0.72); g.quadraticCurveTo(x + pw / 2, H * 1.0, x, H * 0.72); g.closePath(); g.fill();
+  }
+  g.fillStyle = '#EDE3D2'; g.fillRect(0, 0, W, 7);
+  g.fillStyle = '#C9A040'; g.fillRect(0, 7, W, 3);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 4;
+  return new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.9, vertexColors: true });
+}
+
 /** Newar sanjhyal: a carved frame around a fine diagonal lattice (alpha cut-out). */
 function latticeMaterial() {
   const S = 512;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.clearRect(0, 0, S, S);
+  // holes are painted as the dark room behind (opaque, mip-mapped): an alpha-tested fine lattice shimmers in motion
+  g.fillStyle = '#17110D'; g.fillRect(0, 0, S, S);
   const wood = '#4A3324';
   g.fillStyle = wood;
   // outer carved frame
@@ -123,7 +154,7 @@ function latticeMaterial() {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
-  const m = new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.45, roughness: 0.85, side: THREE.DoubleSide, vertexColors: true });
+  const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.85, side: THREE.DoubleSide, vertexColors: true });
   return m;
 }
 

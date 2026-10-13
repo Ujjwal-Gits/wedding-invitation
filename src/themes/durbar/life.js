@@ -60,7 +60,7 @@ export function createPigeons(scene, { spots, flockCenter, count = 70, flyers = 
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
   const body = pigeonBody();
   const ground = new THREE.InstancedMesh(body, mat, count);
-  ground.castShadow = true;
+  ground.castShadow = false;
   const birds = [];
   for (let i = 0; i < count; i++) {
     const s = spots[Math.floor(R() * spots.length)];
@@ -187,8 +187,19 @@ export function createBunting(scene, strings, { reduced = false } = {}) {
     ph[i] = i * 0.7;
   });
   tri.setAttribute('aPh', new THREE.InstancedBufferAttribute(ph, 1));
-  im.castShadow = true;
-  const cord = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(lines, 3)), new THREE.LineBasicMaterial({ color: '#5A4A3A' }));
+  im.castShadow = false;
+  // cords as thin lit tubes (1-px lines shimmer as the camera moves)
+  const tubes = [];
+  for (let i = 0; i < lines.length; i += 6) {
+    const a = new THREE.Vector3(lines[i], lines[i + 1], lines[i + 2]), b = new THREE.Vector3(lines[i + 3], lines[i + 4], lines[i + 5]);
+    const g = new THREE.CylinderGeometry(0.012, 0.012, 1, 4, 1, true);
+    g.translate(0, 0.5, 0); g.scale(1, a.distanceTo(b), 1);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()));
+    g.translate(a.x, a.y, a.z);
+    g.deleteAttribute('uv');
+    tubes.push(g.index ? g.toNonIndexed() : g);
+  }
+  const cord = new THREE.Mesh(mergeGeometries(tubes), new THREE.MeshStandardMaterial({ color: '#6A5848', roughness: 0.9 }));
   scene.add(im, cord);
   return { update: (t) => { uTime.value = reduced ? 0 : t; } };
 }

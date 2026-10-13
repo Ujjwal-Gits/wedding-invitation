@@ -5,11 +5,20 @@ import * as T from 'three';
 const PLAT = 0.222;
 const loader = new T.TextureLoader();
 
-/** A carved, dark wood frame with a gold fillet on a brass easel, holding a photograph. */
-export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null } = {}) {
+/**
+ * A photograph on a brass easel, in one of four frame treatments so no two easels repeat:
+ *  'carved' dark wood with a gold fillet · 'gilt' a wide stepped gold frame ·
+ *  'ivory' a white lacquer frame with a deep mat · 'floral' ivory wrapped in roses (flowers API).
+ * The photo always keeps its own proportions; nothing is masked or cropped.
+ */
+export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null, style = 'carved', flowers = null } = {}) {
   const g = new T.Group();
-  const wood = new T.MeshStandardMaterial({ color: '#2a140b', roughness: 0.45, metalness: 0.1 });
+  const lacquer = new T.MeshStandardMaterial({ color: '#f6f1e8', roughness: 0.35 });
+  const wood = style === 'carved' ? new T.MeshStandardMaterial({ color: '#2a140b', roughness: 0.45, metalness: 0.1 })
+    : style === 'gilt' ? new T.MeshStandardMaterial({ color: '#c99a45', metalness: 1, roughness: 0.28 })
+      : lacquer;
   const gold = new T.MeshStandardMaterial({ color: '#d4a656', metalness: 1, roughness: 0.3 });
+  const backWood = new T.MeshStandardMaterial({ color: '#3a1f12', roughness: 0.5, metalness: 0.05 });
   const brass = new T.MeshStandardMaterial({ color: '#b98b3e', metalness: 1, roughness: 0.32 });
   const photoMat = new T.MeshBasicMaterial({ color: new T.Color(0.9, 0.88, 0.85), toneMapped: false });
   photoMat.userData.gamma = { value: 1 };
@@ -33,28 +42,54 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null 
     state.h = h + 0.16;
     photo.scale.set(w, h, 1);
     parts.clear();
-    const b = 0.07;
-    const bar = (bw, bh, x, y, m = wood, depth = 0.05) => {
+    const mat = style === 'ivory' ? 0.06 : 0; // a white mat around the photo
+    const b = style === 'gilt' ? 0.11 : style === 'carved' ? 0.07 : 0.06;
+    const bar = (bw, bh, x, y, m = wood, depth = 0.05, z = -0.005) => {
       const mesh = new T.Mesh(new T.BoxGeometry(bw, bh, depth), m);
-      mesh.position.set(x, y, -0.005);
+      mesh.position.set(x, y, z);
       parts.add(mesh);
     };
-    bar(w + 2 * b, b, 0, h / 2 + b / 2);
-    bar(w + 2 * b, b, 0, -h / 2 - b / 2);
-    bar(b, h, -w / 2 - b / 2, 0);
-    bar(b, h, w / 2 + b / 2, 0);
-    const f = 0.012;
-    bar(w + 2 * f, f, 0, h / 2 + f / 2, gold, 0.056);
-    bar(w + 2 * f, f, 0, -h / 2 - f / 2, gold, 0.056);
-    bar(f, h, -w / 2 - f / 2, 0, gold, 0.056);
-    bar(f, h, w / 2 + f / 2, 0, gold, 0.056);
-    const back = new T.Mesh(new T.BoxGeometry(w + 2 * b, h + 2 * b, 0.01), wood);
+    const W = w + 2 * mat, H = h + 2 * mat;
+    if (mat) {
+      const m = new T.Mesh(new T.PlaneGeometry(W, H), new T.MeshStandardMaterial({ color: '#fbf8f2', roughness: 0.9 }));
+      m.position.z = -0.002;
+      parts.add(m);
+    }
+    bar(W + 2 * b, b, 0, H / 2 + b / 2);
+    bar(W + 2 * b, b, 0, -H / 2 - b / 2);
+    bar(b, H, -W / 2 - b / 2, 0);
+    bar(b, H, W / 2 + b / 2, 0);
+    if (style === 'gilt') {
+      // A raised inner step and an outer bead for a carved-gilt look.
+      const s2 = 0.035;
+      bar(W + 2 * s2, s2, 0, H / 2 + s2 / 2, gold, 0.075, 0.01);
+      bar(W + 2 * s2, s2, 0, -H / 2 - s2 / 2, gold, 0.075, 0.01);
+      bar(s2, H, -W / 2 - s2 / 2, 0, gold, 0.075, 0.01);
+      bar(s2, H, W / 2 + s2 / 2, 0, gold, 0.075, 0.01);
+    } else {
+      const f = 0.012;
+      bar(W + 2 * f, f, 0, H / 2 + f / 2, gold, 0.056);
+      bar(W + 2 * f, f, 0, -H / 2 - f / 2, gold, 0.056);
+      bar(f, H, -W / 2 - f / 2, 0, gold, 0.056);
+      bar(f, H, W / 2 + f / 2, 0, gold, 0.056);
+    }
+    state.w = W + 2 * b;
+    state.h = H + 2 * b;
+    // The back is a dressed panel (seen from the mandap): dark carved wood, a gold border and a
+    // small rose swag, never a blank board.
+    const back = new T.Mesh(new T.BoxGeometry(W + 2 * b, H + 2 * b, 0.01), backWood);
     back.position.z = -0.035;
     parts.add(back);
+    const inset = new T.Mesh(new T.BoxGeometry(W + 2 * b - 0.12, H + 2 * b - 0.12, 0.004), gold);
+    inset.position.z = -0.042;
+    parts.add(inset);
+    const inner = new T.Mesh(new T.BoxGeometry(W + 2 * b - 0.15, H + 2 * b - 0.15, 0.004), backWood);
+    inner.position.z = -0.045;
+    parts.add(inner);
     // Easel: two front legs and one back leg.
     legs.clear();
     const legGeo = new T.CylinderGeometry(0.014, 0.018, 1, 10);
-    const bottom = -h / 2 - b;
+    const bottom = -H / 2 - b;
     const top = h * 0.2;
     const leg = (x, z) => {
       const m = new T.Mesh(legGeo, brass);
@@ -65,10 +100,10 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null 
       m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), to.clone().sub(from).normalize());
       legs.add(m);
     };
-    leg(-(w / 2 - 0.02), -0.2);
-    leg(w / 2 - 0.02, -0.2);
+    leg(-(W / 2 - 0.02), -0.2);
+    leg(W / 2 - 0.02, -0.2);
     leg(0, -0.6);
-    const ledge = new T.Mesh(new T.BoxGeometry(w + 0.25, 0.03, 0.09), brass);
+    const ledge = new T.Mesh(new T.BoxGeometry(W + 0.25, 0.03, 0.09), brass);
     ledge.position.set(0, bottom - 0.015, 0.02);
     legs.add(ledge);
   };
@@ -98,6 +133,27 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null 
     photoMat.map = tex;
     photoMat.needsUpdate = true;
     build(tex.image.width / tex.image.height);
+    // Floral frames: roses climb the top corner and the opposite lower corner.
+    if (flowers && !state.swag) {
+      // A small rose swag across the top of the back panel.
+      state.swag = true;
+      g.updateMatrixWorld(true);
+      const W2 = state.w / 2, H2 = state.h / 2;
+      const B = (x, y) => g.localToWorld(new T.Vector3(x, y, -0.06));
+      flowers.band([B(-W2 * 0.6, H2 - 0.02), B(0, H2 - 0.08), B(W2 * 0.6, H2 - 0.02)], { radius: 0.045, density: 70, size: 0.045 });
+      flowers.finish();
+    }
+    if (style === 'floral' && flowers && !state.flowered) {
+      state.flowered = true;
+      g.updateMatrixWorld(true);
+      const W2 = state.w / 2, H2 = state.h / 2;
+      const P = (x, y) => g.localToWorld(new T.Vector3(x, y, 0.03));
+      const out = new T.Vector3(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new T.Quaternion()));
+      flowers.band([P(-W2, H2 * 0.25), P(-W2, H2), P(-W2 * 0.2, H2)], { radius: 0.06, density: 90, size: 0.05 });
+      flowers.band([P(W2 * 0.35, -H2), P(W2, -H2), P(W2, -H2 * 0.4)], { radius: 0.06, density: 90, size: 0.05 });
+      flowers.cluster(P(-W2, H2).addScaledVector(out, 0.03), 0.1, 18, { size: 0.06 });
+      flowers.finish();
+    }
     state.ready = true;
   };
   loader.load(url, onLoad);

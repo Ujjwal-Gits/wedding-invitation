@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
-import { bi, esc, dateOf, bsDateOf, timeRange, mapUrl, biNodes } from '../../core/i18n.js';
+import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, biNodes } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, animateGallery, guestEvents } from '../../core/finale.js';
@@ -43,7 +43,8 @@ const portraitAlt = (ref) => (c.portraits || []).find((p) => p.photo === ref)?.a
   const ref = img(`us.photo${n}`);
   if (!ref || frames.some((f) => f.photo === ref)) return;
   const s = story[i];
-  frames.push({ photo: ref, alt: portraitAlt(ref) || alt(`us.photo${n}`), kicker: s ? s.year : txt('us.kicker'), line: s ? s.text : { en: plainNamesOf(), ne: `${c.bride.name.ne} र ${c.groom.name.ne}` } });
+  const soon = [{ en: plainNamesOf(), ne: `${c.bride.name.ne} र ${c.groom.name.ne}` }, { en: 'Two families, one sacred fire', ne: 'दुई परिवार, एउटै पवित्र अग्नि' }, { en: 'Soon, side by side for life', ne: 'चाँडै, जीवनभरका साथी' }, { en: 'With the blessings of our elders', ne: 'गुरुजनको आशीर्वादसहित' }, { en: 'We would love you there', ne: 'हजुरको साथ चाहन्छौं' }][i % 5];
+  frames.push({ photo: ref, alt: portraitAlt(ref) || alt(`us.photo${n}`), kicker: s ? s.year : txt('us.kicker'), line: s ? s.text : soon });
 });
 frames.splice(5);
 // Brighter stand-ins (other couple portraits) if a framed photo is too dark for the night scene.
@@ -98,7 +99,7 @@ main.innerHTML = `
         ${events.map((e, i) => `
           <article class="m-cap m-ev" data-i="${i}" aria-labelledby="ev-${esc(e.id)}">
             <h3 class="m-ev__title" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
-            <p class="m-ev__when">${bi(dateOf(e.start))}<br /><span class="m-bs">${bi(bsDateOf(e.start, e.dateBS))}</span><br />${bi(timeRange(e.start, e.end))}</p>
+            <p class="m-ev__when">${bi(dateOf(e.start))}<br /><span class="m-bs">${bi(bsDateOf(e.start, e.dateBS))}</span><br />${bi(timeLabel(e))}</p>
             <p class="m-ev__where">${bi(e.venue)} <a class="m-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })} <span aria-hidden="true">↗</span></a></p>
           </article>`).join('')}
         <div class="m-cap m-arrive" data-i="${events.length}">
@@ -158,9 +159,9 @@ main.innerHTML = `
             <h3 class="m-prog__name">${bi(e.title)}</h3>
             <dl class="m-prog__facts">
               <div><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd>${bi(dateOf(e.start))}<span class="m-prog__bs">${bi(bsDateOf(e.start, e.dateBS))}</span></dd></div>
-              <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeRange(e.start, e.end))}</dd></div>
+              <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeLabel(e))}</dd></div>
               <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)} <a class="m-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Open map', ne: 'नक्सा हेर्नुहोस्' })} <span aria-hidden="true">↗</span></a></dd></div>
-              ${e.dress?.text ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="m-prog__sw" aria-hidden="true">${(e.dress.colors || []).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
+              ${e.dress?.text?.en || e.dress?.text?.ne ? `<div><dt>${bi({ en: 'Wear', ne: 'पहिरन' })}</dt><dd><span class="m-prog__sw" aria-hidden="true">${(e.dress.colors || []).map((col) => `<i style="background:${esc(col)}"></i>`).join('')}</span>${bi(e.dress.text)}</dd></div>` : ''}
             </dl>
           </li>`).join('')}
       </ol>
@@ -288,6 +289,8 @@ function buildProps({ photoFrame, brassPlaque }) {
     const normal = V(Math.sin(a), 0, Math.cos(a));
     const g = photoFrame(photoUrl(f.photo, 'sm'), {
       height: 1.05,
+      style: ['floral', 'gilt', 'ivory', 'carved', 'floral'][i % 5],
+      flowers: view.flowers,
       fallback: () => { const s = spare.shift(); return s ? { url: photoUrl(s.photo, 'sm'), alt: s.alt } : null; },
       onSwap: (next) => {
         const img = document.querySelector(`#us .m-cap[data-i="${i}"] .m-cap__img`);
@@ -503,11 +506,12 @@ function frameOf(center, normal, w, h, o) {
 function crane(t, hero) {
   const pr = portrait();
   // Daylight: a gentle descent from above the lamp path to the hero view.
-  const pts = [V(0.6, 4.2, 18 + (pr ? 3 : 0)), V(0.35, 3.4, 15 + (pr ? 3 : 0)), V(0.1, 2.6, 12 + (pr ? 3 : 0)), hero.pos];
-  const looks = [V(0, 2.4, 0), V(0, 2.0, 0), V(0, 1.6, 0), hero.look];
+  // Through the floral gate: start outside it, glide under the rose arch, settle on the mandap.
+  const pts = [V(0.2, 1.75, 22 + (pr ? 2 : 0)), V(0.15, 2.45, 18.2), V(0.05, 2.35, 15.2), V(0.05, 2.1, 12.6 + (pr ? 1 : 0)), hero.pos];
+  const looks = [V(0, 1.75, 12), V(0, 1.7, 8), V(0, 1.55, 6), V(0, 1.2, 1), hero.look];
   const curve = new T.CatmullRomCurve3(pts);
   const lc = new T.CatmullRomCurve3(looks);
-  const e = 1 - Math.pow(1 - t, 2.2);
+  const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // ease in and out: a calm glide through the gate
   return { pos: curve.getPoint(e), look: lc.getPoint(e), fov: 40 + (hero.fov - 40) * e };
 }
 
@@ -559,6 +563,12 @@ function director(v, aspect, time, dt) {
   v.camera.fov = cam.fov;
   v.camera.position.copy(cam.pos);
   v.camera.lookAt(cam.look);
+  // Never let a figure fill the lens when the camera passes close by on a narrow screen.
+  for (const f of [v.bride, v.groom]) {
+    const p = f.root.position;
+    const d = Math.hypot(cam.pos.x - p.x, cam.pos.z - p.z);
+    f.root.visible = !(d < 0.75 && cam.pos.y < p.y + 2.2);
+  }
   return true;
 }
 

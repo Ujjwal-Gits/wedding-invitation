@@ -108,13 +108,13 @@ export class Builder {
     this.lists = new Map();
     this.tiles = tiles;
   }
-  add(key, geo, { uv, color, flat } = {}) {
+  add(key, geo, { uv, color, flat, dark } = {}) {
     let g = ni(geo);
     if (flat) g.computeVertexNormals();
     if (uv !== 'keep') worldUV(g, typeof uv === 'number' ? uv : this.tiles[key] ?? 1);
     if (!g.attributes.uv) worldUV(g, 1);
     if (!g.attributes.normal) g.computeVertexNormals();
-    if (!g.attributes.color) tint(g, color ?? '#ffffff');
+    if (!g.attributes.color) tint(g, color ?? '#ffffff', dark);
     for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k);
     if (!this.lists.has(key)) this.lists.set(key, []);
     this.lists.get(key).push(g);

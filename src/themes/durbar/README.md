@@ -43,6 +43,35 @@ moves quietly: the cards fade, pigeons peck and circle, and the bunting moves in
 6. **Finale** (shared `core/finale.js`, restyled on white): an uncropped masonry gallery
    with the couple first, guest info, countdown, RSVP, blessing and credits.
 
+## Round 4 (client feedback)
+
+- **Portraits up close.** At each portrait stop the camera faces the frame almost square-on. On desktop the photo fills
+  about 60% of the screen height; on phones it fills the top half of the screen, above a short card. There are four
+  frame treatments that cycle: gilt with a white mat, carved Newar wood under a torana, a brass frame wrapped in
+  roses and wisteria, and a black frame with a deep ivory mat and a rose-and-marigold garland.
+- **Wedding flowers** (`flowers.js`) are 3D roses with layered, cupped petals, plus leaves and hanging
+  wisteria/jasmine strands. The guest enters through a floral welcome arch on the lane before the lion gate. There is
+  a floral arch at the foot of the Nyatapola stair, rose swags on the lion gate and the Golden Gate, and brass urns
+  of roses at the stations. Marigold strings are drawn as ruffled flower heads, not beads.
+- **No flicker.** Windows, shutters and doors sit proud of the wall plane, the photo sits well in front of its mat,
+  and the near plane is 0.6 m, so there is no z-fighting. One fixed shadow frustum covers the whole square, and the
+  shadow map is redrawn only when the sun moves. Edges get native MSAA. The fine lattice is painted opaque, so it
+  mip-maps instead of being alpha-tested. Bunting cords are thin tubes, not 1-px lines. The camera doesn't drift at
+  rest, the drawing buffer is resized only when the canvas size really changes, and nothing pops by distance.
+  - Measured with frames captured on the real GPU while the camera moves slowly. At rest, under 0.2% of pixels
+    change, and those are the pigeons and flags.
+  - Pixels flipping back and forth between frames while moving: names 0.03%, mandap 0.001%, Golden Gate 0.016%.
+    Near a portrait it is 0.6–2.7%, and that is the photo's own detail sliding across the screen, not flicker.
+- **Realism, compared side by side with photos.**
+  - Nyatapola: a deep first roof, short carved-wood storeys and shallow roofs, a low top, taller terraces and larger
+    guardians.
+  - Brick: clean Newar stretcher bond with thin dark joints. It is a procedural texture, `newar_brick_*`.
+  - Palace: the gallery of 55 windows and the first-floor window hoods are rectified and cut out from the CC BY-SA
+    photo of the real palace (`palace_gallery.webp`, `palace_window.webp`). The eave has a red cloth fringe.
+  - Walls have baked occlusion under the eaves and at their feet. The placeholder platforms and chaityas are gone.
+- **Performance:** 60 fps at 1200×800 on an RTX 3050 laptop with 4096 shadows and MSAA. GTAO is opt-in (`?ao`).
+- Event times use `timeLabel(e)`, which shows "onwards" for open-ended events. Checked with `?id=<client-slug>`.
+
 ## The model
 
 - **Nyatapola**: five brick terraces with stone copings. A straight stair meets every terrace
@@ -131,7 +160,7 @@ made in code for this theme.
 - DPR cap: 1.75 on desktop, 1.5 on phones and 1 on low-power devices (4 cores or fewer).
 - Phones get 1k textures, a 2048 shadow map, no AO, fewer bells, lighter statues and simpler
   flowers. Low-power devices also turn off shadows and MSAA.
-- Desktop adds GTAO.
+- GTAO is available with `?ao`. It is off by default; see Round 4.
 - It runs at 60 fps at 1200×800 with AO on an RTX 3050 laptop GPU. Rendering pauses once the
   finale covers the square.
 

@@ -136,6 +136,32 @@ long moves arc up over the mandap rather than cutting through it.
 `?still` forces the reduced-motion path: no crane, camera cuts between stations.
 Without WebGL, the page falls back to stacked text over a photograph.
 
+## Floral decor and frames (round 4)
+- **Floral opening:** the opening crane starts outside a rose-and-wisteria welcome gate on
+  the lamp path, glides under it and settles on the mandap. The groom's Janti walk starts
+  beyond the gate too.
+- **Mandap:**
+  - Pillars wrapped in garden roses and greenery, with a marigold collar at the base.
+  - Rose banks along every beam, with corner bursts.
+  - Wisteria-like strands hanging inside.
+  - Marigold swags.
+  - An ivory silk canopy.
+  - Rose bouquets in brass urns at the steps.
+- **Flowers:** procedural instanced geometry (`Flowers` in `mandap3d.js`): cupped-petal roses,
+  leaves and florets, all made in code, so there are no licensing questions.
+- **Easel frames:** they rotate through four treatments, so no two neighbours match:
+  rose-wrapped ivory, wide stepped gilt, white lacquer with a deep mat, and carved dark wood.
+  Photos always keep their own proportions.
+- **Groom:**
+  - Clothes re-weighted to the nearest body vertex after relaxing, so the sleeves follow the
+    arms.
+  - Fitted daura in a fine cotton-silk weave.
+  - Charcoal brocade istakot.
+  - Topi seated lower.
+  - Natural relaxed hands from the animation.
+- **Studio:** works with the real invitation (`?id=<client-slug>`): their names, dates, B.S.
+  dates and photos. Easels without story lines get short forward-looking lines.
+
 ## Readability (§11)
 - **Sizes:** body 17–23 px (Spectral 400); Devanagari 17–20 px (Martel) at line-height
   1.75–1.85; labels 13 px English, 15 px Nepali.
