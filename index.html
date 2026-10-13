@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sayapatri Invitations</title>
+  <meta name="description" content="Eight premium Nepali wedding invitation themes." />
+  <meta name="theme-color" content="#FFFFFF" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&family=Noto+Serif+Devanagari:wght@500&display=swap" />
+  <style>
+    :root { --bg: #FFFFFF; --ink: #191512; --dim: #5B6068; --hair: rgba(25, 21, 18, 0.14); --accent: #A3122A; --ease: cubic-bezier(0.22, 0.8, 0.24, 1); }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 'Hanken Grotesk', 'Segoe UI', sans-serif; }
+    a { color: inherit; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+    .wrap { max-width: 1320px; margin: 0 auto; padding: calc(48px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 48px) 80px; }
+    header { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding-bottom: 36px; border-bottom: 1px solid var(--hair); }
+    .kicker { margin: 0 0 10px; font: 600 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.24em; text-transform: uppercase; color: var(--accent); }
+    h1 { margin: 0; font: italic 400 clamp(40px, 6vw, 80px)/1 'Bodoni Moda', serif; }
+    .lede { margin: 14px 0 0; max-width: 54ch; color: var(--dim); font-size: 20px; line-height: 1.5; }
+    .studio { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; background: var(--ink); color: var(--bg); text-decoration: none; font: 600 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; }
+    .studio:hover { background: #3a302a; }
+    ol { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 28px; }
+    .card { display: grid; gap: 12px; text-decoration: none; }
+    .shot { aspect-ratio: 4 / 3; overflow: hidden; background: #EEF0F2; position: relative; }
+    .shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 800ms var(--ease); }
+    .card:hover .shot img, .card:focus-visible .shot img { transform: scale(1.04); }
+    .num { font: 500 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.2em; color: var(--dim); }
+    .name { display: flex; align-items: baseline; gap: 10px; margin: 0; font: italic 400 30px/1.1 'Bodoni Moda', serif; }
+    .name span { font: 500 20px/1.2 'Noto Serif Devanagari', serif; font-style: normal; color: var(--accent); }
+    .desc { margin: 0; color: var(--dim); font-size: 16px; line-height: 1.5; }
+    footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--hair); color: var(--dim); font-size: 12px; }
+    @media (max-width: 1100px) { ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { header { grid-template-columns: 1fr; } ol { grid-template-columns: 1fr; gap: 40px; } .studio { justify-self: start; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <p class="kicker">Sayapatri · Wedding invitations</p>
+        <h1>Eight ways to invite</h1>
+        <p class="lede">Each theme carries the same couple, ceremonies, music and RSVP. Create an invitation in the studio, upload the couple's photos, choose a theme, and share the link.</p>
+      </div>
+      <a class="studio" href="/studio/">Open the studio →</a>
+    </header>
+    <ol>
+      <li><a class="card" href="/dhoka/"><span class="shot"><img src="/themes/dhoka/thumb.jpg" alt="Dhoka theme: the Golden Door of Patan on cream paper" loading="lazy" /></span><span class="num">01</span><h2 class="name">Dhoka <span lang="ne">ढोका</span></h2><p class="desc">Ivory editorial. The Golden Door of Patan opens in 3D onto a printed card.</p></a></li>
+      <li><a class="card" href="/ghar/"><span class="shot"><img src="/themes/ghar/thumb.jpg" alt="Ghar theme: a Newar courtyard at night in film framing" loading="lazy" /></span><span class="num">02</span><h2 class="name">Ghar <span lang="ne">घर</span></h2><p class="desc">A night film walking through a lamplit Newar house, room by room.</p></a></li>
+      <li><a class="card" href="/sayapatri/"><span class="shot"><img src="/themes/sayapatri/thumb.jpg" alt="Sayapatri theme: bright turmeric arch with couple photos" loading="lazy" /></span><span class="num">03</span><h2 class="name">Sayapatri <span lang="ne">सयपत्री</span></h2><p class="desc">Bright haldi daylight. Two hands, one promise.</p></a></li>
+      <li><a class="card" href="/chitra/"><span class="shot"><img src="/themes/chitra/thumb.jpg" alt="Chitra theme: illustrated couple walking around the sacred fire" loading="lazy" /></span><span class="num">04</span><h2 class="name">Chitra <span lang="ne">चित्र</span></h2><p class="desc">A Mithila picture book: janti, swayambar, seven rounds, sindoor, the dance.</p></a></li>
+      <li><a class="card" href="/mandap/"><span class="shot"><img src="/themes/mandap/thumb.jpg" alt="Mandap theme: 3D bride and groom exchanging garlands" loading="lazy" /></span><span class="num">05</span><h2 class="name">Mandap <span lang="ne">मण्डप</span></h2><p class="desc">A 3D night mandap where the couple exchange garlands and walk seven rounds.</p></a></li>
+      <li><a class="card" href="/bagaicha/"><span class="shot"><img src="/themes/bagaicha/thumb.jpg" alt="Bagaicha theme: a 3D garden venue" loading="lazy" /></span><span class="num">06</span><h2 class="name">Bagaicha <span lang="ne">बगैंचा</span></h2><p class="desc">A garden destination in 3D: pavilion, waterfall, lanterns, from morning to night.</p></a></li>
+      <li><a class="card" href="/dhaka/"><span class="shot"><img src="/themes/dhaka/thumb.jpg" alt="Dhaka theme: woven Dhaka pattern forming initials" loading="lazy" /></span><span class="num">07</span><h2 class="name">Dhaka <span lang="ne">ढाका</span></h2><p class="desc">Modern and graphic. The Dhaka weave weaves the couple's initials.</p></a></li>
+      <li><a class="card" href="/himal/"><span class="shot"><img src="/themes/himal/thumb.jpg" alt="Himal theme: Machhapuchhre at dawn with the couple's names" loading="lazy" /></span><span class="num">08</span><h2 class="name">Himal <span lang="ne">हिमाल</span></h2><p class="desc">Quiet luxury. Sunrise over the Himalaya and a photo essay of the couple.</p></a></li>
+    </ol>
+    <footer>Photographs: Wikimedia Commons and Openverse contributors under CC0 / CC BY / CC BY-SA, credited in each invitation.</footer>
+  </main>
+</body>
+</html>
