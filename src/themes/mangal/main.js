@@ -1,9 +1,10 @@
 // Theme · Mangal (मंगल) — the red-and-gold Nepali wedding card, come alive.
-// A wide sindoor doorway hung with fresh garlands and brass bells. Tap the latch and the two carved
-// leaves swing open in 3D and the camera walks in through the gate (the one signature motion) onto
-// the red arched card: a welcome line, then शुभ विवाह in gold, the names and both dates. Then a calm, layered "paper-cut" scroll: the couple in gold arch frames,
-// the families, the card wording beside a puja thaali, the programme, a few more photographs, the
-// reply card and the blessing between two lit diyos, closed by a Dhaka band.
+// A carved Newar doorway (pillars, a lintel, a torana with Ganesh) hung with one marigold toran and two brass
+// bells. Tap the latch and the heavy leaves swing open with warm light spilling through, and the camera walks
+// in (the one signature motion) onto the red card: Ganesh, ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and the
+// couple in a gold temple arch. Then a calm scroll: a gold scratch card that reveals the date, the countdown,
+// a strip of photographs that moves sideways, the families, the card wording, the programme, the reply card
+// and the blessing between two lit diyos, closed by a Dhaka band.
 import '../../core/base.css';
 import './mangal.css';
 import { gsap } from 'gsap';
@@ -21,9 +22,8 @@ import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
-import META from './decor-meta.js';
 import {
-  DEFS, archPath, frameSVG, panelBorderSVG, leafSVG, bellSVG, diyoSVG, dhakaTile, crownSVG, swastikaSVG, dividerSVG, petalSVG, rosette,
+  DEFS, frameSVG, panelBorderSVG, leafSVG, bellSVG, diyoSVG, dhakaTile, crownSVG, dividerSVG, petalSVG, rosette, beamSVG, medalSVG,
 } from './art.js';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -47,7 +47,7 @@ if (DEBUG) {
 const S = useSlots(manifest);
 const txt = S.txt;
 /** "-", "none" or "off" in a text slot turns that element off (religious marks are optional). */
-const isOff = (v) => !v || /^\s*(-|–|none|off)\s*$/i.test(v);
+const isOff = (v) => !v || /^\s*(-|–|none|off|no|hide)\s*$/i.test(v);
 const on = (o) => !isOff(o.en) || !isOff(o.ne);
 
 // ───────────────────────── Photo helpers ─────────────────────────
@@ -74,17 +74,14 @@ const imgTag = (ref, alt, sizes, { eager = false } = {}) => {
   return `<img src="${esc(sm)}" ${sm !== lg ? `srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w"` : ''} sizes="${sizes}" alt="${esc(alt || '')}" ${ar ? `style="aspect-ratio:${ar.toFixed(4)}"` : ''} ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" />`;
 };
 
-const CROWNS = { temple: crownSVG('temple'), round: crownSVG('round'), scallop: crownSVG('scallop') };
-/** A gold arch frame: the crown sits above the photo, so the photo is always whole. */
-const frame = (ref, alt, kind, sizes, { cls = '', button = '', eager = false } = {}) => {
-  const cr = CROWNS[kind];
-  const ar = aspectOf(ref);
-  const inner = imgTag(ref, alt, sizes, { eager });
-  return `<figure class="mg-frame mg-frame--${kind} ${cls}" data-orient="${ar ? (ar > 1.05 ? 'land' : ar < 0.95 ? 'port' : 'sq') : 'port'}" style="--crown:${(200 / cr.H).toFixed(4)}">
-    <span class="mg-frame__crown" aria-hidden="true">${cr.svg}</span>
-    <span class="mg-frame__body">${button ? `<button type="button" class="mg-frame__btn" ${button}>${inner}</button>` : inner}</span>
+const TEMPLE = crownSVG('temple');
+/** The gold temple-arch frame (the main photo only): the crown sits above the photo, so it is always whole. */
+const archFrame = (ref, alt, sizes, { cls = '', eager = false } = {}) => `<figure class="mg-frame mg-frame--temple ${cls}" style="--crown:${(200 / TEMPLE.H).toFixed(4)}">
+    <span class="mg-frame__crown" aria-hidden="true">${TEMPLE.svg}</span>
+    <span class="mg-frame__body">${imgTag(ref, alt, sizes, { eager })}</span>
   </figure>`;
-};
+/** Every other photograph: a plain ivory mat and one thin gold line. */
+const plainFrame = (ref, alt, sizes, cls = '') => `<figure class="mg-plain ${cls}">${imgTag(ref, alt, sizes)}</figure>`;
 
 // ───────────────────────── Which photo goes where ─────────────────────────
 const used = new Set();
@@ -114,7 +111,14 @@ const galMore = (config.gallery || [])
   .filter((g, i, a) => a.findIndex((x) => keyOf(x.photo) === keyOf(g.photo)) === i)
   .sort((x, y) => Number(isCouple(y.photo)) - Number(isCouple(x.photo)))
   .map((g) => ({ photo: g.photo, alt: g.alt || '' }));
-const album = [...galCouple, ...galMore].slice(0, 9);
+/** The photo strip: every photograph after the main one, in order. */
+const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
+
+// Ganesh (optional): one picture, shown in a round gold medallion above the door and inside.
+const ganeshRef = on(txt('torana.show')) ? S.img('torana.ganesh') : null;
+const medal = (cls = '') => (ganeshRef
+  ? `<div class="mg-medal ${cls}" aria-hidden="true"><img src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 320w, ${esc(photoUrl(ganeshRef, 'lg'))} 640w" sizes="200px" alt="" decoding="async" />${medalSVG()}</div>`
+  : '');
 
 // ───────────────────────── Dates ─────────────────────────
 function adParts(iso) {
@@ -125,12 +129,27 @@ function adParts(iso) {
 }
 function bsParts(iso, override) {
   const b = bsDateOf(iso, override);
+  let day = null; let month = null; let year = null;
   const m = String(b.short?.ne || '').match(/^(\S+)\s+([०-९]+),\s*([०-९]+)/);
-  return { full: b, day: m ? m[2] : null, monthYear: m ? `${m[1]} ${m[3]}` : null };
+  if (m) [, month, day, year] = m;
+  else {
+    // a family's own wording, e.g. "वि.सं. २०८३ मंसिर १० गते, बिहिबार"
+    const ne = String(b.ne || '');
+    const md = ne.match(/([^\s,.०-९]+)\s+([०-९]{1,2})\s*गते/);
+    const y = ne.match(/([०-९]{4})/);
+    if (md && y) { [, month, day] = md; [, year] = y; }
+  }
+  const enShort = String(b.short?.en || b.en || '').replace(/^[A-Za-z]+,\s*/, '');
+  return { full: b, day, month, year, monthYear: month ? `${month} ${year}` : null, enShort: /B\.S\./.test(enShort) ? enShort : `${enShort} B.S.` };
 }
-const mainAD = dateOf(config.weddingDate);
-const mainBS = bsDateOf(config.weddingDate, config.weddingDateBS);
-const daysLeft = Math.ceil((new Date(config.weddingDate).getTime() - Date.now()) / 86400000);
+const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu' }).format(new Date(iso));
+// The wedding ceremony itself: the event on the wedding day (else the wedding date).
+const mainEv = events.find((e) => e?.start && npDay(e.start) === npDay(config.weddingDate)) || null;
+const mainIso = mainEv?.start || config.weddingDate;
+const mainAD = adParts(mainIso);
+const mainBS = bsParts(mainIso, mainEv?.dateBS || config.weddingDateBS);
+const target = new Date(mainIso).getTime();
+const daysLeft = Math.ceil((target - Date.now()) / 86400000);
 const countLine = daysLeft > 1
   ? { en: `${daysLeft} days to go`, ne: `${neNum(daysLeft)} दिन बाँकी` }
   : daysLeft === 1 ? { en: 'Tomorrow', ne: 'भोलि' } : { en: 'With love', ne: 'मायासहित' };
@@ -151,14 +170,18 @@ const T = {
   contacts: { en: 'Questions', ne: 'सोधपुछ' },
   live: { en: 'Watch the ceremony live', ne: 'प्रत्यक्ष हेर्नुहोस्' },
   order: { en: 'Order of the day', ne: 'दिनको क्रम' },
+  days: { en: 'Days', ne: 'दिन' },
+  hours: { en: 'Hours', ne: 'घण्टा' },
+  minutes: { en: 'Minutes', ne: 'मिनेट' },
+  seconds: { en: 'Seconds', ne: 'सेकेन्ड' },
+  today: { en: 'Today, our forever begins', ne: 'आज हाम्रो सदाको यात्रा सुरु हुन्छ' },
+  married: { en: 'Married, with your blessings', ne: 'हजुरहरूको आशीर्वादसहित, विवाहित' },
 };
 
 const names = () => `<span class="mg-n">${bi(c.bride.name)}</span> <span class="mg-n"><span class="mg-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
 const symbol = txt('hero.symbol');
 const invocation = txt('hero.invocation');
 const title = txt('hero.title');
-const subtitle = txt('hero.subtitle');
-const mark = txt('kalash.mark');
 const welcome = txt('hero.welcome');
 
 const damask = (() => {
@@ -171,16 +194,19 @@ document.documentElement.style.setProperty('--mg-dhaka', DHAKA.url);
 document.documentElement.style.setProperty('--mg-dhaka-w', `${DHAKA.w}px`);
 document.documentElement.style.setProperty('--mg-dhaka-h', `${DHAKA.h}px`);
 
-const kalashMark = () => {
-  if (isOff(mark.en)) return '';
-  if (/^swastika$/i.test(mark.en.trim())) return `<span class="mg-kalash__mark" aria-hidden="true">${swastikaSVG(60)}</span>`;
-  return `<span class="mg-kalash__mark mg-kalash__mark--text" aria-hidden="true" lang="ne">${esc(mark.ne || mark.en)}</span>`;
-};
-const kalash = (cls = '') => `<div class="mg-kalash ${cls}" aria-hidden="true"><img src="${DECOR}kalash-sm.webp" srcset="${DECOR}kalash-sm.webp 320w, ${DECOR}kalash.webp 640w" sizes="220px" alt="" decoding="async" />${kalashMark()}</div>`;
-const thaali = (cls = '') => `<div class="mg-thaali ${cls}" aria-hidden="true"><img src="${DECOR}thaali-sm.webp" srcset="${DECOR}thaali-sm.webp 460w, ${DECOR}thaali.webp 900w" sizes="(max-width: 700px) 70vw, 340px" alt="" decoding="async" loading="lazy" /></div>`;
 const diyo = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true">${diyoSVG(w, Math.round(w * 1.6))}</div>`;
 const swag = (cls = '') => `<div class="mg-swag ${cls}" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1100px" alt="" decoding="async" /></div>`;
 const head = (kicker, h, id, cls = '') => `<header class="mg-head ${cls} mg-rise">${dividerSVG(200)}${kicker ? `<p class="mg-kicker">${bi(kicker)}</p>` : ''}<h2 class="mg-h2" id="${id}">${bi(h)}</h2></header>`;
+
+// The date under the scratch foil: AD and B.S. (B.S. leads in Nepali), the time and the place.
+const dateBig = { en: `${mainAD.day} ${mainAD.month.en}`, ne: mainBS.day ? `${mainBS.month} ${mainBS.day} गते` : mainBS.full.ne };
+const adNoDay = mainAD.full.ne.split(', ').slice(1).join(', '); // "नोभेम्बर २६, २०२६"
+const dateAlt = { en: mainBS.enShort, ne: mainBS.year ? `वि.सं. ${mainBS.year} · ${adNoDay}` : mainAD.full.ne };
+const whenLine = mainEv ? timeLabel(mainEv) : null;
+const placeLine = mainEv?.venue?.en || mainEv?.venue?.ne ? mainEv.venue : config.city;
+
+const stripFig = (g, i, dup) => `<figure class="mg-ph"><button type="button" class="mg-ph__btn" data-idx="${i}" ${dup ? 'tabindex="-1"' : ''} aria-label="${esc(g.alt || 'Open photograph')}">${imgTag(g.photo, dup ? '' : g.alt, '(max-width: 700px) 70vw, 30vw')}</button></figure>`;
+const countCell = (u, label) => `<li class="mg-count__cell"><b class="mg-count__n" data-u="${u}">${bi({ en: '00', ne: '००' })}</b><span class="mg-count__l">${bi(label)}</span></li>`;
 
 // ───────────────────────── Markup ─────────────────────────
 const main = document.getElementById('main');
@@ -188,13 +214,10 @@ document.body.insertAdjacentHTML('afterbegin', DEFS);
 main.innerHTML = `
   <section class="mg-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
     <div class="mg-inside" id="inside" aria-hidden="true"><i class="mg-inside__rule"></i></div>
-    <div class="mg-sidedecor" id="sidedecor" aria-hidden="true">
-      <div class="mg-side mg-side--l" data-part="-1">${kalash('mg-kalash--hero')}</div>
-      <div class="mg-side mg-side--r" data-part="1">${thaali('mg-thaali--hero')}</div>
-    </div>
     <div class="mg-door" id="door">
       <div class="mg-panel" id="panel">
-        <div class="mg-panel__bg" id="panelbg"></div>
+        <div class="mg-panel__bg"></div>
+        <div class="mg-light" id="light" aria-hidden="true"><i class="mg-light__gap" id="gap"></i></div>
         <div class="mg-panel__border" id="pborder"></div>
       </div>
       <div class="mg-leaves" id="leaves" aria-hidden="true">
@@ -202,12 +225,12 @@ main.innerHTML = `
         <div class="mg-leaf mg-leaf--r" id="leafR"><i class="mg-leaf__shade"></i></div>
       </div>
       <div class="mg-framewrap" id="framewrap" aria-hidden="true"></div>
-      <div class="mg-diyos" aria-hidden="true">${diyo('mg-diyo--l')}${diyo('mg-diyo--r')}</div>
+      ${medal('mg-medal--door')}
+      <div class="mg-diyos" id="diyos" aria-hidden="true">${diyo('mg-diyo--l')}${diyo('mg-diyo--r')}</div>
       <div class="mg-gate" id="gate">
         <div class="mg-plaque">
           <p class="mg-plaque__line">${bi(txt('gate.line'))}</p>
           <p class="mg-plaque__names">${names()}</p>
-          <p class="mg-plaque__date">${bi({ en: mainAD.en, ne: mainBS.ne })}</p>
         </div>
         <button class="mg-latch" id="open" type="button" disabled>
           <span class="mg-latch__disc" aria-hidden="true"><svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="38" fill="url(#mg-brass)" stroke="#5A3A0A" stroke-width="1.2"/><circle cx="40" cy="40" r="31" fill="none" stroke="#FCEDB9" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="0 5.2" stroke-linecap="round"/>${rosette(40, 40, 22, { petals: 12 })}</svg></span>
@@ -216,56 +239,78 @@ main.innerHTML = `
         <button class="mg-quiet" id="quiet" type="button" disabled>${bi(txt('gate.quiet'))}</button>
       </div>
     </div>
+    <div class="mg-spill" id="spill" aria-hidden="true"></div>
     <div class="mg-bells" id="bells" aria-hidden="true"></div>
-    <div class="mg-garland" id="garland" aria-hidden="true">
-      <picture class="mg-garland__half mg-garland__half--l"><source media="(max-width: 699px)" srcset="${DECOR}garland-narrow.webp" /><img src="${DECOR}garland-wide.webp" alt="" decoding="async" fetchpriority="high" /></picture>
-      <picture class="mg-garland__half mg-garland__half--r"><source media="(max-width: 699px)" srcset="${DECOR}garland-narrow.webp" /><img src="${DECOR}garland-wide.webp" alt="" decoding="async" fetchpriority="high" /></picture>
-    </div>
+    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-toran" id="toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" fetchpriority="high" /></div>
+    <div class="mg-beam" id="beam" aria-hidden="true"></div>
     <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
     <div class="mg-panel__content" id="pcontent">
       ${on(welcome) ? `<div class="mg-welcome" id="welcome" aria-hidden="true">
         ${welcome.ne ? `<p class="mg-welcome__ne" lang="ne">${esc(welcome.ne)}</p>` : ''}
         ${welcome.en && welcome.en !== welcome.ne ? `<p class="mg-welcome__en" lang="en">${esc(welcome.en)}</p>` : ''}
       </div>` : ''}
-      <div class="mg-panel__inner" id="pinner">
-        ${on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
-        ${on(invocation) ? `<p class="mg-invoke mg-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
-        <h1 class="mg-title mg-in"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
-        <p class="mg-sub mg-in"><span lang="ne">${esc(subtitle.ne)}</span></p>
-        <p class="mg-sub-en l-en mg-in">${esc(subtitle.en)}</p>
-        <span class="mg-hero__div mg-in">${dividerSVG(180)}</span>
-        <p class="mg-names mg-in" id="names">${names()}</p>
-        <p class="mg-date mg-in">${bi({ en: mainAD.en, ne: mainBS.ne })}</p>
-        <p class="mg-date mg-date--alt mg-in">${bi({ en: mainBS.en, ne: mainAD.ne })}</p>
-        <p class="mg-city mg-in">${bi(config.city)}</p>
+      <div class="mg-panel__inner${lead ? ' has-photo' : ''}" id="pinner">
+        <div class="mg-hero__text" id="htext">
+          ${ganeshRef ? `<div class="mg-hero__medal mg-in">${medal('mg-medal--hero')}</div>` : on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
+          ${on(invocation) ? `<p class="mg-invoke mg-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
+          <h1 class="mg-title mg-in"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
+          <span class="mg-hero__div mg-in">${dividerSVG(180)}</span>
+          <p class="mg-names mg-in" id="names">${names()}</p>
+        </div>
+        ${lead ? `<div class="mg-hero__photo mg-in" id="hphoto">${archFrame(lead.photo, lead.alt, '(max-width: 700px) 80vw, 520px', { eager: true })}</div>` : ''}
       </div>
-      <a class="mg-cue" id="cue" href="#couple"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
+      <a class="mg-cue" id="cue" href="#date"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
     </div>
   </section>
 
-  ${lead ? `
-  <section class="mg-sec mg-couple" id="couple" aria-labelledby="couple-title">
+  <section class="mg-sec mg-when" id="date" aria-labelledby="date-title">
+    ${head(txt('date.kicker'), txt('date.title'), 'date-title')}
+    <div class="mg-scratch mg-rise" id="scratch">
+      <div class="mg-scratch__card">
+        <div class="mg-scratch__date">
+          <p class="mg-scratch__wd">${bi(mainAD.wd)}</p>
+          <p class="mg-scratch__big">${bi(dateBig)}</p>
+          <p class="mg-scratch__alt">${bi(dateAlt)}</p>
+          ${whenLine ? `<p class="mg-scratch__time">${bi(whenLine)}</p>` : ''}
+          ${placeLine?.en || placeLine?.ne ? `<p class="mg-scratch__place">${bi(placeLine)}</p>` : ''}
+        </div>
+        <canvas class="mg-scratch__foil" id="foil" aria-hidden="true"></canvas>
+      </div>
+      <button class="mg-btn mg-btn--line" type="button" id="reveal">${bi(txt('scratch.button'))}</button>
+    </div>
+    <div class="mg-count mg-rise" id="count">
+      <h3 class="mg-count__title">${bi(txt('count.title'))}</h3>
+      <ol class="mg-count__grid" id="countgrid" aria-label="${esc(txt('count.title').en)}">
+        ${countCell('d', T.days)}${countCell('h', T.hours)}${countCell('m', T.minutes)}${countCell('s', T.seconds)}
+      </ol>
+      <p class="mg-count__done" id="countdone" hidden></p>
+    </div>
+  </section>
+
+  ${album.length ? `
+  <section class="mg-sec mg-strip" id="couple" aria-labelledby="couple-title">
+    <div class="mg-strip__pin" id="strippin">
     ${head(null, txt('couple.title'), 'couple-title')}
     <p class="mg-lede mg-rise">${bi(txt('couple.line'))}</p>
-    <div class="mg-couple__lead">
-      <div class="mg-orn mg-orn--l" data-depth="0.6">${kalash('mg-kalash--couple')}</div>
-      ${frame(lead.photo, lead.alt, 'temple', '(max-width: 700px) 88vw, 460px', { cls: 'mg-rise mg-frame--lead', eager: false })}
-      <div class="mg-orn mg-orn--r" data-depth="0.9">${diyo('mg-diyo--couple', 84)}</div>
+    <div class="mg-strip__view" id="stripview">
+      <div class="mg-strip__track" id="track">
+        <div class="mg-strip__set">${album.map((g, i) => stripFig(g, i, false)).join('')}</div>
+        <div class="mg-strip__set mg-strip__set--dup" aria-hidden="true">${album.map((g, i) => stripFig(g, i, true)).join('')}</div>
+      </div>
     </div>
-    ${pair.length ? `<div class="mg-couple__pair mg-couple__pair--${pair.length}">${pair.map((p, i) => frame(p.photo, p.alt, 'round', '(max-width: 700px) 46vw, 360px', { cls: `mg-rise mg-pair__${i + 1}` })).join('')}</div>` : ''}
-    ${row.length ? `<div class="mg-couple__row mg-couple__row--${row.length}">${row.map((p, i) => frame(p.photo, p.alt, 'scallop', '(max-width: 700px) 46vw, 300px', { cls: `mg-rise mg-row__${i + 1}` })).join('')}</div>` : ''}
+    </div>
   </section>` : ''}
 
   <section class="mg-sec mg-fam" id="families" aria-labelledby="fam-title">
     <div class="mg-cut mg-cut--fam">
       <div class="mg-cut__layer mg-cut__layer--gold" data-settle="1"></div>
       <div class="mg-cut__layer mg-cut__layer--red" data-settle="0.5"></div>
-      ${swag('mg-swag--fam')}
       <div class="mg-cut__body">
+        ${dividerSVG(180)}
         <h2 class="mg-h2 mg-h2--gold mg-rise" id="fam-title">${bi(txt('families.title'))}</h2>
         <div class="mg-fam__grid">
           <div class="mg-fam__side mg-rise">
-            ${brideGroom ? frame(bridePh, c.bride.name.en, 'round', '(max-width: 700px) 60vw, 260px', { cls: 'mg-fam__pic' }) : ''}
+            ${brideGroom ? plainFrame(bridePh, c.bride.name.en, '(max-width: 700px) 60vw, 260px', 'mg-fam__pic') : ''}
             <p class="mg-kicker mg-kicker--gold">${bi(txt('families.bride'))}</p>
             <p class="mg-fam__name">${bi(c.bride.fullName)}</p>
             ${(c.bride.parents?.en || c.bride.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.daughter'))}</p><p class="mg-fam__parents">${bi(c.bride.parents)}</p>` : ''}
@@ -273,7 +318,7 @@ main.innerHTML = `
           </div>
           <div class="mg-fam__mid" aria-hidden="true"><div class="mg-fam__bell" id="fambell"></div></div>
           <div class="mg-fam__side mg-rise">
-            ${brideGroom ? frame(groomPh, c.groom.name.en, 'round', '(max-width: 700px) 60vw, 260px', { cls: 'mg-fam__pic' }) : ''}
+            ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 260px', 'mg-fam__pic') : ''}
             <p class="mg-kicker mg-kicker--gold">${bi(txt('families.groom'))}</p>
             <p class="mg-fam__name">${bi(c.groom.fullName)}</p>
             ${(c.groom.parents?.en || c.groom.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.son'))}</p><p class="mg-fam__parents">${bi(c.groom.parents)}</p>` : ''}
@@ -285,20 +330,15 @@ main.innerHTML = `
   </section>
 
   <section class="mg-sec mg-card" id="card" aria-labelledby="card-title">
-    <div class="mg-card__grid">
-      <div class="mg-card__thaali" data-depth="0.7">${thaali('mg-thaali--card')}</div>
-      <article class="mg-card__sheet mg-rise">
-        <img class="mg-card__corner mg-card__corner--tl" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="220px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-        <img class="mg-card__corner mg-card__corner--br" src="${DECOR}corner-br-sm.webp" srcset="${DECOR}corner-br-sm.webp 400w, ${DECOR}corner-br.webp 720w" sizes="220px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-        <div class="mg-card__in">
-          <p class="mg-kicker mg-kicker--gold">${bi(txt('card.kicker'))}</p>
-          <p class="mg-card__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
-          <h2 class="mg-card__line" id="card-title">${bi(txt('card.line'))}</h2>
-          <p class="mg-card__hosts">${bi(config.hosts)}</p>
-          <button class="mg-btn mg-btn--gold" type="button" data-open-card>${bi(txt('card.button'))}</button>
-        </div>
-      </article>
-    </div>
+    <article class="mg-card__sheet mg-rise">
+      <div class="mg-card__in">
+        <p class="mg-kicker mg-kicker--gold">${bi(txt('card.kicker'))}</p>
+        <p class="mg-card__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
+        <h2 class="mg-card__line" id="card-title">${bi(txt('card.line'))}</h2>
+        <p class="mg-card__hosts">${bi(config.hosts)}</p>
+        <button class="mg-btn mg-btn--gold" type="button" data-open-card>${bi(txt('card.button'))}</button>
+      </div>
+    </article>
   </section>
 
   <section class="mg-sec mg-prog" id="programme" aria-labelledby="prog-title">
@@ -344,14 +384,6 @@ main.innerHTML = `
       </details>` : ''}
     </div>
   </section>
-
-  ${album.length ? `
-  <section class="mg-sec mg-gal" id="gallery" aria-labelledby="gal-title">
-    ${head(null, txt('gallery.title'), 'gal-title')}
-    <div class="mg-gal__grid">
-      ${album.map((g, i) => `<figure class="mg-gphoto mg-rise"><button type="button" class="mg-gphoto__btn" data-idx="${i}" aria-label="${esc(g.alt || 'Open photograph')}">${imgTag(g.photo, g.alt, '(max-width: 700px) 46vw, 30vw')}</button></figure>`).join('')}
-    </div>
-  </section>` : ''}
 
   <section class="mg-sec mg-rsvp" id="rsvp" aria-labelledby="rsvp-title">
     <div class="mg-rsvp__in">
@@ -438,7 +470,7 @@ main.innerHTML = `
       <p class="mg-modal__p">${bi(config.invitation?.body || '')}</p>
       <p class="mg-modal__p">${bi(config.invitation?.request || '')}</p>
       <dl class="mg-modal__when">
-        <div><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd>${bi(mainAD)}<br />${bi(mainBS)}</dd></div>
+        <div><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd>${bi(dateOf(mainIso))}<br />${bi({ en: mainBS.full.en, ne: mainBS.full.ne })}</dd></div>
         <div><dt>${bi({ en: 'Place', ne: 'स्थान' })}</dt><dd>${bi(config.city)}</dd></div>
       </dl>
       <p class="mg-modal__sign">${bi(config.invitation?.signoff || '')}<br /><b>${bi(config.hosts)}</b></p>
@@ -494,7 +526,7 @@ modal.addEventListener('click', (e) => { if (e.target === modal || e.target.clos
     setTimeout(() => { lb.hidden = true; }, 260);
     r();
   };
-  document.querySelector('.mg-gal__grid')?.addEventListener('click', (e) => {
+  document.getElementById('track')?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-idx]');
     if (!b) return;
     show(Number(b.dataset.idx));
@@ -527,6 +559,8 @@ const door = document.getElementById('door');
 const panel = document.getElementById('panel');
 const pcontent = document.getElementById('pcontent');
 const pinner = document.getElementById('pinner');
+const htext = document.getElementById('htext');
+const hphoto = document.getElementById('hphoto');
 const leafL = document.getElementById('leafL');
 const leafR = document.getElementById('leafR');
 const gate = document.getElementById('gate');
@@ -536,69 +570,94 @@ const quietBtn = document.getElementById('quiet');
 const inside = document.getElementById('inside');
 const welcomeEl = document.getElementById('welcome');
 const garlandEl = document.getElementById('garland');
-const sideEl = document.getElementById('sidedecor');
+const toranEl = document.getElementById('toran');
+const beamEl = document.getElementById('beam');
+const spillEl = document.getElementById('spill');
 const thresholdEl = document.getElementById('threshold');
 const root = document.documentElement;
+const TORAN_AR = 235 / 1600;
 let L = null;
 
 function computeLayout(W, H) {
   const phone = W < 700;
-  const G = META[phone ? 'garland-narrow' : 'garland-wide'];
-  const gh = (W / G.w) * G.h;
-  const prof = G.profile;
-  const mid = prof.slice(Math.floor(prof.length * 0.1), Math.ceil(prof.length * 0.9));
-  const swagB = Math.max(...mid) * gh;
+  const beam = phone ? 12 : 22;
+  const drop = phone ? 7 : 14;
   const thr = phone ? 28 : Math.round(Math.min(48, Math.max(34, H * 0.05)));
-  const fw = phone ? W - 16 : Math.min(Math.round(W * (W < 1000 ? 0.86 : 0.76)), 1240);
-  const fx = Math.round((W - fw) / 2);
-  const fy = Math.round(gh * (phone ? 0.26 : 0.22));
-  const fh = H - thr - fy + 2;
-  const b = phone ? 12 : Math.round(Math.min(40, Math.max(24, fw * 0.03)));
-  const lh = Math.round(b * (phone ? 1.5 : 1.6));
-  const ox = b; const oy = lh; const ow = fw - 2 * b; const oh = fh - lh - Math.round(b * 0.5);
-  const ch = Math.round(phone ? Math.min(ow * 0.34, oh * 0.2) : Math.min(ow * 0.2, oh * 0.3));
-  const diyoW = phone ? 34 : Math.round(Math.min(66, Math.max(48, ow * 0.055)));
-  const top = Math.round(Math.max(swagB - (fy + oy) + (phone ? 10 : 14), ch * 0.42));
-  const bottom = Math.round(phone ? diyoW * 1.6 + 8 : 30);
-  const side = fx;
-  // Inside the doorway the card fills the screen: clear of the HUD at the top and the Dhaka band below.
+  const fw = phone ? W - 20 : Math.min(Math.round(W * (W < 1000 ? 0.8 : 0.6)), 1120);
+  const pw = phone ? 16 : Math.round(Math.min(64, Math.max(40, fw * 0.058)));
+  const ext = phone ? 4 : Math.round(pw * 0.8);
+  const lh = phone ? 22 : Math.round(Math.min(48, Math.max(32, fw * 0.042)));
+  const sill = phone ? 8 : 14;
+  const tw = Math.round(fw * (phone ? 0.52 : 0.34));
+  const th = Math.round(tw * 0.5);
+  const fy = phone ? 62 : Math.round(beam + drop + Math.max(22, H * 0.035));
+  const DW = fw + 2 * ext;
+  const fx = Math.round((W - DW) / 2);
+  const fh = H - thr - fy;
+  const ox = ext + pw; const oy = th + lh; const ow = fw - 2 * pw; const oh = fh - oy - sill;
+  const medal = Math.round(Math.min(th * 0.74, tw * 0.4));
+  const medalY = Math.round(th * 0.58);
+  const diyoW = phone ? 30 : Math.round(Math.min(58, Math.max(42, ow * 0.05)));
+  // the toran: across the opening, its flower knots just inside the pillars
+  const bellW = phone ? 22 : Math.round(Math.min(40, Math.max(26, ext * 0.78)));
+  const tX = phone ? fx + ox + 4 : fx + ox - Math.round(pw * 0.2);
+  const tW = phone ? ow - 8 : ow + Math.round(pw * 0.4);
+  const tY = fy + th + Math.round(lh * (phone ? 0.55 : 0.62));
+  const tH = tW * TORAN_AR;
+  const gTop = Math.round(tY + tH * 0.9 - (fy + oy) + (phone ? 8 : 14));
+  const gBottom = Math.round(diyoW * 1.6 + (phone ? 6 : 14));
   const ctop = phone ? 62 : Math.round(Math.max(72, H * 0.09));
   const cbottom = thr + (phone ? 6 : 10);
-  return { W, H, phone, gh, swagB, thr, fx, fy, fw, fh, b, lh, ox, oy, ow, oh, ch, top, bottom, diyoW, side, ctop, cbottom };
+  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, ctop, cbottom, ganesh: !!ganeshRef };
 }
 
 function placeBells(L) {
   const list = [];
   if (L.phone) {
-    const bw = 24; const bh = 62;
-    list.push({ x: L.fx + L.ox + 10, y: L.fy + L.oy - 2, w: bw, h: bh, links: 3 });
-    list.push({ x: L.fx + L.ox + L.ow - 10 - bw, y: L.fy + L.oy - 2, w: bw, h: bh, links: 3 });
-  } else if (L.side > 70) {
-    const bw = Math.round(Math.min(54, Math.max(36, L.side * 0.24)));
-    const bh = Math.round(bw * 2.5);
-    const y = L.fy + L.lh * 0.7;
-    list.push({ x: L.fx - bw - 14, y, w: bw, h: bh, links: 4, arm: true });
-    list.push({ x: L.fx + L.fw + 14, y, w: bw, h: bh, links: 4, arm: true });
-    list.push({ x: L.fx - bw * 0.7 - 14 - bw * 1.25, y: y - 2, w: Math.round(bw * 0.72), h: Math.round(bh * 1.25), links: 7, arm: true, far: true });
-    list.push({ x: L.fx + L.fw + 14 + bw * 1.35, y: y - 2, w: Math.round(bw * 0.72), h: Math.round(bh * 1.25), links: 7, arm: true, far: true });
+    // phones: the bells hang in front of the pillars, just under the lintel
+    const bw = L.bellW; const bh = Math.round(bw * 2.9);
+    const y = L.fy + L.oy - 2;
+    list.push({ x: L.fx + L.ext + L.pw / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
+    list.push({ x: L.fx + L.DW - L.ext - L.pw / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
+  } else {
+    const bw = L.bellW; const bh = Math.round(bw * 2.7);
+    const y = L.fy + L.th + L.lh - 2;
+    list.push({ x: L.fx + L.ext / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
+    list.push({ x: L.fx + L.DW - L.ext / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
   }
-  bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell${b.far ? ' mg-bell--far' : ''}" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${b.w}px;height:${b.h}px" data-i="${i}">${bellSVG(b.w, b.h, { links: b.links })}</div>`).join('')
-    + (list.length && !L.phone ? `<i class="mg-arm" style="left:${Math.round(list[2].x + list[2].w / 2 - 4)}px;top:${Math.round(L.fy + L.lh * 0.7 - 4)}px;width:${Math.round(L.fx - (list[2].x + list[2].w / 2) + 6)}px"></i><i class="mg-arm" style="left:${Math.round(L.fx + L.fw - 2)}px;top:${Math.round(L.fy + L.lh * 0.7 - 4)}px;width:${Math.round(list[3].x + list[3].w / 2 - (L.fx + L.fw) + 6)}px"></i>` : '');
+  bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${b.w}px;height:${b.h}px" data-i="${i}">${bellSVG(b.w, b.h, { links: b.links })}</div>`).join('');
 }
 
+/** The card inside: text and the main photo. Side by side on wide screens, stacked on tall ones; the photo
+ *  takes the room the words leave, and the words shrink a little only when they must. */
 function fitContent() {
   pinner.style.setProperty('--fit', '1');
   const cs = getComputedStyle(pcontent);
-  const avail = pcontent.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const availH = pcontent.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const availW = pcontent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const side = !!hphoto && availW >= 760 && availW / availH > 1.05;
+  pinner.classList.toggle('is-side', side);
+  const ar = lead ? (aspectOf(lead.photo) || hphoto?.querySelector('img')?.naturalWidth / hphoto?.querySelector('img')?.naturalHeight || 0.8) : 0.8;
+  const perW = 1 / TEMPLE_AR + 1 / ar; // crown + photo height per unit of width
+  const sizePhoto = () => {
+    if (!hphoto) return;
+    const pad = 22;
+    let w;
+    if (side) w = Math.min(availW * 0.44, (availH - pad - 8) / perW, 560);
+    else w = Math.min(availW * 0.86, (availH - htext.offsetHeight - pad - 14) / perW, 440);
+    hphoto.style.width = `${Math.max(L?.phone ? 150 : 200, Math.round(w))}px`;
+  };
   let k = 1;
-  for (let n = 0; n < 16; n++) {
-    const tooTall = pinner.scrollHeight > avail;
-    const tooWide = [...pinner.querySelectorAll('.mg-n, .mg-title__ne')].some((el) => el.offsetWidth > pinner.clientWidth + 1);
+  for (let n = 0; n < 18; n++) {
+    sizePhoto();
+    const tooTall = pinner.scrollHeight > availH + 1;
+    const tooWide = [...pinner.querySelectorAll('.mg-n, .mg-title__ne')].some((el) => el.offsetWidth > htext.clientWidth + 1);
     if (!tooTall && !tooWide) break;
     k *= 0.94;
     pinner.style.setProperty('--fit', k.toFixed(3));
   }
 }
+const TEMPLE_AR = 200 / TEMPLE.H;
 
 function applyLayout() {
   const W = root.clientWidth;
@@ -606,24 +665,26 @@ function applyLayout() {
   L = computeLayout(W, H);
   hero.style.height = `${H}px`;
   root.style.setProperty('--mg-thr', `${L.thr}px`);
-  root.style.setProperty('--mg-gh', `${Math.round(L.gh)}px`);
-  Object.assign(door.style, { left: `${L.fx}px`, top: `${L.fy}px`, width: `${L.fw}px`, height: `${L.fh}px` });
+  Object.assign(door.style, { left: `${L.fx}px`, top: `${L.fy}px`, width: `${L.DW}px`, height: `${L.fh}px` });
   const box = { left: `${L.ox}px`, top: `${L.oy}px`, width: `${L.ow}px`, height: `${L.oh}px` };
   Object.assign(panel.style, box);
   Object.assign(document.getElementById('leaves').style, box);
-  Object.assign(gate.style, { left: `${L.ox}px`, top: `${L.oy + L.top}px`, width: `${L.ow}px`, height: `${L.oh - L.top - L.bottom}px` });
-  document.getElementById('panelbg').style.clipPath = `path('${archPath(0, 0, L.ow, L.oh, L.ch)}')`;
+  Object.assign(gate.style, { left: `${L.ox}px`, top: `${L.oy + L.gTop}px`, width: `${L.ow}px`, height: `${L.oh - L.gTop - L.gBottom}px` });
+  Object.assign(document.getElementById('diyos').style, { left: `${L.ox}px`, width: `${L.ow}px`, bottom: `${L.sill}px` });
+  const dm = door.querySelector('.mg-medal--door');
+  if (dm) Object.assign(dm.style, { width: `${L.medal}px`, left: `${Math.round(L.DW / 2 - L.medal / 2)}px`, top: `${Math.round(L.medalY - L.medal / 2)}px` });
   document.getElementById('pborder').innerHTML = panelBorderSVG(L);
   document.getElementById('framewrap').innerHTML = frameSVG(L);
+  beamEl.innerHTML = beamSVG(L.W, L.beam, L.drop);
+  Object.assign(toranEl.style, { left: `${Math.round(L.tX)}px`, top: `${Math.round(L.tY)}px`, width: `${Math.round(L.tW)}px` });
+  Object.assign(spillEl.style, { left: `${L.fx + L.ox - L.ow * 0.1}px`, width: `${L.ow * 1.2}px`, bottom: `${L.thr}px`, height: `${Math.round(L.oh * 0.5)}px` });
   Object.assign(pcontent.style, { top: `${L.ctop}px`, bottom: `${L.cbottom}px` });
   const lw = L.ow / 2;
   leafL.querySelector('svg')?.remove(); leafR.querySelector('svg')?.remove();
-  leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh, L.ch));
-  leafR.insertAdjacentHTML('afterbegin', leafSVG('r', lw, L.oh, L.ch));
+  leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh));
+  leafR.insertAdjacentHTML('afterbegin', leafSVG('r', lw, L.oh));
   root.style.setProperty('--mg-diyo-w', `${L.diyoW}px`);
-  root.style.setProperty('--mg-side', `${L.side}px`);
   door.querySelectorAll('.mg-diyos .mg-diyo').forEach((d) => { d.innerHTML = diyoSVG(L.diyoW, Math.round(L.diyoW * 1.6)); });
-  hero.classList.toggle('has-sides', !L.phone && L.side >= 120);
   placeBells(L);
   fitContent();
 }
@@ -633,42 +694,56 @@ document.body.classList.add('mg-locked');
 window.scrollTo(0, 0);
 applyLayout();
 document.fonts?.ready.then(fitContent);
+hphoto?.querySelector('img')?.addEventListener('load', fitContent, { once: true });
 openBtn.disabled = false;
 quietBtn.disabled = false;
 document.body.classList.add('is-ready');
 
 let opened = false;
 let finished = false;
-const EASE_DOOR = 'power3.inOut';
+
+/** A cubic-bezier easing (x1, y1, x2, y2), solved by bisection. */
+const bezier = (x1, y1, x2, y2) => {
+  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return (x) => {
+    let lo = 0; let hi = 1; let t = x;
+    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
+    return bz(t, y1, y2);
+  };
+};
+// Heavy leaves: they take a moment to get going, then glide and settle softly.
+const easeDoor = bezier(0.52, 0.02, 0.16, 1);
+// Walking in: a slow first step, a long glide, a soft stop.
+const easeWalk = bezier(0.45, 0, 0.25, 1);
 
 function dropPetals() {
   if (reduced) return;
   const box = document.createElement('div');
   box.className = 'mg-petals';
   box.setAttribute('aria-hidden', 'true');
-  const n = L.phone ? 12 : 18;
-  const kinds = ['marigold', 'rose', 'marigold', 'pink'];
+  const n = L.phone ? 7 : 10;
+  const kinds = ['marigold', 'rose', 'marigold', 'marigold'];
   for (let i = 0; i < n; i++) {
-    const s = Math.round((L.phone ? 12 : 16) * (0.8 + Math.random() * 0.5));
+    const s = Math.round((L.phone ? 12 : 15) * (0.8 + Math.random() * 0.5));
     const p = document.createElement('i');
     p.innerHTML = petalSVG(kinds[i % 4], s);
-    p.style.left = `${Math.round(L.fx + L.fw * (0.08 + Math.random() * 0.84))}px`;
-    p.style.top = `${Math.round(L.swagB * (0.4 + Math.random() * 0.5))}px`;
+    p.style.left = `${Math.round(L.tX + L.tW * (0.12 + Math.random() * 0.76))}px`;
+    p.style.top = `${Math.round(L.tY + L.tH * (0.4 + Math.random() * 0.4))}px`;
     box.append(p);
-    gsap.fromTo(p, { y: -10, x: 0, rotation: Math.random() * 180, opacity: 0 }, {
+    gsap.fromTo(p, { y: -6, x: 0, rotation: Math.random() * 180, opacity: 0 }, {
       keyframes: { opacity: [0, 1, 1, 0] },
-      y: L.H * (0.45 + Math.random() * 0.4), x: (Math.random() - 0.5) * 120, rotation: `+=${200 + Math.random() * 260}`,
-      duration: 2.6 + Math.random() * 1.4, delay: 0.25 + Math.random() * 0.9, ease: 'sine.in',
+      y: L.H * (0.35 + Math.random() * 0.3), x: (Math.random() - 0.5) * 90, rotation: `+=${160 + Math.random() * 200}`,
+      duration: 3 + Math.random() * 1.2, delay: 0.3 + Math.random() * 1, ease: 'sine.in',
     });
   }
   document.body.append(box);
-  setTimeout(() => box.remove(), 5200);
+  setTimeout(() => box.remove(), 6000);
 }
 
 function swayBells(strength = 1) {
   bellsEl.querySelectorAll('.mg-bell').forEach((b, i) => {
-    const a = (i % 2 ? -1 : 1) * (b.classList.contains('mg-bell--far') ? 7 : 9) * strength;
-    gsap.fromTo(b, { rotation: 0 }, { keyframes: { rotation: [a, -a * 0.7, a * 0.45, -a * 0.25, a * 0.1, 0] }, duration: 2.6 + i * 0.15, ease: 'sine.inOut', delay: i * 0.06 });
+    const a = (i % 2 ? -1 : 1) * 8 * strength;
+    gsap.fromTo(b, { rotation: 0 }, { keyframes: { rotation: [a, -a * 0.7, a * 0.45, -a * 0.25, a * 0.1, 0] }, duration: 2.8 + i * 0.15, ease: 'sine.inOut', delay: i * 0.08 });
   });
 }
 
@@ -686,46 +761,26 @@ function open(withMusic) {
   setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
 }
 
-/** The card's lines settle into place, a few at a time (headings only, no body text). */
+/** The card's lines settle into place, a few at a time (headings and the photo, no body text). */
 const cardGroups = () => {
   const g = (sel) => [...pinner.querySelectorAll(sel)];
-  return [g('.mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-sub, .mg-sub-en, .mg-hero__div'), g('.mg-names'), g('.mg-date, .mg-city')].filter((a) => a.length);
+  return [g('.mg-hero__medal, .mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-hero__div, .mg-names'), g('.mg-hero__photo')].filter((a) => a.length);
 };
 
-// Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera
-// (garland nearest, then bells, kalash and thaali, the threshold, the doorway itself); moving the
-// camera forward by c scales a layer at distance D by D / (D - c) about the vanishing point, so near
-// things grow and leave the frame first. Only transform and opacity change, so it stays on the GPU.
-const DEPTH = [[garlandEl, 2.7], [bellsEl, 2.9], [sideEl, 3.1], [thresholdEl, 3.5], [door, 4]];
-// A slow first step, a long glide, a soft stop.
-const easeWalk = (() => {
-  const x1 = 0.45; const y1 = 0; const x2 = 0.25; const y2 = 1;
-  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  return (x) => {
-    let lo = 0; let hi = 1; let t = x;
-    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
-    return bz(t, y1, y2);
-  };
-})();
+// Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera (the
+// toran nearest, then the beam and bells, the threshold, the doorway itself); moving the camera forward by c
+// scales a layer at distance D by D / (D - c) about the vanishing point, so near things leave the frame first.
+const DEPTH = [[garlandEl, 2.7], [beamEl, 2.8], [bellsEl, 2.9], [spillEl, 3.4], [thresholdEl, 3.5], [door, 4]];
 
-/** The smallest scale of the doorway at which every corner of the screen lies inside its arched
- *  opening (the same curve as art.js archPath), i.e. the camera has passed through the frame. */
+/** The smallest scale of the doorway at which every corner of the screen lies inside its opening. */
 function throughScale(vx, vy) {
-  const { W, H, ow, oh, ch } = L;
+  const { W, H, ow, oh } = L;
   const x0 = L.fx + L.ox; const y0 = L.fy + L.oy;
-  const bz = (t, a, b, c, d) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d;
-  const archY = (x) => {
-    const u = Math.min(x, ow - x); // symmetric; the left half runs from (0, ch) to (ow/2, 0)
-    if (u <= 0) return ch;
-    let lo = 0; let hi = 1;
-    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (bz(m, 0, 0, ow * 0.3, ow / 2) < u) lo = m; else hi = m; }
-    return bz(lo, ch, ch * 0.42, ch * 0.16, 0);
-  };
-  const inside = (s) => [[0, 0], [W, 0], [0, H], [W, H], [W / 2, 0]].every(([px, py]) => {
+  const inside = (s) => [[0, 0], [W, 0], [0, H], [W, H]].every(([px, py]) => {
     const x = vx + (px - vx) / s - x0; const y = vy + (py - vy) / s - y0;
-    return x >= 0 && x <= ow && y <= oh && y >= archY(x);
+    return x >= 0 && x <= ow && y >= 0 && y <= oh;
   });
-  let lo = 1; let hi = 6;
+  let lo = 1; let hi = 8;
   if (inside(lo)) return lo;
   for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; }
   return hi;
@@ -734,9 +789,7 @@ function throughScale(vx, vy) {
 function dollyRig() {
   const W = L.W; const H = L.H;
   const vx = W / 2;
-  const cs = getComputedStyle(pcontent);
-  const vy = L.ctop + (H - L.ctop - L.cbottom - parseFloat(cs.paddingBottom)) / 2;
-  // Just deep enough that the doorway frame (and its arch corners) pass the edges of the screen.
+  const vy = L.fy + L.oy + L.oh * 0.42;
   const doorEnd = Math.max(throughScale(vx, vy) * 1.05, 1.6);
   const C = 4 - 4 / doorEnd;
   const layers = DEPTH.filter(([el]) => el && getComputedStyle(el).display !== 'none').map(([el, D]) => {
@@ -747,14 +800,13 @@ function dollyRig() {
     return { el, D, box, gone: false };
   });
   const set = (p) => {
-    const c = C * p;
+    const cc = C * p;
     for (const ly of layers) {
       if (ly.gone) continue;
-      const s = ly.D / (ly.D - c);
+      const s = ly.D / (ly.D - cc);
       if (ly.box) {
         const l = vx + (ly.box.l - vx) * s; const r = vx + (ly.box.r - vx) * s;
         const t = vy + (ly.box.t - vy) * s; const b = vy + (ly.box.b - vy) * s;
-        // Out of the frame: stop drawing it (it only gets bigger from here).
         if (r < 0 || l > W || b < 0 || t > H) { ly.gone = true; ly.el.style.visibility = 'hidden'; continue; }
       }
       ly.el.style.transform = `translate3d(0,0,0) scale(${s.toFixed(4)})`;
@@ -765,40 +817,48 @@ function dollyRig() {
 
 function walkIn() {
   const phone = L.phone;
-  const DOLLY_AT = 0.85;
+  const SWING_AT = 0.55;
+  const SWING = phone ? 2.1 : 2.4;
+  const DOLLY_AT = SWING_AT + SWING * 0.6;
   const DOLLY = phone ? 2.5 : 2.9;
   const end = DOLLY_AT + DOLLY;
   const rig = { p: 0 };
   let cam = null;
   const groups = cardGroups();
   const tl = gsap.timeline({ onComplete: afterOpen });
-  tl.to(gate, { autoAlpha: 0, y: -10, duration: 0.32, ease: 'power2.out' }, 0)
-    .add(() => swayBells(1), 0.05)
-    .to(leafL, { rotationY: 3, duration: 0.2, ease: 'power2.out' }, 0.18)
-    .to(leafR, { rotationY: -3, duration: 0.2, ease: 'power2.out' }, 0.18)
-    .to(leafL, { rotationY: 84, duration: 1.3, ease: EASE_DOOR }, 0.38)
-    .to(leafR, { rotationY: -84, duration: 1.3, ease: EASE_DOOR }, 0.38)
-    .to('.mg-leaf__shade', { opacity: 0.62, duration: 1.3, ease: 'power2.in' }, 0.38)
-    .add(dropPetals, 0.3)
-    // The camera walks in through the open doors.
+  tl.to(gate, { autoAlpha: 0, y: -8, duration: 0.45, ease: 'power2.out' }, 0)
+    .add(() => swayBells(0.8), 0.1)
+    // the latch gives: the leaves ease off the frame by a hair
+    .to(leafL, { rotationY: 2.5, duration: 0.4, ease: 'power2.out' }, 0.2)
+    .to(leafR, { rotationY: -2.5, duration: 0.4, ease: 'power2.out' }, 0.2)
+    .fromTo('#gap', { opacity: 0, scaleX: 0.03 }, { opacity: 0.85, scaleX: 0.08, duration: 0.4, ease: 'power1.out' }, 0.2)
+    // then the heavy swing, with warm light pouring through the widening gap
+    .to(leafL, { rotationY: 80, duration: SWING, ease: easeDoor }, SWING_AT)
+    .to(leafR, { rotationY: -80, duration: SWING, ease: easeDoor }, SWING_AT)
+    .to('.mg-leaf__shade', { opacity: 0.5, duration: SWING, ease: 'power1.in' }, SWING_AT)
+    .to('#gap', { opacity: 1, scaleX: 1, duration: SWING * 0.8, ease: easeDoor }, SWING_AT)
+    .fromTo('#light', { opacity: 0 }, { opacity: 1, duration: SWING * 0.7, ease: 'power1.out' }, SWING_AT + 0.15)
+    .fromTo(spillEl, { opacity: 0, scaleX: 0.25 }, { opacity: 1, scaleX: 1, duration: SWING * 0.75, ease: 'power2.out' }, SWING_AT + 0.25)
+    .add(dropPetals, SWING_AT)
+    // as we step through, the glare settles to a warm glow so the welcome reads clearly
+    .to('#gap', { opacity: 0, duration: 1.2, ease: 'power1.inOut' }, DOLLY_AT + 0.1)
+    .to('#light', { opacity: 0.22, duration: 1.4, ease: 'power1.inOut' }, DOLLY_AT + 0.2)
+    .to(spillEl, { opacity: 0, duration: 1, ease: 'power1.inOut' }, DOLLY_AT + 0.3)
+    // the camera walks in through the open doors
     .add(() => { cam = dollyRig(); }, DOLLY_AT - 0.02)
     .to(rig, { p: 1, duration: DOLLY, ease: easeWalk, onUpdate: () => cam?.set(rig.p) }, DOLLY_AT)
-    // Once the doorway has passed, the red arch is all around: the inner wall takes over.
-    .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, end - 0.5)
+    .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.55, ease: 'power1.inOut' }, end - 0.55)
     .add(() => hero.classList.add('is-inside'), end + 0.02);
-  // The welcome, centred, while walking in; it leaves before the card settles, so lines never overlap.
   let t = end;
   if (welcomeEl) {
-    // It comes toward you with the walk (a slow scale), so the move is still felt once the gate has passed.
-    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'power1.out' }, DOLLY_AT + 0.35)
-      .fromTo(welcomeEl, { scale: 0.86, y: 14 }, { scale: 1, y: 0, duration: end - DOLLY_AT - 0.35, ease: 'power2.out' }, DOLLY_AT + 0.35)
+    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'power1.out' }, DOLLY_AT + 0.45)
+      .fromTo(welcomeEl, { scale: 0.86, y: 14 }, { scale: 1, y: 0, duration: end - DOLLY_AT - 0.45, ease: 'power2.out' }, DOLLY_AT + 0.45)
       .to(welcomeEl, { autoAlpha: 0, y: -16, scale: 1.03, duration: 0.42, ease: 'power2.in' }, end - 0.05);
     t = end + 0.42;
   }
-  // The card's lines wait at opacity 0 (already painted, so nothing rasterises mid-move).
   gsap.set(groups.flat(), { opacity: 0 });
   gsap.set(pinner, { opacity: 1 });
-  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 22, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.08 : 0.1)));
+  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 22, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.09 : 0.12)));
   tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.5 }, t + 0.7);
   return tl;
 }
@@ -834,15 +894,175 @@ function afterOpen() {
   lenis = createSmooth();
   revealOnScroll();
   scrollStory();
+  photoStrip();
   document.getElementById('cue').addEventListener('click', (e) => {
     e.preventDefault();
-    const target = document.querySelector('#couple') || document.querySelector('#families');
-    const y = target.getBoundingClientRect().top + window.scrollY;
+    const y = document.getElementById('date').getBoundingClientRect().top + window.scrollY;
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
   });
 }
 
-// ───────────────────────── The scroll: panels rise, ornament layers part and settle ─────────────────────────
+// ───────────────────────── Scratch to reveal the date ─────────────────────────
+(function scratchCard() {
+  const wrap = document.getElementById('scratch');
+  const cv = document.getElementById('foil');
+  const btn = document.getElementById('reveal');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  let revealed = false; let drawn = false; let moves = 0; let last = null; let dpr = 1;
+  const hint = txt('scratch.hint');
+  const lang = () => (root.dataset.lang === 'ne' ? 'ne' : 'en');
+  function paint() {
+    if (revealed) return;
+    const r = cv.getBoundingClientRect();
+    if (!r.width) return;
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    const w = cv.width; const h = cv.height;
+    ctx.globalCompositeOperation = 'source-over';
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    [[0, '#B9862E'], [0.18, '#F3D58A'], [0.36, '#C9963F'], [0.52, '#FCEDB9'], [0.7, '#B57E22'], [0.86, '#E8C26B'], [1, '#9C6A1E']].forEach(([o, col]) => g.addColorStop(o, col));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    // fine foil grain
+    for (let i = 0; i < (w * h) / 900; i++) {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,248,220,.35)' : 'rgba(110,70,10,.18)';
+      ctx.fillRect(Math.random() * w, Math.random() * h, dpr, dpr);
+    }
+    // a gold rule and the hint, embossed
+    const m = 12 * dpr;
+    ctx.strokeStyle = 'rgba(106,63,12,.55)'; ctx.lineWidth = 1.2 * dpr; ctx.strokeRect(m, m, w - 2 * m, h - 2 * m);
+    ctx.strokeStyle = 'rgba(255,244,207,.6)'; ctx.strokeRect(m + 4 * dpr, m + 4 * dpr, w - 2 * m - 8 * dpr, h - 2 * m - 8 * dpr);
+    const ne = lang() === 'ne';
+    const size = Math.round(Math.min(w / (ne ? 11 : 14), 30 * dpr));
+    ctx.font = ne ? `600 ${size}px Laila, Mukta, serif` : `400 ${size}px Gloock, Georgia, serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const line = ne ? (hint.ne || hint.en) : hint.en;
+    ctx.fillStyle = 'rgba(255,246,214,.75)'; ctx.fillText(line, w / 2 + dpr, h / 2 + dpr * 1.5);
+    ctx.fillStyle = '#5C3A08'; ctx.fillText(line, w / 2, h / 2);
+    // a fine gold rule with a diamond above and below the hint
+    ctx.strokeStyle = 'rgba(92,58,8,.55)'; ctx.fillStyle = 'rgba(92,58,8,.7)'; ctx.lineWidth = dpr;
+    for (const dy of [-size * 1.15, size * 1.15]) {
+      const y = h / 2 + dy; const hw = Math.min(w * 0.2, size * 3.2);
+      ctx.beginPath(); ctx.moveTo(w / 2 - hw, y); ctx.lineTo(w / 2 - size * 0.4, y); ctx.moveTo(w / 2 + size * 0.4, y); ctx.lineTo(w / 2 + hw, y); ctx.stroke();
+      const d = size * 0.18; ctx.beginPath(); ctx.moveTo(w / 2, y - d); ctx.lineTo(w / 2 + d, y); ctx.lineTo(w / 2, y + d); ctx.lineTo(w / 2 - d, y); ctx.closePath(); ctx.fill();
+    }
+    drawn = true; moves = 0;
+  }
+  function cleared() {
+    const { width: w, height: h } = cv;
+    const step = Math.max(4, Math.round(8 * dpr));
+    const data = ctx.getImageData(0, 0, w, h).data;
+    let n = 0; let z = 0;
+    for (let y = step / 2; y < h; y += step) for (let x = step / 2; x < w; x += step) { n++; if (data[(Math.floor(y) * w + Math.floor(x)) * 4 + 3] < 40) z++; }
+    return n ? z / n : 0;
+  }
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    wrap.classList.add('is-revealed');
+    btn.hidden = true;
+    if (!reduced) gsap.fromTo(wrap.querySelector('.mg-scratch__date'), { scale: 0.97 }, { scale: 1, duration: 0.6, ease: 'power3.out' });
+    setTimeout(() => { cv.hidden = true; }, 700);
+  }
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
+  function scratch(e) {
+    if (revealed || !drawn) return;
+    const [x, y] = pos(e);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(34, Math.min(56, cv.width / dpr / 9)) * dpr;
+    ctx.beginPath();
+    if (last) ctx.moveTo(last[0], last[1]); else ctx.moveTo(x - 0.1, y);
+    ctx.lineTo(x, y); ctx.stroke();
+    last = [x, y];
+    if (++moves % 6 === 0 && cleared() >= 0.6) reveal();
+  }
+  cv.addEventListener('pointerdown', (e) => { if (revealed) return; e.preventDefault(); cv.setPointerCapture?.(e.pointerId); last = null; wrap.classList.add('is-scratching'); scratch(e); });
+  cv.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch' || e.pressure > 0) { if (cv.hasPointerCapture?.(e.pointerId) || e.buttons) scratch(e); } });
+  const up = () => { last = null; if (!revealed && drawn && cleared() >= 0.6) reveal(); };
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+  btn.addEventListener('click', reveal);
+  document.fonts?.ready.then(paint);
+  paint();
+  let rw = 0;
+  new ResizeObserver(() => { const w = cv.getBoundingClientRect().width; if (w && Math.abs(w - rw) > 1) { rw = w; paint(); } }).observe(cv);
+  document.addEventListener('langchange', () => { if (!revealed) paint(); });
+  if (DEBUG) window.__mgScratch = { cleared, reveal, isRevealed: () => revealed };
+}());
+
+// ───────────────────────── Countdown to the ceremony ─────────────────────────
+(function countdown() {
+  const cells = Object.fromEntries([...document.querySelectorAll('#countgrid [data-u]')].map((b) => [b.dataset.u, b]));
+  const done = document.getElementById('countdone');
+  const grid = document.getElementById('countgrid');
+  const set = (el, n) => {
+    const s = String(n).padStart(2, '0');
+    const en = el.querySelector('.l-en'); const ne = el.querySelector('.l-ne');
+    if (en.textContent !== s) { en.textContent = s; ne.textContent = neNum(s); }
+  };
+  let timer = null;
+  const tick = () => {
+    const ms = target - Date.now();
+    if (!(ms > 0)) {
+      const after = ms < -86400000;
+      grid.hidden = true; done.hidden = false;
+      done.innerHTML = bi(after ? T.married : T.today);
+      clearInterval(timer);
+      return;
+    }
+    const s = Math.floor(ms / 1000);
+    set(cells.d, Math.floor(s / 86400)); set(cells.h, Math.floor((s % 86400) / 3600));
+    set(cells.m, Math.floor((s % 3600) / 60)); set(cells.s, s % 60);
+  };
+  tick();
+  setTimeout(() => { tick(); timer = setInterval(tick, 1000); }, 1000 - (Date.now() % 1000));
+}());
+
+// ───────────────────────── The photo strip: moves right to left ─────────────────────────
+function photoStrip() {
+  const view = document.getElementById('stripview');
+  const track = document.getElementById('track');
+  if (!view || !track) return;
+  const set0 = track.querySelector('.mg-strip__set');
+  if (reduced) { view.classList.add('is-static'); return; }
+  const mm = gsap.matchMedia();
+  // Desktop: the strip is tied to the scroll (scrubbed), uncropped photographs in plain mounts.
+  mm.add('(min-width: 900px) and (pointer: fine)', () => {
+    view.classList.add('is-scroll');
+    const dist = () => Math.max(0, set0.scrollWidth - view.clientWidth);
+    const pin = document.getElementById('strippin');
+    // The strip holds still in the middle of the screen while the photographs pass (when it fits the screen).
+    const tw = pin.offsetHeight < window.innerHeight * 0.96
+      ? gsap.fromTo(track, { x: 0 }, {
+        x: () => -dist(), ease: 'none',
+        scrollTrigger: { trigger: pin, start: 'center center', end: () => `+=${Math.round(dist() * 0.8)}`, pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true },
+      })
+      : gsap.fromTo(track, { x: () => Math.min(view.clientWidth * 0.12, dist() * 0.3) }, {
+        x: () => -dist(), ease: 'none',
+        scrollTrigger: { trigger: view, start: 'top 92%', end: 'bottom 8%', scrub: 0.7, invalidateOnRefresh: true },
+      });
+    return () => { view.classList.remove('is-scroll'); tw.scrollTrigger?.kill(); tw.kill(); gsap.set(track, { clearProps: 'transform' }); };
+  });
+  // Phones and tablets: an endless, gentle marquee (two identical sets; pauses off screen).
+  mm.add('(max-width: 899px), (pointer: coarse), (pointer: none)', () => {
+    view.classList.add('is-marquee');
+    const speed = () => track.style.setProperty('--mg-dur', `${Math.max(20, set0.scrollWidth / 34).toFixed(1)}s`);
+    speed();
+    const io = new IntersectionObserver(([en]) => view.classList.toggle('is-paused', !en.isIntersecting));
+    io.observe(view);
+    return () => { view.classList.remove('is-marquee', 'is-paused'); io.disconnect(); };
+  });
+  let rt;
+  track.querySelectorAll('img').forEach((im) => im.addEventListener('load', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      ScrollTrigger.refresh();
+      if (view.classList.contains('is-marquee')) track.style.setProperty('--mg-dur', `${Math.max(20, set0.scrollWidth / 34).toFixed(1)}s`);
+    }, 150);
+  }, { once: true }));
+}
+
+// ───────────────────────── The scroll: panels rise, ornament layers settle ─────────────────────────
 function revealOnScroll() {
   const els = document.querySelectorAll('.mg-rise');
   if (reduced) { els.forEach((el) => el.classList.add('is-in')); return; }
@@ -857,17 +1077,14 @@ function scrollStory() {
   const mm = gsap.matchMedia();
   // Depth only on larger screens with a fine pointer: phones get the plain reveals (no parallax).
   mm.add('(min-width: 900px) and (pointer: fine)', () => {
-    // Walking further in: the first scroll carries the camera on past the card, a little deeper.
     const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
-    gsap.to(inside, { scale: 1.14, ease: 'none', scrollTrigger: st });
-    gsap.to(pinner, { scale: 1.07, opacity: 0.25, ease: 'none', scrollTrigger: st });
+    gsap.to(inside, { scale: 1.1, ease: 'none', scrollTrigger: st });
+    gsap.to(pinner, { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
     gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
-    // Ornaments beside the content drift at their own depth.
     document.querySelectorAll('[data-depth]').forEach((el) => {
       const d = Number(el.dataset.depth) || 0.5;
       gsap.fromTo(el, { y: 90 * d }, { y: -50 * d, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 0.8 } });
     });
-    // Paper-cut layers: each sheet settles into place a little after the one above it.
     document.querySelectorAll('[data-settle]').forEach((el) => {
       const d = Number(el.dataset.settle) || 0.5;
       gsap.fromTo(el, { y: 60 * d, scale: 1 - 0.015 * d }, { y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'top 35%', scrub: 0.8 } });
@@ -876,7 +1093,6 @@ function scrollStory() {
       gsap.fromTo(el, { y: -30 }, { y: 0, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'top 40%', scrub: 0.8 } });
     });
   });
-  // Bells answer once when the families come into view (all screens; tiny and slow).
   ScrollTrigger.create({
     trigger: '#families', start: 'top 70%', once: true,
     onEnter: () => {
@@ -902,18 +1118,19 @@ if (DEBUG) {
   window.__mg = {
     gsap, ScrollTrigger,
     layout: () => L,
+    lenis: () => lenis,
     open: () => open(false),
     finish: () => {
       opened = true;
       gsap.set(gate, { autoAlpha: 0 });
-      gsap.set(leafL, { rotationY: 84 }); gsap.set(leafR, { rotationY: -84 });
-      gsap.set('.mg-leaf__shade', { opacity: 0.62 });
+      gsap.set(leafL, { rotationY: 80 }); gsap.set(leafR, { rotationY: -80 });
+      gsap.set('.mg-leaf__shade', { opacity: 0.5 });
       gsap.set(inside, { autoAlpha: 1 });
       if (welcomeEl) gsap.set(welcomeEl, { autoAlpha: 0 });
       gsap.set([pinner, '#cue'], { opacity: 1, scale: 1 });
       afterOpen();
     },
-    seek: (deg) => { gsap.set(leafL, { rotationY: deg }); gsap.set(leafR, { rotationY: -deg }); gsap.set(pinner, { opacity: deg / 84 }); },
+    seek: (deg) => { gsap.set(leafL, { rotationY: deg }); gsap.set(leafR, { rotationY: -deg }); },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;

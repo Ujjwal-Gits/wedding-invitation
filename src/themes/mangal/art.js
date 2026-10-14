@@ -48,21 +48,22 @@ export const DEFS = `
   </defs>
 </svg>`;
 
-/** A rectangle with a pointed (ogee) crown of height ch. */
-export function archPath(x, y, w, h, ch) {
-  return `M${r1(x)} ${r1(y + h)}L${r1(x)} ${r1(y + ch)}C${r1(x)} ${r1(y + ch * 0.42)} ${r1(x + w * 0.3)} ${r1(y + ch * 0.16)} ${r1(x + w / 2)} ${r1(y)}`
-    + `C${r1(x + w * 0.7)} ${r1(y + ch * 0.16)} ${r1(x + w)} ${r1(y + ch * 0.42)} ${r1(x + w)} ${r1(y + ch)}L${r1(x + w)} ${r1(y + h)}Z`;
-}
-/** Only the curve and the sides (open at the bottom), for strokes. */
-const archStroke = (x, y, w, h, ch) => archPath(x, y, w, h, ch).replace(/Z$/, '');
-/** Half of the arch (the left or right door leaf), in the leaf's own box of width w (= half the opening). */
-function halfArch(side, w, h, ch, i = 0) {
-  // The full arch is 2w wide; the leaf keeps the half that touches its hinge.
-  const W = 2 * w;
-  if (side === 'l') {
-    return `M${r1(i)} ${r1(h - i)}L${r1(i)} ${r1(ch + i * 0.2)}C${r1(i)} ${r1(ch * 0.42 + i * 0.6)} ${r1(W * 0.3 + i * 0.2)} ${r1(ch * 0.16 + i)} ${r1(w - i * 0.5)} ${r1(i * 1.3)}L${r1(w - i * 0.5)} ${r1(h - i)}Z`;
+/** A cusped (multifoil) arch like the niches of the printed red card: lobes along a semi-ellipse and a small
+ *  pointed finial at the apex. Box (x, y, w, h); `spring` is the height of the arched part. */
+export function cuspPath(x, y, w, h, spring, lobes = 7) {
+  const cx = x + w / 2; const rx = w / 2; const fin = spring * 0.16; const ry = spring - fin; const base = y + spring;
+  const pts = [];
+  for (let i = 0; i <= lobes; i++) { const t = Math.PI - (i / lobes) * Math.PI; pts.push([cx + rx * Math.cos(t), base - ry * Math.sin(t)]); }
+  let d = `M${r1(x)} ${r1(y + h)}L${r1(pts[0][0])} ${r1(pts[0][1])}`;
+  for (let i = 0; i < lobes; i++) {
+    const [ax, ay] = pts[i]; const [bx, by] = pts[i + 1];
+    const chord = Math.hypot(bx - ax, by - ay);
+    if (i === Math.floor(lobes / 2) && lobes % 2) {
+      const mx = (ax + bx) / 2; const lift = Math.min(ay, by) - y;
+      d += `C${r1(ax + chord * 0.02)} ${r1(ay - lift * 0.75)} ${r1(mx - chord * 0.16)} ${r1(y + lift * 0.3)} ${r1(mx)} ${r1(y)}C${r1(mx + chord * 0.16)} ${r1(y + lift * 0.3)} ${r1(bx - chord * 0.02)} ${r1(by - lift * 0.75)} ${r1(bx)} ${r1(by)}`;
+    } else d += `A${r1(chord * 0.56)} ${r1(chord * 0.56)} 0 0 1 ${r1(bx)} ${r1(by)}`;
   }
-  return `M${r1(w - i)} ${r1(h - i)}L${r1(w - i)} ${r1(ch + i * 0.2)}C${r1(w - i)} ${r1(ch * 0.42 + i * 0.6)} ${r1(w - W * 0.3 - i * 0.2)} ${r1(ch * 0.16 + i)} ${r1(i * 0.5)} ${r1(i * 1.3)}L${r1(i * 0.5)} ${r1(h - i)}Z`;
+  return `${d}L${r1(x + w)} ${r1(y + h)}Z`;
 }
 
 /** A lotus rosette: two rings of petals, a beaded ring and a boss. */
@@ -101,117 +102,203 @@ function studs(x0, y0, x1, y1, r, gap) {
   return s;
 }
 
-/** The doorway: a carved frame with a pointed opening (the panel and the leaves sit inside). */
-export function frameSVG(L) {
-  const { fw, fh, b, lh, ox, oy, ow, oh, ch } = L;
-  const s = Math.max(0.7, Math.min(1.25, b / 30));
-  const outer = `M0 0H${r1(fw)}V${r1(fh)}H0Z`;
-  const hole = archPath(ox, oy, ow, oh + 2, ch);
-  // carved lintel: a run of small rosettes between two rules
-  let lintel = '';
-  const lr = lh * 0.3;
-  const n = Math.max(3, Math.round(fw / (lr * 3.2)));
-  for (let k = 0; k < n; k++) lintel += rosette((k + 0.5) * fw / n, lh * 0.52, lr, { petals: 8, inner: '#5C0911', sw: 0.5 });
-  // posts: a chain of lozenges
-  let posts = '';
-  const pr = b * 0.26;
-  const top = oy + ch * 0.2;
-  const m = Math.max(3, Math.floor((fh - top - b) / (pr * 3.4)));
-  for (let k = 0; k <= m; k++) {
-    const y = top + (k / m) * (fh - top - b * 0.9);
-    for (const x of [b / 2, fw - b / 2]) {
-      posts += `<path d="M${r1(x)} ${r1(y - pr * 1.3)}L${r1(x + pr)} ${r1(y)}L${r1(x)} ${r1(y + pr * 1.3)}L${r1(x - pr)} ${r1(y)}Z" fill="url(#mg-gold)" stroke="#5A3A0A" stroke-width=".5" stroke-opacity=".6"/>`;
-      posts += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(pr * 0.36)}" fill="#5C0911"/>`;
-    }
+/** The full-width carved beam along the top of the screen, with a gold bead festoon hung in equal loops
+ *  (an even number of loops across the width, so it is symmetric and ends cleanly at both edges). */
+export function beamSVG(W, bh, drop) {
+  const s = Math.max(0.6, Math.min(1, bh / 18));
+  let n = Math.max(6, Math.round(W / (bh * 3.6)));
+  if (n % 2) n += 1;
+  const p = W / n;
+  let loops = ''; let drops = '';
+  for (let k = 0; k < n; k++) loops += `M${r1(k * p)} ${r1(bh)}Q${r1((k + 0.5) * p)} ${r1(bh + drop * 1.5)} ${r1((k + 1) * p)} ${r1(bh)}`;
+  for (let k = 1; k < n; k++) {
+    const x = k * p; const big = k === n / 2;
+    const r = (big ? 3.2 : 2.2) * s; const y = bh + (big ? 5 : 3.5) * s;
+    drops += `<path d="M${r1(x)} ${r1(bh)}L${r1(x)} ${r1(y)}" stroke="#B9862E" stroke-width="${r1(0.9 * s)}"/><circle cx="${r1(x)}" cy="${r1(y + r)}" r="${r1(r)}" fill="url(#mg-stud)"/>`;
   }
-  // spandrels: a rosette in each top corner between the arch and the frame
-  const sr = Math.min(ch * 0.17, ow * 0.04, 34);
-  const spandrels = ch > 40 ? rosette(ox + sr * 1.5, oy + sr * 1.4, sr, { petals: 12, inner: '#5C0911' }) + rosette(ox + ow - sr * 1.5, oy + sr * 1.4, sr, { petals: 12, inner: '#5C0911' }) : '';
-  const rim = archStroke(ox - 2 * s, oy - 2 * s, ow + 4 * s, oh + 4, ch + 1.2 * s);
-  const rim2 = archStroke(ox - 7 * s, oy - 8 * s, ow + 14 * s, oh + 12, ch + 4 * s);
-  return `<svg class="mg-frame-svg" width="${r1(fw)}" height="${r1(fh)}" viewBox="0 0 ${r1(fw)} ${r1(fh)}" aria-hidden="true" focusable="false">
-    <path d="${outer} ${hole}" fill-rule="evenodd" fill="url(#mg-ox)"/>
-    <path d="${outer} ${hole}" fill-rule="evenodd" fill="url(#mg-sheen)"/>
-    <rect x="${r1(1.5 * s)}" y="${r1(1.5 * s)}" width="${r1(fw - 3 * s)}" height="${r1(fh - 3 * s)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
-    <rect x="${r1(6 * s)}" y="${r1(6 * s)}" width="${r1(fw - 12 * s)}" height="${r1(fh - 12 * s)}" fill="none" stroke="#C99A48" stroke-opacity=".55" stroke-width="${r1(0.9 * s)}"/>
-    <path d="M${r1(6 * s)} ${r1(lh)}H${r1(fw - 6 * s)}" stroke="url(#mg-gold)" stroke-width="${r1(1.4 * s)}"/>
-    ${lintel}${posts}${spandrels}
-    <path d="${rim2}" fill="none" stroke="#E8BF63" stroke-width="${r1(3.2 * s)}" stroke-dasharray="0 ${r1(9 * s)}" stroke-linecap="round"/>
-    <path d="${rim}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(3 * s)}"/>
+  const H = bh + drop + 8 * s;
+  return `<svg class="mg-beam-svg" width="${r1(W)}" height="${r1(H)}" viewBox="0 0 ${r1(W)} ${r1(H)}" aria-hidden="true" focusable="false">
+    <rect width="${r1(W)}" height="${r1(bh)}" fill="url(#mg-ox)"/><rect width="${r1(W)}" height="${r1(bh)}" fill="url(#mg-sheen)"/>
+    <path d="M0 ${r1(3 * s)}H${r1(W)}" stroke="#D9AA52" stroke-opacity=".65" stroke-width="${r1(0.9 * s)}"/>
+    <path d="M0 ${r1(bh / 2)}H${r1(W)}" stroke="#E2B65C" stroke-opacity=".8" stroke-width="${r1(2.2 * s)}" stroke-dasharray="0 ${r1(7 * s)}" stroke-linecap="round"/>
+    <path d="M0 ${r1(bh - 1.2 * s)}H${r1(W)}" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
+    <path d="${loops}" fill="none" stroke="#D9A848" stroke-width="${r1(1.8 * s)}" stroke-dasharray="0 ${r1(4.2 * s)}" stroke-linecap="round"/>
+    ${drops}
   </svg>`;
 }
 
-/** The inner red panel's gold filigree border (follows the arch). */
+/** Gold ring for a round medallion (Ganesh), viewBox 100: a ring of lotus petals, a gold band and beads.
+ *  The picture sits underneath, a circle of diameter 72 in the middle. */
+export function medalSVG() {
+  let pet = '';
+  const n = 24;
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2; const w = (Math.PI / n) * 0.9;
+    const pt = (rr, aa) => `${r1(50 + Math.cos(aa) * rr)} ${r1(50 + Math.sin(aa) * rr)}`;
+    pet += `M${pt(41, a - w)}Q${pt(47.5, a - w * 0.9)} ${pt(49.6, a)}Q${pt(47.5, a + w * 0.9)} ${pt(41, a + w)}Z`;
+  }
+  return `<svg class="mg-medal__ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <path d="${pet}" fill="url(#mg-gold)" stroke="#7A5214" stroke-width=".35" stroke-opacity=".6"/>
+    <circle cx="50" cy="50" r="39.6" fill="none" stroke="#6A0A12" stroke-width="3.4"/>
+    <circle cx="50" cy="50" r="39.2" fill="none" stroke="url(#mg-gold)" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="37" fill="none" stroke="#F6DB92" stroke-width="1.5" stroke-dasharray="0 2.9" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="36.2" fill="none" stroke="#7A5214" stroke-width=".7"/>
+  </svg>`;
+}
+
+/** One carved pillar of the doorway: a lotus base, a lacquer shaft with gold flutes, a chain of gold lozenges and
+ *  a ring at mid-height, and a lotus bracket capital under the lintel. (x, y) is the top-left of the pillar box. */
+function pillar(x, y, w, h, s) {
+  const cx = x + w / 2;
+  const capH = Math.max(14, w * 0.95); const baseH = Math.max(14, w * 1.05);
+  const sx0 = x + w * 0.1; const sx1 = x + w * 0.9; const sw = sx1 - sx0;
+  const y0 = y + capH; const y1 = y + h - baseH;
+  const o = Math.max(2, w * 0.1);
+  const np = Math.max(3, Math.round(w / (9 * s)));
+  const petalRow = (py, len, up) => {
+    let d = '';
+    for (let k = 0; k < np; k++) {
+      const px = x + (k + 0.5) * (w / np); const pw = (w / np) * 0.46; const sg = up ? -1 : 1;
+      d += `M${r1(px - pw)} ${r1(py)}Q${r1(px - pw * 0.8)} ${r1(py + sg * len * 0.82)} ${r1(px)} ${r1(py + sg * len)}Q${r1(px + pw * 0.8)} ${r1(py + sg * len * 0.82)} ${r1(px + pw)} ${r1(py)}Z`;
+    }
+    return `<path d="${d}" fill="url(#mg-gold)" stroke="#6A3F0C" stroke-width=".5" stroke-opacity=".6"/>`;
+  };
+  const gold = `stroke="url(#mg-gold)" stroke-width="${r1(1.4 * s)}"`;
+  // capital: abacus slab, a band of downward lotus petals on a flared bracket, a collar
+  const bell = `M${r1(x - o * 0.4)} ${r1(y + capH * 0.24)}C${r1(x + w * 0.02)} ${r1(y + capH * 0.6)} ${r1(sx0)} ${r1(y + capH * 0.7)} ${r1(sx0)} ${r1(y0)}H${r1(sx1)}C${r1(sx1)} ${r1(y + capH * 0.7)} ${r1(x + w * 0.98)} ${r1(y + capH * 0.6)} ${r1(x + w + o * 0.4)} ${r1(y + capH * 0.24)}Z`;
+  const vase = `M${r1(sx0)} ${r1(y1)}C${r1(sx0)} ${r1(y1 + baseH * 0.3)} ${r1(x + w * 0.02)} ${r1(y1 + baseH * 0.42)} ${r1(x - o * 0.4)} ${r1(y + h - baseH * 0.26)}H${r1(x + w + o * 0.4)}C${r1(x + w * 0.98)} ${r1(y1 + baseH * 0.42)} ${r1(sx1)} ${r1(y1 + baseH * 0.3)} ${r1(sx1)} ${r1(y1)}Z`;
+  // shaft: lacquer, two gold flutes, a lozenge chain, a ring at mid-height
+  const mid = (y0 + y1) / 2; const ringH = Math.max(6, w * 0.3);
+  let chain = '';
+  const pr = Math.max(2.2, sw * 0.17);
+  const span = (a, b) => {
+    const m = Math.max(1, Math.floor((b - a) / (pr * 3.6)));
+    for (let k = 0; k <= m; k++) {
+      const yy = a + pr * 1.6 + (k / m) * (b - a - pr * 3.2);
+      chain += `<path d="M${r1(cx)} ${r1(yy - pr * 1.35)}L${r1(cx + pr)} ${r1(yy)}L${r1(cx)} ${r1(yy + pr * 1.35)}L${r1(cx - pr)} ${r1(yy)}Z" fill="url(#mg-gold)" stroke="#5A3A0A" stroke-width=".5" stroke-opacity=".5"/><circle cx="${r1(cx)}" cy="${r1(yy)}" r="${r1(pr * 0.34)}" fill="#5C0911"/>`;
+    }
+  };
+  span(y0 + 4 * s, mid - ringH / 2 - 4 * s);
+  span(mid + ringH / 2 + 4 * s, y1 - 4 * s);
+  const flute = Math.max(2, sw * 0.14);
+  return `<g class="mg-pillar">
+    <rect x="${r1(sx0)}" y="${r1(y0)}" width="${r1(sw)}" height="${r1(y1 - y0)}" fill="url(#mg-lacquer)"/>
+    <rect x="${r1(sx0)}" y="${r1(y0)}" width="${r1(sw)}" height="${r1(y1 - y0)}" fill="url(#mg-sheen)"/>
+    <path d="M${r1(sx0 + flute)} ${r1(y0)}V${r1(y1)}M${r1(sx1 - flute)} ${r1(y0)}V${r1(y1)}" stroke="#E2B65C" stroke-opacity=".7" stroke-width="${r1(1.1 * s)}"/>
+    <path d="M${r1(sx0)} ${r1(y0)}V${r1(y1)}M${r1(sx1)} ${r1(y0)}V${r1(y1)}" stroke="url(#mg-gold-v)" stroke-width="${r1(1.8 * s)}"/>
+    ${chain}
+    <rect x="${r1(sx0 - o * 0.5)}" y="${r1(mid - ringH / 2)}" width="${r1(sw + o)}" height="${r1(ringH)}" fill="url(#mg-ox)" ${gold}/>
+    ${w > 30 ? rosette(cx, mid, ringH * 0.36, { petals: 8, inner: '#5C0911', sw: 0.4 }) : ''}
+    <path d="${bell}" fill="url(#mg-lacquer)" ${gold}/>
+    ${petalRow(y + capH * 0.26, capH * 0.44, false)}
+    <rect x="${r1(x - o)}" y="${r1(y)}" width="${r1(w + 2 * o)}" height="${r1(capH * 0.24)}" fill="url(#mg-ox)" ${gold}/>
+    <rect x="${r1(sx0 - 1)}" y="${r1(y0 - capH * 0.12)}" width="${r1(sw + 2)}" height="${r1(capH * 0.12)}" fill="url(#mg-gold)"/>
+    <path d="${vase}" fill="url(#mg-lacquer)" ${gold}/>
+    ${petalRow(y + h - baseH * 0.27, baseH * 0.42, true)}
+    <rect x="${r1(x - o)}" y="${r1(y + h - baseH * 0.26)}" width="${r1(w + 2 * o)}" height="${r1(baseH * 0.26)}" fill="url(#mg-ox)" ${gold}/>
+    <rect x="${r1(sx0 - 1)}" y="${r1(y1)}" width="${r1(sw + 2)}" height="${r1(baseH * 0.11)}" fill="url(#mg-gold)"/>
+  </g>`;
+}
+
+/** The doorway, Newar style: two carved pillars, a lintel that runs past them, a torana (cusped tympanum)
+ *  above with a gold halo for Ganesh, and a step. The opening itself is a clean rectangle (the leaves sit in it). */
+export function frameSVG(L) {
+  const { DW, fh, ext, pw, lh, th, tw, sill, ox, oy, ow, oh, medal, medalY, ganesh } = L;
+  const s = Math.max(0.55, Math.min(1.2, pw / 56));
+  const cx = DW / 2;
+  // torana
+  const tx = cx - tw / 2; const fin = Math.max(6, th * 0.07);
+  const tor = cuspPath(tx, fin, tw, th - fin + 2, th - fin, 7);
+  const i1 = Math.max(4, 7 * s); const i2 = Math.max(6, 12 * s);
+  const tor1 = cuspPath(tx + i1, fin + i1, tw - 2 * i1, th - fin - i1 + 2, th - fin - i1, 7);
+  const tor2 = cuspPath(tx + i2, fin + i2, tw - 2 * i2, th - fin - i2 + 2, th - fin - i2, 7);
+  let halo = '';
+  const hr0 = medal * 0.52; const hr1 = Math.min(th * 0.8, tw * 0.42);
+  for (let k = 0; k < 28; k++) {
+    const a = Math.PI + (k / 27) * Math.PI;
+    halo += `M${r1(cx + Math.cos(a) * hr0)} ${r1(medalY + Math.sin(a) * hr0)}L${r1(cx + Math.cos(a) * hr1)} ${r1(medalY + Math.sin(a) * hr1)}`;
+  }
+  const finial = `<path d="M${r1(cx)} 0C${r1(cx + fin * 0.7)} ${r1(fin * 0.6)} ${r1(cx + fin * 0.5)} ${r1(fin * 1.3)} ${r1(cx)} ${r1(fin * 1.5)}C${r1(cx - fin * 0.5)} ${r1(fin * 1.3)} ${r1(cx - fin * 0.7)} ${r1(fin * 0.6)} ${r1(cx)} 0Z" fill="url(#mg-gold)"/>`;
+  // lintel with a run of carved rosettes (odd count: one sits under the torana's centre)
+  const ly = th; const rr = lh * 0.24;
+  let n = Math.max(5, Math.round(DW / (lh * 1.9)));
+  if (!(n % 2)) n += 1;
+  let ros = '';
+  for (let k = 0; k < n; k++) ros += rosette((k + 0.5) * DW / n, ly + lh / 2, rr, { petals: 8, inner: '#5C0911', sw: 0.45 });
+  const lintel = `<rect x="0" y="${r1(ly)}" width="${r1(DW)}" height="${r1(lh)}" fill="url(#mg-ox)"/><rect x="0" y="${r1(ly)}" width="${r1(DW)}" height="${r1(lh)}" fill="url(#mg-sheen)"/>
+    <path d="M0 ${r1(ly + 1.2 * s)}H${r1(DW)}M0 ${r1(ly + lh - 1.2 * s)}H${r1(DW)}" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
+    <path d="M0 ${r1(ly + 5 * s)}H${r1(DW)}M0 ${r1(ly + lh - 5 * s)}H${r1(DW)}" stroke="#D9AA52" stroke-opacity=".6" stroke-width="${r1(0.8 * s)}"/>
+    <path d="M${r1(1 * s)} ${r1(ly)}V${r1(ly + lh)}M${r1(DW - 1 * s)} ${r1(ly)}V${r1(ly + lh)}" stroke="url(#mg-gold-v)" stroke-width="${r1(2 * s)}"/>
+    ${lh > 26 ? ros : ''}`;
+  // the step
+  const sy = fh - sill;
+  const step = `<rect x="0" y="${r1(sy)}" width="${r1(DW)}" height="${r1(sill)}" fill="#4E070D"/><path d="M0 ${r1(sy + 1)}H${r1(DW)}" stroke="url(#mg-gold)" stroke-width="${r1(2 * s)}"/>`;
+  const py = ly + lh; const ph = sy - py;
+  const reveal = `<rect x="${r1(ox - 1)}" y="${r1(oy - 1)}" width="${r1(ow + 2)}" height="${r1(oh + 2)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(1.6 * s)}"/>`;
+  return `<svg class="mg-frame-svg" width="${r1(DW)}" height="${r1(fh)}" viewBox="0 0 ${r1(DW)} ${r1(fh)}" aria-hidden="true" focusable="false">
+    <path d="${tor}" fill="url(#mg-lacquer)"/>
+    <path d="${tor}" fill="url(#mg-sheen)"/>
+    <clipPath id="mg-tor-clip"><path d="${tor}"/></clipPath>
+    <path d="${halo}" stroke="#E8BF63" stroke-opacity=".42" stroke-width="${r1(1 * s)}" clip-path="url(#mg-tor-clip)"/>
+    <path d="${tor}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(3 * s)}"/>
+    <path d="${tor1}" fill="none" stroke="#E2B65C" stroke-width="${r1(2.2 * s)}" stroke-dasharray="0 ${r1(6 * s)}" stroke-linecap="round"/>
+    <path d="${tor2}" fill="none" stroke="#D9AA52" stroke-opacity=".7" stroke-width="${r1(0.9 * s)}"/>
+    ${finial}
+    ${ganesh ? '' : rosette(cx, medalY, medal * 0.36, { petals: 16 })}
+    ${reveal}
+    ${pillar(ext, py, pw, ph, s)}${pillar(DW - ext - pw, py, pw, ph, s)}
+    ${lintel}${step}
+  </svg>`;
+}
+
+/** The inner panel's gold border (seen as the doors open). */
 export function panelBorderSVG(L) {
-  const { ow, oh, ch } = L;
-  const s = Math.max(0.7, Math.min(1.2, ow / 900));
-  const i1 = 12 * s, i2 = 19 * s, i3 = 25 * s;
-  const a1 = archStroke(i1, i1 * 1.3, ow - 2 * i1, oh - i1 * 1.3 - i1, ch - i1 * 0.3);
-  const a2 = archStroke(i2, i2 * 1.3, ow - 2 * i2, oh - i2 * 1.3 - i2, ch - i2 * 0.3);
-  const a3 = archStroke(i3, i3 * 1.3, ow - 2 * i3, oh - i3 * 1.3 - i3, ch - i3 * 0.3);
-  const base = (i) => `M${r1(i)} ${r1(oh - i)}H${r1(ow - i)}`;
+  const { ow, oh } = L;
+  const s = Math.max(0.6, Math.min(1.2, ow / 900));
+  const r = (i, extra) => `<rect x="${r1(i)}" y="${r1(i)}" width="${r1(ow - 2 * i)}" height="${r1(oh - 2 * i)}" fill="none" ${extra}/>`;
   return `<svg class="mg-panel-svg" width="${r1(ow)}" height="${r1(oh)}" viewBox="0 0 ${r1(ow)} ${r1(oh)}" aria-hidden="true" focusable="false">
-    <path d="${a1}${base(i1)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2 * s)}"/>
-    <path d="${a2}${base(i2)}" fill="none" stroke="#E2B65C" stroke-width="${r1(3 * s)}" stroke-dasharray="0 ${r1(8 * s)}" stroke-linecap="round"/>
-    <path d="${a3}${base(i3)}" fill="none" stroke="#D9AA52" stroke-opacity=".75" stroke-width="${r1(1 * s)}"/>
-    ${rosette(i2, oh - i2, 9 * s, { petals: 8 })}${rosette(ow - i2, oh - i2, 9 * s, { petals: 8 })}
+    ${r(12 * s, `stroke="url(#mg-gold)" stroke-width="${r1(2 * s)}"`)}
+    ${r(19 * s, `stroke="#E2B65C" stroke-width="${r1(3 * s)}" stroke-dasharray="0 ${r1(8 * s)}" stroke-linecap="round"`)}
   </svg>`;
 }
 
-/** One carved door leaf: lacquered red with gold rails, studs, a lattice panel and a lotus. */
-export function leafSVG(side, w, h, ch) {
-  const s = Math.max(0.6, Math.min(1.2, w / 420));
-  const id = `mg-clip-${side}`;
-  const shape = halfArch(side, w, h, ch);
-  const inner1 = halfArch(side, w, h, ch, 11 * s);
-  const inner2 = halfArch(side, w, h, ch, 17 * s);
-  const hinge = side === 'l' ? 0 : w;
+/** One carved door leaf (a rectangle): red lacquer, a gold border, a small upper panel with a lotus, a tall
+ *  lower panel with a fine lattice, rows of brass studs and a gold astragal at the meeting edge. */
+export function leafSVG(side, w, h) {
+  const s = Math.max(0.42, Math.min(1.2, w / 440));
   const seam = side === 'l' ? w : 0;
   const dir = side === 'l' ? 1 : -1;
-  const px0 = Math.min(hinge, seam) + 24 * s;
-  const px1 = Math.max(hinge, seam) - 24 * s;
-  const railY = ch + 18 * s;
-  const panTop = railY + 16 * s;
-  const panBot = h - 38 * s;
-  const midY = panTop + (panBot - panTop) * 0.5;
-  // lattice inside the main panel
+  const m = Math.max(10, 26 * s);
+  const px0 = m; const px1 = w - m;
+  const uy0 = h * 0.07; const uy1 = h * 0.25;
+  const ly0 = h * 0.3; const ly1 = h - h * 0.07;
+  const panel = (y0, y1) => `<rect x="${r1(px0)}" y="${r1(y0)}" width="${r1(px1 - px0)}" height="${r1(y1 - y0)}" fill="#6E0A13"/>`
+    + `<rect x="${r1(px0)}" y="${r1(y0)}" width="${r1(px1 - px0)}" height="${r1(y1 - y0)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2.2 * s)}"/>`
+    + `<rect x="${r1(px0 + 6 * s)}" y="${r1(y0 + 6 * s)}" width="${r1(px1 - px0 - 12 * s)}" height="${r1(y1 - y0 - 12 * s)}" fill="none" stroke="#D9AA52" stroke-opacity=".6" stroke-width="${r1(0.8 * s)}"/>`;
   let lat = '';
-  const step = 26 * s;
-  for (let k = -Math.ceil((panBot - panTop) / step); k < Math.ceil((px1 - px0) / step) + 2; k++) {
+  const step = 30 * Math.max(0.7, s);
+  const H = ly1 - ly0;
+  for (let k = -Math.ceil(H / step); k < Math.ceil((px1 - px0) / step) + 2; k++) {
     const x = px0 + k * step;
-    lat += `M${r1(x)} ${r1(panTop)}L${r1(x + (panBot - panTop))} ${r1(panBot)}M${r1(x)} ${r1(panBot)}L${r1(x + (panBot - panTop))} ${r1(panTop)}`;
+    lat += `M${r1(x)} ${r1(ly0)}L${r1(x + H)} ${r1(ly1)}M${r1(x)} ${r1(ly1)}L${r1(x + H)} ${r1(ly0)}`;
   }
-  // a fan of rays in the crown, from the seam
-  let rays = '';
-  const fx = seam, fy = railY;
-  for (let k = 1; k < 9; k++) {
-    const a = (k / 9) * (Math.PI / 2);
-    const x = fx - dir * Math.cos(a) * w * 1.2;
-    const y = fy - Math.sin(a) * w * 1.2;
-    rays += `M${r1(fx)} ${r1(fy)}L${r1(x)} ${r1(y)}`;
-  }
-  const lotusR = Math.min((px1 - px0) * 0.26, (panBot - panTop) * 0.12);
-  const lotusX = (px0 + px1) / 2 - dir * (px1 - px0) * 0.06;
+  const id = `mg-lat-${side}`;
+  const lotusR = Math.min((px1 - px0) * 0.2, (uy1 - uy0) * 0.3);
+  const lotusX = (px0 + px1) / 2;
   return `<svg class="mg-leaf-svg" width="${r1(w)}" height="${r1(h)}" viewBox="0 0 ${r1(w)} ${r1(h)}" aria-hidden="true" focusable="false">
-    <defs><clipPath id="${id}"><path d="${shape}"/></clipPath><clipPath id="${id}-p"><rect x="${r1(px0)}" y="${r1(panTop)}" width="${r1(px1 - px0)}" height="${r1(panBot - panTop)}"/></clipPath></defs>
-    <g clip-path="url(#${id})">
-      <path d="${shape}" fill="url(#mg-lacquer${side === 'r' ? '-r' : ''})"/>
-      <path d="${rays}" stroke="#E2B65C" stroke-opacity=".5" stroke-width="${r1(1.1 * s)}"/>
-      <rect x="${r1(px0)}" y="${r1(panTop)}" width="${r1(px1 - px0)}" height="${r1(panBot - panTop)}" fill="#6E0A13"/>
-      <path d="${lat}" stroke="#D7A84E" stroke-opacity=".32" stroke-width="${r1(1 * s)}" clip-path="url(#${id}-p)"/>
-      <rect x="${r1(px0)}" y="${r1(panTop)}" width="${r1(px1 - px0)}" height="${r1(panBot - panTop)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
-      <rect x="${r1(px0 + 6 * s)}" y="${r1(panTop + 6 * s)}" width="${r1(px1 - px0 - 12 * s)}" height="${r1(panBot - panTop - 12 * s)}" fill="none" stroke="#D9AA52" stroke-opacity=".7" stroke-width="${r1(0.9 * s)}"/>
-      ${rosette(lotusX, panTop + (panBot - panTop) * 0.2, lotusR, { petals: 16 })}
-      ${rosette(lotusX, panBot - (panBot - panTop) * 0.16, lotusR * 0.8, { petals: 12 })}
-      ${studs(px0, railY, px1, railY, 3.6 * s, 22 * s)}
-      ${studs(px0, h - 20 * s, px1, h - 20 * s, 3.6 * s, 22 * s)}
-      <path d="M${r1(seam - dir * 4 * s)} 0V${r1(h)}" stroke="url(#mg-gold-v)" stroke-width="${r1(7 * s)}"/>
-      <path d="M${r1(seam - dir * 9 * s)} 0V${r1(h)}" stroke="#4E070D" stroke-opacity=".5" stroke-width="${r1(1.2 * s)}"/>
-      <path d="${shape}" fill="url(#mg-sheen)"/>
-    </g>
-    <path d="${inner1}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
-    <path d="${inner2}" fill="none" stroke="#E2B65C" stroke-width="${r1(2.6 * s)}" stroke-dasharray="0 ${r1(8 * s)}" stroke-linecap="round"/>
-    <path d="${shape}" fill="none" stroke="#3E0409" stroke-width="${r1(1.5 * s)}"/>
+    <defs><clipPath id="${id}"><rect x="${r1(px0)}" y="${r1(ly0)}" width="${r1(px1 - px0)}" height="${r1(H)}"/></clipPath></defs>
+    <rect width="${r1(w)}" height="${r1(h)}" fill="url(#mg-lacquer${side === 'r' ? '-r' : ''})"/>
+    ${panel(uy0, uy1)}${panel(ly0, ly1)}
+    <path d="${lat}" stroke="#D7A84E" stroke-opacity=".2" stroke-width="${r1(0.9 * s)}" clip-path="url(#${id})"/>
+    ${rosette(lotusX, (uy0 + uy1) / 2, lotusR, { petals: 16 })}
+    ${studs(px0, (uy1 + ly0) / 2, px1, (uy1 + ly0) / 2, 3.4 * s, 24 * s)}
+    ${studs(px0, h * 0.035, px1, h * 0.035, 3.4 * s, 24 * s)}
+    ${studs(px0, h - h * 0.035, px1, h - h * 0.035, 3.4 * s, 24 * s)}
+    <rect x="${r1(5 * s)}" y="${r1(5 * s)}" width="${r1(w - 10 * s)}" height="${r1(h - 10 * s)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(1.6 * s)}"/>
+    <path d="M${r1(seam - dir * 4 * s)} 0V${r1(h)}" stroke="url(#mg-gold-v)" stroke-width="${r1(7 * s)}"/>
+    <path d="M${r1(seam - dir * 9.5 * s)} 0V${r1(h)}" stroke="#4E070D" stroke-opacity=".5" stroke-width="${r1(1.2 * s)}"/>
+    <rect width="${r1(w)}" height="${r1(h)}" fill="url(#mg-sheen)"/>
+    <rect x=".75" y=".75" width="${r1(w - 1.5)}" height="${r1(h - 1.5)}" fill="none" stroke="#3E0409" stroke-width="1.5"/>
   </svg>`;
 }
 
