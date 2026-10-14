@@ -259,8 +259,8 @@ main.innerHTML = `
     </div>
     <div class="mg-spill" id="spill" aria-hidden="true"></div>
     <div class="mg-bells" id="bells" aria-hidden="true"></div>
-    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-drape" id="drape" src="${DECOR}drape-gate-md.webp" alt="" decoding="async" fetchpriority="high" /></div>
-    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp" srcset="${DECOR}kalash-gate-sm.webp 280w, ${DECOR}kalash-gate.webp 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}${diyo('mg-gdiyo mg-diyo--l')}${diyo('mg-gdiyo mg-diyo--r')}</div>
+    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-drape" id="drape" src="${DECOR}drape-gate-md.webp?v=5" alt="" decoding="async" fetchpriority="high" /></div>
+    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp?v=5" srcset="${DECOR}kalash-gate-sm.webp?v=5 280w, ${DECOR}kalash-gate.webp?v=5 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}${diyo('mg-gdiyo mg-diyo--l')}${diyo('mg-gdiyo mg-diyo--r')}</div>
     <div class="mg-beam" id="beam" aria-hidden="true"></div>
     <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
     <div class="mg-panel__content" id="pcontent">
@@ -324,9 +324,9 @@ main.innerHTML = `
 
   <section class="mg-sec mg-fam" id="families" aria-labelledby="fam-title">
     <div class="mg-fam__card mg-rise">
-      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1708w" sizes="(max-width: 700px) 110vw, 1300px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="mg-fam__spray mg-fam__spray--tl" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="mg-fam__spray mg-fam__spray--br" src="${DECOR}corner-br-sm.webp" srcset="${DECOR}corner-br-sm.webp 400w, ${DECOR}corner-br.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="(max-width: 700px) 110vw, 1300px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__spray mg-fam__spray--tl" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__spray mg-fam__spray--br" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       <div class="mg-fam__body">
         ${dividerSVG(180)}
         <h2 class="mg-h2" id="fam-title">${bi(txt('families.title'))}</h2>
@@ -339,7 +339,7 @@ main.innerHTML = `
             ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="mg-fam__home">${bi(c.bride.home)}</p>` : ''}
           </div>
           <div class="mg-fam__mid" aria-hidden="true">
-            <img class="mg-fam__kalash" src="${DECOR}kalash-sm.webp" srcset="${DECOR}kalash-sm.webp 320w, ${DECOR}kalash.webp 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
+            <img class="mg-fam__kalash" src="${DECOR}kalash-sm.webp?v=5" srcset="${DECOR}kalash-sm.webp?v=5 320w, ${DECOR}kalash.webp?v=5 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="mg-fam__side">
             ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 240px', 'mg-fam__pic') : ''}
@@ -468,7 +468,7 @@ main.innerHTML = `
   </section>
 
   <footer class="mg-close" aria-label="Blessing">
-    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
+    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
     <div class="mg-close__row">
       <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
       <div class="mg-close__text mg-rise">

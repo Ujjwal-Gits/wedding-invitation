@@ -341,9 +341,10 @@ body.is-open .mg-leaves { visibility: visible; }
 /* the two sprays stand OUTSIDE the frame, hugging its bottom corners: the empty corner of each spray's L sits on the
    frame's outer corner, --sg out (the arms touch the gold ring, never the red). As fractions of the spray's width:
    br corner at x 61.4%, y 47.5% (height 80.8%); the flipped tl at x 37.8%, y 46.8% (height 81.5%). */
-.mg-fam__spray { --sg: 5px; --sp: min(210px, 13vw, (max(5vw, (100vw - 1120px) / 2) - 9px) / 0.39); position: absolute; z-index: 2; width: var(--sp); height: auto; pointer-events: none; filter: drop-shadow(0 4px 5px rgba(30, 0, 4, 0.3)); }
-.mg-fam__spray--tl { left: calc(-1 * (var(--sg) + 0.3778 * var(--sp))); bottom: calc(-1 * (var(--sg) + 0.3473 * var(--sp))); transform: scaleY(-1); }
-.mg-fam__spray--br { right: calc(-1 * (var(--sg) + 0.3861 * var(--sp))); bottom: calc(-1 * (var(--sg) + 0.3333 * var(--sp))); }
+.mg-fam__spray { --sp: clamp(150px, 12vw, 220px); position: absolute; z-index: 3; width: var(--sp); height: auto; pointer-events: none; filter: drop-shadow(0 4px 5px rgba(30, 0, 4, 0.3)); }
+/* the rose cluster (at 69% x 70% of the art) sits exactly on the card's bottom corner; its arms run along the outside of both edges */
+.mg-fam__spray--br { right: calc(-0.31 * var(--sp)); bottom: calc(-0.243 * var(--sp)); }
+.mg-fam__spray--tl { left: calc(-0.31 * var(--sp)); bottom: calc(-0.243 * var(--sp)); transform: scaleX(-1); }
 .mg-fam__body { position: relative; z-index: 1; padding: calc((100% - 2 * var(--te)) * 0.1177 + 50px) clamp(24px, 6vw, 90px) clamp(70px, 9vh, 104px); text-align: center; }
 .mg-fam__body > .mg-div { display: block; margin: 0 auto 12px; }
 .mg-fam__body .mg-h2 { color: #F6D88E; }
