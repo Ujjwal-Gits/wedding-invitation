@@ -29,12 +29,14 @@ export function rateLimiter({ windowMs, max }) {
 
 const PAGE_CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // 'wasm-unsafe-eval' lets the 3D themes compile their mesh/texture decoders (WebAssembly only; JS eval stays blocked)
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
-  "connect-src 'self'",
+  // GLTFLoader reads embedded textures through blob: URLs; data: for inline buffers
+  "connect-src 'self' blob: data:",
   "worker-src 'self' blob:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com",
   "frame-ancestors 'self'",
