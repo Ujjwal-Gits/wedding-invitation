@@ -1,11 +1,12 @@
 // Nimtto Studio: a simple, guided tool for wedding planners.
 // Home (invitation cards) → a six-step editor (autosaved) → replies.
-import { h, icon, clear, toast, openDialog, confirmDialog, fmtDate } from './dom.js';
+import { h, icon, clear, toast, openDialog, confirmDialog, fmtDate, fmtRelative, copyText } from './dom.js';
 import { api, setCsrf, whenSignedOut, ApiError } from './api.js';
 import { createModel } from './fields.js';
 import { STEPS } from './steps.js';
 import { responsesView } from './responses.js';
-import { shareDialog } from './publish.js';
+import { shareDialog, shareUrl } from './publish.js';
+import { coupleLinkDialog, activityDialog, deleteDialog, actionMenu } from './manage.js';
 import { photoUrl } from '../photos.js';
 import { CREDIT_GROUPS } from '../core/asset-credits.js';
 
@@ -45,6 +46,31 @@ function renderLinkProblem(message = 'This link is no longer active. Please ask 
 
 // ── Routing ───────────────────────────────────────────────────────────────
 
+/**
+ * Planner and couple share one browser session. Opening a couple's link while signed in as the
+ * planner would silently replace the planner's session, so ask first.
+ */
+async function okToOpenAsCouple() {
+  let who = S.me;
+  if (!who) { try { who = await api('/auth/me'); } catch { return true; } }
+  if (who.role !== 'admin') return true;
+  return new Promise((resolve) => {
+    let ok = false;
+    const d = openDialog({
+      title: 'Open as the couple?',
+      body: [
+        h('p.dialog__text', 'You’re signed in as the planner. Open as the couple? You’ll be signed out of the planner account here.'),
+        h('p.notice', h('b', 'Tip: '), 'open couple links in a private window, so you stay signed in here.'),
+      ],
+      actions: [
+        h('button.btn', { type: 'button', onclick: () => d.close() }, 'Stay as the planner'),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => { ok = true; d.close(); } }, 'Open as the couple'),
+      ],
+      onClose: () => resolve(ok),
+    });
+  });
+}
+
 const go = (hash) => { if (location.hash !== hash) location.hash = hash; else route(); };
 window.addEventListener('hashchange', () => route());
 
@@ -53,6 +79,10 @@ async function route() {
   // The couple's private link: trade the token for a session, then drop it from the address bar.
   const cm = /^#\/c\/([A-Za-z0-9_-]{43})$/.exec(hash);
   if (cm) {
+    if (!(await okToOpenAsCouple())) {
+      history.replaceState(null, '', '#/'); // never leave the token in the address bar
+      return route();
+    }
     try {
       const s = await api('/client/session', { method: 'POST', body: { token: cm[1] } });
       S.me = s;
@@ -96,15 +126,21 @@ function fatal(err) {
 }
 
 function topbar(extra) {
-  return h('header.topbar',
+  const bar = h('header.topbar',
     h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
     extra || null,
     h('div.topbar__right',
       S.me.role === 'admin' ? h('a.topbar__link', { href: '#/credits', 'aria-current': location.hash === '#/credits' ? 'page' : null }, 'Credits') : null,
       S.me.role === 'admin' ? h('span.topbar__user', S.me.email) : null,
-      h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out'),
+      S.me.role === 'admin' ? h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out') : null,
     ),
   );
+  if (S.me.role !== 'client') return bar;
+  // The couple always sees whose session this is (it replaces a planner session in the same browser).
+  const frag = document.createDocumentFragment();
+  frag.append(h('div.asbar', { role: 'note' }, h('span', 'You’re editing as the couple'), h('span', { 'aria-hidden': 'true' }, '·'),
+    h('button.asbar__out', { type: 'button', onclick: signOut }, 'Sign out')), bar);
+  return frag;
 }
 
 async function signOut() {
@@ -187,8 +223,35 @@ async function renderHome() {
     ? h('span.pill', { class: i.changed ? 'pill--warn' : 'pill--ok' }, i.changed ? 'Live · unpublished changes' : 'Live')
     : h('span.pill.pill--muted', 'Draft'));
 
+  const share = async (i, names) => {
+    const doc = await api(`/invitations/${i.slug}`).catch(() => null);
+    shareDialog({ meta: S.meta, slug: i.slug, theme: i.theme, names, events: doc?.data.events || [], live: i.status === 'published',
+      couple: S.me.role === 'admin' ? { link: i.clientLink, onChange: (l) => { i.clientLink = l; } } : null });
+  };
+  const unpublishFromHome = async (i) => {
+    if (!(await confirmDialog({ title: 'Take the invitation offline?', message: 'Guests opening the link will see “not found” until you publish again. Replies are kept.', confirm: 'Unpublish', danger: true }))) return;
+    try {
+      await api(`/invitations/${i.slug}/unpublish`, { method: 'POST' });
+      toast('Unpublished', 'success');
+      renderHome();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+  const isAdmin = S.me.role === 'admin';
+
   const cards = items.map((i) => {
     const names = coupleName(i.bride, i.groom);
+    const live = i.status === 'published';
+    const guestUrl = shareUrl(S.meta, i.slug, i.theme);
+    const byCouple = i.lastEdit?.by === 'couple';
+    const menu = actionMenu([
+      { label: 'Open the editor', icon: 'edit', href: `#/i/${i.slug}/theme` },
+      { label: live ? 'Open the live invitation' : 'Preview the invitation', icon: 'external', href: live ? guestUrl : `/${i.theme}/?id=${encodeURIComponent(i.slug)}`, newTab: true },
+      { label: 'Copy the guest link', icon: 'copy', onSelect: async () => { await copyText(guestUrl); if (!live) toast('Not published yet: guests see “not found” until you publish.'); } },
+      { label: 'Couple’s link', icon: 'link', onSelect: () => coupleLinkDialog({ slug: i.slug, names, link: i.clientLink, onChange: (l) => { i.clientLink = l; } }) },
+      { label: 'Replies', icon: 'menu', href: `#/i/${i.slug}/replies` },
+      isAdmin && live ? { label: 'Unpublish', icon: 'eye', onSelect: () => unpublishFromHome(i) } : null,
+      isAdmin ? { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => { if (await deleteDialog({ slug: i.slug, names })) renderHome(); } } : null,
+    ], { label: `More for ${names}` });
     return h('article.icard',
       h('a.icard__photo', { href: `#/i/${i.slug}/theme`, tabindex: -1, 'aria-hidden': 'true' },
         i.hero ? h('img', { src: photoUrl(i.hero, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : h('span.icard__ph', icon('image', 28)),
@@ -198,12 +261,16 @@ async function renderHome() {
         h('p.icard__date', fmtDate(i.weddingDate, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })),
         h('p.icard__meta', h('span', `${themeName[i.theme] || i.theme} theme`), h('span', { 'aria-hidden': 'true' }, '·'),
           h('a', { href: `#/i/${i.slug}/replies` }, `${i.rsvpCount} repl${i.rsvpCount === 1 ? 'y' : 'ies'}`)),
+        byCouple ? h('p.icard__edit', { class: i.unseen ? 'is-new' : '', title: new Date(i.lastEdit.at).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu' }) },
+          i.unseen ? h('span.icard__dot', { 'aria-hidden': 'true' }) : null,
+          i.unseen ? h('span.sr-only', 'New: ') : null,
+          `Edited by the couple · ${fmtRelative(i.lastEdit.at)}`) : null,
         h('div.icard__actions',
           h('a.btn.btn--primary', { href: `#/i/${i.slug}/theme` }, 'Edit'),
-          h('button.btn', { type: 'button', onclick: async () => {
-            const doc = await api(`/invitations/${i.slug}`).catch(() => null);
-            shareDialog({ meta: S.meta, slug: i.slug, theme: i.theme, names, events: doc?.data.events || [], live: i.status === 'published' });
-          } }, icon('send', 16), 'Share'),
+          h('button.btn', { type: 'button', onclick: () => share(i, names) }, icon('send', 16), 'Share'),
+          menu,
+          h('button.btn.icard__clink', { type: 'button', onclick: () => coupleLinkDialog({ slug: i.slug, names, link: i.clientLink, onChange: (l) => { i.clientLink = l; } }) },
+            icon('link', 16), 'Couple’s link', i.clientLink ? h('span.icard__on', 'On') : null),
         ),
       ),
     );
@@ -296,6 +363,7 @@ async function openEditor(slug, stepId) {
   }
   S.editor = createEditor(doc);
   S.editor.show(stepId);
+  if (S.me.role === 'admin') api(`/invitations/${slug}/seen`, { method: 'POST' }).catch(() => {}); // clears the home-card dot
 }
 
 function createEditor(doc) {
@@ -419,25 +487,10 @@ function createEditor(doc) {
   }
 
   async function remove() {
-    const input = h('input.input', { id: 'del-confirm', autocomplete: 'off', spellcheck: 'false' });
-    const err = h('p.form-error', { role: 'alert' });
-    const btn = h('button.btn.btn--danger', { type: 'button', onclick: async () => {
-      if (input.value !== slug) { err.textContent = 'That does not match.'; return; }
-      try {
-        await api(`/invitations/${slug}`, { method: 'DELETE', body: { confirm: slug } });
-        pending = false;
-        d.close();
-        toast('Invitation deleted', 'success');
-        go('#/');
-      } catch (ex) { err.textContent = ex.message; }
-    } }, 'Delete');
-    const d = openDialog({
-      title: 'Delete this invitation?',
-      body: [h('p.dialog__text', 'The invitation, its photos and its replies are removed and the link stops working.'),
-        h('div.field', h('label.label', { for: 'del-confirm' }, `Type ${slug} to confirm`), input), err],
-      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), btn],
-    });
-    input.focus();
+    if (!(await deleteDialog({ slug, names: names() }))) return;
+    pending = false;
+    clearTimeout(saveTimer);
+    go('#/');
   }
 
   // ── Layout
@@ -446,7 +499,9 @@ function createEditor(doc) {
   const repliesLink = h('a.btn.btn--quiet.btn--sm', { href: `#/i/${slug}/replies` }, 'Replies');
   const head = h('div.ed2__head',
     isAdmin ? h('a.btn.btn--quiet.btn--sm.ed2__back', { href: '#/' }, icon('back', 16), h('span', 'All invitations')) : null,
-    title, saved, repliesLink);
+    title, saved, repliesLink,
+    isAdmin ? h('button.btn.btn--quiet.btn--sm.ed2__tool', { type: 'button', 'aria-label': 'Couple’s link', title: 'Couple’s link', onclick: () => coupleLinkDialog({ slug, names: names(), link: doc.clientLink, onChange: (l) => { doc.clientLink = l; } }) }, icon('link', 16), h('span', 'Couple’s link')) : null,
+    isAdmin ? h('button.btn.btn--quiet.btn--sm.ed2__tool', { type: 'button', 'aria-label': 'Activity', title: 'Activity', onclick: () => activityDialog({ slug, names: names() }) }, icon('history', 16), h('span', 'Activity')) : null);
   const progress = h('nav.steps', { 'aria-label': 'Steps' });
   const content = h('div.ed2__content', { id: 'main', tabindex: -1 });
   const foot = h('div.ed2__foot');
@@ -523,13 +578,13 @@ function createEditor(doc) {
     if (step) {
       clear(content).append(
         h('header.ed2__intro', h('p.ed2__kicker', `Step ${idx + 1} of ${STEPS.length}`), h('h1.ed2__title', step.title), h('p.ed2__lede', step.intro)),
-        ...[step.render(ctx)].flat(),
+        ...[step.render(ctx)].flat().filter((n) => n != null && n !== false),
       );
       const prev = STEPS[idx - 1];
       const next = STEPS[idx + 1];
       clear(foot).append(
         prev ? h('a.btn.btn--lg', { href: `#/i/${slug}/${prev.id}` }, icon('left', 16), 'Back') : h('span'),
-        current === 'publish' ? null : h('button.btn.btn--lg.foot__preview', { type: 'button', onclick: openPreviewSheet, 'aria-label': 'Preview the invitation' }, icon('eye', 18), h('span.foot__pv-t', 'Preview')),
+        current === 'publish' ? h('span') : h('button.btn.btn--lg.foot__preview', { type: 'button', onclick: openPreviewSheet, 'aria-label': 'Preview the invitation' }, icon('eye', 18), h('span.foot__pv-t', 'Preview')),
         next ? h('a.btn.btn--primary.btn--lg', { href: `#/i/${slug}/${next.id}`, 'aria-label': `Next: ${next.title}` }, h('span', 'Next'), h('span.foot__more', `: ${next.title}`), icon('right', 16)) : h('a.btn.btn--lg', { href: `#/i/${slug}/replies` }, 'See replies', icon('right', 16)),
       );
     } else {

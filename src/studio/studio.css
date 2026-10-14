@@ -681,3 +681,42 @@ div.photo__frame { cursor: default; }
 /* Nepali text: keep the familiar digit shapes. With lang="ne" some fonts (Noto, Tiro) switch to
    localized forms where ८ reads as ५ to most readers (२०८३ looked like २०५३). */
 [lang='ne'], [lang='ne'] *, .l-ne, .l-ne * { font-feature-settings: 'locl' 0 !important; }
+
+/* ── Couple's link, activity, "⋯" menu, couple banner ───────── */
+.icard__actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+.icard__actions .menu__btn { border: 1px solid var(--line-strong); width: 40px; min-height: 40px; }
+.icard__clink { grid-column: 1 / -1; color: var(--ink-2); }
+.icard__on { padding: 1px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 600; }
+.icard__edit { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13.5px; }
+.icard__edit.is-new { color: var(--ink); font-weight: 500; }
+.icard__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.menu { position: fixed; z-index: 60; min-width: 220px; max-width: calc(100vw - 16px); padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-pop); opacity: 0; transform: translateY(-4px); transition: opacity 160ms var(--ease), transform 160ms var(--ease); }
+.menu.is-open { opacity: 1; transform: none; }
+.menu__item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink); font-size: 14.5px; text-align: left; text-decoration: none; cursor: pointer; }
+.menu__item:hover, .menu__item:focus-visible { background: var(--sunken); box-shadow: none; }
+.menu__item svg { flex: none; color: var(--ink-3); }
+.menu__item--danger, .menu__item--danger svg { color: var(--danger); }
+.menu__gap { width: 16px; }
+.clink { display: grid; gap: 14px; }
+.clink .card__help { margin-top: 0; }
+.clink__names { font-family: var(--f-display); font-size: 22px; color: var(--ink); }
+.clink__field { min-height: 48px; font-size: 15px; color: var(--ink); }
+.clink__status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.clink__actions { flex-wrap: wrap; }
+.clink__actions .btn { white-space: normal; text-align: center; line-height: 1.25; padding-top: 8px; padding-bottom: 8px; }
+.activity__list { list-style: none; margin: 0; padding: 0; display: grid; }
+.activity__item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.activity__item:last-child { border-bottom: 0; }
+.activity__item.is-couple .activity__text { font-weight: 500; }
+.activity__when { color: var(--ink-3); font-size: 13.5px; white-space: nowrap; }
+.asbar { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent-soft); color: var(--accent-hover); font-size: 14px; font-weight: 500; text-align: center; }
+.asbar__out { padding: 0; border: 0; background: none; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+@media (max-width: 680px) {
+  .ed2__tool { width: 36px; padding: 0; }
+  .ed2__tool span { display: none; }
+  .activity__item { grid-template-columns: 1fr; gap: 2px; }
+}
+.clink__actions .btn svg { flex: none; }
+@media (max-width: 680px) {
+  .clink .clink__actions .btn:not(.btn--icon) { flex: 1 1 100%; }
+}

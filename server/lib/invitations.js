@@ -1,5 +1,6 @@
 // Invitation documents: a draft the studio edits and a published snapshot guests see.
-// File: data/invitations/<slug>.json = { slug, version, status, createdAt, updatedAt, publishedAt, draft, published }
+// File: data/invitations/<slug>.json = { slug, version, status, createdAt, updatedAt, publishedAt, draft, published,
+//   clientAccess?, lastEdit? {at, by, type}, activity? [{at, by, type, sections}], adminSeenAt? }
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, withLock, invPath, getInvitation, listInvitations, writeJsonAtomic, trashInvitation, uploadDir, readJson, rsvpPath } from './store.js';
@@ -9,10 +10,32 @@ import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
 import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions } from './auth.js';
 import { bsDateOf } from '../../src/core/i18n.js';
+import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Activity log (admin only, never in the public payload): the last 50 changes, newest last.
+// Autosave fires after every pause in typing, so back-to-back saves by the same person
+// (less than 10 minutes apart) fold into one entry with the union of the areas they touched.
+const ACTIVITY_MAX = 50;
+const MERGE_MS = 10 * 60 * 1000;
+const actor = (req) => (isAdmin(req) ? 'admin' : 'couple');
+function logActivity(doc, entry) {
+  const log = Array.isArray(doc.activity) ? doc.activity : [];
+  const last = log.at(-1);
+  if (entry.type === 'edit' && last?.type === 'edit' && last.by === entry.by && Date.parse(entry.at) - Date.parse(last.at) < MERGE_MS) {
+    last.sections = AREA_IDS.filter((id) => last.sections.includes(id) || entry.sections.includes(id));
+    last.at = entry.at;
+  } else {
+    log.push(entry);
+  }
+  doc.activity = log.slice(-ACTIVITY_MAX);
+  doc.lastEdit = { at: entry.at, by: entry.by, type: entry.type };
+}
+/** The couple changed something the planner has not opened since. */
+const unseenByAdmin = (doc) => doc.lastEdit?.by === 'couple' && (!doc.adminSeenAt || doc.lastEdit.at > doc.adminSeenAt);
+
 const nameText = (v, max = 60) => (typeof v === 'string' ? v.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 
 function summary(doc, rsvpCount = 0) {
@@ -31,6 +54,9 @@ function summary(doc, rsvpCount = 0) {
     publishedAt: doc.publishedAt,
     rsvpCount,
     hero,
+    lastEdit: doc.lastEdit || null,
+    unseen: unseenByAdmin(doc),
+    clientLink: doc.clientAccess ? { createdAt: doc.clientAccess.createdAt } : null,
   };
 }
 
@@ -43,6 +69,8 @@ const docOut = (doc, admin = true) => ({
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
   publishedAt: doc.publishedAt,
+  lastEdit: doc.lastEdit || null,
+  ...(admin ? { activity: doc.activity || [] } : {}),
   data: doc.draft,
 });
 
@@ -168,13 +196,16 @@ export async function update(req, res) {
     if (b.version !== cur.version) throw httpError(409, 'This invitation was changed in another tab. Reload to get the latest version.', { current: cur.version });
     const draft = sanitizeInvitation(b.data, slug, slots);
     attachDepth(slug, draft);
+    if (same(cur.draft, draft)) return cur; // nothing changed: no new version, nothing to log
+    const sections = changedAreas(cur.draft, draft);
     cur.draft = draft;
     cur.version += 1;
     cur.updatedAt = new Date().toISOString();
+    logActivity(cur, { at: cur.updatedAt, by: actor(req), type: 'edit', sections: sections.length ? sections : ['other'] });
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
-  res.json({ version: doc.version, updatedAt: doc.updatedAt, changed: doc.status === 'published' && !same(doc.draft, doc.published), data: doc.draft });
+  res.json({ version: doc.version, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null, changed: doc.status === 'published' && !same(doc.draft, doc.published), data: doc.draft });
 }
 
 export async function publish(req, res) {
@@ -187,6 +218,7 @@ export async function publish(req, res) {
     cur.status = 'published';
     cur.publishedAt = new Date().toISOString();
     cur.version += 1;
+    logActivity(cur, { at: cur.publishedAt, by: actor(req), type: 'publish', sections: [] });
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
@@ -201,11 +233,29 @@ export async function unpublish(req, res) {
     cur.status = 'draft';
     cur.published = null;
     cur.version += 1;
+    logActivity(cur, { at: new Date().toISOString(), by: actor(req), type: 'unpublish', sections: [] });
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
   console.info(`[admin] unpublish slug=${slug}`);
   res.json(docOut(doc));
+}
+
+/** GET /api/invitations/:slug/version: the cheap check the studio polls to notice changes made elsewhere. */
+export async function version(req, res) {
+  const doc = await load(req.params.slug);
+  res.json({ version: doc.version, status: doc.status, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null });
+}
+
+/** POST /api/invitations/:slug/seen: the planner has looked at the latest changes (clears the home-card dot). */
+export async function seen(req, res) {
+  const { slug } = req.params;
+  await withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    cur.adminSeenAt = new Date().toISOString();
+    await writeJsonAtomic(invPath(slug), cur);
+  });
+  res.json({ ok: true });
 }
 
 export async function remove(req, res) {

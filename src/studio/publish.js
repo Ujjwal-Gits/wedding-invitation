@@ -1,6 +1,6 @@
 // Step 6 "Preview & publish" and the share tools (also used from the home screen).
-import { h, icon, clear, copyText, openDialog, confirmDialog, toast, fmtDate } from './dom.js';
-import { api } from './api.js';
+import { h, icon, clear, copyText, openDialog } from './dom.js';
+import { coupleLinkPanel } from './manage.js';
 
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
 
@@ -32,7 +32,7 @@ function linkRow(getUrl, getMessage, { primary = false } = {}) {
 }
 
 /** Share tools: main link + personal guest link. */
-export function shareTools({ meta, slug, theme, names, events = [], live = true }) {
+export function shareTools({ meta, slug, theme, names, events = [], live = true, couple = null }) {
   const nameIn = h('input.input', { type: 'text', id: `to-${slug}`, maxlength: 60, placeholder: 'e.g. Maiju & family', autocomplete: 'off' });
   const picks = events.map((e) => h('input', { type: 'checkbox', value: e.id, checked: true }));
   const extra = () => {
@@ -54,6 +54,8 @@ export function shareTools({ meta, slug, theme, names, events = [], live = true 
       events.length > 1 ? h('fieldset.field', h('legend.label', 'Ceremonies to show'),
         h('div.chips', events.map((e, i) => h('label.chip', picks[i], h('span', label(e.title, e.id)))))) : null,
       personal),
+    // Planner only: the couple's private editing link (same component as the Couple's link dialog).
+    couple ? h('div.share__block', coupleLinkPanel({ slug, link: couple.link, onChange: couple.onChange, title: h('h3.share__title', 'Link for the couple to edit') })) : null,
   );
 }
 
@@ -129,47 +131,6 @@ export function publishStep(ctx) {
 
 /** Planner only: a private link that lets the couple edit this one invitation and see its replies. */
 function coupleLinkCard(ctx) {
-  const box = h('section.card');
-  const url = (token) => `${location.origin}/studio/#/c/${token}`;
-  const draw = (fresh) => {
-    const link = ctx.doc.clientLink;
-    clear(box).append(
-      h('h2.card__title', 'Couple’s editing link'),
-      h('p.card__help', 'A private link for the couple: they can change their photos and words and see replies, for this invitation only.'),
-    );
-    if (fresh) {
-      const field = h('input.input.linkrow__field', { type: 'text', readonly: true, value: url(fresh), 'aria-label': 'Couple’s editing link', onfocus: (e) => e.target.select() });
-      box.append(
-        h('div.linkrow', field, h('div.linkrow__actions',
-          h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(field.value) }, icon('copy', 16), 'Copy link'),
-          h('a.btn', { href: `https://wa.me/?text=${encodeURIComponent(`Here is your private link to edit your wedding invitation: ${url(fresh)}`)}`, target: '_blank', rel: 'noopener' }, icon('send', 16), 'WhatsApp'))),
-        h('p.notice', 'Copy it now. For safety it is shown only once; you can always make a new one.'),
-      );
-    } else if (link) {
-      box.append(h('p', `A link is active (made ${fmtDate(link.createdAt)}).`));
-    }
-    box.append(h('div.linkrow__actions',
-      h('button.btn', { type: 'button', onclick: make }, icon('link', 16), link ? 'Make a new link' : 'Make a link'),
-      link ? h('button.btn.btn--quiet', { type: 'button', onclick: off }, 'Turn the link off') : null,
-    ));
-  };
-  async function make() {
-    if (ctx.doc.clientLink && !(await confirmDialog({ title: 'Make a new link?', message: 'The old link will stop working straight away.', confirm: 'Make a new link' }))) return;
-    try {
-      const out = await api(`/invitations/${ctx.slug}/client-link`, { method: 'POST' });
-      ctx.doc.clientLink = { createdAt: out.createdAt };
-      draw(out.token);
-    } catch (err) { toast(err.message, 'error'); }
-  }
-  async function off() {
-    if (!(await confirmDialog({ title: 'Turn the couple’s link off?', message: 'Anyone using it will be signed out straight away.', confirm: 'Turn off', danger: true }))) return;
-    try {
-      await api(`/invitations/${ctx.slug}/client-link`, { method: 'DELETE' });
-      ctx.doc.clientLink = null;
-      draw();
-      toast('Link turned off', 'success');
-    } catch (err) { toast(err.message, 'error'); }
-  }
-  draw();
-  return box;
+  return h('section.card',
+    coupleLinkPanel({ slug: ctx.slug, link: ctx.doc.clientLink, onChange: (l) => { ctx.doc.clientLink = l; }, title: h('h2.card__title', 'Link for the couple to edit their invitation') }));
 }

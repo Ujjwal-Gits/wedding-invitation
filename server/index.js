@@ -49,6 +49,8 @@ api.get('/invitations', requireAdmin, wrap(inv.list));
 api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
 api.get('/invitations/:slug', editor, wrap(inv.read));
 api.put('/invitations/:slug', editor, json('768kb'), wrap(inv.update));
+api.get('/invitations/:slug/version', editor, wrap(inv.version));
+api.post('/invitations/:slug/seen', requireAdmin, wrap(inv.seen));
 api.delete('/invitations/:slug', requireAdmin, json('2kb'), wrap(inv.remove));
 api.post('/invitations/:slug/publish', editor, wrap(inv.publish));
 api.post('/invitations/:slug/client-link', requireAdmin, wrap(inv.createClientLink));
