@@ -231,13 +231,17 @@ export class World {
   constructor(canvas, { mobile = false, pixelRatio } = {}) {
     this.mobile = mobile;
     this.renderer = new WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(pixelRatio ?? Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.6));
+    // DPR cap: 1.25 on phones, 1.5 on desktop; the adaptive loop below steps it down further.
+    this.maxPR = pixelRatio ?? Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
+    this.minPR = Math.min(this.maxPR, mobile ? 0.6 : 0.75);
+    this.renderer.setPixelRatio(this.maxPR);
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.setClearColor(new Color(0x020306));
     this.scene = new Scene();
     this.camera = new PerspectiveCamera(40, 1, 0.03, 140);
     this.camera.rotation.order = 'YXZ';
     this.sets = new Map();
+    this.frames = []; // framed pictures, so page text can keep clear of them
     this.lamps = [];
     this.photoMats = [];
     this.anims = [];
@@ -301,11 +305,62 @@ export class World {
     this.resize();
     this.active = true;
     this.clock = performance.now();
-    const loop = () => {
+    // Adaptive quality: when frames keep taking longer than ~20ms, render fewer pixels.
+    let last = 0, ema = 16, slow = 0, fast = 0;
+    const loop = (now) => {
       this.raf = requestAnimationFrame(loop);
-      if (this.active && !document.hidden) this.render();
+      if (!this.active || document.hidden || this.visible === false) { last = 0; return; }
+      this.render();
+      if (last) {
+        const dt = Math.min(100, now - last);
+        ema += (dt - ema) * 0.1;
+        slow = ema > 20 ? slow + 1 : 0;
+        fast = ema < 12 ? fast + 1 : 0;
+        if (slow > 40) { slow = 0; this.setQuality(this.renderer.getPixelRatio() - 0.2); }
+        else if (fast > 240) { fast = 0; this.setQuality(this.renderer.getPixelRatio() + 0.1); }
+      }
+      last = now;
     };
     this.raf = requestAnimationFrame(loop);
+    // Pause while the canvas is scrolled away (the page sets active as well).
+    if ('IntersectionObserver' in window) {
+      this.visible = true;
+      new IntersectionObserver(([en]) => { this.visible = en.isIntersecting; }).observe(canvas);
+    }
+  }
+
+  /** Screen rectangles (CSS px) of the framed pictures currently in view, from the last rendered camera. */
+  frameRects() {
+    const out = [];
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const v = this._v || (this._v = new Vector3());
+    const cam = this.camera;
+    cam.updateMatrixWorld();
+    for (const f of this.frames) {
+      let shown = true;
+      for (let n = f.group; n; n = n.parent) if (!n.visible) { shown = false; break; }
+      if (!shown) continue;
+      f.group.updateWorldMatrix(true, false);
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity, behind = false;
+      for (const [x, y] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        v.set((x * f.w) / 2, (y * f.h) / 2, 0.03).applyMatrix4(f.group.matrixWorld);
+        v.project(cam);
+        if (v.z > 1 || v.z < -1) { behind = true; break; }
+        const sx = (v.x * 0.5 + 0.5) * vw, sy = (0.5 - v.y * 0.5) * vh;
+        l = Math.min(l, sx); r = Math.max(r, sx); t = Math.min(t, sy); b = Math.max(b, sy);
+      }
+      if (behind || r < 0 || l > vw || b < 0 || t > vh) continue;
+      out.push({ l, t, r, b });
+    }
+    return out;
+  }
+
+  setQuality(pr) {
+    const next = Math.max(this.minPR, Math.min(this.maxPR, Math.round(pr * 100) / 100));
+    if (Math.abs(next - this.renderer.getPixelRatio()) < 0.01) return;
+    this.renderer.setPixelRatio(next);
+    this.dust.material.uniforms.uPR.value = next;
+    this.resize();
   }
 
   /* ── assets ── */
@@ -453,6 +508,7 @@ export class World {
     bar(L, ph, -pw / 2 - L / 2, 0, gilt, 0.04, 0.03);
     bar(L, ph, pw / 2 + L / 2, 0, gilt, 0.04, 0.03);
     this.set(setId).add(g);
+    this.frames.push({ group: g, w: pw + 2 * fw, h: ph + 2 * fw });
     return { group: g, w: pw + 2 * fw, h: ph + 2 * fw };
   }
 

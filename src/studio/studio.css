@@ -653,3 +653,7 @@ div.photo__frame { cursor: default; }
 }
 .no-side .tpick { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 .tpick__acts .btn--icon { flex: none; width: 40px; justify-content: center; border: 1px solid var(--line); background: var(--surface); }
+
+/* Nepali text: keep the familiar digit shapes. With lang="ne" some fonts (Noto, Tiro) switch to
+   localized forms where ८ reads as ५ to most readers (२०८३ looked like २०५३). */
+[lang='ne'], [lang='ne'] *, .l-ne, .l-ne * { font-feature-settings: 'locl' 0 !important; }

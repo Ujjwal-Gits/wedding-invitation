@@ -152,6 +152,17 @@ body.is-risen .hm-hero__night { opacity: 0; }
   color: var(--hm-snow); will-change: transform, opacity;
 }
 .hm-rv { opacity: 0; }
+/* Portrait screens: the names sit on the ridge and the pale dawn sky, so they get a
+   soft ink scrim that fades out with them (WCAG AA for the white type). */
+@media (max-aspect-ratio: 1/1) {
+  .hm-hero__names { isolation: isolate; }
+  .hm-hero__names::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(-1 * var(--hm-g)); right: calc(-1 * var(--hm-g)); top: -45%;
+    bottom: calc(-1 * (clamp(28px, 6vh, 64px) + var(--safe-b)));
+    background: linear-gradient(to bottom, rgba(10, 16, 26, 0), rgba(10, 16, 26, 0.5) 38%, rgba(10, 16, 26, 0.68));
+  }
+}
 .hm-names { margin: 0 0 14px; font: 400 clamp(54px, 8.2vw, 136px)/0.98 var(--f-names); letter-spacing: -0.012em; }
 .hm-names .l-ne { font: 400 0.8em/1.3 var(--f-deva-display); }
 .hm-names__amp { font-size: 0.5em; padding: 0 0.22em; vertical-align: 0.2em; color: rgba(255, 255, 255, 0.75); }

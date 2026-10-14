@@ -405,6 +405,7 @@ async function start() {
       door = new PlateDoor({ id: DOOR, src: photoUrl(doorRef, mobile ? 'sm' : 'lg'), rect: doorRect, behind: COURT, plate: plateRect, paper: '#FFFFFF' });
       stage.views.set(DOOR, door);
       stage.set({ a: DOOR, pa: 0 });
+      governGpu(stage, door);
       const heroImg = document.querySelector('.d-hero__img');
       await trackProgress([door.load(), stage.views.get(COURT).load(mobile), heroImg ? imgReady(heroImg) : Promise.resolve()], document.getElementById('load-bar'));
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -424,6 +425,45 @@ async function start() {
     }
     if (DEBUG && params.has('skip')) return openDoor(false, true);
     enableGate(openDoor);
+  }
+
+  // Smooth on any device: cap the pixel ratio (1.25 phones, 1.5 desktop), step it
+  // down while frames keep taking over ~20ms, and stop drawing when the tab is
+  // hidden or the canvas is not on screen.
+  function governGpu(st, dr) {
+    const maxPR = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
+    const minPR = Math.min(maxPR, mobile ? 0.6 : 0.75);
+    const setPR = (pr) => {
+      const next = Math.max(minPR, Math.min(maxPR, Math.round(pr * 100) / 100));
+      if (Math.abs(next - st.renderer.getPixelRatio()) < 0.01) return;
+      st.renderer.setPixelRatio(next);
+      st.resize();
+      if (dr.dust) dr.dust.material.uniforms.uPR.value = next;
+    };
+    st.renderer.setPixelRatio(maxPR);
+    st.resize();
+    dr.load().then(() => { if (dr.dust) dr.dust.material.uniforms.uPR.value = st.renderer.getPixelRatio(); }).catch(() => {});
+    let onScreen = true, wanted = true;
+    const sync = () => { st.active = wanted && onScreen && !document.hidden; };
+    const setActive = st.setActive.bind(st);
+    st.setActive = (on) => { wanted = on; sync(); setActive(st.active); };
+    if ('IntersectionObserver' in window) new IntersectionObserver(([en]) => { onScreen = en.isIntersecting; sync(); }).observe(st.renderer.domElement);
+    document.addEventListener('visibilitychange', sync);
+    let last = 0, ema = 16, slow = 0, fast = 0;
+    const watch = (now) => {
+      if (!wanted) return; // stage retired after the intro
+      requestAnimationFrame(watch);
+      if (!st.active) { last = 0; return; }
+      if (last) {
+        ema += (Math.min(100, now - last) - ema) * 0.1;
+        slow = ema > 20 ? slow + 1 : 0;
+        fast = ema < 12 ? fast + 1 : 0;
+        if (slow > 40) { slow = 0; setPR(st.renderer.getPixelRatio() - 0.2); }
+        else if (fast > 240) { fast = 0; setPR(st.renderer.getPixelRatio() + 0.1); }
+      }
+      last = now;
+    };
+    requestAnimationFrame(watch);
   }
 
   function enableGate(onOpen) {
@@ -546,7 +586,9 @@ async function start() {
       plates.forEach((p, i) => {
         if (i === 0) return;
         tl.fromTo(p, { yPercent: 115 }, { yPercent: 0, duration: 1, ease: 'power2.out' }, i - 1)
-          .to(plates[i - 1], { scale: 0.93, yPercent: -3, duration: 1, ease: 'power2.out' }, i - 1);
+          .to(plates[i - 1], { scale: 0.93, yPercent: -3, duration: 1, ease: 'power2.out' }, i - 1)
+          // The covered print's caption leaves first, so no text ever sits under a photo.
+          .to(plates[i - 1].querySelector('figcaption'), { autoAlpha: 0, duration: 0.3, ease: 'none' }, i - 1);
         if (i > 1) tl.to(plates[i - 2], { autoAlpha: 0, duration: 0.5, ease: 'none' }, i - 1);
       });
       tl.to({}, { duration: 0.4 });

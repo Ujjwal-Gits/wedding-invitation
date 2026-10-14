@@ -278,6 +278,43 @@ async function start() {
   document.body.classList.add(`is-${mode}`);
   if (debug) document.body.classList.add('is-debug');
 
+  // Book pages: the painting is cropped differently at every aspect ratio, so the
+  // ceremony label is placed in the first page corner where it clears every photo
+  // frame and the HUD (never on top of the couple's photos).
+  function placeCaps() {
+    if (mode !== 'book') return;
+    const pw = W(), ph = H(), aw = pw - 44, ah = ph - 44;
+    const s = Math.max(aw / 1600, ah / 1000);
+    const ox = 22 + (aw - 1600 * s) / 2, oy = 22 + (ah - 1000 * s) / 2;
+    const pad = 14;
+    const chrome = [...document.querySelectorAll('.hud__btn, .hud .pill, .chapters ol')]
+      .map((n) => n.getBoundingClientRect()).filter((r) => r.width)
+      .map((r) => ({ l: r.left - pad, t: r.top - pad, r: r.right + pad, b: r.bottom + pad }));
+    const hit = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
+    live.forEach((L) => {
+      const capEl = L.el.querySelector('.page__cap');
+      if (!capEl) return;
+      const photos = [...L.el.querySelectorAll('.photo-box')].map((g) => {
+        const [x, y, w, h] = g.dataset.box.split(',').map(Number);
+        return { l: ox + x * s - pad, t: oy + y * s - pad, r: ox + (x + w) * s + pad, b: oy + (y + h) * s + pad };
+      });
+      const w = capEl.offsetWidth, h = capEl.offsetHeight;
+      const right = pw - 72 - w, bottom = ph - 64 - h;
+      const spots = [[56, 54], [56, bottom], [right, 96], [right, bottom], [(pw - w) / 2, 54]];
+      let best = null;
+      for (const [x, y] of spots) {
+        const box = { l: x, t: y, r: x + w, b: y + h };
+        const cost = photos.reduce((a, p) => a + hit(box, p) * 10, 0) + chrome.reduce((a, p) => a + hit(box, p), 0);
+        if (!best || cost < best.cost) best = { x, y, cost };
+        if (cost === 0) break;
+      }
+      Object.assign(capEl.style, { left: `${Math.round(best.x)}px`, top: `${Math.round(best.y)}px` });
+    });
+  }
+  placeCaps();
+  document.fonts?.ready.then(placeCaps);
+  window.addEventListener('resize', placeCaps);
+
   // Static first frame of every scene.
   live.forEach((L) => { L.def?.update?.(mode === 'still' ? finalP(L.pg.id) : 0); L.def?.tick?.(0, 0.016); });
   function finalP(id) { return { janti: 1, swayambar: 1, pheras: 1, sindoor: 1, reception: 0.5 }[id] ?? 0; }

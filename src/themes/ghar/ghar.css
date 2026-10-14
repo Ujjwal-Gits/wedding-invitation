@@ -24,9 +24,9 @@ body.ghar {
   --f-display-weight: 400;
   --f-names: 'EB Garamond', serif;
   --f-names-style: italic 400;
-  --f-deva: 'Tiro Devanagari Hindi', serif;
-  --f-deva-display: 'Tiro Devanagari Hindi', serif;
-  --f-deva-body: 'Mukta', 'Tiro Devanagari Hindi', sans-serif;
+  --f-deva: 'Noto Serif Devanagari', 'Mukta', serif; /* Tiro's ८ reads as ५ in Nepali dates */
+  --f-deva-display: 'Noto Serif Devanagari', serif;
+  --f-deva-body: 'Mukta', 'Noto Serif Devanagari', sans-serif;
   --f-body: 'Hanken Grotesk', 'Segoe UI', sans-serif;
   --ease-film: cubic-bezier(0.7, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -166,7 +166,7 @@ body.is-moving .film__cue, body.is-gated .film__cue { opacity: 0; }
 .stills__title, .reply__title { margin: 0; display: grid; gap: 10px; }
 .stills__title .tc__ne, .reply__title .tc__ne { font-size: clamp(40px, 4.6vw, 68px); }
 .stills__title .tc__en, .reply__title .tc__en { padding-left: 0; }
-.stills__vp { overflow: hidden; }
+.stills__vp { overflow: hidden; padding-bottom: calc(4svh + 10px); } /* room for the lowered even stills and their captions */
 .stills__track { list-style: none; margin: 0; padding: 0 var(--side); display: flex; gap: clamp(28px, 4vw, 72px); align-items: center; width: max-content; will-change: transform; }
 .still { flex: none; display: grid; gap: 14px; }
 .still__btn { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; }

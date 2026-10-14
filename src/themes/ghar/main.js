@@ -435,6 +435,36 @@ async function boot() {
   let lastLive = '';
   const chTicks = [...nav.querySelectorAll('button')];
   let lastCh = -1;
+  // Titles, names and ceremony cards float over the film; they must never sit on a
+  // framed photograph. Each frame, the framed pictures in view are projected to the
+  // screen and any overlapping text block slides to the nearest clear band.
+  const CLEAR = new Set(['title', 'names', 'end', 'event']);
+  const lbTop = $('.lb--top'), lbBot = $('.lb--bottom');
+  const keepClear = () => {
+    const live = film.beats.map((b, i) => [b, beatEls[i]]).filter(([b, el]) => CLEAR.has(b.kind) && el._o > 0.01);
+    if (!live.length || !world?.frameRects) return;
+    const pics = world.frameRects();
+    const minY = (lbTop?.getBoundingClientRect().bottom || 0) + 10;
+    const maxY = (lbBot?.getBoundingClientRect().top || window.innerHeight) - 10;
+    for (const [, el] of live) {
+      const box = el.firstElementChild;
+      if (!box) continue;
+      const cur = box._dy || 0;
+      const r = box.getBoundingClientRect();
+      const top0 = r.top - cur, h = r.height;
+      const pad = 14;
+      const block = pics.filter((p) => p.r > r.left - pad && p.l < r.right + pad).map((p) => [p.t - pad, p.b + pad]);
+      const hits = (y) => block.reduce((a, [t, b]) => a + Math.max(0, Math.min(b, y + h) - Math.max(t, y)), 0);
+      let target = 0;
+      if (hits(top0) > 0) {
+        const cands = [top0, ...block.flatMap(([t, b]) => [t - h, b])].map((y) => Math.min(Math.max(y, minY), Math.max(minY, maxY - h)));
+        const best = cands.map((y) => ({ y, cost: hits(y) * 1000 + Math.abs(y - top0) })).sort((a, b) => a.cost - b.cost)[0];
+        target = best.y - top0;
+      }
+      const next = Math.abs(target - cur) < 0.5 ? target : cur + (target - cur) * 0.25;
+      if (next !== cur) { box._dy = next; box.style.translate = `0 ${next.toFixed(1)}px`; }
+    }
+  };
   const updateBeats = (t) => {
     let say = '';
     film.beats.forEach((b, i) => {
@@ -449,6 +479,7 @@ async function boot() {
       el.classList.toggle('is-on', o > 0.5);
       if (o > 0.5) say = el.textContent.trim();
     });
+    keepClear();
     if (say && say !== lastLive) { lastLive = say; live.textContent = say; }
     const idx = Math.max(0, film.chapters.filter((ch) => t >= ch.t - 0.1).length - 1);
     if (idx !== lastCh) {

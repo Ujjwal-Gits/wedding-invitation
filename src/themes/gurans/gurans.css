@@ -33,7 +33,7 @@ body.theme-gurans {
   --f-body: 'Crimson Pro', Georgia, serif;
   --f-label: 'Manrope', 'Segoe UI', sans-serif;
   --f-deva: 'Noto Serif Devanagari', 'Tiro Devanagari Hindi', serif;
-  --f-deva-display: 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', serif;
+  --f-deva-display: 'Noto Serif Devanagari', serif; /* Tiro only on the crest (no digits): its ८ reads as ५ */
   --ease-out: cubic-bezier(0.22, 0.8, 0.24, 1);
   --ease-gate: cubic-bezier(0.65, 0.02, 0.2, 1);
   --gutter: clamp(18px, 5.5vw, 96px);
@@ -148,7 +148,7 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 .pb-gate__crest { position: absolute; transform: translate(-50%, -50%); width: calc(var(--pw) * 1cqw); display: grid; place-items: center; }
 .pb-crest {
   position: relative; display: block; width: 100%; padding: 0.3em 0.4em 0.18em; text-align: center; white-space: nowrap;
-  font: 400 calc(var(--pw) * 0.185cqw)/1.25 var(--f-deva-display);
+  font: 400 calc(var(--pw) * 0.185cqw)/1.25 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', serif;
   border-radius: 999px;
   background: radial-gradient(120% 140% at 50% 20%, #FFFDF8 0%, #F8EFE2 70%, #EFE0C9 100%);
   box-shadow: 0 0 0 0.12cqw #C9A46A, 0 0 0 0.55cqw #FFFDF8, 0 0 0 0.68cqw #B88E52, 0 1.2cqw 2.4cqw -0.8cqw rgba(60, 40, 20, 0.45);

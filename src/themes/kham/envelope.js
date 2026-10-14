@@ -29,16 +29,18 @@ export function computeLayout(vw, vh, { printAr = 0 } = {}) {
     top = topPad + (vh - topPad - bottomPad - H) / 2;
   }
   // The couple's print rests beside the card on wide screens.
+  // It sits fully clear of the card (never tucked under it), so the photo is never cut.
+  const gap = 34;
   const print = printAr && !portrait && vw >= 900 ? (() => {
     const ph = H * 0.62;
-    const pw = Math.min(ph * printAr, W * 0.98);
-    return { w: pw, h: pw / printAr };
+    const pw = Math.min(ph * printAr, W * 0.98, vw - 64 - W - gap);
+    return pw > 120 ? { w: pw, h: pw / printAr } : null;
   })() : null;
-  const shift = print ? print.w * 0.8 : 0;
+  const shift = print ? print.w + gap : 0;
   const cx = vw / 2 - shift / 2;
   const card = { x: cx - W / 2, y: top, w: W, h: H };
   if (print) {
-    print.x = card.x + W - print.w * 0.2;
+    print.x = card.x + W + gap;
     print.y = top + H * 0.5 - print.h / 2 + H * 0.05;
   }
   // Envelope: the folded card (W × H/2) fills 90% of its width (95% on phones, so it fits the screen).

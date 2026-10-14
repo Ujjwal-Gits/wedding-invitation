@@ -22,8 +22,8 @@
   --f-display-weight: 500;
   --f-names: 'Pinyon Script', cursive;
   --names-scale: 1;
-  --f-deva: 'Tiro Devanagari Hindi', 'Mukta', 'Noto Serif Devanagari', 'Martel', 'Laila', 'Noto Sans Devanagari', serif;
-  --f-deva-display: 'Tiro Devanagari Hindi', serif;
+  --f-deva: 'Mukta', 'Noto Serif Devanagari', 'Martel', 'Laila', 'Noto Sans Devanagari', serif; /* never Tiro first: its ८ reads as ५ to Nepali readers */
+  --f-deva-display: 'Noto Serif Devanagari', 'Laila', serif;
   --f-body: 'Mukta', 'Segoe UI', sans-serif;
   --eyebrow-track: 0.32em;
 
@@ -326,3 +326,7 @@ button[aria-checked='true'] .trk__eq { opacity: 1; }
 .gstep__b:disabled { opacity: 0.3; cursor: default; }
 .gstep__b:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
 .gstep__v { min-width: 40px; text-align: center; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Nepali text: keep the familiar digit shapes. With lang="ne" some fonts (Noto, Tiro) switch to
+   localized forms where ८ reads as ५ to most readers (२०८३ looked like २०५३). */
+[lang='ne'], [lang='ne'] *, .l-ne, .l-ne * { font-feature-settings: 'locl' 0 !important; }
