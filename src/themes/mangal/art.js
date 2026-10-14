@@ -38,6 +38,13 @@ export const DEFS = `
       <stop offset="0" stop-color="#FFFDF0"/><stop offset=".3" stop-color="#FFE7A0"/><stop offset=".62" stop-color="#FFB13B"/>
       <stop offset="1" stop-color="#F06A12" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="mg-fl-out" cx=".5" cy=".85" r=".75">
+      <stop offset="0" stop-color="#FFE9A8"/><stop offset=".4" stop-color="#FFB236"/><stop offset=".75" stop-color="#F2711A" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#D9440C" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mg-fl-mid" cx=".5" cy=".8" r=".7">
+      <stop offset="0" stop-color="#FFFBE6"/><stop offset=".45" stop-color="#FFE07A"/><stop offset="1" stop-color="#FFB43C" stop-opacity=".2"/>
+    </radialGradient>
     <radialGradient id="mg-glow" cx=".5" cy=".5" r=".5">
       <stop offset="0" stop-color="#FFC56A" stop-opacity=".55"/><stop offset=".45" stop-color="#FFB04A" stop-opacity=".18"/>
       <stop offset="1" stop-color="#FFB04A" stop-opacity="0"/>
@@ -339,12 +346,11 @@ export function diyoSVG(w, h) {
   const p = (fx, fy) => `${r1(cx + fx * w)} ${r1(fy * h)}`;
   const foot = `M${p(-0.34, 0.98)}Q${p(-0.34, 0.9)} ${p(-0.12, 0.88)}L${p(-0.06, 0.84)}L${p(0.06, 0.84)}L${p(0.12, 0.88)}Q${p(0.34, 0.9)} ${p(0.34, 0.98)}Z`;
   const stem = `M${p(-0.05, 0.84)}L${p(-0.045, 0.64)}L${p(0.045, 0.64)}L${p(0.05, 0.84)}Z`;
-  const bowl = `M${p(-0.44, 0.52)}Q${p(-0.42, 0.64)} ${p(0, 0.66)}Q${p(0.42, 0.64)} ${p(0.44, 0.52)}Q${p(0.46, 0.5)} ${p(0.5, 0.49)}L${p(0.3, 0.55)}Z`;
   const bowl2 = `M${p(-0.46, 0.5)}Q${p(-0.4, 0.66)} ${p(0, 0.67)}Q${p(0.38, 0.66)} ${p(0.44, 0.53)}Q${p(0.5, 0.5)} ${p(0.54, 0.47)}Q${p(0.46, 0.5)} ${p(0.4, 0.5)}Z`;
-  const flame = `M${p(0.36, 0.48)}C${p(0.28, 0.42)} ${p(0.3, 0.34)} ${p(0.36, 0.16)}C${p(0.42, 0.34)} ${p(0.46, 0.42)} ${p(0.36, 0.48)}Z`;
-  const core = `M${p(0.36, 0.475)}C${p(0.32, 0.44)} ${p(0.33, 0.39)} ${p(0.36, 0.3)}C${p(0.39, 0.39)} ${p(0.41, 0.44)} ${p(0.36, 0.475)}Z`;
-  return `<svg class="mg-diyo-svg" width="${r1(w)}" height="${r1(h)}" viewBox="0 0 ${r1(w)} ${r1(h)}" aria-hidden="true" focusable="false">
-    <ellipse cx="${r1(cx + w * 0.36)}" cy="${r1(h * 0.33)}" rx="${r1(w * 0.42)}" ry="${r1(w * 0.42)}" fill="url(#mg-glow)" class="mg-glow"/>
+  // the flame sits on the wick at the spout: a warm outer flame, a golden body, a white-hot core and a blue root
+  const fx = 0.37; const fb = 0.475;
+  const tear = (hw, tip, base = fb) => `M${p(fx, base)}C${p(fx - hw * 1.25, base - 0.02)} ${p(fx - hw * 0.9, base - (base - tip) * 0.55)} ${p(fx, tip)}C${p(fx + hw * 0.9, base - (base - tip) * 0.55)} ${p(fx + hw * 1.25, base - 0.02)} ${p(fx, base)}Z`;
+  return `<svg class="mg-diyo-svg" width="${r1(w)}" height="${r1(h)}" viewBox="0 0 ${r1(w)} ${r1(h)}" aria-hidden="true" focusable="false" overflow="visible">
     <ellipse cx="${r1(cx + w * 0.04)}" cy="${r1(by)}" rx="${r1(w * 0.42)}" ry="${r1(h * 0.022)}" fill="#2E1004" opacity=".25"/>
     <path d="${foot}" fill="url(#mg-brass)"/>
     <path d="${stem}" fill="url(#mg-brass)"/>
@@ -352,9 +358,15 @@ export function diyoSVG(w, h) {
     <ellipse cx="${r1(cx)}" cy="${r1(h * 0.665)}" rx="${r1(w * 0.12)}" ry="${r1(h * 0.022)}" fill="url(#mg-brass)"/>
     <path d="${bowl2}" fill="url(#mg-brass)"/>
     <ellipse cx="${r1(cx - w * 0.02)}" cy="${r1(h * 0.505)}" rx="${r1(w * 0.42)}" ry="${r1(h * 0.035)}" fill="#6A4410"/>
-    <ellipse cx="${r1(cx - w * 0.02)}" cy="${r1(h * 0.508)}" rx="${r1(w * 0.36)}" ry="${r1(h * 0.024)}" fill="#C79A3A" opacity=".55"/>
-    <path d="M${p(0.33, 0.5)}L${p(0.36, 0.47)}" stroke="#3A2408" stroke-width="${r1(Math.max(1, w * 0.02))}"/>
-    <g class="mg-flame"><path d="${flame}" fill="url(#mg-flame)"/><path d="${core}" fill="#FFFBEA" opacity=".9"/></g>
+    <ellipse cx="${r1(cx - w * 0.02)}" cy="${r1(h * 0.508)}" rx="${r1(w * 0.36)}" ry="${r1(h * 0.024)}" fill="#E0A848" opacity=".7"/>
+    <ellipse cx="${r1(cx + w * 0.2)}" cy="${r1(h * 0.5)}" rx="${r1(w * 0.2)}" ry="${r1(h * 0.016)}" fill="#FFE2A0" opacity=".55"/>
+    <path d="M${p(fx - 0.02, 0.5)}L${p(fx, 0.47)}" stroke="#2A1804" stroke-width="${r1(Math.max(1.2, w * 0.024))}" stroke-linecap="round"/>
+    <g class="mg-flame">
+      <path d="${tear(0.1, 0.04)}" fill="url(#mg-fl-out)"/>
+      <path d="${tear(0.068, 0.15)}" fill="url(#mg-fl-mid)"/>
+      <path d="${tear(0.034, 0.28, fb - 0.01)}" fill="#FFFDF2"/>
+      <ellipse cx="${r1(cx + fx * w)}" cy="${r1(h * (fb - 0.012))}" rx="${r1(w * 0.03)}" ry="${r1(h * 0.016)}" fill="#3E6FE0" opacity=".55"/>
+    </g>
   </svg>`;
 }
 

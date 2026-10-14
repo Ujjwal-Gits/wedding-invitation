@@ -2,7 +2,7 @@
 // from the studio. Plain data, no imports (the server loads this file). See src/core/slots.js.
 // Invitation data (names, parents, dates, events, card wording, gallery, travel/stays/contacts,
 // RSVP, closing blessing) is edited in the studio's normal sections and is not repeated here.
-// Religious marks are optional: Ganesh (type "off" in torana.show), ॐ and the invocation (type "-").
+// Religious marks are optional: Ganesh (type "off" in ganesh.show), ॐ and the invocation (type "-").
 const couple = (id, label, n, note) => [id, { label, kind: 'couple', default: { portrait: n }, note }];
 const gallery = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`gallery.${n}`, {
   label: `Photo strip: photo ${n + 5}`, kind: 'couple', default: { portrait: n + 5 },
@@ -12,13 +12,13 @@ const gallery = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`gallery.${n}`
 export default {
   theme: 'mangal',
   images: {
-    'torana.ganesh': {
-      label: 'Ganesh medallion (above the door and inside)', kind: 'detail',
-      default: { lg: '/themes/mangal/ganesh-640.webp', sm: '/themes/mangal/ganesh-320.webp', w: 640, h: 640, alt: 'Ganesha, from a Basohli miniature painting, about 1730' },
-      note: 'Shown in a round gold medallion; a square picture works best (the corners are cut away). Public-domain Basohli miniature by default. To remove it, type “off” in the Ganesh line.',
+    'hero.ganesh': {
+      label: 'Ganesh (the torana medallion, then large inside the doors and softly behind the names)', kind: 'detail',
+      default: { lg: '/themes/mangal/ganesh-rv-800.webp', sm: '/themes/mangal/ganesh-rv-420.webp', w: 800, h: 1183, alt: 'Shri Ganesh, a Ravi Varma Press oleograph' },
+      note: 'A cut-out picture with a transparent background works best (PNG or WebP); the medallion shows his head and shoulders. Public-domain Ravi Varma Press Ganesh by default. To remove it, type “off” in the Ganesh line.',
     },
     ...Object.fromEntries([
-      couple('couple.lead', 'Main photo, inside the doors (gold temple-arch frame)', 0, 'The couple’s best photo, beside शुभ विवाह. Shown whole under a gold temple-arch crown. Portrait works best.'),
+      couple('couple.lead', 'Main photo, just below the doors (gold temple-arch frame)', 0, 'The couple’s best photo, in its own section under शुभ विवाह. Shown whole under a gold temple-arch crown. Portrait works best.'),
       couple('couple.pair.1', 'Photo strip: photo 1', 1, 'The couple. Moves across the screen in a plain gold-line mount; shown whole, any orientation.'),
       couple('couple.pair.2', 'Photo strip: photo 2', 2, 'The couple. Shown whole; any orientation.'),
       couple('couple.row.1', 'Photo strip: photo 3', 3, 'The couple. Shown whole; any orientation.'),
@@ -37,18 +37,18 @@ export default {
   },
   texts: {
     'gate.line': { label: 'Doorway: line above the names', default: { en: 'An invitation for you and your family', ne: 'हजुरलाई सपरिवार निमन्त्रणा' }, max: 60 },
-    'torana.show': { label: 'Ganesh medallion above the door and inside (type “off” to hide it)', default: { en: 'on', ne: 'on' }, max: 8 },
     'gate.open': { shared: 'gate.open', label: 'Doorway: open button', default: { en: 'Open the doors', ne: 'ढोका खोल्नुहोस्' }, max: 28 },
     'gate.quiet': { shared: 'gate.quiet', label: 'Doorway: open without music', default: { en: 'Open without music', ne: 'संगीतबिना खोल्नुहोस्' }, max: 32 },
-    'hero.welcome': { label: 'Walking in: welcome line (both languages are shown together)', default: { en: 'You are warmly invited', ne: 'हजुरलाई हार्दिक निमन्त्रणा' }, max: 40 },
-    'hero.symbol': { label: 'Inside: sacred symbol, shown only when Ganesh is off (type - to remove)', default: { en: 'ॐ', ne: 'ॐ' }, max: 6 },
-    'hero.invocation': { label: 'Card: invocation line (type - to remove)', default: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' }, max: 40 },
-    'hero.title': { shared: 'hero.kicker', label: 'Card: calligraphy title (the Nepali is always shown large)', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 24 },
+    'ganesh.show': { label: 'Ganesh on the torana and inside (type “off” to hide him)', default: { en: 'on', ne: 'on' }, max: 8 },
+    'hero.invocation': { label: 'Opening: invocation line (type - to remove)', default: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' }, max: 40 },
+    'hero.title': { shared: 'hero.kicker', label: 'Opening: calligraphy title (the Nepali is always shown large)', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 24 },
+    'hero.blessing': { label: 'Opening: one warm line under the names', default: { en: 'Awaiting your blessings as two families become one', ne: 'हजुरको शुभ आशीर्वादको प्रतीक्षामा' }, max: 70, multiline: true },
+    'hero.symbol': { label: 'Full card: sacred symbol at the top (type - to remove)', default: { en: 'ॐ', ne: 'ॐ' }, max: 6 },
     'date.kicker': { label: 'Date: small label', default: { en: 'Save the date', ne: 'शुभ साइत' }, max: 28 },
     'date.title': { label: 'Date: title above the scratch card', default: { en: 'The auspicious day', ne: 'शुभ दिन' }, max: 32 },
     'scratch.hint': { label: 'Scratch card: line on the gold foil', default: { en: 'Scratch to reveal the date', ne: 'मिति हेर्न कोर्नुहोस्' }, max: 32 },
     'scratch.button': { label: 'Scratch card: button that reveals it at once', default: { en: 'Tap to reveal', ne: 'थिचेर हेर्नुहोस्' }, max: 24 },
-    'count.title': { label: 'Countdown: title', default: { en: 'Until our forever', ne: 'हाम्रो सदाका लागि बाँकी' }, max: 36 },
+    'count.title': { label: 'Countdown: title', default: { en: 'Counting down to the big day', ne: 'शुभ घडी आउन बाँकी' }, max: 36 },
     'couple.title': { shared: 'couple.title', label: 'Photos: title', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 28 },
     'couple.line': { shared: 'couple.line', label: 'Photos: one line', default: { en: 'Soon to be married, with the blessings of both families.', ne: 'दुवै परिवारको आशीर्वादसहित, चाँडै विवाह बन्धनमा।' }, max: 90, multiline: true },
     'families.title': { label: 'Families: title', default: { en: 'With the blessings of our families', ne: 'दुवै परिवारको आशीर्वादसहित' }, max: 48 },

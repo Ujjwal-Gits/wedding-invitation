@@ -1,10 +1,11 @@
 // Theme · Mangal (मंगल) — the red-and-gold Nepali wedding card, come alive.
-// A carved Newar doorway (pillars, a lintel, a torana with Ganesh) hung with one marigold toran and two brass
-// bells. Tap the latch and the heavy leaves swing open with warm light spilling through, and the camera walks
-// in (the one signature motion) onto the red card: Ganesh, ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and the
-// couple in a gold temple arch. Then a calm scroll: a gold scratch card that reveals the date, the countdown,
-// a strip of photographs that moves sideways, the families, the card wording, the programme, the reply card
-// and the blessing between two lit diyos, closed by a Dhaka band.
+// A carved Newar doorway (pillars, a lintel, a torana with Ganesh) hung with a full marigold toran, two brass
+// bells and small flower sprays. Tap the latch and the heavy leaves swing open with warm light spilling through,
+// and the camera walks in (the one signature motion). Inside, Shri Ganesh appears first, large and glowing, then
+// settles softly behind ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and one warm line. Then a calm scroll: the
+// couple in a gold temple arch, a gold scratch card that reveals the date, the countdown, a strip of photographs,
+// the families around a brass kalash, the card wording, the programme, the reply card and the blessing under a
+// full-width marigold garland between two lit diyos, closed by a Dhaka band.
 import '../../core/base.css';
 import './mangal.css';
 import { gsap } from 'gsap';
@@ -114,10 +115,14 @@ const galMore = (config.gallery || [])
 /** The photo strip: every photograph after the main one, in order. */
 const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 
-// Ganesh (optional): one picture, shown in a round gold medallion above the door and inside.
-const ganeshRef = on(txt('torana.show')) ? S.img('torana.ganesh') : null;
+// Ganesh (optional): one cut-out picture. In the gold medallion on the torana, then inside: shown large first
+// and softly behind the opening words after that.
+const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
 const medal = (cls = '') => (ganeshRef
-  ? `<div class="mg-medal ${cls}" aria-hidden="true"><img src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 320w, ${esc(photoUrl(ganeshRef, 'lg'))} 640w" sizes="200px" alt="" decoding="async" />${medalSVG()}</div>`
+  ? `<div class="mg-medal ${cls}" aria-hidden="true"><img src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 420w, ${esc(photoUrl(ganeshRef, 'lg'))} 800w" sizes="240px" alt="" decoding="async" />${medalSVG()}</div>`
+  : '');
+const ganesh = () => (ganeshRef
+  ? `<div class="mg-gan" id="gan" aria-hidden="true"><i class="mg-gan__glow" id="ganglow"></i><img class="mg-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 420w, ${esc(photoUrl(ganeshRef, 'lg'))} 800w" sizes="(max-width: 700px) 80vw, 560px" alt="" decoding="async" /></div>`
   : '');
 
 // ───────────────────────── Dates ─────────────────────────
@@ -182,7 +187,7 @@ const names = () => `<span class="mg-n">${bi(c.bride.name)}</span> <span class="
 const symbol = txt('hero.symbol');
 const invocation = txt('hero.invocation');
 const title = txt('hero.title');
-const welcome = txt('hero.welcome');
+const blessing = txt('hero.blessing');
 
 const damask = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" viewBox="0 0 84 84">${rosette(21, 21, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}${rosette(63, 63, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}<circle cx="63" cy="21" r="1.6" fill="#000"/><circle cx="21" cy="63" r="1.6" fill="#000"/></svg>`;
@@ -194,8 +199,7 @@ document.documentElement.style.setProperty('--mg-dhaka', DHAKA.url);
 document.documentElement.style.setProperty('--mg-dhaka-w', `${DHAKA.w}px`);
 document.documentElement.style.setProperty('--mg-dhaka-h', `${DHAKA.h}px`);
 
-const diyo = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true">${diyoSVG(w, Math.round(w * 1.6))}</div>`;
-const swag = (cls = '') => `<div class="mg-swag ${cls}" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1100px" alt="" decoding="async" /></div>`;
+const diyo = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true"><i class="mg-diyo__halo"></i>${diyoSVG(w, Math.round(w * 1.6))}</div>`;
 const head = (kicker, h, id, cls = '') => `<header class="mg-head ${cls} mg-rise">${dividerSVG(200)}${kicker ? `<p class="mg-kicker">${bi(kicker)}</p>` : ''}<h2 class="mg-h2" id="${id}">${bi(h)}</h2></header>`;
 
 // The date under the scratch foil: AD and B.S. (B.S. leads in Nepali), the time and the place.
@@ -241,27 +245,29 @@ main.innerHTML = `
     </div>
     <div class="mg-spill" id="spill" aria-hidden="true"></div>
     <div class="mg-bells" id="bells" aria-hidden="true"></div>
-    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-toran" id="toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" fetchpriority="high" /></div>
+    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-toran mg-toran--back" id="toran2" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" /><img class="mg-toran" id="toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" fetchpriority="high" /><img class="mg-spray mg-spray--l" id="sprayL" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="220px" alt="" decoding="async" /><img class="mg-spray mg-spray--r" id="sprayR" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="220px" alt="" decoding="async" /></div>
     <div class="mg-beam" id="beam" aria-hidden="true"></div>
     <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
     <div class="mg-panel__content" id="pcontent">
-      ${on(welcome) ? `<div class="mg-welcome" id="welcome" aria-hidden="true">
-        ${welcome.ne ? `<p class="mg-welcome__ne" lang="ne">${esc(welcome.ne)}</p>` : ''}
-        ${welcome.en && welcome.en !== welcome.ne ? `<p class="mg-welcome__en" lang="en">${esc(welcome.en)}</p>` : ''}
-      </div>` : ''}
-      <div class="mg-panel__inner${lead ? ' has-photo' : ''}" id="pinner">
+      ${ganesh()}
+      <div class="mg-panel__inner" id="pinner">
         <div class="mg-hero__text" id="htext">
-          ${ganeshRef ? `<div class="mg-hero__medal mg-in">${medal('mg-medal--hero')}</div>` : on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
+          ${!ganeshRef && on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
           ${on(invocation) ? `<p class="mg-invoke mg-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
           <h1 class="mg-title mg-in"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
           <span class="mg-hero__div mg-in">${dividerSVG(180)}</span>
           <p class="mg-names mg-in" id="names">${names()}</p>
+          ${on(blessing) ? `<p class="mg-bless mg-in">${bi(blessing)}</p>` : ''}
         </div>
-        ${lead ? `<div class="mg-hero__photo mg-in" id="hphoto">${archFrame(lead.photo, lead.alt, '(max-width: 700px) 80vw, 520px', { eager: true })}</div>` : ''}
       </div>
-      <a class="mg-cue" id="cue" href="#date"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
+      <a class="mg-cue" id="cue" href="#${lead ? 'portrait' : 'date'}"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
     </div>
   </section>
+
+  ${lead ? `
+  <section class="mg-sec mg-portrait" id="portrait" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
+    <div class="mg-portrait__in mg-rise">${archFrame(lead.photo, lead.alt, '(max-width: 700px) 84vw, 480px')}</div>
+  </section>` : ''}
 
   <section class="mg-sec mg-when" id="date" aria-labelledby="date-title">
     ${head(txt('date.kicker'), txt('date.title'), 'date-title')}
@@ -302,24 +308,27 @@ main.innerHTML = `
   </section>` : ''}
 
   <section class="mg-sec mg-fam" id="families" aria-labelledby="fam-title">
-    <div class="mg-cut mg-cut--fam">
-      <div class="mg-cut__layer mg-cut__layer--gold" data-settle="1"></div>
-      <div class="mg-cut__layer mg-cut__layer--red" data-settle="0.5"></div>
-      <div class="mg-cut__body">
+    <div class="mg-fam__card mg-rise">
+      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 96vw, 1040px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__spray mg-fam__spray--tl" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__spray mg-fam__spray--br" src="${DECOR}corner-br-sm.webp" srcset="${DECOR}corner-br-sm.webp 400w, ${DECOR}corner-br.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <div class="mg-fam__body">
         ${dividerSVG(180)}
-        <h2 class="mg-h2 mg-h2--gold mg-rise" id="fam-title">${bi(txt('families.title'))}</h2>
+        <h2 class="mg-h2" id="fam-title">${bi(txt('families.title'))}</h2>
         <div class="mg-fam__grid">
-          <div class="mg-fam__side mg-rise">
-            ${brideGroom ? plainFrame(bridePh, c.bride.name.en, '(max-width: 700px) 60vw, 260px', 'mg-fam__pic') : ''}
-            <p class="mg-kicker mg-kicker--gold">${bi(txt('families.bride'))}</p>
+          <div class="mg-fam__side">
+            ${brideGroom ? plainFrame(bridePh, c.bride.name.en, '(max-width: 700px) 60vw, 240px', 'mg-fam__pic') : ''}
+            <p class="mg-kicker">${bi(txt('families.bride'))}</p>
             <p class="mg-fam__name">${bi(c.bride.fullName)}</p>
             ${(c.bride.parents?.en || c.bride.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.daughter'))}</p><p class="mg-fam__parents">${bi(c.bride.parents)}</p>` : ''}
             ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="mg-fam__home">${bi(c.bride.home)}</p>` : ''}
           </div>
-          <div class="mg-fam__mid" aria-hidden="true"><div class="mg-fam__bell" id="fambell"></div></div>
-          <div class="mg-fam__side mg-rise">
-            ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 260px', 'mg-fam__pic') : ''}
-            <p class="mg-kicker mg-kicker--gold">${bi(txt('families.groom'))}</p>
+          <div class="mg-fam__mid" aria-hidden="true">
+            <img class="mg-fam__kalash" src="${DECOR}kalash-sm.webp" srcset="${DECOR}kalash-sm.webp 320w, ${DECOR}kalash.webp 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
+          </div>
+          <div class="mg-fam__side">
+            ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 240px', 'mg-fam__pic') : ''}
+            <p class="mg-kicker">${bi(txt('families.groom'))}</p>
             <p class="mg-fam__name">${bi(c.groom.fullName)}</p>
             ${(c.groom.parents?.en || c.groom.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.son'))}</p><p class="mg-fam__parents">${bi(c.groom.parents)}</p>` : ''}
             ${(c.groom.home?.en || c.groom.home?.ne) ? `<p class="mg-fam__home">${bi(c.groom.home)}</p>` : ''}
@@ -444,16 +453,16 @@ main.innerHTML = `
   </section>
 
   <footer class="mg-close" aria-label="Blessing">
-    ${swag('mg-swag--close')}
+    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
     <div class="mg-close__row">
-      <div class="mg-close__lamp" data-depth="0.5">${diyo('mg-diyo--close', 96)}</div>
+      <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
       <div class="mg-close__text mg-rise">
         <p class="mg-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
         <p class="mg-close__en l-en">${esc(config.closing?.en || '')}</p>
         <p class="mg-close__names">${names()}</p>
         ${c.hashtag ? `<p class="mg-close__tag">${esc(c.hashtag)}</p>` : ''}
       </div>
-      <div class="mg-close__lamp" data-depth="0.5">${diyo('mg-diyo--close', 96)}</div>
+      <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
     </div>
     <div class="mg-band" aria-hidden="true"></div>
     ${madeWith()}
@@ -484,7 +493,6 @@ main.innerHTML = `
     <button type="button" class="mg-lb__btn mg-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
   </div>`;
 
-document.getElementById('fambell').innerHTML = bellSVG(40, 104, { links: 5 });
 
 // ───────────────────────── Shell, RSVP, dialogs ─────────────────────────
 const { player } = mountShell({ chapters: [] });
@@ -560,7 +568,10 @@ const panel = document.getElementById('panel');
 const pcontent = document.getElementById('pcontent');
 const pinner = document.getElementById('pinner');
 const htext = document.getElementById('htext');
-const hphoto = document.getElementById('hphoto');
+const ganEl = document.getElementById('gan');
+const ganImg = document.getElementById('ganimg');
+const ganGlow = document.getElementById('ganglow');
+const WATERMARK = 0.16;
 const leafL = document.getElementById('leafL');
 const leafR = document.getElementById('leafR');
 const gate = document.getElementById('gate');
@@ -568,9 +579,11 @@ const bellsEl = document.getElementById('bells');
 const openBtn = document.getElementById('open');
 const quietBtn = document.getElementById('quiet');
 const inside = document.getElementById('inside');
-const welcomeEl = document.getElementById('welcome');
 const garlandEl = document.getElementById('garland');
 const toranEl = document.getElementById('toran');
+const toran2El = document.getElementById('toran2');
+const sprayL = document.getElementById('sprayL');
+const sprayR = document.getElementById('sprayR');
 const beamEl = document.getElementById('beam');
 const spillEl = document.getElementById('spill');
 const thresholdEl = document.getElementById('threshold');
@@ -583,14 +596,14 @@ function computeLayout(W, H) {
   const beam = phone ? 12 : 22;
   const drop = phone ? 7 : 14;
   const thr = phone ? 28 : Math.round(Math.min(48, Math.max(34, H * 0.05)));
-  const fw = phone ? W - 20 : Math.min(Math.round(W * (W < 1000 ? 0.8 : 0.6)), 1120);
+  const fw = phone ? W - 16 : Math.min(Math.round(W * (W < 1000 ? 0.86 : 0.68)), 1360);
   const pw = phone ? 16 : Math.round(Math.min(64, Math.max(40, fw * 0.058)));
   const ext = phone ? 4 : Math.round(pw * 0.8);
   const lh = phone ? 22 : Math.round(Math.min(48, Math.max(32, fw * 0.042)));
   const sill = phone ? 8 : 14;
   const tw = Math.round(fw * (phone ? 0.52 : 0.34));
   const th = Math.round(tw * 0.5);
-  const fy = phone ? 62 : Math.round(beam + drop + Math.max(22, H * 0.035));
+  const fy = phone ? 56 : Math.round(beam + drop + Math.max(14, H * 0.02));
   const DW = fw + 2 * ext;
   const fx = Math.round((W - DW) / 2);
   const fh = H - thr - fy;
@@ -628,28 +641,13 @@ function placeBells(L) {
   bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${b.w}px;height:${b.h}px" data-i="${i}">${bellSVG(b.w, b.h, { links: b.links })}</div>`).join('');
 }
 
-/** The card inside: text and the main photo. Side by side on wide screens, stacked on tall ones; the photo
- *  takes the room the words leave, and the words shrink a little only when they must. */
+/** The opening words inside: they shrink a little only when they must. */
 function fitContent() {
   pinner.style.setProperty('--fit', '1');
   const cs = getComputedStyle(pcontent);
   const availH = pcontent.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  const availW = pcontent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const side = !!hphoto && availW >= 760 && availW / availH > 1.05;
-  pinner.classList.toggle('is-side', side);
-  const ar = lead ? (aspectOf(lead.photo) || hphoto?.querySelector('img')?.naturalWidth / hphoto?.querySelector('img')?.naturalHeight || 0.8) : 0.8;
-  const perW = 1 / TEMPLE_AR + 1 / ar; // crown + photo height per unit of width
-  const sizePhoto = () => {
-    if (!hphoto) return;
-    const pad = 22;
-    let w;
-    if (side) w = Math.min(availW * 0.44, (availH - pad - 8) / perW, 560);
-    else w = Math.min(availW * 0.86, (availH - htext.offsetHeight - pad - 14) / perW, 440);
-    hphoto.style.width = `${Math.max(L?.phone ? 150 : 200, Math.round(w))}px`;
-  };
   let k = 1;
-  for (let n = 0; n < 18; n++) {
-    sizePhoto();
+  for (let n = 0; n < 14; n++) {
     const tooTall = pinner.scrollHeight > availH + 1;
     const tooWide = [...pinner.querySelectorAll('.mg-n, .mg-title__ne')].some((el) => el.offsetWidth > htext.clientWidth + 1);
     if (!tooTall && !tooWide) break;
@@ -657,7 +655,6 @@ function fitContent() {
     pinner.style.setProperty('--fit', k.toFixed(3));
   }
 }
-const TEMPLE_AR = 200 / TEMPLE.H;
 
 function applyLayout() {
   const W = root.clientWidth;
@@ -677,6 +674,13 @@ function applyLayout() {
   document.getElementById('framewrap').innerHTML = frameSVG(L);
   beamEl.innerHTML = beamSVG(L.W, L.beam, L.drop);
   Object.assign(toranEl.style, { left: `${Math.round(L.tX)}px`, top: `${Math.round(L.tY)}px`, width: `${Math.round(L.tW)}px` });
+  // a second, shallower strand behind makes the toran full; small sprays dress the lintel ends
+  const t2W = L.tW * 0.94;
+  Object.assign(toran2El.style, { left: `${Math.round(L.tX + (L.tW - t2W) / 2)}px`, top: `${Math.round(L.tY - L.tH * 0.12)}px`, width: `${Math.round(t2W)}px` });
+  const sw = L.phone ? Math.round(L.pw * 4.2) : Math.round(Math.min(220, Math.max(120, L.ext * 3.4)));
+  const sy = L.fy + L.th - Math.round(sw * 0.16);
+  Object.assign(sprayL.style, { width: `${sw}px`, left: `${Math.round(L.fx - sw * 0.12)}px`, top: `${sy}px` });
+  Object.assign(sprayR.style, { width: `${sw}px`, left: `${Math.round(L.fx + L.DW - sw * 0.88)}px`, top: `${sy}px` });
   Object.assign(spillEl.style, { left: `${L.fx + L.ox - L.ow * 0.1}px`, width: `${L.ow * 1.2}px`, bottom: `${L.thr}px`, height: `${Math.round(L.oh * 0.5)}px` });
   Object.assign(pcontent.style, { top: `${L.ctop}px`, bottom: `${L.cbottom}px` });
   const lw = L.ow / 2;
@@ -694,7 +698,6 @@ document.body.classList.add('mg-locked');
 window.scrollTo(0, 0);
 applyLayout();
 document.fonts?.ready.then(fitContent);
-hphoto?.querySelector('img')?.addEventListener('load', fitContent, { once: true });
 openBtn.disabled = false;
 quietBtn.disabled = false;
 document.body.classList.add('is-ready');
@@ -764,7 +767,7 @@ function open(withMusic) {
 /** The card's lines settle into place, a few at a time (headings and the photo, no body text). */
 const cardGroups = () => {
   const g = (sel) => [...pinner.querySelectorAll(sel)];
-  return [g('.mg-hero__medal, .mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-hero__div, .mg-names'), g('.mg-hero__photo')].filter((a) => a.length);
+  return [g('.mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-hero__div, .mg-names'), g('.mg-bless')].filter((a) => a.length);
 };
 
 // Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera (the
@@ -840,7 +843,7 @@ function walkIn() {
     .fromTo('#light', { opacity: 0 }, { opacity: 1, duration: SWING * 0.7, ease: 'power1.out' }, SWING_AT + 0.15)
     .fromTo(spillEl, { opacity: 0, scaleX: 0.25 }, { opacity: 1, scaleX: 1, duration: SWING * 0.75, ease: 'power2.out' }, SWING_AT + 0.25)
     .add(dropPetals, SWING_AT)
-    // as we step through, the glare settles to a warm glow so the welcome reads clearly
+    // as we step through, the glare settles to a warm glow for Ganesh
     .to('#gap', { opacity: 0, duration: 1.2, ease: 'power1.inOut' }, DOLLY_AT + 0.1)
     .to('#light', { opacity: 0.22, duration: 1.4, ease: 'power1.inOut' }, DOLLY_AT + 0.2)
     .to(spillEl, { opacity: 0, duration: 1, ease: 'power1.inOut' }, DOLLY_AT + 0.3)
@@ -849,16 +852,19 @@ function walkIn() {
     .to(rig, { p: 1, duration: DOLLY, ease: easeWalk, onUpdate: () => cam?.set(rig.p) }, DOLLY_AT)
     .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.55, ease: 'power1.inOut' }, end - 0.55)
     .add(() => hero.classList.add('is-inside'), end + 0.02);
-  let t = end;
-  if (welcomeEl) {
-    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'power1.out' }, DOLLY_AT + 0.45)
-      .fromTo(welcomeEl, { scale: 0.86, y: 14 }, { scale: 1, y: 0, duration: end - DOLLY_AT - 0.45, ease: 'power2.out' }, DOLLY_AT + 0.45)
-      .to(welcomeEl, { autoAlpha: 0, y: -16, scale: 1.03, duration: 0.42, ease: 'power2.in' }, end - 0.05);
-    t = end + 0.42;
+  let t = end + 0.1;
+  if (ganEl) {
+    // Shri Ganesh first, large and glowing; after a moment he settles softly behind the words
+    gsap.set([ganImg, ganGlow], { opacity: 0 });
+    tl.fromTo(ganImg, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out' }, end - 0.3)
+      .fromTo(ganGlow, { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 1.3, ease: 'power2.out' }, end - 0.3)
+      .to(ganImg, { opacity: WATERMARK, duration: 1.4, ease: 'power1.inOut' }, end + 1.7)
+      .to(ganGlow, { opacity: 0.4, duration: 1.4, ease: 'power1.inOut' }, end + 1.7);
+    t = end + 2.3;
   }
   gsap.set(groups.flat(), { opacity: 0 });
   gsap.set(pinner, { opacity: 1 });
-  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 22, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.09 : 0.12)));
+  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.14 : 0.18)));
   tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.5 }, t + 0.7);
   return tl;
 }
@@ -869,12 +875,8 @@ function crossfadeIn() {
   tl.to(gate, { autoAlpha: 0, duration: 0.25 }, 0)
     .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, 0.1)
     .add(() => hero.classList.add('is-inside'), 0.62);
-  let t = 0.6;
-  if (welcomeEl) {
-    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, 0.5)
-      .to(welcomeEl, { autoAlpha: 0, duration: 0.3 }, 1.9);
-    t = 2.25;
-  }
+  const t = 0.6;
+  if (ganEl) { gsap.set(ganImg, { opacity: WATERMARK }); gsap.set(ganGlow, { opacity: 0.4 }); }
   tl.fromTo(pinner, { opacity: 0 }, { opacity: 1, duration: 0.45 }, t)
     .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.2);
   return tl;
@@ -897,7 +899,7 @@ function afterOpen() {
   photoStrip();
   document.getElementById('cue').addEventListener('click', (e) => {
     e.preventDefault();
-    const y = document.getElementById('date').getBoundingClientRect().top + window.scrollY;
+    const y = document.getElementById(lead ? 'portrait' : 'date').getBoundingClientRect().top + window.scrollY;
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
   });
 }
@@ -933,7 +935,7 @@ function afterOpen() {
     ctx.strokeStyle = 'rgba(255,244,207,.6)'; ctx.strokeRect(m + 4 * dpr, m + 4 * dpr, w - 2 * m - 8 * dpr, h - 2 * m - 8 * dpr);
     const ne = lang() === 'ne';
     const size = Math.round(Math.min(w / (ne ? 11 : 14), 30 * dpr));
-    ctx.font = ne ? `600 ${size}px Laila, Mukta, serif` : `400 ${size}px Gloock, Georgia, serif`;
+    ctx.font = ne ? `400 ${size}px 'Yatra One', Mukta, serif` : `600 ${size}px 'Cormorant Garamond', Georgia, serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const line = ne ? (hint.ne || hint.en) : hint.en;
     ctx.fillStyle = 'rgba(255,246,214,.75)'; ctx.fillText(line, w / 2 + dpr, h / 2 + dpr * 1.5);
@@ -1079,7 +1081,7 @@ function scrollStory() {
   mm.add('(min-width: 900px) and (pointer: fine)', () => {
     const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
     gsap.to(inside, { scale: 1.1, ease: 'none', scrollTrigger: st });
-    gsap.to(pinner, { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
+    gsap.to([pinner, ganEl].filter(Boolean), { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
     gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
     document.querySelectorAll('[data-depth]').forEach((el) => {
       const d = Number(el.dataset.depth) || 0.5;
@@ -1089,16 +1091,6 @@ function scrollStory() {
       const d = Number(el.dataset.settle) || 0.5;
       gsap.fromTo(el, { y: 60 * d, scale: 1 - 0.015 * d }, { y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'top 35%', scrub: 0.8 } });
     });
-    document.querySelectorAll('.mg-swag').forEach((el) => {
-      gsap.fromTo(el, { y: -30 }, { y: 0, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'top 40%', scrub: 0.8 } });
-    });
-  });
-  ScrollTrigger.create({
-    trigger: '#families', start: 'top 70%', once: true,
-    onEnter: () => {
-      const b = document.getElementById('fambell');
-      gsap.fromTo(b, { rotation: 0 }, { keyframes: { rotation: [6, -4, 2.5, -1, 0] }, duration: 2.4, ease: 'sine.inOut' });
-    },
   });
 }
 
@@ -1126,7 +1118,7 @@ if (DEBUG) {
       gsap.set(leafL, { rotationY: 80 }); gsap.set(leafR, { rotationY: -80 });
       gsap.set('.mg-leaf__shade', { opacity: 0.5 });
       gsap.set(inside, { autoAlpha: 1 });
-      if (welcomeEl) gsap.set(welcomeEl, { autoAlpha: 0 });
+      if (ganEl) { gsap.set(ganImg, { opacity: WATERMARK }); gsap.set(ganGlow, { opacity: 0.4 }); }
       gsap.set([pinner, '#cue'], { opacity: 1, scale: 1 });
       afterOpen();
     },

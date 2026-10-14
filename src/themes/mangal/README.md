@@ -12,8 +12,8 @@ Dhaka band underfoot. The closed door shows only "An invitation for you and your
 निमन्त्रणा" and the names: no dates, no side props.
 
 Palette: ivory paper `#F8F1E3`, ink `#2C0C09`, sindoor reds `#8C1018` / `#6A0A12`, gold as metal
-(`#D4A24C`, text gold `#F4D896`, 7.6:1 on red). Type: **Rozha One** (शुभ विवाह in gold foil),
-**Laila** (Nepali names and headings), **Gloock** (Latin names and headings), **Mukta** (all reading text,
+(`#D4A24C`, text gold `#F4D896`, 7.6:1 on red). Type: **Yatra One** (शुभ विवाह in gold foil,
+Nepali names and headings), **Cormorant Garamond** 600 (Latin names and headings), **Mukta** (all reading text,
 both scripts; dates always in Mukta). No script faces; Devanagari never tracked or uppercased.
 
 ## Art (no AI images)
@@ -21,9 +21,10 @@ both scripts; dates always in Mukta). No script faces; Devanagari never tracked 
   number of loops so it is symmetric edge to edge), the doorway (`frameSVG`: pillars, lintel rosettes, torana
   via `cuspPath` like nimantrana's arches, a halo clipped to the torana), the rectangular leaves (`leafSVG`),
   the medallion ring (`medalSVG`), bells, diyos, the Dhaka tile, the temple crown, dividers and petals.
-- Ganesh: `public/themes/mangal/ganesh-640/320.webp`, a square crop of nimantrana's public-domain Basohli
-  miniature (about 1730), shown in a circle. Slot `torana.ganesh`; type "off" in `torana.show` to hide it
-  (the torana then shows a gold lotus, and the inside shows ॐ from `hero.symbol`).
+- Ganesh: `public/themes/mangal/ganesh-rv-800/420.webp`, the public-domain Ravi Varma Press oleograph "Shri
+  Mangalmurti" (Wikimedia Commons, credited in `flora-credits.js` only), background removed with rembg. Head and
+  shoulders in the torana medallion; inside, shown large with a glow, then faded to a 16% watermark behind the words.
+  Slot `hero.ganesh`; type "off" in `ganesh.show` to hide it (the inside then shows ॐ from `hero.symbol`).
 - Raster decor: `decor/swag*.webp` (the toran and the closing swag), `corner-*`, `paper.webp`
   (made by `tools/decor.py`; flowers credited in `flora-credits.js`).
 
@@ -37,23 +38,24 @@ The welcome line drifts in, then the card settles group by group. Transform and 
 (median frame 16.7 ms at 1920 and 390). Reduced motion: a crossfade. A safety timer always finishes the sequence.
 
 ## Inside and the scroll
-1. **Hero (inside the doors):** Ganesh medallion, ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and the main photo
-   (`couple.lead`) in the gold temple-arch frame; side by side on wide screens, stacked on phones (`fitContent`).
+1. **Hero (inside the doors):** Ganesh first, then ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and `hero.blessing` over
+   his watermark. Then **the couple** (`couple.lead`) in the gold temple-arch frame, in its own section.
 2. **The date:** a gold scratch card (canvas, pointer and touch; reveals at 60% cleared) over the ceremony's
    weekday, AD and B.S. date (B.S. leads in Nepali), `timeLabel` and venue; "Tap to reveal" button for keyboard,
-   screen readers and reduced motion. Then **Until our forever / हाम्रो सदाका लागि बाँकी**: days, hours, minutes,
+   screen readers and reduced motion. Then **Counting down to the big day / शुभ घडी आउन बाँकी**: days, hours, minutes,
    seconds to the ceremony start (the event on the wedding day), Nepali digits in NE.
 3. **The two of us:** every other photo, uncropped, in a plain ivory mat with one gold line, moving right to
    left: pinned and scrubbed by ScrollTrigger on desktop, an endless slow marquee on phones and tablets, a
    swipeable row with reduced motion. Tap a photo for the lightbox.
-4. **Families** (gold/red paper-cut arch), 5. **the card wording** (centred), 6. **the programme**
-   (`timeLabel`, AD + B.S.), 7. **RSVP** (`core/rsvp.js`), 8. **the blessing** between two lit diyos under one
-   swag, Dhaka band, Made with Nimtto.
+4. **Families** (red card framed in gold, marigold toran, corner sprays, a brass kalash with mango leaves and coconut
+   between the two families), 5. **the card wording** (centred), 6. **the programme**
+   (`timeLabel`, AD + B.S.), 7. **RSVP** (`core/rsvp.js`), 8. **the blessing** between two lit diyos under a
+   full-width marigold garland, Dhaka band, Made with Nimtto.
 
 ## Studio slots (`slots.js`)
-Images: `torana.ganesh`, `couple.lead` (portrait 0), `couple.pair.1–2`, `couple.row.1–3`, `gallery.1–6` (the photo
+Images: `hero.ganesh`, `couple.lead` (portrait 0), `couple.pair.1–2`, `couple.row.1–3`, `gallery.1–6` (the photo
 strip, in that order, then the invitation gallery), `families.bride` / `families.groom`. Texts: `gate.line`,
-`gate.open`, `gate.quiet`, `torana.show`, `hero.welcome`, `hero.symbol`, `hero.invocation`, `hero.title`,
+`gate.open`, `gate.quiet`, `ganesh.show`, `hero.symbol`, `hero.invocation`, `hero.title`, `hero.blessing`,
 `date.kicker`, `date.title`, `scratch.hint`, `scratch.button`, `count.title`, `couple.title`, `couple.line`,
 `families.*`, `card.*`, `prog.*`, `rsvp.*`. Religious marks are optional ("off" / "-").
 
