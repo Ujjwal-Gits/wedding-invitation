@@ -35,12 +35,23 @@ Tap the brass latch (or "Open without music"): the plaque fades, the temple bell
 the hanging bells sway, the two carved leaves unlatch and swing inward in 3D (`perspective` + `rotateY`,
 1.3 s, `power3.inOut`, darkening as they turn), a few marigold and rose petals fall, and the red card
 behind settles in: ॐ, the invocation, **शुभ विवाह**, निमन्त्रणा, the names, both dates (AD and B.S.;
-B.S. first in Nepali) and the city. The doorway is computed per screen: wide on desktop (76% of the width,
+B.S. first in Nepali) and the city.
+
+**Walking in** (after the doors): a forward dolly through the gate (`walkIn()` in `main.js`). Each layer
+has a distance from the camera (garland 2.7, bells 2.9, kalash/thaali 3.1, threshold 3.5, doorway 4); the
+camera moves forward by c and a layer scales by D / (D - c) about the vanishing point, so the garland and
+bells leave first and the door leaves slide past the edges. The travel is computed per screen
+(`throughScale()`: just past the point where every screen corner is inside the arch). About 2.9 s
+(2.5 s on phones), custom cubic ease, transform/opacity only, layers pre-promoted so nothing rasterises
+mid-move. While walking in, the `hero.welcome` line (both languages) fades in centred and drifts toward
+you; it leaves, then the card lines settle in group by group on the red arch (`.mg-inside`: gold arched
+rules, Dhaka band underfoot). Only then is the scroll lock released and the scroll cue shown; on desktop
+the first scroll carries the camera a little further in (ScrollTrigger scrub). Reduced motion: a plain
+crossfade. A safety timer always finishes the sequence. The doorway is computed per screen: wide on desktop (76% of the width,
 up to 1240 px), full width on phones, always one screen, content shrunk-to-fit if needed. Transform and
 opacity only; 60 fps measured on the GPU (median frame 16.7 ms).
 
 ## The scroll (GSAP ScrollTrigger, desktop only; phones and reduced motion get plain reveals)
-Leaving the doorway, the garland parts left and right, bells lift, the kalash and thaali sink away.
 Ornaments beside the content (`data-depth`) drift at their own depth; the paper-cut layers of the
 families panel (`data-settle`) and the swags settle into place. Content panels rise once (no body-text
 animation). Sections:
@@ -60,7 +71,7 @@ animation). Sections:
 ## Studio slots (`slots.js`)
 Images: `couple.lead` (portrait 0), `couple.pair.1–2` (1–2), `couple.row.1–3` (3–5),
 `families.bride` / `families.groom`, `gallery.1–6` (6–11). Repeats are skipped.
-Texts: `gate.line`, `gate.open`, `gate.quiet`, `hero.symbol` (ॐ), `hero.invocation`, `hero.title`,
+Texts: `gate.line`, `gate.open`, `gate.quiet`, `hero.welcome`, `hero.symbol` (ॐ), `hero.invocation`, `hero.title`,
 `hero.subtitle`, `kalash.mark` (`swastika`, any short text, or `-`), `couple.title`, `couple.line`,
 `families.title/bride/groom/daughter/son`, `card.kicker`, `card.line`, `card.button`, `prog.kicker`,
 `prog.title`, `prog.more`, `gallery.title`, `rsvp.title`, `rsvp.send`. Religious marks (ॐ, invocation,

@@ -1,5 +1,5 @@
 // Sources of the cut-out flowers and leaves composed into the garlands, kalash and thaali
-// (public/themes/mangal/decor, made by tools/decor.py). Listed in the footer credits.
+// (public/themes/mangal/decor, made by tools/decor.py). Listed on the public /credits/ page.
 // Marigolds are cut from the library photos marigold-macro / marigold-macro-alt (credited in credits.json).
 // Brass, coconut, hibiscus, jasmine, rice, sindoor and cloth are drawn in code.
 const W = (file) => `https://commons.wikimedia.org/wiki/File:${file}`;

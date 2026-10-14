@@ -34,6 +34,7 @@ export default {
     'gate.line': { shared: 'gate.line', label: 'Doorway: line above the names', default: { en: 'An invitation for you and your family', ne: 'हजुर र हजुरको परिवारलाई निम्तो' }, max: 60 },
     'gate.open': { shared: 'gate.open', label: 'Doorway: open button', default: { en: 'Open the doors', ne: 'ढोका खोल्नुहोस्' }, max: 28 },
     'gate.quiet': { shared: 'gate.quiet', label: 'Doorway: open without music', default: { en: 'Open without music', ne: 'संगीतबिना खोल्नुहोस्' }, max: 32 },
+    'hero.welcome': { label: 'Walking in: welcome line (both languages are shown together)', default: { en: 'You are warmly invited', ne: 'हजुरलाई हार्दिक निमन्त्रणा' }, max: 40 },
     'hero.symbol': { label: 'Card: sacred symbol at the top (type - to remove)', default: { en: 'ॐ', ne: 'ॐ' }, max: 6 },
     'hero.invocation': { label: 'Card: invocation line (type - to remove)', default: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' }, max: 40 },
     'hero.title': { shared: 'hero.kicker', label: 'Card: calligraphy title (the Nepali is always shown large)', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 24 },

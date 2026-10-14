@@ -58,7 +58,6 @@
 .theme-dhaka .trk__text b { font: 400 19px/1.3 var(--f-text); color: var(--ink); }
 .theme-dhaka .trk__text small { font-size: 14px; color: var(--ink-2); }
 .theme-dhaka .sheet__close { color: var(--ink); }
-.theme-dhaka .sheet__credits { color: var(--ink-2); font-size: 12.5px; }
 .theme-dhaka .btn--ghost { color: var(--ink); border-color: var(--ink); }
 .theme-dhaka .eyebrow { font: 400 12.5px/1.4 var(--f-text); letter-spacing: 0.16em; color: var(--ink-2); }
 
@@ -137,6 +136,10 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 
 /* ───────── Flowers (real cut-out photographs) ───────── */
 .fl { position: absolute; height: auto; max-width: none; pointer-events: none; user-select: none; filter: drop-shadow(0 12px 14px rgba(70, 40, 15, 0.26)) drop-shadow(0 2px 3px rgba(70, 40, 15, 0.22)); }
+/* leaves always sit behind the blooms, whatever their order in a spray (per-spray rules may raise
+   both, but always keep leaf < bloom) */
+.fl { z-index: 1; }
+.fl.fl--leaf { z-index: 0; }
 
 /* ───────── Welcome: the floral frame ───────── */
 .welcome { --fu: min(100vw, 100svh); position: relative; height: 100svh; min-height: 620px; overflow: hidden; }
@@ -342,10 +345,6 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 .end__names .l-ne { font: 600 clamp(30px, 4vw, 44px)/1.45 var(--f-dv-display); }
 .end__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; }
 .end__tag { margin: 8px 0 0; font: 400 15px/1.5 var(--f-text); letter-spacing: 0.06em; color: var(--sindoor); }
-.end__credits { margin-top: 24px; max-width: 760px; text-align: left; font: 400 13px/1.6 var(--f-text); color: var(--ink-2); }
-.end__credits summary { cursor: pointer; text-align: center; font-size: 14px; }
-.end__credits summary .l-ne { font: 400 15px/1.7 var(--f-dv-text); }
-.end__credits a { color: inherit; }
 
 /* Letter (the full invitation wording) */
 .letter { width: min(640px, calc(100vw - 24px)); max-height: calc(100svh - 24px); padding: 0; border: 0; border-radius: 4px; background: var(--paper-grain), var(--ivory); color: var(--ink); overflow: auto; overscroll-behavior: contain; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.6); }

@@ -9,6 +9,7 @@ import { gsap } from 'gsap';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, timeLabel, mapUrl, neNum, biNodes, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -19,7 +20,7 @@ import { photoUrl, view } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
 import { palpaliTile } from './weave.js';
-import { FLOWER_CREDITS, FLOWER_LIBRARY_SLUGS, flowerUrl } from './flowers.js';
+import { FLOWER_LIBRARY_SLUGS, flowerUrl } from './flowers.js';
 
 const config = await loadInvitation();
 const params = new URLSearchParams(location.search);
@@ -67,7 +68,8 @@ const bsOf = (e) => {
   const d = bsDateOf(e.start, e.dateBS);
   return e.dateBS ? d : { en: `${d.short.en} B.S.`, ne: `वि.सं. ${d.short.ne}` };
 };
-const flower = (name, cls = '', style = '') => `<img class="fl ${cls}" src="${flowerUrl(name)}" alt="" aria-hidden="true" decoding="async" style="${style}" />`;
+// Leaves are tagged so every spray stacks them behind every bloom (see .fl--leaf in dhaka.css).
+const flower = (name, cls = '', style = '') => `<img class="fl${name.startsWith('leaf') ? ' fl--leaf' : ''} ${cls}" src="${flowerUrl(name)}" alt="" aria-hidden="true" decoding="async" style="${style}" />`;
 
 // ───────────────────────── data ─────────────────────────
 const c = config.couple;
@@ -416,10 +418,7 @@ ${guestCols.length ? `<section class="sec guest guest--${guestCols.length}" aria
     <button class="btn-line" type="button" id="share">${bi({ en: 'Share the invitation', ne: 'निम्तो पठाउनुहोस्' })}</button>
   </div>
   ${c.hashtag ? `<p class="end__tag">${esc(c.hashtag)}</p>` : ''}
-  <details class="end__credits">
-    <summary>${bi({ en: 'Photo and music credits', ne: 'तस्बिर र संगीतको श्रेय' })}</summary>
-    <ul id="credits-list"></ul>
-  </details>
+  ${madeWith()}
 </footer>
 
 <dialog class="letter" id="letter" aria-labelledby="letter-title" data-lenis-prevent>
@@ -442,11 +441,6 @@ ${guestCols.length ? `<section class="sec guest guest--${guestCols.length}" aria
   <button type="button" class="lb__nav lb__nav--prev" data-lb="-1"><span aria-hidden="true">←</span><span class="sr-only">Previous</span></button>
   <button type="button" class="lb__nav lb__nav--next" data-lb="1"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
 </dialog>`;
-
-document.getElementById('credits-list').innerHTML = FLOWER_CREDITS.map((k) => `<li>Flower cut-out from “${esc(k.title)}” by ${esc(k.creator)}, ${esc(k.license)}, <a href="${esc(k.url)}" target="_blank" rel="noopener">source</a></li>`).join('')
-  + credits.filter((k) => used.has(k.slot)).map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')
-  + (config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')
-  + '<li>The Palpali Dhaka pattern is woven in code for this design.</li>';
 
 // ───────────────────────── behaviours ─────────────────────────
 initRsvp(events);

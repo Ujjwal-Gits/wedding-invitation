@@ -1,7 +1,7 @@
 // Theme · Mangal (मंगल) — the red-and-gold Nepali wedding card, come alive.
 // A wide sindoor doorway hung with fresh garlands and brass bells. Tap the latch and the two carved
-// leaves swing open in 3D (the one signature motion) onto the red arched card: शुभ विवाह in gold,
-// the names and both dates. Then a calm, layered "paper-cut" scroll: the couple in gold arch frames,
+// leaves swing open in 3D and the camera walks in through the gate (the one signature motion) onto
+// the red arched card: a welcome line, then शुभ विवाह in gold, the names and both dates. Then a calm, layered "paper-cut" scroll: the couple in gold arch frames,
 // the families, the card wording beside a puja thaali, the programme, a few more photographs, the
 // reply card and the blessing between two lit diyos, closed by a Dhaka band.
 import '../../core/base.css';
@@ -11,6 +11,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -19,7 +20,6 @@ import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
-import floraCredits from './flora-credits.js';
 import manifest from './slots.js';
 import META from './decor-meta.js';
 import {
@@ -144,7 +144,6 @@ const T = {
   call: { en: 'Call', ne: 'फोन' },
   calendar: { en: 'Add the dates to your calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
   shareIt: { en: 'Share the invitation', ne: 'निम्तो पठाउनुहोस्' },
-  credits: { en: 'Photo, flower and music credits', ne: 'श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
   scroll: { en: 'Scroll', ne: 'तल हेर्नुहोस्' },
   stays: { en: 'Where to stay', ne: 'बसाइ' },
@@ -160,6 +159,7 @@ const invocation = txt('hero.invocation');
 const title = txt('hero.title');
 const subtitle = txt('hero.subtitle');
 const mark = txt('kalash.mark');
+const welcome = txt('hero.welcome');
 
 const damask = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" viewBox="0 0 84 84">${rosette(21, 21, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}${rosette(63, 63, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}<circle cx="63" cy="21" r="1.6" fill="#000"/><circle cx="21" cy="63" r="1.6" fill="#000"/></svg>`;
@@ -187,6 +187,7 @@ const main = document.getElementById('main');
 document.body.insertAdjacentHTML('afterbegin', DEFS);
 main.innerHTML = `
   <section class="mg-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
+    <div class="mg-inside" id="inside" aria-hidden="true"><i class="mg-inside__rule"></i></div>
     <div class="mg-sidedecor" id="sidedecor" aria-hidden="true">
       <div class="mg-side mg-side--l" data-part="-1">${kalash('mg-kalash--hero')}</div>
       <div class="mg-side mg-side--r" data-part="1">${thaali('mg-thaali--hero')}</div>
@@ -195,21 +196,6 @@ main.innerHTML = `
       <div class="mg-panel" id="panel">
         <div class="mg-panel__bg" id="panelbg"></div>
         <div class="mg-panel__border" id="pborder"></div>
-        <div class="mg-panel__content" id="pcontent">
-          <div class="mg-panel__inner" id="pinner">
-            ${on(symbol) ? `<p class="mg-symbol" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
-            ${on(invocation) ? `<p class="mg-invoke" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
-            <h1 class="mg-title"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
-            <p class="mg-sub"><span lang="ne">${esc(subtitle.ne)}</span></p>
-            <p class="mg-sub-en l-en">${esc(subtitle.en)}</p>
-            <span class="mg-hero__div">${dividerSVG(180)}</span>
-            <p class="mg-names" id="names">${names()}</p>
-            <p class="mg-date">${bi({ en: mainAD.en, ne: mainBS.ne })}</p>
-            <p class="mg-date mg-date--alt">${bi({ en: mainBS.en, ne: mainAD.ne })}</p>
-            <p class="mg-city">${bi(config.city)}</p>
-          </div>
-          <a class="mg-cue" id="cue" href="#couple"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
-        </div>
       </div>
       <div class="mg-leaves" id="leaves" aria-hidden="true">
         <div class="mg-leaf mg-leaf--l" id="leafL"><i class="mg-leaf__shade"></i></div>
@@ -235,7 +221,26 @@ main.innerHTML = `
       <picture class="mg-garland__half mg-garland__half--l"><source media="(max-width: 699px)" srcset="${DECOR}garland-narrow.webp" /><img src="${DECOR}garland-wide.webp" alt="" decoding="async" fetchpriority="high" /></picture>
       <picture class="mg-garland__half mg-garland__half--r"><source media="(max-width: 699px)" srcset="${DECOR}garland-narrow.webp" /><img src="${DECOR}garland-wide.webp" alt="" decoding="async" fetchpriority="high" /></picture>
     </div>
-    <div class="mg-threshold" aria-hidden="true"></div>
+    <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
+    <div class="mg-panel__content" id="pcontent">
+      ${on(welcome) ? `<div class="mg-welcome" id="welcome" aria-hidden="true">
+        ${welcome.ne ? `<p class="mg-welcome__ne" lang="ne">${esc(welcome.ne)}</p>` : ''}
+        ${welcome.en && welcome.en !== welcome.ne ? `<p class="mg-welcome__en" lang="en">${esc(welcome.en)}</p>` : ''}
+      </div>` : ''}
+      <div class="mg-panel__inner" id="pinner">
+        ${on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
+        ${on(invocation) ? `<p class="mg-invoke mg-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
+        <h1 class="mg-title mg-in"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
+        <p class="mg-sub mg-in"><span lang="ne">${esc(subtitle.ne)}</span></p>
+        <p class="mg-sub-en l-en mg-in">${esc(subtitle.en)}</p>
+        <span class="mg-hero__div mg-in">${dividerSVG(180)}</span>
+        <p class="mg-names mg-in" id="names">${names()}</p>
+        <p class="mg-date mg-in">${bi({ en: mainAD.en, ne: mainBS.ne })}</p>
+        <p class="mg-date mg-date--alt mg-in">${bi({ en: mainBS.en, ne: mainAD.ne })}</p>
+        <p class="mg-city mg-in">${bi(config.city)}</p>
+      </div>
+      <a class="mg-cue" id="cue" href="#couple"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
+    </div>
   </section>
 
   ${lead ? `
@@ -419,12 +424,7 @@ main.innerHTML = `
       <div class="mg-close__lamp" data-depth="0.5">${diyo('mg-diyo--close', 96)}</div>
     </div>
     <div class="mg-band" aria-hidden="true"></div>
-    <details class="mg-credits">
-      <summary>${bi(T.credits)}</summary>
-      <ul>${[...credits, ...floraCredits].map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}
-      <li>Doorway, doors, bells, diyos, filigree, Dhaka weave, kalash brass, coconut, thaali, hibiscus and jasmine drawn in code for this invitation.</li></ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <div class="mg-modal" id="cardmodal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title" data-lenis-prevent>
@@ -533,6 +533,11 @@ const gate = document.getElementById('gate');
 const bellsEl = document.getElementById('bells');
 const openBtn = document.getElementById('open');
 const quietBtn = document.getElementById('quiet');
+const inside = document.getElementById('inside');
+const welcomeEl = document.getElementById('welcome');
+const garlandEl = document.getElementById('garland');
+const sideEl = document.getElementById('sidedecor');
+const thresholdEl = document.getElementById('threshold');
 const root = document.documentElement;
 let L = null;
 
@@ -556,7 +561,10 @@ function computeLayout(W, H) {
   const top = Math.round(Math.max(swagB - (fy + oy) + (phone ? 10 : 14), ch * 0.42));
   const bottom = Math.round(phone ? diyoW * 1.6 + 8 : 30);
   const side = fx;
-  return { W, H, phone, gh, swagB, thr, fx, fy, fw, fh, b, lh, ox, oy, ow, oh, ch, top, bottom, diyoW, side };
+  // Inside the doorway the card fills the screen: clear of the HUD at the top and the Dhaka band below.
+  const ctop = phone ? 62 : Math.round(Math.max(72, H * 0.09));
+  const cbottom = thr + (phone ? 6 : 10);
+  return { W, H, phone, gh, swagB, thr, fx, fy, fw, fh, b, lh, ox, oy, ow, oh, ch, top, bottom, diyoW, side, ctop, cbottom };
 }
 
 function placeBells(L) {
@@ -607,7 +615,7 @@ function applyLayout() {
   document.getElementById('panelbg').style.clipPath = `path('${archPath(0, 0, L.ow, L.oh, L.ch)}')`;
   document.getElementById('pborder').innerHTML = panelBorderSVG(L);
   document.getElementById('framewrap').innerHTML = frameSVG(L);
-  Object.assign(pcontent.style, { top: `${L.top}px`, bottom: `${L.bottom}px` });
+  Object.assign(pcontent.style, { top: `${L.ctop}px`, bottom: `${L.cbottom}px` });
   const lw = L.ow / 2;
   leafL.querySelector('svg')?.remove(); leafR.querySelector('svg')?.remove();
   leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh, L.ch));
@@ -673,13 +681,96 @@ function open(withMusic) {
     player.start(withMusic);
   } catch { /* audio is optional */ }
   document.body.classList.add('is-opening');
-  if (reduced) {
-    gsap.set(gate, { autoAlpha: 0 });
-    gsap.to([leafL, leafR], { opacity: 0, duration: 0.25, onComplete: afterOpen });
-    gsap.set(pinner, { opacity: 1 });
-    gsap.set('#cue', { opacity: 1 });
-    return;
-  }
+  const tl = reduced ? crossfadeIn() : walkIn();
+  // Never leave the page locked: if the timeline is starved (hidden tab, throttled device), finish it.
+  setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
+}
+
+/** The card's lines settle into place, a few at a time (headings only, no body text). */
+const cardGroups = () => {
+  const g = (sel) => [...pinner.querySelectorAll(sel)];
+  return [g('.mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-sub, .mg-sub-en, .mg-hero__div'), g('.mg-names'), g('.mg-date, .mg-city')].filter((a) => a.length);
+};
+
+// Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera
+// (garland nearest, then bells, kalash and thaali, the threshold, the doorway itself); moving the
+// camera forward by c scales a layer at distance D by D / (D - c) about the vanishing point, so near
+// things grow and leave the frame first. Only transform and opacity change, so it stays on the GPU.
+const DEPTH = [[garlandEl, 2.7], [bellsEl, 2.9], [sideEl, 3.1], [thresholdEl, 3.5], [door, 4]];
+// A slow first step, a long glide, a soft stop.
+const easeWalk = (() => {
+  const x1 = 0.45; const y1 = 0; const x2 = 0.25; const y2 = 1;
+  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return (x) => {
+    let lo = 0; let hi = 1; let t = x;
+    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
+    return bz(t, y1, y2);
+  };
+})();
+
+/** The smallest scale of the doorway at which every corner of the screen lies inside its arched
+ *  opening (the same curve as art.js archPath), i.e. the camera has passed through the frame. */
+function throughScale(vx, vy) {
+  const { W, H, ow, oh, ch } = L;
+  const x0 = L.fx + L.ox; const y0 = L.fy + L.oy;
+  const bz = (t, a, b, c, d) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d;
+  const archY = (x) => {
+    const u = Math.min(x, ow - x); // symmetric; the left half runs from (0, ch) to (ow/2, 0)
+    if (u <= 0) return ch;
+    let lo = 0; let hi = 1;
+    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (bz(m, 0, 0, ow * 0.3, ow / 2) < u) lo = m; else hi = m; }
+    return bz(lo, ch, ch * 0.42, ch * 0.16, 0);
+  };
+  const inside = (s) => [[0, 0], [W, 0], [0, H], [W, H], [W / 2, 0]].every(([px, py]) => {
+    const x = vx + (px - vx) / s - x0; const y = vy + (py - vy) / s - y0;
+    return x >= 0 && x <= ow && y <= oh && y >= archY(x);
+  });
+  let lo = 1; let hi = 6;
+  if (inside(lo)) return lo;
+  for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; }
+  return hi;
+}
+
+function dollyRig() {
+  const W = L.W; const H = L.H;
+  const vx = W / 2;
+  const cs = getComputedStyle(pcontent);
+  const vy = L.ctop + (H - L.ctop - L.cbottom - parseFloat(cs.paddingBottom)) / 2;
+  // Just deep enough that the doorway frame (and its arch corners) pass the edges of the screen.
+  const doorEnd = Math.max(throughScale(vx, vy) * 1.05, 1.6);
+  const C = 4 - 4 / doorEnd;
+  const layers = DEPTH.filter(([el]) => el && getComputedStyle(el).display !== 'none').map(([el, D]) => {
+    const kids = el.children.length ? [...el.children] : [el];
+    const rs = kids.map((k) => k.getBoundingClientRect()).filter((r) => r.width && r.height);
+    const box = rs.length ? { l: Math.min(...rs.map((r) => r.left)), t: Math.min(...rs.map((r) => r.top)), r: Math.max(...rs.map((r) => r.right)), b: Math.max(...rs.map((r) => r.bottom)) } : null;
+    el.style.transformOrigin = `${(vx - el.offsetLeft).toFixed(1)}px ${(vy - el.offsetTop).toFixed(1)}px`;
+    return { el, D, box, gone: false };
+  });
+  const set = (p) => {
+    const c = C * p;
+    for (const ly of layers) {
+      if (ly.gone) continue;
+      const s = ly.D / (ly.D - c);
+      if (ly.box) {
+        const l = vx + (ly.box.l - vx) * s; const r = vx + (ly.box.r - vx) * s;
+        const t = vy + (ly.box.t - vy) * s; const b = vy + (ly.box.b - vy) * s;
+        // Out of the frame: stop drawing it (it only gets bigger from here).
+        if (r < 0 || l > W || b < 0 || t > H) { ly.gone = true; ly.el.style.visibility = 'hidden'; continue; }
+      }
+      ly.el.style.transform = `translate3d(0,0,0) scale(${s.toFixed(4)})`;
+    }
+  };
+  return { set };
+}
+
+function walkIn() {
+  const phone = L.phone;
+  const DOLLY_AT = 0.85;
+  const DOLLY = phone ? 2.5 : 2.9;
+  const end = DOLLY_AT + DOLLY;
+  const rig = { p: 0 };
+  let cam = null;
+  const groups = cardGroups();
   const tl = gsap.timeline({ onComplete: afterOpen });
   tl.to(gate, { autoAlpha: 0, y: -10, duration: 0.32, ease: 'power2.out' }, 0)
     .add(() => swayBells(1), 0.05)
@@ -688,9 +779,45 @@ function open(withMusic) {
     .to(leafL, { rotationY: 84, duration: 1.3, ease: EASE_DOOR }, 0.38)
     .to(leafR, { rotationY: -84, duration: 1.3, ease: EASE_DOOR }, 0.38)
     .to('.mg-leaf__shade', { opacity: 0.62, duration: 1.3, ease: 'power2.in' }, 0.38)
-    .fromTo(pinner, { opacity: 0, scale: 0.965 }, { opacity: 1, scale: 1, duration: 1.0, ease: 'power2.out' }, 0.75)
-    .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.5)
-    .add(dropPetals, 0.3);
+    .add(dropPetals, 0.3)
+    // The camera walks in through the open doors.
+    .add(() => { cam = dollyRig(); }, DOLLY_AT - 0.02)
+    .to(rig, { p: 1, duration: DOLLY, ease: easeWalk, onUpdate: () => cam?.set(rig.p) }, DOLLY_AT)
+    // Once the doorway has passed, the red arch is all around: the inner wall takes over.
+    .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, end - 0.5)
+    .add(() => hero.classList.add('is-inside'), end + 0.02);
+  // The welcome, centred, while walking in; it leaves before the card settles, so lines never overlap.
+  let t = end;
+  if (welcomeEl) {
+    // It comes toward you with the walk (a slow scale), so the move is still felt once the gate has passed.
+    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'power1.out' }, DOLLY_AT + 0.35)
+      .fromTo(welcomeEl, { scale: 0.86, y: 14 }, { scale: 1, y: 0, duration: end - DOLLY_AT - 0.35, ease: 'power2.out' }, DOLLY_AT + 0.35)
+      .to(welcomeEl, { autoAlpha: 0, y: -16, scale: 1.03, duration: 0.42, ease: 'power2.in' }, end - 0.05);
+    t = end + 0.42;
+  }
+  // The card's lines wait at opacity 0 (already painted, so nothing rasterises mid-move).
+  gsap.set(groups.flat(), { opacity: 0 });
+  gsap.set(pinner, { opacity: 1 });
+  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 22, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.08 : 0.1)));
+  tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.5 }, t + 0.7);
+  return tl;
+}
+
+/** Reduced motion: no camera move; the doorway gives way to the card in a crossfade. */
+function crossfadeIn() {
+  const tl = gsap.timeline({ onComplete: afterOpen });
+  tl.to(gate, { autoAlpha: 0, duration: 0.25 }, 0)
+    .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, 0.1)
+    .add(() => hero.classList.add('is-inside'), 0.62);
+  let t = 0.6;
+  if (welcomeEl) {
+    tl.fromTo(welcomeEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, 0.5)
+      .to(welcomeEl, { autoAlpha: 0, duration: 0.3 }, 1.9);
+    t = 2.25;
+  }
+  tl.fromTo(pinner, { opacity: 0 }, { opacity: 1, duration: 0.45 }, t)
+    .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.2);
+  return tl;
 }
 
 openBtn.addEventListener('click', () => open(true));
@@ -700,6 +827,7 @@ let lenis = null;
 function afterOpen() {
   if (finished) return;
   finished = true;
+  hero.classList.add('is-inside');
   document.body.classList.remove('mg-locked', 'is-opening');
   document.body.classList.add('is-open');
   gate.hidden = true;
@@ -729,13 +857,11 @@ function scrollStory() {
   const mm = gsap.matchMedia();
   // Depth only on larger screens with a fine pointer: phones get the plain reveals (no parallax).
   mm.add('(min-width: 900px) and (pointer: fine)', () => {
-    // Leaving the doorway: the garland parts to both sides, bells and the brass lift away.
+    // Walking further in: the first scroll carries the camera on past the card, a little deeper.
     const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
-    gsap.to('.mg-garland__half--l', { xPercent: -7, y: -40, ease: 'none', scrollTrigger: st });
-    gsap.to('.mg-garland__half--r', { xPercent: 7, y: -40, ease: 'none', scrollTrigger: st });
-    gsap.to('.mg-bell', { y: -60, ease: 'none', scrollTrigger: st });
-    gsap.to('.mg-side--l', { x: -50, y: 70, ease: 'none', scrollTrigger: st });
-    gsap.to('.mg-side--r', { x: 50, y: 70, ease: 'none', scrollTrigger: st });
+    gsap.to(inside, { scale: 1.14, ease: 'none', scrollTrigger: st });
+    gsap.to(pinner, { scale: 1.07, opacity: 0.25, ease: 'none', scrollTrigger: st });
+    gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
     // Ornaments beside the content drift at their own depth.
     document.querySelectorAll('[data-depth]').forEach((el) => {
       const d = Number(el.dataset.depth) || 0.5;
@@ -782,6 +908,8 @@ if (DEBUG) {
       gsap.set(gate, { autoAlpha: 0 });
       gsap.set(leafL, { rotationY: 84 }); gsap.set(leafR, { rotationY: -84 });
       gsap.set('.mg-leaf__shade', { opacity: 0.62 });
+      gsap.set(inside, { autoAlpha: 1 });
+      if (welcomeEl) gsap.set(welcomeEl, { autoAlpha: 0 });
       gsap.set([pinner, '#cue'], { opacity: 1, scale: 1 });
       afterOpen();
     },
