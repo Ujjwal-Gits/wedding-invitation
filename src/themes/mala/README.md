@@ -2,25 +2,38 @@
 
 Port 5203 · `http://localhost:5203/mala/` · debug: `?debug&open` (also `&lang=ne`, `&still` for the reduced-motion version).
 
-## Round 4 (floral entrance)
+## Round 5 (decorated mandap)
 
-- **Gate:** a full floral arch built from real cut-out roses. A rose canopy sits across the top, rose pillars down both sides and rose mounds at the foot. Jasmine and marigold strands hang from the canopy and sway, ending in marigold tassels. Names, date and hosts sit in the arch. On "Open", the camera walks forward through the arch (it scales and fades) and the hero settles in behind it. That is the one signature motion; with reduced motion the gate simply fades.
-- **Hero:** the couple's photo framed by corner sprays of roses.
-- **Floral stage:** a new section (`stage.photo`, `stage.kicker`) like a decorated wedding stage. A rose canopy with hanging strands and rose pillars frame the couple's photo, and the caption gives the main ceremony's date and venue.
-- **Photo frames vary:** spray-framed (hero), stage (canopy and pillars), garland-exchange pair, prints hanging on a marigold rope, an uncropped album, and an RSVP card framed by sprays.
-- **Times:** shown with `timeLabel(e)`, so open-ended events read "onwards" / "देखि".
-- **Rose art:** `public/themes/mala/flora/*.webp` (canopy, canopy-stage, pillar-l/r, pillar-stage, mound, mound-stage, spray, each with a `-sm` version). Composed in Python from rose heads cut out (rembg isnet plus a colour key) of CC0 photos in the WordPress Photo Directory:
-  - wordpress.org/photos/photo/63368551ad
-  - wordpress.org/photos/photo/4176809faf
-  - wordpress.org/photos/photo/8096800bee
-  - wordpress.org/photos/photo/60169e7cac
-  - wordpress.org/photos/photo/236679902f
-  - wordpress.org/photos/photo/80266903ae
+The client said the round-4 rose heaps looked wilted and funereal (grey, white and dusty-mauve masses read as mourning
+in Nepal) and that text sat under flowers. The theme is now dressed the way a Nepali decorator dresses a mandap:
+
+- **Gate:** a sindoor silk valance over an ivory net layer with a gold zari hem, a marigold rosette at every gather,
+  marigold strings hung neatly from under the valance (each ending in one small marigold, no tassel blobs), and a
+  pair of brass kalash arrangements (fresh marigold, red and pink roses, leaves) standing on the floor in the bottom
+  corners. The text sits on clean paper in the middle. Strings are measured against the text block and the kalash
+  (`hangStrings()` in `main.js`): they are cut short above anything they would reach, and dropped if only a stub
+  would remain. On "Open" the gate scales and fades (the one signature motion; reduced motion simply fades).
+- **Hero:** the couple's photo on a white mat with one neat corner of fresh roses and marigolds top-left and
+  bottom-right. Corners are pinned to the frame's corner (`.ml-corner--*`, sized in `cqw` of the frame).
+- **Floral stage:** the same valance and strings across the full width, the couple's photo matted in the middle with
+  a top-right corner, a kalash on either side on the same floor line. Caption below, clear of everything.
+- **RSVP:** the white card with a top-right and a bottom-left corner; the actions are centred away from them.
+- **Swayambar:** both varmalas are marigold; each finishes with a small marigold drop instead of the old tassel.
+- Palette: one accent (sindoor). Flowers are saturated marigold orange and yellow, red and rose-pink roses, a little
+  blush, crisp green leaves. No white or grey masses.
+
+**Decor art:** `public/themes/mala/decor/*.webp` (drape, drape-sm, kalash-a/b, corner-tl/tr/br/bl, each with `-sm`)
+and `tex/drop.webp`, made by `tools/decor.py` (`python tools/decor.py <repo> public/themes/mala/decor`). The silk and
+the brass are rendered procedurally (fold shading, environment-lit brass on a lathe profile); the flowers and leaves
+are the Wikimedia Commons cut-outs in `public/themes/dhaka/flowers` (credited in the footer, CC BY / CC BY-SA), and
+the marigold is cut from the library photo `marigold-macro`. Light comes from the upper left everywhere and every
+bloom casts a soft shadow down-right; the two kalash are composed separately (no mirrored copies). Frame-corner anchor
+fractions printed by the script are the numbers in `.ml-corner--*`.
 
 ## Concept
 
-Real flower garlands are the frame of the invitation: marigold (सयपत्री) swags over jasmine (चमेली), rose bands, and
-marigold tassels, hanging on white lokta-style paper. The garlands are photographs, not drawings. Hanging garlands
+Real flower garlands are the frame of the invitation: marigold (सयपत्री) strings and varmalas with rose bands,
+hanging on white lokta-style paper. The garlands are photographs, not drawings. Hanging garlands
 were cut out of CC-licensed market photos and straightened in Python, then made to tile so they can run along any
 curve. In the page each garland is a verlet rope (gravity, damping, bending stiffness) skinned with those strands in
 WebGL (`garland.js`, three.js), with a soft paper shadow. Garlands sway gently with scroll speed and when a finger or
@@ -33,17 +46,18 @@ Hind (Latin body), Mukta (Devanagari body; Hind's Devanagari digits render as La
 ## Signature motion: the Swayambar
 
 A pinned scene (about 1.6 screens of scroll). Above the bride's and the groom's portraits, each garland hangs from a
-pair of hands: a marigold-and-rose garland on her side, a jasmine one on his. As you scroll, both are lifted and
-carried across. The marigold garland passes in front and grows slightly nearer, the jasmine one passes behind. They
+pair of hands: a yellow-and-orange marigold garland on her side, a deep orange one on his. As you scroll, both are lifted and
+carried across. Her garland passes in front and grows slightly nearer, his passes behind. They
 swing on real rope physics and settle on the other side. **The garlands never touch the photo frames.** A
 marigold garland draped on a framed portrait reads as a memorial (shraddha) photo in Nepal, so the theme avoids it
 everywhere. Reduced motion: the exchange is shown in its final state and nothing sways.
 
 ## Sections
 
-1. Gate: the real varmala photograph, names, hosts, "Open the invitation" / "Open without music".
-2. Hero: festoon across the top (marigold over jasmine, rose bands at the joints, drops with tassels). Two marigold
-   strands hang either side of the couple's photo like a decorated doorway. Names, AD + B.S. date, city.
+1. Gate: the dressed mandap (silk valance, marigold strings, two kalash), names, date, hosts, "Open the invitation" /
+   "Open without music".
+2. Hero: the couple's photo on a white mat with two floral corners. Names, AD + B.S. date, city.
+   Then the floral stage (main ceremony) after the families.
 3. Families: one line, bride and groom with parents and home, "Read the invitation card" (modal via `openModal`).
 4. Swayambar (signature).
 5. Programme, "When & where": per ceremony, the weekday and a big day number, then the name, the AD date with the B.S.
@@ -72,10 +86,10 @@ paper are fixed theme art.
 | file | made from | licence |
 |---|---|---|
 | `tex/rope-orange.webp`, `tex/rope-alt.webp`, `tex/rope-alt2.webp` | single strands cut out of "Marigold garlands, Pak Khlong Talat flower market Bangkok" by Gzzz (library slug `marigold-garland-alt`) | CC BY-SA 4.0 (derivatives shared alike) |
-| `tex/rope-jasmine.webp`, `tex/band-rose.webp` | "Garlands in Indian flower market" by Elvina Goves, WordPress Photo Directory (added as `garland-jasmine-market`) | CC0 |
-| `tex/varmala.webp`, `tex/tassel.webp` | "A garland made of yellow-orange marigold (Jamanthi) flowers" by Balu B, WordPress Photo Directory (added as `varmala-marigold`) | CC0 |
+| `tex/band-rose.webp` | "Garlands in Indian flower market" by Elvina Goves, WordPress Photo Directory (added as `garland-jasmine-market`) | CC0 |
+| `tex/varmala.webp` | "A garland made of yellow-orange marigold (Jamanthi) flowers" by Balu B, WordPress Photo Directory (added as `varmala-marigold`) | CC0 |
 | `paper.webp` | generated (noise + fibres) for this theme | n/a |
-| `thumb.jpg` | screenshot of the hero | n/a |
+| `thumb.jpg` | screenshot of the demo gate | n/a |
 
 Cut-out method: the gaps between neighbouring strands are found as minimum-energy vertical seams (dark gaps, no
 flower colour). The strand is colour-keyed inside its seams, edges are defringed, and the result is straightened on its
@@ -87,5 +101,4 @@ appear in the footer credits along with an extra line naming them as the garland
 
 - There is no dubo (Cynodon) grass garland. No usable photograph could be cut out cleanly, and a drawn one would
   look fake next to the photographic flowers.
-- The jasmine strand is shorter than the marigold strands (about 2.3:1), so on very long ropes it repeats more often.
 - Without WebGL a 2D-canvas fallback draws the same ropes as rotated slices. It works but looks rougher.

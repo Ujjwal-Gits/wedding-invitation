@@ -16,11 +16,11 @@ export default {
   images: {
     'hero.photo': {
       label: 'Opening photo (under the garlands)', kind: 'couple', default: { portrait: 0 },
-      note: 'The couple together, portrait orientation works best. Two jasmine strands hang on either side of it; shown uncropped.',
+      note: 'The couple together, portrait orientation works best. White-matted, with a corner of fresh roses and marigolds top-left and bottom-right; shown uncropped.',
     },
     'stage.photo': {
-      label: 'Floral stage: photo under the rose canopy', kind: 'couple', default: { portrait: 5 },
-      note: 'The couple together. Shown uncropped beneath a rose canopy with hanging jasmine strands and rose pillars either side; portrait or landscape.',
+      label: 'Floral stage: photo under the silk drape', kind: 'couple', default: { portrait: 5 },
+      note: 'The couple together. Shown uncropped under a sindoor silk drape with marigold strings, between two brass kalash arrangements; portrait or landscape.',
     },
     ...line,
     'swayambar.bride': {

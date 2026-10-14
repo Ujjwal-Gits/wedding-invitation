@@ -17,7 +17,7 @@ const KNOWN = {
   himal: { name: 'Himal', concept: 'Calm and photo-led, at mountain dawn' },
   kham: { name: 'Kham', concept: 'Handmade-paper envelope that unfolds into a clear programme' },
   durbar: { name: 'Durbar', concept: 'A 3D morning walk through Bhaktapur Durbar Square' },
-  mala: { name: 'Mala', concept: 'An arch of real roses, jasmine and marigold' },
+  mala: { name: 'Mala', concept: 'A dressed mandap: silk drapes, marigold strings, brass kalash' },
   gurans: { name: 'Phoolbari', concept: 'A flower gate with शुभ विवाह, then calm normal scrolling' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;

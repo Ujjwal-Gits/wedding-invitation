@@ -83,28 +83,30 @@
 }
 .ml-map .l-ne { font-size: 16px; }
 
-/* ───────── Gate: a floral arch the guest walks through ───────── */
+/* ───────── Gate: a dressed mandap the guest walks into ───────── */
 .ml-gate {
   position: fixed; inset: 0; z-index: 70; overflow: hidden; display: grid; place-items: center;
   background: var(--paper) url('/themes/mala/paper.webp') repeat; background-size: 640px 640px;
+  --kalash-h: min(36svh, 22vw); --drape-h: 10.2vw;
 }
 .ml-gate.is-entering { background-image: none; background-color: rgba(251, 248, 241, 1); pointer-events: none; }
 .ml-arch { position: absolute; inset: 0; transform-origin: 50% 46%; will-change: transform, opacity; }
-.ml-arch img { position: absolute; display: block; max-width: none; pointer-events: none; user-select: none; }
-/* pillar images carry a transparent organic margin (padding) on the inner side */
-.ml-arch__pl { left: calc(-1 * var(--pillar-hide)); top: -4svh; height: 112svh; width: auto; }
-.ml-arch__pr { right: calc(-1 * var(--pillar-hide)); top: -4svh; height: 112svh; width: auto; }
-.ml-arch__canopy { left: 50%; top: calc(-1 * var(--canopy-lift)); width: var(--canopy-w); height: auto; transform: translateX(-50%); }
-.ml-arch__ml { left: -4vw; bottom: -3svh; width: var(--mound-w); height: auto; }
-.ml-arch__mr { right: -4vw; bottom: -3svh; width: var(--mound-w); height: auto; transform: scaleX(-1); }
-.ml-arch__strands { position: absolute; inset: 0; }
-.ml-gate { --pillar-hide: 3vw; --canopy-w: max(1500px, 118vw); --canopy-lift: 70px; --mound-w: clamp(380px, 40vw, 720px); }
+.ml-arch img { display: block; max-width: none; pointer-events: none; user-select: none; }
+.ml-arch__strands { position: absolute; inset: 0; z-index: 1; }
+.ml-drape { position: absolute; left: 0; top: 0; z-index: 4; width: 100%; display: block; pointer-events: none; }
+.ml-drape img { width: 100%; height: auto; display: block; }
+.ml-kalash { position: absolute; z-index: 4; height: auto; max-width: none; pointer-events: none; user-select: none; }
+.ml-arch__kl, .ml-arch__kr { bottom: 2.4svh; height: var(--kalash-h); width: auto; }
+.ml-arch__kl { left: max(2.4vw, 14px); }
+.ml-arch__kr { right: max(2.4vw, 14px); }
 .ml-gate__inner {
   position: relative; z-index: 5; display: grid; justify-items: center; text-align: center; gap: 0;
-  max-width: min(560px, 62vw); padding: 18svh 0 10svh;
+  max-width: min(760px, 54vw); padding: calc(var(--drape-h) + 4svh) 0 4svh;
 }
-.ml-gate__names { margin: 6px 0 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.28em; font: 400 clamp(46px, 5.8vw, 86px)/1.04 var(--f-display); color: var(--ink); }
-.ml-gate__names .l-ne { font: 600 clamp(42px, 5vw, 74px)/1.35 var(--f-deva-display); }
+.ml-gate .ml-kicker { font-size: 14px; text-wrap: balance; }
+.ml-gate .ml-kicker .l-ne { font-size: 18px; }
+.ml-gate__names { margin: 6px 0 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.28em; font: 400 clamp(46px, 5.4vw, 84px)/1.04 var(--f-display); color: var(--ink); }
+.ml-gate__names .l-ne { font: 600 clamp(42px, 4.8vw, 72px)/1.35 var(--f-deva-display); }
 .ml-gate__names .ml-amp { font-size: 0.62em; }
 .ml-gate__date { margin: 0 0 4px; font: 400 clamp(19px, 1.6vw, 23px)/1.4 var(--f-display); }
 .ml-gate__date .l-ne { font: 600 20px/1.6 var(--f-deva-display); }
@@ -117,15 +119,16 @@
 .ml-gate__inner > :nth-child(4) { animation-delay: 260ms; }
 .ml-gate__inner > :nth-child(5) { animation-delay: 340ms; }
 @keyframes ml-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.ml-arch img { animation: ml-bloom 1100ms var(--ease) both; }
+.ml-arch img { animation: ml-bloom 900ms var(--ease) both; }
 @keyframes ml-bloom { from { opacity: 0; } to { opacity: 1; } }
 
-/* Corner sprays of real roses on a photo frame (the image carries ~21% transparent margin) */
-.ml-spray { position: absolute; z-index: 3; width: var(--spray, 46%); height: auto; max-width: none; pointer-events: none; }
-.ml-spray--tl { left: calc(var(--spray, 46%) * -0.27); top: calc(var(--spray, 46%) * -0.27); }
-.ml-spray--br { right: calc(var(--spray, 46%) * -0.27); bottom: calc(var(--spray, 46%) * -0.27); transform: rotate(180deg); }
-.ml-spray--tr { right: calc(var(--spray, 46%) * -0.27); top: calc(var(--spray, 46%) * -0.27); transform: scaleX(-1); }
-.ml-spray--bl { left: calc(var(--spray, 46%) * -0.27); bottom: calc(var(--spray, 46%) * -0.27); transform: scaleY(-1); }
+/* One neat corner of fresh roses and marigolds, pinned to the frame's corner.
+   The numbers are where the frame corner sits inside each image (see the decor generator). */
+.ml-corner { position: absolute; z-index: 3; width: var(--cw, 40cqw); height: auto; max-width: none; pointer-events: none; }
+.ml-corner--tl { left: calc(var(--cw, 40cqw) * -0.2489); top: calc(var(--cw, 40cqw) * -0.2157); }
+.ml-corner--br { right: calc(var(--cw, 40cqw) * -0.2589); bottom: calc(var(--cw, 40cqw) * -0.2202); }
+.ml-corner--tr { right: calc(var(--cw, 40cqw) * -0.2287); top: calc(var(--cw, 40cqw) * -0.2604); }
+.ml-corner--bl { left: calc(var(--cw, 40cqw) * -0.2273); bottom: calc(var(--cw, 40cqw) * -0.2715); }
 
 /* ───────── Plates: frames that take the photo's own proportions ───────── */
 .ml-plate { position: relative; display: block; aspect-ratio: var(--ar); background: var(--paper-2); overflow: hidden; }
@@ -146,8 +149,10 @@
 .ml-hero__date b .l-ne { font: 600 clamp(20px, 1.7vw, 24px)/1.6 var(--f-deva-display); }
 .ml-hero__date span { font-size: 17px; color: var(--ink-dim); }
 .ml-hero__date span .l-ne { font-size: 18px; }
-.ml-hero__fig { position: relative; margin: 0; justify-self: center; width: min(100%, 440px); --spray: 80%; }
-.ml-hero__plate { width: min(100%, calc(66svh * var(--ar))); margin: 0 auto; box-shadow: 0 30px 60px -34px rgba(40, 30, 10, 0.45); }
+.ml-hero__fig { position: relative; margin: 0; justify-self: center; width: min(440px, calc(62svh * var(--ar)), 100%); }
+.ml-hero__fig { container-type: inline-size; }
+.ml-hero__fig .ml-corner { --cw: min(230px, 52cqw); }
+.ml-hero__plate { width: 100%; margin: 0; box-shadow: 0 0 0 10px #fff, 0 0 0 11px rgba(29, 35, 27, 0.06), 0 34px 60px -30px rgba(40, 30, 10, 0.5); }
 .ml-cue { position: absolute; left: var(--gutter); bottom: 26px; z-index: 4; display: grid; justify-items: start; gap: 8px; font: 600 12px/1 var(--f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-dim); }
 .ml-cue .l-ne { font-size: 14px; letter-spacing: 0; }
 .ml-cue i { width: 1px; height: 34px; background: var(--ink-dim); transform-origin: top; animation: ml-cue 2.4s var(--ease) infinite; }
@@ -166,19 +171,18 @@
 .ml-fam__home { margin: 0; font-size: 16px; color: var(--ink-dim); }
 .ml-fam__home .l-ne { font-size: 17px; }
 
-/* ───────── Floral stage: rose canopy, hanging strands, rose pillars ───────── */
-.ml-stage { position: relative; padding: clamp(40px, 8vh, 90px) 0 clamp(60px, 10vh, 110px); overflow: hidden; }
-.ml-stage__set { position: relative; margin: 0 auto; width: min(1180px, 100vw); height: clamp(560px, 92svh, 900px); }
-.ml-stage__set img { position: absolute; display: block; max-width: none; pointer-events: none; }
-.ml-stage__canopy { left: 50%; top: 0; margin-top: -15%; width: 136%; height: auto; transform: translateX(-50%); z-index: 4; }
-.ml-stage__pl { left: 1%; top: 2%; height: 100%; width: auto; z-index: 2; }
-.ml-stage__pr { right: 1%; top: 2%; height: 100%; width: auto; z-index: 2; transform: scaleX(-1); }
-.ml-stage__ml { left: -4%; bottom: -4%; margin-bottom: -10%; width: 58%; height: auto; z-index: 5; }
-.ml-stage__mr { right: -4%; bottom: -4%; margin-bottom: -10%; width: 58%; height: auto; z-index: 5; transform: scaleX(-1); }
-.ml-stage__fig { position: absolute; z-index: 6; left: 50%; top: 26%; transform: translateX(-50%); margin: 0; width: min(44%, calc(50svh * var(--fig-ar, 0.8))); }
-.ml-stage__plate { width: 100%; box-shadow: 0 30px 60px -30px rgba(40, 30, 10, 0.5); outline: 10px solid #fff; }
+/* ───────── Floral stage: valance, marigold strings, kalash pair, framed photo ───────── */
+.ml-stage { position: relative; padding: 0 0 clamp(60px, 10vh, 110px); overflow: hidden; }
+.ml-stage__set { position: relative; width: 100%; padding: calc(10.2vw + clamp(28px, 5vh, 56px)) var(--gutter) 0; }
+.ml-stage__set img { display: block; max-width: none; pointer-events: none; }
 .ml-stage .ml-gl { z-index: 3; }
-.ml-stage__cap { text-align: center; padding: 0 var(--gutter); margin-top: clamp(10px, 3vh, 30px); display: grid; justify-items: center; }
+.ml-stage__row { position: relative; z-index: 5; display: flex; justify-content: center; align-items: flex-end; gap: clamp(20px, 2.6vw, 44px); }
+.ml-stage__fig { position: relative; margin: 0; flex: none; width: min(40vw, calc(60svh * var(--fig-ar, 0.8)), 560px); }
+.ml-stage__fig { container-type: inline-size; }
+.ml-stage__fig .ml-corner { --cw: min(240px, 46cqw); }
+.ml-stage__plate { width: 100%; box-shadow: 0 0 0 10px #fff, 0 0 0 11px rgba(29, 35, 27, 0.06), 0 34px 60px -30px rgba(40, 30, 10, 0.5); }
+.ml-stage .ml-kalash { position: relative; flex: none; width: auto; height: clamp(180px, 30svh, 320px); margin-bottom: -6px; }
+.ml-stage__cap { text-align: center; padding: 0 var(--gutter); margin-top: clamp(40px, 7vh, 72px); display: grid; justify-items: center; }
 .ml-stage__when { margin: 12px 0 0; font-size: 19px; color: var(--ink-dim); line-height: 1.6; }
 .ml-stage__when .l-ne { font-size: 19px; line-height: 1.75; }
 
@@ -268,8 +272,10 @@
 
 /* ───────── RSVP ───────── */
 .ml-rsvp { display: grid; justify-items: center; padding: clamp(100px, 16vh, 170px) var(--gutter); max-width: 1240px; margin: 0 auto; overflow: hidden; }
-.ml-rsvp__col { position: relative; width: min(100%, 660px); padding: clamp(36px, 5vw, 60px) clamp(22px, 5vw, 60px); background: #FFFFFF; box-shadow: 0 30px 70px -40px rgba(40, 30, 10, 0.45); --spray: 62%; }
-.ml-rsvp__col > :not(.ml-spray) { position: relative; z-index: 4; }
+.ml-rsvp__col { position: relative; width: min(100%, 660px); padding: clamp(44px, 5vw, 64px) clamp(22px, 5vw, 60px) clamp(64px, 7vw, 96px); background: #FFFFFF; box-shadow: 0 30px 70px -40px rgba(40, 30, 10, 0.45); }
+.ml-rsvp__col { container-type: inline-size; }
+.ml-rsvp__col .ml-corner { --cw: min(230px, 36cqw); }
+.ml-rsvp__col > :not(.ml-corner) { position: relative; z-index: 4; }
 .ml-rsvp .ml-h2 { margin-bottom: 10px; }
 .ml-rsvp .ml-small { margin-bottom: 30px; }
 .ml-form .field > label, .ml-form .field > legend { font: 600 13px/1.4 var(--f-body); letter-spacing: 0.16em; color: var(--leaf); }
@@ -280,7 +286,7 @@
 .ml-form .choice-grid .choice { border-color: rgba(29, 35, 27, 0.2); background: rgba(255, 255, 255, 0.55); min-height: 46px; }
 .ml-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .ml-form .rsvp__status { font: 500 17px/1.5 var(--f-body); color: var(--leaf); }
-.ml-rsvp__actions { display: flex; gap: 20px; flex-wrap: wrap; margin: 26px 0 0; }
+.ml-rsvp__actions { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 26px 0 0; }
 
 /* ───────── Close ───────── */
 .ml-close { padding: clamp(60px, 10vh, 120px) var(--gutter) calc(60px + var(--safe-b)); text-align: center; border-top: 1px solid var(--hair); }
@@ -340,25 +346,27 @@
 /* ───────── Phones ───────── */
 @media (max-width: 760px) {
   .theme-mala { font-size: 17px; }
-  .ml-gate { --pillar-hide: 118px; --canopy-w: 860px; --canopy-lift: 34px; --mound-w: 300px; }
-  .ml-gate__inner { max-width: 70vw; padding: 22svh 0 18svh; }
+  .ml-gate { --kalash-h: min(21svh, 34vw); --drape-h: 23vw; }
+  .ml-gate__inner { max-width: calc(100vw - 72px); padding: calc(var(--drape-h) + 3svh) 0 calc(var(--kalash-h) + 5svh); }
   .ml-gate .ml-kicker { letter-spacing: 0.14em; }
-  .ml-gate__names { flex-direction: column; align-items: center; }
+  .ml-gate__names { flex-direction: column; align-items: center; font-size: clamp(42px, 12vw, 56px); }
+  .ml-gate__names .l-ne { font-size: clamp(40px, 11.5vw, 54px); }
   .ml-gate__names .ml-amp { line-height: 0.9; }
-  .ml-hero__fig { --spray: 64%; margin-bottom: 26px; }
-  .ml-stage__set { height: clamp(520px, 88svh, 760px); width: 100vw; }
-  .ml-stage__canopy { width: 190%; margin-top: -22%; }
-  .ml-stage__pl { left: -27%; height: 88%; top: 10%; }
-  .ml-stage__pr { right: -27%; height: 88%; top: 10%; }
-  .ml-stage__ml, .ml-stage__mr { width: 92%; bottom: -2%; margin-bottom: -16%; }
-  .ml-stage__ml { left: -34%; } .ml-stage__mr { right: -34%; }
-  .ml-stage__fig { width: min(64%, calc(46svh * var(--fig-ar, 0.8))); top: 20%; }
-  .ml-stage__plate { outline-width: 6px; }
-  .ml-rsvp__col { --spray: 80%; }
+  .ml-gate__hosts { margin-bottom: 22px; }
+  .ml-arch__kl { left: 6px; } .ml-arch__kr { right: 6px; }
+  .ml-hero__fig .ml-corner { --cw: 46cqw; }
+  .ml-hero__fig { margin-bottom: 26px; }
+  .ml-stage__set { padding: calc(23vw + 26px) 16px 0; }
+  .ml-stage__fig { width: min(56vw, calc(46svh * var(--fig-ar, 0.8))); z-index: 1; }
+  .ml-stage__fig .ml-corner { --cw: 46cqw; }
+  .ml-stage .ml-kalash { width: 17vw; height: auto; margin: 0 0 -4px; z-index: 2; }
+  .ml-stage__row { gap: 2vw; }
+  .ml-stage__plate { box-shadow: 0 0 0 6px #fff, 0 0 0 7px rgba(29, 35, 27, 0.06), 0 24px 40px -24px rgba(40, 30, 10, 0.5); }
+  .ml-rsvp__col .ml-corner { --cw: 38cqw; }
   .ml-hero { padding: 104px 20px 80px; }
   .ml-hero__grid { grid-template-columns: 1fr; gap: 30px; }
-  .ml-hero__fig { order: -1; width: min(74vw, 340px); }
-  .ml-hero__plate { width: min(100%, calc(46svh * var(--ar))); }
+  .ml-hero__fig { order: -1; }
+  .ml-hero__fig { width: min(72vw, 330px, calc(44svh * var(--ar))); }
   .ml-hero__text { text-align: center; padding: 0; }
   .ml-hero__line { margin-left: auto; margin-right: auto; }
   .ml-hero__date { margin: 0 auto; justify-items: center; }

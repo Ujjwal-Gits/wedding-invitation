@@ -7,7 +7,7 @@ dashboard to create, customise, publish and track invitations.
 |---|---|---|
 | 01 | **Kham** `/kham/` | Handmade-paper envelope with an endless-knot wax seal; the card unfolds into a clear programme. |
 | 02 | **Dhoka** `/dhoka/` | White editorial print. The Golden Door of Patan opens in 3D. |
-| 03 | **Mala** `/mala/` | Walk through an arch of real roses, jasmine and marigold; the couple framed in flowers. |
+| 03 | **Mala** `/mala/` | A dressed Nepali mandap: sindoor silk drapes, marigold strings and brass kalash of fresh flowers. |
 | 04 | **Durbar** `/durbar/` | A 3D morning walk through Bhaktapur Durbar Square, under flower arches, past the Nyatapola. |
 | 05 | **Phoolbari** `/gurans/` | A flower gate with शुभ विवाह opens onto a calm, normally scrolling invitation (no 3D). |
 | 06 | **Dhaka** `/dhaka/` | The seal breaks, the Dhaka band slides off and the couple's photo rises into a floral frame. |

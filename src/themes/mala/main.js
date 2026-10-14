@@ -133,15 +133,21 @@ const weekday = (iso) => ({
 
 // ───────────────────────── Gate ─────────────────────────
 const gate = document.getElementById('gate');
-const FL = (n) => `/themes/mala/flora/${n}${mobile ? '-sm' : ''}.webp`;
+// Decoration, the way a Nepali decorator dresses a mandap: a sindoor silk valance over ivory net with
+// marigold rosettes, marigold strings hung from it, brass kalash arrangements on the floor, and photos
+// framed with one neat corner of fresh roses and marigolds. Text never sits on any of it.
+const DECOR = '/themes/mala/decor/';
+const drape = (cls) => `<picture class="${cls}"><source media="(max-width: 760px)" srcset="${DECOR}drape-sm.webp" /><img src="${DECOR}drape.webp" alt="" decoding="async" /></picture>`;
+const DIM = { 'kalash-a': [760, 1010], 'kalash-b': [760, 1033], 'corner-tl': [720, 587], 'corner-br': [720, 582], 'corner-tr': [720, 641], 'corner-bl': [720, 636] };
+const wh = (n) => `width="${DIM[n][0]}" height="${DIM[n][1]}"`;
+const kalash = (v, cls, lazy = true) => `<img class="ml-kalash ${cls}" ${wh(`kalash-${v}`)} src="${DECOR}kalash-${v}.webp" srcset="${DECOR}kalash-${v}-sm.webp 380w, ${DECOR}kalash-${v}.webp 760w" sizes="(max-width: 760px) 30vw, 300px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
+const corner = (k, lazy = true) => `<img class="ml-corner ml-corner--${k}" ${wh(`corner-${k}`)} src="${DECOR}corner-${k}.webp" srcset="${DECOR}corner-${k}-sm.webp 400w, ${DECOR}corner-${k}.webp 720w" sizes="(max-width: 760px) 40vw, 260px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
 gate.innerHTML = `
   <div class="ml-arch" id="gate-arch" aria-hidden="true">
-    <img class="ml-arch__pl" src="${FL('pillar-l')}" alt="" decoding="async" />
-    <img class="ml-arch__pr" src="${FL('pillar-r')}" alt="" decoding="async" />
     <div class="ml-arch__strands" id="gate-strands"></div>
-    <img class="ml-arch__ml" src="${FL('mound')}" alt="" decoding="async" />
-    <img class="ml-arch__mr" src="${FL('mound')}" alt="" decoding="async" />
-    <img class="ml-arch__canopy" src="${FL('canopy')}" alt="" decoding="async" />
+    ${drape('ml-drape ml-arch__drape')}
+    ${kalash('a', 'ml-arch__kl', false)}
+    ${kalash('b', 'ml-arch__kr', false)}
   </div>
   <div class="ml-gate__inner">
     <p class="ml-kicker">${bi(txt('gate.from'))}</p>
@@ -153,6 +159,16 @@ gate.innerHTML = `
       <button class="ml-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
     </div>
   </div>`;
+
+const DECOR_CREDITS = [
+  { title: 'Red rose with black background', creator: 'Laitche', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Red_rose_with_black_background.jpg' },
+  { title: 'Red rose with black background II', creator: 'Laitche', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Red_rose_with_black_background_II.jpg' },
+  { title: 'Rosa Red Chateau on black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rosa_Red_Chateau_on_black_background.jpg' },
+  { title: 'Rose on black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_on_black_background.jpg' },
+  { title: 'Rose black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_black_background.jpg' },
+  { title: 'Pink Rose Closeup With Black Background', creator: 'AsaQuathern', license: 'CC BY 4.0', url: 'https://commons.wikimedia.org/wiki/File:Pink_Rose_Closeup_With_Black_Background.jpg' },
+  { title: 'Leaf from bush', creator: 'Ben Sale', license: 'CC BY 2.0', url: 'https://commons.wikimedia.org/wiki/File:Leaf_from_bush_(15635275502).jpg' },
+];
 
 // ───────────────────────── Main markup ─────────────────────────
 const eventRows = events.map((e, i) => {
@@ -197,10 +213,10 @@ main.innerHTML = `
         <p class="ml-hero__line ml-rv">${bi(txt('hero.line'))}</p>
         <p class="ml-hero__date ml-rv"><b>${bi(dateOf(config.weddingDate))}</b><span>${bi(bsDateOf(config.weddingDate, config.weddingDateBS?.en ? config.weddingDateBS : null))}</span><span>${bi(config.city)}</span></p>
       </div>
-      <figure class="ml-hero__fig" id="hero-fig">
+      <figure class="ml-hero__fig" id="hero-fig" style="--ar:${(aspectOf(heroRef) || 0.75).toFixed(4)}">
         ${plate(heroRef, altFor(heroRef, 'hero.photo'), '(max-width: 760px) 74vw, 34vw', 'ml-hero__plate', { eager: true })}
-        <img class="ml-spray ml-spray--tl" src="${FL('spray')}" alt="" aria-hidden="true" decoding="async" />
-        <img class="ml-spray ml-spray--br" src="${FL('spray')}" alt="" aria-hidden="true" decoding="async" />
+        ${corner('tl', false)}
+        ${corner('br', false)}
       </figure>
     </div>
     <span class="ml-cue" aria-hidden="true">${bi(T.scroll)}<i></i></span>
@@ -228,12 +244,12 @@ main.innerHTML = `
 
   <section class="ml-stage" id="stage" aria-labelledby="stage-title">
     <div class="ml-stage__set" id="stage-set">
-      <img class="ml-stage__pl" src="${FL('pillar-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="ml-stage__pr" src="${FL('pillar-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <figure class="ml-stage__fig" id="stage-fig" style="--fig-ar:${(aspectOf(stageRef) || 0.8).toFixed(4)}">${plate(stageRef, altFor(stageRef, 'stage.photo'), '(max-width: 760px) 64vw, 36vw', 'ml-stage__plate')}</figure>
-      <img class="ml-stage__ml" src="${FL('mound-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="ml-stage__mr" src="${FL('mound-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="ml-stage__canopy" src="${FL('canopy-stage')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      ${drape('ml-drape ml-stage__drape')}
+      <div class="ml-stage__row">
+        ${kalash('b', 'ml-stage__kl')}
+        <figure class="ml-stage__fig" id="stage-fig" style="--fig-ar:${(aspectOf(stageRef) || 0.8).toFixed(4)}">${plate(stageRef, altFor(stageRef, 'stage.photo'), '(max-width: 760px) 64vw, 36vw', 'ml-stage__plate')}${corner('tr')}</figure>
+        ${kalash('a', 'ml-stage__kr')}
+      </div>
     </div>
     <div class="ml-stage__cap">
       <p class="ml-kicker ml-in">${bi(txt('stage.kicker'))}</p>
@@ -276,15 +292,15 @@ main.innerHTML = `
     <div class="ml-travel__text">
       <h2 class="ml-h2 ml-in" id="travel-title">${bi(txt('travel.title'))}</h2>
       <p class="ml-p ml-in">${bi(config.info.travel)}</p>
-      <p class="ml-label">${bi(txt('travel.stay'))}</p>
-      <ul class="ml-list">${(config.info.stays || []).map((s) => `
+      ${(config.info.stays || []).length ? `<p class="ml-label">${bi(txt('travel.stay'))}</p>
+      <ul class="ml-list">${config.info.stays.map((s) => `
         <li><b>${bi(s.name)}</b><small>${bi(s.note)}</small><a class="ml-map" href="${esc(mapUrl(s.mapQuery || s.name.en))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span></a></li>`).join('')}
-      </ul>
-      <p class="ml-label">${bi(txt('travel.ask'))}</p>
-      <ul class="ml-list">${(config.info.contacts || []).map((p) => `
+      </ul>` : ''}
+      ${(config.info.contacts || []).length ? `<p class="ml-label">${bi(txt('travel.ask'))}</p>
+      <ul class="ml-list">${config.info.contacts.map((p) => `
         <li><b>${bi(p.name)}</b><small>${bi(p.role)}</small>
           <span class="ml-links"><a class="ml-map" href="tel:${esc(tel(p.phone))}">${bi(T.call)}</a><a class="ml-map" href="https://wa.me/${esc(tel(p.phone).replace('+', ''))}" target="_blank" rel="noopener">WhatsApp</a></span></li>`).join('')}
-      </ul>
+      </ul>` : ''}
       ${safeHref(config.info.livestream) ? `<a class="ml-map" href="${esc(safeHref(config.info.livestream))}" target="_blank" rel="noopener">${bi(T.live)}<span aria-hidden="true"> ↗</span></a>` : ''}
     </div>
   </section>
@@ -300,8 +316,8 @@ main.innerHTML = `
 
   <section class="ml-rsvp" id="rsvp" aria-labelledby="rsvp-title">
     <div class="ml-rsvp__col">
-      <img class="ml-spray ml-spray--tr" src="${FL('spray')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="ml-spray ml-spray--bl" src="${FL('spray')}" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      ${corner('tr')}
+      ${corner('bl')}
       <p class="ml-kicker ml-in">${bi(countLine)}</p>
       <h2 class="ml-h2 ml-in" id="rsvp-title">${bi(txt('rsvp.title'))}</h2>
       <p class="ml-small ml-in">${bi(config.rsvp.deadline)}</p>
@@ -364,7 +380,7 @@ main.innerHTML = `
     <details class="ml-credits">
       <summary>${bi(T.credits)}</summary>
       <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), jasmine strands and rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala and its tassel from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The rose canopies, pillars and sprays are composed from CC0 rose photographs in the WordPress Photo Directory. Paper texture generated for this theme.</li>
+      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The kalash arrangements, rosettes and photo corners are composed from these cut-outs (Wikimedia Commons): ${DECOR_CREDITS.map((k) => `“${esc(k.title)}” by ${esc(k.creator)}, <a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.license)}</a>`).join('; ')}; marigolds from the library photo “marigold-macro”. Silk drape, brass kalash and paper are rendered for this theme.</li>
       ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
     </details>
   </footer>
@@ -413,6 +429,8 @@ function watchAspects(root = document) {
     const set = () => {
       const ar = im.naturalWidth / im.naturalHeight; if (!ar) return;
       const p = im.closest('.ml-plate'); p.style.setProperty('--ar', ar.toFixed(4)); p.dataset.ar = '1';
+      const fig = p.parentElement;
+      if (fig?.matches('.ml-hero__fig, .ml-stage__fig')) { fig.style.setProperty('--ar', ar.toFixed(4)); fig.style.setProperty('--fig-ar', ar.toFixed(4)); }
       relayout();
     };
     if (im.complete && im.naturalWidth) set(); else im.addEventListener('load', set, { once: true });
@@ -487,41 +505,60 @@ const swayScene = new GarlandScene(swayStage, { reduced });
 const lineScene = lineStage ? new GarlandScene(lineStage, { reduced, bleed: 0 }) : null;
 scenes.push(gateScene, stageScene, swayScene); if (lineScene) scenes.push(lineScene);
 
-/** Strands hanging from a floral canopy: jasmine and marigold, each ending in a marigold tassel. */
-function strands(scene, host, canopyEl, spots) {
+/** Marigold strings hung from the valance, each finished with one small marigold. They hang at the
+ *  sides and under the rosettes, and are cut short wherever they would reach text, a photo or a kalash. */
+const box = (r, pad = 0) => ({ l: r.x - pad, r: r.x + r.w + pad, t: r.y - pad, b: r.y + r.h + pad });
+function hangStrings(scene, host, drapeImg, obstacles) {
   scene.clear(); scene.resize();
-  const cb = local(canopyEl, host);
-  const W = scene.w; const small = W < 760;
-  spots.forEach(([fx, len, tex, wScale, y0f], i) => {
-    const x = W * fx; const y0 = cb.y + cb.h * (y0f ?? 0.2);
-    const rw = (small ? 16 : 22) * (wScale || 1);
+  const d = local(drapeImg, host);
+  if (!d.w) return;
+  const small = /drape-sm/.test(drapeImg.currentSrc || '') || d.w < 761;
+  const n = small ? 3 : 5;
+  const W = d.w; const H = scene.h;
+  const jy = d.y + W * (small ? 0.034 : 0.021);
+  const by = d.y + W * (small ? 0.03 : 0.018);
+  const rw = small ? 14 : Math.max(16, Math.min(22, W / 92));
+  const drop = rw * 1.75;
+  const pad = small ? 10 : 30;
+  const tex = ['rope-alt2', 'rope-orange', 'rope-alt'];
+  const plan = [];
+  const side = small ? [[0.028, 0.5], [0.07, 0.4]] : [[0.012, 0.5], [0.03, 0.41], [0.048, 0.33]];
+  side.forEach(([f, len], i) => {
+    plan.push([d.x + W * f, by, H * len, tex[i % 3]]);
+    plan.push([d.x + W * (1 - f), by, H * len * 0.95, tex[(i + 1) % 3]]);
+  });
+  for (let k = 1; k < n; k++) plan.push([d.x + (W * k) / n, jy, H * (k === 1 || k === n - 1 ? 0.27 : 0.2), tex[(k + 2) % 3]]);
+  const obs = obstacles.filter(Boolean).map((r) => box(r, pad));
+  plan.forEach(([x, y0, len, t], i) => {
+    let end = y0 + len;
+    for (const o of obs) {
+      if (x + rw / 2 > o.l && x - rw / 2 < o.r && end + drop > o.t && y0 < o.b) end = Math.min(end, o.t - drop);
+    }
+    // a string must show a real length below the valance, never just a stub with a flower
+    if (end < d.y + d.h + (small ? 44 : 70)) return;
     scene.add({
-      tex, width: rw, length: len, z: 2 + (i % 2), stiff: 0.5, vOffset: i * 0.37,
+      tex: t, width: rw, length: end - y0, z: 2 + (i % 2), stiff: 0.5, vOffset: i * 0.37,
       pins: [{ i: 0, at: () => [x, y0] }],
-      ornaments: [{ tex: 'tassel', f: 1, w: rw * 1.9, mode: 'hang', overlap: rw * 0.5 }],
+      ornaments: [{ tex: 'drop', f: 1, w: drop * 1.36, mode: 'hang', overlap: drop * 1.36 * 0.125 + rw * 0.3 }],
     });
   });
   scene.settle(360);
 }
 function buildGate() {
   if (!gateStrands.isConnected) return;
-  const H = gateStrands.clientHeight; const small = gateStrands.clientWidth < 760;
-  const spots = small
-    ? [[0.05, H * 0.2, 'rope-jasmine', 0.85], [0.12, H * 0.13, 'rope-alt2', 0.8], [0.88, H * 0.13, 'rope-alt2', 0.8], [0.95, H * 0.2, 'rope-jasmine', 0.85]]
-    : [[0.13, H * 0.46, 'rope-jasmine'], [0.18, H * 0.33, 'rope-alt2'], [0.225, H * 0.24, 'rope-jasmine', 0.9], [0.775, H * 0.24, 'rope-jasmine', 0.9], [0.82, H * 0.33, 'rope-alt2'], [0.87, H * 0.46, 'rope-jasmine']];
-  strands(gateScene, gateStrands, document.querySelector('.ml-arch__canopy'), spots);
+  const inner = [...gate.querySelectorAll('.ml-gate__inner > *')].map((el) => local(el, gateStrands)).filter((r) => r.w);
+  const text = inner.length ? (() => {
+    const l = Math.min(...inner.map((r) => r.x)); const t = Math.min(...inner.map((r) => r.y));
+    const r = Math.max(...inner.map((q) => q.x + q.w)); const b = Math.max(...inner.map((q) => q.y + q.h));
+    return { x: l, y: t, w: r - l, h: b - t };
+  })() : null;
+  const kal = [...gate.querySelectorAll('.ml-kalash')].map((el) => local(el, gateStrands));
+  hangStrings(gateScene, gateStrands, gate.querySelector('.ml-arch__drape img'), [text, ...kal]);
 }
 function buildStage() {
-  const fig = local(document.getElementById('stage-fig'), stageSet);
-  const W = stageSet.clientWidth; const small = W < 760;
-  const fx = (x) => x / W;
-  const L = fig.y + fig.h * 0.4;
-  const spots = [
-    [fx(fig.x - (small ? 10 : 24)), L, 'rope-jasmine', 1, 0.5], [fx(fig.x + fig.w + (small ? 10 : 24)), L, 'rope-jasmine', 1, 0.5],
-    [fx(fig.x - (small ? 28 : 60)), L * 0.7, 'rope-alt2', 0.9, 0.5], [fx(fig.x + fig.w + (small ? 28 : 60)), L * 0.7, 'rope-alt2', 0.9, 0.5],
-  ];
-  if (!small) spots.push([fx(fig.x - 98), L * 0.52, 'rope-jasmine', 0.85, 0.5], [fx(fig.x + fig.w + 98), L * 0.52, 'rope-jasmine', 0.85, 0.5]);
-  strands(stageScene, stageSet, stageSet.querySelector('.ml-stage__canopy'), spots);
+  const fig = document.getElementById('stage-fig');
+  const obs = [fig, fig.querySelector('.ml-corner'), ...stageSet.querySelectorAll('.ml-kalash')].filter(Boolean).map((el) => local(el, stageSet));
+  hangStrings(stageScene, stageSet, stageSet.querySelector('.ml-stage__drape img'), obs);
 }
 
 // ───────────────────────── The Swayambar: two garlands exchanged (signature) ─────────────────────────
@@ -561,7 +598,7 @@ function buildSway() {
       ],
       ornaments: [
         { tex: 'band-rose', f: 0.5 + (top / L) / 2, w: rw * 1.7, mode: 'center' },
-        { tex: 'tassel', f: 0.5 + (top / L) / 2, w: rw * 2.1, mode: 'hang', dir: 'down', overlap: rw * 0.6 },
+        { tex: 'drop', f: 0.5 + (top / L) / 2, w: rw * 2.6, mode: 'hang', dir: 'down', overlap: rw * 2.6 * 0.125 + rw * 0.5 },
       ],
     });
     // The hands hold the garland a short way apart; the rest of the loop hangs.
@@ -570,7 +607,7 @@ function buildSway() {
     return rope;
   };
   sway.A = make('rope-alt', hooks.L, hooks.R, [0.08, 0.7], arcH, 1, 3);
-  sway.B = make('rope-jasmine', hooks.R, hooks.L, [0.22, 0.86], arcH * 0.3, -1, 2);
+  sway.B = make('rope-orange', hooks.R, hooks.L, [0.22, 0.86], arcH * 0.3, -1, 2);
   s.settle(420);
 }
 
@@ -580,6 +617,7 @@ function buildLine() {
   if (!lineScene) return;
   const s = lineScene; s.clear(); prints.length = 0;
   const els = [...lineStage.querySelectorAll('.ml-print')];
+  els.forEach((el) => { const im = el.querySelector('img'); if (im) im.loading = 'eager'; });
   const W = lineStage.clientWidth;
   const small = W < 700;
   const perRow = small ? 2 : 3;
@@ -643,9 +681,9 @@ function relayout() {
 // ───────────────────────── Gate & opening ─────────────────────────
 const enterBtn = document.getElementById('enter');
 const quietBtn = document.getElementById('enter-quiet');
-const heroImg = document.querySelector('.ml-arch__canopy');
+const heroImg = document.querySelector('.ml-arch__drape img');
 Promise.all([
-  preload(['rope-orange', 'rope-alt', 'rope-alt2', 'rope-jasmine', 'band-rose', 'tassel']),
+  preload(['rope-orange', 'rope-alt', 'rope-alt2', 'band-rose', 'drop']),
   heroImg?.decode?.().catch(() => {}),
   document.fonts?.ready,
 ]).catch(() => {}).finally(() => {
@@ -687,9 +725,12 @@ runScenes(scenes, gsap, {
   },
 });
 // The gate's strands hang and breathe while the guest decides to come in.
-const gateCanopy = document.querySelector('.ml-arch__canopy');
+const gateDrape = document.querySelector('.ml-arch__drape img');
 const initGate = () => { buildGate(); gateScene.forceRender = true; };
-if (gateCanopy.complete) requestAnimationFrame(initGate); else gateCanopy.addEventListener('load', initGate, { once: true });
+if (gateDrape.complete) requestAnimationFrame(initGate); else gateDrape.addEventListener('load', initGate, { once: true });
+// Fonts and the kalash images change the measured boxes; rebuild once they are in.
+Promise.all([document.fonts?.ready, ...[...gate.querySelectorAll('.ml-kalash')].map((im) => im.decode?.().catch(() => {}))]).then(() => { if (!opened) initGate(); });
+window.addEventListener('resize', () => { if (!opened) { clearTimeout(window.__mlG); window.__mlG = setTimeout(initGate, 150); } });
 function setupScroll() {
   lenis = createSmooth();
 
