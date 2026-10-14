@@ -118,6 +118,7 @@ const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 // Ganesh (optional): one cut-out picture. In the gold medallion on the torana, then inside: shown large first
 // and softly behind the opening words after that.
 const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
+const closeGanesh = ganeshRef ? S.img('close.ganesh') : null; // a different Ganesh, seated, between the closing diyos
 // The medallion frames his head: a picture may say where the head's centre is (`face`, fractions) and how far to
 // zoom (`zoom`, 1 = the picture just covers the circle; below 1 shows more of it, e.g. the whole head and crown).
 const medalFit = (() => {
@@ -472,6 +473,7 @@ main.innerHTML = `
     <div class="mg-close__row">
       <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
       <div class="mg-close__text mg-rise">
+        ${closeGanesh ? `<figure class="mg-close__gan" aria-hidden="true"><i class="mg-close__glow"></i><img src="${esc(photoUrl(closeGanesh, 'sm'))}" srcset="${esc(photoUrl(closeGanesh, 'sm'))} 500w, ${esc(photoUrl(closeGanesh, 'lg'))} 1000w" sizes="260px" alt="" loading="lazy" decoding="async" /></figure>` : ''}
         <p class="mg-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
         <p class="mg-close__en l-en">${esc(config.closing?.en || '')}</p>
         <p class="mg-close__names">${names()}</p>

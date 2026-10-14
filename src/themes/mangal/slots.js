@@ -17,6 +17,11 @@ export default {
       default: { lg: '/themes/mangal/ganesh-card-1000.webp', sm: '/themes/mangal/ganesh-card-500.webp', w: 1000, h: 1793, face: [0.5, 0.41], zoom: 0.74, alt: 'Shri Ganesh with a golden crown and marigold garland' },
       note: 'A cut-out picture with a transparent background works best (PNG or WebP); the medallion shows his whole head, crown to trunk. A public-domain hand-coloured Ganesh (1842) by default. To remove it, type “off” in the Ganesh line.',
     },
+    'close.ganesh': {
+      label: 'Ganesh at the closing blessing (between the two diyos)', kind: 'detail',
+      default: { lg: '/themes/mangal/ganesh-throne-1000.webp', sm: '/themes/mangal/ganesh-throne-500.webp', w: 1000, h: 1221, alt: 'Shri Ganesh seated on a golden throne' },
+      note: 'A cut-out picture with a transparent background works best. Hidden when Ganesh is turned off.',
+    },
     ...Object.fromEntries([
       couple('couple.lead', 'Main photo, just below the doors (gold temple-arch frame)', 0, 'The couple’s best photo, in its own section under शुभ विवाह. Shown whole under a gold temple-arch crown. Portrait works best.'),
       couple('couple.pair.1', 'Photo strip: photo 1', 1, 'The couple. Moves across the screen in a plain gold-line mount; shown whole, any orientation.'),

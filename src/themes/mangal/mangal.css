@@ -456,6 +456,9 @@ body.is-open .mg-leaves { visibility: visible; }
 .mg-close__lamp:first-child { justify-content: flex-end; }
 .mg-close__lamp:last-child { justify-content: flex-start; }
 .mg-close__lamp:last-child .mg-diyo { transform: scaleX(-1); }
+.mg-close__gan { position: relative; width: clamp(150px, 15vw, 230px); margin: 0 auto 26px; }
+.mg-close__gan img { position: relative; display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(20, 0, 2, 0.45)); }
+.mg-close__glow { position: absolute; inset: -18% -30%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 196, 92, 0.42), rgba(255, 150, 60, 0.12) 60%, transparent); pointer-events: none; }
 .mg-close__ne { margin: 0; font: 400 clamp(32px, 4vw, 54px)/1.5 var(--f-deva-display) !important; color: #F6D88E; }
 .mg-close__en { margin: 10px auto 0; max-width: 40ch; text-wrap: balance; font: 400 clamp(19px, 1.6vw, 23px)/1.55 var(--f-body); color: #FBE7B0; }
 .mg-close__names { margin: 26px 0 0; font: 600 clamp(32px, 3.4vw, 48px)/1.2 var(--f-names); color: #FFF1CC; }
