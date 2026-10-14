@@ -45,7 +45,7 @@ export function listThemes() {
       name: KNOWN[slug]?.name || titleCase(slug),
       concept: KNOWN[slug]?.concept || '',
       ready: existsSync(resolve(ROOT_DIR, slug, 'index.html')) || existsSync(resolve(ROOT_DIR, 'dist', slug, 'index.html')),
-      thumb: existsSync(resolve(ROOT_DIR, 'public', 'themes', slug, 'thumb.jpg')) ? `/themes/${slug}/thumb.jpg` : '',
+      thumb: [resolve(ROOT_DIR, 'public', 'themes', slug, 'thumb.jpg'), resolve(ROOT_DIR, 'dist', 'themes', slug, 'thumb.jpg')].some(existsSync) ? `/themes/${slug}/thumb.jpg` : '', // dist only in production
     }));
   themeCache = { at: Date.now(), list };
   return list;
