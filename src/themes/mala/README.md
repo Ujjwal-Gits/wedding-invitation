@@ -2,33 +2,38 @@
 
 Port 5203 · `http://localhost:5203/mala/` · debug: `?debug&open` (also `&lang=ne`, `&still` for the reduced-motion version).
 
-## Round 5 (decorated mandap)
+## Round 6 (lavish, colourful mandap)
 
-The client said the round-4 rose heaps looked wilted and funereal (grey, white and dusty-mauve masses read as mourning
-in Nepal) and that text sat under flowers. The theme is now dressed the way a Nepali decorator dresses a mandap:
+Round 5 replaced the grey, white and dusty-mauve rose heaps, which read as funeral flowers. The client did not want
+fewer flowers, though: they want a lavishly decorated Nepali wedding stage, all in fresh colour (marigold, red and
+pink roses, hibiscus, peach, with green leaves). So the silk drapes and kalash stay and the flowers are now abundant:
 
-- **Gate:** a sindoor silk valance over an ivory net layer with a gold zari hem, a marigold rosette at every gather,
-  marigold strings hung neatly from under the valance (each ending in one small marigold, no tassel blobs), and a
-  pair of brass kalash arrangements (fresh marigold, red and pink roses, leaves) standing on the floor in the bottom
-  corners. The text sits on clean paper in the middle. Strings are measured against the text block and the kalash
-  (`hangStrings()` in `main.js`): they are cut short above anything they would reach, and dropped if only a stub
-  would remain. On "Open" the gate scales and fades (the one signature motion; reduced motion simply fades).
-- **Hero:** the couple's photo on a white mat with one neat corner of fresh roses and marigolds top-left and
-  bottom-right. Corners are pinned to the frame's corner (`.ml-corner--*`, sized in `cqw` of the frame).
-- **Floral stage:** the same valance and strings across the full width, the couple's photo matted in the middle with
-  a top-right corner, a kalash on either side on the same floor line. Caption below, clear of everything.
-- **RSVP:** the white card with a top-right and a bottom-left corner; the actions are centred away from them.
-- **Swayambar:** both varmalas are marigold; each finishes with a small marigold drop instead of the old tassel.
-- Palette: one accent (sindoor). Flowers are saturated marigold orange and yellow, red and rose-pink roses, a little
-  blush, crisp green leaves. No white or grey masses.
+- **Drape (gate and floral stage):** the sindoor silk valance over ivory net with a gold zari hem. Every gather
+  carries a full cluster (a fan of leaves, two big marigolds, a gold marigold, red and pink roses and a hibiscus or
+  peach rose), and every swag dips into a posy (a rose or hibiscus at the heart, marigolds and leaves round it).
+- **Strings:** fuller and thicker marigold strings: four at each side on desktop (three on phones), one under every
+  gather and one from every swag posy. They are measured against the text block, the photo, its corners and the kalash
+  (`hangStrings()` in `main.js`): cut short above anything they would reach, and dropped if only a stub would remain.
+- **Kalash:** each brass kalash carries a fuller dome (marigold, red and pink roses, hibiscus, peach) and stands in a
+  low bed of fresh flowers and leaves on the floor. The two are composed separately (no mirrored copies).
+- **Photo corners:** four fuller corner arrangements (roses, marigolds, hibiscus, peach roses and leaves trailing
+  along both edges). Hero: top-left and bottom-right. Floral stage: top-left and bottom-right. Travel photo:
+  top-left and bottom-left. RSVP card: top-right and bottom-left. Corners are pinned to the frame's corner
+  (`.ml-corner--*`, sized in `cqw` of the frame).
+- On "Open" the gate scales and fades (the one signature motion; reduced motion simply fades).
+- Palette: one accent (sindoor). Flowers are saturated marigold orange and yellow, red, crimson and rose-pink roses,
+  red hibiscus and a little peach, with deep green leaves. No white or grey masses, and no text over or behind flowers.
 
 **Decor art:** `public/themes/mala/decor/*.webp` (drape, drape-sm, kalash-a/b, corner-tl/tr/br/bl, each with `-sm`)
 and `tex/drop.webp`, made by `tools/decor.py` (`python tools/decor.py <repo> public/themes/mala/decor`). The silk and
-the brass are rendered procedurally (fold shading, environment-lit brass on a lathe profile); the flowers and leaves
-are the Wikimedia Commons cut-outs in `public/themes/dhaka/flowers` (credited in the footer, CC BY / CC BY-SA), and
-the marigold is cut from the library photo `marigold-macro`. Light comes from the upper left everywhere and every
-bloom casts a soft shadow down-right; the two kalash are composed separately (no mirrored copies). Frame-corner anchor
-fractions printed by the script are the numbers in `.ml-corner--*`.
+the brass are rendered procedurally (fold shading, environment-lit brass on a lathe profile); the roses and marigold
+are the Wikimedia Commons cut-outs in `public/themes/dhaka/flowers` (credited in the footer, CC BY / CC BY-SA), the
+hibiscus (`tools/cutouts/hibiscus.webp`, CC0, WordPress Photo Directory) and the leaf (`tools/cutouts/leaf-mango.webp`,
+one clean leaf cut from "Leaves of Hopea odorata", CC BY-SA 3.0) sit next to the script. Every cut-out was checked on a
+dark background at full size; the old single-leaf photo was dropped because of its hairy rim and white glare. Light
+comes from the upper left everywhere and every bloom casts a soft shadow down-right. Frame-corner anchor fractions
+printed by the script are the numbers in `.ml-corner--*`; image sizes are in `DIM` in `main.js`; the drape's height
+(h/W) is `--drape-h`.
 
 ## Concept
 
@@ -57,14 +62,16 @@ everywhere. Reduced motion: the exchange is shown in its final state and nothing
 1. Gate: the dressed mandap (silk valance, marigold strings, two kalash), names, date, hosts, "Open the invitation" /
    "Open without music".
 2. Hero: the couple's photo on a white mat with two floral corners. Names, AD + B.S. date, city.
-   Then the floral stage (main ceremony) after the families.
+   Then the floral stage (main ceremony) after the families: drape, strings, the photo with two corners between the
+   two kalash.
 3. Families: one line, bride and groom with parents and home, "Read the invitation card" (modal via `openModal`).
 4. Swayambar (signature).
 5. Programme, "When & where": per ceremony, the weekday and a big day number, then the name, the AD date with the B.S.
    date (`bsDateOf(e.start, e.dateBS)`), the time, the venue with a map link, and the dress swatches. The wedding has an
    "Order of the day" disclosure.
 6. "The two of us": couple photos hang on threads from a marigold rope and swing as their own little pendulums.
-7. Getting there: a calm view of Nepal (laligurans under Annapurna South), travel note, stays, contacts.
+7. Getting there: a calm view of Nepal (laligurans under Annapurna South) with two flower corners, travel note,
+   stays, contacts.
 8. Album: uncropped masonry of the couple's album slots and the gallery, with a lightbox (`openModal`).
 9. RSVP (`core/rsvp.js`), calendar and share, with the varmala hanging beside the form.
 10. Blessing, names, credits.
@@ -102,3 +109,10 @@ appear in the footer credits along with an extra line naming them as the garland
 - There is no dubo (Cynodon) grass garland. No usable photograph could be cut out cleanly, and a drawn one would
   look fake next to the photographic flowers.
 - Without WebGL a 2D-canvas fallback draws the same ropes as rotated slices. It works but looks rougher.
+
+## Verified (round 6)
+
+Playwright with the real GPU at 1440×860, 1920×1080, 390×844 and 360×740, English and Nepali, demo and
+`?id=sunil-srijana`: the gate and every scroll position. A script samples the alpha of every flower image (drape,
+kalash, corners) under every visible text line: no flower is under or over text. No console errors, nothing
+overflows sideways. The thumbnail is the demo gate.

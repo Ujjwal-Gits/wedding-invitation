@@ -87,7 +87,7 @@
 .ml-gate {
   position: fixed; inset: 0; z-index: 70; overflow: hidden; display: grid; place-items: center;
   background: var(--paper) url('/themes/mala/paper.webp') repeat; background-size: 640px 640px;
-  --kalash-h: min(36svh, 22vw); --drape-h: 10.2vw;
+  --kalash-h: min(34svh, 22vw); --drape-h: 11.95vw;
 }
 .ml-gate.is-entering { background-image: none; background-color: rgba(251, 248, 241, 1); pointer-events: none; }
 .ml-arch { position: absolute; inset: 0; transform-origin: 50% 46%; will-change: transform, opacity; }
@@ -125,10 +125,10 @@
 /* One neat corner of fresh roses and marigolds, pinned to the frame's corner.
    The numbers are where the frame corner sits inside each image (see the decor generator). */
 .ml-corner { position: absolute; z-index: 3; width: var(--cw, 40cqw); height: auto; max-width: none; pointer-events: none; }
-.ml-corner--tl { left: calc(var(--cw, 40cqw) * -0.2489); top: calc(var(--cw, 40cqw) * -0.2157); }
-.ml-corner--br { right: calc(var(--cw, 40cqw) * -0.2589); bottom: calc(var(--cw, 40cqw) * -0.2202); }
-.ml-corner--tr { right: calc(var(--cw, 40cqw) * -0.2287); top: calc(var(--cw, 40cqw) * -0.2604); }
-.ml-corner--bl { left: calc(var(--cw, 40cqw) * -0.2273); bottom: calc(var(--cw, 40cqw) * -0.2715); }
+.ml-corner--tl { left: calc(var(--cw, 40cqw) * -0.2332); top: calc(var(--cw, 40cqw) * -0.2367); }
+.ml-corner--br { right: calc(var(--cw, 40cqw) * -0.2422); bottom: calc(var(--cw, 40cqw) * -0.2468); }
+.ml-corner--tr { right: calc(var(--cw, 40cqw) * -0.2433); top: calc(var(--cw, 40cqw) * -0.2320); }
+.ml-corner--bl { left: calc(var(--cw, 40cqw) * -0.2399); bottom: calc(var(--cw, 40cqw) * -0.2485); }
 
 /* ───────── Plates: frames that take the photo's own proportions ───────── */
 .ml-plate { position: relative; display: block; aspect-ratio: var(--ar); background: var(--paper-2); overflow: hidden; }
@@ -173,7 +173,7 @@
 
 /* ───────── Floral stage: valance, marigold strings, kalash pair, framed photo ───────── */
 .ml-stage { position: relative; padding: 0 0 clamp(60px, 10vh, 110px); overflow: hidden; }
-.ml-stage__set { position: relative; width: 100%; padding: calc(10.2vw + clamp(28px, 5vh, 56px)) var(--gutter) 0; }
+.ml-stage__set { position: relative; width: 100%; padding: calc(11.95vw + clamp(28px, 5vh, 56px)) var(--gutter) 0; }
 .ml-stage__set img { display: block; max-width: none; pointer-events: none; }
 .ml-stage .ml-gl { z-index: 3; }
 .ml-stage__row { position: relative; z-index: 5; display: flex; justify-content: center; align-items: flex-end; gap: clamp(20px, 2.6vw, 44px); }
@@ -247,7 +247,8 @@
 
 /* ───────── Travel ───────── */
 .ml-travel { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(30px, 6vw, 96px); align-items: start; padding: clamp(80px, 13vh, 140px) var(--gutter); max-width: 1400px; margin: 0 auto; }
-.ml-travel__fig { margin: 0; position: sticky; top: 12vh; }
+.ml-travel__fig { margin: 0; position: sticky; top: 12vh; container-type: inline-size; }
+.ml-travel__fig .ml-corner { --cw: min(260px, 34cqw); }
 .ml-travel__plate { width: 100%; }
 .ml-travel .ml-h2 { margin-bottom: 18px; }
 .ml-list { list-style: none; margin: 0 0 30px; padding: 0; display: grid; gap: 14px; }
@@ -346,7 +347,7 @@
 /* ───────── Phones ───────── */
 @media (max-width: 760px) {
   .theme-mala { font-size: 17px; }
-  .ml-gate { --kalash-h: min(21svh, 34vw); --drape-h: 23vw; }
+  .ml-gate { --kalash-h: min(20svh, 34vw); --drape-h: 25.75vw; }
   .ml-gate__inner { max-width: calc(100vw - 72px); padding: calc(var(--drape-h) + 3svh) 0 calc(var(--kalash-h) + 5svh); }
   .ml-gate .ml-kicker { letter-spacing: 0.14em; }
   .ml-gate__names { flex-direction: column; align-items: center; font-size: clamp(42px, 12vw, 56px); }
@@ -356,7 +357,7 @@
   .ml-arch__kl { left: 6px; } .ml-arch__kr { right: 6px; }
   .ml-hero__fig .ml-corner { --cw: 46cqw; }
   .ml-hero__fig { margin-bottom: 26px; }
-  .ml-stage__set { padding: calc(23vw + 26px) 16px 0; }
+  .ml-stage__set { padding: calc(25.75vw + 26px) 16px 0; }
   .ml-stage__fig { width: min(56vw, calc(46svh * var(--fig-ar, 0.8))); z-index: 1; }
   .ml-stage__fig .ml-corner { --cw: 46cqw; }
   .ml-stage .ml-kalash { width: 17vw; height: auto; margin: 0 0 -4px; z-index: 2; }
@@ -389,7 +390,7 @@
   .ml-ev__wd, .ml-ev__my { grid-column: 2; }
   .ml-rituals li { grid-template-columns: 1fr; gap: 0; }
   .ml-travel { grid-template-columns: 1fr; }
-  .ml-travel__fig { position: static; margin: 0 -20px; }
+  .ml-travel__fig { position: relative; top: auto; margin: 0; }
   .ml-rsvp { grid-template-columns: 1fr; }
   .ml-form__row { grid-template-columns: 1fr; }
   .ml-print { padding: 6px 6px 8px; }

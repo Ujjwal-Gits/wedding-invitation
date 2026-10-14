@@ -133,12 +133,13 @@ const weekday = (iso) => ({
 
 // ───────────────────────── Gate ─────────────────────────
 const gate = document.getElementById('gate');
-// Decoration, the way a Nepali decorator dresses a mandap: a sindoor silk valance over ivory net with
-// marigold rosettes, marigold strings hung from it, brass kalash arrangements on the floor, and photos
-// framed with one neat corner of fresh roses and marigolds. Text never sits on any of it.
+// Decoration, the way a Nepali decorator dresses a mandap for the wedding: a sindoor silk valance over ivory
+// net with a cluster of marigolds, roses and hibiscus at every gather and a posy at the foot of every swag,
+// full marigold strings hung from it, brass kalash arrangements standing in a bed of fresh flowers, and photos
+// framed with full corners of fresh roses and marigolds. Text never sits on any of it.
 const DECOR = '/themes/mala/decor/';
 const drape = (cls) => `<picture class="${cls}"><source media="(max-width: 760px)" srcset="${DECOR}drape-sm.webp" /><img src="${DECOR}drape.webp" alt="" decoding="async" /></picture>`;
-const DIM = { 'kalash-a': [760, 1010], 'kalash-b': [760, 1033], 'corner-tl': [720, 587], 'corner-br': [720, 582], 'corner-tr': [720, 641], 'corner-bl': [720, 636] };
+const DIM = { 'kalash-a': [760, 926], 'kalash-b': [760, 915], 'corner-tl': [720, 611], 'corner-br': [720, 610], 'corner-tr': [720, 610], 'corner-bl': [720, 612] };
 const wh = (n) => `width="${DIM[n][0]}" height="${DIM[n][1]}"`;
 const kalash = (v, cls, lazy = true) => `<img class="ml-kalash ${cls}" ${wh(`kalash-${v}`)} src="${DECOR}kalash-${v}.webp" srcset="${DECOR}kalash-${v}-sm.webp 380w, ${DECOR}kalash-${v}.webp 760w" sizes="(max-width: 760px) 30vw, 300px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
 const corner = (k, lazy = true) => `<img class="ml-corner ml-corner--${k}" ${wh(`corner-${k}`)} src="${DECOR}corner-${k}.webp" srcset="${DECOR}corner-${k}-sm.webp 400w, ${DECOR}corner-${k}.webp 720w" sizes="(max-width: 760px) 40vw, 260px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
@@ -167,7 +168,8 @@ const DECOR_CREDITS = [
   { title: 'Rose on black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_on_black_background.jpg' },
   { title: 'Rose black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_black_background.jpg' },
   { title: 'Pink Rose Closeup With Black Background', creator: 'AsaQuathern', license: 'CC BY 4.0', url: 'https://commons.wikimedia.org/wiki/File:Pink_Rose_Closeup_With_Black_Background.jpg' },
-  { title: 'Leaf from bush', creator: 'Ben Sale', license: 'CC BY 2.0', url: 'https://commons.wikimedia.org/wiki/File:Leaf_from_bush_(15635275502).jpg' },
+  { title: 'Leaves of Hopea odorata (one leaf cut out)', creator: 'Silviculture at Vietnamese Wikipedia', license: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:Leaves_of_Hopea_odorata.jpg' },
+  { title: 'A red hibiscus flower with green leaves around it', creator: 'Pooja Derashri', license: 'CC0', url: 'https://wordpress.org/photos/photo/31065c08a4/' },
 ];
 
 // ───────────────────────── Main markup ─────────────────────────
@@ -247,7 +249,7 @@ main.innerHTML = `
       ${drape('ml-drape ml-stage__drape')}
       <div class="ml-stage__row">
         ${kalash('b', 'ml-stage__kl')}
-        <figure class="ml-stage__fig" id="stage-fig" style="--fig-ar:${(aspectOf(stageRef) || 0.8).toFixed(4)}">${plate(stageRef, altFor(stageRef, 'stage.photo'), '(max-width: 760px) 64vw, 36vw', 'ml-stage__plate')}${corner('tr')}</figure>
+        <figure class="ml-stage__fig" id="stage-fig" style="--fig-ar:${(aspectOf(stageRef) || 0.8).toFixed(4)}">${plate(stageRef, altFor(stageRef, 'stage.photo'), '(max-width: 760px) 64vw, 36vw', 'ml-stage__plate')}${corner('tl')}${corner('br')}</figure>
         ${kalash('a', 'ml-stage__kr')}
       </div>
     </div>
@@ -288,7 +290,7 @@ main.innerHTML = `
   </section>` : ''}
 
   <section class="ml-travel" id="travel" aria-labelledby="travel-title">
-    <figure class="ml-travel__fig ml-in">${plate(travelRef, S.alt('travel.photo'), '(max-width: 760px) 100vw, 58vw', 'ml-travel__plate')}</figure>
+    <figure class="ml-travel__fig ml-in">${plate(travelRef, S.alt('travel.photo'), '(max-width: 760px) 100vw, 58vw', 'ml-travel__plate')}${corner('tl')}${corner('bl')}</figure>
     <div class="ml-travel__text">
       <h2 class="ml-h2 ml-in" id="travel-title">${bi(txt('travel.title'))}</h2>
       <p class="ml-p ml-in">${bi(config.info.travel)}</p>
@@ -380,7 +382,7 @@ main.innerHTML = `
     <details class="ml-credits">
       <summary>${bi(T.credits)}</summary>
       <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The kalash arrangements, rosettes and photo corners are composed from these cut-outs (Wikimedia Commons): ${DECOR_CREDITS.map((k) => `“${esc(k.title)}” by ${esc(k.creator)}, <a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.license)}</a>`).join('; ')}; marigolds from the library photo “marigold-macro”. Silk drape, brass kalash and paper are rendered for this theme.</li>
+      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The kalash arrangements, rosettes and photo corners are composed from these cut-outs (Wikimedia Commons and the WordPress Photo Directory): ${DECOR_CREDITS.map((k) => `“${esc(k.title)}” by ${esc(k.creator)}, <a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.license)}</a>`).join('; ')}; marigolds from the library photo “marigold-macro”. Silk drape, brass kalash and paper are rendered for this theme.</li>
       ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
     </details>
   </footer>
@@ -517,17 +519,20 @@ function hangStrings(scene, host, drapeImg, obstacles) {
   const W = d.w; const H = scene.h;
   const jy = d.y + W * (small ? 0.034 : 0.021);
   const by = d.y + W * (small ? 0.03 : 0.018);
-  const rw = small ? 14 : Math.max(16, Math.min(22, W / 92));
+  const rw = small ? 16 : Math.max(18, Math.min(26, W / 80));
   const drop = rw * 1.75;
   const pad = small ? 10 : 30;
   const tex = ['rope-alt2', 'rope-orange', 'rope-alt'];
   const plan = [];
-  const side = small ? [[0.028, 0.5], [0.07, 0.4]] : [[0.012, 0.5], [0.03, 0.41], [0.048, 0.33]];
+  const side = small ? [[0.026, 0.52], [0.062, 0.42], [0.098, 0.34]] : [[0.012, 0.52], [0.03, 0.44], [0.048, 0.37], [0.066, 0.3]];
   side.forEach(([f, len], i) => {
     plan.push([d.x + W * f, by, H * len, tex[i % 3]]);
     plan.push([d.x + W * (1 - f), by, H * len * 0.95, tex[(i + 1) % 3]]);
   });
-  for (let k = 1; k < n; k++) plan.push([d.x + (W * k) / n, jy, H * (k === 1 || k === n - 1 ? 0.27 : 0.2), tex[(k + 2) % 3]]);
+  for (let k = 1; k < n; k++) plan.push([d.x + (W * k) / n, jy, H * (k === 1 || k === n - 1 ? 0.3 : 0.22), tex[(k + 2) % 3]]);
+  // a short string from the posy at the foot of every swag (dropped wherever it would only be a stub)
+  const fy = d.y + W * (small ? 0.205 : 0.092);
+  for (let k = 0; k < n; k++) plan.push([d.x + (W * (k + 0.5)) / n, fy, H * (k === 0 || k === n - 1 ? 0.24 : 0.16), tex[k % 3]]);
   const obs = obstacles.filter(Boolean).map((r) => box(r, pad));
   plan.forEach(([x, y0, len, t], i) => {
     let end = y0 + len;
@@ -557,7 +562,7 @@ function buildGate() {
 }
 function buildStage() {
   const fig = document.getElementById('stage-fig');
-  const obs = [fig, fig.querySelector('.ml-corner'), ...stageSet.querySelectorAll('.ml-kalash')].filter(Boolean).map((el) => local(el, stageSet));
+  const obs = [fig, ...fig.querySelectorAll('.ml-corner'), ...stageSet.querySelectorAll('.ml-kalash')].filter(Boolean).map((el) => local(el, stageSet));
   hangStrings(stageScene, stageSet, stageSet.querySelector('.ml-stage__drape img'), obs);
 }
 

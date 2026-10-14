@@ -74,19 +74,20 @@ const img = (ref, alt, sizes, { eager = false } = {}) => {
   return `<img src="${esc(sm)}" ${sm !== lg ? `srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w"` : ''} sizes="${sizes}" alt="${esc(alt || '')}"
     style="object-position:${(fx * 100).toFixed(1)}% ${(fy * 100).toFixed(1)}%" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" />`;
 };
+/** Floral photo corners: four different arrangements (none mirrors another), each made for its own corner. */
+const CORNERS = { tl: 'corner-a', br: 'corner-b', tr: 'corner-c', bl: 'corner-d' };
+const cornerImg = (k) => `<img class="pb-fr__fl pb-fr__fl--${k}" src="${FLORA}${CORNERS[k]}-sm.webp" srcset="${FLORA}${CORNERS[k]}-sm.webp 1x, ${FLORA}${CORNERS[k]}.webp 2x" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
 /**
  * A framed photograph that keeps the photo's own proportions (nothing cropped).
- * style: mat | floral | print | line | blush
+ * style: mat | floral | print | line | blush; fl: extra flower corners ('tl' | 'tr' | 'br' | 'bl').
  */
-const frame = (ref, alt, sizes, { style = 'mat', cap = '', cls = '', eager = false } = {}) => {
+const frame = (ref, alt, sizes, { style = 'mat', cap = '', cls = '', eager = false, fl = [] } = {}) => {
   if (!ref) return '';
   const ar = aspectOf(ref);
   const orient = ar ? (ar >= 1.05 ? 'land' : ar <= 0.95 ? 'port' : 'sq') : 'auto';
-  const flowers = style === 'floral'
-    ? `<img class="pb-fr__fl pb-fr__fl--tl" src="${FLORA}corner-a-sm.webp" srcset="${FLORA}corner-a-sm.webp 1x, ${FLORA}corner-a.webp 2x" alt="" aria-hidden="true" loading="lazy" /><img class="pb-fr__fl pb-fr__fl--br" src="${FLORA}corner-b-sm.webp" srcset="${FLORA}corner-b-sm.webp 1x, ${FLORA}corner-b.webp 2x" alt="" aria-hidden="true" loading="lazy" />`
-    : '';
-  return `<figure class="pb-fr pb-fr--${style} ${cls}" data-orient="${orient}" style="--ar:${ar ? ar.toFixed(4) : 0.75}">
-    <span class="pb-fr__mat"><span class="pb-fr__img">${img(ref, alt, sizes, { eager })}</span></span>${flowers}
+  const corners = style === 'floral' ? ['tl', 'br'] : fl;
+  return `<figure class="pb-fr pb-fr--${style} ${corners.length ? 'pb-fr--fl' : ''} ${cls}" data-orient="${orient}" style="--ar:${ar ? ar.toFixed(4) : 0.75}">
+    <span class="pb-fr__mat"><span class="pb-fr__img">${img(ref, alt, sizes, { eager })}</span>${corners.map(cornerImg).join('')}</span>
     ${cap ? `<figcaption>${cap}</figcaption>` : ''}</figure>`;
 };
 
@@ -154,15 +155,22 @@ const boardBS = (bs) => (bs.short && !has(config.weddingDateBS) ? { en: `${bs.sh
 const gate = document.getElementById('gate');
 const crest = txt('gate.crest');
 const pct = (o) => `left:${o.x}%;top:${o.y}%;width:${o.w}%;height:${o.h}%`;
+// Only the visible stage's images load (lazy + display:none), each at the width the stage is drawn.
 const gateStage = (v) => {
   const g = GATE[v];
   const p = g.plaque;
   const o = g.opening;
+  const ar = g.W / g.H;
+  const stageW = `min(100vw, calc((100vh - 12px) * ${ar.toFixed(4)}))`;
+  const set = (name, wPct) => {
+    const lg = Math.round((g.W * wPct) / 100 * g.sc);
+    return `src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp ${Math.round(lg * 0.6)}w, ${FLORA}${name}.webp ${lg}w" sizes="calc(${stageW} * ${(wPct / 100).toFixed(4)})"`;
+  };
   return `
-  <div class="pb-gate__stage pb-gate__stage--${v}" style="--gar:${g.W / g.H};--floor:${o.floor};--open:${(o.x1 - o.x0).toFixed(3)};--pw:${p.w}">
-    <img class="pb-gate__curtain pb-gate__curtain--l" src="${FLORA}curtain-l-${v}-sm.webp" srcset="${FLORA}curtain-l-${v}-sm.webp 1x, ${FLORA}curtain-l-${v}.webp 2x" alt="" style="${pct(g.curtain_l)}" />
-    <img class="pb-gate__curtain pb-gate__curtain--r" src="${FLORA}curtain-r-${v}-sm.webp" srcset="${FLORA}curtain-r-${v}-sm.webp 1x, ${FLORA}curtain-r-${v}.webp 2x" alt="" style="${pct(g.curtain_r)}" />
-    <img class="pb-gate__arch" src="${FLORA}gate-${v}-sm.webp" srcset="${FLORA}gate-${v}-sm.webp 1x, ${FLORA}gate-${v}.webp 2x" alt="" fetchpriority="high" />
+  <div class="pb-gate__stage pb-gate__stage--${v}" style="--gar:${ar};--floor:${o.floor};--open:${(o.x1 - o.x0).toFixed(3)};--pw:${p.w}">
+    <img class="pb-gate__curtain pb-gate__curtain--l" ${set(`curtain-l-${v}`, g.curtain_l.w)} alt="" loading="lazy" style="${pct(g.curtain_l)}" />
+    <img class="pb-gate__curtain pb-gate__curtain--r" ${set(`curtain-r-${v}`, g.curtain_r.w)} alt="" loading="lazy" style="${pct(g.curtain_r)}" />
+    <img class="pb-gate__arch" ${set(`gate-${v}`, 100)} alt="" loading="lazy" fetchpriority="high" />
     <div class="pb-gate__crest" style="left:${p.x}%;top:${p.y}%">
       <span class="pb-crest" lang="ne">${esc(crest.ne || crest.en)}</span>
     </div>
@@ -253,8 +261,8 @@ main.innerHTML = `
 
   <section class="pb-couple pb-sec pb-sec--blush" id="couple" aria-labelledby="couple-title">
     <div class="pb-couple__photos">
-      ${frame(coupleA, pairMode ? c.bride.name.en : altFor(coupleA, 'couple.first'), '(max-width: 760px) 58vw, 26vw', { style: 'mat', cls: 'pb-couple__a pb-rise', cap: pairMode ? bi(c.bride.name) : '' })}
-      ${frame(coupleB, pairMode ? c.groom.name.en : altFor(coupleB, 'couple.second'), '(max-width: 760px) 52vw, 22vw', { style: 'print', cls: 'pb-couple__b pb-rise', cap: pairMode ? bi(c.groom.name) : '' })}
+      ${frame(coupleA, pairMode ? c.bride.name.en : altFor(coupleA, 'couple.first'), '(max-width: 760px) 58vw, 26vw', { style: 'mat', cls: 'pb-couple__a pb-rise', cap: pairMode ? bi(c.bride.name) : '', fl: ['bl'] })}
+      ${frame(coupleB, pairMode ? c.groom.name.en : altFor(coupleB, 'couple.second'), '(max-width: 760px) 52vw, 22vw', { style: 'print', cls: 'pb-couple__b pb-rise', cap: pairMode ? bi(c.groom.name) : '', fl: ['tr'] })}
     </div>
     <div class="pb-couple__text">
       <p class="pb-kicker pb-rise">${bi(txt('couple.title'))}</p>
@@ -265,14 +273,14 @@ main.innerHTML = `
   </section>
 
   <section class="pb-prog pb-sec" id="programme" aria-labelledby="prog-title">
-    ${flower('branch', 'pb-orn--divider')}
+    ${flower('divider', 'pb-orn--divider')}
     <header class="pb-prog__head">
       <p class="pb-kicker pb-rise">${bi(txt('programme.kicker'))}</p>
       <h2 class="pb-h2 pb-h2--xl pb-rise" id="prog-title">${bi(txt('programme.title'))}</h2>
     </header>
     <div class="pb-prog__body">
       <ol class="pb-prog__list">${programme}</ol>
-      ${progRef ? `<div class="pb-prog__photo">${frame(progRef, altFor(progRef, 'programme.photo'), '(max-width: 1100px) 0px, 26vw', { style: 'blush' })}</div>` : ''}
+      ${progRef ? `<div class="pb-prog__photo">${frame(progRef, altFor(progRef, 'programme.photo'), '(max-width: 1100px) 0px, 26vw', { style: 'blush', fl: ['tr'] })}</div>` : ''}
     </div>
     <p class="pb-prog__actions"><button class="pb-btn pb-btn--ghost" type="button" id="add-calendar">${bi(T.calendar)}</button></p>
   </section>
@@ -280,6 +288,7 @@ main.innerHTML = `
   ${album.length ? `
   <section class="pb-album pb-sec pb-sec--blush" id="album" aria-labelledby="album-title">
     <header class="pb-album__head">
+      ${flower('divider', 'pb-orn--rule')}
       <p class="pb-kicker pb-rise">${bi(txt('album.kicker'))}</p>
       <h2 class="pb-h2 pb-rise" id="album-title">${bi(txt('album.title'))}</h2>
     </header>
@@ -289,6 +298,7 @@ main.innerHTML = `
   ${infoBlocks.length ? `
   <section class="pb-info pb-sec" id="info" aria-labelledby="info-title">
     <header>
+      ${flower('divider', 'pb-orn--rule')}
       <p class="pb-kicker pb-rise">${bi(txt('info.kicker'))}</p>
       <h2 class="pb-h2 pb-rise" id="info-title">${bi(config.city)}</h2>
     </header>
@@ -348,8 +358,9 @@ main.innerHTML = `
   </section>` : ''}
 
   <footer class="pb-close pb-sec" aria-label="Blessing">
-    ${closeRef ? `<div class="pb-close__photo pb-rise">${frame(closeRef, altFor(closeRef, 'close.photo'), '(max-width: 760px) 70vw, 28vw', { style: 'line' })}</div>` : ''}
+    ${closeRef ? `<div class="pb-close__photo pb-rise">${frame(closeRef, altFor(closeRef, 'close.photo'), '(max-width: 760px) 70vw, 28vw', { style: 'line', fl: ['tl', 'br'] })}</div>` : ''}
     <div class="pb-close__text">
+      ${flower('divider', 'pb-orn--rule')}
       <p class="pb-kicker pb-rise">${bi(txt('close.kicker'))}</p>
       ${has(config.closing) ? `<p class="pb-close__words pb-rise">${bi(config.closing)}</p>` : ''}
       <p class="pb-close__names pb-rise">${names('pb-names--small')}</p>
@@ -387,7 +398,7 @@ main.innerHTML = `
 
 // ───────────────────────── Album: balanced columns, varied frames ─────────────────────────
 const grid = document.getElementById('album-grid');
-const STYLES = ['mat', 'print', 'line', 'blush', 'mat', 'floral'];
+const STYLES = ['mat', 'floral', 'print', 'line', 'blush', 'mat', 'print', 'floral'];
 const layoutAlbum = () => {
   if (!grid) return;
   const cols = window.innerWidth < 640 ? 2 : 3;
