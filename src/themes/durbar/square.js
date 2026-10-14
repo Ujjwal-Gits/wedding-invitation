@@ -547,13 +547,13 @@ export async function createSquare(canvas, opts) {
   }
   // ── Adaptive quality: steps resolution (and the optional AO pass) down when frames run over
   // ~20 ms for 2 s, back up when there is headroom. Shadows are already drawn only when the sun moves.
-  const LEVELS = [{ pr: 1, ao: true }, { pr: 0.85, ao: true }, { pr: 0.85, ao: false }, { pr: 0.72, ao: false }, { pr: 0.6, ao: false }];
+  const LEVELS = [{ pr: 1, ao: true }, { pr: 1, ao: false }, { pr: 0.92, ao: false }, { pr: 0.85, ao: false }, { pr: 0.7, ao: false }];
   let useComposer = !!composer;
   const governor = createGovernor({
     name: 'durbar', levels: LEVELS.length, start: lowPower ? 2 : 0,
     apply(l) {
       const L = LEVELS[l];
-      renderer.setPixelRatio(Math.max(0.6, prCap * L.pr));
+      renderer.setPixelRatio(Math.max(Math.min(1, prCap), prCap * L.pr)); // never blurrier than the screen's own pixels
       useComposer = !!composer && L.ao;
       composer?.setPixelRatio(renderer.getPixelRatio());
       lastW = lastH = 0; resize();

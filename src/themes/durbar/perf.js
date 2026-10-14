@@ -46,7 +46,7 @@ export function dprCap({ tier, mobile }) {
  * Steps down when the average frame is over `slowMs` for `windowS` seconds; steps back up after
  * a run of fast windows, waiting longer each time a step up had to be undone (no ping-pong).
  */
-export function createGovernor({ levels, apply, start = 0, slowMs = 20, fastMs = 17.6, windowS = 2, name = '3d' }) {
+export function createGovernor({ levels, apply, start = 0, slowMs = 28, fastMs = 18.5, windowS = 2, name = '3d' }) {
   let level = Math.max(0, Math.min(levels - 1, start));
   let sum = 0, n = 0, fastRun = 0, upWait = 2, lastUp = -1;
   const log = [];

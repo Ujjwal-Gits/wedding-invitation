@@ -1639,16 +1639,16 @@ export async function createGarden(canvas, opts) {
   let reflectEvery = 1, shadowEvery = 1, frameNo = 0;
   const LEVELS = [
     { pr: 1, shadowEvery: 1, reflectEvery: 1, grass: 1 },
-    { pr: 0.85, shadowEvery: 1, reflectEvery: 1, grass: 1 },
-    { pr: 0.85, shadowEvery: 2, reflectEvery: 2, grass: 0.7 },
-    { pr: 0.72, shadowEvery: 3, reflectEvery: 3, grass: 0.45 },
-    { pr: 0.6, shadowEvery: 4, reflectEvery: 4, grass: 0.25 },
+    { pr: 1, shadowEvery: 2, reflectEvery: 2, grass: 0.75 },
+    { pr: 1, shadowEvery: 3, reflectEvery: 3, grass: 0.5 },
+    { pr: 0.85, shadowEvery: 4, reflectEvery: 4, grass: 0.35 },
+    { pr: 0.7, shadowEvery: 4, reflectEvery: 4, grass: 0.25 },
   ];
   const governor = createGovernor({
     name: 'bagaicha', levels: LEVELS.length, start: lowPower ? 2 : 0,
     apply(l) {
       const L = LEVELS[l];
-      renderer.setPixelRatio(Math.max(0.6, prCap * L.pr));
+      renderer.setPixelRatio(Math.max(Math.min(1, prCap), prCap * L.pr)); // never blurrier than the screen's own pixels
       shadowEvery = L.shadowEvery; reflectEvery = L.reflectEvery;
       // shadows are not switched off (that would recompile every material): the map is redrawn less often
       if (shadowsOn) renderer.shadowMap.autoUpdate = shadowEvery === 1;

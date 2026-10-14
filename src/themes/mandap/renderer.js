@@ -97,9 +97,9 @@ export class NightRenderer {
    */
   govern() {
     const LEVELS = [
-      { pr: 1, shadowEvery: 1, bloom: true }, { pr: 0.85, shadowEvery: 1, bloom: true },
-      { pr: 0.85, shadowEvery: 2, bloom: true }, { pr: 0.72, shadowEvery: 3, bloom: false },
-      { pr: 0.6, shadowEvery: 4, bloom: false },
+      { pr: 1, shadowEvery: 1, bloom: true }, { pr: 1, shadowEvery: 2, bloom: true },
+      { pr: 1, shadowEvery: 3, bloom: false }, { pr: 0.85, shadowEvery: 4, bloom: false },
+      { pr: 0.7, shadowEvery: 4, bloom: false },
     ];
     const r = this.renderer;
     this.shadowEvery = 1;
@@ -107,7 +107,7 @@ export class NightRenderer {
       name: 'mandap', levels: LEVELS.length, start: this.low ? 3 : 0,
       apply: (l) => {
         const L = LEVELS[l];
-        this.pr = Math.max(0.6, this.maxPR * L.pr);
+        this.pr = Math.max(Math.min(1, this.maxPR), this.maxPR * L.pr); // never blurrier than the screen's own pixels
         this.shadowEvery = L.shadowEvery;
         if (r.shadowMap.enabled) r.shadowMap.autoUpdate = L.shadowEvery === 1;
         this.bloom.enabled = L.bloom;
