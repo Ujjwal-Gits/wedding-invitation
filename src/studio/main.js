@@ -57,7 +57,7 @@ async function route() {
       S.me = s;
       setCsrf(s.csrf);
       coupleFlag(true);
-      history.replaceState(null, '', `#/i/${s.slug}/couple`);
+      history.replaceState(null, '', `#/i/${s.slug}/theme`);
     } catch (err) {
       return err.status === 429 ? renderLinkProblem(err.message, 'Please wait a moment') : renderLinkProblem();
     }
@@ -78,7 +78,7 @@ async function route() {
       return coupleFlag() ? renderLinkProblem() : renderLogin();
     }
   }
-  if (S.me.role === 'client' && !hash.startsWith(`#/i/${S.me.slug}/`)) return go(`#/i/${S.me.slug}/couple`);
+  if (S.me.role === 'client' && !hash.startsWith(`#/i/${S.me.slug}/`)) return go(`#/i/${S.me.slug}/theme`);
   if (hash === '#/login') return go('#/');
   try { S.meta = await api('/meta'); } catch (err) { if (!S.meta) return fatal(err); } // theme list can grow at any time
   const m = /^#\/i\/([a-z0-9-]{3,64})\/([a-z-]+)$/.exec(hash);
@@ -187,7 +187,7 @@ async function renderHome() {
   const cards = items.map((i) => {
     const names = coupleName(i.bride, i.groom);
     return h('article.icard',
-      h('a.icard__photo', { href: `#/i/${i.slug}/couple`, tabindex: -1, 'aria-hidden': 'true' },
+      h('a.icard__photo', { href: `#/i/${i.slug}/theme`, tabindex: -1, 'aria-hidden': 'true' },
         i.hero ? h('img', { src: photoUrl(i.hero, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : h('span.icard__ph', icon('image', 28)),
         h('span.icard__status', status(i))),
       h('div.icard__body',
@@ -196,7 +196,7 @@ async function renderHome() {
         h('p.icard__meta', h('span', `${themeName[i.theme] || i.theme} theme`), h('span', { 'aria-hidden': 'true' }, '·'),
           h('a', { href: `#/i/${i.slug}/replies` }, `${i.rsvpCount} repl${i.rsvpCount === 1 ? 'y' : 'ies'}`)),
         h('div.icard__actions',
-          h('a.btn.btn--primary', { href: `#/i/${i.slug}/couple` }, 'Edit'),
+          h('a.btn.btn--primary', { href: `#/i/${i.slug}/theme` }, 'Edit'),
           h('button.btn', { type: 'button', onclick: async () => {
             const doc = await api(`/invitations/${i.slug}`).catch(() => null);
             shareDialog({ meta: S.meta, slug: i.slug, theme: i.theme, names, events: doc?.data.events || [], live: i.status === 'published' });
@@ -244,7 +244,7 @@ function newInvitation() {
       const theme = S.meta.themes.find((t) => t.ready)?.slug;
       const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme, sample: true } });
       d.close();
-      go(`#/i/${doc.slug}/couple`);
+      go(`#/i/${doc.slug}/theme`);
     } catch (ex) {
       err.textContent = ex.status === 409 ? 'That web address is taken. Open “Web address” and change it.' : ex.message;
     } finally {
@@ -478,7 +478,7 @@ function createEditor(doc) {
     } else if (STEPS.some((s) => s.id === id)) {
       current = id;
     } else {
-      go(`#/i/${slug}/couple`);
+      go(`#/i/${slug}/theme`);
       return;
     }
     if (!app.contains(root)) clear(app).append(root);
@@ -487,7 +487,7 @@ function createEditor(doc) {
     const idx = STEPS.indexOf(step);
     document.title = `${step ? step.title : 'Replies'} · ${names()} · Sayapatri Studio`;
     root.classList.toggle('is-replies', current === 'replies');
-    root.classList.toggle('no-side', !(current !== 'publish' && current !== 'replies'));
+    root.classList.toggle('no-side', ['publish', 'replies', 'theme'].includes(current));
     loadSide(false);
     requestAnimationFrame(fitSide);
     repliesLink.setAttribute('aria-current', current === 'replies' ? 'page' : 'false');

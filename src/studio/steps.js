@@ -1,5 +1,5 @@
 // The guided editor: six short steps in plain language.
-import { h, icon, iconBtn, clear, confirmDialog } from './dom.js';
+import { h, icon, iconBtn, clear, confirmDialog, openDialog } from './dom.js';
 import { textField, biField, photoSlot } from './fields.js';
 import { portraitsEditor, colorsEditor, musicSection, gallerySection, storySection, wordingSection, infoSection, rsvpSection } from './sections.js';
 import { customiseStep, carryOver } from './customise.js';
@@ -212,32 +212,46 @@ function datesStep(ctx) {
 
 function themeStep(ctx) {
   const m = ctx.m;
-  const grid = h('div.tpick', { role: 'radiogroup', 'aria-label': 'Theme' });
+  const grid = h('div.tpick', { role: 'list', 'aria-label': 'Themes' });
   const note = h('div.carry-note', { 'aria-live': 'polite' });
   const showNote = async () => {
     const t = m.get(['theme']);
     const c = await carryOver(ctx, t);
     if (m.get(['theme']) !== t) return;
     const name = ctx.meta.themes.find((x) => x.slug === t)?.name || t;
-    clear(note).append(
+    clear(note).append(...[
       h('p', h('b', `Your names, dates, ceremonies and ${c.portraits} couple photo${c.portraits === 1 ? '' : 's'} move with you to ${name}.`)),
       c.shown.length ? h('p', `Your own words and photos that ${name} also shows: ${c.shown.join(', ')}.`) : null,
       c.others.length ? h('p.muted', 'Changes you made only for another theme are kept, in case you switch back.') : null,
-    );
+    ].filter(Boolean));
+  };
+  const choose = (t) => { m.set(['theme'], t.slug); ctx.onTheme?.(t.slug); render(); showNote(); };
+  const next = () => { location.hash = `#/i/${encodeURIComponent(ctx.slug)}/couple`; };
+  // Full-screen look at one theme filled with this couple's own details (the unsaved draft).
+  const view = (t) => {
+    const frame = h('iframe.tview__frame', { title: `${t.name} with your details`, src: `/${t.slug}/?id=${encodeURIComponent(ctx.slug)}&studio=${Date.now()}` });
+    const d = openDialog({
+      title: `${t.name}${t.concept ? ` · ${t.concept}` : ''}`, body: frame, cls: 'dialog--viewer', wide: true,
+      actions: [
+        h('button.btn', { type: 'button', onclick: () => d.close() }, 'Back to all themes'),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => { choose(t); d.close(); next(); } }, icon('check', 18), `Use ${t.name}`),
+      ],
+    });
   };
   const render = () => {
     clear(grid);
     const cur = m.get(['theme']);
     for (const t of ctx.meta.themes) {
-      const id = `pick-${t.slug}`;
       const on = cur === t.slug;
       const img = t.thumb ? h('img', { src: t.thumb, alt: '', loading: 'lazy', decoding: 'async' }) : h('span.tpick__ph', t.name);
-      grid.append(h('label.tpick__item', { for: id, class: `${on ? 'is-on' : ''} ${t.ready ? '' : 'is-soon'}` },
-        h('input.sr-only', { type: 'radio', name: 'theme', id, value: t.slug, checked: on, disabled: !t.ready, onchange: () => {
-          m.set(['theme'], t.slug); ctx.onTheme?.(t.slug); render(); showNote(); grid.querySelector(`#${id}`)?.focus();
-        } }),
-        h('span.tpick__img', img, on ? h('span.tpick__check', icon('check', 18), 'Chosen') : null, t.ready ? null : h('span.tpick__soon', 'Coming soon')),
+      grid.append(h('div.tpick__item', { class: `${on ? 'is-on' : ''} ${t.ready ? '' : 'is-soon'}` },
+        h('button.tpick__img', { type: 'button', disabled: !t.ready, 'aria-label': `View ${t.name} with your details`, onclick: () => view(t) },
+          img, on ? h('span.tpick__check', icon('check', 18), 'Chosen') : null, t.ready ? h('span.tpick__view', icon('eye', 16), 'View') : h('span.tpick__soon', 'Coming soon')),
         h('span.tpick__text', h('b', t.name), t.concept ? h('small', t.concept) : null),
+        t.ready ? h('div.tpick__acts',
+          h('button.btn.btn--sm', { type: 'button', onclick: () => view(t) }, icon('eye', 16), 'View'),
+          on ? h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: next }, 'Chosen · Next')
+            : h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => { choose(t); next(); } }, 'Use this theme')) : null,
       ));
     }
   };
@@ -273,9 +287,9 @@ function extras(ctx) {
 }
 
 export const STEPS = [
+  { id: 'theme', title: 'Choose a theme', intro: 'Tap any theme to see it with your own names, dates and photos. Pick the one you love; you can change it later and nothing is lost.', render: themeStep },
   { id: 'couple', title: 'Couple & photos', intro: 'Names and photos of the two of you.', render: coupleStep },
   { id: 'dates', title: 'Dates & ceremonies', intro: 'When and where everything happens.', render: datesStep },
-  { id: 'theme', title: 'Choose a theme', intro: 'Pick the look. You can change it any time; nothing you entered is lost.', render: themeStep },
   { id: 'customise', title: 'Customise', intro: 'Click any photo or line of text to change it.', render: (ctx) => [customiseStep(ctx), extras(ctx)] },
   { id: 'music', title: 'Music', intro: 'Choose what plays while guests open the invitation.', render: musicStep },
   { id: 'publish', title: 'Preview & publish', intro: 'Check it on a phone and a computer, then share it.', render: publishStep },

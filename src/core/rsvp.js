@@ -17,7 +17,27 @@ export function initRsvp(eventsList = config.events) {
   const nameErr = document.getElementById('f-name-err');
   let lastSent = 0;
 
-  guests.innerHTML = Array.from({ length: config.rsvp.maxGuests }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+  // Guest count: a clear − 1 + stepper instead of the browser's list (same name and id, so themes need no change).
+  const maxGuests = Math.max(1, config.rsvp.maxGuests || 1);
+  const step = document.createElement('div');
+  step.className = 'gstep';
+  step.setAttribute('role', 'group');
+  step.setAttribute('aria-label', 'Number of guests / पाहुना संख्या');
+  step.innerHTML = `<button type="button" class="gstep__b" data-d="-1" aria-label="One fewer guest">−</button>`
+    + `<output class="gstep__v" aria-live="polite">1</output>`
+    + `<button type="button" class="gstep__b" data-d="1" aria-label="One more guest">+</button>`
+    + `<input type="hidden" name="guests" id="${guests.id}" value="1" />`;
+  guests.replaceWith(step);
+  const gIn = step.querySelector('input');
+  const gOut = step.querySelector('output');
+  const [gMinus, gPlus] = step.querySelectorAll('button');
+  const setGuests = (n) => {
+    const v = Math.min(maxGuests, Math.max(1, n));
+    gIn.value = String(v); gOut.textContent = String(v);
+    gMinus.disabled = v <= 1; gPlus.disabled = v >= maxGuests;
+  };
+  step.addEventListener('click', (e) => { const b = e.target.closest('.gstep__b'); if (b) setGuests(Number(gIn.value) + Number(b.dataset.d)); });
+  setGuests(1);
   events.innerHTML = eventsList
     .map((e) => `<label class="choice"><input type="checkbox" name="events" value="${e.id}" checked /><span>${bi(e.title)}</span></label>`)
     .join('');
@@ -99,7 +119,7 @@ export function initRsvp(eventsList = config.events) {
       ne.lang = 'ne';
       ne.textContent = `धन्यवाद, ${first}। हजुरको जवाफ हामीसम्म आइपुग्यो।`;
       status.append(en, ne);
-      form.querySelectorAll('input:not([type=hidden]), select, textarea').forEach((el) => { if (el.type !== 'radio' && el.type !== 'checkbox') el.value = el.name === 'guests' ? '1' : ''; });
+      form.querySelectorAll('input:not([type=hidden]), select, textarea').forEach((el) => { if (el.type !== 'radio' && el.type !== 'checkbox') el.value = el.name === 'guests' ? '1' : ''; }); setGuests(1);
     } catch (err) {
       console.error('[RSVP]', err);
       say(bi({ en: 'We could not send that. Please try again, or message the family directly.', ne: 'पठाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।' }), true);

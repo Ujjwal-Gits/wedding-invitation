@@ -317,3 +317,12 @@ button[aria-checked='true'] .trk__eq { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* RSVP guest count stepper (core/rsvp.js) */
+.gstep { display: inline-flex; width: max-content; justify-self: start; align-self: start; align-items: center; gap: 4px; margin-top: 6px; border: 1px solid color-mix(in srgb, currentColor 28%, transparent); border-radius: 999px; padding: 4px; }
+.gstep__b { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 24px; line-height: 1; cursor: pointer; transition: background-color 160ms cubic-bezier(0.22, 0.8, 0.24, 1), transform 160ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+.gstep__b:hover:not(:disabled) { background: color-mix(in srgb, currentColor 10%, transparent); }
+.gstep__b:active:not(:disabled) { transform: scale(0.92); }
+.gstep__b:disabled { opacity: 0.3; cursor: default; }
+.gstep__b:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
+.gstep__v { min-width: 40px; text-align: center; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
