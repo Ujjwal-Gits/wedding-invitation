@@ -59,3 +59,6 @@ clients/
 
 # Client photo archives dropped in the project root
 *.zip
+
+# Owner-supplied source images dropped in the project root (processed copies live in public/)
+/ganesh image.webp

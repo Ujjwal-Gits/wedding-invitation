@@ -21,7 +21,7 @@ both scripts; dates always in Mukta). No script faces; Devanagari never tracked 
   number of loops so it is symmetric edge to edge), the doorway (`frameSVG`: pillars, lintel rosettes, torana
   via `cuspPath` like nimantrana's arches, a halo clipped to the torana), the rectangular leaves (`leafSVG`),
   the medallion ring (`medalSVG`), bells, diyos, the Dhaka tile, the temple crown, dividers and petals.
-- Ganesh: `public/themes/mangal/ganesh-rd-1000/500.webp`, a public-domain hand-coloured plate of Ganesh seated on
+- Ganesh: `public/themes/mangal/ganesh-card-1000/500.webp`, supplied by the owner; white background removed (watercolour wash kept, fading to transparent).
   a golden throne (E. A. Rodrigues, 1842, Wikimedia Commons; credited in `flora-credits.js` only), the white paper
   keyed out (rembg checked). Head and
   shoulders in the torana medallion; inside, shown large with a glow, then faded to a 16% watermark behind the words.

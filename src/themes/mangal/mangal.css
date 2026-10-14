@@ -86,7 +86,7 @@ body.mg-locked .mg-sec, body.mg-locked .mg-close { visibility: hidden; }
 .mg-hero__medal .mg-medal { width: 100%; }
 .mg-medal { position: relative; aspect-ratio: 1; filter: drop-shadow(0 6px 10px rgba(30, 0, 4, 0.4)); }
 .mg-medal__pic { position: absolute; left: 13.6%; top: 13.6%; width: 72.8%; height: 72.8%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 38%, #F6D88E 0%, #E2A848 34%, #A3141E 72%, #7A0E17 100%); }
-.mg-medal__pic img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 62%; transform: scale(0.94) !important; } /* the whole seated Ganesh on gold, never a cropped background */
+.mg-medal__pic img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 .mg-medal__ring { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .mg-medal--door { position: absolute; z-index: 4; pointer-events: none; }
 .mg-symbol { margin: 0; font: 400 calc(clamp(30px, 3.2vw, 46px) * var(--fit))/1.15 var(--f-cal); color: #F6D27A; }
