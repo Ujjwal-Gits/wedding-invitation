@@ -1,8 +1,8 @@
 // Theme · Phoolbari (फूलबारी), slug "gurans": a flower garden invitation.
-// The guest arrives at a decorated wedding gate: an arch of real roses, peonies and
-// eucalyptus with a marigold ladi along its inner edge, a curtain of jasmine strands,
-// a kalash at each foot and शुभ विवाह lettered on the crest. "Open" parts the jasmine
-// curtain and the guest steps through (the one signature motion). After that it is a
+// The guest arrives at a decorated wedding gate: a built ivory arch dressed asymmetrically
+// with fresh roses, marigolds and green leaves, light marigold and jasmine ladis in the
+// opening, a brass kalash at each foot and शुभ विवाह lettered on the crest. "Open" parts
+// the ladis and the guest steps through (the one signature motion). After that it is a
 // calm, normally scrolling invitation on soft paper: the couple in varied frames,
 // families, a crystal-clear programme, photographs, guest notes, RSVP and a blessing.
 import '../../core/base.css';
@@ -83,7 +83,7 @@ const frame = (ref, alt, sizes, { style = 'mat', cap = '', cls = '', eager = fal
   const ar = aspectOf(ref);
   const orient = ar ? (ar >= 1.05 ? 'land' : ar <= 0.95 ? 'port' : 'sq') : 'auto';
   const flowers = style === 'floral'
-    ? `<img class="pb-fr__fl pb-fr__fl--tl" src="${FLORA}corner-sm.webp" alt="" aria-hidden="true" loading="lazy" /><img class="pb-fr__fl pb-fr__fl--br" src="${FLORA}corner-sm.webp" alt="" aria-hidden="true" loading="lazy" />`
+    ? `<img class="pb-fr__fl pb-fr__fl--tl" src="${FLORA}corner-a-sm.webp" srcset="${FLORA}corner-a-sm.webp 1x, ${FLORA}corner-a.webp 2x" alt="" aria-hidden="true" loading="lazy" /><img class="pb-fr__fl pb-fr__fl--br" src="${FLORA}corner-b-sm.webp" srcset="${FLORA}corner-b-sm.webp 1x, ${FLORA}corner-b.webp 2x" alt="" aria-hidden="true" loading="lazy" />`
     : '';
   return `<figure class="pb-fr pb-fr--${style} ${cls}" data-orient="${orient}" style="--ar:${ar ? ar.toFixed(4) : 0.75}">
     <span class="pb-fr__mat"><span class="pb-fr__img">${img(ref, alt, sizes, { eager })}</span></span>${flowers}
@@ -147,6 +147,8 @@ const names = (cls = '') => `<span class="pb-names ${cls}">
   <span class="pb-names__amp" aria-hidden="true">${bi(T.and)}</span><span class="sr-only">and</span>
   <span class="pb-names__two">${bi(c.groom.name)}</span></span>`;
 const weddingBS = bsOf(config.weddingDate, config.weddingDateBS);
+// The welcome board is small: the B.S. date without the weekday (the AD line above already carries it).
+const boardBS = (bs) => (bs.short && !has(config.weddingDateBS) ? { en: `${bs.short.en} B.S.`, ne: `वि.सं. ${bs.short.ne}` } : bs);
 
 // ───────────────────────── The gate ─────────────────────────
 const gate = document.getElementById('gate');
@@ -155,12 +157,13 @@ const pct = (o) => `left:${o.x}%;top:${o.y}%;width:${o.w}%;height:${o.h}%`;
 const gateStage = (v) => {
   const g = GATE[v];
   const p = g.plaque;
+  const o = g.opening;
   return `
-  <div class="pb-gate__stage pb-gate__stage--${v}" style="--gar:${g.W / g.H}">
+  <div class="pb-gate__stage pb-gate__stage--${v}" style="--gar:${g.W / g.H};--floor:${o.floor};--open:${(o.x1 - o.x0).toFixed(3)};--pw:${p.w}">
     <img class="pb-gate__curtain pb-gate__curtain--l" src="${FLORA}curtain-l-${v}-sm.webp" srcset="${FLORA}curtain-l-${v}-sm.webp 1x, ${FLORA}curtain-l-${v}.webp 2x" alt="" style="${pct(g.curtain_l)}" />
     <img class="pb-gate__curtain pb-gate__curtain--r" src="${FLORA}curtain-r-${v}-sm.webp" srcset="${FLORA}curtain-r-${v}-sm.webp 1x, ${FLORA}curtain-r-${v}.webp 2x" alt="" style="${pct(g.curtain_r)}" />
     <img class="pb-gate__arch" src="${FLORA}gate-${v}-sm.webp" srcset="${FLORA}gate-${v}-sm.webp 1x, ${FLORA}gate-${v}.webp 2x" alt="" fetchpriority="high" />
-    <div class="pb-gate__crest" style="left:${p.x}%;top:${p.y}%;--pw:${p.w}">
+    <div class="pb-gate__crest" style="left:${p.x}%;top:${p.y}%">
       <span class="pb-crest" lang="ne">${esc(crest.ne || crest.en)}</span>
     </div>
   </div>`;
@@ -173,7 +176,7 @@ gate.innerHTML = `
     <h1 class="pb-board__names" id="gate-names">${names()}</h1>
     <p class="pb-board__line">${bi(txt('gate.line'))}</p>
     <p class="pb-board__date">${bi(dateOf(config.weddingDate))}</p>
-    ${weddingBS ? `<p class="pb-board__bs">${bi(weddingBS)}</p>` : ''}
+    ${weddingBS ? `<p class="pb-board__bs">${bi(boardBS(weddingBS))}</p>` : ''}
     <div class="pb-board__actions">
       <button class="pb-btn" type="button" id="enter" disabled>${bi(txt('gate.open'))}</button>
       <button class="pb-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
@@ -228,12 +231,12 @@ const families = `
     <div><dt class="pb-kicker">${bi(txt('couple.groomLabel'))}</dt><dd><b>${bi(c.groom.fullName)}</b>${has(c.groom.parents) ? `<small>${bi(txt('couple.son'))} ${bi(c.groom.parents)}</small>` : ''}${has(c.groom.home) ? `<small>${bi(c.groom.home)}</small>` : ''}</dd></div>
   </dl>`;
 
-const flower = (name, cls) => `<img class="pb-orn ${cls}" src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp 1x, ${FLORA}${name}.webp 2x" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+const flower = (name, cls, { eager = false } = {}) => `<img class="pb-orn ${cls}" src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp 1x, ${FLORA}${name}.webp 2x" alt="" aria-hidden="true" ${eager ? '' : 'loading="lazy"'} decoding="async" />`;
 
 const main = document.getElementById('main');
 main.innerHTML = `
   <section class="pb-hero pb-sec" id="top" aria-labelledby="hero-names">
-    ${flower('spray', 'pb-orn--spray')}
+    ${flower('swag', 'pb-orn--swag', { eager: true })}
     <div class="pb-hero__text">
       <p class="pb-kicker pb-rise">${bi(txt('hero.kicker'))}</p>
       <h2 class="pb-hero__names pb-rise" id="hero-names">${names()}</h2>
@@ -262,7 +265,7 @@ main.innerHTML = `
   </section>
 
   <section class="pb-prog pb-sec" id="programme" aria-labelledby="prog-title">
-    ${flower('spray', 'pb-orn--divider')}
+    ${flower('branch', 'pb-orn--divider')}
     <header class="pb-prog__head">
       <p class="pb-kicker pb-rise">${bi(txt('programme.kicker'))}</p>
       <h2 class="pb-h2 pb-h2--xl pb-rise" id="prog-title">${bi(txt('programme.title'))}</h2>
@@ -518,6 +521,18 @@ window.addEventListener('resize', () => { if (window.innerWidth !== rw) { rw = w
 const enterBtn = document.getElementById('enter');
 const quietBtn = document.getElementById('enter-quiet');
 const visibleStage = () => [...gate.querySelectorAll('.pb-gate__stage')].find((s) => s.offsetParent !== null) || gate;
+// The welcome board stands inside the arch opening; on short landscape screens it stands beside the arch.
+const board = gate.querySelector('.pb-gate__board');
+const placeBoard = () => {
+  if (!board.isConnected) return;
+  const side = window.innerWidth > window.innerHeight * 1.25 && window.innerHeight < 600;
+  gate.classList.toggle('is-side', side);
+  const home = side ? gate : visibleStage();
+  if (board.parentNode !== home) home.append(board);
+};
+placeBoard();
+window.addEventListener('resize', placeBoard);
+
 const gateImgs = () => [...visibleStage().querySelectorAll('img')];
 const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
 Promise.race([Promise.all(gateImgs().map((im) => im.decode?.().catch(() => {}))), timeout(8000)]).finally(() => {
@@ -544,7 +559,7 @@ function open(withMusic, { instant = false } = {}) {
     setTimeout(done, instant ? 0 : 260);
     return;
   }
-  // The signature motion: the board lifts away, the jasmine curtain parts, and we step through.
+  // The signature motion: the board lifts away, the ladis part, and we step through.
   gate.classList.add('is-opening');
   setTimeout(() => document.body.classList.remove('is-gated'), 900);
   setTimeout(() => { observe(); }, 1100);

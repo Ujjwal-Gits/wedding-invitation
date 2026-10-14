@@ -129,10 +129,10 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
     var(--tex);
   background-size: auto, auto, 640px;
 }
-.pb-gate__scene { position: absolute; inset: 0; display: grid; place-items: end center; transform-origin: 50% 46%; }
+.pb-gate__scene { position: absolute; inset: 0; display: grid; place-items: center; transform-origin: 50% 40%; }
 .pb-gate__stage {
   position: relative; grid-area: 1 / 1; aspect-ratio: var(--gar); container-type: inline-size;
-  height: min(100svh, calc(100vw / var(--gar))); width: auto;
+  height: min(100svh - 12px, calc(100vw / var(--gar))); width: auto;
 }
 .pb-gate__stage--tall { display: none; }
 @media (max-aspect-ratio: 3/4) {
@@ -144,10 +144,11 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 .pb-gate__curtain { position: absolute; max-width: none; pointer-events: none; will-change: transform; }
 .pb-gate__curtain--l { transform-origin: 0% 0%; }
 .pb-gate__curtain--r { transform-origin: 100% 0%; }
-.pb-gate__crest { position: absolute; transform: translate(-50%, -50%); width: calc(var(--pw) * 1.12%); display: grid; place-items: center; }
+/* The crest: an ivory cartouche on the apex of the arch, शुभ विवाह in gold foil. No flowers sit behind it. */
+.pb-gate__crest { position: absolute; transform: translate(-50%, -50%); width: calc(var(--pw) * 1cqw); display: grid; place-items: center; }
 .pb-crest {
-  position: relative; display: block; width: 100%; padding: 0.42em 0.5em 0.3em; text-align: center; white-space: nowrap;
-  font: 400 7.2cqw/1.25 var(--f-deva-display);
+  position: relative; display: block; width: 100%; padding: 0.3em 0.4em 0.18em; text-align: center; white-space: nowrap;
+  font: 400 calc(var(--pw) * 0.185cqw)/1.25 var(--f-deva-display);
   border-radius: 999px;
   background: radial-gradient(120% 140% at 50% 20%, #FFFDF8 0%, #F8EFE2 70%, #EFE0C9 100%);
   box-shadow: 0 0 0 0.12cqw #C9A46A, 0 0 0 0.55cqw #FFFDF8, 0 0 0 0.68cqw #B88E52, 0 1.2cqw 2.4cqw -0.8cqw rgba(60, 40, 20, 0.45);
@@ -164,30 +165,41 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
     filter: drop-shadow(0 0.08cqw 0 rgba(255, 255, 255, 0.9));
   }
 }
+/* The welcome board: a small card on a brass easel, standing inside the arch opening, below the ladis. */
 .pb-gate__board {
-  position: absolute; left: 50%; bottom: max(5svh, 22px); z-index: 2; translate: -50% 0;
-  width: min(420px, calc(100vw - 48px)); padding: 26px 28px 20px; text-align: center;
-  background: rgba(255, 255, 255, 0.94) var(--tex); background-size: 640px;
-  border: 1px solid var(--line-gold); box-shadow: 0 2px 4px rgba(46, 39, 37, 0.08), 0 28px 60px -26px rgba(46, 39, 37, 0.55);
+  position: absolute; left: 50%; bottom: calc((100 - var(--floor)) * 1% + 0.6%); z-index: 2; translate: -50% 0;
+  width: calc(var(--open) * 0.86cqw); padding: 18px 18px 10px; text-align: center;
+  background: #FFFDF9 var(--tex); background-size: 640px;
+  border: 1px solid var(--line-gold); box-shadow: 0 2px 4px rgba(46, 39, 37, 0.08), 0 22px 40px -22px rgba(46, 39, 37, 0.5);
   transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
 }
-.pb-gate__board::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(169, 132, 76, 0.35); pointer-events: none; }
-.pb-board__welcome { margin: 0 0 6px; font: 700 12.5px/1.4 var(--f-label); letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-text); }
-.pb-board__welcome .l-ne { font: 400 22px/1.4 var(--f-deva-display); letter-spacing: 0; color: var(--gold-text); }
-.pb-board__names { margin: 0 0 8px; font-size: clamp(40px, 4.4vw, 54px); }
+.pb-gate__board::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(169, 132, 76, 0.35); pointer-events: none; }
+/* easel legs behind the card */
+.pb-gate__board::after {
+  content: ''; position: absolute; z-index: -1; left: 50%; bottom: -10px; width: 64%; height: 22px; translate: -50% 0;
+  background: linear-gradient(90deg, transparent 0 6%, #B08A4E 6% 9%, transparent 9% 91%, #B08A4E 91% 94%, transparent 94%);
+}
+.pb-gate__stage--tall .pb-gate__board { width: 62cqw; }
+.pb-gate.is-side .pb-gate__scene { place-items: center start; padding-left: 4vw; }
+.pb-gate.is-side .pb-gate__board { position: absolute; left: auto; right: 5vw; bottom: auto; top: 50%; translate: 0 -50%; width: min(340px, 44vw); }
+.pb-board__welcome { margin: 0 0 2px; font: 700 12px/1.4 var(--f-label); letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-text); }
+.pb-board__welcome .l-ne { font: 400 19px/1.4 var(--f-deva-display); letter-spacing: 0; color: var(--gold-text); }
+.pb-board__names { margin: 0 0 6px; font-size: clamp(28px, 2.6vw, 36px); }
 .pb-board__names .pb-names > span { display: inline; }
 .pb-board__names .pb-names__amp { margin: 0 0.18em; }
-.pb-board__line { margin: 0 0 12px; font: italic 400 19px/1.45 var(--f-body); color: var(--ink-dim); }
-.pb-board__line .l-ne { font: 400 17px/1.75 var(--f-deva); font-style: normal; }
-.pb-board__date { margin: 0; font: 500 19px/1.45 var(--f-body); }
-.pb-board__date .l-ne { font: 500 17px/1.75 var(--f-deva); }
-.pb-board__bs { margin: 0 0 16px; font: 400 17px/1.5 var(--f-body); color: var(--ink-dim); }
-.pb-board__bs .l-ne { font: 400 16px/1.75 var(--f-deva); }
-.pb-board__actions { display: grid; justify-items: center; gap: 2px; }
-.pb-board__actions .pb-btn { width: 100%; }
+.pb-board__line { margin: 0 0 6px; font: italic 400 17px/1.4 var(--f-body); color: var(--ink-dim); }
+.pb-board__line .l-ne { font: 400 16px/1.7 var(--f-deva); font-style: normal; }
+.pb-board__date { margin: 0; font: 500 17px/1.4 var(--f-body); }
+.pb-board__date .l-ne { font: 500 16px/1.7 var(--f-deva); }
+.pb-board__bs { margin: 0 0 10px; font: 400 16px/1.45 var(--f-body); color: var(--ink-dim); }
+.pb-board__bs .l-ne { font: 400 16px/1.7 var(--f-deva); }
+.pb-board__date, .pb-board__bs, .pb-board__names { text-wrap: balance; }
+.pb-board__actions { display: grid; justify-items: center; gap: 0; }
+.pb-board__actions .pb-btn { width: 100%; min-height: 46px; padding: 12px 18px; }
+.pb-board__actions .pb-quiet { padding: 10px 8px 8px; }
 .pb-gate:not(.is-ready) .pb-gate__board { opacity: 0.94; }
 
-/* Opening: the board lifts away, the jasmine curtain parts, the paper fades, we step through. */
+/* Opening: the board lifts away, the ladis part, the paper fades, we step through. */
 .pb-gate.is-opening .pb-gate__board { opacity: 0; transform: translateY(18px) scale(0.98); pointer-events: none; }
 .pb-gate__curtain { transition: transform 1250ms var(--ease-gate) 260ms, opacity 900ms ease 700ms; }
 .pb-gate.is-opening .pb-gate__curtain--l { transform: translateX(-58%) scaleX(0.42); opacity: 0.0; }
@@ -209,9 +221,11 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 /* Welcome */
 .pb-hero {
   min-height: 100svh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center;
-  gap: clamp(32px, 6vw, 110px); padding-top: calc(min(1180px, 112vw) * 0.275 - 6px); overflow: hidden;
+  gap: clamp(32px, 6vw, 110px); padding-top: calc(var(--swag-top) + var(--swag-w) * 0.281 + 28px); overflow: hidden;
+  --swag-w: min(1000px, 88vw); --swag-top: 72px;
 }
-.pb-orn--spray { position: absolute; top: -26px; left: 50%; translate: -50% 0; width: min(1180px, 112vw); }
+/* A toran swag: symmetric, fully inside the page, hung below the language and music buttons. */
+.pb-orn--swag { position: absolute; top: var(--swag-top); left: 50%; translate: -50% 0; width: var(--swag-w); }
 .pb-hero__text { text-align: center; display: grid; justify-items: center; }
 .pb-hero__names { margin: 0 0 14px; font-size: clamp(60px, 7.4vw, 112px); }
 .pb-hero__line { margin: 0 0 26px; font: italic 400 clamp(22px, 2vw, 28px)/1.4 var(--f-body); color: var(--ink-dim); }
@@ -241,9 +255,9 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 }
 .pb-fr--mat .pb-fr__img, .pb-fr--floral .pb-fr__img { outline: 1px solid var(--line-gold); outline-offset: clamp(5px, 0.55vw, 8px); }
 /* floral: roses on two corners */
-.pb-fr__fl { position: absolute; z-index: 1; width: 40%; max-width: 260px; pointer-events: none; filter: drop-shadow(0 8px 10px rgba(46, 39, 37, 0.18)); }
-.pb-fr__fl--tl { top: -11%; left: -13%; }
-.pb-fr__fl--br { bottom: -11%; right: -13%; transform: rotate(180deg); }
+.pb-fr__fl { position: absolute; z-index: 1; pointer-events: none; }
+.pb-fr__fl--tl { width: 50%; max-width: 300px; top: -9%; left: -14%; }
+.pb-fr__fl--br { width: 30%; max-width: 170px; bottom: -7%; right: -9%; }
 .pb-fr--floral { margin: 8% 9%; }
 /* print: a tilted print with a caption strip */
 .pb-fr--print { transform: rotate(-1.6deg); }
@@ -276,8 +290,8 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 .pb-families small .l-ne { font-size: 17.5px; line-height: 1.8; }
 
 /* Programme */
-.pb-prog { padding-top: calc(min(520px, 86vw) * 0.275 + 44px); }
-.pb-orn--divider { position: absolute; top: 18px; left: 50%; translate: -50% 0; width: min(520px, 86vw); }
+.pb-prog { padding-top: calc(min(300px, 70vw) * 0.49 + 70px); }
+.pb-orn--divider { position: absolute; top: 34px; left: 50%; translate: -50% 0; width: min(300px, 70vw); }
 .pb-prog__head { text-align: center; display: grid; justify-items: center; margin-bottom: clamp(30px, 6vh, 60px); }
 .pb-prog__head .pb-h2 { margin: 0; }
 .pb-prog__body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 340px); gap: clamp(28px, 4vw, 64px); align-items: start; max-width: 1240px; margin: 0 auto; }
@@ -356,7 +370,7 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
   background: var(--white) var(--tex); background-size: 640px; border: 1px solid var(--line); text-align: center;
   box-shadow: 0 2px 4px rgba(46, 39, 37, 0.05), 0 40px 80px -50px rgba(46, 39, 37, 0.55);
 }
-.pb-orn--posy { position: absolute; top: -100px; left: 50%; translate: -50% 0; width: clamp(170px, 20vw, 230px); }
+.pb-orn--posy { position: absolute; top: 0; left: 50%; translate: -50% -56%; width: clamp(150px, 15vw, 190px); }
 .pb-rsvp__card .pb-h2 { margin-left: auto; margin-right: auto; }
 .pb-form { margin-top: 28px; text-align: left; }
 .pb-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -437,14 +451,11 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
   body.theme-gurans { font-size: 18px; }
   html[data-lang='ne'] body.theme-gurans { font-size: 17px; }
   .pb-sec { padding-left: 18px; padding-right: 18px; }
-  .pb-gate__board { width: min(360px, calc(100vw - 32px)); padding: 20px 20px 14px; bottom: max(3svh, 12px); }
-  .pb-board__names { font-size: clamp(34px, 10vw, 42px); }
-  .pb-board__line { font-size: 18px; margin-bottom: 8px; }
-  .pb-board__date { font-size: 18px; }
-  .pb-board__bs { margin-bottom: 12px; font-size: 16.5px; }
+  .pb-gate__board { padding: 14px 12px 6px; }
+  .pb-board__names { font-size: clamp(26px, 7.6vw, 30px); }
+  .pb-board__line { display: none; }
 
-  .pb-hero { grid-template-columns: 1fr; padding-top: calc(170vw * 0.275 - 6px); gap: 40px; min-height: 0; }
-  .pb-orn--spray { width: 170vw; top: -14px; }
+  .pb-hero { grid-template-columns: 1fr; gap: 48px; min-height: 0; --swag-w: 94vw; --swag-top: 62px; }
   .pb-hero__names { font-size: clamp(52px, 15vw, 66px); }
   .pb-hero__date { padding: 14px 8px 12px; }
   .pb-hero__photo .pb-fr { --maxh: 62svh; }
@@ -475,7 +486,8 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
   .pb-fr--line { padding: 10px; }
   .pb-note { padding: 22px 18px; }
   .pb-form__row { grid-template-columns: 1fr; }
-  .pb-orn--posy { top: -86px; width: 170px; }
+  .pb-orn--posy { width: 150px; }
+
   .pb-rsvp__card { padding-top: 92px; }
   .pb-close { grid-template-columns: 1fr; text-align: center; justify-items: center; }
   .pb-close__photo .pb-fr { --maxh: 56svh; }
@@ -483,9 +495,12 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
   .pb-credits { margin-left: auto; margin-right: auto; }
   .pb-lb__prev, .pb-lb__next { top: auto; bottom: calc(14px + var(--safe-b)); translate: none; }
 }
-@media (max-width: 760px) and (max-height: 760px) {
-  .pb-gate__board { padding: 16px 18px 10px; }
-  .pb-board__names { font-size: 34px; margin-bottom: 4px; }
+@media (max-width: 380px) {
+  .pb-gate__board { padding: 12px 8px 4px; }
+  .pb-board__date { font-size: 16px; }
+  .pb-board__bs { font-size: 15.5px; margin-bottom: 8px; }
+}
+@media (max-height: 800px) and (min-aspect-ratio: 3/4) {
   .pb-board__line { display: none; }
 }
 
