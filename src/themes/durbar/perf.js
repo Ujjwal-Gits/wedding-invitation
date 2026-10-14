@@ -22,7 +22,7 @@ export function deviceTier() {
   } catch { /* no WebGL: the theme falls back to its still version */ }
   const weakGpu = WEAK_GPU.test(gpu);
   let tier = 'high';
-  if (weakGpu || mem <= 2 || cores <= 2 || (mobile && (mem <= 4 || cores <= 4))) tier = 'low';
+  if (weakGpu || mem <= 2 || cores <= 2 || (mobile && mem <= 3 && cores <= 4)) tier = 'low'; // most phones report 4 GB/8 cores: those are 'mid', not 'low'
   else if (mobile || mem <= 4 || cores <= 4) tier = 'mid';
   cached = { tier, gpu, mobile, mem, cores };
   (window.__perf ||= {}).tier = cached; // read by the perf harness
@@ -34,9 +34,9 @@ function mobileUA() {
   return navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua);
 }
 
-/** devicePixelRatio cap: desktop ≤ 1.5, phones ≤ 1.25, low tier 1. */
+/** devicePixelRatio cap: desktop ≤ 1.75, phones ≤ 2 (low-tier phones 1.5, low-tier desktops 1). */
 export function dprCap({ tier, mobile }) {
-  const cap = tier === 'low' ? 1 : mobile ? 1.25 : 1.5;
+  const cap = tier === 'low' ? (mobile ? 1.5 : 1) : mobile ? 2 : 1.75; // phones render sharp; the governor steps down if frames run long
   return Math.min(window.devicePixelRatio || 1, cap);
 }
 

@@ -187,7 +187,7 @@ export class PhotoStage {
   constructor(canvas, { mobile = false, grade = {} } = {}) {
     this.mobile = mobile;
     this.renderer = new WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.75));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 2 : 1.75));
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.setClearColor(new Color(grade.clear ?? '#14040a'));
     this.renderer.shadowMap.enabled = !mobile;

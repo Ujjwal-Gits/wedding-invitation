@@ -232,7 +232,7 @@ export class World {
     this.mobile = mobile;
     this.renderer = new WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
     // DPR cap: 1.25 on phones, 1.5 on desktop; the adaptive loop below steps it down further.
-    this.maxPR = pixelRatio ?? Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
+    this.maxPR = pixelRatio ?? Math.min(window.devicePixelRatio || 1, mobile ? 2 : 1.75);
     this.minPR = Math.min(this.maxPR, mobile ? 0.6 : 0.75);
     this.renderer.setPixelRatio(this.maxPR);
     this.renderer.outputColorSpace = SRGBColorSpace;

@@ -427,7 +427,7 @@ async function start() {
   // down while frames keep taking over ~20ms, and stop drawing when the tab is
   // hidden or the canvas is not on screen.
   function governGpu(st, dr) {
-    const maxPR = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
+    const maxPR = Math.min(window.devicePixelRatio || 1, mobile ? 2 : 1.75);
     const minPR = Math.min(maxPR, mobile ? 0.6 : 0.75);
     const setPR = (pr) => {
       const next = Math.max(minPR, Math.min(maxPR, Math.round(pr * 100) / 100));
