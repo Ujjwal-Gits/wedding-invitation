@@ -423,3 +423,7 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
 }
+
+/* On the dark opening table the quiet link must stay readable (it inherited dark ink). */
+#open-quiet { color: rgba(246, 236, 222, 0.82); text-decoration-color: rgba(246, 236, 222, 0.4); }
+#open-quiet:hover { color: #fff; }

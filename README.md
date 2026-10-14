@@ -1,6 +1,6 @@
 # Nimtto (निम्तो) — premium Nepali wedding invitations
 
-Thirteen bilingual (English / नेपाली) wedding-invitation themes and a studio
+Fourteen bilingual (English / नेपाली) wedding-invitation themes and a studio
 dashboard to create, customise, publish and track invitations.
 
 | # | Theme | Concept |
@@ -18,6 +18,7 @@ dashboard to create, customise, publish and track invitations.
 | 11 | **Bagaicha** `/bagaicha/` | 3D garden wedding: through a rose arch, seven rounds of the fire, on to the reception. |
 | 12 | **Ghar** `/ghar/` | A lamplit film walking room by room through a Newar house. |
 | 13 | **Mangal** `/mangal/` | A wide red temple doorway with marigold garlands and bells; the doors swing open on शुभ विवाह in gold. |
+| 14 | **Nimantrana** `/nimantrana/` | A traditional red-gold tri-fold card on green silk; it unfolds in 3D into Ganesh, the couple and the programme. |
 
 The showroom at `/` links every theme and the studio.
 

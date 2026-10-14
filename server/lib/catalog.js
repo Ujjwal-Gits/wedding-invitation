@@ -18,6 +18,7 @@ const KNOWN = {
   kham: { name: 'Kham', concept: 'Handmade-paper envelope that unfolds into a clear programme' },
   durbar: { name: 'Durbar', concept: 'A 3D morning walk through Bhaktapur Durbar Square' },
   mala: { name: 'Mala', concept: 'A dressed mandap: silk drapes, marigold strings, brass kalash' },
+  nimantrana: { name: 'Nimantrana', concept: 'A traditional tri-fold card that unfolds: Ganesh, the couple, the programme' },
   mangal: { name: 'Mangal', concept: 'A red temple doorway with garlands and bells; doors open on शुभ विवाह' },
   gurans: { name: 'Phoolbari', concept: 'A flower gate with शुभ विवाह, then calm normal scrolling' },
 };
