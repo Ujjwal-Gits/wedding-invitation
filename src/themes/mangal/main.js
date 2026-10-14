@@ -1163,21 +1163,40 @@ function photoStrip() {
       });
     return () => { view.classList.remove('is-scroll'); tw.scrollTrigger?.kill(); tw.kill(); gsap.set(track, { clearProps: 'transform' }); };
   });
-  // Phones and tablets: an endless, gentle marquee (two identical sets; pauses off screen).
+  // Phones and tablets: a native horizontal scroller that drifts right to left on its own and can be
+  // swiped by hand at any time (auto-drift pauses while touched and resumes a moment later). Two identical
+  // sets make it endless: past the first set it jumps back by one set width, invisibly.
   mm.add('(max-width: 899px), (pointer: coarse), (pointer: none)', () => {
-    view.classList.add('is-marquee');
-    const speed = () => track.style.setProperty('--mg-dur', `${Math.max(20, set0.scrollWidth / 34).toFixed(1)}s`);
-    speed();
-    const io = new IntersectionObserver(([en]) => view.classList.toggle('is-paused', !en.isIntersecting));
+    view.classList.add('is-swipe');
+    const PX_PER_S = 34;
+    let raf = 0, last = 0, held = false, resumeAt = 0, visible = true, pos = view.scrollLeft;
+    const wrap = () => { const w = set0.offsetWidth; if (w > 0) { if (view.scrollLeft >= w) view.scrollLeft -= w; else if (view.scrollLeft <= 0 && held) view.scrollLeft += w; } };
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      if (!visible || held || now < resumeAt) { pos = view.scrollLeft; return; }
+      pos += PX_PER_S * dt; view.scrollLeft = pos; // sub-pixel accumulator: scrollLeft rounds on some phones
+      if (view.scrollLeft >= set0.offsetWidth) { pos -= set0.offsetWidth; view.scrollLeft = pos; }
+    };
+    const hold = () => { held = true; };
+    const release = () => { held = false; resumeAt = performance.now() + 2500; pos = view.scrollLeft; };
+    view.addEventListener('pointerdown', hold, { passive: true });
+    view.addEventListener('touchstart', hold, { passive: true });
+    view.addEventListener('pointerup', release, { passive: true });
+    view.addEventListener('pointercancel', release, { passive: true });
+    view.addEventListener('touchend', release, { passive: true });
+    view.addEventListener('wheel', () => { resumeAt = performance.now() + 2500; }, { passive: true });
+    view.addEventListener('scroll', () => { if (held || performance.now() < resumeAt) wrap(); }, { passive: true });
+    const io = new IntersectionObserver(([en]) => { visible = en.isIntersecting; last = 0; });
     io.observe(view);
-    return () => { view.classList.remove('is-marquee', 'is-paused'); io.disconnect(); };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); io.disconnect(); view.classList.remove('is-swipe'); };
   });
   let rt;
   track.querySelectorAll('img').forEach((im) => im.addEventListener('load', () => {
     clearTimeout(rt);
     rt = setTimeout(() => {
       ScrollTrigger.refresh();
-      if (view.classList.contains('is-marquee')) track.style.setProperty('--mg-dur', `${Math.max(20, set0.scrollWidth / 34).toFixed(1)}s`);
     }, 150);
   }, { once: true }));
 }

@@ -319,6 +319,10 @@ body.is-open .mg-leaves { visibility: visible; }
 .mg-strip__view.is-marquee .mg-strip__track { animation: mg-marquee var(--mg-dur, 60s) linear infinite; }
 .mg-strip__view.is-marquee.is-paused .mg-strip__track { animation-play-state: paused; }
 @keyframes mg-marquee { to { transform: translate3d(-50%, 0, 0); } }
+.mg-strip__view.is-swipe { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x pan-y; }
+.mg-strip__view.is-swipe::-webkit-scrollbar { display: none; }
+.mg-strip__view.is-swipe .mg-strip__set--dup { display: flex; }
+.mg-strip__view.is-swipe .mg-strip__set:first-child { padding-left: 0; }
 .mg-strip__view.is-static { overflow-x: auto; scroll-snap-type: x mandatory; }
 .mg-strip__view.is-static .mg-ph { scroll-snap-align: center; }
 
