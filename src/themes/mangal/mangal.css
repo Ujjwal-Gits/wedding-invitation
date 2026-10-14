@@ -180,7 +180,14 @@ body.is-open .mg-leaves { visibility: visible; }
 .mg-diyos { position: absolute; z-index: 6; height: 0; pointer-events: none; }
 .mg-diyos .mg-diyo { position: absolute; bottom: 2px; }
 .mg-diyos .mg-diyo--l { left: var(--mg-diyo-in, calc(var(--mg-diyo-w) * 0.7)); }
-.mg-diyos .mg-diyo--r { right: var(--mg-diyo-in, calc(var(--mg-diyo-w) * 0.7)); }
+.mg-diyos .mg-diyo--r { right: var(--mg-diyo-in, calc(var(--mg-diyo-w) * 0.7)); transform: scaleX(-1); } /* the two face each other */
+/* desktop: on the floor beside the pillars, spouts and flames turned in toward the door, with a soft contact shadow */
+.mg-kalashes .mg-gdiyo { position: absolute; display: block; }
+.mg-kalashes .mg-gdiyo[hidden] { display: none; }
+.mg-gdiyo.mg-diyo--r { transform: scaleX(-1); }
+.mg-gdiyo::before { content: ''; position: absolute; left: -2%; width: 104%; top: 93%; height: 11%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(40, 8, 4, 0.5), rgba(40, 8, 4, 0.2) 60%, rgba(40, 8, 4, 0)); }
+.mg-gdiyo .mg-diyo__halo { width: 190%; opacity: 0.8; }
 .mg-diyo svg { display: block; overflow: visible; }
 .mg-flame { transform-box: fill-box; transform-origin: 50% 92%; animation: mg-flicker 2.6s ease-in-out infinite; }
 .mg-glow { animation: mg-glow 3.2s ease-in-out infinite; }
@@ -326,11 +333,18 @@ body.is-open .mg-leaves { visibility: visible; }
 }
 .mg-fam__card::before { content: ''; position: absolute; inset: 14px; border: 1px solid rgba(244, 216, 150, 0.7); pointer-events: none; }
 .mg-fam__card::after { content: ''; position: absolute; inset: 19px; border: 1px solid rgba(244, 216, 150, 0.3); pointer-events: none; }
-.mg-fam__toran { position: absolute; z-index: 2; left: 50%; top: -18px; width: calc(100% + 34px); max-width: none; height: auto; translate: -50% 0; pointer-events: none; filter: drop-shadow(0 6px 6px rgba(30, 0, 4, 0.35)); }
-.mg-fam__spray { position: absolute; z-index: 2; width: clamp(110px, 13vw, 190px); height: auto; pointer-events: none; filter: drop-shadow(0 4px 5px rgba(30, 0, 4, 0.3)); }
-.mg-fam__spray--tl { left: -34px; bottom: -30px; transform: scaleY(-1); } /* outside the frame, resting on its corner */
-.mg-fam__spray--br { right: -34px; bottom: -30px; }
-.mg-fam__body { position: relative; z-index: 1; padding: calc((100% - 40px) * 0.147 + 34px) clamp(24px, 6vw, 90px) clamp(70px, 9vh, 104px); text-align: center; }
+.mg-fam__card { --te: 22px; }
+@media (min-width: 1360px) { .mg-fam__card { --te: 8px; } }
+/* the toran: its end rosettes (at 6.73% and 93.27% of the swag art, 25.96% down; height 13.76% of its width) sit on
+   the frame's border, --te in from each side, with their leaves whole */
+.mg-fam__toran { position: absolute; z-index: 2; left: 50%; top: 6px; width: calc((100% - 2 * var(--te)) / 0.8654); max-width: none; height: auto; translate: -50% -25.96%; pointer-events: none; filter: drop-shadow(0 6px 6px rgba(30, 0, 4, 0.35)); }
+/* the two sprays stand OUTSIDE the frame, hugging its bottom corners: the empty corner of each spray's L sits on the
+   frame's outer corner, --sg out (the arms touch the gold ring, never the red). As fractions of the spray's width:
+   br corner at x 61.4%, y 47.5% (height 80.8%); the flipped tl at x 37.8%, y 46.8% (height 81.5%). */
+.mg-fam__spray { --sg: 5px; --sp: min(210px, 13vw, (max(5vw, (100vw - 1120px) / 2) - 9px) / 0.39); position: absolute; z-index: 2; width: var(--sp); height: auto; pointer-events: none; filter: drop-shadow(0 4px 5px rgba(30, 0, 4, 0.3)); }
+.mg-fam__spray--tl { left: calc(-1 * (var(--sg) + 0.3778 * var(--sp))); bottom: calc(-1 * (var(--sg) + 0.3473 * var(--sp))); transform: scaleY(-1); }
+.mg-fam__spray--br { right: calc(-1 * (var(--sg) + 0.3861 * var(--sp))); bottom: calc(-1 * (var(--sg) + 0.3333 * var(--sp))); }
+.mg-fam__body { position: relative; z-index: 1; padding: calc((100% - 2 * var(--te)) * 0.1177 + 50px) clamp(24px, 6vw, 90px) clamp(70px, 9vh, 104px); text-align: center; }
 .mg-fam__body > .mg-div { display: block; margin: 0 auto 12px; }
 .mg-fam__body .mg-h2 { color: #F6D88E; }
 .mg-fam__grid { display: grid; grid-template-columns: minmax(0, 1fr) clamp(130px, 15vw, 210px) minmax(0, 1fr); gap: clamp(16px, 3vw, 44px); align-items: start; margin-top: clamp(30px, 5vh, 50px); }
@@ -435,7 +449,7 @@ body.is-open .mg-leaves { visibility: visible; }
 /* closing: the blessing under a full-width marigold garland, between two lit diyos, then a Dhaka band */
 .mg-close { position: relative; padding: calc(100vw * 0.147 + 60px) clamp(16px, 5vw, 72px) calc(28px + var(--safe-b)); text-align: center; color: #FFF1CC; background: var(--mg-damask) 0 0 / 84px repeat, linear-gradient(#5C0911, #4A060C); background-blend-mode: soft-light, normal; overflow: hidden; }
 .mg-close__garland { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
-.mg-close__garland img { display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 8px rgba(20, 0, 2, 0.35)); }
+.mg-close__garland img { display: block; width: 105.44%; max-width: none; margin-left: -2.72%; height: auto; filter: drop-shadow(0 8px 8px rgba(20, 0, 2, 0.35)); }
 .mg-close__row { display: grid; grid-template-columns: 1fr minmax(0, 640px) 1fr; align-items: end; gap: clamp(16px, 4vw, 60px); max-width: 1180px; margin: 0 auto; }
 .mg-close__lamp { display: flex; justify-content: center; }
 .mg-close__lamp:first-child { justify-content: flex-end; }
@@ -477,6 +491,23 @@ body.is-open .mg-leaves { visibility: visible; }
 .mg-lb__prev { left: 10px; top: 50%; translate: 0 -50%; }
 .mg-lb__next { right: 10px; top: 50%; translate: 0 -50%; }
 
+/* the light, continuous fall over the doorway and the opening card: behind the opening words, never clickable */
+.mg-fall { position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; contain: strict; }
+.mg-fall__p { position: absolute; top: 0; display: block; opacity: 0.92; will-change: transform;
+  animation: mg-fall var(--dur) cubic-bezier(0.3, 0.1, 0.6, 0.9) var(--del) infinite; }
+.mg-fall__p span { display: block; will-change: transform; animation: mg-sway var(--sdur) cubic-bezier(0.45, 0, 0.55, 1) var(--sdel) infinite alternate; }
+.mg-fall__p svg { display: block; filter: drop-shadow(1px 2px 1.5px rgba(40, 6, 4, 0.22)); }
+.mg-fall.is-off { visibility: hidden; }
+/* on the doorway they pass behind the plaque and the buttons (a hole in the layer's mask over them) */
+body:not(.is-opening):not(.is-open) .mg-fall {
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0); mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-position: 0 0, var(--mx, 0) var(--my, 0); mask-position: 0 0, var(--mx, 0) var(--my, 0);
+  -webkit-mask-size: 100% 100%, var(--mw, 0) var(--mh, 0); mask-size: 100% 100%, var(--mw, 0) var(--mh, 0);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-composite: xor; mask-composite: exclude; }
+.mg-fall.is-off .mg-fall__p, .mg-fall.is-off .mg-fall__p span { animation-play-state: paused; }
+@keyframes mg-fall { from { transform: translate3d(0, -48px, 0); } to { transform: translate3d(var(--dx), calc(var(--fall, 100vh) + 24px), 0); } }
+@keyframes mg-sway { from { transform: translateX(calc(var(--sw) * -1)) rotate(var(--r0)) rotateY(0deg); } to { transform: translateX(var(--sw)) rotate(calc(var(--r0) + 70deg)) rotateY(160deg); } }
 .mg-petals { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
 .mg-petals i { position: absolute; display: block; will-change: transform, opacity; opacity: 0; }
 .mg-petals svg { display: block; }
@@ -526,11 +557,11 @@ body.is-open .mg-leaves { visibility: visible; }
   .mg-fam__card { --tw: calc(100vw - 24px); }
   .mg-fam__card::before { inset: 10px; }
   .mg-fam__card::after { inset: 14px; }
-  .mg-fam__toran { top: -10px; width: calc(100% + 18px); }
+  .mg-fam__card { --te: 12px; }
   .mg-fam__spray { width: 92px; }
   .mg-fam__spray--tl { left: -14px; bottom: -18px; }
   .mg-fam__spray--br { right: -14px; bottom: -18px; }
-  .mg-fam__body { padding: calc((100% - 20px) * 0.147 + 22px) 22px 86px; }
+  .mg-fam__body { padding: calc((100% - 2 * var(--te)) * 0.1177 + 32px) 22px 86px; }
   .mg-fam__grid { grid-template-columns: 1fr; gap: 14px; }
   .mg-fam__side { padding-top: 0; }
   .mg-fam__kalash { width: 112px; }
@@ -550,4 +581,5 @@ body.is-open .mg-leaves { visibility: visible; }
   .mg-strip__view .mg-strip__track { animation: none !important; }
   .mg-scratch__foil { transition: none; }
   .mg-flame, .mg-glow, .mg-diyo__halo, body.is-open .mg-cue i { animation: none; }
+  .mg-fall { display: none; }
 }

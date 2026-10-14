@@ -514,6 +514,9 @@ export function dividerSVG(w = 220) {
 
 /** Falling petal shapes (marigold and rose). */
 export function petalSVG(kind, size) {
+  if (kind === 'leaf') {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1C14.5 5 15.5 11 10 19C4.5 11 5.5 5 10 1Z" fill="#4F8A3C" stroke="#2F5E24" stroke-width=".7"/><path d="M10 3V17" stroke="#C9E0A4" stroke-opacity=".6" stroke-width=".6" fill="none"/></svg>`;
+  }
   const fill = kind === 'rose' ? '#C3172A' : kind === 'pink' ? '#E35A7E' : '#F29A1F';
   const edge = kind === 'rose' ? '#8E0D1C' : kind === 'pink' ? '#B8355A' : '#D9700F';
   return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1C15 4 18 9 16 14C14 18 6 18 4 14C2 9 5 4 10 1Z" fill="${fill}" stroke="${edge}" stroke-width=".8"/><path d="M10 3C9 8 9 12 10 17" stroke="${edge}" stroke-opacity=".45" stroke-width=".6" fill="none"/></svg>`;

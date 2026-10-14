@@ -118,17 +118,19 @@ const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 // Ganesh (optional): one cut-out picture. In the gold medallion on the torana, then inside: shown large first
 // and softly behind the opening words after that.
 const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
-// The medallion frames his face: a picture may say where the face is (`face`, fractions) and how far to zoom in.
+// The medallion frames his head: a picture may say where the head's centre is (`face`, fractions) and how far to
+// zoom (`zoom`, 1 = the picture just covers the circle; below 1 shows more of it, e.g. the whole head and crown).
 const medalFit = (() => {
   const r = ganeshRef && typeof ganeshRef === 'object' ? ganeshRef : {};
   const z = Number(r.zoom) || 1;
-  if (!Array.isArray(r.face) || z <= 1 || !r.w || !r.h) return 'object-position:50% 4%';
-  // cover in a square, centred: where the face lands (box units), then the origin that scales it to the middle
+  if (!Array.isArray(r.face) || !r.w || !r.h) return 'object-position:50% 4%';
+  // contain in the square, then scale to `zoom` x cover and move the head's centre to the middle of the circle
   const ar = r.w / r.h;
-  const px = ar < 1 ? r.face[0] : r.face[0] * ar - (ar - 1) / 2;
-  const py = ar < 1 ? r.face[1] / ar - (1 / ar - 1) / 2 : r.face[1];
-  const o = (t, p) => (((t - z * p) / (1 - z)) * 100).toFixed(2);
-  return `object-position:50% 50%;transform-origin:${o(0.5, px)}% ${o(0.56, py)}%;transform:scale(${z})`;
+  const s = z * Math.max(ar, 1 / ar);
+  const px = ar < 1 ? 0.5 + (r.face[0] - 0.5) * ar : r.face[0];
+  const py = ar < 1 ? r.face[1] : 0.5 + (r.face[1] - 0.5) / ar;
+  const t = (p) => ((0.5 - 0.5 - s * (p - 0.5)) * 100).toFixed(2);
+  return `object-fit:contain;transform:translate(${t(px)}%, ${t(py)}%) scale(${s.toFixed(3)})`;
 })();
 const medal = (cls = '') => (ganeshRef
   ? `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"><img style="${medalFit}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
@@ -258,7 +260,7 @@ main.innerHTML = `
     <div class="mg-spill" id="spill" aria-hidden="true"></div>
     <div class="mg-bells" id="bells" aria-hidden="true"></div>
     <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-drape" id="drape" src="${DECOR}drape-gate-md.webp" alt="" decoding="async" fetchpriority="high" /></div>
-    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp" srcset="${DECOR}kalash-gate-sm.webp 280w, ${DECOR}kalash-gate.webp 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}</div>
+    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp" srcset="${DECOR}kalash-gate-sm.webp 280w, ${DECOR}kalash-gate.webp 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}${diyo('mg-gdiyo mg-diyo--l')}${diyo('mg-gdiyo mg-diyo--r')}</div>
     <div class="mg-beam" id="beam" aria-hidden="true"></div>
     <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
     <div class="mg-panel__content" id="pcontent">
@@ -322,7 +324,7 @@ main.innerHTML = `
 
   <section class="mg-sec mg-fam" id="families" aria-labelledby="fam-title">
     <div class="mg-fam__card mg-rise">
-      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 96vw, 1040px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1708w" sizes="(max-width: 700px) 110vw, 1300px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       <img class="mg-fam__spray mg-fam__spray--tl" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       <img class="mg-fam__spray mg-fam__spray--br" src="${DECOR}corner-br-sm.webp" srcset="${DECOR}corner-br-sm.webp 400w, ${DECOR}corner-br.webp 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       <div class="mg-fam__body">
@@ -466,7 +468,7 @@ main.innerHTML = `
   </section>
 
   <footer class="mg-close" aria-label="Blessing">
-    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
+    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
     <div class="mg-close__row">
       <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
       <div class="mg-close__text mg-rise">
@@ -624,7 +626,8 @@ function computeLayout(W, H) {
     const a = Math.min(1.55, Math.max(1.0, (W / H) * 0.72));
     fw = (fh * a) / 1.09;
     kh = fh * 0.25;
-    const comp = fw * 1.09 + ((2 * kh) / KALASH.ar) * 0.8;
+    // (and, on the floor between each kalash and its pillar, a brass diyo)
+    const comp = fw * 1.09 + ((2 * kh) / KALASH.ar) * 0.8 + 2 * Math.min(72, kh * 0.3);
     const maxW = W - 2 * Math.max(16, W * 0.025);
     if (comp > maxW) { const k = maxW / comp; fw *= k; fh *= k; kh *= k; }
     fw = Math.round(fw); fh = Math.round(fh); kh = Math.round(kh);
@@ -641,7 +644,7 @@ function computeLayout(W, H) {
   const ox = ext + pw; const oy = th + lh; const ow = fw - 2 * pw; const oh = fh - oy - sill;
   const medal = Math.round(Math.min(th * 0.74, tw * 0.4));
   const medalY = Math.round(th * 0.58);
-  const diyoW = phone ? 30 : Math.round(Math.min(58, Math.max(40, ow * 0.05)));
+  const diyoW = phone ? 30 : Math.round(Math.min(72, Math.max(44, kh * 0.28)));
   const bellW = phone ? 22 : Math.round(Math.min(50, Math.max(28, ext * 0.95)));
   // the silk drape, hung under the lintel: its end rosettes sit on the pillar capitals
   const D = phone ? DRAPE.sm : DRAPE.lg;
@@ -656,11 +659,16 @@ function computeLayout(W, H) {
   const kw = Math.round(kh / KALASH.ar);
   const ground = H - thr;
   const kY = Math.round(ground - kh * KALASH.ground);
-  const kL = phone ? Math.max(2, fx - 2) : Math.max(8, Math.round(fx + ext + pw * 0.35 - kw));
+  // desktop: a diyo stands on the floor against each pillar's foot, facing the door; the kalash just outside it
+  const dH = Math.round(diyoW * 1.6);
+  const dXL = Math.round(fx + ext - diyoW * 1.04);
+  const dXR = W - dXL - diyoW;
+  const dY = Math.round(ground - dH * 0.985);
+  const kL = phone ? Math.max(2, fx - 2) : Math.max(8, Math.round(dXL + diyoW * 0.22 - kw));
   const kR = W - kL - kw;
   const ctop = phone ? 62 : Math.round(Math.max(72, H * 0.09));
   const cbottom = thr + (phone ? 6 : 10);
-  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, kh, kw, kY, kL, kR, ctop, cbottom, ganesh: !!ganeshRef };
+  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, kh, kw, kY, kL, kR, dH, dXL, dXR, dY, ctop, cbottom, ganesh: !!ganeshRef };
 }
 
 function placeBells(L) {
@@ -739,19 +747,73 @@ function applyLayout() {
   leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh));
   leafR.insertAdjacentHTML('afterbegin', leafSVG('r', lw, L.oh));
   root.style.setProperty('--mg-diyo-w', `${L.diyoW}px`);
+  fallEl?.style.setProperty('--fall', `${H}px`);
   // on phones the kalash stand in front of the pillars, so the lamps move in beside them
   root.style.setProperty('--mg-diyo-in', `${L.phone ? Math.max(Math.round(L.diyoW * 0.7), L.kL + L.kw + 2 - (L.fx + L.ox)) : Math.round(L.diyoW * 0.7)}px`);
   door.querySelectorAll('.mg-diyos .mg-diyo').forEach((d) => { d.innerHTML = diyoSVG(L.diyoW, Math.round(L.diyoW * 1.6)); });
+  // the diyos stand inside the doorway on phones, on the floor outside it beside the pillars elsewhere
+  document.getElementById('diyos').hidden = !L.phone;
+  kalashEl.querySelectorAll('.mg-gdiyo').forEach((d, i) => {
+    d.hidden = L.phone;
+    if (L.phone) return;
+    Object.assign(d.style, { left: `${i ? L.dXR : L.dXL}px`, top: `${L.dY}px`, width: `${L.diyoW}px`, height: `${L.dH}px` });
+    d.querySelector('svg')?.remove();
+    d.insertAdjacentHTML('beforeend', diyoSVG(L.diyoW, L.dH));
+  });
   placeBells(L);
   fitGate();
   fitContent();
+  maskFall();
+}
+
+// ───────────────────────── A light fall of petals over the doorway and the opening card ─────────────────────────
+// A few rose and marigold petals and the odd leaf drift down from the top, slowly, swaying (CSS transforms only).
+// Paused when the tab is hidden or the doorway is scrolled away; none at all under reduced motion.
+const fallEl = (() => {
+  if (reduced) return null;
+  const box = document.createElement('div');
+  box.className = 'mg-fall';
+  box.setAttribute('aria-hidden', 'true');
+  const phone = root.clientWidth < 700;
+  const n = phone ? 5 : 9;
+  const kinds = ['marigold', 'rose', 'marigold', 'pink', 'marigold', 'rose', 'leaf', 'marigold', 'rose'];
+  const r = (a, b) => a + Math.random() * (b - a);
+  for (let i = 0; i < n; i++) {
+    const kind = kinds[i % kinds.length];
+    const size = Math.round((phone ? 14 : 19) * r(0.8, 1.25) * (kind === 'leaf' ? 1.15 : 1));
+    const fall = r(phone ? 13 : 15, phone ? 19 : 23);
+    const sway = r(3.2, 5.2);
+    const p = document.createElement('i');
+    p.className = 'mg-fall__p';
+    // spread across the width in lanes, so they never bunch up
+    p.style.cssText = `left:${(((i + r(0.15, 0.85)) / n) * 100).toFixed(1)}%;--dur:${fall.toFixed(1)}s;--del:${(-r(0, fall)).toFixed(1)}s;--dx:${Math.round(r(-60, 60))}px;--sdur:${sway.toFixed(1)}s;--sdel:${(-r(0, sway)).toFixed(1)}s;--sw:${Math.round(r(10, 26))}px;--r0:${Math.round(r(-40, 40))}deg`;
+    p.innerHTML = `<span>${petalSVG(kind, size)}</span>`;
+    box.append(p);
+  }
+  hero.append(box);
+  const sync = (off) => box.classList.toggle('is-off', off);
+  let heroOff = false;
+  new IntersectionObserver(([e]) => { heroOff = !e.isIntersecting; sync(heroOff || document.hidden); }).observe(hero);
+  document.addEventListener('visibilitychange', () => sync(heroOff || document.hidden));
+  return box;
+})();
+/** On the doorway the petals pass behind the plaque and the two buttons, never over their words. */
+function maskFall() {
+  if (!fallEl) return;
+  const h = hero.getBoundingClientRect();
+  const rs = [...gate.children].map((k) => k.getBoundingClientRect()).filter((r) => r.width);
+  if (!rs.length) return;
+  const l = Math.min(...rs.map((r) => r.left)) - 8; const t = Math.min(...rs.map((r) => r.top)) - 8;
+  const r = Math.max(...rs.map((x) => x.right)) + 8; const b = Math.max(...rs.map((x) => x.bottom)) + 8;
+  Object.entries({ '--mx': l - h.left, '--my': t - h.top, '--mw': r - l, '--mh': b - t })
+    .forEach(([k, v]) => fallEl.style.setProperty(k, `${Math.round(v)}px`));
 }
 
 // ───────────────────────── Opening: the doors swing open ─────────────────────────
 document.body.classList.add('mg-locked');
 window.scrollTo(0, 0);
 applyLayout();
-document.fonts?.ready.then(() => { fitGate(); fitContent(); });
+document.fonts?.ready.then(() => { fitGate(); fitContent(); maskFall(); });
 openBtn.disabled = false;
 quietBtn.disabled = false;
 document.body.classList.add('is-ready');
