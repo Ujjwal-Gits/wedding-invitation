@@ -1,11 +1,11 @@
-// Sources of the theme art: the cut-out Ganesh (public/themes/mangal/ganesh-rv-*.webp) and the flowers and leaves
+// Sources of the theme art: the cut-out Ganesh (public/themes/mangal/ganesh-rd-*.webp) and the flowers and leaves
 // composed into the garlands, sprays and kalash (public/themes/mangal/decor, made by tools/decor.py).
 // Listed on the public /credits/ page only, never on the invitation.
 // Marigolds are cut from the library photos marigold-macro / marigold-macro-alt (credited in credits.json).
 // Brass, coconut, hibiscus, jasmine, rice, sindoor and cloth are drawn in code.
 const W = (file) => `https://commons.wikimedia.org/wiki/File:${file}`;
 export default [
-  { title: 'Shri Mangalmurti (Ganesh), Ravi Varma Press oleograph, about 1900 (background removed)', creator: 'Ravi Varma Press (Raja Ravi Varma)', license: 'Public domain', license_url: 'https://commons.wikimedia.org/wiki/Commons:Public_domain', source_url: W('Sri_Mangalmurthy.jpg') },
+  { title: 'Ganesha, hand-coloured plate from The Complete Hindoo Pantheon, 1842 (background removed)', creator: 'E. A. Rodrigues', license: 'Public domain', license_url: 'https://commons.wikimedia.org/wiki/Commons:Public_domain', source_url: W('Ganesha_deva.JPG') },
   { title: 'Red rose with black background (cut out)', creator: 'Laitche', license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0', source_url: W('Red_rose_with_black_background.jpg') },
   { title: 'Red rose with black background II (cut out)', creator: 'Laitche', license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0', source_url: W('Red_rose_with_black_background_II.jpg') },
   { title: 'Rosa Red Chateau on black background (cut out)', creator: "Filo gèn'", license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0', source_url: W('Rosa_Red_Chateau_on_black_background.jpg') },

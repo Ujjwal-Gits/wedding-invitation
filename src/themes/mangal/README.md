@@ -21,8 +21,9 @@ both scripts; dates always in Mukta). No script faces; Devanagari never tracked 
   number of loops so it is symmetric edge to edge), the doorway (`frameSVG`: pillars, lintel rosettes, torana
   via `cuspPath` like nimantrana's arches, a halo clipped to the torana), the rectangular leaves (`leafSVG`),
   the medallion ring (`medalSVG`), bells, diyos, the Dhaka tile, the temple crown, dividers and petals.
-- Ganesh: `public/themes/mangal/ganesh-rv-800/420.webp`, the public-domain Ravi Varma Press oleograph "Shri
-  Mangalmurti" (Wikimedia Commons, credited in `flora-credits.js` only), background removed with rembg. Head and
+- Ganesh: `public/themes/mangal/ganesh-rd-1000/500.webp`, a public-domain hand-coloured plate of Ganesh seated on
+  a golden throne (E. A. Rodrigues, 1842, Wikimedia Commons; credited in `flora-credits.js` only), the white paper
+  keyed out (rembg checked). Head and
   shoulders in the torana medallion; inside, shown large with a glow, then faded to a 16% watermark behind the words.
   Slot `hero.ganesh`; type "off" in `ganesh.show` to hide it (the inside then shows ॐ from `hero.symbol`).
 - Raster decor: `decor/swag*.webp` (the toran and the closing swag), `corner-*`, `paper.webp`

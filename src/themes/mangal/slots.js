@@ -14,8 +14,8 @@ export default {
   images: {
     'hero.ganesh': {
       label: 'Ganesh (the torana medallion, then large inside the doors and softly behind the names)', kind: 'detail',
-      default: { lg: '/themes/mangal/ganesh-rv-800.webp', sm: '/themes/mangal/ganesh-rv-420.webp', w: 800, h: 1183, alt: 'Shri Ganesh, a Ravi Varma Press oleograph' },
-      note: 'A cut-out picture with a transparent background works best (PNG or WebP); the medallion shows his head and shoulders. Public-domain Ravi Varma Press Ganesh by default. To remove it, type “off” in the Ganesh line.',
+      default: { lg: '/themes/mangal/ganesh-rd-1000.webp', sm: '/themes/mangal/ganesh-rd-500.webp', w: 1000, h: 1221, face: [0.47, 0.34], zoom: 1.75, alt: 'Shri Ganesh seated on a golden throne, a hand-coloured plate of 1842' },
+      note: 'A cut-out picture with a transparent background works best (PNG or WebP); the medallion shows his head and shoulders. A public-domain hand-coloured Ganesh (1842) by default. To remove it, type “off” in the Ganesh line.',
     },
     ...Object.fromEntries([
       couple('couple.lead', 'Main photo, just below the doors (gold temple-arch frame)', 0, 'The couple’s best photo, in its own section under शुभ विवाह. Shown whole under a gold temple-arch crown. Portrait works best.'),

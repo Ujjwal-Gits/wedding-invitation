@@ -49,6 +49,29 @@ export const DEFS = `
       <stop offset="0" stop-color="#FFC56A" stop-opacity=".55"/><stop offset=".45" stop-color="#FFB04A" stop-opacity=".18"/>
       <stop offset="1" stop-color="#FFB04A" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="mg-bbody" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3B2405"/><stop offset=".07" stop-color="#6E4810"/><stop offset=".17" stop-color="#B07C26"/>
+      <stop offset=".26" stop-color="#EBC46A"/><stop offset=".33" stop-color="#FFF0BE"/><stop offset=".4" stop-color="#E4B652"/>
+      <stop offset=".55" stop-color="#A9731C"/><stop offset=".7" stop-color="#6E470E"/><stop offset=".82" stop-color="#8E6216"/>
+      <stop offset=".91" stop-color="#D7A851"/><stop offset=".96" stop-color="#9B6B1C"/><stop offset="1" stop-color="#4A2E07"/>
+    </linearGradient>
+    <linearGradient id="mg-bshade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF4CF" stop-opacity=".22"/><stop offset=".25" stop-color="#FFF4CF" stop-opacity="0"/>
+      <stop offset=".7" stop-color="#2A1500" stop-opacity="0"/><stop offset="1" stop-color="#2A1500" stop-opacity=".22"/>
+    </linearGradient>
+    <linearGradient id="mg-blip" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5A3809"/><stop offset=".15" stop-color="#C9963B"/><stop offset=".3" stop-color="#FFF2C6"/>
+      <stop offset=".45" stop-color="#E0B154"/><stop offset=".7" stop-color="#93641A"/><stop offset=".9" stop-color="#E2B860"/><stop offset="1" stop-color="#5A3809"/>
+    </linearGradient>
+    <radialGradient id="mg-bmouth" cx=".5" cy=".2" r=".75">
+      <stop offset="0" stop-color="#120A01"/><stop offset=".6" stop-color="#2E1B04"/><stop offset="1" stop-color="#6A4510"/>
+    </radialGradient>
+    <radialGradient id="mg-bball" cx=".36" cy=".32" r=".7">
+      <stop offset="0" stop-color="#FFF1C4"/><stop offset=".35" stop-color="#C9963B"/><stop offset="1" stop-color="#4A2E07"/>
+    </radialGradient>
+    <linearGradient id="mg-bchain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FCE7A6"/><stop offset=".45" stop-color="#C08A30"/><stop offset="1" stop-color="#6E4810"/>
+    </linearGradient>
     <radialGradient id="mg-bell-in" cx=".5" cy=".3" r=".7">
       <stop offset="0" stop-color="#2A1804"/><stop offset="1" stop-color="#6B4710"/>
     </radialGradient>
@@ -309,33 +332,70 @@ export function leafSVG(side, w, h) {
   </svg>`;
 }
 
-/** A brass temple bell (ghanti) on a short chain. The box is w × h; the chain hangs from the top centre. */
+/** A cast-brass temple bell (ghanti) on a chain, seen from a little below: a domed crown with a hanging loop,
+ *  a waisted body that flares to a thick rolled lip, the dark mouth with the clapper hanging in it, incised rings,
+ *  a polished highlight down the left and a warm rim light on the right. Drawn at w × h pixels. */
 export function bellSVG(w, h, { links = 4 } = {}) {
   const cx = w / 2;
-  const chainH = h * 0.36;
+  const B = w * 0.47;                  // half-width at the lip
+  const chainH = h * 0.27;
+  const loopH = h * 0.06;
+  const y0 = chainH + loopH;           // top of the crown
+  const yl = h * 0.84;                 // the lip line
+  const Hb = yl - y0;
+  const ry = B * 0.2;                  // the mouth ellipse
+  const sw = Math.max(0.6, w * 0.022);
+  const P = (fx, fy) => `${r1(cx + fx * B)} ${r1(y0 + fy * Hb)}`;
+  // chain: alternating face-on and edge-on links, each a dark under-stroke and a brass stroke
   let chain = '';
-  const lh = chainH / links;
+  const lk = chainH / links;
   for (let k = 0; k < links; k++) {
-    const y = k * lh + lh / 2;
-    chain += k % 2
-      ? `<ellipse cx="${r1(cx)}" cy="${r1(y)}" rx="${r1(w * 0.025 + 0.6)}" ry="${r1(lh * 0.55)}" fill="none" stroke="#9C6F22" stroke-width="${r1(Math.max(1, w * 0.035))}"/>`
-      : `<ellipse cx="${r1(cx)}" cy="${r1(y)}" rx="${r1(w * 0.07)}" ry="${r1(lh * 0.58)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(Math.max(1.1, w * 0.04))}"/>`;
+    const y = k * lk + lk / 2;
+    const face = k % 2 === 0;
+    const rx = face ? w * 0.075 : w * 0.026 + 0.5; const ryk = lk * 0.62;
+    chain += `<ellipse cx="${r1(cx)}" cy="${r1(y)}" rx="${r1(rx)}" ry="${r1(ryk)}" fill="none" stroke="#3A2406" stroke-width="${r1(sw * 2.3)}"/>`
+      + `<ellipse cx="${r1(cx)}" cy="${r1(y)}" rx="${r1(rx)}" ry="${r1(ryk)}" fill="none" stroke="url(#mg-bchain)" stroke-width="${r1(sw * 1.5)}"/>`;
   }
-  const y0 = chainH;
-  const Hb = h * 0.56;
-  const B = w * 0.92;
-  const p = (fx, fy) => `${r1(cx + fx * B)} ${r1(y0 + fy * Hb)}`;
-  const body = `M${p(-0.13, 0.06)}C${p(-0.2, 0.08)} ${p(-0.28, 0.2)} ${p(-0.3, 0.42)}C${p(-0.32, 0.7)} ${p(-0.4, 0.84)} ${p(-0.5, 0.94)}`
-    + `Q${p(0, 1.06)} ${p(0.5, 0.94)}C${p(0.4, 0.84)} ${p(0.32, 0.7)} ${p(0.3, 0.42)}C${p(0.28, 0.2)} ${p(0.2, 0.08)} ${p(0.13, 0.06)}Z`;
-  const band = (fy, k) => `<path d="M${p(-0.31 - k, fy)}Q${p(0, fy + 0.07)} ${p(0.31 + k, fy)}" fill="none" stroke="#7A5214" stroke-width="${r1(Math.max(0.8, w * 0.025))}" stroke-opacity=".7"/>`;
-  return `<svg class="mg-bell-svg" width="${r1(w)}" height="${r1(h)}" viewBox="0 0 ${r1(w)} ${r1(h)}" aria-hidden="true" focusable="false">
-    ${chain}
-    <ellipse cx="${r1(cx)}" cy="${r1(y0 + Hb * 0.02)}" rx="${r1(B * 0.13)}" ry="${r1(Hb * 0.07)}" fill="url(#mg-brass)"/>
-    <ellipse cx="${r1(cx)}" cy="${r1(y0 + Hb * 1.08)}" rx="${r1(B * 0.09)}" ry="${r1(B * 0.09)}" fill="url(#mg-stud)"/>
-    <path d="${body}" fill="url(#mg-brass)"/>
-    ${band(0.36, 0)}${band(0.76, 0.06)}
-    <ellipse cx="${r1(cx)}" cy="${r1(y0 + Hb * 0.95)}" rx="${r1(B * 0.5)}" ry="${r1(Hb * 0.06)}" fill="url(#mg-bell-in)"/>
-    <path d="M${p(-0.5, 0.94)}Q${p(0, 1.06)} ${p(0.5, 0.94)}" fill="none" stroke="#F3D58A" stroke-width="${r1(Math.max(0.8, w * 0.03))}"/>
+  // hanging loop on the crown
+  const loop = `<ellipse cx="${r1(cx)}" cy="${r1(chainH + loopH * 0.35)}" rx="${r1(w * 0.09)}" ry="${r1(loopH * 0.75)}" fill="none" stroke="#3A2406" stroke-width="${r1(sw * 2.6)}"/>`
+    + `<ellipse cx="${r1(cx)}" cy="${r1(chainH + loopH * 0.35)}" rx="${r1(w * 0.09)}" ry="${r1(loopH * 0.75)}" fill="none" stroke="url(#mg-bchain)" stroke-width="${r1(sw * 1.7)}"/>`;
+  // body silhouette: dome, shoulder, waist, flare, then the front of the lip
+  // classic temple-bell silhouette: rounded crown, gently widening waist, short flare at the lip
+  const body = `M${P(-0.5, 0.14)}`
+    + `C${P(-0.52, -0.04)} ${P(-0.16, -0.06)} ${P(0, -0.06)}`
+    + `C${P(0.16, -0.06)} ${P(0.52, -0.04)} ${P(0.5, 0.14)}`
+    + `C${P(0.54, 0.4)} ${P(0.6, 0.62)} ${P(0.72, 0.8)}`
+    + `C${P(0.8, 0.92)} ${P(0.92, 0.96)} ${P(1, 0.99)}`
+    + `L${P(1, 1)}`
+    + `A${r1(B)} ${r1(ry)} 0 0 0 ${P(-1, 1)}`
+    + `L${P(-1, 0.99)}`
+    + `C${P(-0.92, 0.96)} ${P(-0.8, 0.92)} ${P(-0.72, 0.8)}`
+    + `C${P(-0.6, 0.62)} ${P(-0.54, 0.4)} ${P(-0.5, 0.14)}Z`;
+  // incised rings (bowed down a touch: we look up at the bell)
+  const ring = (fy, half, dy = 0.035) => {
+    const yy = y0 + fy * Hb;
+    return `<path d="M${r1(cx - half * B)} ${r1(yy)}Q${r1(cx)} ${r1(yy + dy * Hb * 2)} ${r1(cx + half * B)} ${r1(yy)}" fill="none" stroke="#4A2C06" stroke-opacity=".75" stroke-width="${r1(sw)}"/>`
+      + `<path d="M${r1(cx - half * B)} ${r1(yy + sw * 1.3)}Q${r1(cx)} ${r1(yy + sw * 1.3 + dy * Hb * 2)} ${r1(cx + half * B)} ${r1(yy + sw * 1.3)}" fill="none" stroke="#FFE9A8" stroke-opacity=".55" stroke-width="${r1(sw * 0.8)}"/>`;
+  };
+  const neckW = B * 0.16;
+  const mouthY = yl + ry * 0.15;
+  const lipT = Math.max(1.4, Hb * 0.055);
+  const ballR = B * 0.17;
+  const ballY = mouthY + ry * 0.55;
+  return `<svg class="mg-bell-svg" width="${r1(w)}" height="${r1(h)}" viewBox="0 0 ${r1(w)} ${r1(h)}" aria-hidden="true" focusable="false" overflow="visible">
+    <defs><filter id="mg-bsoft" x="-50%" y="-20%" width="200%" height="140%"><feGaussianBlur stdDeviation="${r1(Math.max(0.6, w * 0.035))}"/></filter></defs>
+    ${chain}${loop}
+    <rect x="${r1(cx - neckW)}" y="${r1(y0 - Hb * 0.09)}" width="${r1(neckW * 2)}" height="${r1(Hb * 0.1)}" rx="${r1(neckW * 0.4)}" fill="url(#mg-bbody)" stroke="#3A2406" stroke-width="${r1(sw * 0.6)}"/>
+    <path d="${body}" fill="url(#mg-bbody)" stroke="#3A2406" stroke-width="${r1(sw * 0.7)}" stroke-linejoin="round"/>
+    <path d="${body}" fill="url(#mg-bshade)"/>
+    ${ring(0.14, 0.31, 0.02)}${ring(0.5, 0.41)}${ring(0.8, 0.62, 0.04)}
+    <ellipse cx="${r1(cx)}" cy="${r1(yl)}" rx="${r1(B * 0.99)}" ry="${r1(ry)}" fill="url(#mg-bmouth)"/>
+    <line x1="${r1(cx)}" y1="${r1(mouthY - ry * 0.6)}" x2="${r1(cx)}" y2="${r1(ballY)}" stroke="#2A1803" stroke-width="${r1(Math.max(1, w * 0.04))}"/>
+    <circle cx="${r1(cx)}" cy="${r1(ballY)}" r="${r1(ballR)}" fill="url(#mg-bball)" stroke="#3A2406" stroke-width="${r1(sw * 0.5)}"/>
+    <path d="M${r1(cx - B)} ${r1(yl - lipT * 0.4)}A${r1(B)} ${r1(ry)} 0 0 0 ${r1(cx + B)} ${r1(yl - lipT * 0.4)}L${r1(cx + B)} ${r1(yl + lipT * 0.6)}A${r1(B)} ${r1(ry)} 0 0 1 ${r1(cx - B)} ${r1(yl + lipT * 0.6)}Z" fill="url(#mg-blip)" stroke="#3A2406" stroke-width="${r1(sw * 0.6)}"/>
+    <path d="M${r1(cx - B * 0.98)} ${r1(yl - lipT * 0.1)}A${r1(B)} ${r1(ry)} 0 0 0 ${r1(cx + B * 0.2)} ${r1(yl + ry * 0.98)}" fill="none" stroke="#FFF6DA" stroke-opacity=".7" stroke-width="${r1(sw * 0.8)}"/>
+    <path d="M${P(-0.2, 0.05)}C${P(-0.26, 0.3)} ${P(-0.3, 0.55)} ${P(-0.42, 0.74)}C${P(-0.52, 0.86)} ${P(-0.66, 0.92)} ${P(-0.74, 0.94)}" fill="none" stroke="#FFFBEA" stroke-opacity=".85" stroke-linecap="round" stroke-width="${r1(Math.max(1.2, w * 0.07))}" filter="url(#mg-bsoft)"/>
+    <ellipse cx="${r1(cx - B * 0.12)}" cy="${r1(y0 + Hb * 0.04)}" rx="${r1(B * 0.12)}" ry="${r1(Hb * 0.03)}" fill="#FFF8E0" opacity=".75" filter="url(#mg-bsoft)"/>
   </svg>`;
 }
 

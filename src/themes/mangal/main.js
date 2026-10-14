@@ -1,6 +1,6 @@
 // Theme · Mangal (मंगल) — the red-and-gold Nepali wedding card, come alive.
-// A carved Newar doorway (pillars, a lintel, a torana with Ganesh) hung with a full marigold toran, two brass
-// bells and small flower sprays. Tap the latch and the heavy leaves swing open with warm light spilling through,
+// A carved Newar doorway (pillars, a lintel, a torana with Ganesh) dressed with a silk drape of marigold-and-rose
+// rosettes and short marigold strings, two brass bells and a kalash at the foot of each pillar. Tap the latch and the heavy leaves swing open with warm light spilling through,
 // and the camera walks in (the one signature motion). Inside, Shri Ganesh appears first, large and glowing, then
 // settles softly behind ॥ श्री गणेशाय नमः ॥, शुभ विवाह, the names and one warm line. Then a calm scroll: the
 // couple in a gold temple arch, a gold scratch card that reveals the date, the countdown, a strip of photographs,
@@ -118,11 +118,23 @@ const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 // Ganesh (optional): one cut-out picture. In the gold medallion on the torana, then inside: shown large first
 // and softly behind the opening words after that.
 const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
+// The medallion frames his face: a picture may say where the face is (`face`, fractions) and how far to zoom in.
+const medalFit = (() => {
+  const r = ganeshRef && typeof ganeshRef === 'object' ? ganeshRef : {};
+  const z = Number(r.zoom) || 1;
+  if (!Array.isArray(r.face) || z <= 1 || !r.w || !r.h) return 'object-position:50% 4%';
+  // cover in a square, centred: where the face lands (box units), then the origin that scales it to the middle
+  const ar = r.w / r.h;
+  const px = ar < 1 ? r.face[0] : r.face[0] * ar - (ar - 1) / 2;
+  const py = ar < 1 ? r.face[1] / ar - (1 / ar - 1) / 2 : r.face[1];
+  const o = (t, p) => (((t - z * p) / (1 - z)) * 100).toFixed(2);
+  return `object-position:50% 50%;transform-origin:${o(0.5, px)}% ${o(0.56, py)}%;transform:scale(${z})`;
+})();
 const medal = (cls = '') => (ganeshRef
-  ? `<div class="mg-medal ${cls}" aria-hidden="true"><img src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 420w, ${esc(photoUrl(ganeshRef, 'lg'))} 800w" sizes="240px" alt="" decoding="async" />${medalSVG()}</div>`
+  ? `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"><img style="${medalFit}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
   : '');
 const ganesh = () => (ganeshRef
-  ? `<div class="mg-gan" id="gan" aria-hidden="true"><i class="mg-gan__glow" id="ganglow"></i><img class="mg-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 420w, ${esc(photoUrl(ganeshRef, 'lg'))} 800w" sizes="(max-width: 700px) 80vw, 560px" alt="" decoding="async" /></div>`
+  ? `<div class="mg-gan" id="gan" aria-hidden="true"><i class="mg-gan__glow" id="ganglow"></i><img class="mg-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="(max-width: 700px) 80vw, 560px" alt="" decoding="async" /></div>`
   : '');
 
 // ───────────────────────── Dates ─────────────────────────
@@ -245,7 +257,8 @@ main.innerHTML = `
     </div>
     <div class="mg-spill" id="spill" aria-hidden="true"></div>
     <div class="mg-bells" id="bells" aria-hidden="true"></div>
-    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-toran mg-toran--back" id="toran2" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" /><img class="mg-toran" id="toran" src="${DECOR}swag-sm.webp" srcset="${DECOR}swag-sm.webp 800w, ${DECOR}swag.webp 1600w" sizes="(max-width: 700px) 100vw, 1120px" alt="" decoding="async" fetchpriority="high" /><img class="mg-spray mg-spray--l" id="sprayL" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="220px" alt="" decoding="async" /><img class="mg-spray mg-spray--r" id="sprayR" src="${DECOR}corner-tl-sm.webp" srcset="${DECOR}corner-tl-sm.webp 400w, ${DECOR}corner-tl.webp 720w" sizes="220px" alt="" decoding="async" /></div>
+    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-drape" id="drape" src="${DECOR}drape-gate-md.webp" alt="" decoding="async" fetchpriority="high" /></div>
+    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp" srcset="${DECOR}kalash-gate-sm.webp 280w, ${DECOR}kalash-gate.webp 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}</div>
     <div class="mg-beam" id="beam" aria-hidden="true"></div>
     <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
     <div class="mg-panel__content" id="pcontent">
@@ -580,65 +593,104 @@ const openBtn = document.getElementById('open');
 const quietBtn = document.getElementById('quiet');
 const inside = document.getElementById('inside');
 const garlandEl = document.getElementById('garland');
-const toranEl = document.getElementById('toran');
-const toran2El = document.getElementById('toran2');
-const sprayL = document.getElementById('sprayL');
-const sprayR = document.getElementById('sprayR');
+const drapeEl = document.getElementById('drape');
+const kalashEl = document.getElementById('kalashes');
 const beamEl = document.getElementById('beam');
 const spillEl = document.getElementById('spill');
 const thresholdEl = document.getElementById('threshold');
 const root = document.documentElement;
-const TORAN_AR = 235 / 1600;
+// Geometry of the art in public/themes/mangal/decor (written by tools/gate.py): height / width, the side margin
+// beyond the end rosettes (fraction of width), the top of the heading band (fraction of height); the kalash's
+// ground line (fraction of its height, where the flower bed meets the floor).
+const DRAPE = { lg: { ar: 0.1451, mx: 0.0536, band: 0.0154 }, sm: { ar: 0.178, mx: 0.0763, band: 0.0212 } };
+const KALASH = { ar: 1.1085, ground: 0.9525 };
 let L = null;
 
+/** The whole gate (torana, doorway, pillars, step and the two kalash) is sized from the width AND the height of
+ *  the screen, as large as fits, so the plaque and both buttons are always in view. */
 function computeLayout(W, H) {
   const phone = W < 700;
   const beam = phone ? 12 : 22;
   const drop = phone ? 7 : 14;
-  const thr = phone ? 28 : Math.round(Math.min(48, Math.max(34, H * 0.05)));
-  const fw = phone ? W - 16 : Math.min(Math.round(W * (W < 1000 ? 0.86 : 0.68)), 1360);
-  const pw = phone ? 16 : Math.round(Math.min(64, Math.max(40, fw * 0.058)));
+  const thr = phone ? 28 : Math.round(Math.min(46, Math.max(30, H * 0.045)));
+  const top = phone ? 56 : Math.round(beam + drop + Math.max(12, H * 0.02));
+  let fh = H - thr - top;
+  let fw; let kh;
+  if (phone) {
+    fw = W - 24;
+    kh = Math.round(Math.min(fh * 0.115, 96));
+  } else {
+    // a wide door on wide screens, a squarer one on squarer screens; a kalash on each side of it
+    const a = Math.min(1.55, Math.max(1.0, (W / H) * 0.72));
+    fw = (fh * a) / 1.09;
+    kh = fh * 0.25;
+    const comp = fw * 1.09 + ((2 * kh) / KALASH.ar) * 0.8;
+    const maxW = W - 2 * Math.max(16, W * 0.025);
+    if (comp > maxW) { const k = maxW / comp; fw *= k; fh *= k; kh *= k; }
+    fw = Math.round(fw); fh = Math.round(fh); kh = Math.round(kh);
+  }
+  const pw = phone ? 16 : Math.round(Math.min(64, Math.max(34, fw * 0.058)));
   const ext = phone ? 4 : Math.round(pw * 0.8);
-  const lh = phone ? 22 : Math.round(Math.min(48, Math.max(32, fw * 0.042)));
+  const DW = fw + 2 * ext;
+  const lh = phone ? 22 : Math.round(Math.min(48, Math.max(28, fw * 0.042)));
   const sill = phone ? 8 : 14;
   const tw = Math.round(fw * (phone ? 0.52 : 0.34));
-  const th = Math.round(tw * 0.5);
-  const fy = phone ? 56 : Math.round(beam + drop + Math.max(14, H * 0.02));
-  const DW = fw + 2 * ext;
+  const th = Math.round(Math.min(tw * 0.5, phone ? Infinity : fh * 0.2));
+  const fy = H - thr - fh;
   const fx = Math.round((W - DW) / 2);
-  const fh = H - thr - fy;
   const ox = ext + pw; const oy = th + lh; const ow = fw - 2 * pw; const oh = fh - oy - sill;
   const medal = Math.round(Math.min(th * 0.74, tw * 0.4));
   const medalY = Math.round(th * 0.58);
-  const diyoW = phone ? 30 : Math.round(Math.min(58, Math.max(42, ow * 0.05)));
-  // the toran: across the opening, its flower knots just inside the pillars
-  const bellW = phone ? 22 : Math.round(Math.min(40, Math.max(26, ext * 0.78)));
-  const tX = phone ? fx + ox + 4 : fx + ox - Math.round(pw * 0.2);
-  const tW = phone ? ow - 8 : ow + Math.round(pw * 0.4);
-  const tY = fy + th + Math.round(lh * (phone ? 0.55 : 0.62));
-  const tH = tW * TORAN_AR;
-  const gTop = Math.round(tY + tH * 0.9 - (fy + oy) + (phone ? 8 : 14));
-  const gBottom = Math.round(diyoW * 1.6 + (phone ? 6 : 14));
+  const diyoW = phone ? 30 : Math.round(Math.min(58, Math.max(40, ow * 0.05)));
+  const bellW = phone ? 22 : Math.round(Math.min(50, Math.max(28, ext * 0.95)));
+  // the silk drape, hung under the lintel: its end rosettes sit on the pillar capitals
+  const D = phone ? DRAPE.sm : DRAPE.lg;
+  const span = phone ? ow - 8 : fw - pw;
+  const tW = span / (1 - 2 * D.mx);
+  const tH = tW * D.ar;
+  const tX = fx + DW / 2 - tW / 2;
+  const tY = fy + th + lh - tH * D.band - Math.round(lh * 0.3);
+  const gTop = Math.round(tY + tH - (fy + oy) + (phone ? 8 : 12));
+  const gBottom = phone ? Math.round(diyoW * 1.6 + 6) : 12;
+  // the kalash stand on the floor at the foot of the pillars (in front of them on phones)
+  const kw = Math.round(kh / KALASH.ar);
+  const ground = H - thr;
+  const kY = Math.round(ground - kh * KALASH.ground);
+  const kL = phone ? Math.max(2, fx - 2) : Math.max(8, Math.round(fx + ext + pw * 0.35 - kw));
+  const kR = W - kL - kw;
   const ctop = phone ? 62 : Math.round(Math.max(72, H * 0.09));
   const cbottom = thr + (phone ? 6 : 10);
-  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, ctop, cbottom, ganesh: !!ganeshRef };
+  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, kh, kw, kY, kL, kR, ctop, cbottom, ganesh: !!ganeshRef };
 }
 
 function placeBells(L) {
   const list = [];
+  const bw = L.bellW; const bh = Math.round(bw * 2.75);
   if (L.phone) {
-    // phones: the bells hang in front of the pillars, just under the lintel
-    const bw = L.bellW; const bh = Math.round(bw * 2.9);
-    const y = L.fy + L.oy - 2;
-    list.push({ x: L.fx + L.ext + L.pw / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
-    list.push({ x: L.fx + L.DW - L.ext - L.pw / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
+    // phones: under the end rosettes of the drape, in front of the pillars
+    const y = Math.round(L.tY + L.tH * 0.3);
+    list.push({ x: L.fx + L.ext + L.pw / 2 - bw / 2, y });
+    list.push({ x: L.fx + L.DW - L.ext - L.pw / 2 - bw / 2, y });
   } else {
-    const bw = L.bellW; const bh = Math.round(bw * 2.7);
+    // from the ends of the lintel, outside the pillars
     const y = L.fy + L.th + L.lh - 2;
-    list.push({ x: L.fx + L.ext / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
-    list.push({ x: L.fx + L.DW - L.ext / 2 - bw / 2, y, w: bw, h: bh, links: 4 });
+    list.push({ x: L.fx + L.ext / 2 - bw / 2, y });
+    list.push({ x: L.fx + L.DW - L.ext / 2 - bw / 2, y });
   }
-  bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${b.w}px;height:${b.h}px" data-i="${i}">${bellSVG(b.w, b.h, { links: b.links })}</div>`).join('');
+  bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${bw}px;height:${bh}px" data-i="${i}">${bellSVG(bw, bh, { links: 4 })}</div>`).join('');
+}
+
+/** The plaque and the two buttons scale down together only when the doorway is short. */
+function fitGate() {
+  gate.style.setProperty('--gk', '1');
+  const avail = gate.clientHeight;
+  const kids = [...gate.children];
+  const need = () => {
+    const gap = parseFloat(getComputedStyle(gate).rowGap) || 0;
+    return kids.reduce((n, el) => n + el.offsetHeight, 0) + gap * (kids.length - 1);
+  };
+  let k = 1;
+  for (let i = 0; i < 14 && need() > avail && k > 0.6; i++) { k *= 0.95; gate.style.setProperty('--gk', k.toFixed(3)); }
 }
 
 /** The opening words inside: they shrink a little only when they must. */
@@ -673,14 +725,13 @@ function applyLayout() {
   document.getElementById('pborder').innerHTML = panelBorderSVG(L);
   document.getElementById('framewrap').innerHTML = frameSVG(L);
   beamEl.innerHTML = beamSVG(L.W, L.beam, L.drop);
-  Object.assign(toranEl.style, { left: `${Math.round(L.tX)}px`, top: `${Math.round(L.tY)}px`, width: `${Math.round(L.tW)}px` });
-  // a second, shallower strand behind makes the toran full; small sprays dress the lintel ends
-  const t2W = L.tW * 0.94;
-  Object.assign(toran2El.style, { left: `${Math.round(L.tX + (L.tW - t2W) / 2)}px`, top: `${Math.round(L.tY - L.tH * 0.12)}px`, width: `${Math.round(t2W)}px` });
-  const sw = L.phone ? Math.round(L.pw * 4.2) : Math.round(Math.min(220, Math.max(120, L.ext * 3.4)));
-  const sy = L.fy + L.th - Math.round(sw * 0.16);
-  Object.assign(sprayL.style, { width: `${sw}px`, left: `${Math.round(L.fx - sw * 0.12)}px`, top: `${sy}px` });
-  Object.assign(sprayR.style, { width: `${sw}px`, left: `${Math.round(L.fx + L.DW - sw * 0.88)}px`, top: `${sy}px` });
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const drapeSrc = `${DECOR}${L.phone ? 'drape-gate-sm' : L.tW * dpr > 1250 ? 'drape-gate' : 'drape-gate-md'}.webp`;
+  if (!drapeEl.src.endsWith(drapeSrc)) drapeEl.src = drapeSrc;
+  Object.assign(drapeEl.style, { left: `${Math.round(L.tX)}px`, top: `${Math.round(L.tY)}px`, width: `${Math.round(L.tW)}px`, height: `${Math.round(L.tH)}px` });
+  const [kl, kr] = kalashEl.children;
+  Object.assign(kl.style, { left: `${L.kL}px`, top: `${L.kY}px`, width: `${L.kw}px`, height: `${L.kh}px` });
+  Object.assign(kr.style, { left: `${L.kR}px`, top: `${L.kY}px`, width: `${L.kw}px`, height: `${L.kh}px` });
   Object.assign(spillEl.style, { left: `${L.fx + L.ox - L.ow * 0.1}px`, width: `${L.ow * 1.2}px`, bottom: `${L.thr}px`, height: `${Math.round(L.oh * 0.5)}px` });
   Object.assign(pcontent.style, { top: `${L.ctop}px`, bottom: `${L.cbottom}px` });
   const lw = L.ow / 2;
@@ -688,8 +739,11 @@ function applyLayout() {
   leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh));
   leafR.insertAdjacentHTML('afterbegin', leafSVG('r', lw, L.oh));
   root.style.setProperty('--mg-diyo-w', `${L.diyoW}px`);
+  // on phones the kalash stand in front of the pillars, so the lamps move in beside them
+  root.style.setProperty('--mg-diyo-in', `${L.phone ? Math.max(Math.round(L.diyoW * 0.7), L.kL + L.kw + 2 - (L.fx + L.ox)) : Math.round(L.diyoW * 0.7)}px`);
   door.querySelectorAll('.mg-diyos .mg-diyo').forEach((d) => { d.innerHTML = diyoSVG(L.diyoW, Math.round(L.diyoW * 1.6)); });
   placeBells(L);
+  fitGate();
   fitContent();
 }
 
@@ -697,7 +751,7 @@ function applyLayout() {
 document.body.classList.add('mg-locked');
 window.scrollTo(0, 0);
 applyLayout();
-document.fonts?.ready.then(fitContent);
+document.fonts?.ready.then(() => { fitGate(); fitContent(); });
 openBtn.disabled = false;
 quietBtn.disabled = false;
 document.body.classList.add('is-ready');
@@ -773,7 +827,7 @@ const cardGroups = () => {
 // Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera (the
 // toran nearest, then the beam and bells, the threshold, the doorway itself); moving the camera forward by c
 // scales a layer at distance D by D / (D - c) about the vanishing point, so near things leave the frame first.
-const DEPTH = [[garlandEl, 2.7], [beamEl, 2.8], [bellsEl, 2.9], [spillEl, 3.4], [thresholdEl, 3.5], [door, 4]];
+const DEPTH = [[garlandEl, 2.7], [beamEl, 2.8], [bellsEl, 2.9], [kalashEl, 3.3], [spillEl, 3.4], [thresholdEl, 3.5], [door, 4]];
 
 /** The smallest scale of the doorway at which every corner of the screen lies inside its opening. */
 function throughScale(vx, vy) {
