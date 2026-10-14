@@ -7,6 +7,7 @@ import { STEPS } from './steps.js';
 import { responsesView } from './responses.js';
 import { shareDialog } from './publish.js';
 import { photoUrl } from '../photos.js';
+import { CREDIT_GROUPS } from '../core/asset-credits.js';
 
 const app = document.getElementById('app');
 const S = { me: null, meta: null, editor: null };
@@ -80,6 +81,7 @@ async function route() {
   }
   if (S.me.role === 'client' && !hash.startsWith(`#/i/${S.me.slug}/`)) return go(`#/i/${S.me.slug}/theme`);
   if (hash === '#/login') return go('#/');
+  if (hash === '#/credits') return S.me.role === 'admin' ? renderCredits() : go('#/');
   try { S.meta = await api('/meta'); } catch (err) { if (!S.meta) return fatal(err); } // theme list can grow at any time
   const m = /^#\/i\/([a-z0-9-]{3,64})\/([a-z-]+)$/.exec(hash);
   if (m) {
@@ -98,6 +100,7 @@ function topbar(extra) {
     h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
     extra || null,
     h('div.topbar__right',
+      S.me.role === 'admin' ? h('a.topbar__link', { href: '#/credits', 'aria-current': location.hash === '#/credits' ? 'page' : null }, 'Credits') : null,
       S.me.role === 'admin' ? h('span.topbar__user', S.me.email) : null,
       h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out'),
     ),
@@ -211,6 +214,31 @@ async function renderHome() {
       h('h2.empty__title', 'Make your first invitation'),
       h('p', 'Six short steps: the couple, the dates, a theme, your own touches, music, and share.'),
       h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: newInvitation }, icon('plus', 18), 'New invitation')));
+}
+
+// ── Credits (planner only) ────────────────────────────────────────────────
+
+/** Every photo, flower and track the themes use, with author, licence and source. Guests never see this. */
+function renderCredits() {
+  document.title = 'Credits · Nimtto Studio';
+  const ext = (href, text) => (href ? h('a', { href, target: '_blank', rel: 'noopener' }, text) : text);
+  const groups = CREDIT_GROUPS.map((g) => h('section.card.credits', { 'aria-labelledby': `cr-${g.id}` },
+    h('h2.card__title', { id: `cr-${g.id}` }, g.title, h('span.credits__count', ` ${g.items.length}`)),
+    h('div.credits__scroll', h('table.credits__table',
+      h('thead', h('tr', h('th', { scope: 'col' }, 'Title'), h('th', { scope: 'col' }, 'Author'), h('th', { scope: 'col' }, 'Licence'), h('th', { scope: 'col' }, 'Source'))),
+      h('tbody', g.items.map((k) => h('tr',
+        h('td', k.title, k.usedIn?.length ? h('small.credits__used', `Used in ${k.usedIn.join(', ')}`) : null),
+        h('td', k.author || '—'),
+        h('td', ext(k.licenseUrl, k.license || 'See source')),
+        h('td', k.sourceUrl ? ext(k.sourceUrl, (() => { try { return new URL(k.sourceUrl).hostname.replace(/^www./, ''); } catch { return 'Source'; } })()) : '—'),
+      ))),
+    )),
+  ));
+  clear(app).append(topbar(), h('main.home', { id: 'main' },
+    h('header.home__head', h('div',
+      h('h1.home__title', 'Credits'),
+      h('p.home__meta', 'Every photo, flower and track in the themes. Invitations never show these; the same list is public at ', h('a', { href: '/credits/', target: '_blank', rel: 'noopener' }, '/credits/'), ' (linked from the showroom only).'))),
+    h('div.credits__groups', groups)));
 }
 
 const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);

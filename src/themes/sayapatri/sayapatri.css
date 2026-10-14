@@ -255,7 +255,6 @@ html:has(body.theme-sayapatri) { background: var(--ivory); }
 .theme-sayapatri .sheet__list button { border-bottom-color: var(--line); }
 .theme-sayapatri .sheet__list button[aria-checked='true'] { background: var(--ivory); }
 .theme-sayapatri .trk__text b { font: 600 17px/1.3 var(--f-head); }
-.theme-sayapatri .sheet__credits { color: var(--ink-2); }
 .theme-sayapatri .btn { border-radius: 999px; letter-spacing: 0.01em; text-transform: none; font: 600 16px/1 var(--f-body); }
 .theme-sayapatri .btn .l-ne { font: 500 17px/1 var(--f-deva); }
 .theme-sayapatri .btn--ghost { color: var(--ink); border-color: var(--line-2); background: #fff; }
@@ -336,8 +335,6 @@ html:has(body.theme-sayapatri) { background: var(--ivory); }
 .theme-sayapatri .blessing__names .amp { font: italic 400 0.55em var(--f-names); color: var(--red); }
 .theme-sayapatri .blessing__names .l-ne { font: 500 0.7em var(--f-deva-display); }
 .theme-sayapatri .blessing__tag { color: var(--leaf); letter-spacing: 0.1em; font-weight: 600; font-size: 14px; }
-.theme-sayapatri .credits { color: var(--ink-2); font-size: 13px; }
-.theme-sayapatri .credits summary { color: var(--leaf); font-size: 13px; }
 .theme-sayapatri .lightbox { background: rgba(255, 255, 255, 0.97); }
 .theme-sayapatri .lightbox__close, .theme-sayapatri .lightbox__nav { color: var(--ink); }
 .theme-sayapatri .lightbox__fig figcaption { color: var(--ink-2); }

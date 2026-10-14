@@ -6,6 +6,7 @@ import './ghar.css';
 import { loadInvitation } from '../../core/data.js';
 import { bi, biNodes, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
 import { initRsvp } from '../../core/rsvp.js';
@@ -14,7 +15,6 @@ import { photoUrl } from '../../photos.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
-import credits from '../../generated/credits.json';
 
 const config = await loadInvitation();
 const params0 = new URLSearchParams(location.search);
@@ -91,7 +91,7 @@ if (to) {
   el.hidden = false;
 }
 
-/* ───────────────────────── finale (stills, reply, credits) ───────────────────────── */
+/* ───────────────────────── finale (stills, reply, end roll) ───────────────────────── */
 // Stills lead with the couple; supporting photos follow. No narrative captions (this is sent before the wedding).
 const gallery = (() => {
   const seen = new Set();
@@ -233,14 +233,7 @@ $('#finale-root').innerHTML = `
     <p class="roll__v">${bi(config.hosts || { en: '', ne: '' })}</p>
     <p class="roll__bless" lang="ne">${esc(config.closing?.ne || '')}</p>
     <p class="roll__tag">${esc(c.hashtag || '')}</p>
-    <details class="roll__credits">
-      <summary>${bi({ en: 'Photographs and music', ne: 'तस्बिर र संगीतको श्रेय' })}</summary>
-      <ul>
-        ${credits.map((k) => `<li>${esc(k.title || k.slot)}, ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a> (<a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a>)</li>`).join('')}
-        <li>Brick and carved-post textures cut from “Wooden door with tympanum” by Suraj Belbase, CC BY-SA 4.0</li>
-        ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}
-      </ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <div class="card" id="card" hidden role="dialog" aria-modal="true" aria-labelledby="card-title" data-lenis-prevent>

@@ -1,5 +1,5 @@
 // Sources of the cut-out flowers and leaves used in the gate and the arrangements (public/themes/gurans/flora/).
-// Listed in the footer credits.
+// Listed on the public /credits/ page (never on the invitation).
 const CC0 = { license: 'CC0 1.0', license_url: 'https://creativecommons.org/publicdomain/zero/1.0/' };
 const BYSA4 = { license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0' };
 export default [

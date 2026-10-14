@@ -314,10 +314,6 @@ body.is-open .kh-rv.is-in { opacity: 1; translate: 0 0; }
 .kh-close__names { margin-top: 34px !important; font: 500 clamp(30px, 3.4vw, 44px)/1.2 var(--kh-serif); color: var(--kh-ink); }
 .kh-close__names .l-ne { font: 600 0.88em/1.5 var(--kh-deva-d); }
 .kh-close__tag { margin-top: 12px !important; font: 600 13px/1.5 var(--kh-sans); letter-spacing: 0.16em; color: var(--kh-sindoor); }
-.kh-credits { max-width: 760px; margin: 56px auto 0; text-align: left; font: 400 13px/1.6 var(--kh-sans); color: var(--kh-ink-2); }
-.kh-credits summary { cursor: pointer; text-align: center; font: 500 13px/1.5 var(--kh-sans); letter-spacing: 0.14em; text-transform: uppercase; }
-.kh-credits summary .l-ne { font: 500 15px/1.5 var(--kh-deva); }
-.kh-credits ul { padding-left: 18px; }
 
 /* Invitation card dialog */
 .kh-modal { position: fixed; inset: 0; z-index: 80; padding: clamp(16px, 5vh, 56px) 16px; background: rgba(var(--scrim), 0.55); opacity: 0; transition: opacity 260ms var(--kh-ease); }

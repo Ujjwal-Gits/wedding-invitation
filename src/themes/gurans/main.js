@@ -10,6 +10,7 @@ import './gurans.css';
 import { loadInvitation } from '../../core/data.js';
 import * as i18n from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -20,7 +21,6 @@ import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
 import GATE from './gate.json';
-import FLORA_CREDITS from './flora-credits.js';
 
 const { bi, esc, dateOf, mapUrl, neNum } = i18n;
 const config = await loadInvitation();
@@ -125,7 +125,6 @@ const T = {
   live: { en: 'Watch the ceremony live', ne: 'प्रत्यक्ष हेर्नुहोस्' },
   calendar: { en: 'Add to calendar', ne: 'क्यालेन्डरमा राख्नुहोस्' },
   shareIt: { en: 'Share the invitation', ne: 'निम्तो सेयर गर्नुहोस्' },
-  credits: { en: 'Photo, flower & music credits', ne: 'तस्बिर, फूल तथा संगीत श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
   and: { en: '&', ne: 'र' },
 };
@@ -367,12 +366,8 @@ main.innerHTML = `
       ${c.hashtag ? `<p class="pb-small">${esc(c.hashtag)}</p>` : ''}
       <p class="pb-close__actions"><button class="pb-link" type="button" id="share">${bi(T.shareIt)}</button></p>
       <p class="pb-close__hosts">${bi(config.hosts)}</p>
-      <details class="pb-credits">
-        <summary>${bi(T.credits)}</summary>
-        <ul>${[...FLORA_CREDITS, ...credits].map((k) => `<li>${esc(k.title || k.slot)}${k.creator ? ` by ${esc(k.creator)}` : ''}, ${k.license_url ? `<a href="${esc(k.license_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>` : esc(k.license)}${k.source_url ? `, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a>` : ''}</li>`).join('')}
-        ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
-      </details>
     </div>
+    ${madeWith()}
   </footer>
 
   <div class="pb-card-wrap" id="card" hidden role="dialog" aria-modal="true" aria-labelledby="card-title" data-lenis-prevent>

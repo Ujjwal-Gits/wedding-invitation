@@ -68,7 +68,6 @@ export function createPlayer({ tracks, volume = 0.7 }) {
       <span class="trk__eq" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="trk__text"><b>${bi(t.title)}</b><small>${bi(t.mood)}</small></span>
     </button></li>`).join('');
-  sheet.querySelector('.sheet__credits').innerHTML = tracks.map((t) => esc(t.credit)).join(' · ');
 
   /** Must run inside a user gesture (the door tap / seal). */
   const unlock = () => {
@@ -173,6 +172,5 @@ export const playerMarkup = () => `
       </div>
       <ul class="sheet__list" role="menu"></ul>
       <button type="button" class="btn btn--ghost sheet__toggle" data-act="toggle"></button>
-      <p class="sheet__credits"></p>
     </div>
   </div>`;

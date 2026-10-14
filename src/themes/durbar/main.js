@@ -15,7 +15,6 @@ import { bi, biNodes, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '..
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
-import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
@@ -237,7 +236,7 @@ if (to) {
     .filter((g) => { const k = typeof g.photo === 'string' ? g.photo : JSON.stringify(g.photo); if (seen.has(k)) return false; seen.add(k); return true; })
     .map(({ caption, ...g }) => g);
 }
-renderFinale(document.getElementById('finale-root'), { credits });
+renderFinale(document.getElementById('finale-root'));
 {
   const gt = document.getElementById('gallery-title');
   if (gt) gt.innerHTML = T('gallery.title');

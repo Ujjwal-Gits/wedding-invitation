@@ -13,6 +13,7 @@ import { CustomEase } from 'gsap/CustomEase';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -21,7 +22,6 @@ import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
-import flora from './flora-credits.json';
 import manifest from './slots.js';
 import {
   goldDefs, archPanelSVG, crestSVG, canopySVG, lotusSVG, dhakaTile, swastikaSVG, havanSVG,
@@ -124,7 +124,6 @@ const T = {
   call: { en: 'Call', ne: 'फोन' },
   calendar: { en: 'Add the dates to your calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
   shareIt: { en: 'Share the invitation', ne: 'निम्तो पठाउनुहोस्' },
-  credits: { en: 'Art, photo and music credits', ne: 'श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
   full: { en: 'The full programme', ne: 'पूरा कार्यक्रम' },
   more: (n) => ({ en: `and ${n} more`, ne: `थप ${neNum(n)} कार्यक्रम` }),
@@ -488,15 +487,7 @@ main.innerHTML = `
     <p class="nm-close__en">${esc(config.closing?.en || '')}</p>
     <p class="nm-close__names">${names()}</p>
     ${c.hashtag ? `<p class="nm-close__tag">${esc(c.hashtag)}</p>` : ''}
-    <details class="nm-credits">
-      <summary>${bi(T.credits)}</summary>
-      <ul>
-        ${flora.filter((k) => k.slot !== 'deity' || (faith && deity && !config.themeContent?.nimantrana?.images?.['card.deity'])).map((k) => `<li>${esc(k.title)}${k.creator ? ` by ${esc(k.creator)}` : ''}${k.license ? `, ${k.license_url ? `<a href="${esc(k.license_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>` : esc(k.license)}` : ''}${k.source_url ? `, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a>` : ''}</li>`).join('')}
-        ${credits.filter((k) => used.has(k.slot) || album.some((g) => keyOf(g.photo) === k.slot) || /^marigold-macro/.test(k.slot)).map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-        ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}
-        <li>Card, border, Dhaka weave, arches, tiles, bells, kalash and diyos drawn in code for this invitation.</li>
-      </ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <div class="nm-lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photograph" data-lenis-prevent>

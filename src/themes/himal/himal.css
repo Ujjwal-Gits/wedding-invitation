@@ -110,7 +110,6 @@ body.theme-himal {
 .theme-himal .sheet__list button { border-bottom-color: var(--hm-line); }
 .theme-himal .sheet__list button[aria-checked='true'] { background: var(--hm-stone-bg); }
 .theme-himal .sheet__close { color: var(--hm-ink); }
-.theme-himal .sheet__credits { color: var(--hm-ink-2); }
 .theme-himal .btn--ghost { color: var(--hm-ink); border-color: var(--hm-ink); }
 .theme-himal .btn--ghost:hover { background: var(--hm-stone-bg); }
 .theme-himal .trk__text b { font-size: 18px; }
@@ -348,10 +347,6 @@ body.is-risen .hm-hero__night { opacity: 0; }
 .hm-close__en { margin: 10px 0 44px; font: 400 clamp(19px, 1.6vw, 22px)/1.5 var(--f-display); color: var(--hm-ink-2); }
 .hm-close__names { margin: 0 0 8px; font: 400 clamp(26px, 2.6vw, 36px)/1.2 var(--f-display); }
 .hm-close__names .l-ne { font: 400 0.88em/1.5 var(--f-deva-display); }
-.hm-credits { margin: 64px auto 0; text-align: left; font: 400 13px/1.6 var(--f-body); color: var(--hm-ink-2); }
-.hm-credits summary { cursor: pointer; text-align: center; font: 500 12.5px/1.4 var(--f-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--hm-ink-2); }
-.hm-credits summary .l-ne { font-size: 14px; }
-.hm-credits ul { padding-left: 18px; margin-top: 18px; }
 
 /* ───────── Invitation card dialog ───────── */
 .hm-card-wrap { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: 16px; background: rgba(30, 34, 37, 0); transition: background-color 320ms var(--hm-ease); }

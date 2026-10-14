@@ -18,8 +18,6 @@ import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
-import credits from '../../generated/credits.json';
-import floraCredits from './flora-credits.json';
 import manifest from './slots.js';
 
 gsap.registerPlugin(ScrollTrigger, CustomEase);
@@ -268,7 +266,7 @@ async function main() {
   (config.gallery || []).forEach((g) => { const k = keyOf(g.photo); if (g.photo && !seen.has(k)) { seen.add(k); gal.push(g); } });
   config.gallery = gal;
 
-  renderFinale(document.getElementById('finale-root'), { credits: [...credits, ...floraCredits] });
+  renderFinale(document.getElementById('finale-root'));
   const gallery = document.getElementById('gallery');
   const gTitle = document.getElementById('gallery-title');
   if (gTitle) gTitle.innerHTML = bi(txt('gallery.title'));

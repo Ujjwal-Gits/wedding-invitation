@@ -1,4 +1,5 @@
-// Shared closing sections: gallery, guest information, countdown, RSVP, blessing, credits.
+// Shared closing sections: gallery, guest information, countdown, RSVP, blessing.
+// Asset credits are not shown to guests: they are listed on /credits/.
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { config } from '../config.js';
@@ -7,6 +8,7 @@ import { initRsvp } from './rsvp.js';
 import { photoUrl } from '../photos.js';
 import { lockScroll, unlockScroll } from './modal.js';
 import { downloadIcs, share } from './calendar.js';
+import { madeWith } from './madewith.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -23,7 +25,7 @@ const srcOf = (g, size) => (g.photo ? photoUrl(g.photo, size) : size === 'sm' ? 
 const img = (g, sizes) =>
   `<img src="${esc(srcOf(g, 'sm'))}" srcset="${esc(srcOf(g, 'sm'))} 1280w, ${esc(srcOf(g, 'lg'))} 2560w" sizes="${sizes}" alt="${esc(g.alt)}" loading="lazy" decoding="async" />`;
 
-export function renderFinale(root, { credits = [] } = {}) {
+export function renderFinale(root) {
   const c = config.couple;
   const events = guestEvents();
   const info = config.info;
@@ -144,12 +146,7 @@ export function renderFinale(root, { credits = [] } = {}) {
     <p class="blessing__en">${esc(config.closing.en)}</p>
     <p class="blessing__names">${bi(c.bride.name)} <span class="amp">&amp;</span> ${bi(c.groom.name)}</p>
     <p class="blessing__tag">${esc(c.hashtag)}</p>
-    ${credits.length ? `
-    <details class="credits">
-      <summary>${bi({ en: 'Photo & music credits', ne: 'श्रेय' })}</summary>
-      <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      ${config.music.tracks.map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
-    </details>` : ''}
+    ${madeWith()}
   </footer>
 
   <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo" data-lenis-prevent>

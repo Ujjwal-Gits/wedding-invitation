@@ -13,7 +13,6 @@ import { bi, biNodes, esc, dateOf, timeLabel, shortDate, mapUrl, neNum, bsDateOf
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
-import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
@@ -224,7 +223,7 @@ if (to) {
     .filter((g) => { const k = typeof g.photo === 'string' ? g.photo : JSON.stringify(g.photo); if (seen.has(k)) return false; seen.add(k); return true; })
     .map(({ caption, ...g }) => g); // library photos carry no narrative captions
 }
-renderFinale(document.getElementById('finale-root'), { credits });
+renderFinale(document.getElementById('finale-root'));
 document.getElementById('finale-root').insertAdjacentHTML('afterbegin', '<div class="b-finale-fade" aria-hidden="true"></div>');
 
 // Gallery: a masonry of whole photos, filled in reading order (shortest column first), so the

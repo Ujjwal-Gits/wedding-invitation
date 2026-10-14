@@ -102,6 +102,30 @@ h1, h2, h3, h4, p { margin: 0; }
 .brand--lg .brand__name { font-size: 30px; }
 .topbar__right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .topbar__user { color: var(--ink-3); font-size: 13.5px; }
+.topbar__link { display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px; border-radius: var(--r-sm); color: var(--ink-2); font-size: 14px; font-weight: 500; text-decoration: none; }
+.topbar__link:hover, .topbar__link[aria-current="page"] { background: var(--sunken); color: var(--ink); }
+
+/* ── Credits (planner only) ─────────────────────────────── */
+.credits__groups { display: grid; gap: 24px; }
+.credits__count { margin-left: 6px; color: var(--ink-3); font-weight: 400; font-variant-numeric: tabular-nums; }
+.card.credits { padding: 24px 0 0; gap: 16px; overflow: hidden; }
+.credits .card__title { padding: 0 28px; }
+.credits__scroll { overflow-x: auto; }
+.credits__table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.credits__table th { padding: 10px 14px; background: var(--surface-2); color: var(--ink-3); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; border-block: 1px solid var(--line); }
+.credits__table td { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.credits__table th:first-child, .credits__table td:first-child { padding-left: 28px; width: 42%; }
+.credits__table th:last-child, .credits__table td:last-child { padding-right: 28px; }
+.credits__table tr:last-child td { border-bottom: 0; }
+.credits__table a { color: var(--ink); text-underline-offset: 3px; }
+.credits__table a:hover { color: var(--accent); }
+.credits__used { display: block; margin-top: 2px; color: var(--ink-3); font-size: 12.5px; }
+@media (max-width: 680px) {
+  .card.credits { padding: 20px 0 0; }
+  .credits .card__title, .credits__table th:first-child, .credits__table td:first-child { padding-left: 16px; }
+  .credits__table th:last-child, .credits__table td:last-child { padding-right: 16px; }
+  .credits__table { min-width: 620px; }
+}
 
 /* ── Sign in ─────────────────────────────────────────────── */
 .login { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(400px, 1fr); min-height: 100vh; }

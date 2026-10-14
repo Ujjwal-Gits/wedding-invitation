@@ -11,6 +11,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -151,7 +152,6 @@ const T = {
   call: { en: 'Call', ne: 'फोन' },
   calendar: { en: 'Add the dates to your calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
   shareIt: { en: 'Share the invitation', ne: 'निम्तो पठाउनुहोस्' },
-  credits: { en: 'Photo and music credits', ne: 'श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
   scroll: { en: 'The programme', ne: 'कार्यक्रम' },
   stays: { en: 'Where to stay', ne: 'बसाइ' },
@@ -378,12 +378,7 @@ main.innerHTML = `
     <p class="kh-close__en">${esc(config.closing?.en || '')}</p>
     <p class="kh-close__names">${names()}</p>
     ${c.hashtag ? `<p class="kh-close__tag">${esc(c.hashtag)}</p>` : ''}
-    <details class="kh-credits">
-      <summary>${bi(T.credits)}</summary>
-      <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}
-      <li>Paper, envelope, seal and botanicals drawn in code for this invitation.</li></ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <div class="kh-modal" id="cardmodal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title" data-lenis-prevent>

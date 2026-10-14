@@ -11,6 +11,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, dayNum, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -145,7 +146,6 @@ const T = {
   live: { en: 'Watch the ceremony live', ne: 'प्रत्यक्ष हेर्नुहोस्' },
   calendar: { en: 'Add to calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
   shareIt: { en: 'Share', ne: 'पठाउनुहोस्' },
-  credits: { en: 'Photo & music credits', ne: 'श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
 };
 
@@ -383,12 +383,8 @@ main.innerHTML = `
       <p class="hm-close__en">${esc(config.closing?.en || '')}</p>
       <p class="hm-close__names">${bi(c.bride.name)} <span aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</p>
       ${c.hashtag ? `<p class="hm-small">${esc(c.hashtag)}</p>` : ''}
-      <details class="hm-credits">
-        <summary>${bi(T.credits)}</summary>
-        <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-        ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
-      </details>
     </div>
+    ${madeWith()}
   </footer>
 
   <div class="hm-card-wrap" id="card" hidden role="dialog" aria-modal="true" aria-labelledby="card-title" data-lenis-prevent>

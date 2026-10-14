@@ -11,6 +11,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, neNum, dayNum } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile, getLenis } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
@@ -112,7 +113,6 @@ const T = {
   live: { en: 'Watch the ceremony live', ne: 'प्रत्यक्ष हेर्नुहोस्' },
   calendar: { en: 'Add to calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' },
   shareIt: { en: 'Share', ne: 'पठाउनुहोस्' },
-  credits: { en: 'Photo, garland & music credits', ne: 'श्रेय' },
   close: { en: 'Close', ne: 'बन्द गर्नुहोस्' },
   and: { en: 'and', ne: 'र' },
   scroll: { en: 'Scroll', ne: 'तल जानुहोस्' },
@@ -160,17 +160,6 @@ gate.innerHTML = `
       <button class="ml-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
     </div>
   </div>`;
-
-const DECOR_CREDITS = [
-  { title: 'Red rose with black background', creator: 'Laitche', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Red_rose_with_black_background.jpg' },
-  { title: 'Red rose with black background II', creator: 'Laitche', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Red_rose_with_black_background_II.jpg' },
-  { title: 'Rosa Red Chateau on black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rosa_Red_Chateau_on_black_background.jpg' },
-  { title: 'Rose on black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_on_black_background.jpg' },
-  { title: 'Rose black background', creator: "Filo gèn'", license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Rose_black_background.jpg' },
-  { title: 'Pink Rose Closeup With Black Background', creator: 'AsaQuathern', license: 'CC BY 4.0', url: 'https://commons.wikimedia.org/wiki/File:Pink_Rose_Closeup_With_Black_Background.jpg' },
-  { title: 'Leaves of Hopea odorata (one leaf cut out)', creator: 'Silviculture at Vietnamese Wikipedia', license: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:Leaves_of_Hopea_odorata.jpg' },
-  { title: 'A red hibiscus flower with green leaves around it', creator: 'Pooja Derashri', license: 'CC0', url: 'https://wordpress.org/photos/photo/31065c08a4/' },
-];
 
 // ───────────────────────── Main markup ─────────────────────────
 const eventRows = events.map((e, i) => {
@@ -379,12 +368,7 @@ main.innerHTML = `
     <p class="ml-close__en">${esc(config.closing?.en || '')}</p>
     <p class="ml-close__names">${bi(c.bride.name)} <span class="ml-amp" aria-hidden="true">&amp;</span><span class="sr-only">${bi(T.and)}</span> ${bi(c.groom.name)}</p>
     ${c.hashtag ? `<p class="ml-small">${esc(c.hashtag)}</p>` : ''}
-    <details class="ml-credits">
-      <summary>${bi(T.credits)}</summary>
-      <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)} by ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a>, <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      <li>The garlands are cut out of three of the photographs above: marigold strands from “Marigold garlands, Pak Khlong Talat flower market Bangkok” (Gzzz, CC BY-SA 4.0), rose bands from “Garlands in Indian flower market” (Elvina Goves, CC0), the varmala from “A garland made of yellow-orange marigold (Jamanthi) flowers” (Balu B, CC0). The kalash arrangements, rosettes and photo corners are composed from these cut-outs (Wikimedia Commons and the WordPress Photo Directory): ${DECOR_CREDITS.map((k) => `“${esc(k.title)}” by ${esc(k.creator)}, <a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.license)}</a>`).join('; ')}; marigolds from the library photo “marigold-macro”. Silk drape, brass kalash and paper are rendered for this theme.</li>
-      ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <div class="ml-card-wrap" id="card" hidden role="dialog" aria-modal="true" aria-labelledby="card-title" data-lenis-prevent>

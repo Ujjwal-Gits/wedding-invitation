@@ -27,11 +27,13 @@ const unixPython = resolve(ROOT_DIR, 'tools', '.venv', 'bin', 'python');
 export const DEPTH_PYTHON = env.DEPTH_PYTHON || (existsSync(defaultPython) ? defaultPython : unixPython);
 export const DEPTH_ENABLED = env.DEPTH_ENABLED !== '0' && existsSync(DEPTH_PYTHON);
 
-export const DATA_DIR = resolve(SERVER_DIR, 'data');
+// DATA_ROOT (optional) moves data/ and uploads/ elsewhere, e.g. a scratch copy for testing a push.
+const DATA_ROOT = env.DATA_ROOT ? resolve(env.DATA_ROOT) : SERVER_DIR;
+export const DATA_DIR = resolve(DATA_ROOT, 'data');
 export const INV_DIR = resolve(DATA_DIR, 'invitations');
 export const RSVP_DIR = resolve(DATA_DIR, 'rsvps');
 export const TRASH_DIR = resolve(DATA_DIR, 'trash');
-export const UPLOAD_DIR = resolve(SERVER_DIR, 'uploads');
+export const UPLOAD_DIR = resolve(DATA_ROOT, 'uploads');
 export const DIST_DIR = resolve(ROOT_DIR, 'dist');
 
 export function assertConfigured() {

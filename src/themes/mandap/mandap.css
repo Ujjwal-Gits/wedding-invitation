@@ -179,7 +179,7 @@ body.theme-mandap {
 .theme-mandap .chapters button[aria-current='step'] i { background: var(--accent); }
 .theme-mandap .chapters b { color: var(--ink); background: rgba(255, 253, 248, 0.92); padding: 4px 8px; }
 .theme-mandap .sheet__panel { background: var(--paper) var(--paper-tex); }
-.theme-mandap .trk__text b, .theme-mandap .trk__text small, .theme-mandap .sheet__credits { color: var(--ink); }
+.theme-mandap .trk__text b, .theme-mandap .trk__text small { color: var(--ink); }
 #finale-root { position: relative; z-index: 3; background: var(--bg) var(--paper-tex); color: var(--ink); }
 .theme-mandap .gallery, .theme-mandap .info, .theme-mandap .finale, .theme-mandap .blessing { background: var(--bg) var(--paper-tex); color: var(--ink); }
 .theme-mandap .display { font: 400 clamp(34px, 4.6vw, 64px)/1.08 var(--f-names); letter-spacing: 0.04em; color: var(--accent-2); }
@@ -198,8 +198,7 @@ body.theme-mandap {
 .theme-mandap .blessing__names { font: 400 clamp(32px, 4.4vw, 56px)/1.2 var(--f-names); letter-spacing: 0.05em; color: var(--accent-2); }
 .theme-mandap .blessing__ne { font-family: var(--f-deva); color: var(--ink); line-height: 1.8; }
 .theme-mandap .blessing__en { color: var(--ink-dim); }
-.theme-mandap .blessing__tag, .theme-mandap .credits summary { color: var(--accent); }
-.theme-mandap .credits { color: var(--ink-dim); }
+.theme-mandap .blessing__tag { color: var(--accent); }
 .theme-mandap .gallery__cap { display: none; }
 
 /* Gallery: every photo keeps its own proportions (no crop, no drift inside a mask). */

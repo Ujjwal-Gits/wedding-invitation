@@ -52,7 +52,6 @@ html:has(body.theme-chitra) { background: #2a1e16; }
 .theme-chitra .sheet__panel { background: var(--paper); border: 2px solid var(--ink-c); box-shadow: 6px 6px 0 var(--ink-c); }
 .theme-chitra .sheet__close { color: var(--ink-c); }
 .theme-chitra .trk__text b { font: 400 20px/1.2 var(--f-display); }
-.theme-chitra .sheet__credits { color: var(--paper-dim); }
 .theme-chitra .chapters button { color: var(--ink-c); }
 .theme-chitra .chapters i { border: 1.5px solid var(--ink-c); background: var(--paper); }
 .theme-chitra .chapters button[aria-current='step'] i { background: var(--verm-bright); }
@@ -282,8 +281,6 @@ html:has(body.theme-chitra) { background: #2a1e16; }
 .theme-chitra .blessing__names { color: var(--ink-c); }
 .theme-chitra .blessing__tag { color: var(--verm); }
 .theme-chitra .blessing__div { color: var(--verm); }
-.theme-chitra .credits { color: #5b4434; }
-.theme-chitra .credits summary { color: var(--verm); }
 .theme-chitra .lightbox__close, .theme-chitra .lightbox__nav, .theme-chitra .lightbox__fig figcaption { color: #ffffff; }
 .theme-chitra .skip { background: var(--ink-c); color: var(--paper); }
 

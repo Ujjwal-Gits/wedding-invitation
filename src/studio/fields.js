@@ -136,7 +136,7 @@ export function pickLibrary(ctx) {
         onclick: () => { picked = p.slug; d.close(); },
       }, h('img', { src: `/photos/${p.slug}-sm.webp`, alt: p.title, loading: 'lazy', decoding: 'async' }))));
     }
-    const d = openDialog({ title: 'Choose from the photo library', body: [h('p.hint', 'Real photographs of Nepal (credited automatically on the invitation).'), grid], wide: true, onClose: () => resolve(picked) });
+    const d = openDialog({ title: 'Choose from the photo library', body: [h('p.hint', 'Real photographs of Nepal (credited on the Nimtto credits page).'), grid], wide: true, onClose: () => resolve(picked) });
   });
 }
 

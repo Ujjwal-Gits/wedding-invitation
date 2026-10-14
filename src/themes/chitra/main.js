@@ -202,7 +202,7 @@ async function start() {
     ...(config.gallery || []),
   ].filter((g) => { const k = JSON.stringify(g.photo); if (seen.has(k)) return false; seen.add(k); return true; })
     .map((g) => ({ ...g, caption: undefined }));
-  finale.renderFinale(document.getElementById('finale-root'), { credits });
+  finale.renderFinale(document.getElementById('finale-root'));
   document.querySelector('.gallery__head .display').innerHTML = T('gallery.title');
   document.querySelector('.gallery__head .eyebrow').innerHTML = T('gallery.eyebrow');
   const { player, setChapter } = shell.mountShell({ chapters: PAGES.map((p) => p.name) });

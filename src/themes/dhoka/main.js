@@ -12,11 +12,11 @@ import { loadInvitation } from '../../core/data.js';
 import { photos, photoUrl, view } from '../../photos.js';
 import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
+import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { guestEvents } from '../../core/finale.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { downloadIcs, share } from '../../core/calendar.js';
-import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
@@ -325,11 +325,7 @@ async function start() {
     <p class="d-colophon__en">${esc(config.closing?.en || '')}</p>
     <p class="d-colophon__names">${names}</p>
     ${c.hashtag ? `<p class="d-colophon__tag">${esc(c.hashtag)}</p>` : ''}
-    <details class="d-credits">
-      <summary>${bi({ en: 'Photographs & music', ne: 'तस्बिर तथा संगीत' })}</summary>
-      <ul>${credits.map((k) => `<li>${esc(k.title || k.slot)}, ${esc(k.creator || 'unknown')}, <a href="${esc(k.license_url || k.source_url)}" target="_blank" rel="noopener">${esc(k.license)}</a> · <a href="${esc(k.source_url)}" target="_blank" rel="noopener">source</a></li>`).join('')}
-      ${(config.music?.tracks || []).map((t) => `<li>${esc(t.credit)}</li>`).join('')}</ul>
-    </details>
+    ${madeWith()}
   </footer>
 
   <dialog class="d-sheet" id="card-dialog" aria-labelledby="card-dialog-title">

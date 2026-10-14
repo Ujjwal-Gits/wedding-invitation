@@ -15,7 +15,6 @@ import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, biNodes } from '../../cor
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, animateGallery, guestEvents } from '../../core/finale.js';
-import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
@@ -228,7 +227,7 @@ cardWrap.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCard?
   const isCouple = (g) => mine.has(key(g)) || /^(couple|bride|groom)/.test(String(g.photo));
   config.gallery = [...(config.gallery || [])].sort((a, b) => Number(isCouple(b)) - Number(isCouple(a))).map((g) => ({ ...g, caption: undefined }));
 }
-renderFinale(document.getElementById('finale-root'), { credits });
+renderFinale(document.getElementById('finale-root'));
 {
   const gk = document.querySelector('.gallery__head .eyebrow');
   const gt = document.querySelector('#gallery-title');

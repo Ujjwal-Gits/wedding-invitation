@@ -476,11 +476,6 @@ body.is-open .nm-after { display: flex; animation: nm-up 600ms var(--nm-ease) bo
 .nm-close__names .l-ne { font: 600 clamp(26px, 2.8vw, 34px)/1.5 var(--nm-f-deva-d); }
 .nm-close__names .nm-amp { color: var(--nm-gold-lt); }
 .nm-close__tag { margin: 10px 0 0; font: 600 13px/1.4 var(--nm-f-text); letter-spacing: 0.26em; color: var(--nm-gold-lt); }
-.nm-credits { margin: 52px auto 0; max-width: 820px; text-align: left; font: 400 13.5px/1.6 var(--nm-f-text); color: rgba(246, 238, 220, 0.78); }
-.nm-credits summary { cursor: pointer; text-align: center; font: 600 12.5px/1.4 var(--nm-f-text); letter-spacing: 0.2em; text-transform: uppercase; color: var(--nm-gold-lt); padding: 8px; }
-.nm-credits summary .l-ne { font: 600 15px/1.5 var(--nm-f-deva); }
-.nm-credits ul { padding-left: 18px; }
-.nm-credits a { color: inherit; }
 
 /* Lightbox */
 .nm-lb { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(6, 26, 20, 0.95); opacity: 0; transition: opacity 260ms var(--nm-ease); }
