@@ -9,7 +9,7 @@ import { config as demo } from '../../src/config.js';
 const KNOWN = {
   dhoka: { name: 'Dhoka', concept: 'A printed ivory card with a golden door that opens' },
   ghar: { name: 'Ghar', concept: 'A lamplit evening walk through a Newar house' },
-  sayapatri: { name: 'Sayapatri', concept: 'A floral wedding stage; the flower gate parts on a white card' },
+  sayapatri: { name: 'Sayapatri', concept: 'A marigold-hung doorway opening on a calm ivory invitation' },
   chitra: { name: 'Chitra', concept: 'An illustrated storybook in Mithila colours' },
   mandap: { name: 'Mandap', concept: 'A floral 3D mandap; garland exchange and seven rounds' },
   bagaicha: { name: 'Bagaicha', concept: '3D garden wedding: rose arch and seven rounds of the fire' },

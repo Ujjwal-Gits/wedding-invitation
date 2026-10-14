@@ -11,7 +11,7 @@ dashboard to create, customise, publish and track invitations.
 | 04 | **Durbar** `/durbar/` | A 3D morning walk through Bhaktapur Durbar Square, under flower arches, past the Nyatapola. |
 | 05 | **Phoolbari** `/gurans/` | A flower gate with शुभ विवाह opens onto a calm, normally scrolling invitation (no 3D). |
 | 06 | **Dhaka** `/dhaka/` | The seal breaks, the Dhaka band slides off and the couple's photo rises into a floral frame. |
-| 07 | **Sayapatri** `/sayapatri/` | A floral wedding stage: the flower gate parts on a crisp white card. |
+| 07 | **Sayapatri** `/sayapatri/` | A doorway hung with real marigold strings and a mango-leaf toran; they lift to open a calm ivory invitation. |
 | 08 | **Himal** `/himal/` | Quiet luxury: Himalayan sunrise and a photo essay of the couple. |
 | 09 | **Chitra** `/chitra/` | Mithila picture book with illustrated characters: janti, swayambar, seven rounds, sindoor, dance. |
 | 10 | **Mandap** `/mandap/` | 3D floral mandap on a bright morning; realistic couple exchange garlands and walk seven rounds. |
