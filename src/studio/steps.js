@@ -226,14 +226,16 @@ function themeStep(ctx) {
     ].filter(Boolean));
   };
   const choose = (t) => { m.set(['theme'], t.slug); ctx.onTheme?.(t.slug); render(); showNote(); };
+  const pageOf = (t) => `/${t.slug}/?id=${encodeURIComponent(ctx.slug)}&studio=${Date.now()}`;
   const next = () => { location.hash = `#/i/${encodeURIComponent(ctx.slug)}/couple`; };
   // Full-screen look at one theme filled with this couple's own details (the unsaved draft).
   const view = (t) => {
-    const frame = h('iframe.tview__frame', { title: `${t.name} with your details`, src: `/${t.slug}/?id=${encodeURIComponent(ctx.slug)}&studio=${Date.now()}` });
+    const frame = h('iframe.tview__frame', { title: `${t.name} with your details`, src: pageOf(t) });
     const d = openDialog({
       title: `${t.name}${t.concept ? ` · ${t.concept}` : ''}`, body: frame, cls: 'dialog--viewer', wide: true,
       actions: [
         h('button.btn', { type: 'button', onclick: () => d.close() }, 'Back to all themes'),
+        h('a.btn', { href: pageOf(t), target: '_blank', rel: 'noopener' }, icon('external', 16), 'Open in new tab'),
         h('button.btn.btn--primary', { type: 'button', onclick: () => { choose(t); d.close(); next(); } }, icon('check', 18), `Use ${t.name}`),
       ],
     });
@@ -250,6 +252,7 @@ function themeStep(ctx) {
         h('span.tpick__text', h('b', t.name), t.concept ? h('small', t.concept) : null),
         t.ready ? h('div.tpick__acts',
           h('button.btn.btn--sm', { type: 'button', onclick: () => view(t) }, icon('eye', 16), 'View'),
+          h('a.btn.btn--sm.btn--icon', { href: pageOf(t), target: '_blank', rel: 'noopener', 'aria-label': `Open ${t.name} full page in a new tab`, title: 'Open full page in a new tab' }, icon('external', 16)),
           on ? h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: next }, 'Chosen · Next')
             : h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => { choose(t); next(); } }, 'Use this theme')) : null,
       ));

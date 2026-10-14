@@ -553,9 +553,13 @@ async function start() {
     }
 
     // No. III · The rites travel sideways while the page holds still.
+    // Only when the whole plate (photo + caption) fits the screen height; short screens and
+    // in-studio previews get a calm two-column layout that scrolls normally instead.
     const track = document.querySelector('.d-rites__track');
-    if (track && !window.matchMedia('(max-width: 760px)').matches) {
-      const dist = () => Math.max(0, track.scrollWidth - window.innerWidth);
+    const pinRites = !window.matchMedia('(max-width: 760px), (max-height: 760px)').matches;
+    if (track && !pinRites) document.querySelector('.d-rites')?.classList.add('is-flat');
+    if (track && pinRites) {
+      const dist = () => Math.max(0, track.scrollWidth - document.documentElement.clientWidth);
       const sec = document.querySelector('.d-rites');
       const setH = () => { sec.style.height = `${window.innerHeight + dist()}px`; };
       setH();

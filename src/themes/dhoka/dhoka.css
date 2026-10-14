@@ -182,7 +182,14 @@ html:has(.design-dhoka) { background: #FFFFFF; }
 /* ───────── No. III · The rites, a horizontal sequence ───────── */
 .d-rites { position: relative; height: 300svh; border-top: 1px solid var(--hair); }
 .d-rites__pin { position: sticky; top: 0; height: 100svh; overflow: hidden; display: flex; align-items: center; }
-.d-rites__track { display: flex; align-items: center; gap: clamp(36px, 5vw, 104px); padding: 64px var(--gutter) 0; width: max-content; will-change: transform; }
+.d-rites__track { display: flex; align-items: center; gap: clamp(36px, 5vw, 104px); padding: 96px var(--gutter) 24px; width: max-content; will-change: transform; }
+/* Short screens: no sideways travel; two calm columns that scroll normally. */
+.d-rites.is-flat { height: auto !important; }
+.d-rites.is-flat .d-rites__pin { position: static; height: auto; overflow: visible; display: block; padding: clamp(72px, 12vh, 120px) 0; }
+.d-rites.is-flat .d-rites__track { width: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 64px clamp(32px, 4vw, 64px); padding: 0 var(--gutter); max-width: 1280px; margin: 0 auto; transform: none !important; }
+.d-rites.is-flat .d-rites__intro { grid-column: 1 / -1; width: auto; }
+.d-rites.is-flat .d-rite__frame { height: auto; width: 100%; aspect-ratio: var(--ar, 3 / 2); }
+.d-rites.is-flat .d-rite__frame img { width: 100%; margin-left: 0; height: 100%; }
 .d-rites__intro { width: clamp(260px, 26vw, 400px); flex: none; }
 .d-rite { margin: 0; flex: none; display: grid; gap: 18px; }
 .d-rite__frame { height: min(56svh, 580px); aspect-ratio: var(--ar, 3 / 2); overflow: hidden; }
