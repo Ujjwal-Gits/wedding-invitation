@@ -10,6 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
+import { deviceTier } from './perf.js';
 import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, biNodes } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
@@ -259,10 +260,15 @@ async function boot() {
   const tick = setInterval(() => { fake = Math.min(0.85, fake + 0.04); bar.style.transform = `scaleX(${fake})`; }, 200);
   try {
     const [{ MandapView }, { NightRenderer }, props] = await Promise.all([import('../../core/mandap3d.js'), import('./renderer.js'), import('./props.js')]);
-    view = new MandapView({ id: 'mandap3d', mobile });
-    night = new NightRenderer(document.getElementById('stage'), view, { mobile });
+    // low tier (weak GPU, little memory, a cheap phone): the view's light build (fewer flowers, no shadow maps)
+    const tier = deviceTier();
+    view = new MandapView({ id: 'mandap3d', mobile: mobile || tier.tier === 'low' });
+    night = new NightRenderer(document.getElementById('stage'), view, { mobile, tier });
     await Promise.all([view.load(), document.fonts.load('40px "Marcellus SC"'), document.fonts.load('40px "Marcellus"'), document.fonts.load('40px "Martel"').catch(() => {})]);
     buildProps(props);
+    // upload the portrait textures and compile the hidden frames' shaders while the gate is up,
+    // so the first scroll to the portraits does not stall on a 2560px upload
+    for (const ms of [1200, 3500, 7000]) setTimeout(prewarm, ms);
     view.janti = 0;
     view.swayambar = 0;
     view.progress = 0;
@@ -284,14 +290,15 @@ async function boot() {
 
 function buildProps({ photoFrame, brassPlaque }) {
   const n = frames.length;
+  const photoSize = deviceTier().tier === 'low' ? 'sm' : 'lg'; // weak devices take the 1280w photos
   frames.forEach((f, i) => {
     const a = Math.PI + (i - (n - 1) / 2) * 0.62;
     const normal = V(Math.sin(a), 0, Math.cos(a));
-    const g = photoFrame(photoUrl(f.photo, 'lg'), {
+    const g = photoFrame(photoUrl(f.photo, photoSize), {
       height: 1.05,
       style: ['floral', 'gilt', 'ivory', 'carved', 'floral'][i % 5],
       flowers: view.flowers,
-      fallback: () => { const s = spare.shift(); return s ? { url: photoUrl(s.photo, 'lg'), alt: s.alt } : null; },
+      fallback: () => { const s = spare.shift(); return s ? { url: photoUrl(s.photo, photoSize), alt: s.alt } : null; },
       onSwap: (next) => {
         const img = document.querySelector(`#us .m-cap[data-i="${i}"] .m-cap__img`);
         if (img) { img.src = next.url; img.alt = next.alt; }
@@ -322,6 +329,18 @@ function buildProps({ photoFrame, brassPlaque }) {
   for (let i = 0; i <= 200; i++) { const j = (i / 200) * 0.94; table.push([j, view.jantiPose(j).p.z]); }
   const jAt = (z) => { for (let i = 1; i < table.length; i++) if (table[i][1] <= z) { const [j0, z0] = table[i - 1]; const [j1, z1] = table[i]; return j0 + ((z0 - z) / (z0 - z1)) * (j1 - j0); } return 0.94; };
   st.jKnots = [[0, 0.0], ...st.plaques.map((pl, k) => [(k + 0.62) / (N + 1), jAt(pl.z + 0.4)]), [(N + 0.55) / (N + 1), 0.9], [1, 1]];
+}
+
+function prewarm() {
+  const r = night?.renderer;
+  if (!r) return;
+  const was = st.frames3d.map((f) => f.g.visible);
+  st.frames3d.forEach((f) => {
+    f.g.visible = true;
+    f.g.traverse((o) => { const m = o.material?.map; if (m?.image && !m.userData.warm) { r.initTexture(m); m.userData.warm = true; } });
+  });
+  r.compile(view.scene, view.camera);
+  st.frames3d.forEach((f, i) => { f.g.visible = was[i]; });
 }
 
 function drawPlaques() {

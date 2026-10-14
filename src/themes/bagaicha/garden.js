@@ -4,6 +4,7 @@
 // Everything is procedural; the only photographs are the mountain backplate and
 // the couple's own portraits on easels. Time of day follows the scroll.
 import * as THREE from 'three';
+import { dprCap, createGovernor, onTabHidden } from './perf.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -370,9 +371,10 @@ function ribbon(points, width) {
 // ───────────────────────── The garden ─────────────────────────
 export async function createGarden(canvas, opts) {
   const { mobile, lowPower, plateUrl, easels = [], welcome, onProgress = () => {}, reduced } = opts;
-  const dprCap = lowPower ? 1 : mobile ? 1.5 : 1.75;
+  // pixel-ratio cap: desktop ≤ 1.5, phones ≤ 1.25, low tier 1; the governor below steps it down further when frames run long
+  const prCap = dprCap({ tier: lowPower ? 'low' : opts.tier?.tier || 'mid', mobile: mobile || !!opts.tier?.mobile });
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile && !lowPower, powerPreference: 'high-performance', alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+  renderer.setPixelRatio(prCap);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = !lowPower;
@@ -1111,6 +1113,7 @@ export async function createGarden(canvas, opts) {
   onProgress(0.55);
   easels.forEach((e, i) => {
     const tex = photoTextures[i];
+    if (tex) { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 16; tex.needsUpdate = true; } // three clamps to the GPU maximum: sharp at an angle
     const img = tex?.image;
     const aspect = img ? img.width / img.height : 0.8;
     const big = i === 0;
@@ -1134,9 +1137,10 @@ export async function createGarden(canvas, opts) {
     ledge.position.set(0, bottom - 0.02, 0.0); ledge.castShadow = true; g.add(ledge);
     const back = new THREE.Mesh(new THREE.BoxGeometry(pw2 + mat * 2 + fr * 2, ph + mat * 2 + fr * 2, 0.05), M.frame);
     back.position.set(0, cy, -0.06); back.castShadow = true; g.add(back);
-    const matte = new THREE.Mesh(new THREE.PlaneGeometry(pw2 + mat * 2, ph + mat * 2), new THREE.MeshBasicMaterial({ color: '#F4F4F2' }));
+    // the mat and the photo are unlit, untoned and unfogged: true colour, never greyed by haze or ACES
+    const matte = new THREE.Mesh(new THREE.PlaneGeometry(pw2 + mat * 2, ph + mat * 2), new THREE.MeshBasicMaterial({ color: '#FBFAF7', toneMapped: false, fog: false }));
     matte.position.set(0, cy, -0.02); g.add(matte);
-    const photo = new THREE.Mesh(new THREE.PlaneGeometry(pw2, ph), new THREE.MeshBasicMaterial({ map: tex, color: '#F2EEE8', toneMapped: false }));
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(pw2, ph), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, fog: false }));
     photo.position.set(0, cy, -0.012); g.add(photo);
     // a welcome sign below the hero portrait
     if (big && welcomeTex) {
@@ -1152,7 +1156,7 @@ export async function createGarden(canvas, opts) {
       addBloom(w.x, w.y, w.z, 0.8);
       if (k % 2) addLeaf(w.x, w.y - 0.1, w.z, 0.9);
     }
-    easelGroups.push({ group: g, center: v3(0, cy, 0).applyMatrix4(g.matrixWorld), w: pw2 + 0.4, h: ph + 0.4 + (big ? 0.6 : 0), normal: v3(0, 0, 1).applyQuaternion(g.quaternion) });
+    easelGroups.push({ group: g, center: v3(0, cy, 0).applyMatrix4(g.matrixWorld), w: pw2 + 0.4, h: ph + 0.4 + (big ? 0.6 : 0), frameW: pw2 + 0.34, frameH: ph + 0.34 + (big ? 0.5 : 0), normal: v3(0, 0, 1).applyQuaternion(g.quaternion) });
     lanternGlow.push(...[[0.8 + pw2 / 2, 0.25, 0.4]].map(([x, y, zz]) => { const w = v3(x, y, zz).applyMatrix4(g.matrixWorld); return [w.x, w.y, w.z, 0.9, 1, 0.7, 0.38]; }));
   });
 
@@ -1192,12 +1196,14 @@ export async function createGarden(canvas, opts) {
 
   // All flowers and leaves in two instanced draws.
   const flowerMeshes = [];
-  flowerMeshes.push(scatter(scene, roseGeometry(), ROSE_MAT(), blooms, bloomCols));
+  // low tier: every other bloom (index-aligned colours), so the planting thins evenly
+  const thin = (a) => (lowPower && a ? a.filter((_, k) => k % 2 === 0) : a);
+  flowerMeshes.push(scatter(scene, roseGeometry(), ROSE_MAT(), thin(blooms), thin(bloomCols)));
   {
     const mg = marigoldGeometry(mobile ? 1 : 2);
     mg.scale(0.068, 0.068, 0.068);
-    flowerMeshes.push(scatter(scene, mg, marigoldMaterial({ emissiveIntensity: 0.25 }), marigolds, marigoldCols));
-    flowerMeshes.push(scatter(scene, wisteriaGeometry(), WISTERIA_MAT(), wisteria, null));
+    flowerMeshes.push(scatter(scene, mg, marigoldMaterial({ emissiveIntensity: 0.25 }), thin(marigolds), thin(marigoldCols)));
+    flowerMeshes.push(scatter(scene, wisteriaGeometry(), WISTERIA_MAT(), thin(wisteria), null));
   }
   const leafGeo = new THREE.BufferGeometry();
   leafGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.065, 0.025, 0.11, 0, 0.01, 0.26, 0, 0, 0, 0, 0.01, 0.26, -0.065, 0.025, 0.11], 3));
@@ -1406,6 +1412,8 @@ export async function createGarden(canvas, opts) {
 
   function layoutOf(st, aspect) {
     const narrow = aspect < 0.9;
+    // phones: the portrait fills the screen between the top bar and the note card, face-on
+    if (narrow && st.kind === 'easel') return { sx: 0, sy: aspect < 0.5 ? 0.17 : 0.12, wf: 0.97, hf: 0.6 };
     if (st.layout === 'top') return narrow ? { sx: 0, sy: -0.22, wf: 0.95, hf: 0.5 } : { sx: 0, sy: -0.16, wf: 0.9, hf: 0.62 };
     if (narrow) return { sx: 0, sy: aspect < 0.5 ? 0.47 : 0.4, wf: 0.94, hf: aspect < 0.5 ? 0.38 : 0.44 };
     const side = st.layout === 'left' ? 1 : -1; // card on the left → subject to the right
@@ -1421,7 +1429,7 @@ export async function createGarden(canvas, opts) {
       const [w, h] = aspect < 0.9 && st.fitNarrow ? st.fitNarrow : st.fit;
       dist = Math.max(h / 2 / t / L.hf, w / 2 / (t * aspect) / L.wf);
     } else if (aspect < 0.9 && st.distNarrow) dist = st.distNarrow;
-    return { target: st.target, yaw: st.yaw, pitch: st.pitch, dist, sx: L.sx, sy: L.sy, fov };
+    return { target: st.target, yaw: aspect < 0.9 && st.yawNarrow != null ? st.yawNarrow : st.yaw, pitch: st.pitch, dist, sx: L.sx, sy: L.sy, fov };
   }
 
   function setStations(list) {
@@ -1430,7 +1438,7 @@ export async function createGarden(canvas, opts) {
       if (s.kind === 'easel') {
         const e = easelGroups[s.index];
         const yaw = Math.atan2(e.normal.x, e.normal.z) + 0.12;
-        return { ...s, target: e.center.clone(), yaw, pitch: 0.03, fit: [e.w, e.h], layout: 'right', tod: 0.04 + s.index * 0.03, couple: { s: coupleAt.start, face: Math.PI } };
+        return { ...s, target: e.center.clone(), yaw, pitch: 0.03, fit: [e.w, e.h], fitNarrow: [e.frameW, e.frameH], yawNarrow: yaw - 0.1, layout: 'right', tod: 0.04 + s.index * 0.03, couple: { s: coupleAt.start, face: Math.PI } };
       }
       if (s.kind === 'spot') {
         const sp = spots[s.spot];
@@ -1624,11 +1632,56 @@ export async function createGarden(canvas, opts) {
     mistMat.uniforms.scale.value = h * pr;
   }
 
+  // ── Adaptive quality: a frame-time governor steps resolution, shadow updates, the pool
+  // mirror and grass density down when frames run over ~20 ms for 2 s, and back up with headroom.
+  const shadowsOn = sun.castShadow;
+  const grassFull = grass.geometry.instanceCount;
+  let reflectEvery = 1, shadowEvery = 1, frameNo = 0;
+  const LEVELS = [
+    { pr: 1, shadowEvery: 1, reflectEvery: 1, grass: 1 },
+    { pr: 0.85, shadowEvery: 1, reflectEvery: 1, grass: 1 },
+    { pr: 0.85, shadowEvery: 2, reflectEvery: 2, grass: 0.7 },
+    { pr: 0.72, shadowEvery: 3, reflectEvery: 3, grass: 0.45 },
+    { pr: 0.6, shadowEvery: 4, reflectEvery: 4, grass: 0.25 },
+  ];
+  const governor = createGovernor({
+    name: 'bagaicha', levels: LEVELS.length, start: lowPower ? 2 : 0,
+    apply(l) {
+      const L = LEVELS[l];
+      renderer.setPixelRatio(Math.max(0.6, prCap * L.pr));
+      shadowEvery = L.shadowEvery; reflectEvery = L.reflectEvery;
+      // shadows are not switched off (that would recompile every material): the map is redrawn less often
+      if (shadowsOn) renderer.shadowMap.autoUpdate = shadowEvery === 1;
+      grass.geometry.instanceCount = Math.max(1, Math.round(grassFull * L.grass));
+      if (typeof resize === 'function' && camera.aspect) resize();
+    },
+  });
+  {
+    const orig = reflector.onBeforeRender;
+    reflector.onBeforeRender = function (...a) { if (frameNo % reflectEvery === 0) orig.apply(this, a); };
+  }
+  let hidden = document.hidden;
+  onTabHidden((h) => { hidden = h; clock.getDelta(); });
+
   let time = 0;
   let firstFrame = true;
+  // Render on demand: once the camera has settled, ambient motion (water, grass, the couple) is drawn
+  // at half rate (a third on low tier); any scroll or camera movement returns to every frame.
+  let stillFor = 0, skip = 0, acc = 0, lastP = -1, lastIntro = -1;
+  const camPrev = v3();
   function tick() {
-    if (paused) return;
-    const dt = Math.min(clock.getDelta(), 0.1);
+    if (paused || hidden) return;
+    const raw = clock.getDelta();
+    governor.sample(raw);
+    acc += raw;
+    const moving = p !== lastP || intro !== lastIntro || firstFrame;
+    lastP = p; lastIntro = intro;
+    stillFor = moving ? 0 : stillFor + raw;
+    if (stillFor > 0.5 && ++skip % (lowPower ? 3 : 2)) return;
+    const dt = Math.min(acc, 0.1);
+    acc = 0;
+    frameNo++;
+    if (shadowsOn && shadowEvery > 1 && frameNo % shadowEvery === 0) renderer.shadowMap.needsUpdate = true;
     time += dt * (reduced ? 0.4 : 1);
     const aspect = camera.aspect;
     const st = frameState(aspect);
@@ -1662,6 +1715,9 @@ export async function createGarden(canvas, opts) {
     for (const L of leafMats) L.uniforms.uTime.value = time;
     impostorLight.time.value = time;
     grass.userData.uniforms.uTime.value = time;
+    // still means the eased camera has actually arrived, not only that the scroll stopped
+    if (camPrev.distanceToSquared(camera.position) > 1e-6) stillFor = 0;
+    camPrev.copy(camera.position);
     renderer.render(scene, camera);
   }
 

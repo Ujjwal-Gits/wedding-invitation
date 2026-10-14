@@ -8,6 +8,7 @@ import '../../core/base.css';
 import './bagaicha.css';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
+import { deviceTier } from './perf.js';
 import { bi, biNodes, esc, dateOf, timeLabel, shortDate, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
@@ -386,13 +387,15 @@ async function welcomeSign() {
 }
 
 async function boot() {
-  const lowPower = (DEBUG && !params.has('hq')) || (navigator.hardwareConcurrency || 8) <= 4;
+  const tier = deviceTier();
+  const lowPower = (DEBUG && !params.has('hq')) || tier.tier === 'low';
+  const small = mobile || lowPower; // phones and weak GPUs take the 1280w photos
   const { createGarden } = await import('./garden.js');
   garden = await createGarden(canvas, {
-    mobile, lowPower, reduced,
+    mobile, lowPower, reduced, tier,
     grass: DEBUG && !params.has('hq') ? (mobile ? 12000 : 20000) : undefined,
-    plateUrl: photoUrl(slots.img('scene.mountains'), mobile ? 'sm' : 'lg'),
-    easels: easelPhotos.map((e) => ({ url: photoUrl(e.photo, mobile ? 'sm' : 'lg') })),
+    plateUrl: photoUrl(slots.img('scene.mountains'), small ? 'sm' : 'lg'),
+    easels: easelPhotos.map((e) => ({ url: photoUrl(e.photo, small ? 'sm' : 'lg') })),
     welcome: await welcomeSign(),
     onProgress: setBar,
   });

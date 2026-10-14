@@ -6,6 +6,7 @@
 // between them. Soft daylight comes from a CC0 sky HDRI plus a shadowing sun
 // that swings west and warms for the evening reception.
 import * as THREE from 'three';
+import { dprCap, createGovernor, onTabHidden } from './perf.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
@@ -44,10 +45,11 @@ const SHADOW_C = v3(8, 0, 4), SHADOW_HALF = 98;
 
 export async function createSquare(canvas, opts) {
   // GTAO is opt-in (?ao): native MSAA without a post chain keeps 60 fps and stable edges; walls carry baked occlusion instead
-  const { mobile, lowPower, reduced, frames = [], onProgress = () => {}, debug = false, ao = false } = opts;
-  const dprCap = lowPower ? 1 : mobile ? 1.5 : 1.75;
+  const { mobile, lowPower, reduced, frames = [], onProgress = () => {}, debug = false, ao = false, tier } = opts;
+  // pixel-ratio cap: desktop ≤ 1.5, phones ≤ 1.25, low tier 1; the governor steps it down further when frames run long
+  const prCap = dprCap({ tier: lowPower ? 'low' : tier?.tier || 'mid', mobile: mobile || !!tier?.mobile });
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowPower && !ao, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+  renderer.setPixelRatio(prCap);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -397,8 +399,12 @@ export async function createSquare(canvas, opts) {
     stations = list.map((s) => {
       if (s.kind === 'frame') {
         const f = frameAt(s.index);
+        // the nearest neighbouring portrait's near edge (with its roses): kept off screen so the
+        // text card never sits over another photograph
+        const gap = [frameInfo[s.index - 1], frameInfo[s.index + 1]].filter(Boolean)
+          .reduce((m, n) => Math.min(m, Math.abs(n.center.z - f.center.z) - n.w / 2 - 0.35), Infinity);
         // close and nearly square-on: the portrait fills about 60% of the screen height
-        return { ...s, pose: { target: f.center.clone(), yaw: Math.PI / 2 - 0.12, pitch: 0, frame: true, fit: [f.w * 1.25, (f.h / 0.62) * 0.86], fitNarrow: [f.w * 1.12, f.h * 1.1], fov: [52, 46, 42] }, family: 'frame', tod: 0 };
+        return { ...s, pose: { target: f.center.clone(), yaw: Math.PI / 2 - 0.12, pitch: 0, frame: true, fit: [f.w * 1.25, (f.h / 0.62) * 0.86], fitNarrow: [f.w * 1.12, f.h * 1.1], fov: [52, 46, 42], gap, size: [f.w, f.h] }, family: 'frame', tod: 0 };
       }
       if (s.kind === 'spot') return { ...s, pose: POSES[s.spot], family: s.spot, tod: SPOT_TOD[s.spot] ?? 0.2 };
       return { ...s, pose: POSES[s.kind], family: s.kind, tod: s.kind === 'finale' ? 1 : 0 };
@@ -427,6 +433,13 @@ export async function createSquare(canvas, opts) {
     if (P0.fit) {
       const [w, h] = aspect < 0.9 && P0.fitNarrow ? P0.fitNarrow : P0.fit;
       dist = Math.max(h / 2 / t / L.hf, w / 2 / (t * aspect) / L.wf);
+      if (P0.gap && aspect >= 0.9 && Number.isFinite(P0.gap)) {
+        // move in until the neighbours leave the screen, but never so close that this portrait
+        // reaches the card's half or the screen's top and bottom
+        const out = P0.gap / ((1 + Math.abs(L.sx)) * t * aspect);
+        const min = Math.max(P0.size[0] / 2 / (0.78 * t * aspect), P0.size[1] / 2 / (0.92 * t));
+        dist = Math.max(min, Math.min(dist, out));
+      }
     } else if (aspect < 0.9 && P0.distNarrow) dist = P0.distNarrow;
     else if (aspect < 1.4 && P0.distNarrow) dist = P0.dist + (P0.distNarrow - P0.dist) * 0.3;
     return { target: aspect < 0.9 && P0.targetNarrow ? P0.targetNarrow : P0.target, yaw: aspect < 0.9 && P0.yawNarrow != null ? P0.yawNarrow : P0.yaw, pitch: P0.pitch, dist, sx: L.sx, sy: L.sy, fov };
@@ -532,9 +545,37 @@ export async function createSquare(canvas, opts) {
     composer?.setSize(w, h);
     camera.aspect = w / h;
   }
+  // ── Adaptive quality: steps resolution (and the optional AO pass) down when frames run over
+  // ~20 ms for 2 s, back up when there is headroom. Shadows are already drawn only when the sun moves.
+  const LEVELS = [{ pr: 1, ao: true }, { pr: 0.85, ao: true }, { pr: 0.85, ao: false }, { pr: 0.72, ao: false }, { pr: 0.6, ao: false }];
+  let useComposer = !!composer;
+  const governor = createGovernor({
+    name: 'durbar', levels: LEVELS.length, start: lowPower ? 2 : 0,
+    apply(l) {
+      const L = LEVELS[l];
+      renderer.setPixelRatio(Math.max(0.6, prCap * L.pr));
+      useComposer = !!composer && L.ao;
+      composer?.setPixelRatio(renderer.getPixelRatio());
+      lastW = lastH = 0; resize();
+    },
+  });
+  let hidden = document.hidden;
+  onTabHidden((h) => { hidden = h; clock.getDelta(); });
+  // Render on demand: once the camera has settled the pigeons and bunting are drawn at half rate
+  // (a third on low tier); any scroll or camera movement returns to every frame.
+  let stillFor = 0, skip = 0, acc = 0, lastP = -1, lastIntro = -1;
+  const camPrev = v3();
   function tick() {
-    if (paused) return;
-    const dt = Math.min(clock.getDelta(), 0.1);
+    if (paused || hidden) return;
+    const raw = clock.getDelta();
+    governor.sample(raw);
+    acc += raw;
+    const moving = p !== lastP || intro !== lastIntro || firstFrame || !!debugPose;
+    lastP = p; lastIntro = intro;
+    stillFor = moving ? 0 : stillFor + raw;
+    if (stillFor > 0.5 && ++skip % (lowPower ? 3 : 2)) return;
+    const dt = Math.min(acc, 0.1);
+    acc = 0;
     time += dt;
     const aspect = camera.aspect;
     const pose = debugPose ? { ...debugPose, sx: 0, sy: 0, fov: debugPose.fov || 40, tod: debugPose.tod || 0 } : poseAt(p, aspect);
@@ -563,7 +604,9 @@ export async function createSquare(canvas, opts) {
     }
     pigeons.update(time, true);
     bunting.update(time);
-    if (composer) composer.render(); else renderer.render(scene, camera);
+    if (camPrev.distanceToSquared(camera.position) > 1e-6) stillFor = 0;
+    camPrev.copy(camera.position);
+    if (useComposer) composer.render(); else renderer.render(scene, camera);
   }
 
   resize();

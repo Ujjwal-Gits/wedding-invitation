@@ -134,7 +134,7 @@ body:not(.is-in) .b-cue { opacity: 0; }
 .b-note .l-ne { font: 500 19px/1.75 var(--f-deva); }
 
 /* night: deep blue glass with amber */
-.b-card--night { background: rgba(14, 26, 46, 0.86); color: var(--ink); border-color: rgba(240, 180, 96, 0.45); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7); }
+.b-card--night { background: rgba(14, 26, 46, 0.95); color: var(--ink); border-color: rgba(240, 180, 96, 0.45); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7); }
 .b-card--night::before { background: var(--b-amber); }
 .b-card--night .b-eyebrow { color: var(--b-amber); }
 .b-card--night .b-title { color: #FBF3E4; }

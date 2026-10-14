@@ -106,9 +106,8 @@ body.theme-mandap {
 .m-hint { position: absolute; left: 50%; bottom: calc(10px + var(--safe-b)); transform: translateX(-50%); margin: 0; padding: 4px 12px; font: 400 12px/1.4 'Marcellus SC', serif; letter-spacing: 0.24em; color: var(--ink); background: rgba(255, 253, 248, 0.8); }
 .m-hint .l-ne { font: 400 14px/1.4 var(--f-deva); }
 
-/* The couple: caption card on the right third */
-.m-us .m-cap { right: clamp(24px, 6vw, 110px); top: 50%; transform: translate3d(0, calc(-50% + 14px), 0); max-width: min(26rem, 32vw); }
-.m-us .m-cap.is-on { transform: translate3d(0, -50%, 0); }
+/* The couple: caption card low in the right third, under the next easel's photograph (never over it) */
+.m-us .m-cap { right: clamp(24px, 6vw, 110px); bottom: 6svh; max-width: min(26rem, 32vw); }
 
 /* Ceremonies: details beside the plaque */
 .m-ev, .m-arrive { bottom: 10svh; max-width: min(27rem, 36vw); }

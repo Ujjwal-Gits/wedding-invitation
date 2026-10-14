@@ -10,6 +10,7 @@ import '../../core/base.css';
 import './durbar.css';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
+import { deviceTier } from './perf.js';
 import { bi, biNodes, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
@@ -361,11 +362,12 @@ let lenis = null;
 
 async function boot() {
   if (STILL) throw new Error('still mode');
-  const lowPower = (DEBUG && !params.has('hq')) || (navigator.hardwareConcurrency || 8) <= 4;
+  const tier = deviceTier();
+  const lowPower = (DEBUG && !params.has('hq')) || tier.tier === 'low';
   const { createSquare } = await import('./square.js');
   square = await createSquare(canvas, {
-    mobile, lowPower, reduced, debug: DEBUG, ...(params.has('ao') ? { ao: true } : {}),
-    frames: framePhotos.map((f) => ({ url: photoUrl(f.photo, mobile ? 'sm' : 'lg') })),
+    mobile, lowPower, reduced, tier, debug: DEBUG, ...(params.has('ao') ? { ao: true } : {}),
+    frames: framePhotos.map((f) => ({ url: photoUrl(f.photo, mobile || lowPower ? 'sm' : 'lg') })),
     onProgress: setBar,
   });
   square.setStations(stations);

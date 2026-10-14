@@ -6,6 +6,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { dprCap, createGovernor } from './perf.js';
 
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uAspect: { value: 1 }, uVignette: { value: 0.08 }, uGrain: { value: 0.035 }, uFade: { value: 0 } },
@@ -42,11 +43,13 @@ const GrainShader = {
 };
 
 export class NightRenderer {
-  constructor(canvas, view, { mobile = false, maxPR } = {}) {
+  constructor(canvas, view, { mobile = false, maxPR, tier } = {}) {
     this.view = view;
     this.mobile = mobile;
-    this.maxPR = maxPR ?? (mobile ? 1.5 : 1.75);
-    this.pr = Math.min(window.devicePixelRatio || 1, this.maxPR);
+    this.low = tier?.tier === 'low';
+    // pixel-ratio cap: desktop ≤ 1.5, phones ≤ 1.25, low tier 1
+    this.maxPR = maxPR ?? dprCap({ tier: tier?.tier || 'mid', mobile: mobile || !!tier?.mobile });
+    this.pr = this.maxPR;
     const r = (this.renderer = new T.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' }));
     r.outputColorSpace = T.SRGBColorSpace;
     r.toneMapping = T.ACESFilmicToneMapping;
@@ -72,6 +75,7 @@ export class NightRenderer {
     this.active = true;
     this.frames = [];
     this.timeOverride = null;
+    this.govern();
   }
 
   resize() {
@@ -86,24 +90,38 @@ export class NightRenderer {
     this.view.setPixelRatio?.(this.pr);
   }
 
-  /** Lower the resolution when frames are slow (phones), never above the cap. */
-  adapt(dt) {
-    this.frames.push(dt);
-    if (this.frames.length < 40) return;
-    const avg = this.frames.reduce((a, b) => a + b, 0) / this.frames.length;
-    this.frames.length = 0;
-    const cap = Math.min(window.devicePixelRatio || 1, this.maxPR);
-    let next = this.pr;
-    if (avg > 1 / 40 && this.pr > 0.75) next = Math.max(0.75, this.pr - 0.25);
-    else if (avg < 1 / 58 && this.pr < cap) next = Math.min(cap, this.pr + 0.25);
-    if (next !== this.pr) { this.pr = next; this.resize(); }
+  /**
+   * Frame-time governor: steps resolution, shadow-map updates and bloom down when frames run
+   * over ~20 ms for 2 s, and back up when there is headroom. Shadows are never switched off
+   * (that recompiles every material); their map is redrawn less often instead.
+   */
+  govern() {
+    const LEVELS = [
+      { pr: 1, shadowEvery: 1, bloom: true }, { pr: 0.85, shadowEvery: 1, bloom: true },
+      { pr: 0.85, shadowEvery: 2, bloom: true }, { pr: 0.72, shadowEvery: 3, bloom: false },
+      { pr: 0.6, shadowEvery: 4, bloom: false },
+    ];
+    const r = this.renderer;
+    this.shadowEvery = 1;
+    this.governor = createGovernor({
+      name: 'mandap', levels: LEVELS.length, start: this.low ? 3 : 0,
+      apply: (l) => {
+        const L = LEVELS[l];
+        this.pr = Math.max(0.6, this.maxPR * L.pr);
+        this.shadowEvery = L.shadowEvery;
+        if (r.shadowMap.enabled) r.shadowMap.autoUpdate = L.shadowEvery === 1;
+        this.bloom.enabled = L.bloom;
+        this.resize();
+      },
+    });
   }
 
   render() {
     const now = performance.now();
     const t = this.timeOverride ?? (now - this.t0) / 1000;
-    if (this.last && this.timeOverride == null) this.adapt((now - this.last) / 1000);
     this.last = now;
+    this.frameNo = (this.frameNo || 0) + 1;
+    if (this.shadowEvery > 1 && this.frameNo % this.shadowEvery === 0) this.renderer.shadowMap.needsUpdate = true;
     this.onFrame?.(t);
     this.view.update(this.aspect, t);
     this.grade.uniforms.uTime.value = t;
@@ -112,9 +130,22 @@ export class NightRenderer {
   }
 
   start() {
-    const loop = () => {
+    // Render on demand: once the camera has settled (no scroll, no camera travel) the ambient
+    // motion is drawn at half rate (a third on low tier); any movement returns to every frame.
+    let prev = 0, stillFor = 0, skip = 0, lastY = -1;
+    const camPrev = new T.Vector3();
+    const loop = (now) => {
       this.raf = requestAnimationFrame(loop);
-      if (this.active && !document.hidden) this.render();
+      const dt = prev ? (now - prev) / 1000 : 0;
+      prev = now;
+      if (!this.active || document.hidden) { stillFor = 0; return; }
+      this.governor.sample(dt);
+      const cam = this.view.camera.position;
+      const moving = window.scrollY !== lastY || camPrev.distanceToSquared(cam) > 1e-7 || this.timeOverride != null;
+      lastY = window.scrollY; camPrev.copy(cam);
+      stillFor = moving ? 0 : stillFor + dt;
+      if (stillFor > 0.5 && ++skip % (this.low ? 3 : 2)) return;
+      this.render();
     };
     this.raf = requestAnimationFrame(loop);
   }

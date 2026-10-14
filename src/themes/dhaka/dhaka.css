@@ -85,6 +85,8 @@
 .theme-dhaka.is-gated #main { visibility: visible; }
 .theme-dhaka.is-gated #main > :not(.welcome) { visibility: hidden; }
 .theme-dhaka.is-gated:not(.is-opening) .welcome { visibility: hidden; }
+/* corner flowers may run off the page edge; they must never widen it (phones would zoom out) */
+.theme-dhaka #main { overflow-x: clip; }
 .env-gate { position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; }
 .env-gate .env, .env-gate__ctl { pointer-events: auto; }
 .env {
@@ -138,7 +140,9 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 
 /* ───────── Welcome: the floral frame ───────── */
 .welcome { --fu: min(100vw, 100svh); position: relative; height: 100svh; min-height: 620px; overflow: hidden; }
-.welcome__flowers { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.welcome__flowers { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  /* flowers past the section's foot fade out instead of being sliced by a hard edge */
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 110px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 110px), transparent); }
 .wf { will-change: transform; }
 .welcome__inner { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 7svh 20px 6svh; text-align: center; }
 .welcome__kicker { margin: 0 0 6px; font: 600 clamp(20px, 2vw, 26px)/1.5 var(--f-dv-display); color: var(--sindoor); }
@@ -182,8 +186,10 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 .print { position: relative; margin: 0; justify-self: end; width: min(100%, 520px); }
 .print.reveal { transform: translateY(26px) rotate(1.5deg); }
 .print.reveal.is-in { transform: rotate(-1.6deg); }
-.print__rose { width: 36%; right: -13%; top: -11%; z-index: 2; rotate: 14deg; }
-.print__leaf { width: 46%; right: -24%; top: -18%; z-index: 1; rotate: 140deg; }
+/* the rose rests on the frame's outer top corner (away from the words beside it), mostly outside
+   the photograph: it never reaches the faces or the line of text */
+.print__rose { width: 30%; left: -17%; top: -15%; z-index: 2; rotate: -14deg; }
+.print__leaf { width: 42%; left: -26%; top: -20%; z-index: 1; rotate: -140deg; }
 .print-row__line { margin: 0; max-width: 24ch; font: italic 400 clamp(24px, 2.4vw, 32px)/1.45 var(--f-text); color: var(--ink); }
 .print-row__line .l-ne { font: 600 clamp(22px, 2.1vw, 28px)/1.75 var(--f-dv-display); font-style: normal; }
 .print--solo { margin: clamp(60px, 10vh, 110px) auto 0; justify-self: center; }
@@ -373,14 +379,15 @@ body.is-gated .hud { opacity: 0; pointer-events: none; }
 /* ───────── Phones ───────── */
 @media (max-width: 760px) {
   .theme-dhaka { font-size: 17px; }
-  .env { --ew: 90vw; top: 47svh; }
-  .env-gate__ctl { top: calc(47svh + 90vw * 0.32 + 18px); }
+  /* a taller envelope on phones: the seal sits on the band and the names clear it in both languages */
+  .env { --ew: 90vw; --eh: calc(var(--ew) * 0.76); top: 47svh; }
+  .env-gate__ctl { top: calc(47svh + 90vw * 0.38 + 18px); }
   .env__band { height: 34px; top: calc(50% - 17px); }
-  .env__text { top: 61%; }
+  .env__text { top: 64%; bottom: 2%; gap: 0; }
   .env__kicker { font-size: 11.5px; }
   .env__names { font-size: clamp(25px, 7.4vw, 32px); }
   .env__line { font-size: 14.5px; }
-  .seal { width: 76px; }
+  .seal { width: 66px; }
   .welcome { min-height: 560px; }
   .welcome__inner { padding: 15svh 18px 15svh; gap: 2px; }
   .mat--welcome .ph__img { height: min(33svh, 360px); }
