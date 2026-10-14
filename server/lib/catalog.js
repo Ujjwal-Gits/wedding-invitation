@@ -21,6 +21,7 @@ const KNOWN = {
   nimantrana: { name: 'Nimantrana', concept: 'A traditional tri-fold card that unfolds: Ganesh, the couple, the programme' },
   mangal: { name: 'Mangal', concept: 'A red temple doorway with garlands and bells; doors open on शुभ विवाह' },
   gurans: { name: 'Phoolbari', concept: 'A flower gate with शुभ विवाह, then calm normal scrolling' },
+  jhyal: { name: 'Jhyal', concept: 'A carved Newari window; lattice shutters swing open on शुभ विवाह' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');

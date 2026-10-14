@@ -6,6 +6,7 @@ import { FLOWER_CREDITS as dhaka } from '../themes/dhaka/flowers.js';
 import gurans from '../themes/gurans/flora-credits.js';
 import mala from '../themes/mala/flora-credits.js';
 import mangal from '../themes/mangal/flora-credits.js';
+import jhyal from '../themes/jhyal/flora-credits.js';
 import nimantrana from '../themes/nimantrana/flora-credits.json';
 import sayapatri from '../themes/sayapatri/flora-credits.json';
 
@@ -39,6 +40,7 @@ const THEME_FLORA = [
   ['Gurans', gurans],
   ['Mala', mala],
   ['Mangal', mangal],
+  ['Jhyal', jhyal],
   ['Nimantrana', nimantrana],
   ['Sayapatri', sayapatri],
 ];
