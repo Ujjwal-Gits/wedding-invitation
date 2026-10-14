@@ -6,7 +6,7 @@
 FROM node:22-bookworm-slim AS web
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev   # build tools are devDependencies; Coolify sets NODE_ENV=production at build time
 COPY . .
 RUN npm run build
 
