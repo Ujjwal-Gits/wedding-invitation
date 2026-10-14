@@ -1178,14 +1178,15 @@ function photoStrip() {
       pos += PX_PER_S * dt; view.scrollLeft = pos; // sub-pixel accumulator: scrollLeft rounds on some phones
       if (view.scrollLeft >= set0.offsetWidth) { pos -= set0.offsetWidth; view.scrollLeft = pos; }
     };
-    const hold = () => { held = true; };
-    const release = () => { held = false; resumeAt = performance.now() + 2500; pos = view.scrollLeft; };
+    // A finger on the strip takes over; the drift comes back 1.2s after letting go, however the touch
+    // ended (released outside the strip, cancelled by a page scroll, window blur): it never stays stopped.
+    let holdTimer = 0;
+    const release = () => { if (!held) return; held = false; clearTimeout(holdTimer); resumeAt = performance.now() + 1200; pos = view.scrollLeft; };
+    const hold = () => { held = true; clearTimeout(holdTimer); holdTimer = setTimeout(release, 6000); };
     view.addEventListener('pointerdown', hold, { passive: true });
     view.addEventListener('touchstart', hold, { passive: true });
-    view.addEventListener('pointerup', release, { passive: true });
-    view.addEventListener('pointercancel', release, { passive: true });
-    view.addEventListener('touchend', release, { passive: true });
-    view.addEventListener('wheel', () => { resumeAt = performance.now() + 2500; }, { passive: true });
+    for (const ev of ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'blur']) window.addEventListener(ev, release, { passive: true });
+    document.addEventListener('visibilitychange', release);
     view.addEventListener('scroll', () => { if (held || performance.now() < resumeAt) wrap(); }, { passive: true });
     const io = new IntersectionObserver(([en]) => { visible = en.isIntersecting; last = 0; });
     io.observe(view);
