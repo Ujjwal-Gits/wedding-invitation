@@ -1,4 +1,4 @@
-# Sayapatri — premium Nepali wedding invitations
+# Nimtto (निम्तो) — premium Nepali wedding invitations
 
 Twelve bilingual (English / नेपाली) wedding-invitation themes and a studio
 dashboard to create, customise, publish and track invitations.

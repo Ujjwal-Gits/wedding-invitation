@@ -63,6 +63,7 @@ api.get('/invitations/:slug/rsvps.csv', editor, wrap(rsvp.exportCsv));
 api.delete('/invitations/:slug/rsvps/:id', editor, wrap(rsvp.deleteReply));
 
 api.use((req, res) => res.status(404).json({ error: 'Not found.' }));
+app.get('/healthz', (req, res) => res.type('text').send('ok')); // container health check
 app.use('/api', api);
 
 // Short guest link: /i/<slug>?to=Name&e=wedding,reception -> the current theme page.

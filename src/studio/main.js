@@ -1,4 +1,4 @@
-// Sayapatri Studio: a simple, guided tool for wedding planners.
+// Nimtto Studio: a simple, guided tool for wedding planners.
 // Home (invitation cards) → a six-step editor (autosaved) → replies.
 import { h, icon, clear, toast, openDialog, confirmDialog, fmtDate } from './dom.js';
 import { api, setCsrf, whenSignedOut, ApiError } from './api.js';
@@ -33,10 +33,10 @@ function coupleFlag(set) {
 
 /** Shown to a couple whose link was turned off or replaced. */
 function renderLinkProblem(message = 'This link is no longer active. Please ask your wedding planner for a new one.', heading = 'This link has expired') {
-  document.title = 'Sayapatri';
+  document.title = 'Nimtto';
   clear(app).append(h('main.login.login--msg',
     h('div.login__panel', h('div.login__inner',
-      h('span.brand.brand--lg', h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri')),
+      h('span.brand.brand--lg', h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto')),
       h('h1.login__title', heading),
       h('p.login__lede', message),
       h('button.link', { type: 'button', onclick: () => { coupleFlag(false); renderLogin(); } }, 'I am the planner: sign in')))));
@@ -95,7 +95,7 @@ function fatal(err) {
 
 function topbar(extra) {
   return h('header.topbar',
-    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri'), h('span.brand__sub', 'Studio')),
+    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
     extra || null,
     h('div.topbar__right',
       S.me.role === 'admin' ? h('span.topbar__user', S.me.email) : null,
@@ -117,7 +117,7 @@ async function signOut() {
 // ── Sign in ───────────────────────────────────────────────────────────────
 
 function renderLogin() {
-  document.title = 'Sign in · Sayapatri Studio';
+  document.title = 'Sign in · Nimtto Studio';
   const err = h('p.form-error', { role: 'alert' });
   const btn = h('button.btn.btn--primary.btn--block', { type: 'submit' }, 'Sign in');
   const form = h('form.login__form', { novalidate: true },
@@ -152,7 +152,7 @@ function renderLogin() {
     h('div.login__art', { 'aria-hidden': 'true' }, h('img', { src: '/photos/marigold-garland-lg.webp', alt: '' })),
     h('div.login__panel',
       h('div.login__inner',
-        h('a.brand.brand--lg', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Sayapatri'), h('span.brand__sub', 'Studio')),
+        h('a.brand.brand--lg', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
         h('h1.login__title', 'Welcome back'),
         h('p.login__lede', 'Sign in to make and share wedding invitations.'),
         form,
@@ -165,7 +165,7 @@ function renderLogin() {
 // ── Home ──────────────────────────────────────────────────────────────────
 
 async function renderHome() {
-  document.title = 'Invitations · Sayapatri Studio';
+  document.title = 'Invitations · Nimtto Studio';
   const body = h('main.home', { id: 'main' }, h('p.boot', 'Loading…'));
   clear(app).append(topbar(), body);
   let items;
@@ -485,7 +485,7 @@ function createEditor(doc) {
     ctx.onSaved = null;
     const step = STEPS.find((s) => s.id === current);
     const idx = STEPS.indexOf(step);
-    document.title = `${step ? step.title : 'Replies'} · ${names()} · Sayapatri Studio`;
+    document.title = `${step ? step.title : 'Replies'} · ${names()} · Nimtto Studio`;
     root.classList.toggle('is-replies', current === 'replies');
     root.classList.toggle('no-side', ['publish', 'replies', 'theme'].includes(current));
     loadSide(false);

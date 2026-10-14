@@ -7,7 +7,7 @@ const text = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replac
 export function downloadIcs(events = config.events) {
   const { bride, groom } = config.couple;
   const who = `${bride.name.en} & ${groom.name.en}`;
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sayapatri//Wedding Invitation//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nimtto//Wedding Invitation//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
   for (const e of events) {
     lines.push(
       'BEGIN:VEVENT',

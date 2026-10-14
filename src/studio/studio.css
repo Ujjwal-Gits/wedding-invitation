@@ -337,8 +337,10 @@ div.photo__frame { cursor: default; }
 .tpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 24px; }
 .tpick__img { width: 100%; padding: 0; border: 0; cursor: pointer; font: inherit; }
 .tpick__view { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.94); color: var(--ink); font-size: 13px; font-weight: 600; }
-.tpick__acts { display: flex; gap: 10px; }
-.tpick__acts .btn { flex: 1; justify-content: center; }
+.tpick__acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.tpick__item { min-width: 0; }
+.tpick__text small { overflow-wrap: anywhere; }
+.tpick__acts .btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
 .dialog.dialog--viewer { border-radius: 0; width: min(1280px, 100vw); height: min(900px, 100dvh); max-width: 100vw; max-height: 100dvh; padding: 0; display: grid; grid-template-rows: auto 1fr auto; }
 .dialog.dialog--viewer .dialog__body { position: relative; padding: 0; overflow: hidden; min-height: 0; max-height: none; }
 .tview__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #fff; }
@@ -649,7 +651,5 @@ div.photo__frame { cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
-.no-side .tpick { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-@media (max-width: 1100px) { .no-side .tpick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .no-side .tpick { grid-template-columns: 1fr; } }
+.no-side .tpick { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 .tpick__acts .btn--icon { flex: none; width: 40px; justify-content: center; border: 1px solid var(--line); background: var(--surface); }
