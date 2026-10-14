@@ -13,14 +13,14 @@ const loader = new T.TextureLoader();
  */
 export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null, style = 'carved', flowers = null } = {}) {
   const g = new T.Group();
-  const lacquer = new T.MeshStandardMaterial({ color: '#f6f1e8', roughness: 0.35 });
+  const lacquer = new T.MeshStandardMaterial({ color: '#f6f1e8', roughness: 0.5, emissive: '#f6efe2', emissiveIntensity: 0.32 }); // stays ivory, not sky-grey
   const wood = style === 'carved' ? new T.MeshStandardMaterial({ color: '#2a140b', roughness: 0.45, metalness: 0.1 })
-    : style === 'gilt' ? new T.MeshStandardMaterial({ color: '#c99a45', metalness: 1, roughness: 0.28 })
+    : style === 'gilt' ? new T.MeshStandardMaterial({ color: '#c99a45', metalness: 1, roughness: 0.45 })
       : lacquer;
   const gold = new T.MeshStandardMaterial({ color: '#d4a656', metalness: 1, roughness: 0.3 });
   const backWood = new T.MeshStandardMaterial({ color: '#3a1f12', roughness: 0.5, metalness: 0.05 });
   const brass = new T.MeshStandardMaterial({ color: '#b98b3e', metalness: 1, roughness: 0.32 });
-  const photoMat = new T.MeshBasicMaterial({ color: new T.Color(0.9, 0.88, 0.85), toneMapped: false });
+  const photoMat = new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
   photoMat.userData.gamma = { value: 1 };
   photoMat.onBeforeCompile = (sh) => {
     sh.uniforms.uGamma = photoMat.userData.gamma;
@@ -110,7 +110,7 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null,
   build(0.75);
   const onLoad = (tex) => {
     tex.colorSpace = T.SRGBColorSpace;
-    tex.anisotropy = 4;
+    tex.anisotropy = 16; // three clamps to the GPU maximum: sharp when the easel is seen at an angle
     // Lift dark photographs so every portrait reads in the night scene; a photo that is
     // mostly black (a subject on a dark ground) gives its easel to the next portrait instead.
     try {
@@ -140,7 +140,7 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null,
       g.updateMatrixWorld(true);
       const W2 = state.w / 2, H2 = state.h / 2;
       const B = (x, y) => g.localToWorld(new T.Vector3(x, y, -0.06));
-      flowers.band([B(-W2 * 0.6, H2 - 0.02), B(0, H2 - 0.08), B(W2 * 0.6, H2 - 0.02)], { radius: 0.045, density: 70, size: 0.045 });
+      flowers.band([B(-W2 * 0.6, H2 - 0.02), B(0, H2 - 0.08), B(W2 * 0.6, H2 - 0.02)], { radius: 0.04, density: 80, size: 0.05, leaves: 0.1 });
       flowers.finish();
     }
     if (style === 'floral' && flowers && !state.flowered) {
@@ -149,9 +149,10 @@ export function photoFrame(url, { height = 1.05, fallback = null, onSwap = null,
       const W2 = state.w / 2, H2 = state.h / 2;
       const P = (x, y) => g.localToWorld(new T.Vector3(x, y, 0.03));
       const out = new T.Vector3(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new T.Quaternion()));
-      flowers.band([P(-W2, H2 * 0.25), P(-W2, H2), P(-W2 * 0.2, H2)], { radius: 0.06, density: 90, size: 0.05 });
-      flowers.band([P(W2 * 0.35, -H2), P(W2, -H2), P(W2, -H2 * 0.4)], { radius: 0.06, density: 90, size: 0.05 });
-      flowers.cluster(P(-W2, H2).addScaledVector(out, 0.03), 0.1, 18, { size: 0.06 });
+      // Tight, full rose corners hugging the frame (few leaves, so nothing reads as stray grass).
+      flowers.band([P(-W2, H2 * 0.45), P(-W2, H2), P(-W2 * 0.45, H2)], { radius: 0.035, density: 150, size: 0.065, leaves: 0.08 });
+      flowers.band([P(W2 * 0.55, -H2), P(W2, -H2), P(W2, -H2 * 0.6)], { radius: 0.035, density: 120, size: 0.06, leaves: 0.08 });
+      flowers.cluster(P(-W2, H2).addScaledVector(out, 0.03), 0.09, 22, { size: 0.075 });
       flowers.finish();
     }
     state.ready = true;

@@ -287,11 +287,11 @@ function buildProps({ photoFrame, brassPlaque }) {
   frames.forEach((f, i) => {
     const a = Math.PI + (i - (n - 1) / 2) * 0.62;
     const normal = V(Math.sin(a), 0, Math.cos(a));
-    const g = photoFrame(photoUrl(f.photo, 'sm'), {
+    const g = photoFrame(photoUrl(f.photo, 'lg'), {
       height: 1.05,
       style: ['floral', 'gilt', 'ivory', 'carved', 'floral'][i % 5],
       flowers: view.flowers,
-      fallback: () => { const s = spare.shift(); return s ? { url: photoUrl(s.photo, 'sm'), alt: s.alt } : null; },
+      fallback: () => { const s = spare.shift(); return s ? { url: photoUrl(s.photo, 'lg'), alt: s.alt } : null; },
       onSwap: (next) => {
         const img = document.querySelector(`#us .m-cap[data-i="${i}"] .m-cap__img`);
         if (img) { img.src = next.url; img.alt = next.alt; }

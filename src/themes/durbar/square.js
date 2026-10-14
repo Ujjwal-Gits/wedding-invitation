@@ -215,7 +215,7 @@ export async function createSquare(canvas, opts) {
   const loader = new THREE.TextureLoader();
   const loadImg = (url) => new Promise((res) => {
     if (!url) { res(null); return; }
-    loader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; res(t); }, undefined, () => res(null));
+    loader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; res(t); }, undefined, () => res(null));
   });
   const texs = await Promise.all(frames.map((f) => loadImg(f.url)));
   onProgress(0.94);
@@ -245,7 +245,7 @@ export async function createSquare(canvas, opts) {
     else FB.add('woodPaint', box(0.11, H - 2 * rim + 0.02, W - 2 * rim + 0.02, fx + 0.06, cy - H / 2 + rim - 0.01, z), { color: '#3C2A1E' });
     // white mat well in front of the moulding, photo well in front of the mat: no coplanar faces
     FB.add('paper', box(0.03, h + 2 * mat, w + 2 * mat, fx + 0.135, cy - h / 2 - mat, z));
-    const ph = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, color: t ? '#FFFFFF' : '#DDD', envMapIntensity: 0.4 }));
+    const ph = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, color: t ? '#FFFFFF' : '#DDD', toneMapped: false, fog: false }) /* an evenly lit print: true colours, never dimmed or hazed */);
     ph.position.set(fx + 0.175, cy, z);
     ph.rotation.y = Math.PI / 2;
     ph.receiveShadow = true;
@@ -272,15 +272,16 @@ export async function createSquare(canvas, opts) {
     }
     const ox = fx + 0.22;
     if (kind === 0 || kind === 3) {
-      marigoldCurves.push(catenary(v3(ox, cy + H / 2 + 0.02, z - W / 2 - 0.05), v3(ox, cy + H / 2 + 0.02, z + W / 2 + 0.05), kind === 3 ? 0.45 : 0.3, 24));
-      for (const s of [-1, 1]) marigoldCurves.push([v3(ox, cy + H / 2 + 0.02, z + s * (W / 2 + 0.05)), v3(ox + 0.02, cy + H / 2 - (kind === 3 ? 0.9 : 0.55), z + s * (W / 2 + 0.07))]);
-      if (kind === 3) FL.rope(catenary(v3(ox + 0.04, cy + H / 2 + 0.06, z - W / 2), v3(ox + 0.04, cy + H / 2 + 0.06, z + W / 2), 0.42, 16), { cols: FL.palette(['red', 'blush']), rose: 0.06, thick: 0.05, per: 0.09 });
+      marigoldCurves.push(catenary(v3(ox, cy + H / 2 + 0.02, z - W / 2 - 0.05), v3(ox, cy + H / 2 + 0.02, z + W / 2 + 0.05), 0.08, 24));
+      for (const s of [-1, 1]) marigoldCurves.push([v3(ox, cy + H / 2 + 0.02, z + s * (W / 2 + 0.05)), v3(ox + 0.02, cy + H / 2 - 0.35, z + s * (W / 2 + 0.07))]);
+      if (kind === 3) FL.rope(catenary(v3(ox + 0.04, cy + H / 2 + 0.06, z - W / 2), v3(ox + 0.04, cy + H / 2 + 0.06, z + W / 2), 0.08, 16), { cols: FL.palette(['red', 'blush']), rose: 0.07, thick: 0.06, per: 0.05 });
     }
     if (kind === 2) {
       const e = 0.04, x = fx + 0.16;
-      const c = [v3(x, cy - H / 2 - e, z - W / 2 - e), v3(x, cy + H / 2 + e, z - W / 2 - e), v3(x, cy + H / 2 + e, z + W / 2 + e), v3(x, cy - H / 2 - e, z + W / 2 + e), v3(x, cy - H / 2 - e, z - W / 2 - e)];
-      FL.rope(c, { cols: ROSES, rose: 0.075, thick: 0.07, per: 0.06, leafRatio: 0.3 });
-      FL.strands(v3(x + 0.05, cy + H / 2, z), { count: 22, spread: v3(0, 0, W / 2), len: [0.4, 1.0], cols: ['#F3EEF7', '#E2D6EE', '#C7B2E0'], size: 0.022 });
+      // Two full rose corners on the frame (top-left, bottom-right); nothing hangs over the photo.
+      const T = cy + H / 2 + e, B = cy - H / 2 - e, L = z - W / 2 - e, R = z + W / 2 + e;
+      FL.rope([v3(x, T - H * 0.4, L), v3(x, T, L), v3(x, T, L + W * 0.45)], { cols: ROSES, rose: 0.09, thick: 0.08, per: 0.032, leafRatio: 0.08 });
+      FL.rope([v3(x, B, R - W * 0.35), v3(x, B, R), v3(x, B + H * 0.3, R)], { cols: ROSES, rose: 0.085, thick: 0.07, per: 0.035, leafRatio: 0.08 });
     }
     frameInfo.push({ center: v3(fx + 0.18, cy, z), w: W, h: H });
   });

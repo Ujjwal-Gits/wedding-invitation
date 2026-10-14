@@ -77,7 +77,7 @@ export async function loadMaterials(renderer, { mobile, lowPower, onProgress = (
     gilt: new THREE.MeshStandardMaterial({ color: '#E8B652', metalness: 1, roughness: 0.24, vertexColors: true }),
     bronze: new THREE.MeshStandardMaterial({ color: '#8C6A3E', metalness: 1, roughness: 0.42, vertexColors: true }),
     dark: new THREE.MeshStandardMaterial({ color: '#2A1E17', roughness: 1, vertexColors: true }),
-    paper: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.92, vertexColors: true }),
+    paper: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.92, vertexColors: true, emissive: '#F4EEE3', emissiveIntensity: 0.35 }), // warm ivory mats, never shade-blue
     paint: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.75, vertexColors: true }),
     gateFace: new THREE.MeshStandardMaterial({ map: gate, roughness: 0.62, metalness: 0.0, vertexColors: true }),
     // rectified from a CC BY-SA photograph of the real palace (Shadow Ayush): the carved gallery and window hoods
