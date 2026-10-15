@@ -1,5 +1,5 @@
 /* Shree (श्री): deep plum and antique gold. Tokens for the suite, then the gate, the hero and the ornaments. */
-body.theme-shree {
+body.theme-shree, .mx-part.theme-shree {
   --su-bg: #2E0F2A;
   --su-paper: #4A1C44;
   --su-ink: #F3E6CC;
@@ -26,8 +26,8 @@ html:has(body.theme-shree) { background: #2E0F2A; }
 .theme-shree .su-h2 { letter-spacing: 0.02em; }
 .theme-shree .su-h2 .l-ne { font: 400 0.82em/1.45 var(--su-f-deva); }
 .theme-shree .su-kicker { color: var(--su-gold); }
-.theme-shree .l-ne { font-family: var(--su-f-body); }
-.theme-shree :focus-visible { outline-color: var(--sh-gold-hi); }
+.theme-shree .l-ne:where(:not(.mx-part:not(.theme-shree) *)) { font-family: var(--su-f-body); } /* never inside another theme's part on this page */
+.theme-shree :focus-visible:where(:not(.mx-part:not(.theme-shree) *)) { outline-color: var(--sh-gold-hi); }
 
 /* HUD on plum: solid pills (no blur on phones), gold type */
 .theme-shree .hud__btn, .theme-shree .pill { background: rgba(36, 11, 33, 0.92); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--sh-gold-hi); border-color: rgba(201, 163, 90, 0.55); }

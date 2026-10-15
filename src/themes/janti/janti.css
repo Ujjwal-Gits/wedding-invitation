@@ -32,7 +32,7 @@ body.theme-janti, .mx-part.theme-janti {
 }
 .theme-janti .su-btn { border-radius: 3px; }
 .theme-janti .su-h2, .theme-janti .jt-names .l-en { font-weight: 400; }
-.theme-janti .l-ne { font-family: var(--su-f-body); } /* reading text in Mukta; display classes below set Sura */
+.theme-janti .l-ne:where(:not(.mx-part:not(.theme-janti) *)) { font-family: var(--su-f-body); } /* reading text in Mukta; display classes below set Sura (never inside another theme's part on this page) */
 .jt-toranstrip { background: url('/themes/_nepali/toran-sm.webp') 50% 0 / auto 100% repeat-x; }
 
 /* ───────── the carved torana (SVG) ───────── */

@@ -414,6 +414,11 @@ const T = {
     return heroEnter(tl, 0.1);
   },
 
+  // after another theme's gate: the band strikes up as it clears (the words follow, from the engine)
+  heroIntro(ctx, tl, t) {
+    if (!ctx.reduced && document.querySelector('.su-hero .jt-hero')) heroEnter(tl, t);
+  },
+
   scroll(ctx) {
     if (!ctx.reduced) {
       // the hero's procession walks on as you leave the hero

@@ -267,4 +267,15 @@ export default {
     '--sh-gold-hi': { label: 'Light gold', default: '#E8CB8C' },
     '--su-accent': { label: 'Title gold', default: '#D8B46A' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: 'pair', hero: true, hostGate: true, hostHero: true, // 'pair': an opening scene, its gate only with its own first screen
+    ownGateNeedsHero: true, // its own gate opens its own hero's lotus: with another first screen, choose another gate too
+    why: {
+      gate: 'Shree’s gate holds the lotus of its own first screen, so it comes only as Shree’s opening scene: its gate and first screen together.',
+      hostHero: 'Shree’s own gate opens the lotus of its own first screen: with another first screen, choose another gate too.',
+    },
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.invocation'], images: [], colors: ['--su-bg', '--su-gold', '--sh-gold-hi'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--su-bg', '--su-gold', '--sh-gold-hi', '--su-accent'] },
+  },
 };

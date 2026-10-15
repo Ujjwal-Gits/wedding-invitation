@@ -1,7 +1,7 @@
 /* Agni (अग्नि): the sacred fire at night. Deep aubergine-charcoal night, brass, ember orange; everything warm is lit
    by the fire. Castoro Titling (engraved capitals) and Castoro for Latin, Kadwa for Devanagari display, Mukta to read.
    Motion is transform and opacity only; no animated filters, no backdrop-filter, no box-shadow animation. */
-body.theme-agni {
+body.theme-agni, .mx-part.theme-agni {
   --ag-night: #140C10;
   --ag-brass: #D2AC66;
   --ag-ember: #F0873A;
@@ -62,8 +62,8 @@ body.theme-agni {
 .ag-fire__core { position: absolute; left: 51.5%; top: 27%; width: 36%; aspect-ratio: 1.3; translate: -50% -50%; pointer-events: none; mix-blend-mode: screen; }
 .ag-fire__core::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(255, 200, 130, 0.45), rgba(255, 150, 70, 0.18) 55%, rgba(255, 140, 60, 0) 100%); }
-body.is-open .ag-fire__core::before { animation: ag-breathe 2.3s ease-in-out infinite alternate; }
-body.is-open .ag-kunda__glow::before { animation: ag-breathe 3.1s ease-in-out -1.2s infinite alternate; }
+body.is-open .ag-fire__core::before, .mx-hero--agni.is-open .ag-fire__core::before { animation: ag-breathe 2.3s ease-in-out infinite alternate; }
+body.is-open .ag-kunda__glow::before, .mx-hero--agni.is-open .ag-kunda__glow::before { animation: ag-breathe 3.1s ease-in-out -1.2s infinite alternate; }
 @keyframes ag-breathe { from { opacity: 0.78; transform: scale(0.96); } to { opacity: 1; transform: scale(1.04); } }
 .ag-embers { position: absolute; left: 51.5%; top: 26%; width: 0; height: 0; pointer-events: none; }
 .ag-embers i { position: absolute; left: 0; top: 0; width: 5px; height: 5px; margin: -2.5px; border-radius: 50%; opacity: 0;
@@ -110,14 +110,15 @@ body.is-open .ag-kunda__glow::before { animation: ag-breathe 3.1s ease-in-out -1
 .ag-hdate .l-ne { font: 500 16px/1.5 var(--su-f-body); letter-spacing: 0; }
 .theme-agni #top .su-cue { bottom: 6px; }
 
-/* unlit, while the gate is up: the kunda a dark shape, Ganesh faint, the names barely catching the dark */
-body:not(.is-opening):not(.is-open) .ag-hero .su-in { opacity: 0; }
-body:not(.is-opening):not(.is-open) .ag-kunda--hero .ag-w { opacity: 0; transform: scale(0); }
-body:not(.is-opening):not(.is-open) .ag-kunda--hero :is(.ag-fire__core, .ag-kunda__glow, .ag-kunda__cast) { opacity: 0; }
-body:not(.is-opening):not(.is-open) .ag-hero__warm { opacity: 0; }
-body:not(.is-opening):not(.is-open) .ag-kunda--hero .ag-kunda__img { opacity: 0.2; }
-body:not(.is-opening):not(.is-open) .ag-hero .ag-gan { opacity: 0.3; }
-body:not(.is-opening):not(.is-open) .ag-hero .ag-dim { opacity: 0.5; }
+/* unlit, while the gate is up: the kunda a dark shape, Ganesh faint, the names barely catching the dark
+   (Agni's own page: its body state; Agni's first screen on another theme's page: .ag-unlit on the section) */
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-hero .su-in { opacity: 0; }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-kunda--hero .ag-w { opacity: 0; transform: scale(0); }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-kunda--hero :is(.ag-fire__core, .ag-kunda__glow, .ag-kunda__cast) { opacity: 0; }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-hero__warm { opacity: 0; }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-kunda--hero .ag-kunda__img { opacity: 0.2; }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-hero .ag-gan { opacity: 0.3; }
+:is(body:not(.is-opening):not(.is-open) .su-hero, .ag-unlit) .ag-hero .ag-dim { opacity: 0.5; }
 body.is-opening .ag-kunda--hero .ag-w, body.is-opening .ag-hero__warm, body.is-opening .ag-kunda--hero .ag-kunda__glow { will-change: transform, opacity; }
 .ag-reduced .ag-hero :is(.ag-w, .ag-fire__core, .ag-kunda__glow, .ag-kunda__cast, .ag-kunda__img, .ag-gan, .ag-dim), .ag-reduced .ag-hero__warm { transition: opacity 0.6s ease, transform 0.6s ease; }
 
@@ -377,7 +378,8 @@ html[data-lang='ne'] .ag-close__en { display: none; }
 
 /* ───────── reduced motion: a still fire, the walk as a list ───────── */
 @media (prefers-reduced-motion: reduce) {
-  .ag-embers.is-live i, body.is-open .ag-fire__core::before, body.is-open .ag-kunda__glow::before { animation: none; }
+  .ag-embers.is-live i, body.is-open .ag-fire__core::before, body.is-open .ag-kunda__glow::before,
+  .mx-hero--agni.is-open .ag-fire__core::before, .mx-hero--agni.is-open .ag-kunda__glow::before { animation: none; }
 }
 .ag-reduced .ag-vows__pin { height: auto; min-height: 100svh; grid-template-rows: auto auto auto; }
 .ag-reduced .ag-stage { height: 56svh; }

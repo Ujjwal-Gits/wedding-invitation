@@ -1,7 +1,7 @@
 /* Rangoli (रंगोली) · a flower rangoli on a sunlit Newari courtyard.
    Tokens first, then the hero (the floor, the camera, the rangoli), the gate, the courtyard path, the door. */
 html:has(body.theme-rangoli) { background: #2A1008; }
-body.su.theme-rangoli {
+body.su.theme-rangoli, .mx-part.theme-rangoli {
   --rg-lime: #FFF3DC;        /* names and words in the shade, 13:1 on the shade */
   --rg-shade: #2A1008;       /* the eave's morning shadow over the bricks */
   --rg-clay: #5C1F10;        /* smooth red clay (rato mato) under headings */
@@ -25,7 +25,7 @@ body.su.theme-rangoli {
   background: var(--su-bg) url('/themes/rangoli/art/floor.webp') repeat 50% 0 / var(--rg-tile) auto;
   overflow-x: clip;
 }
-@media (min-width: 720px) { body.su.theme-rangoli { --rg-tile: 760px; } }
+@media (min-width: 720px) { body.su.theme-rangoli, .mx-part.theme-rangoli { --rg-tile: 760px; } }
 .theme-rangoli .hud__btn, .theme-rangoli .pill { color: var(--su-ink); }
 
 /* textures: lime wash and clay carry a fine grain (one small tile) */
@@ -149,19 +149,20 @@ html[data-lang='ne'] .rg-n .l-ne { font-size: 0.74em; line-height: 1.22; }
 .theme-rangoli .su-btn--open { background: var(--su-accent); border-color: color-mix(in srgb, var(--su-gold) 70%, transparent); box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.7); }
 
 @media (prefers-reduced-motion: no-preference) {
-  body.su-locked:not(.is-opening) #top .rg-ring--0, body.su-locked:not(.is-opening) #top .rg-ring--1,
-  body.su-locked:not(.is-opening) #top .rg-wick, body.su-locked:not(.is-opening) #top .rg-halo,
-  body.su-locked:not(.is-opening) .rg-words .su-in { opacity: 0; }
-  body.su-locked:not(.is-opening) #top .rg-ring--3 { transform: rotate(-28deg); }
-  body.su-locked:not(.is-opening) #top .rg-ring--2 { transform: rotate(70deg); }
+  /* Rangoli's own page keys the closed floor to its body state; its first screen on another page to .rg-closed */
+  body.su-locked:not(.is-opening) .su-hero.rg-hero :is(.rg-ring--0, .rg-ring--1, .rg-wick, .rg-halo, .rg-words .su-in),
+  .rg-hero.rg-closed :is(.rg-hero-r .rg-ring--0, .rg-hero-r .rg-ring--1, .rg-hero-r .rg-wick, .rg-hero-r .rg-halo, .rg-words .su-in) { opacity: 0; }
+  body.su-locked:not(.is-opening) .su-hero.rg-hero .rg-ring--3, .rg-hero.rg-closed .rg-hero-r .rg-ring--3 { transform: rotate(-28deg); }
+  body.su-locked:not(.is-opening) .su-hero.rg-hero .rg-ring--2, .rg-hero.rg-closed .rg-hero-r .rg-ring--2 { transform: rotate(70deg); }
 }
 /* only while the camera moves */
-body.rg-moving .rg-floor, body.rg-moving #top .rg-ring, body.rg-moving .rg-sky { will-change: transform, opacity; }
+body.rg-moving .rg-floor, body.rg-moving #top .rg-ring, body.rg-moving .rg-sky,
+.rg-hero.rg-moving :is(.rg-floor, .rg-ring, .rg-sky) { will-change: transform, opacity; }
 /* landed: the floor is a flat picture again (no 3D layer kept alive) */
-body.rg-landed .rg-hero { --k: 0; }
-body.rg-landed .rg-floor { transform: none; transform-style: flat; }
-body.rg-landed .rg-bb { transform: none; }
-body.rg-landed .rg-sky { display: none; }
+body.rg-landed .rg-hero, .rg-hero.rg-landed { --k: 0; }
+body.rg-landed .rg-floor, .rg-landed .rg-floor { transform: none; transform-style: flat; }
+body.rg-landed .rg-bb, .rg-landed .rg-bb { transform: none; }
+body.rg-landed .rg-sky, .rg-landed .rg-sky { display: none; }
 
 /* ───────── the courtyard path ───────── */
 body.su-locked .rg-path, body.su-locked .rg-close { visibility: hidden; }

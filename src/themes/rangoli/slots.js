@@ -267,4 +267,15 @@ export default {
     '--su-gold': { label: 'Brass', default: '#D9A54A' },
     '--su-accent': { label: 'Sindoor red (buttons)', default: '#A2321B' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: 'pair', hero: true, hostGate: true, hostHero: true, // 'pair': an opening scene, its gate only with its own first screen
+    ownGateNeedsHero: true, // its own gate tilts its own hero's camera: with another first screen, choose another gate too
+    why: {
+      gate: 'Rangoli’s gate is its own courtyard seen from low down, so it comes only as Rangoli’s opening scene: its gate and first screen together.',
+      hostHero: 'Rangoli’s own gate tilts the camera of its own first screen: with another first screen, choose another gate too.',
+    },
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title'], images: [], colors: ['--rg-lime', '--rg-shade', '--su-gold', '--su-accent'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--rg-lime', '--rg-shade', '--su-gold', '--su-accent'] },
+  },
 };

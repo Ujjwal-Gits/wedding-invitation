@@ -63,4 +63,15 @@ export default {
     '--sd-paper': { label: 'Paper', default: '#FCFAF7' },
     '--sd-ink': { label: 'Ink', default: '#141212' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: 'pair', hero: true, hostGate: true, hostHero: true, // 'pair': an opening scene, its gate only with its own first screen
+    ownGateNeedsHero: true, // its own gate opens its own cover's box: with another first screen, choose another gate too
+    why: {
+      gate: 'Sindoor’s gate is its own cover before the box is opened, so it comes only as Sindoor’s opening scene: its gate and first screen together.',
+      hostHero: 'Sindoor’s own gate opens the box on its own cover: with another first screen, choose another gate too.',
+    },
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--sd-ink', '--sd-paper'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--sd-red', '--sd-paper', '--sd-ink'] },
+  },
 };

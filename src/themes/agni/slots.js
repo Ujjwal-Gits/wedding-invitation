@@ -346,4 +346,15 @@ export default {
     '--ag-ember': { label: 'Firelight', default: '#F0873A' },
     '--ag-ivory': { label: 'Text', default: '#F4E8D3' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: 'pair', hero: true, hostGate: true, hostHero: true, // 'pair': an opening scene, its gate only with its own first screen
+    ownGateNeedsHero: true, // its own gate lights its own hero's fire: with another first screen, choose another gate too
+    why: {
+      gate: 'Agni’s gate is its first screen before the fire is lit, so it comes only as Agni’s opening scene: its gate and first screen together.',
+      hostHero: 'Agni’s own gate lights the fire of its own first screen: with another first screen, choose another gate too.',
+    },
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--ag-night', '--ag-brass', '--ag-ember', '--ag-ivory'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--ag-night', '--ag-brass', '--ag-ember', '--ag-ivory'] },
+  },
 };

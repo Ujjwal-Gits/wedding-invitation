@@ -1,0 +1,29 @@
+/* Shree's gate and first screen on another theme's page (docs/MIX.md): what shree.css gives the suite's gate and hero
+   wrappers, restated for the mix wrappers. */
+.mx-part.theme-shree { --mx-btn-radius: 3px; }
+/* the gate: the plum, the closed lotus and the names (see-through over its own hero: the hero's lotus is lifted into
+   the gate's spot and opens from there) */
+.mx-part.mx-gate--shree { color: var(--su-ink); --lotus: min(96vw, 50svh, 600px); --cy: 44%; }
+.mx-gate--shree.sh-still .sh-gate__still { display: block; }
+.mx-gate--shree.sh-live .sh-gate__bg { display: none; }
+.mx-gate--shree.sh-live .mx-gate__scene { cursor: pointer; }
+.mx-gate--shree .mx-ui { bottom: max(26px, calc(3.5svh + env(safe-area-inset-bottom, 0px))); }
+.mx-gate--shree .mx-ui__line { font: 400 17px/1.45 var(--su-f-display); letter-spacing: 0.04em; color: var(--su-ink-2); }
+.mx-gate--shree .mx-ui__line .l-ne { font: 400 17px/1.6 var(--su-f-body); }
+.mx-gate--shree .mx-ui__open { min-width: 240px; background: var(--su-gold); border-color: var(--su-gold); color: #2E0F2A; }
+.mx-gate--shree .mx-ui__quiet { color: var(--su-ink-2); }
+/* the hero */
+.mx-part.mx-hero--shree { background: radial-gradient(120% 70% at 50% 30%, #4A1C44 0%, #3A1435 40%, #2E0F2A 78%); color: var(--su-ink); }
+.mx-hero--shree .mx-cue { bottom: 22px; color: var(--su-ink-2); }
+.mx-hero--shree.sh-on .sh-halo__spin { animation: sh-spin 300s linear infinite; }
+.mx-hero--shree.sh-on .sh-diya__swing { animation: sh-sway 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.mx-hero--shree.sh-on .sh-diya--r .sh-diya__swing { animation-duration: 7.8s; animation-delay: -1.3s; }
+@media (max-width: 1199px) {
+  .mx-hero--shree .sh-diya { top: calc(50px + env(safe-area-inset-top, 0px)); }
+  .mx-hero--shree .sh-diya img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
+}
+@media (prefers-reduced-motion: reduce) { .mx-hero--shree .sh-halo__spin, .mx-hero--shree .sh-diya__swing { animation: none; } }
+/* the opening scene: the see-through gate needs the first screen showing beneath, even on a host that hides its page
+   while the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
+html[data-mx-gate='shree'] .mx-hero--shree { visibility: visible; }
+html[data-mx-gate='shree'] .mx-hero--shree:not(.is-open) .mx-cue { opacity: 0; }

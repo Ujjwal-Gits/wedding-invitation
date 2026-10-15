@@ -8,91 +8,29 @@
 // brass thals, lime-washed tablets, a ring of diyos), rows of lit diyos line the way, and the page ends at the door.
 import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
-import { lamp, flame, kalash, toran, flowers, initNepali } from '../_suite/nepali.js';
+import { lamp, kalash, toran, flowers, initNepali } from '../_suite/nepali.js';
 import './rangoli.css'; // after the suite's CSS, so the theme wins ties
+import { ART, rangoli, heroHtml, gateHtml, gateExit, heroEnter, ringScroll } from './parts.js';
 
-const ART = '/themes/rangoli/art/';
-// the ring layers cut from the flower rangoli (made concentric): their square box and -sm width, in the 1600-px
-// picture's units. 0 = the diyo and the rose core, 1 = jasmine and leaves, 2 = the marigold-and-diamond band, 3 = the rim
-const RING = [{ box: 250, sm: 112 }, { box: 710, sm: 320 }, { box: 1362, sm: 613 }, { box: 1660, sm: 747 }];
-const WICK = { x: 50, y: 48.1 }; // the centre diyo's wick, % of the rangoli's 1600-px square
-const r2 = (n) => Math.round(n * 100) / 100;
-
-/** the rangoli; `vw` is its width on phones and desktops (for sizes) */
-function rangoli(cls, [phone, desk], { eager = false } = {}) {
-  const rings = RING.map(({ box, sm }, i) => {
-    const f = box / 1600;
-    return `<img class="rg-ring rg-ring--${i}" style="--f:${r2(f)}" src="${ART}ring${i}-sm.webp" srcset="${ART}ring${i}-sm.webp ${sm}w, ${ART}ring${i}.webp ${box}w"
-      sizes="(max-width: 719px) ${r2(phone * f)}vw, ${r2(desk * f)}vw" alt="" decoding="async" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} />`;
-  }).reverse().join('');
-  return `<div class="rg-rangoli ${cls}" aria-hidden="true">${rings}
-    <span class="rg-halo"></span><span class="rg-wick" style="left:${WICK.x}%;top:${WICK.y}%">${flame('rg-cflame')}</span></div>`;
-}
-
-// ───────── the hero: the courtyard floor, seen from above once the camera has tilted down ─────────
-function hero(ctx) {
-  const { bi, esc, c, AD, BS, txt, on, placeLine } = ctx;
-  const bsDeva = BS.day && BS.month ? `${BS.month} ${BS.day} गते, ${BS.year}` : BS.full.ne;
-  const invo = txt('hero.invocation'); const title = txt('hero.title'); const line = txt('hero.line');
-  const bb = (html, cls) => `<div class="rg-bb ${cls}">${html}</div>`; // stands up on the floor while the camera is low
-  return `
-  <div class="rg-sky" aria-hidden="true"><div class="rg-sky__wall"></div>${toran('rg-sky__toran', '(max-width: 719px) 140vw, 90vw')}</div>
-  <div class="rg-cam">
-    <div class="rg-floor">
-      <i class="rg-shade" aria-hidden="true"></i><i class="rg-sun" aria-hidden="true"></i>
-      ${bb(`${ctx.ganesh('rg-gan', '(max-width: 719px) 90px, 130px')}`, 'rg-shrine')}
-      ${bb(lamp('diyo', { cls: 'rg-hl', sizes: '90px' }), 'rg-hlamp rg-hlamp--sl')}${bb(lamp('diyo', { cls: 'rg-hl', sizes: '90px' }), 'rg-hlamp rg-hlamp--sr')}
-      ${rangoli('rg-hero-r', [86, 46], { eager: true })}
-      ${['a', 'b', 'c', 'd'].map((k) => bb(lamp('diyo', { cls: 'rg-hl', sizes: '80px' }), `rg-hlamp rg-hlamp--${k}`)).join('')}
-    </div>
-  </div>
-  <div class="rg-words">
-    ${on(invo) ? `<p class="rg-invo su-in">${bi(invo)}</p>` : ''}
-    ${on(title) ? `<p class="rg-title su-in">${bi(title)}</p>` : ''}
-    ${on(line) ? `<p class="rg-line su-in">${bi(line)}</p>` : ''}
-    <h1 class="rg-names">
-      <span class="rg-n su-in">${bi(c.bride.name)}</span>
-      <span class="rg-and su-in" aria-hidden="true"><span class="l-en">&amp;</span><span class="l-ne" lang="ne">र</span></span><span class="sr-only">and</span>
-      <span class="rg-n su-in">${bi(c.groom.name)}</span>
-    </h1>
-    <div class="rg-when su-in">
-      <p class="rg-date">${bi({ en: `${AD.wd.en} · ${AD.day} ${AD.month.en} ${AD.year}`, ne: BS.full.ne })}</p>
-      <p class="rg-alt"><span class="l-en" lang="ne">${esc(bsDeva)}</span><span class="l-ne" lang="ne">${esc(AD.full.ne)}</span></p>
-      ${placeLine?.en || placeLine?.ne ? `<p class="rg-place">${bi(placeLine)}</p>` : ''}
-    </div>
-  </div>`;
-}
-
-function gate(ctx) {
-  const t = ctx.txt('hero.title');
-  return `<div class="rg-gate">
-    <div class="rg-gate__gan">${ctx.ganesh('rg-gate__ganimg', '96px')}</div>
-    ${ctx.on(t) ? `<p class="rg-gate__title" lang="ne">${ctx.esc(t.ne || t.en)}</p>` : ''}
-    <i class="rg-gate__scrim"></i>
-  </div>`;
-}
+const hero = heroHtml;
+const gate = (ctx) => gateHtml(ctx);
 
 /** the camera tilts down while the rings turn into place; the centre diyo lights */
 function open(ctx, tl, gateEl) {
-  const { gsap } = ctx;
-  const hero = document.getElementById('top');
-  const q = (s) => hero.querySelector(s);
+  const top = document.getElementById('top');
   document.body.classList.add('rg-moving');
-  tl.to(gateEl.querySelector('.rg-gate__title'), { opacity: 0, y: -14, duration: 0.55, ease: 'power2.in' }, 0);
-  tl.to(gateEl.querySelector('.rg-gate__scrim'), { opacity: 0, duration: 1, ease: 'power1.out' }, 0.2);
-  // the camera: one variable drives the floor's tilt and the counter-tilt of everything standing on it
-  tl.fromTo(hero, { '--k': 1 }, { '--k': 0, duration: 2.3, ease: 'power3.inOut' }, 0.1);
-  tl.to(q('.rg-sky'), { yPercent: -55, opacity: 0, duration: 1.2, ease: 'power2.in' }, 0.15);
-  // the rings: the rim settles, then each ring turns in from the opposite side to the one before
-  tl.fromTo(q('.rg-ring--3'), { rotation: -28 }, { rotation: 0, duration: 2.3, ease: 'power3.inOut' }, 0.1);
-  tl.fromTo(q('.rg-ring--2'), { rotation: 70 }, { rotation: 0, duration: 2.0, ease: 'power3.inOut' }, 0.3);
-  tl.fromTo(q('.rg-ring--1'), { rotation: -170, scale: 1.3, opacity: 0 }, { rotation: 0, scale: 1, opacity: 1, duration: 1.6, ease: 'expo.out' }, 0.95);
-  tl.fromTo(q('.rg-ring--0'), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.9, ease: 'back.out(1.5)' }, 1.45);
-  // the centre diyo catches its flame
-  tl.fromTo(q('.rg-wick'), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: 'back.out(2.2)' }, 2.15);
-  tl.fromTo(q('.rg-halo'), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out' }, 2.15);
+  gateExit(tl, gateEl);
+  const t = heroEnter(tl, 0.1, top);
   tl.set(gateEl, { autoAlpha: 0 }, 2.4);
-  return 2.25;
+  return t;
+}
+
+/** after another theme's gate: the camera tilts down as it clears (the words follow, from the engine) */
+function heroIntro(ctx, tl, t) {
+  const top = document.querySelector('.su-hero.rg-hero');
+  if (ctx.reduced || !top) return;
+  document.body.classList.add('rg-moving');
+  heroEnter(tl, t, top);
 }
 
 // ───────── the scratch cover: the brass thal heaped with the flower rangoli ─────────
@@ -298,14 +236,16 @@ function page(ctx) {
 /** after the opening: the floor lies flat for good, the rings turn as you scroll, things are set down on the bricks */
 function scroll(ctx) {
   const { gsap } = ctx;
+  const own = document.querySelector('.su-hero.rg-hero'); // another theme's first screen may stand in for it
   document.body.classList.remove('rg-moving');
   document.body.classList.add('rg-landed');
-  gsap.set('#top', { '--k': 0 });
-  gsap.set('#top .rg-ring, #top .rg-wick, #top .rg-halo', { clearProps: 'opacity,scale' });
+  if (own) {
+    gsap.set(own, { '--k': 0 });
+    gsap.set(own.querySelectorAll('.rg-ring, .rg-wick, .rg-halo'), { clearProps: 'opacity,scale' });
+  }
   if (ctx.reduced) return;
-  const top = { trigger: '#top', start: 'top top', end: 'bottom top', scrub: 0.6 };
   // the rings turn against each other as the courtyard slides by
-  [[3, 24], [2, -46], [1, 80]].forEach(([i, deg]) => gsap.fromTo(`#top .rg-ring--${i}`, { rotation: 0 }, { rotation: deg, ease: 'none', scrollTrigger: top }));
+  if (own) ringScroll(gsap, own, own);
   gsap.fromTo('.rg-mini .rg-ring--2', { rotation: -40 }, { rotation: 40, ease: 'none', scrollTrigger: { trigger: '.rg-close', start: 'top bottom', end: 'bottom bottom', scrub: 0.6 } });
   gsap.fromTo('.rg-mini .rg-ring--1', { rotation: 60 }, { rotation: -60, ease: 'none', scrollTrigger: { trigger: '.rg-close', start: 'top bottom', end: 'bottom bottom', scrub: 0.6 } });
 
@@ -335,6 +275,7 @@ mountSuite({
   hero,
   page,
   open,
+  heroIntro,
   scroll,
   scratch: { paint: petals },
   ready() { initNepali(); easyBrush(); },

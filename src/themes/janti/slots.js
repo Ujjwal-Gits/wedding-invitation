@@ -303,12 +303,13 @@ export default {
   },
   // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
   parts: {
-    gate: false, hero: true, hostGate: true, hostHero: false,
-    ownGateNeedsHero: true,
+    gate: 'pair', hero: true, hostGate: true, hostHero: true, // 'pair': an opening scene, its gate only with its own first screen
+    ownGateNeedsHero: true, // its own gate is a dusk wash over its own hero: with another first screen, choose another gate too
     why: {
-      gate: 'The gate is this hero at dusk (a see-through wash over the street): it has nothing of its own to show on another page.',
-      hostHero: 'Its own gate is a dusk wash over its own hero; with another hero choose another gate too (not offered yet).',
+      gate: 'Janti’s gate is its own street at dusk, so it comes only as Janti’s opening scene: its gate and first screen together.',
+      hostHero: 'Janti’s own gate is a dusk wash over its own first screen: with another first screen, choose another gate too.',
     },
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--jt-dusk', '--jt-gold'] },
     heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--jt-red', '--jt-gold', '--jt-wood', '--jt-dusk'] },
   },
 };

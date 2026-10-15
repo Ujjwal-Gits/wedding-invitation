@@ -11,8 +11,8 @@ import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
 import { lamp, sindoorDaan, initNepali } from '../_suite/nepali.js';
 import './sindoor.css';
+import { ART, r2, mask, heroHtml, fitAll, placeUi, heroClosed, heroEnter, heroScroll, LID_UP } from './parts.js';
 
-const ART = '/themes/sindoor/art/';
 const L = {
   couple: { en: 'The couple', ne: 'जोडी' },
   bond: { en: 'Sindoor daan', ne: 'सिन्दूर दान' },
@@ -20,125 +20,34 @@ const L = {
   families: { en: 'The families', ne: 'परिवार' },
   photos: { en: 'The album', ne: 'एल्बम' },
   reply: { en: 'Your reply', ne: 'हजुरको जवाफ' },
-  issue: { en: 'The wedding issue', ne: 'विवाह विशेषाङ्क' },
   and: { en: 'and', ne: 'र' },
   fig: { en: 'Fig.', ne: 'चित्र' },
 };
-const r2 = (n) => Math.round(n * 100) / 100;
-
-// ───────── the sindoor dani: one picture, cut along the lid's rim into lid and base ─────────
-// The rim is an arc (49.7% of the height at the sides, 52.2% in the middle); the base reaches 0.4% higher so no
-// seam shows while the box is closed (the lid sits in front of it).
-const RIM = Array.from({ length: 17 }, (_, i) => { const x = i / 16; return [x * 100, (0.497 + 0.025 * (1 - ((x - 0.5) / 0.5) ** 2)) * 100]; });
-const pc = ([x, y], dy = 0) => `${r2(x)}% ${r2(y + dy)}%`;
-const LID_CLIP = `polygon(0% 0%, 100% 0%, ${[...RIM].reverse().map((p) => pc(p)).join(', ')})`;
-const BASE_CLIP = `polygon(${RIM.map((p) => pc(p, -0.4)).join(', ')}, 100% 100%, 0% 100%)`;
-/** where the lid rests on the cover once the box is open (relative to its own size) */
-const LID_UP = { xPercent: 6, yPercent: -30, rotation: -9 };
-const BOX = (sizes, clip) => `<img src="${ART}box-sm.webp" srcset="${ART}box-sm.webp 440w, ${ART}box.webp 1027w" sizes="${sizes}" style="clip-path:${clip}" alt="" decoding="async" fetchpriority="high" />`;
-
-function still(ctx) {
-  const sizes = '(max-width: 859px) 46vw, 300px';
-  return `<div class="sd-still">
-    <div class="sd-box" role="img" aria-label="${ctx.esc('A red and gold sindoor box, its lid lifted, sindoor rising from it')}">
-      <img class="sd-plume" src="${ART}burst-sm.webp" srcset="${ART}burst-sm.webp 585w, ${ART}burst.webp 1366w" sizes="(max-width: 859px) 60vw, 380px" alt="" decoding="async" />
-      <span class="sd-base">${BOX(sizes, BASE_CLIP)}</span>
-      <span class="sd-lid"><span class="sd-lid__f">${BOX(sizes, LID_CLIP)}</span></span>
-      <img class="sd-bloom sd-bloom--a" src="${ART}bloom-sm.webp" alt="" decoding="async" />
-      <img class="sd-bloom sd-bloom--b" src="${ART}bloom-sm.webp" alt="" decoding="async" />
-      <img class="sd-bloom sd-bloom--c" src="${ART}bloom-sm.webp" srcset="${ART}bloom-sm.webp 585w, ${ART}bloom.webp 1366w" sizes="(max-width: 859px) 70vw, 440px" alt="" decoding="async" />
-    </div>
-    <i class="sd-k sd-k--start" data-x=".5" data-xm=".5" aria-hidden="true"></i>
-  </div>`;
-}
-
-/** a heading that rises out of a mask */
-const mask = (html, cls = '') => `<span class="sd-m ${cls}"><span class="sd-m__in">${html}</span></span>`;
 /** a section's opening rule: the thread turns here; the number and label hang under it */
 const head = (n, label, x, xm) => `<header class="sd-hd">
     <i class="sd-k" data-x="${x}" data-xm="${xm}" aria-hidden="true"></i>
     <span class="sd-hd__no">${String(n).padStart(2, '0')}</span><span class="sd-hd__label">${label}</span>
   </header>`;
 
-// ───────── the cover (hero) ─────────
-function hero(ctx) {
-  const { bi, esc, c, AD, BS, txt, on, placeLine, mainEv } = ctx;
-  const invo = txt('hero.invocation');
-  const title = txt('hero.title');
-  const line = txt('hero.line');
-  const bsShort = BS.day && BS.month ? `${BS.month} ${BS.day} गते, ${BS.year}` : BS.full.ne;
-  const timeNe = mainEv ? String(ctx.timeLabel(mainEv).ne || '').split('–')[0].trim() : '';
-  const mm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', month: '2-digit' }).format(new Date(mainEv?.start || ctx.config.weddingDate));
-  const dots = `${AD.day.padStart(2, '0')} · ${mm} · ${AD.year}`;
-  return `<div class="sd-cover">
-    <div class="sd-cover__top">
-      ${ctx.ganesh('sd-gan', '64px')}
-      ${on(invo) ? `<p class="sd-invo" lang="sa">${esc(invo.ne || invo.en)}</p>` : ''}
-    </div>
-    <div class="sd-cover__mast su-in">
-      <span>${on(title) ? bi(title) : bi(L.issue)}</span>
-      <span class="sd-cover__dots">${bi({ en: dots, ne: ctx.neNum(dots) })}</span>
-    </div>
-    <i class="sd-cover__rule" aria-hidden="true"></i>
-    <h1 class="sd-cover__names" data-fit>
-      ${mask(bi(c.bride.name), 'sd-cover__n')}
-      ${mask(`<span class="sd-cover__and">${bi(L.and)}</span>`, 'sd-cover__amp')}<span class="sr-only">and</span>
-      ${mask(bi(c.groom.name), 'sd-cover__n sd-cover__n--b')}
-    </h1>
-    <div class="sd-cover__body">
-      <div class="sd-cover__side sd-cover__side--l su-in">
-        ${on(line) ? `<p class="sd-cover__line">${bi(line)}</p>` : ''}
-      </div>
-      ${still(ctx)}
-      <div class="sd-cover__side sd-cover__side--r su-in">
-        <p class="sd-cover__when">${bi({ en: `${AD.wd.en}, ${AD.day} ${AD.month.en} ${AD.year}`, ne: bsShort })}</p>
-        <p class="sd-cover__alt"><span class="l-en" lang="ne">${esc(bsShort)}</span><span class="l-ne">${esc(AD.full.ne)}</span></p>
-        ${mainEv ? `<p class="sd-cover__alt">${bi({ en: AD.time, ne: timeNe })}</p>` : ''}
-        ${placeLine?.en || placeLine?.ne ? `<p class="sd-cover__where">${bi(placeLine)}</p>` : ''}
-      </div>
-    </div>
-  </div>`;
-}
-
-// ───────── the gate: the cover itself, before the box is opened ─────────
+// ───────── the cover (hero), and the gate: the cover itself, before the box is opened ─────────
+const hero = (ctx) => heroHtml(ctx);
 // The scene is only a transparent hit area: the cover's own box opens, so the opening and the hero are one picture.
 const gate = () => '<div class="sd-gate"></div>';
 
 /** keep the gate's words where the names will appear */
 function placeGateUi() {
-  const gui = document.getElementById('gui');
-  const names = document.querySelector('.sd-cover__names');
-  if (!gui || !names || document.body.classList.contains('is-open')) return;
-  const r = names.getBoundingClientRect();
-  gui.style.top = `${Math.round(r.top + r.height / 2)}px`;
+  if (document.body.classList.contains('is-open')) return;
+  placeUi(document.querySelector('.su-hero'), document.getElementById('gui'));
 }
 
 /** the lid lifts and tilts away; a plume of sindoor rises and blooms across the screen; the names settle in red */
 function open(ctx, tl) {
-  const { gsap } = ctx;
-  const q = (s) => document.querySelector(s);
-  const lid = q('.sd-cover .sd-lid');
-  const plume = q('.sd-cover .sd-plume');
-  const [ba, bb, bc] = document.querySelectorAll('.sd-cover .sd-bloom');
-  // the lid: a small press, then up and away
-  tl.to(lid, { yPercent: 1.4, duration: 0.16, ease: 'power2.in' }, 0.22)
-    .to(lid, { ...LID_UP, duration: 1.6, ease: 'expo.out' }, 0.38);
-  // the plume that stays: it rises out of the box behind the lid
-  tl.fromTo(plume, { scale: 0.16, yPercent: 26, opacity: 0 }, { scale: 1, yPercent: 0, opacity: 1, duration: 1.7, ease: 'power3.out' }, 0.46);
-  // the bloom: three clouds of powder, each larger, billow over the page and clear
-  const bloom = (el, at, s, peak, hold, flip = 1, rot = 0) => {
-    tl.fromTo(el, { scaleX: 0.22 * flip, scaleY: 0.22, yPercent: 18, rotation: -rot, opacity: 0 },
-      { scaleX: s * flip, scaleY: s, yPercent: -26, rotation: rot, duration: 2.3, ease: 'power2.out' }, at);
-    tl.to(el, { opacity: peak, duration: 0.42, ease: 'power1.out' }, at);
-    tl.to(el, { opacity: 0, duration: 1.0, ease: 'power1.inOut' }, at + hold);
-  };
-  bloom(ba, 0.5, 2.5, 0.92, 0.75, 1, 5);
-  bloom(bb, 0.62, 3.3, 0.88, 0.8, -1, -7);
-  bloom(bc, 0.78, 4.4, 0.8, 0.82, 1, 3);
-  // the masthead: the rule draws, the names rise out of their masks in red
-  tl.fromTo('.sd-cover__rule', { scaleX: 0 }, { scaleX: 1, duration: 1.2, ease: 'expo.inOut' }, 1.35);
-  tl.fromTo('.sd-cover__names .sd-m__in', { yPercent: 112 }, { yPercent: 0, duration: 1.2, ease: 'expo.out', stagger: 0.13 }, 1.6);
-  return 1.95;
+  return heroEnter(tl, 0.15, document);
+}
+
+/** after another theme's gate: the box opens as it clears (the words follow, from the engine) */
+function heroIntro(ctx, tl, t) {
+  if (!ctx.reduced && document.querySelector('.su-hero .sd-cover')) heroEnter(tl, t, document);
 }
 
 // ───────── the scratch cover: sindoor powder ─────────
@@ -355,16 +264,6 @@ function page(ctx) {
   </div>`;
 }
 
-// ───────── fit the names to their measure (long names shrink, short ones stay big) ─────────
-function fitAll() {
-  document.querySelectorAll('[data-fit]').forEach((el) => {
-    el.style.removeProperty('--fit');
-    const kids = [...el.querySelectorAll('.sd-m, :scope > span')];
-    const over = Math.max(1, ...kids.map((k) => (k.scrollWidth || 0) / (el.clientWidth || 1)), el.scrollWidth / (el.clientWidth || 1));
-    if (over > 1.001) el.style.setProperty('--fit', String(r2(1 / over - 0.01)));
-  });
-}
-
 // ───────── the siundo: one red line through the whole story, drawn by the scroll ─────────
 function thread(ctx) {
   const story = document.querySelector('.sd-story');
@@ -425,9 +324,9 @@ function thread(ctx) {
     else { tip.style.opacity = '1'; tip.style.transform = `translate(${r2(tx)}px, ${r2(ty)}px)`; }
   };
   build();
-  if (!ctx.reduced) {
+  const k = story.querySelector('.sd-k--start'); // absent when another theme's first screen stands in for the cover
+  if (!ctx.reduced && k) {
     // the line falls from the box to the foot of the cover as the powder settles
-    const k = story.querySelector('.sd-k--start');
     const from = box(k).y;
     const o = { v: from };
     ctx.gsap.to(o, { v: document.getElementById('top').offsetHeight + 4, duration: 1.1, ease: 'power2.inOut', delay: 0.1, onUpdate: () => { boost = o.v; paint(); } });
@@ -456,9 +355,8 @@ function scroll(ctx) {
   initNepali();
   if (ctx.reduced) return;
   const { gsap } = ctx;
-  const away = { trigger: '#top', start: 'top top', end: 'bottom top', scrub: 0.6 };
-  gsap.to('.sd-cover .sd-lid', { xPercent: LID_UP.xPercent + 10, yPercent: LID_UP.yPercent - 40, rotation: LID_UP.rotation - 12, ease: 'none', scrollTrigger: away });
-  gsap.to('.sd-cover .sd-plume', { scale: 1.35, yPercent: -14, opacity: 0.15, ease: 'none', scrollTrigger: away });
+  const own = document.querySelector('.su-hero .sd-cover'); // another theme's first screen may stand in for the cover
+  if (own) heroScroll(gsap, document, '#top');
   // the sindoor-daan painting comes up out of the page in 3D as the thread reaches it
   if (document.querySelector('.sd-bond__img')) {
     gsap.fromTo('.sd-bond__img', { rotationX: 16, y: 60, scale: 0.94, transformPerspective: 1000, transformOrigin: '50% 100%' },
@@ -483,6 +381,7 @@ mountSuite({
   hero,
   page,
   open,
+  heroIntro,
   scroll,
   scratch: { paint: powder },
   ready(ctx) {
@@ -492,12 +391,9 @@ mountSuite({
     addEventListener('resize', () => { fitAll(); placeGateUi(); });
     placeGateUi();
     // the cover waits closed (with reduced motion it simply shows the open box)
+    if (!document.querySelector('.su-hero .sd-cover')) return; // another theme's first screen stands in for the cover
     if (ctx.reduced) { gsap.set('.sd-cover .sd-lid', LID_UP); document.body.classList.add('sd-calm'); return; }
-    gsap.set('.sd-cover .sd-lid', { x: 0, y: 0, xPercent: 0, yPercent: 0, rotation: 0 });
-    gsap.set('.sd-cover .sd-plume', { opacity: 0 });
-    gsap.set('.sd-cover__names .sd-m__in', { yPercent: 112 });
-    gsap.set('.sd-cover__rule', { scaleX: 0 });
-    gsap.set('.sd-cover .su-in', { opacity: 0 });
+    heroClosed(gsap, document);
   },
   gateTap(ctx, go) {
     document.getElementById('gscene')?.addEventListener('click', go);

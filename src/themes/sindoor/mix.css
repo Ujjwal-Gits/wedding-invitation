@@ -1,0 +1,22 @@
+/* Sindoor's gate and first screen on another theme's page (docs/MIX.md): what sindoor.css gives the suite's gate and
+   hero wrappers, restated for the mix wrappers. */
+.mx-part.theme-sindoor { --mx-btn-radius: 0; }
+/* the cue sits low beside where the thread would run */
+.mx-hero--sindoor .mx-cue { left: calc(50% + 12px); translate: 0 0; bottom: 16px; align-items: flex-start; padding: 6px 0; color: var(--sd-ink-2); letter-spacing: 0.3em; }
+.mx-hero--sindoor .mx-cue i { display: none; }
+/* the gate: transparent over the cover; its words stand where the names will rise */
+.mx-gate--sindoor .mx-gate__scene { cursor: pointer; }
+.mx-gate--sindoor .sd-gate { position: absolute; inset: 0; }
+.mx-gate--sindoor .mx-ui { top: 38%; bottom: auto; translate: -50% -50%; gap: 12px; color: var(--sd-ink); }
+.mx-gate--sindoor .mx-ui__line { font: 400 clamp(24px, 6.6vw, 34px)/1.15 var(--sd-f-display); color: var(--sd-ink); letter-spacing: -0.01em; }
+.mx-gate--sindoor .mx-ui__line .l-ne { font: 500 clamp(21px, 5.6vw, 28px)/1.45 var(--sd-f-deva); }
+.mx-gate--sindoor .mx-ui__open { margin-top: 6px; background: var(--sd-ink); border-color: var(--sd-ink); color: var(--sd-paper); letter-spacing: 0.2em; font-size: 12.5px; }
+.mx-gate--sindoor .mx-ui__quiet { color: var(--sd-ink-2); }
+@media (min-width: 860px) { .mx-gate--sindoor .mx-ui { width: min(560px, calc(100% - 32px)); } }
+/* without Sindoor's cover beneath (not offered): plain paper, Ganesh in red line at the top */
+.sd-gate--alone { background: var(--sd-paper); }
+.sd-gate--alone .sd-gan { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 16px); translate: -50% 0; display: block; width: 44px; height: auto; }
+/* the opening scene: the see-through gate needs the cover showing beneath, even on a host that hides its page while
+   the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
+html[data-mx-gate='sindoor'] .mx-hero--sindoor { visibility: visible; }
+html[data-mx-gate='sindoor'] .mx-hero--sindoor:not(.is-open) .mx-cue { opacity: 0; }

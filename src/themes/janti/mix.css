@@ -3,3 +3,16 @@
 .mx-part.mx-hero--janti { background: var(--jt-dusk); }
 .mx-hero--janti .mx-cue { left: auto; right: 10px; bottom: 10px; translate: none; padding: 8px 12px; border-radius: 999px; color: var(--jt-cream);
   background: color-mix(in srgb, var(--jt-dusk) 72%, transparent); }
+/* Janti's gate (its opening scene, with its first screen beneath): the dusk wash and the line and buttons over it */
+.mx-gate--janti .mx-ui { color: var(--jt-cream); }
+.mx-gate--janti .mx-ui::before { content: ''; position: absolute; inset: -36px -48px -24px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--jt-dusk) 82%, transparent), color-mix(in srgb, var(--jt-dusk) 50%, transparent) 60%, transparent); }
+.mx-gate--janti .mx-ui__line { font: 400 20px/1.35 var(--su-f-display); letter-spacing: 0.01em; color: var(--jt-gold-hi); }
+.mx-gate--janti .mx-ui__line .l-ne { font: 700 21px/1.5 var(--su-f-deva); }
+.mx-part.mx-gate--janti { --mx-btn-radius: 3px; }
+.mx-gate--janti .mx-ui__open { background: linear-gradient(180deg, #F3D995, #CF9E45); border-color: #F3D995; color: #3A1A0C; }
+.mx-gate--janti .mx-ui__quiet { color: var(--jt-gold-hi); }
+/* the opening scene: the see-through gate needs the first screen showing beneath, even on a host that hides its page
+   while the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
+html[data-mx-gate='janti'] .mx-hero--janti { visibility: visible; }
+html[data-mx-gate='janti'] .mx-hero--janti:not(.is-open) .mx-cue { opacity: 0; }

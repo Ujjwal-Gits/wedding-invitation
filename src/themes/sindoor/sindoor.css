@@ -1,7 +1,7 @@
 /* Sindoor (सिन्दूर) · an editorial wedding issue. Warm white, deep black type, one colour: sindoor red.
    Tokens first, then the cover (which is also the gate), the thread, the sections. */
 html:has(body.theme-sindoor) { background: #FCFAF7; }
-body.su.theme-sindoor {
+body.su.theme-sindoor, .mx-part.theme-sindoor {
   --sd-red: #C8141D;        /* sindoor: 5.6:1 on the paper; the names, the line, the numbers */
   --sd-paper: #FCFAF7;      /* warm white, not beige */
   --sd-ink: #141212;        /* deep black type */
