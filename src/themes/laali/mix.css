@@ -1,0 +1,5 @@
+/* Laali's gate and hero on another theme's page (docs/MIX.md): the bits laali.css styles through the suite's own
+   gate and hero wrappers, restated for the mix wrappers. */
+.mx-gate--laali .mx-ui { bottom: max(28px, 5svh); }
+.mx-gate--laali .mx-ui__quiet { color: var(--su-ink-2); }
+.mx-hero--laali .mx-cue { bottom: 6px; }

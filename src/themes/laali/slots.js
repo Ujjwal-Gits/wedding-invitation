@@ -267,4 +267,11 @@ export default {
     '--su-bg': { label: 'Blush background', default: '#F7E1E4' },
     '--la-card': { label: 'Card', default: '#FBEFF0' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: true, // Laali's own opening flies Ganesh into its hero's crown: with another hero, gate.js runs instead
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--su-accent', '--su-gold', '--su-bg', '--la-card'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--su-accent', '--su-gold', '--su-bg', '--la-card'] },
+  },
 };

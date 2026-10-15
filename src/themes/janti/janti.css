@@ -1,7 +1,7 @@
 /* Janti (जन्ती): the groom's procession down an old Newari street at golden hour. Painted street, carved dark wood with
    fine gold lines, sindoor red for the doli and the names, cream paper for everything you read. Type: Yeseva One (Latin
    display), Sura (Devanagari display), Mukta (reading). Motion is transform and opacity only; no filters anywhere. */
-body.theme-janti {
+body.theme-janti, .mx-part.theme-janti {
   --jt-red: #A3261B;       /* the one accent: doli curtain, names, headings (7.1:1 on cream) */
   --jt-gold: #D9A847;      /* carving lines and ornament only, never text on cream */
   --jt-wood: #3B2015;      /* carved wood */

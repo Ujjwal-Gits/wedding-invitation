@@ -73,4 +73,10 @@ export default {
     '--marigold': { label: 'Marigold', default: '#E5850F' },
     '--paper': { label: 'Paper', default: '#FBF8F1' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the garland arch zooms away on its own; the hero only fades in after it
+    why: { gate: 'Not converted yet (batch work).', hero: 'Not converted yet (batch work).' },
+  },
 };

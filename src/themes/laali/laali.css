@@ -1,5 +1,5 @@
 /* Laali (लाली) · blush paper, berry ink, fine gold. One arched card; everything else stays quiet. */
-body.su.theme-laali {
+body.su.theme-laali, .mx-part.theme-laali {
   --su-bg: #F7E1E4;
   --su-paper: #FFF7F6;
   --su-ink: #3B2129;

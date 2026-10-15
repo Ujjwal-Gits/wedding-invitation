@@ -295,4 +295,10 @@ export default {
     '--sw-marigold': { label: 'Marigold', default: '#E7A33A' },
     '--sw-ivory': { label: 'Ivory paper', default: '#FBF5EA' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    ownGateNeedsHero: true, // the Ganesh medallion flies from the gate into the hero; the gate garlands land beside it
+    why: { gate: 'Not converted yet (batch work).', hero: 'Not converted yet (batch work).', hostHero: 'Needs its gate as a module first (the opening reaches into the hero).' },
+  },
 };

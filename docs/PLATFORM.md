@@ -213,3 +213,5 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 - Production gates the theme pages: `/<theme>/` is served only for `?id=<published slug>` in its own theme, an admin session, or an active client session; else `302 /#designs` or a 404 "not available" page (`server/lib/gate.js`, details in API.md "Theme pages"). `/i/<slug>` and static assets are unchanged.
 - `GET /api/themes` no longer returns `demo`. The website shows thumbnails/phone stills and a still-image lightbox with "Order this design"; no live links, no preview iframe.
 - Dev: Vite serves the pages, so the gate does not run on 5195. A Vite dev middleware was not added: editing `vite.config.js` restarts the running dev server.
+
+**mix (2026-10-16): separate gate and first-screen choices.** `design: { gate?, hero? }` next to `theme` (theme slugs; absent = the theme's own). Contract, runtime (`src/core/mix.js`), compatibility manifest (`slots.js` `parts`) and the data.js / studio / server changes it needs: `docs/MIX.md`. Theme agents: the token rules of converted themes also match `.mx-part.theme-<slug>`; `_suite/suite.css` defaults match `:where(.mx-part).su`.

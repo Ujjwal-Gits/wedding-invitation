@@ -377,6 +377,14 @@ const T = {
     return 1.2;
   },
 
+  // after another theme's gate (docs/MIX.md): the hero's garlands and medallion come down into place themselves
+  heroIntro(ctx, tl, t) {
+    const els = [...document.querySelectorAll('.sw-hero__garls, .sw-hero__gan')];
+    if (ctx.reduced) { tl.fromTo(els, { opacity: 0 }, { opacity: 1, duration: 0.5 }, t); return; }
+    tl.fromTo('.sw-hero__garls', { opacity: 0, y: -36 }, { opacity: 1, y: 0, duration: 1.3, ease: 'power3.out' }, t)
+      .fromTo('.sw-hero__gan', { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.9, ease: 'power3.out' }, t + 0.35);
+  },
+
   scroll(ctx) {
     if (ctx.reduced) return;
     const phone = matchMedia('(max-width: 699px)').matches;

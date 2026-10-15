@@ -301,4 +301,14 @@ export default {
     '--jt-wood': { label: 'Carved wood', default: '#3B2015' },
     '--jt-dusk': { label: 'Dusk over the street (opening)', default: '#1E120D' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: true, hostGate: true, hostHero: false,
+    ownGateNeedsHero: true,
+    why: {
+      gate: 'The gate is this hero at dusk (a see-through wash over the street): it has nothing of its own to show on another page.',
+      hostHero: 'Its own gate is a dusk wash over its own hero; with another hero choose another gate too (not offered yet).',
+    },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--jt-red', '--jt-gold', '--jt-wood', '--jt-dusk'] },
+  },
 };

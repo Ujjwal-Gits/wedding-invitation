@@ -15,12 +15,12 @@ import { mountSuite } from '../_suite/suite.js';
 import manifest from './slots.js';
 import { lamp, kalash as npKalash, toran as npToran, initNepali } from '../_suite/nepali.js';
 import './janti.css';
+import { A, torana, jantiWalkers, heroHtml, heroPrepare, heroEnter, heroScroll } from './parts.js';
 
 // a reload mid-page must start at the gate, not at the restored scroll position behind it
 // (ScrollTrigger owns history.scrollRestoration and resets it on every refresh, so set it through ScrollTrigger)
 ScrollTrigger.clearScrollMemory('manual');
 
-const A = '/themes/janti/art/';
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const L = {
   couple: { en: 'The couple', ne: 'दुलहा दुलही' },
@@ -36,25 +36,6 @@ const L = {
 };
 
 // ───────── ornaments (inline SVG) ─────────
-const pt = (r, deg, cx = 120, cy = 120) => [cx + r * Math.cos((deg * Math.PI) / 180), cy - r * Math.sin((deg * Math.PI) / 180)].map((v) => v.toFixed(1));
-/** the carved semicircular torana over a Newari door or window; `inner` sits in its centre (Ganesh) */
-function torana(inner = '', cls = '') {
-  const beads = []; for (let a = 4; a <= 176; a += 6) { const [x, y] = pt(104, a); beads.push(`<circle cx="${x}" cy="${y}" r="2.1" />`); }
-  const petals = []; for (let a = 15; a <= 165; a += 15) petals.push(`<path d="M0 0C5-7 5-15 0-21C-5-15-5-7 0 0Z" transform="translate(${pt(70, a).join(' ')}) rotate(${90 - a})" />`);
-  const rays = []; for (let a = 22.5; a <= 157.5; a += 15) { const [x1, y1] = pt(40, a); const [x2, y2] = pt(66, a); rays.push(`M${x1} ${y1}L${x2} ${y2}`); }
-  return `<div class="jt-torana ${cls}">
-    <svg class="jt-torana__svg" viewBox="0 0 240 122" aria-hidden="true" focusable="false">
-      <path class="jt-wd" d="M0 122V120A120 120 0 0 1 240 120V122Z" />
-      <path class="jt-ln" d="M8 120A112 112 0 0 1 232 120" /><path class="jt-ln" d="M18 120A102 102 0 0 1 222 120" />
-      <g class="jt-fl">${beads.join('')}</g>
-      <path class="jt-ln" d="M28 120A92 92 0 0 1 212 120" />
-      <g class="jt-ln">${petals.join('')}</g>
-      <path class="jt-ln jt-ln--thin" d="${rays.join('')}" />
-      <path class="jt-ln" d="M2 120H238" />
-    </svg>
-    <div class="jt-torana__in">${inner}</div>
-  </div>`;
-}
 /** the brass temple bell over the countdown */
 const bell = () => `<svg class="jt-bell" viewBox="0 0 80 112" aria-hidden="true" focusable="false">
   <defs><linearGradient id="jtBrass" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#6E4A12" /><stop offset=".32" stop-color="#D9AE52" /><stop offset=".5" stop-color="#F6DE9C" /><stop offset=".7" stop-color="#C2923A" /><stop offset="1" stop-color="#6E4A12" /></linearGradient></defs>
@@ -139,35 +120,13 @@ function page(ctx) {
   const bsS = (b) => (b.full.short?.en ? (/B\.S\./.test(b.full.short.en) ? b.full.short.en : `${b.full.short.en} B.S.`) : b.full.en);
   const inv = txt('hero.invocation');
   const lead = P.lead;
-  const janti = (cls = '') => `<span class="jt-janti ${cls}" aria-hidden="true"><span class="jt-janti__m">
-      <img class="jt-janti__a" src="${A}procession.webp" alt="" decoding="async" /><img class="jt-janti__b" src="${A}procession.webp" alt="" decoding="async" /></span></span>`;
+  const janti = jantiWalkers;
   const plaque = (title, id = '', cls = '') => `<h2 class="jt-plaque ${cls}"${id ? ` id="${id}"` : ''}><span>${bi(title)}</span></h2>`;
   const hang = (inner, cls = '') => `<div class="jt-hang ${cls}"><span class="jt-hang__post" aria-hidden="true"></span><span class="jt-hang__arm" aria-hidden="true"></span><span class="jt-hang__chain" aria-hidden="true"></span>${inner}</div>`;
   const stop = (id, cls, inner, label = '') => `<article class="jt-stop jt-stop--${cls}"${id ? ` id="${id}"` : ''}${label ? ` aria-labelledby="${label}"` : ''}><div class="jt-stop__in">${inner}</div></article>`;
 
   // ── hero: the carved window with Ganesh in its torana, the doli curtain rolled up over the names ──
-  const hero = `
-    <div class="jt-hero">
-      <div class="jt-hero__street" aria-hidden="true"><img src="${A}street-sm.webp" srcset="${A}street-sm.webp 900w, ${A}street.webp 2048w" sizes="(max-aspect-ratio: 2/1) 200svh, 100vw" alt="" fetchpriority="high" decoding="async" /></div>
-      <div class="jt-hero__toran jt-toranstrip" aria-hidden="true"></div>
-      <div class="jt-arch">
-        ${torana(ctx.ganeshRef ? ctx.ganesh('jt-arch__gan', '(max-width: 700px) 90px, 130px') : npKalash('jt-arch__kal', '90px'), 'jt-arch__torana')}
-        <div class="jt-arch__lintel" aria-hidden="true"></div>
-        <div class="jt-arch__win">
-          <div class="jt-arch__text">
-            ${on(inv) ? `<p class="jt-inv su-in" lang="ne">${esc(inv.ne || inv.en)}</p>` : ''}
-            <p class="jt-title su-in" lang="ne">${esc(txt('hero.title').ne || 'शुभ विवाह')}</p>
-            <h1 class="su-names jt-names su-in">${ctx.names('&amp;')}</h1>
-            ${on(txt('hero.line')) ? `<p class="jt-hline su-in">${bi(txt('hero.line'))}</p>` : ''}
-            <p class="jt-hdate su-in">${bi({ en: `${AD.wd.en}, ${AD.day} ${AD.month.en} ${AD.year}`, ne: BS.day && BS.month && BS.year ? `${AD.wd.ne}, ${BS.month} ${BS.day}, ${BS.year}` : (BS.full.ne || AD.full.ne) })}</p>
-            ${placeLine?.en || placeLine?.ne ? `<p class="jt-hplace su-in">${bi(placeLine)}</p>` : ''}
-          </div>
-          <div class="jt-cur" aria-hidden="true"><span class="jt-cur__cloth"><span class="jt-cur__hem"><i></i></span></span><span class="jt-cur__val"></span></div>
-        </div>
-        <div class="jt-arch__sill" aria-hidden="true">${lamp('diyo', { cls: 'jt-arch__diyo', sizes: '64px' })}${lamp('diyo', { cls: 'jt-arch__diyo', sizes: '64px' })}</div>
-      </div>
-      ${janti('jt-hero__janti')}
-    </div>`;
+  const hero = heroHtml(ctx);
 
   // ── the street's stops ──
   const signs = [lead ? ['couple', L.couple] : null, ['date', L.day], ['families', L.families], P.events.length ? ['programme', L.events] : null, P.photos.length ? ['photos', L.photos] : null, ['arrive', L.house]].filter(Boolean);
@@ -445,35 +404,20 @@ const T = {
   ready(ctx) {
     initNepali();
     const ne = document.getElementById('f-name-err'); if (ne) { ne.hidden = false; ne.setAttribute('role', 'alert'); }
-    if (!ctx.reduced) {
-      document.querySelector('.jt-cur').classList.add('is-closed');
-      gsap.set('.jt-hero__janti', { x: () => -(document.querySelector('.jt-hero__janti').getBoundingClientRect().right - innerWidth * 0.1) });
-    }
+    heroPrepare(ctx);
   },
 
   open(ctx, tl) {
-    const q = (s) => document.querySelector(s);
-    const cloth = q('.jt-cur__cloth'); const hem = q('.jt-cur__hem');
-    const S = 0.04;
     // dusk lifts to golden hour
     tl.to('.jt-g__dusk', { opacity: 0, duration: 1.6, ease: 'sine.inOut' }, 0.15);
-    // the band strikes up: the procession walks in, stepping
-    tl.to('.jt-hero__janti', { x: 0, duration: 2.6, ease: 'power1.out' }, 0.1);
-    tl.fromTo('.jt-hero__janti .jt-janti__a', { y: 0 }, { y: -4, duration: 0.26, ease: 'sine.inOut', yoyo: true, repeat: 9 }, 0.1);
-    tl.fromTo('.jt-hero__janti .jt-janti__b', { y: 0 }, { y: -3, duration: 0.3, ease: 'sine.inOut', yoyo: true, repeat: 7 }, 0.24);
-    // the marigold toran swings with the music
-    tl.to('.jt-hero__toran', { keyframes: [{ skewX: 5, duration: 0.45, ease: 'sine.out' }, { skewX: -3.6, duration: 0.6, ease: 'sine.inOut' }, { skewX: 2, duration: 0.55, ease: 'sine.inOut' }, { skewX: -0.9, duration: 0.5, ease: 'sine.inOut' }, { skewX: 0, duration: 0.45, ease: 'sine.out' }], transformOrigin: '50% 0%' }, 0.2);
-    // the doli curtain rolls up over the names (the hem stays its own size as the cloth gathers)
-    const p = { s: 1 };
-    tl.to(p, { s: S, duration: 1.25, ease: 'power3.inOut', onUpdate: () => { cloth.style.transform = `scaleY(${p.s})`; hem.style.transform = `scaleY(${1 / p.s})`; } }, 1.45);
-    tl.call(() => { q('.jt-cur').classList.remove('is-closed'); cloth.style.transform = ''; hem.style.transform = ''; }, null, 2.72);
-    return 1.95;
+    // the band strikes up: the procession walks in, the toran swings, the doli curtain rolls up over the names
+    return heroEnter(tl, 0.1);
   },
 
   scroll(ctx) {
     if (!ctx.reduced) {
       // the hero's procession walks on as you leave the hero
-      gsap.to('.jt-hero__janti', { x: () => innerWidth * 0.35, ease: 'none', scrollTrigger: { trigger: '#top', start: 'top top', end: 'bottom top', scrub: true } });
+      heroScroll('#top');
       document.querySelectorAll('.jt-up').forEach((el) => {
         gsap.fromTo(el, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', clearProps: 'transform', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
       });

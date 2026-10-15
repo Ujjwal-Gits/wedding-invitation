@@ -18,6 +18,8 @@ import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import { initScratch } from './scratch.js';
+import { isOff, on, adParts, bsParts, npDay } from './kit.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 // a reload must start at the gate, not at a restored scroll position (ScrollTrigger re-enables 'auto' itself)
@@ -39,38 +41,16 @@ const UI = {
   date: { en: 'Date', ne: 'मिति' }, place: { en: 'Place', ne: 'स्थान' },
 };
 
-const isOff = (v) => !v || /^\s*(-|–|none|off|no|hide)\s*$/i.test(v);
-const on = (o) => !!o && (!isOff(o.en) || !isOff(o.ne));
 const safeColor = (s) => (/^#[0-9a-f]{3,8}$/i.test(String(s)) ? s : null);
 const safeHref = (u) => (/^https:\/\//i.test(String(u || '')) ? String(u) : '');
 const tel = (p) => String(p).replace(/[^\d+]/g, '');
 const keyOf = (ref) => (typeof ref === 'string' ? ref : ref && typeof ref === 'object' ? ref.lg || ref.sm || '' : '');
 
-function adParts(iso) {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
-  const g = (t) => en.find((p) => p.type === t)?.value || '';
-  const [wdNe, ...restNe] = dateOf(iso).ne.split(', ');
-  const t = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso)).replace(/\s?([ap])m$/i, (m, x) => ` ${x.toUpperCase()}M`);
-  return { wd: { en: g('weekday'), ne: wdNe }, day: g('day'), month: { en: g('month'), ne: restNe.join(', ').split(' ')[0] || '' }, year: g('year'), monthYear: { en: `${g('month')} ${g('year')}`, ne: restNe.join(', ') }, full: dateOf(iso), time: t };
-}
-function bsParts(iso, override) {
-  const b = bsDateOf(iso, override);
-  let day = null; let month = null; let year = null;
-  const m = String(b.short?.ne || '').match(/^(\S+)\s+([०-९]+),\s*([०-९]+)/);
-  if (m) [, month, day, year] = m;
-  else {
-    const ne = String(b.ne || '');
-    const md = ne.match(/([^\s,.०-९]+)\s+([०-९]{1,2})\s*गते/);
-    const y = ne.match(/([०-९]{4})/);
-    if (md && y) { [, month, day] = md; [, year] = y; }
-  }
-  return { full: b, day, month, year };
-}
-const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu' }).format(new Date(iso));
-
 /** Mount a suite theme. `T` is the theme's spec (see any of the five themes' main.js). */
 export async function mountSuite(T) {
   const config = await loadInvitation();
+  // another theme's gate and/or hero on this page (docs/MIX.md); without config.design nothing changes
+  const mix = await createMix({ host: T.slug, manifest: T.manifest, config });
   const params = new URLSearchParams(location.search);
   const DEBUG = params.has('debug');
   const reduced = reducedMotion() || params.has('still');
@@ -340,7 +320,8 @@ export async function mountSuite(T) {
     <figure class="su-lb__fig"><img alt="" decoding="async" /></figure>
     <button type="button" class="su-lb__btn su-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
   </div>`;
-  main.innerHTML = GATE + (T.page ? T.page(ctx) : PAGE_DEFAULT()) + DIALOGS;
+  main.innerHTML = (mix.gate ? '' : GATE) + (T.page ? T.page(ctx) : PAGE_DEFAULT()) + DIALOGS;
+  if (mix.hero) mix.mountHero(document.getElementById('top'));
 
   // ───────── shell, RSVP, dialogs ─────────
   const { player } = mountShell({ chapters: [] });
@@ -438,7 +419,7 @@ export async function mountSuite(T) {
   window.scrollTo(0, 0);
   let opened = false; let finished = false; let lenis = null; let tl = null; let safety = 0;
   T.ready?.(ctx);
-  openBtn.disabled = false; quietBtn.disabled = false;
+  if (openBtn) { openBtn.disabled = false; quietBtn.disabled = false; }
   document.body.classList.add('is-ready');
 
   function revealOnScroll() {
@@ -451,7 +432,7 @@ export async function mountSuite(T) {
     if (finished) return;
     finished = true;
     clearTimeout(safety);
-    gate.hidden = true;
+    if (gate) gate.hidden = true;
     document.body.classList.remove('su-locked', 'is-opening');
     document.body.classList.add('is-open');
     lenis = createSmooth();
@@ -459,15 +440,38 @@ export async function mountSuite(T) {
     ctx.lenis = () => lenis;
     T.ambient?.(ctx);
     T.scroll?.(ctx);
+    mix.afterOpen?.();
     ScrollTrigger.refresh();
-    document.getElementById('cue').addEventListener('click', (e) => {
+    document.getElementById('cue')?.addEventListener('click', (e) => {
       e.preventDefault();
       const to = document.querySelector(e.currentTarget.getAttribute('href')) || hero.nextElementSibling;
       const y = to.getBoundingClientRect().top + window.scrollY;
       if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
     });
   }
+  let mixGate = null;
+  function startMusic(withMusic) {
+    try { player.unlock(); if (withMusic && T.bell !== false) ringBell(player.ctx, { when: 0.05, gain: 0.2 }); player.start(withMusic); } catch { /* audio is optional */ }
+    document.body.classList.add('is-opening');
+  }
+  /** the hero's lines settle in, a few at a time; then the scroll cue (a foreign hero brings its own entrance) */
+  function heroIntro(tl, t) {
+    if (mix.heroInst) { mix.heroEnter(tl, t); return; }
+    // after another theme's gate: the hero's own pieces that its gate's motion would have brought in (T.heroIntro)
+    if (mixGate) T.heroIntro?.(ctx, tl, t);
+    if (reduced) {
+      tl.fromTo(hero.querySelectorAll('.su-in'), { opacity: 0 }, { opacity: 1, duration: 0.5 }, t).fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.2);
+      return;
+    }
+    const ins = [...hero.querySelectorAll('.su-in')];
+    gsap.set(ins, { opacity: 0 });
+    ins.forEach((el, i) => tl.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, t + i * 0.14));
+    tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.6 }, t + ins.length * 0.14 + 0.2);
+  }
+  // another theme's gate: it runs the opening and hands over to this page (docs/MIX.md)
+  mixGate = mix.gate ? mix.mountGate({ start: (m) => { opened = true; startMusic(m); }, intro: heroIntro, finish: afterOpen }) : null;
   function open(withMusic) {
+    if (mixGate) { tl = mixGate.open(withMusic); return; }
     if (opened) return;
     opened = true;
     try { player.unlock(); if (withMusic && T.bell !== false) ringBell(player.ctx, { when: 0.05, gain: 0.2 }); player.start(withMusic); } catch { /* audio is optional */ }
@@ -478,25 +482,21 @@ export async function mountSuite(T) {
     } else {
       tl.to('#gui', { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power2.out' }, 0);
       const t = T.open(ctx, tl, gate) ?? tl.duration();
-      // the hero's lines settle in, a few at a time; then the scroll cue
-      const ins = [...hero.querySelectorAll('.su-in')];
-      gsap.set(ins, { opacity: 0 });
-      ins.forEach((el, i) => tl.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, t + i * 0.14));
-      tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.6 }, t + ins.length * 0.14 + 0.2);
+      heroIntro(tl, t);
     }
     safety = setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
   }
-  openBtn.addEventListener('click', () => open(true));
-  quietBtn.addEventListener('click', () => open(false));
-  T.gateTap?.(ctx, () => open(true));
+  openBtn?.addEventListener('click', () => open(true));
+  quietBtn?.addEventListener('click', () => open(false));
+  if (!mixGate) T.gateTap?.(ctx, () => open(true));
 
   // ───────── debug hook (screenshots) ─────────
   if (DEBUG) {
     window.__su = {
       gsap, ctx, scratches,
       open: () => open(false),
-      at: (t) => { if (!opened) open(false); clearTimeout(safety); tl.pause(); tl.seek(t, false); return tl.duration(); },
-      finish: () => { if (!opened) open(false); clearTimeout(safety); tl.progress(1); },
+      at: (t) => { if (mixGate) return mixGate.at(t); if (!opened) open(false); clearTimeout(safety); tl.pause(); tl.seek(t, false); return tl.duration(); },
+      finish: () => { if (mixGate) { mixGate.finish(); return; } if (!opened) open(false); clearTimeout(safety); tl.progress(1); },
       to: (sel) => {
         const el = document.querySelector(sel);
         const y = el.getBoundingClientRect().top + window.scrollY;

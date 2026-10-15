@@ -1,0 +1,5 @@
+/* Janti's hero on another theme's page (docs/MIX.md): what janti.css gives the suite's hero wrapper and scroll cue,
+   restated for the mix wrapper. */
+.mx-part.mx-hero--janti { background: var(--jt-dusk); }
+.mx-hero--janti .mx-cue { left: auto; right: 10px; bottom: 10px; translate: none; padding: 8px 12px; border-radius: 999px; color: var(--jt-cream);
+  background: color-mix(in srgb, var(--jt-dusk) 72%, transparent); }

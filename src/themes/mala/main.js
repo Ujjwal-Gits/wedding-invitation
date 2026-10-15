@@ -22,10 +22,13 @@ import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import { GarlandScene, runScenes, preload } from './garland.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const config = await loadInvitation();
+// another theme's gate and/or hero on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'mala', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
@@ -393,6 +396,10 @@ main.innerHTML = `
 
 // ───────────────────────── Album: balanced columns, true proportions ─────────────────────────
 const grid = document.getElementById('album-grid');
+if (mix.hero) mix.mountHero(document.getElementById('top'));
+// another theme's gate covers the page instead of the garland arch: Mala's own gate never enters the page
+if (mix.gate) gate.remove();
+
 function layoutAlbum() {
   if (!grid) return;
   const cols = window.innerWidth < 760 ? 2 : 3;
@@ -481,7 +488,7 @@ const local = (el, host) => {
   return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height, cx: a.left - b.left + a.width / 2 };
 };
 const scenes = [];
-const gateStrands = document.getElementById('gate-strands');
+const gateStrands = gate.querySelector('#gate-strands'); // (still found when another theme's gate replaced Mala's)
 const stageSet = document.getElementById('stage-set');
 const swayStage = document.getElementById('sway-stage');
 const lineStage = document.getElementById('line-stage');
@@ -676,19 +683,32 @@ Promise.all([
   heroImg?.decode?.().catch(() => {}),
   document.fonts?.ready,
 ]).catch(() => {}).finally(() => {
-  enterBtn.disabled = false; quietBtn.disabled = false; gate.classList.add('is-ready');
+  if (enterBtn) { enterBtn.disabled = false; quietBtn.disabled = false; gate.classList.add('is-ready'); }
 });
 
 let opened = false;
-function open(withMusic) {
-  if (opened) return;
+/** Into the page: music from the guest's tap, scrolling on, the garland scenes laid out. */
+function startOpen(withMusic) {
+  if (opened) return false;
   opened = true;
   player.unlock(); player.start(withMusic);
   document.body.classList.remove('is-gated');
   window.scrollTo(0, 0);
   relayout();
   setupScroll();
-  const done = () => { gate.remove(); gateScene.active = false; };
+  return true;
+}
+/** The hero settles in from `at` (another theme's hero brings its own entrance). */
+function heroIntro(tl, at) {
+  if (mix.heroInst) { mix.heroEnter(tl, at); return; }
+  tl.fromTo('.ml-hero__grid', { scale: 0.95 }, { scale: 1, duration: 1.5, ease: 'power2.out', clearProps: 'transform' }, at)
+    .fromTo('.ml-hero .ml-rv', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 }, at + 0.55);
+}
+const mixGate = mix.gate ? mix.mountGate({ start: startOpen, intro: heroIntro }) : null;
+function open(withMusic) {
+  if (mixGate) { mixGate.open(withMusic); return; }
+  if (!startOpen(withMusic)) return;
+  const done = () => { gate.remove(); gateScene.active = false; mix.afterOpen?.(); };
   if (reduced) { gsap.to(gate, { opacity: 0, duration: 0.4, onComplete: done }); return; }
   // The entrance: the camera walks forward through the floral arch into the page.
   gate.classList.add('is-entering');
@@ -696,12 +716,11 @@ function open(withMusic) {
   tl.to('.ml-gate__inner', { opacity: 0, y: -8, duration: 0.4, ease: 'power2.in' }, 0)
     .to('#gate-arch', { scale: 2.6, duration: 1.8, ease: 'power2.inOut' }, 0.1)
     .to(gate, { backgroundColor: 'rgba(251, 248, 241, 0)', duration: 0.8, ease: 'power1.inOut' }, 0.45)
-    .to('#gate-arch', { opacity: 0, duration: 0.55, ease: 'power1.in' }, 1.3)
-    .fromTo('.ml-hero__grid', { scale: 0.95 }, { scale: 1, duration: 1.5, ease: 'power2.out', clearProps: 'transform' }, 0.45)
-    .fromTo('.ml-hero .ml-rv', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 }, 1.0);
+    .to('#gate-arch', { opacity: 0, duration: 0.55, ease: 'power1.in' }, 1.3);
+  heroIntro(tl, 0.45);
 }
-enterBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+enterBtn?.addEventListener('click', () => open(true));
+quietBtn?.addEventListener('click', () => open(false));
 
 // ───────────────────────── Scroll ─────────────────────────
 let lenis = null;
@@ -716,7 +735,7 @@ runScenes(scenes, gsap, {
 // The gate's strands hang and breathe while the guest decides to come in.
 const gateDrape = document.querySelector('.ml-arch__drape img');
 const initGate = () => { buildGate(); gateScene.forceRender = true; };
-if (gateDrape.complete) requestAnimationFrame(initGate); else gateDrape.addEventListener('load', initGate, { once: true });
+if (!gateDrape) { /* another theme's gate */ } else if (gateDrape.complete) requestAnimationFrame(initGate); else gateDrape.addEventListener('load', initGate, { once: true });
 // Fonts and the kalash images change the measured boxes; rebuild once they are in.
 Promise.all([document.fonts?.ready, ...[...gate.querySelectorAll('.ml-kalash')].map((im) => im.decode?.().catch(() => {}))]).then(() => { if (!opened) initGate(); });
 window.addEventListener('resize', () => { if (!opened) { clearTimeout(window.__mlG); window.__mlG = setTimeout(initGate, 150); } });
@@ -764,5 +783,5 @@ if (DEBUG) {
     toY: (y) => { const l = getLenis() || lenis; if (l) l.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y); ScrollTrigger.update(); },
     settle: () => scenes.forEach((s) => { s.settle(300); s.render(); }),
   };
-  if (params.has('open')) open(false);
+  if (params.has('open')) { if (mixGate) mixGate.finish(); else open(false); }
 }

@@ -1,0 +1,48 @@
+/* Mix (docs/MIX.md): the wrappers around another theme's gate or hero on this page. Everything here is scoped to
+   .mx-* classes, so a page without a design is untouched. A part's colours and fonts come from its own theme's
+   tokens, declared on `.mx-part.theme-<slug>` (and on `.mx-part.su` for the suite's defaults). */
+.mx-part {
+  /* the part does not inherit the host's typography */
+  color: var(--su-ink, #2b1d1a);
+  font: 400 17px/1.65 var(--su-f-body, 'Mukta', sans-serif);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: initial;
+  font-synthesis: none;
+}
+html[data-lang='ne'] .mx-part { font-size: 18px; line-height: 1.8; }
+
+/* ───────── the gate: fixed over the host page until it has opened ───────── */
+.mx-gate { position: fixed; inset: 0; z-index: 30; overflow: hidden; margin: 0; }
+.mx-part.mx-gate.mx-gate { background: none; } /* the module's scene paints the gate; its exit shows the page beneath */
+.mx-gate__scene { position: absolute; inset: 0; }
+.mx-gate:not(.is-ready) .mx-ui__open, .mx-gate:not(.is-ready) .mx-ui__quiet { cursor: progress; }
+
+/* the standard line + buttons (a module may bring its own with [data-mx-open] / [data-mx-quiet]) */
+.mx-ui { position: absolute; z-index: 5; left: 50%; bottom: max(22px, 4vh); translate: -50% 0; width: min(calc(100% - 32px), 420px);
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: var(--mx-ui-ink, var(--su-ink, #2b1d1a)); }
+.mx-ui__line { margin: 0; font: 400 19px/1.4 var(--su-f-display, Georgia, serif); text-wrap: balance; }
+.mx-ui__line .l-ne { font: 400 19px/1.5 var(--su-f-deva, 'Mukta', sans-serif); }
+.mx-ui__open { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 28px; border-radius: var(--mx-btn-radius, 999px);
+  border: 1.5px solid var(--mx-btn-bg, var(--su-accent, #8e1424)); background: var(--mx-btn-bg, var(--su-accent, #8e1424)); color: var(--mx-btn-ink, var(--su-accent-ink, #fff));
+  font: 600 13.5px/1.2 var(--su-f-body, 'Mukta', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.22, 0.8, 0.24, 1); }
+.mx-ui__open .l-ne { font: 600 16px/1.3 var(--su-f-body, 'Mukta', sans-serif); letter-spacing: 0; text-transform: none; }
+.mx-ui__open:hover { transform: translateY(-1px); }
+.mx-ui__open:active { transform: scale(0.98); }
+.mx-ui__quiet { padding: 4px 10px; border: 0; background: none; color: inherit; font: 500 13px/1.3 var(--su-f-body, 'Mukta', sans-serif); letter-spacing: 0.08em;
+  text-decoration: underline; text-underline-offset: 4px; cursor: pointer; opacity: 0.85; }
+.mx-ui__quiet .l-ne { font-size: 15px; letter-spacing: 0; }
+.mx-ui button[disabled] { opacity: 0.55; }
+.mx-ui :focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+/* ───────── the hero: the first screen, the host's page continues below ───────── */
+.mx-hero { position: relative; display: block; min-height: 100svh; overflow: hidden; isolation: isolate; margin: 0; padding: 0; }
+.mx-cue { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; z-index: 6; display: inline-flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 12px; color: var(--mx-cue-ink, var(--su-ink-2, currentColor)); text-decoration: none; font: 600 11.5px/1.2 var(--su-f-body, 'Mukta', sans-serif);
+  letter-spacing: 0.28em; text-transform: uppercase; }
+.mx-cue .l-ne { font-size: 14px; letter-spacing: 0; }
+.mx-cue i { width: 1px; height: 22px; background: linear-gradient(currentColor, transparent); }
+.mx-hero.is-open .mx-cue i { animation: mx-cue 2s cubic-bezier(0.45, 0, 0.3, 1) 5; } /* a few bobs, then still */
+@keyframes mx-cue { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(7px); opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .mx-hero .mx-cue i { animation: none; } }

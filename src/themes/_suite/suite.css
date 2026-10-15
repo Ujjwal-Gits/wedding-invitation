@@ -1,6 +1,6 @@
 /* The card suite: structure only. Each theme sets the tokens below on body.theme-<slug> and styles its own
    gate, hero and ornaments; nothing here is a colour or a typeface decision. */
-body.su {
+body.su, :where(.mx-part).su { /* a mix wrapper (docs/MIX.md): the theme's .mx-part.theme-<slug> tokens always win */
   --su-bg: #FBF7F1;          /* page paper */
   --su-paper: #FFFFFF;       /* cards */
   --su-ink: #2B1D1A;         /* body text */
