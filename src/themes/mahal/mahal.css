@@ -1,0 +1,593 @@
+/* Mangal (मंगल) · the red-and-gold card come alive.
+   Ivory handmade paper, deep sindoor red, gold leaf; one accent colour (sindoor), gold as the metal. */
+body.theme-mahal {
+  --mg-red: #8C1018;
+  --mg-red-dk: #6A0A12;
+  --mg-red-lt: #A9161F;
+  --mg-ox: #4E070D;
+  --mg-gold: #D4A24C;
+  --mg-gold-lt: #F4D896;   /* text on red: 7.6:1 on #8C1018 */
+  --mg-gold-dk: #8A5A14;   /* rules and labels on ivory: 5.4:1 */
+  --mg-ivory: #F8F1E3;
+  --mg-ink: #2C0C09;        /* 15:1 on ivory */
+  --mg-ink-2: #5A2A20;      /* 8.9:1 on ivory */
+  --mg-maroon: #7A0F17;     /* headings on ivory: 9.6:1 */
+  --mg-foil: linear-gradient(176deg, #FFF3C9 0%, #F6D27A 30%, #E2AE4C 52%, #F9E2A0 70%, #D9A23F 100%);
+
+  --bg: var(--mg-ivory);
+  --bg-2: #F1E6D0;
+  --ink: var(--mg-ink);
+  --ink-dim: var(--mg-ink-2);
+  --accent: var(--mg-red);
+  --accent-2: var(--mg-gold-lt);
+  --hair: rgba(138, 90, 20, 0.4);
+  --paper: #FFFBF4;
+  --paper-ink: var(--mg-ink);
+  --paper-dim: #6A3A2C;
+  --paper-accent: var(--mg-red);
+  --btn-bg: var(--mg-red);
+  --btn-ink: #FBE7B0;
+  --err: #A3242C;
+  --scrim: 46, 6, 9;
+  --f-display: 'Cormorant Garamond', 'Georgia', serif;
+  --f-display-style: normal;
+  --f-display-weight: 600;
+  --f-names: 'Cormorant Garamond', 'Georgia', serif;
+  --f-names-style: normal;
+  --f-body: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  --f-deva: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  --f-deva-display: 'Yatra One', 'Mukta', serif;
+  --f-cal: 'Yatra One', 'Mukta', serif;
+  --mg-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+  background: var(--mg-ivory) url('/themes/mahal/decor/paper.webp') repeat;
+  background-size: 520px;
+  color: var(--mg-ink);
+  font: 400 17px/1.65 var(--f-body);
+  font-synthesis: none;
+  font-variant-numeric: lining-nums;
+}
+html[data-lang='ne'] body.theme-mahal { font-size: 18px; line-height: 1.8; }
+body.theme-mahal ::selection { background: var(--mg-red); color: #FFF1C9; }
+body.mg-locked { overflow: hidden; height: 100svh; }
+body.mg-locked .mg-sec, body.mg-locked .mg-close { visibility: hidden; }
+
+/* HUD on this theme: sindoor pills with gold type, readable over flowers and paper */
+.theme-mahal .hud__btn, .theme-mahal .pill { background: rgba(110, 10, 18, 0.88); color: #FBE7B0; border-color: rgba(244, 216, 150, 0.55); }
+.theme-mahal .sheet__panel { background: #5C0911; color: #FBE7B0; }
+.theme-mahal .trk__text b, .theme-mahal .sheet__close { color: #FBE7B0; }
+.theme-mahal .trk__text small { color: rgba(251, 231, 176, 0.75); }
+.theme-mahal .sheet .eyebrow { color: #F4D896; }
+.theme-mahal :focus-visible { outline: 2px solid var(--mg-red); outline-offset: 3px; }
+.theme-mahal .mg-fam__card :focus-visible, .theme-mahal .mg-rsvp__note :focus-visible, .theme-mahal .mg-close :focus-visible,
+.theme-mahal .mg-hero :focus-visible, .theme-mahal .mg-card__sheet :focus-visible, .theme-mahal .hud :focus-visible { outline-color: #FFE7A6; }
+
+/* ───────────────────────── Hero: the doorway ───────────────────────── */
+.mg-hero { position: relative; height: 100svh; min-height: 520px; overflow: hidden; isolation: isolate; }
+.mg-door { position: absolute; z-index: 2; }
+.mg-framewrap { position: absolute; inset: 0; z-index: 3; pointer-events: none; filter: drop-shadow(0 18px 26px rgba(60, 10, 6, 0.28)); }
+.mg-framewrap svg { display: block; }
+.mg-panel { position: absolute; z-index: 1; }
+.mg-panel__bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 80% at 50% 38%, #A3141E 0%, #8C1018 46%, #640911 100%);
+}
+.mg-panel__bg::after { content: ''; position: absolute; inset: 0; background: var(--mg-damask) 0 0 / 84px repeat; opacity: 0.07; }
+.mg-panel__border { position: absolute; inset: 0; pointer-events: none; }
+.mg-panel__border svg { display: block; }
+.mg-panel__content { position: absolute; z-index: 9; left: 0; right: 0; pointer-events: none; padding-bottom: 66px !important; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 clamp(26px, 6%, 80px); text-align: center; color: var(--mg-gold-lt); }
+.mg-panel__inner { --fit: 1; width: 100%; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: calc(14px * var(--fit)); opacity: 0; transform-origin: 50% 40%; }
+.mg-panel__inner.is-side { max-width: 1240px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: clamp(36px, 5vw, 96px); text-align: center; }
+.mg-hero__text { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.mg-hero__photo { flex: none; }
+.mg-hero__photo .mg-frame { filter: drop-shadow(0 26px 30px rgba(30, 0, 4, 0.45)); }
+.mg-hero__photo .mg-frame__body { background: #6A0A12; }
+.mg-hero__medal { width: calc(clamp(92px, 9vw, 132px) * var(--fit)); margin-bottom: calc(6px * var(--fit)); }
+.mg-hero__medal .mg-medal { width: 100%; }
+.mg-medal { position: relative; aspect-ratio: 1; filter: drop-shadow(0 6px 10px rgba(30, 0, 4, 0.4)); }
+.mg-medal__pic { position: absolute; left: 13.6%; top: 13.6%; width: 72.8%; height: 72.8%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 38%, #F6D88E 0%, #E2A848 34%, #A3141E 72%, #7A0E17 100%); }
+.mg-medal__pic img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.mg-medal__ring { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.mg-medal--door { position: absolute; z-index: 4; pointer-events: none; }
+.mg-symbol { margin: 0; font: 400 calc(clamp(30px, 3.2vw, 46px) * var(--fit))/1.15 var(--f-cal); color: #F6D27A; }
+.mg-invoke { margin: 0 0 calc(4px * var(--fit)); font: 500 calc(clamp(15px, 1.25vw, 19px) * var(--fit))/1.6 var(--f-deva-display) !important; color: #F4D896; }
+.mg-title { margin: calc(4px * var(--fit)) 0 0; font-weight: 400; line-height: 1; }
+.mg-title__ne {
+  display: inline-block; padding: 0.06em 0.08em 0.12em;
+  font: 400 calc(clamp(58px, 7vw, 120px) * var(--fit))/1.12 var(--f-cal) !important;
+  color: #F2C966; background: var(--mg-foil); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(58, 4, 8, 0.55)) drop-shadow(0 8px 18px rgba(40, 2, 6, 0.35));
+}
+.mg-hero__div { display: block; margin: calc(10px * var(--fit)) 0 calc(10px * var(--fit)); }
+.mg-hero__div svg { width: calc(180px * var(--fit)); height: auto; display: block; }
+.mg-names { margin: 0; font: 600 calc(clamp(34px, 4.2vw, 62px) * var(--fit))/1.12 var(--f-names); color: #FFF1CC; text-wrap: balance; }
+.mg-names .l-ne { font: 400 0.84em/1.35 var(--f-deva-display); }
+.mg-n { display: inline-block; white-space: nowrap; }
+.mg-amp { display: inline-block; padding: 0 0.12em; font-size: 0.6em; color: #F2C966; vertical-align: 0.12em; }
+.mg-cue { position: absolute; left: 50%; bottom: 0; translate: -50% 0; display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 12px; color: #F4D896; text-decoration: none; font: 600 12px/1.2 var(--f-body); letter-spacing: 0.28em; text-transform: uppercase; opacity: 0; }
+.mg-cue .l-ne { font: 500 15px/1.3 var(--f-deva); letter-spacing: 0; }
+.mg-cue i { width: 1px; height: 22px; background: linear-gradient(#F4D896, transparent); }
+body.is-open .mg-panel__content { pointer-events: auto; }
+body.is-open .mg-cue i { animation: mg-cue 2s cubic-bezier(0.45, 0, 0.3, 1) infinite; }
+@keyframes mg-cue { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(7px); opacity: 0.45; } }
+
+/* walking in: the welcome line, centred while the camera moves through the gate */
+.mg-welcome { position: absolute; inset: 0 16px 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; visibility: hidden; pointer-events: none; will-change: transform, opacity; }
+.mg-welcome p { margin: 0; text-shadow: 0 2px 16px rgba(40, 2, 6, 0.6); }
+.mg-welcome__ne { font: 400 clamp(32px, 4.2vw, 62px)/1.45 var(--f-deva-display) !important; color: #F6D88E; text-wrap: balance; }
+.mg-welcome__en { font: 600 clamp(22px, 2.2vw, 32px)/1.3 var(--f-display); color: #F4D896; text-wrap: balance; }
+.mg-welcome__en::before { content: ''; display: block; width: 64px; height: 1px; margin: 14px auto 16px; background: linear-gradient(90deg, transparent, #F4D896, transparent); }
+
+/* inside the doorway: the red arch all around, ruled in gold, the Dhaka band underfoot */
+.mg-inside {
+  position: absolute; inset: 0; z-index: 8; opacity: 0; visibility: hidden; pointer-events: none; transform-origin: 50% 45%;
+  background: radial-gradient(120% 80% at 50% 40%, #A3141E 0%, #8C1018 46%, #640911 100%);
+}
+.mg-inside::after { content: ''; position: absolute; inset: 0; background: var(--mg-damask) 0 0 / 84px repeat; opacity: 0.07; }
+.mg-inside::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: var(--mg-thr, 40px); background: var(--mg-dhaka) 0 50% / auto 100% repeat-x; box-shadow: 0 -2px 0 #D4A24C, 0 -5px 0 #6A0A12, 0 -6px 0 #D4A24C; }
+.mg-inside__rule { position: absolute; left: 18px; right: 18px; top: 18px; bottom: calc(var(--mg-thr, 40px) + 16px); border: 1.5px solid rgba(244, 216, 150, 0.7); border-bottom: 0; border-radius: 50% 50% 0 0 / 130px 130px 0 0; }
+.mg-inside__rule::after { content: ''; position: absolute; inset: 6px 6px 0; border: 1px solid rgba(244, 216, 150, 0.35); border-bottom: 0; border-radius: 50% 50% 0 0 / 124px 124px 0 0; }
+/* the layers the camera passes are their own GPU layers before the walk starts (no raster mid-move) */
+body.mg-locked .mg-door, body.mg-locked .mg-bells, body.mg-locked .mg-garland, body.mg-locked .mg-kalashes, body.mg-locked .mg-beam, body.mg-locked .mg-spill, body.mg-locked .mg-threshold, body.mg-locked .mg-in { will-change: transform; }
+.mg-hero.is-inside .mg-door, .mg-hero.is-inside .mg-bells, .mg-hero.is-inside .mg-garland,
+.mg-hero.is-inside .mg-beam, .mg-hero.is-inside .mg-spill, .mg-hero.is-inside .mg-threshold { visibility: hidden; }
+
+/* light spilling through the doors as they open */
+.mg-light { position: absolute; inset: 0; opacity: 0; pointer-events: none; overflow: hidden;
+  background: radial-gradient(70% 62% at 50% 56%, rgba(255, 244, 214, 0.98) 0%, rgba(255, 214, 140, 0.8) 30%, rgba(214, 120, 60, 0.35) 62%, rgba(140, 16, 24, 0) 88%); }
+.mg-light__gap { position: absolute; top: 0; bottom: 0; left: 50%; width: 56%; margin-left: -28%; opacity: 0; transform: scaleX(0.03); will-change: transform, opacity;
+  background: linear-gradient(90deg, rgba(255, 236, 190, 0) 0%, rgba(255, 240, 205, 0.85) 30%, #FFF8E6 50%, rgba(255, 240, 205, 0.85) 70%, rgba(255, 236, 190, 0) 100%); }
+.mg-spill { position: absolute; z-index: 3; opacity: 0; pointer-events: none; transform-origin: 50% 100%; will-change: transform, opacity;
+  background: radial-gradient(50% 100% at 50% 100%, rgba(255, 226, 160, 0.55) 0%, rgba(255, 210, 140, 0.22) 45%, rgba(255, 210, 140, 0) 75%); }
+
+/* the two carved leaves */
+.mg-leaves { position: absolute; z-index: 2; perspective: 1700px; perspective-origin: 50% 46%; pointer-events: none; }
+.mg-leaf { position: absolute; top: 0; height: 100%; width: 50%; will-change: transform; backface-visibility: visible; transform-style: flat; }
+.mg-leaf--l { left: 0; transform-origin: 0 50%; }
+.mg-leaf--r { right: 0; transform-origin: 100% 50%; }
+.mg-leaf svg { display: block; position: absolute; inset: 0; }
+.mg-leaf__shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20, 0, 2, 0.9), rgba(20, 0, 2, 0.55)); opacity: 0; pointer-events: none; }
+.mg-leaf--r .mg-leaf__shade { background: linear-gradient(270deg, rgba(20, 0, 2, 0.9), rgba(20, 0, 2, 0.55)); }
+body.is-open .mg-leaves { visibility: visible; }
+
+/* the gate text and the latch, on the closed doors */
+.mg-gate { --gk: 1; position: absolute; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(clamp(12px, 2.4vh, 26px) * var(--gk)); pointer-events: none; }
+.mg-gate > * { pointer-events: auto; }
+.mg-plaque {
+  position: relative; width: min(calc(560px * var(--gk)), 86%); padding: calc(clamp(16px, 3vh, 30px) * var(--gk)) clamp(18px, 3vw, 36px) calc(clamp(14px, 2.6vh, 26px) * var(--gk)); text-align: center; color: #FFF1CC;
+  background: radial-gradient(120% 120% at 50% 30%, #9B1520, #6A0A12); border: 2px solid #D9A848;
+  box-shadow: inset 0 0 0 5px #6A0A12, inset 0 0 0 6px rgba(244, 216, 150, 0.7), 0 22px 40px -18px rgba(30, 0, 2, 0.75);
+  border-radius: 999px 999px 10px 10px / 70px 70px 10px 10px;
+}
+.mg-plaque__line { margin: 0; font: 600 calc(13px * var(--gk))/1.5 var(--f-body); letter-spacing: 0.22em; text-transform: uppercase; color: #F4D896; }
+.mg-plaque__line .l-ne { font: 500 calc(18px * var(--gk))/1.6 var(--f-deva); letter-spacing: 0; text-transform: none; }
+.mg-plaque__names { margin: calc(8px * var(--gk)) 0 0; font: 600 calc(clamp(32px, 3.6vw, 54px) * var(--gk))/1.12 var(--f-names); color: #FFF1CC; text-wrap: balance; }
+.mg-plaque__names .l-ne { font: 400 0.84em/1.35 var(--f-deva-display); }
+.mg-latch { display: inline-flex; flex-direction: column; align-items: center; gap: calc(10px * var(--gk)); padding: 0; background: none; border: 0; cursor: pointer; color: inherit; }
+.mg-latch__disc { display: block; width: calc(clamp(56px, 8vh, 80px) * var(--gk)); height: calc(clamp(56px, 8vh, 80px) * var(--gk)); border-radius: 50%; filter: drop-shadow(0 8px 12px rgba(30, 0, 2, 0.6)); transition: transform 220ms var(--mg-ease); }
+.mg-latch__disc svg { width: 100%; height: 100%; display: block; }
+.mg-latch:hover .mg-latch__disc { transform: scale(1.05) rotate(8deg); }
+.mg-latch:active .mg-latch__disc { transform: scale(0.96); }
+.mg-latch__label { display: inline-block; padding: calc(9px * var(--gk)) 22px calc(8px * var(--gk)); border-radius: 999px; background: #F4D896; color: #4E070D; font: 600 calc(14px * max(var(--gk), 0.86))/1.2 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; box-shadow: 0 10px 22px -10px rgba(30, 0, 2, 0.7); }
+.mg-latch__label .l-ne { font: 600 calc(17px * max(var(--gk), 0.86))/1.3 var(--f-deva); }
+.mg-latch:focus-visible { outline: none; }
+.mg-latch:focus-visible .mg-latch__label { outline: 2px solid #FFF1CC; outline-offset: 3px; }
+.mg-quiet { padding: calc(8px * var(--gk)) 16px; border: 0; border-radius: 999px; background: rgba(78, 7, 13, 0.85); color: #F4D896; font: 500 calc(13px * max(var(--gk), 0.9))/1.3 var(--f-body); letter-spacing: 0.12em; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.mg-quiet .l-ne { font: 500 calc(15px * max(var(--gk), 0.9))/1.4 var(--f-deva); }
+.mg-latch[disabled], .mg-quiet[disabled] { opacity: 0.6; cursor: progress; }
+
+/* diyos at the threshold, bells, garland, Dhaka band */
+.mg-diyos { position: absolute; z-index: 6; height: 0; pointer-events: none; }
+.mg-diyos .mg-diyo { position: absolute; bottom: 2px; }
+.mg-diyos .mg-diyo--l { left: var(--mg-diyo-in, calc(var(--mg-diyo-w) * 0.7)); }
+.mg-diyos .mg-diyo--r { right: var(--mg-diyo-in, calc(var(--mg-diyo-w) * 0.7)); transform: scaleX(-1); } /* the two face each other */
+/* desktop: on the floor beside the pillars, spouts and flames turned in toward the door, with a soft contact shadow */
+.mg-kalashes .mg-gdiyo { position: absolute; display: block; }
+.mg-kalashes .mg-gdiyo[hidden] { display: none; }
+.mg-gdiyo.mg-diyo--r { transform: scaleX(-1); }
+.mg-gdiyo::before { content: ''; position: absolute; left: -2%; width: 104%; top: 93%; height: 11%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(40, 8, 4, 0.5), rgba(40, 8, 4, 0.2) 60%, rgba(40, 8, 4, 0)); }
+.mg-gdiyo .mg-diyo__halo { width: 190%; opacity: 0.8; }
+.mg-diyo svg { display: block; overflow: visible; }
+.mg-flame { transform-box: fill-box; transform-origin: 50% 92%; animation: mg-flicker 2.6s ease-in-out infinite; }
+.mg-glow { animation: mg-glow 3.2s ease-in-out infinite; }
+@keyframes mg-flicker { 0%, 100% { transform: scale(1, 1) rotate(0deg); } 22% { transform: scale(0.96, 1.06) rotate(-2deg); } 47% { transform: scale(1.03, 0.95) rotate(1.4deg); } 71% { transform: scale(0.98, 1.04) rotate(-0.8deg); } 86% { transform: scale(1.01, 0.98) rotate(0.6deg); } }
+@keyframes mg-glow { 0%, 100% { opacity: 1; } 40% { opacity: 0.82; } 70% { opacity: 0.94; } }
+
+.mg-bells { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.mg-bell { position: absolute; transform-origin: 50% 0; will-change: transform; filter: drop-shadow(3px 8px 6px rgba(50, 10, 0, 0.3)); }
+.mg-bell svg { display: block; }
+
+.mg-garland { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.mg-toran { position: absolute; height: auto; display: block; filter: drop-shadow(0 6px 6px rgba(60, 10, 4, 0.28)); }
+.mg-beam { position: absolute; left: 0; right: 0; top: 0; z-index: 7; pointer-events: none; }
+.mg-beam svg { display: block; filter: drop-shadow(0 3px 4px rgba(60, 10, 4, 0.25)); }
+
+.mg-threshold { position: absolute; left: 0; right: 0; bottom: 0; height: var(--mg-thr, 40px); z-index: 1; background: var(--mg-dhaka) 0 50% / auto 100% repeat-x; box-shadow: 0 -2px 0 #D4A24C, 0 -5px 0 #6A0A12, 0 -6px 0 #D4A24C; }
+
+/* the silk drape under the lintel: swags, rosettes at the folds, short marigold strings */
+.mg-drape { position: absolute; display: block; max-width: none; filter: drop-shadow(0 6px 7px rgba(40, 4, 6, 0.32)); }
+/* a brass kalash on the floor at the foot of each pillar, with a soft contact shadow */
+.mg-kalashes { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.mg-gkalash { position: absolute; }
+.mg-gkalash::before { content: ''; position: absolute; left: 4%; right: 4%; top: 91%; height: 9%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(40, 8, 4, 0.5), rgba(40, 8, 4, 0.22) 55%, rgba(40, 8, 4, 0)); }
+.mg-gkalash img { position: relative; display: block; width: 100%; height: 100%; filter: drop-shadow(6px 8px 8px rgba(40, 10, 4, 0.28)); }
+
+.mg-hero.is-inside .mg-kalashes { visibility: hidden; }
+
+/* inside: Ganesh first, then softly behind the opening words */
+.mg-gan { position: absolute; z-index: 0; left: 50%; top: 50%; translate: -50% -50%; height: min(92%, 130vw, 900px); aspect-ratio: 1000 / 1221; pointer-events: none; }
+.mg-gan__img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; will-change: opacity, transform; filter: saturate(1.12) contrast(1.04) drop-shadow(0 18px 30px rgba(30, 0, 4, 0.35)); }
+.mg-gan__glow { position: absolute; left: 50%; top: 46%; width: 150%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0; will-change: opacity, transform;
+  background: radial-gradient(closest-side, rgba(255, 226, 150, 0.55), rgba(255, 196, 96, 0.26) 42%, rgba(255, 170, 70, 0.08) 68%, rgba(255, 170, 70, 0) 100%); }
+.mg-panel__inner { position: relative; z-index: 1; }
+.mg-bless { margin: calc(16px * var(--fit)) 0 0; max-width: 34ch; font: 500 italic calc(clamp(19px, 1.6vw, 25px) * var(--fit))/1.5 var(--f-display); color: #FBE7B0; text-wrap: balance; }
+.mg-bless .l-ne { font: 400 calc(clamp(20px, 1.7vw, 27px) * var(--fit))/1.65 var(--f-deva-display); font-style: normal; }
+
+/* the couple, in their own section just below the doors */
+.mg-portrait { display: grid; place-items: center; padding-top: clamp(70px, 11vh, 120px); padding-bottom: clamp(40px, 6vh, 70px); }
+.mg-portrait__in { width: min(480px, 84vw); }
+.mg-portrait .mg-frame__body { background: #6A0A12; }
+
+/* diyos: brass lamps with a warm, living flame */
+.mg-diyo { position: relative; display: inline-block; }
+.mg-diyo__halo { position: absolute; left: 87%; top: 24%; width: 260%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 214, 130, 0.62), rgba(255, 168, 66, 0.3) 30%, rgba(255, 128, 40, 0.1) 60%, rgba(255, 128, 40, 0) 100%);
+  animation: mg-halo 3.4s ease-in-out infinite; will-change: opacity, transform; }
+.mg-diyo svg { position: relative; }
+@keyframes mg-halo { 0%, 100% { opacity: 1; transform: scale(1); } 35% { opacity: 0.82; transform: scale(0.96); } 65% { opacity: 0.95; transform: scale(1.03); } }
+
+
+/* ───────────────────────── Sections ───────────────────────── */
+.mg-sec { position: relative; padding: clamp(80px, 13vh, 150px) clamp(16px, 5vw, 72px); }
+.mg-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin: 0 auto clamp(18px, 3vh, 28px); }
+.mg-head .mg-div { margin-bottom: 14px; }
+.mg-kicker { margin: 0 0 8px; font: 600 13px/1.4 var(--f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-kicker .l-ne { font: 500 16px/1.5 var(--f-deva); letter-spacing: 0; }
+.mg-kicker--gold { color: #F4D896; }
+.mg-h2 { margin: 0; font: 600 clamp(36px, 4.6vw, 64px)/1.08 var(--f-display); color: var(--mg-maroon); text-wrap: balance; }
+.mg-h2 .l-ne { font: 400 clamp(32px, 4vw, 54px)/1.35 var(--f-deva-display); }
+.mg-h2--gold { color: #F6D88E; }
+.mg-lede { margin: 0 auto; max-width: 44ch; text-align: center; font: 400 clamp(18px, 1.5vw, 21px)/1.6 var(--f-body); color: var(--mg-ink-2); }
+.mg-lede .l-ne { font: 400 clamp(18px, 1.5vw, 21px)/1.8 var(--f-deva); }
+.mg-lede--light { color: #FBE7B0; text-align: left; margin: 10px 0 0; }
+
+.mg-rise { opacity: 0; transform: translate3d(0, 36px, 0); transition: opacity 760ms var(--mg-ease), transform 900ms var(--mg-ease); }
+.mg-rise.is-in { opacity: 1; transform: none; }
+
+/* gold arch frames: the crown sits above the photograph, the photograph is never masked */
+.mg-frame { margin: 0; display: flex; flex-direction: column; filter: drop-shadow(0 22px 26px rgba(70, 14, 6, 0.22)); }
+.mg-frame__crown { display: block; aspect-ratio: var(--crown); margin-bottom: -1px; position: relative; z-index: 1; }
+.mg-frame__crown svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mg-frame__body { display: block; padding: clamp(6px, 0.7vw, 10px); background: var(--mg-red); border: 2.5px solid #D4A24C; border-top: 0; box-shadow: inset 0 0 0 1px rgba(244, 216, 150, 0.5); }
+.mg-frame__body img { width: 100%; height: auto; display: block; object-fit: contain; background: #5C0911; outline: 1px solid rgba(244, 216, 150, 0.6); outline-offset: 0; }
+.mg-frame__btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+
+/* every other photograph: a plain ivory mat and one thin gold line, never cropped */
+.mg-plain { margin: 0; padding: clamp(6px, 0.7vw, 10px); background: #FFFBF4; box-shadow: inset 0 0 0 1px rgba(184, 138, 46, 0.85), 0 18px 30px -22px rgba(70, 14, 6, 0.45); }
+.mg-plain img { width: 100%; height: auto; display: block; }
+
+/* the date under gold foil, then the countdown */
+.mg-when { text-align: center; }
+.mg-scratch { display: flex; flex-direction: column; align-items: center; gap: 18px; margin: clamp(26px, 4vh, 40px) auto 0; }
+.mg-scratch__card { position: relative; width: min(100%, 600px); padding: 10px; background: linear-gradient(160deg, #F6E1A0, #C9923A 40%, #F2D58C 60%, #A8741F); box-shadow: 0 30px 50px -30px rgba(60, 10, 6, 0.55); }
+.mg-scratch__date { position: relative; min-height: clamp(250px, 30vh, 300px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 22px; background: #FFFBF4 url('/themes/mahal/decor/paper.webp') repeat; background-size: 420px; box-shadow: inset 0 0 0 5px #FFFBF4, inset 0 0 0 6px rgba(184, 138, 46, 0.7); }
+.mg-scratch__date p { margin: 0; }
+.mg-scratch__wd { font: 600 13px/1.5 var(--f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-scratch__wd .l-ne { font: 500 18px/1.6 var(--f-deva); letter-spacing: 0; text-transform: none; }
+.mg-scratch__date .mg-scratch__big { margin-top: 6px; font: 600 clamp(36px, 4.4vw, 54px)/1.15 var(--f-display); color: var(--mg-maroon); }
+.mg-scratch__big .l-ne { font: 600 clamp(34px, 4vw, 48px)/1.4 var(--f-deva); }
+.mg-scratch__date .mg-scratch__alt { margin-top: 6px; font: 500 19px/1.55 var(--f-body); color: var(--mg-ink); }
+.mg-scratch__alt .l-ne { font-size: 19px; line-height: 1.7; }
+.mg-scratch__date .mg-scratch__time { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(138, 90, 20, 0.4); font: 500 17px/1.55 var(--f-body); color: var(--mg-ink-2); }
+.mg-scratch__time .l-ne { font-size: 18px; line-height: 1.7; }
+.mg-scratch__place { font: 400 16px/1.55 var(--f-body); color: var(--mg-ink-2); }
+.mg-scratch__place .l-ne { font-size: 17px; line-height: 1.7; }
+.mg-scratch__foil { position: absolute; left: 10px; top: 10px; width: calc(100% - 20px); height: calc(100% - 20px); display: block; cursor: grab; touch-action: none; transition: opacity 600ms var(--mg-ease); }
+.mg-scratch.is-scratching .mg-scratch__foil { cursor: grabbing; }
+.mg-scratch.is-revealed .mg-scratch__foil { opacity: 0; pointer-events: none; }
+.mg-btn.mg-btn--line { min-height: 46px; background: transparent; color: var(--mg-maroon); border-color: rgba(122, 15, 23, 0.55); box-shadow: none; }
+.mg-btn.mg-btn--line:hover { filter: none; background: rgba(140, 16, 24, 0.06); }
+
+.mg-count { margin: clamp(56px, 9vh, 96px) auto 0; max-width: 760px; }
+.mg-count__title { margin: 0; font: 600 clamp(30px, 3.4vw, 44px)/1.15 var(--f-display); color: var(--mg-maroon); }
+.mg-count__title .l-ne { font: 400 clamp(28px, 3vw, 38px)/1.45 var(--f-deva-display); }
+.mg-count__grid { list-style: none; margin: 22px auto 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 640px; border-top: 1px solid rgba(138, 90, 20, 0.5); border-bottom: 1px solid rgba(138, 90, 20, 0.5); }
+.mg-count__cell { display: flex; flex-direction: column; align-items: center; padding: 18px 6px 16px; }
+.mg-count__cell + .mg-count__cell { border-left: 1px solid rgba(138, 90, 20, 0.3); }
+.mg-count__n { font: 600 clamp(40px, 5vw, 64px)/1.05 var(--f-display); color: var(--mg-red); font-variant-numeric: lining-nums tabular-nums; }
+.mg-count__n .l-ne { font: 600 clamp(38px, 4.6vw, 58px)/1.2 var(--f-deva); }
+.mg-count__l { margin-top: 6px; font: 600 12.5px/1.4 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-count__l .l-ne { font: 500 16px/1.5 var(--f-deva); letter-spacing: 0; text-transform: none; }
+.mg-count__done { margin: 18px 0 0; font: 600 clamp(24px, 2.6vw, 32px)/1.35 var(--f-display); color: var(--mg-maroon); }
+.mg-count__done .l-ne { font: 400 clamp(24px, 2.4vw, 30px)/1.6 var(--f-deva-display); }
+
+/* the photo strip: moves right to left (scrubbed on desktop, a slow marquee on phones) */
+.mg-strip { text-align: center; padding-left: 0; padding-right: 0; }
+.mg-strip .mg-head, .mg-strip .mg-lede { padding: 0 16px; }
+.mg-strip__view { --sh: clamp(300px, 54vh, 520px); margin-top: clamp(34px, 5vh, 56px); overflow: hidden; overflow: clip; }
+.mg-strip__track { display: flex; width: max-content; will-change: transform; }
+.mg-strip__set { display: flex; align-items: center; gap: clamp(18px, 2.4vw, 36px); padding: 14px clamp(18px, 2.4vw, 36px) 30px 0; }
+.mg-strip__set:first-child { padding-left: clamp(16px, 5vw, 72px); }
+.mg-strip__set--dup { display: none; }
+.mg-ph { margin: 0; flex: none; padding: 8px; background: #FFFBF4; box-shadow: inset 0 0 0 1px rgba(184, 138, 46, 0.85), 0 22px 30px -24px rgba(70, 14, 6, 0.55); }
+.mg-ph__btn { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.mg-ph img { height: var(--sh); width: auto; max-width: 80vw; object-fit: contain; display: block; background: #F1E6D0; }
+.mg-strip__view.is-marquee .mg-strip__set--dup { display: flex; }
+.mg-strip__view.is-marquee .mg-strip__set:first-child { padding-left: 0; }
+.mg-strip__view.is-marquee .mg-strip__track { animation: mg-marquee var(--mg-dur, 60s) linear infinite; }
+.mg-strip__view.is-marquee.is-paused .mg-strip__track { animation-play-state: paused; }
+@keyframes mg-marquee { to { transform: translate3d(-50%, 0, 0); } }
+.mg-strip__view.is-swipe { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x pan-y; }
+.mg-strip__view.is-swipe::-webkit-scrollbar { display: none; }
+.mg-strip__view.is-swipe .mg-strip__set--dup { display: flex; }
+.mg-strip__view.is-swipe .mg-strip__set:first-child { padding-left: 0; }
+.mg-strip__view.is-static { overflow-x: auto; scroll-snap-type: x mandatory; }
+.mg-strip__view.is-static .mg-ph { scroll-snap-align: center; }
+
+/* the families: a sindoor card framed in gold, a marigold toran on top, a brass kalash between the two families */
+.mg-fam { padding-top: clamp(120px, 17vh, 190px); }
+.mg-fam__card {
+  --tw: min(1040px, calc(100vw - 32px));
+  position: relative; max-width: 1120px; margin: 0 auto; color: #FFF1CC;
+  background: var(--mg-damask) 0 0 / 84px repeat, radial-gradient(110% 90% at 50% 30%, #A3141E, #8C1018 50%, #640911);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 0 0 2px #E2B65C, 0 0 0 7px #6A0A12, 0 0 0 8.5px rgba(244, 216, 150, 0.8), 0 40px 70px -34px rgba(60, 10, 6, 0.6);
+}
+.mg-fam__card::before { content: ''; position: absolute; inset: 14px; border: 1px solid rgba(244, 216, 150, 0.7); pointer-events: none; }
+.mg-fam__card::after { content: ''; position: absolute; inset: 19px; border: 1px solid rgba(244, 216, 150, 0.3); pointer-events: none; }
+.mg-fam__card { --te: 22px; }
+@media (min-width: 1360px) { .mg-fam__card { --te: 8px; } }
+/* the toran: its end rosettes (at 6.73% and 93.27% of the swag art, 25.96% down; height 13.76% of its width) sit on
+   the frame's border, --te in from each side, with their leaves whole */
+.mg-fam__toran { position: absolute; z-index: 2; left: 50%; top: 6px; width: calc((100% - 2 * var(--te)) / 0.8654); max-width: none; height: auto; translate: -50% -25.96%; pointer-events: none; filter: drop-shadow(0 6px 6px rgba(30, 0, 4, 0.35)); }
+/* the two sprays stand OUTSIDE the frame, hugging its bottom corners: the empty corner of each spray's L sits on the
+   frame's outer corner, --sg out (the arms touch the gold ring, never the red). As fractions of the spray's width:
+   br corner at x 61.4%, y 47.5% (height 80.8%); the flipped tl at x 37.8%, y 46.8% (height 81.5%). */
+.mg-fam__spray { --sp: clamp(150px, 12vw, 220px); position: absolute; z-index: 3; width: var(--sp); height: auto; pointer-events: none; filter: drop-shadow(0 4px 5px rgba(30, 0, 4, 0.3)); }
+/* the rose cluster (at 69% x 70% of the art) sits exactly on the card's bottom corner; its arms run along the outside of both edges */
+.mg-fam__spray--br { right: calc(-0.31 * var(--sp)); bottom: calc(-0.243 * var(--sp)); }
+.mg-fam__spray--tl { left: calc(-0.31 * var(--sp)); bottom: calc(-0.243 * var(--sp)); transform: scaleX(-1); }
+.mg-fam__body { position: relative; z-index: 1; padding: calc((100% - 2 * var(--te)) * 0.1177 + 50px) clamp(24px, 6vw, 90px) clamp(70px, 9vh, 104px); text-align: center; }
+.mg-fam__body > .mg-div { display: block; margin: 0 auto 12px; }
+.mg-fam__body .mg-h2 { color: #F6D88E; }
+.mg-fam__grid { display: grid; grid-template-columns: minmax(0, 1fr) clamp(130px, 15vw, 210px) minmax(0, 1fr); gap: clamp(16px, 3vw, 44px); align-items: start; margin-top: clamp(30px, 5vh, 50px); }
+.mg-fam__side { display: flex; flex-direction: column; align-items: center; padding-top: clamp(20px, 3vh, 40px); }
+.mg-fam__side .mg-kicker { color: #F4D896; }
+.mg-fam__pic { width: min(220px, 70%); margin-bottom: 20px; }
+.mg-fam__pic.mg-plain { background: #FFF1CC; }
+.mg-fam__name { margin: 2px 0 12px; font: 600 clamp(30px, 3vw, 42px)/1.15 var(--f-display); color: #FFF1CC; }
+.mg-fam__name .l-ne { font: 400 clamp(28px, 2.6vw, 36px)/1.45 var(--f-deva-display); }
+.mg-fam__of { margin: 0; font: 600 12.5px/1.5 var(--f-body); letter-spacing: 0.22em; text-transform: uppercase; color: #F4D896; }
+.mg-fam__of .l-ne { font: 500 16px/1.6 var(--f-deva); letter-spacing: 0; }
+.mg-fam__parents { margin: 4px 0 0; max-width: 32ch; font: 400 19px/1.6 var(--f-body); color: #FFF1CC; text-wrap: balance; }
+.mg-fam__parents .l-ne { font: 400 19px/1.8 var(--f-deva); }
+.mg-fam__home { margin: 6px 0 0; font: 400 16px/1.6 var(--f-body); color: #F4D896; }
+.mg-fam__mid { display: flex; justify-content: center; align-items: center; position: relative; align-self: center; }
+.mg-fam__mid::before { content: ''; position: absolute; left: 50%; top: 50%; width: 150%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 214, 130, 0.32), rgba(255, 214, 130, 0)); }
+.mg-fam__kalash { position: relative; width: 100%; height: auto; display: block; filter: drop-shadow(0 16px 14px rgba(30, 0, 4, 0.4)); }
+
+
+/* the card wording, centred */
+.mg-card__sheet { position: relative; max-width: 760px; margin: 0 auto; padding: 14px; background: linear-gradient(160deg, #F6E1A0, #C9923A 40%, #F2D58C 60%, #A8741F); box-shadow: 0 34px 60px -30px rgba(60, 10, 6, 0.6); }
+.mg-card__in { position: relative; padding: clamp(40px, 6vw, 70px) clamp(24px, 5vw, 64px); text-align: center; color: #FFF1CC; background: var(--mg-damask) 0 0 / 84px repeat, radial-gradient(110% 90% at 50% 20%, #A3141E, #8C1018 50%, #640911); background-blend-mode: soft-light, normal; box-shadow: inset 0 0 0 6px #6A0A12, inset 0 0 0 7.5px rgba(244, 216, 150, 0.75); }
+.mg-card__shloka { margin: 6px auto 16px; max-width: 30ch; font: 500 clamp(18px, 1.6vw, 22px)/1.75 var(--f-deva-display) !important; color: #F4D896; }
+.mg-card__line { margin: 0 auto; max-width: 26ch; font: 600 clamp(26px, 2.6vw, 36px)/1.3 var(--f-display); color: #FFF1CC; }
+.mg-card__line .l-ne { font: 400 clamp(24px, 2.3vw, 32px)/1.6 var(--f-deva-display); }
+.mg-card__hosts { margin: 18px auto 26px; max-width: 40ch; font: 400 18px/1.6 var(--f-body); color: #F4D896; }
+.mg-card__hosts .l-ne { font-size: 19px; line-height: 1.8; }
+
+/* buttons */
+.mg-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 12px 26px; border: 1.5px solid var(--mg-red); background: var(--mg-red); color: #FBE7B0; font: 600 14px/1.3 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; border-radius: 2px; box-shadow: inset 0 0 0 3px var(--mg-red), inset 0 0 0 4px rgba(244, 216, 150, 0.6); transition: transform 180ms var(--mg-ease), filter 180ms var(--mg-ease); }
+.mg-btn .l-ne { font: 600 17px/1.4 var(--f-deva); letter-spacing: 0; }
+.mg-btn:hover { filter: brightness(1.1); }
+.mg-btn:active { transform: translateY(1px); }
+.mg-btn[disabled] { opacity: 0.6; cursor: progress; }
+.mg-btn--gold { background: #F4D896; border-color: #F4D896; color: #4E070D; box-shadow: inset 0 0 0 3px #F4D896, inset 0 0 0 4px rgba(122, 15, 23, 0.45); }
+.mg-link { padding: 6px 0; border: 0; background: none; color: #F4D896; font: 600 14px/1.4 var(--f-body); letter-spacing: 0.12em; text-decoration: underline; text-underline-offset: 5px; cursor: pointer; }
+.mg-link .l-ne { font: 500 17px/1.5 var(--f-deva); letter-spacing: 0; }
+.mg-map { display: inline-block; margin-left: 6px; color: var(--mg-red); font: 600 14px/1.4 var(--f-body); letter-spacing: 0.06em; text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; }
+.mg-map .l-ne { font: 600 16px/1.5 var(--f-deva); }
+
+/* the programme: printed like the inside of a card */
+.mg-events { list-style: none; margin: clamp(28px, 5vh, 48px) auto 0; padding: 0; max-width: 980px; }
+.mg-ev { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: clamp(20px, 4vw, 48px); align-items: start; padding: clamp(28px, 4vh, 40px) 0; border-top: 1px solid rgba(138, 90, 20, 0.45); position: relative; }
+.mg-ev::before { content: ''; position: absolute; left: 0; right: 0; top: 3px; border-top: 1px solid rgba(138, 90, 20, 0.25); }
+.mg-ev:last-child { border-bottom: 1px solid rgba(138, 90, 20, 0.45); }
+.mg-ev__tile { display: flex; flex-direction: column; align-items: center; padding: 34px 10px 16px; text-align: center; color: #FFF1CC; background: radial-gradient(110% 90% at 50% 20%, #A3141E, #8C1018 55%, #6A0A12); border: 2px solid #D4A24C; box-shadow: inset 0 0 0 4px #6A0A12, inset 0 0 0 5px rgba(244, 216, 150, 0.6); border-radius: 50% 50% 4px 4px / 46px 46px 4px 4px; }
+.mg-ev__wd { font: 600 12.5px/1.3 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: #F4D896; }
+.mg-ev__wd .l-ne { font: 500 16px/1.4 var(--f-deva); letter-spacing: 0; }
+.mg-ev__day { margin: 4px 0 2px; font: 600 64px/1 var(--f-display); color: #FFF1CC; }
+.mg-ev__day .l-ne { font: 600 54px/1.15 var(--f-deva); }
+.mg-ev__my { font: 500 14px/1.35 var(--f-body); color: #F4D896; }
+.mg-ev__my .l-ne { font-size: 16px; }
+.mg-ev__title { margin: 0; font: 600 clamp(32px, 3.4vw, 46px)/1.1 var(--f-display); color: var(--mg-maroon); }
+.mg-ev__title .l-ne { font: 400 clamp(30px, 3vw, 40px)/1.4 var(--f-deva-display); }
+.mg-ev__when { margin: 8px 0 0; font: 500 18px/1.6 var(--f-body); color: var(--mg-ink); }
+.mg-ev__when .l-ne { font-size: 18px; line-height: 1.75; }
+.mg-ev__blurb { margin: 6px 0 0; font: 400 17px/1.6 var(--f-body); color: var(--mg-ink-2); max-width: 52ch; }
+.mg-ev__blurb .l-ne { font-size: 18px; line-height: 1.8; }
+.mg-ev__facts { margin: 14px 0 0; display: grid; gap: 8px; }
+.mg-ev__facts div { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 14px; align-items: baseline; }
+.mg-ev__facts dt { font: 600 12.5px/1.5 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-ev__facts dt .l-ne { font: 500 16px/1.6 var(--f-deva); letter-spacing: 0; }
+.mg-ev__facts dd { margin: 0; font: 400 18px/1.6 var(--f-body); color: var(--mg-ink); }
+.mg-ev__facts dd .l-ne { font-size: 18px; line-height: 1.75; }
+.mg-dress { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mg-sw { display: inline-flex; }
+.mg-sw i { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.2); margin-right: -5px; }
+.mg-order { margin-top: 16px; }
+.mg-order__label { margin: 0 0 4px; font: 600 12.5px/1.5 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-order ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.mg-order li { display: grid; grid-template-columns: 96px 1fr; gap: 12px; font: 400 17px/1.6 var(--f-body); }
+.mg-order__t { color: var(--mg-ink-2); font-variant-numeric: tabular-nums; }
+.mg-prog__foot { max-width: 980px; margin: 30px auto 0; display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; }
+.mg-more { flex: 1 1 100%; border-top: 1px solid rgba(138, 90, 20, 0.35); padding-top: 14px; }
+.mg-more summary { cursor: pointer; font: 600 14px/1.5 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mg-maroon); }
+.mg-more summary .l-ne { font: 500 17px/1.5 var(--f-deva); letter-spacing: 0; }
+.mg-more__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px 40px; margin-top: 18px; }
+.mg-more h3 { margin: 0 0 8px; font: 600 24px/1.2 var(--f-display); color: var(--mg-maroon); }
+.mg-more h3 .l-ne { font: 400 22px/1.4 var(--f-deva-display); }
+.mg-more p, .mg-more li { font: 400 17px/1.6 var(--f-body); color: var(--mg-ink); }
+.mg-more ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.mg-more b { display: block; font-weight: 600; }
+.mg-more small { display: block; font-size: 15px; color: var(--mg-ink-2); }
+.mg-links { display: flex; gap: 14px; }
+.mg-links .mg-map { margin-left: 0; }
+
+/* RSVP on red, the reply card on ivory paper */
+.mg-rsvp { background: var(--mg-damask) 0 0 / 84px repeat, radial-gradient(120% 80% at 50% 0%, #9B1520, #7A0E17 50%, #5C0911); background-blend-mode: soft-light, normal; color: #FFF1CC; }
+.mg-rsvp::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px; background: linear-gradient(#D4A24C, #D4A24C) 0 0 / 100% 2px no-repeat, linear-gradient(#D4A24C, #D4A24C) 0 7px / 100% 1px no-repeat; }
+.mg-rsvp__in { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: clamp(32px, 6vw, 100px); align-items: start; max-width: 1180px; margin: 0 auto; }
+.mg-rsvp__note .mg-div { margin-bottom: 12px; }
+.mg-rsvp__note .mg-h2 { text-align: left; }
+.mg-rsvp__card { position: relative; padding: clamp(28px, 4vw, 52px); background: #FFFBF4 url('/themes/mahal/decor/paper.webp') repeat; background-size: 420px; color: var(--mg-ink); box-shadow: 0 0 0 2px #D4A24C, 0 0 0 7px #FFFBF4, 0 0 0 8px rgba(212, 162, 76, 0.7), 0 40px 70px -30px rgba(10, 0, 2, 0.7); }
+.mg-form .field > label, .mg-form .field > legend { color: #6A3A2C; font-size: 12.5px; }
+.mg-form .field > label .l-ne, .mg-form .field > legend .l-ne { font-size: 16px; }
+.mg-form .field input[type='text'], .mg-form .field input[type='tel'], .mg-form .field textarea { font: 400 20px/1.4 var(--f-body); border-bottom-color: rgba(44, 12, 9, 0.4); }
+.mg-form .choice { font: 500 17px/1.35 var(--f-body); }
+.mg-form .choice .l-ne { font: 400 17px/1.5 var(--f-deva); }
+.mg-form .rsvp__status { font: 500 18px/1.5 var(--f-body); color: var(--mg-red); }
+.mg-form__row { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: end; }
+
+/* closing: the blessing under a full-width marigold garland, between two lit diyos, then a Dhaka band */
+.mg-close { position: relative; padding: calc(100vw * 0.147 + 60px) clamp(16px, 5vw, 72px) calc(28px + var(--safe-b)); text-align: center; color: #FFF1CC; background: var(--mg-damask) 0 0 / 84px repeat, linear-gradient(#5C0911, #4A060C); background-blend-mode: soft-light, normal; overflow: hidden; }
+.mg-close__garland { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+.mg-close__garland img { display: block; width: 105.44%; max-width: none; margin-left: -2.72%; height: auto; filter: drop-shadow(0 8px 8px rgba(20, 0, 2, 0.35)); }
+.mg-close__row { display: grid; grid-template-columns: 1fr minmax(0, 640px) 1fr; align-items: end; gap: clamp(16px, 4vw, 60px); max-width: 1180px; margin: 0 auto; }
+.mg-close__lamp { display: flex; justify-content: center; }
+.mg-close__lamp:first-child { justify-content: flex-end; }
+.mg-close__lamp:last-child { justify-content: flex-start; }
+.mg-close__lamp:last-child .mg-diyo { transform: scaleX(-1); }
+.mg-close__gan { position: relative; width: clamp(150px, 15vw, 230px); margin: 0 auto 26px; }
+.mg-close__gan img { position: relative; display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(20, 0, 2, 0.45)); }
+.mg-close__glow { position: absolute; inset: -18% -30%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 196, 92, 0.42), rgba(255, 150, 60, 0.12) 60%, transparent); pointer-events: none; }
+.mg-close__ne { margin: 0; font: 400 clamp(32px, 4vw, 54px)/1.5 var(--f-deva-display) !important; color: #F6D88E; }
+.mg-close__en { margin: 10px auto 0; max-width: 40ch; text-wrap: balance; font: 400 clamp(19px, 1.6vw, 23px)/1.55 var(--f-body); color: #FBE7B0; }
+.mg-close__names { margin: 26px 0 0; font: 600 clamp(32px, 3.4vw, 48px)/1.2 var(--f-names); color: #FFF1CC; }
+.mg-close__names .l-ne { font: 400 0.86em/1.45 var(--f-deva-display); }
+.mg-close__tag { margin: 12px 0 0; font: 600 14px/1.4 var(--f-body); letter-spacing: 0.18em; color: #F4D896; }
+.mg-band { height: 44px; margin: clamp(56px, 9vh, 90px) calc(-1 * clamp(16px, 5vw, 72px)) 0; background: var(--mg-dhaka) 0 50% / auto 100% repeat-x; box-shadow: 0 -2px 0 #D4A24C, 0 2px 0 #D4A24C; }
+
+
+/* full card dialog and lightbox */
+.mg-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: start center; padding: clamp(16px, 5vh, 60px) 14px; background: rgba(36, 4, 7, 0); overflow-y: auto; transition: background-color 260ms var(--mg-ease); }
+.mg-modal.is-open { background: rgba(36, 4, 7, 0.78); }
+.mg-modal__panel { position: relative; width: min(680px, 100%); padding: clamp(40px, 6vw, 64px) clamp(22px, 5vw, 60px); text-align: center; background: #FFFBF4 url('/themes/mahal/decor/paper.webp') repeat; background-size: 420px; color: var(--mg-ink); box-shadow: 0 0 0 3px #8C1018, 0 0 0 6px #D4A24C, 0 40px 80px -20px rgba(0, 0, 0, 0.6); opacity: 0; transform: translateY(20px); transition: opacity 280ms var(--mg-ease), transform 320ms var(--mg-ease); }
+.mg-modal.is-open .mg-modal__panel { opacity: 1; transform: none; }
+.mg-modal__x { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; border: 0; background: none; color: var(--mg-red); font-size: 30px; cursor: pointer; }
+.mg-modal__sym { margin: 0; font: 400 34px/1.1 var(--f-cal); color: var(--mg-red); }
+.mg-modal__shloka { margin: 10px auto 4px; max-width: 34ch; font: 500 19px/1.8 var(--f-deva-display) !important; color: var(--mg-maroon); }
+.mg-modal__shloka-en { margin: 0 auto; max-width: 46ch; font: 400 italic 16px/1.6 var(--f-body); color: var(--mg-ink-2); }
+.mg-modal__title { margin: 18px 0 10px; font: 400 48px/1.2 var(--f-cal); color: var(--mg-red); }
+.mg-modal__title span { font-family: var(--f-cal) !important; }
+.mg-modal__p { margin: 0 auto 14px; max-width: 52ch; font: 400 18px/1.7 var(--f-body); }
+.mg-modal__p .l-ne { font-size: 19px; line-height: 1.85; }
+.mg-modal__when { margin: 20px auto; max-width: 440px; display: grid; gap: 10px; text-align: left; border-top: 1px solid rgba(138, 90, 20, 0.4); border-bottom: 1px solid rgba(138, 90, 20, 0.4); padding: 14px 0; }
+.mg-modal__when div { display: grid; grid-template-columns: 80px 1fr; gap: 14px; }
+.mg-modal__when dt { font: 600 12.5px/1.6 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mg-gold-dk); }
+.mg-modal__when dt .l-ne { font: 500 16px/1.6 var(--f-deva); letter-spacing: 0; }
+.mg-modal__when dd { margin: 0; font: 400 17px/1.6 var(--f-body); }
+.mg-modal__sign { margin: 0; font: 400 18px/1.7 var(--f-body); }
+.mg-lb { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(30, 3, 6, 0.95); opacity: 0; transition: opacity 260ms var(--mg-ease); }
+.mg-lb.is-open { opacity: 1; }
+.mg-lb__fig { margin: 0; padding: 56px 12px; }
+.mg-lb__fig img { max-width: min(94vw, 1500px); max-height: 84svh; width: auto; height: auto; object-fit: contain; }
+.mg-lb__btn { position: absolute; width: 52px; height: 52px; border: 0; border-radius: 50%; background: rgba(110, 10, 18, 0.8); color: #FBE7B0; font-size: 26px; cursor: pointer; }
+.mg-lb__x { top: calc(12px + var(--safe-t)); right: 12px; }
+.mg-lb__prev { left: 10px; top: 50%; translate: 0 -50%; }
+.mg-lb__next { right: 10px; top: 50%; translate: 0 -50%; }
+
+/* the light, continuous fall over the doorway and the opening card: behind the opening words, never clickable */
+.mg-fall { position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; contain: strict; }
+.mg-fall__p { position: absolute; top: 0; display: block; opacity: 0.92; will-change: transform;
+  animation: mg-fall var(--dur) cubic-bezier(0.3, 0.1, 0.6, 0.9) var(--del) infinite; }
+.mg-fall__p span { display: block; will-change: transform; animation: mg-sway var(--sdur) cubic-bezier(0.45, 0, 0.55, 1) var(--sdel) infinite alternate; }
+.mg-fall__p svg { display: block; filter: drop-shadow(1px 2px 1.5px rgba(40, 6, 4, 0.22)); }
+.mg-fall.is-off { visibility: hidden; }
+/* on the doorway they pass behind the plaque and the buttons (a hole in the layer's mask over them) */
+body:not(.is-opening):not(.is-open) .mg-fall {
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0); mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-position: 0 0, var(--mx, 0) var(--my, 0); mask-position: 0 0, var(--mx, 0) var(--my, 0);
+  -webkit-mask-size: 100% 100%, var(--mw, 0) var(--mh, 0); mask-size: 100% 100%, var(--mw, 0) var(--mh, 0);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-composite: xor; mask-composite: exclude; }
+.mg-fall.is-off .mg-fall__p, .mg-fall.is-off .mg-fall__p span { animation-play-state: paused; }
+@keyframes mg-fall { from { transform: translate3d(0, -48px, 0); } to { transform: translate3d(var(--dx), calc(var(--fall, 100vh) + 24px), 0); } }
+@keyframes mg-sway { from { transform: translateX(calc(var(--sw) * -1)) rotate(var(--r0)) rotateY(0deg); } to { transform: translateX(var(--sw)) rotate(calc(var(--r0) + 70deg)) rotateY(160deg); } }
+.mg-petals { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+.mg-petals i { position: absolute; display: block; will-change: transform, opacity; opacity: 0; }
+.mg-petals svg { display: block; }
+
+/* ───────────────────────── Tablets and phones ───────────────────────── */
+@media (max-width: 1000px) {
+  .mg-rsvp__in { grid-template-columns: 1fr; }
+}
+@media (max-width: 699px) {
+  .mg-sec { padding: 84px 16px; }
+  .mg-panel__content { padding: 0 22px; }
+  .mg-inside__rule { left: 9px; right: 9px; top: 9px; bottom: calc(var(--mg-thr, 28px) + 10px); border-radius: 50% 50% 0 0 / 64px 64px 0 0; }
+  .mg-inside__rule::after { inset: 5px 5px 0; border-radius: 50% 50% 0 0 / 59px 59px 0 0; }
+  .mg-symbol { font-size: calc(38px * var(--fit)); }
+  .mg-invoke { font-size: calc(17px * var(--fit)); }
+  .mg-title__ne { font-size: calc(66px * var(--fit)) !important; }
+  .mg-names { font-size: calc(40px * var(--fit)); }
+  .mg-hero__div { margin: calc(6px * var(--fit)) 0 calc(6px * var(--fit)); }
+  .mg-hero__div svg { width: calc(150px * var(--fit)); }
+  .mg-panel__inner { gap: calc(10px * var(--fit)); }
+  .mg-plaque { width: 92%; border-radius: 999px 999px 8px 8px / 52px 52px 8px 8px; padding: 20px 14px 18px; }
+  .mg-plaque__names { font-size: 36px; }
+  .mg-strip__view { --sh: clamp(240px, 42vh, 360px); }
+  .mg-scratch__date { min-height: 250px; padding: 26px 16px; }
+  .mg-scratch__date .mg-scratch__big { font-size: 34px; }
+  .mg-scratch__big .l-ne { font-size: 32px; }
+  .mg-count__cell { padding: 14px 2px 12px; }
+  .mg-count__n { font-size: 38px; }
+  .mg-count__n .l-ne { font-size: 34px; }
+  .mg-count__l { font-size: 11.5px; letter-spacing: 0.12em; }
+  .mg-count__l .l-ne { font-size: 15px; }
+  .mg-card__in { padding: 48px 20px 40px; }
+  .mg-ev { grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 26px 0; }
+  .mg-ev__tile { padding: 24px 4px 12px; border-radius: 50% 50% 4px 4px / 30px 30px 4px 4px; }
+  .mg-ev__day { font-size: 44px; }
+  .mg-ev__day .l-ne { font-size: 38px; }
+  .mg-ev__wd { font-size: 11.5px; letter-spacing: 0.12em; }
+  .mg-ev__my { font-size: 13px; }
+  .mg-ev__facts div { grid-template-columns: 1fr; gap: 0; }
+  .mg-ev__when { font-size: 17px; }
+  .mg-form__row { grid-template-columns: 1fr; }
+  .mg-gan { height: min(86%, 124vw); }
+  .mg-bless { font-size: calc(19px * var(--fit)); }
+  .mg-bless .l-ne { font-size: calc(20px * var(--fit)); }
+  .mg-portrait { padding-top: 64px; padding-bottom: 28px; }
+  .mg-fam { padding-top: 96px; padding-left: 20px; padding-right: 20px; }
+  .mg-fam__card { --tw: calc(100vw - 24px); }
+  .mg-fam__card::before { inset: 10px; }
+  .mg-fam__card::after { inset: 14px; }
+  .mg-fam__card { --te: 12px; }
+  .mg-fam__spray { width: 92px; }
+  .mg-fam__spray--tl { left: -14px; bottom: -18px; }
+  .mg-fam__spray--br { right: -14px; bottom: -18px; }
+  .mg-fam__body { padding: calc((100% - 2 * var(--te)) * 0.1177 + 32px) 22px 86px; }
+  .mg-fam__grid { grid-template-columns: 1fr; gap: 14px; }
+  .mg-fam__side { padding-top: 0; }
+  .mg-fam__kalash { width: 112px; }
+  .mg-fam__mid::before { width: 190px; }
+  .mg-close { padding-top: calc(100vw * 0.147 + 44px); }
+  .mg-close__row { grid-template-columns: 1fr 1fr; }
+  .mg-close__text { grid-column: 1 / -1; grid-row: 1; }
+  .mg-close__lamp { grid-row: 2; margin-top: 34px; }
+  .mg-close__lamp:first-child { justify-content: center; }
+  .mg-close__lamp:last-child { justify-content: center; }
+  .mg-close__lamp svg { width: 70px; height: auto; }
+  .mg-band { height: 34px; margin-left: -16px; margin-right: -16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-rise { opacity: 1; transform: none; transition: none; }
+  .mg-strip__view .mg-strip__track { animation: none !important; }
+  .mg-scratch__foil { transition: none; }
+  .mg-flame, .mg-glow, .mg-diyo__halo, body.is-open .mg-cue i { animation: none; }
+  .mg-fall { display: none; }
+}

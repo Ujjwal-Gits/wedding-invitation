@@ -1,0 +1,158 @@
+/* Mahal (महल) · the palace gate and the balcony behind it. Everything below the hero is Mangal's (mahal.css). */
+body.theme-mahal {
+  --mh-night: #050E2A;
+  --mh-ivory: #FFF8EA;
+  --mh-gold-lt: #F6D98C;
+  --mh-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.mh-hero { background: var(--mh-night); }
+
+/* ───────── the balcony: five depth layers, each its own GPU layer ───────── */
+.mh-scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.mh-ly { position: absolute; inset: 0; will-change: transform; }
+.mh-ly > svg { position: absolute; left: 0; top: 0; display: block; }
+.mh-star { position: absolute; width: calc(var(--s) * 3.4px); height: calc(var(--s) * 3.4px); margin: calc(var(--s) * -1.7px); border-radius: 50%;
+  background: radial-gradient(closest-side, #FFFFFF, rgba(255, 246, 220, 0.5) 45%, rgba(255, 246, 220, 0)); will-change: transform, opacity;
+  animation: mh-twinkle var(--d) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite alternate; }
+@keyframes mh-twinkle { from { opacity: 0.15; transform: scale(0.55); } to { opacity: 1; transform: scale(1.25); } }
+.mh-glow { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0.45; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.6), rgba(255, 170, 70, 0.2) 50%, rgba(255, 170, 70, 0));
+  transition: opacity 1.4s var(--mh-ease); animation: mh-flicker var(--d) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite; }
+.mh-hero.is-lit .mh-glow { opacity: 1; }
+@keyframes mh-flicker { 0%, 100% { transform: scale(1); } 30% { transform: scale(0.93); } 60% { transform: scale(1.05); } 80% { transform: scale(0.97); } }
+.mh-swag { position: absolute; display: block; height: auto; max-width: none; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(20, 2, 4, 0.45)); }
+.mh-swag--r { transform: scaleX(-1); }
+
+/* the palace on the lake (there from the start), the moon above it, lamps along the pond */
+.mh-jal { position: absolute; display: block; max-width: none; }
+.mh-moon { position: absolute; }
+.mh-moon img { position: relative; display: block; width: 100%; height: 100%; max-width: none; }
+.mh-moon__halo { position: absolute; left: 50%; top: 50%; width: 360%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(236, 242, 255, 0.5), rgba(196, 212, 255, 0.16) 36%, rgba(196, 212, 255, 0)); }
+.mh-lamp { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, #FFF6DC 0 18%, rgba(255, 200, 110, 0.75) 32%, rgba(255, 170, 70, 0) 100%); will-change: transform;
+  animation: mh-flicker var(--d) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite; }
+.mh-lamp::after { content: ''; position: absolute; left: 35%; top: 70%; width: 30%; height: 420%; border-radius: 50%;
+  background: linear-gradient(rgba(255, 200, 110, 0.5), rgba(255, 200, 110, 0)); }
+.mh-ganwrap { position: absolute; z-index: 3; display: grid; place-items: center; pointer-events: none; }
+.mh-ganwrap .mh-gan { height: 66%; margin: 0; }
+.mh-ganwrap .mh-gan__img, .mh-ganwrap .mh-gan__glow, .mh-ganwrap .mh-gan__rays { opacity: 0; }
+.mh-words::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(150%, 1100px); height: 115%; translate: -50% -46%; z-index: -1; border-radius: 50%; opacity: 0; transition: opacity 1.2s var(--mh-ease);
+  background: radial-gradient(closest-side, rgba(5, 12, 40, 0.55), rgba(5, 12, 40, 0.32) 50%, rgba(5, 12, 40, 0) 100%); }
+.mh-hero.is-inside .mh-words::before { opacity: 1; }
+
+.mh-fw { position: absolute; left: 0; top: 0; pointer-events: none; }
+.mh-glint { position: absolute; width: 18px; height: 18px; margin: -9px; pointer-events: none; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle, #FFFFFF 0 1.4px, rgba(255, 255, 255, 0) 3px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0) 56%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0) 56%);
+  animation: mh-glint var(--d) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite; }
+@keyframes mh-glint { 0%, 68%, 100% { opacity: 0; transform: scale(0.3) rotate(-45deg); } 80% { opacity: 1; transform: scale(1) rotate(0deg); } }
+
+/* gold dust rising in the warm air, only once we are on the balcony */
+.mh-dust { position: absolute; inset: 0; pointer-events: none; }
+.mh-dust i { position: absolute; width: 4px; height: 4px; border-radius: 50%; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(closest-side, #FFF1C2, rgba(255, 210, 120, 0)); animation: mh-rise var(--d) cubic-bezier(0.3, 0.1, 0.6, 0.9) var(--dl) infinite; animation-play-state: paused; }
+.mh-hero.is-inside .mh-dust i { animation-play-state: running; }
+@keyframes mh-rise { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 20% { opacity: 0.9; } 100% { opacity: 0; transform: translate3d(var(--dx), -36vh, 0); } }
+.mh-pour { position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse 46% 58% at 50% 56%, rgba(255, 240, 200, 0.85), rgba(255, 204, 128, 0.32) 45%, rgba(255, 204, 128, 0) 78%); }
+
+/* ───────── the words on the balcony ───────── */
+.mh-words { position: absolute; z-index: 3; left: 0; right: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 16px; text-align: center; pointer-events: none; }
+.mh-words__in { --fit: 1; display: flex; flex-direction: column; align-items: center; opacity: 0; }
+.mh-gan { position: relative; height: calc(clamp(84px, 12vh, 150px) * var(--fit)); aspect-ratio: 1000 / 1793; margin-bottom: calc(4px * var(--fit)); }
+.mh-gan__img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; will-change: transform, opacity; filter: drop-shadow(0 0 14px rgba(255, 214, 140, 0.55)); }
+.mh-gan__glow { position: absolute; left: 50%; top: 46%; width: 200%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgba(255, 230, 160, 0.55), rgba(255, 196, 96, 0.2) 45%, rgba(255, 196, 96, 0)); }
+.mh-gan__rays { position: absolute; left: 50%; top: 46%; width: 380%; aspect-ratio: 1; margin: -190% 0 0 -190%; border-radius: 50%; will-change: transform, opacity;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 236, 190, 0.1) 0deg 2deg, rgba(255, 236, 190, 0) 2deg 12deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000 18%, rgba(0, 0, 0, 0) 100%); mask-image: radial-gradient(closest-side, #000 18%, rgba(0, 0, 0, 0) 100%); }
+.mh-hero.is-inside .mh-gan__rays { animation: mh-turn 80s linear infinite; }
+@keyframes mh-turn { to { rotate: 360deg; } }
+.mh-symbol { margin: 0; font: 400 calc(40px * var(--fit))/1.1 var(--f-deva-display); color: var(--mh-gold-lt); }
+.mh-invoke { position: relative; margin: 0; font: 400 calc(clamp(15px, 1.3vw, 19px) * var(--fit))/1.6 var(--f-deva-display); color: var(--mh-gold-lt); text-shadow: 0 2px 10px rgba(3, 8, 30, 0.9); }
+.mh-title { position: relative; margin: calc(2px * var(--fit)) 0 calc(4px * var(--fit)); font: 700 calc(clamp(28px, 2.8vw, 42px) * var(--fit))/1.3 'Amita', var(--f-deva-display);
+  filter: drop-shadow(0 2px 3px rgba(3, 8, 30, 0.85)) drop-shadow(0 0 12px rgba(255, 196, 96, 0.35)); }
+/* gold foil: a warm metallic gradient clipped to each letter, with room for swashes */
+.mh-title span[lang], .mh-name .mh-ch {
+  background: linear-gradient(180deg, #FFF9E6 0%, #FBE3A0 30%, #E8B957 55%, #C98E2C 70%, #F6D88A 88%, #FFF3CF 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.mh-name .mh-ch { padding: 0.12em 0.16em 0.2em; margin: -0.12em -0.16em -0.2em; }
+.mh-names { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; font-weight: 400;
+  filter: drop-shadow(0 2px 2px rgba(3, 8, 30, 0.9)) drop-shadow(0 0 16px rgba(255, 200, 110, 0.32)); }
+.mh-name { display: block; white-space: nowrap; font: 400 calc(clamp(52px, 6.4vw, 100px) * var(--fit))/1.12 'Great Vibes', 'Cormorant Garamond', cursive; }
+.mh-name .l-ne { font: 700 0.74em/1.5 'Amita', var(--f-deva-display); }
+.mh-ch { display: inline-block; will-change: transform, opacity; }
+.mh-weds { display: flex; align-items: center; gap: 0.9em; margin: calc(2px * var(--fit)) 0 calc(6px * var(--fit)); font: 500 calc(12px * var(--fit))/1.2 'Cinzel', serif; letter-spacing: 0.5em; text-transform: uppercase; color: #F6DC95; }
+.mh-weds > span { padding-left: 0.5em; }
+.mh-weds i { display: block; width: calc(46px * var(--fit)); height: 1px; background: linear-gradient(90deg, rgba(246, 220, 149, 0), #F6DC95); }
+.mh-weds i:last-child { background: linear-gradient(90deg, #F6DC95, rgba(246, 220, 149, 0)); }
+.mh-weds .l-ne { padding: 0; font: 700 calc(19px * var(--fit))/1.3 'Amita', var(--f-deva-display); letter-spacing: 0; text-transform: none; }
+html[data-lang='ne'] .mh-weds { letter-spacing: 0 !important; }
+
+/* ───────── the gate ───────── */
+.mh-gate { position: absolute; inset: 0; z-index: 5; will-change: transform; }
+.mh-gatein { position: absolute; inset: 0; will-change: transform; }
+.mh-wall { position: absolute; inset: 0; }
+.mh-wall svg { display: block; }
+.mh-gbox { position: absolute; }
+.mh-frame { position: absolute; left: 0; top: 0; }
+.mh-frame svg { display: block; }
+.mh-leaves { position: absolute; }
+.mh-leaf { position: absolute; top: 0; width: 50%; height: 100%; will-change: transform; }
+.mh-leaf--l { left: 0; transform-origin: 0 50%; }
+.mh-leaf--r { left: 50%; transform-origin: 100% 50%; }
+.mh-leaf__art { position: absolute; }
+.mh-leaf__art svg { display: block; }
+.mh-leaf__dark { opacity: 0; filter: brightness(0.32) saturate(0.7); will-change: opacity; }
+.mh-seam { position: absolute; opacity: 0; pointer-events: none; will-change: transform, opacity;
+  background: linear-gradient(90deg, rgba(255, 232, 170, 0), rgba(255, 248, 225, 0.95) 50%, rgba(255, 232, 170, 0)); }
+.mh-arch, .mh-foot { position: absolute; display: block; max-width: none; pointer-events: none; }
+.mh-foot--r { transform: scaleX(-1); }
+.mh-crest { position: absolute; }
+.mh-crest .mg-medal { width: 100%; }
+.mh-crest__halo { position: absolute; left: 50%; top: 50%; width: 240%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0.35; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgba(255, 236, 170, 0.8), rgba(255, 196, 90, 0.26) 48%, rgba(255, 196, 90, 0)); }
+.mh-om { position: absolute; inset: 12%; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #FFF3C6, #E2A848 55%, #8A5A14); color: #6A0A12; font: 400 52px/1 var(--f-deva-display); }
+.mh-ribbon { position: absolute; top: 0; display: block; pointer-events: none; }
+/* a soft ring that invites the tap on the bow */
+.mh-hint { position: absolute; border-radius: 50%; pointer-events: none; border: 2px solid rgba(255, 240, 200, 0.85); box-shadow: 0 0 22px rgba(255, 220, 150, 0.6);
+  opacity: 0; will-change: transform, opacity; animation: mh-hint 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) 1.2s infinite; }
+@keyframes mh-hint { 0% { opacity: 0; transform: scale(0.55); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.25); } }
+.mh-glints { position: absolute; inset: 0; pointer-events: none; }
+
+/* the bow itself is the button; a line and two buttons on a dark glass card at the foot of the gate */
+.mh-bowbtn { position: absolute; z-index: 9; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.mh-bowbtn:focus-visible { outline: 2px solid #FFE7A6; outline-offset: -6px; }
+.mh-ui { position: absolute; z-index: 10; left: 50%; bottom: max(14px, 2.4vh); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: min(calc(100% - 32px), 420px); padding: 14px 18px 10px; border-radius: 20px; text-align: center;
+  background: rgba(42, 8, 12, 0.84); border: 1px solid rgba(244, 216, 150, 0.5); box-shadow: 0 12px 30px rgba(10, 2, 0, 0.4);
+}
+.mh-ui__line { margin: 0; font: 500 italic 18px/1.35 var(--f-display); color: #FBE7B0; text-wrap: balance; }
+.mh-ui__line .l-ne { font: 400 18px/1.5 var(--f-deva-display); font-style: normal; }
+.mh-open { min-height: 46px; padding: 10px 28px; border: 0; border-radius: 999px; cursor: pointer; color: #4A1A06; background: var(--mg-foil);
+  font: 600 13.5px/1.2 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 6px 16px rgba(20, 6, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 180ms var(--mh-ease); }
+.mh-open .l-ne { font: 500 16px/1.3 var(--f-deva); letter-spacing: 0; text-transform: none; }
+.mh-open:hover { transform: translateY(-1px); }
+.mh-open:active { transform: scale(0.98); }
+.mh-quiet { padding: 4px 10px; border: 0; background: none; color: #F4D896; font: 500 13px/1.3 var(--f-body); letter-spacing: 0.1em; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.mh-quiet .l-ne { font: 500 15px/1.4 var(--f-deva); letter-spacing: 0; }
+.mh-open[disabled], .mh-quiet[disabled] { opacity: 0.6; cursor: progress; }
+.theme-mahal .mh-ui :focus-visible { outline-color: #FFE7A6; }
+
+.mh-hero.is-inside .mh-gate { visibility: hidden; }
+.mh-hero .mg-cue { z-index: 4; color: #6A0A12; }
+.mh-hero .mg-cue i { background: linear-gradient(#6A0A12, transparent); }
+.mh-hero .mg-fall { z-index: 8; }
+
+@media (max-width: 699px) {
+  .mh-ui { padding: 12px 14px 8px; gap: 6px; }
+  .mh-ui__line { font-size: 16px; }
+  .mh-ui__line .l-ne { font-size: 16px; }
+  .mh-name { font-size: calc(54px * var(--fit)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-star, .mh-glow, .mh-glint, .mh-dust i, .mh-hero.is-inside .mh-gan__rays, .mh-hint, .mh-lamp { animation: none; }
+}

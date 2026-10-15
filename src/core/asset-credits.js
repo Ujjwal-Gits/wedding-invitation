@@ -7,6 +7,7 @@ import gurans from '../themes/gurans/flora-credits.js';
 import mala from '../themes/mala/flora-credits.js';
 import mangal from '../themes/mangal/flora-credits.js';
 import jhyal from '../themes/jhyal/flora-credits.js';
+import mahal from '../themes/mahal/flora-credits.js';
 import nimantrana from '../themes/nimantrana/flora-credits.json';
 import sayapatri from '../themes/sayapatri/flora-credits.json';
 
@@ -41,6 +42,7 @@ const THEME_FLORA = [
   ['Mala', mala],
   ['Mangal', mangal],
   ['Jhyal', jhyal],
+  ['Mahal', mahal],
   ['Nimantrana', nimantrana],
   ['Sayapatri', sayapatri],
 ];
