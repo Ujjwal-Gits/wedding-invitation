@@ -23,19 +23,26 @@ import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
+import { DEFS, crownSVG, dividerSVG } from './art.js';
 import {
-  DEFS, frameSVG, panelBorderSVG, leafSVG, bellSVG, diyoSVG, dhakaTile, crownSVG, dividerSVG, petalSVG, rosette, beamSVG, medalSVG,
-} from './art.js';
+  DECOR, paperVars, medalHTML, diyoHTML, namesHTML, gateHTML, doorwayHTML, doorRefs, computeLayout, layoutDoorway,
+  fitGate, fallBox, maskFall as maskFallIn, dropPetals as dropPetalsIn, openDoors, depthOf,
+} from './doorway.js';
+import { WATERMARK, cardHTML, cardRefs, fitCard, cardIn as cardInP, cardStill } from './card.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const config = await loadInvitation();
+// Mix (docs/MIX.md): another theme's gate may open this page (Mangal's own doorway then never enters it), and another
+// theme's first screen may replace the red card (Mangal's own doorway then runs as its module, gate.js).
+const mix = await createMix({ host: 'mangal', manifest, config });
+const ownHero = !mix.hero;
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
 const c = config.couple;
 const events = guestEvents();
-const DECOR = '/themes/mangal/decor/';
 
 // ───────────────────────── Slots ─────────────────────────
 if (DEBUG) {
@@ -119,26 +126,8 @@ const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 // and softly behind the opening words after that.
 const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
 const closeGanesh = ganeshRef ? S.img('close.ganesh') : null; // a different Ganesh, seated, between the closing diyos
-// The medallion frames his head: a picture may say where the head's centre is (`face`, fractions) and how far to
-// zoom (`zoom`, 1 = the picture just covers the circle; below 1 shows more of it, e.g. the whole head and crown).
-const medalFit = (() => {
-  const r = ganeshRef && typeof ganeshRef === 'object' ? ganeshRef : {};
-  const z = Number(r.zoom) || 1;
-  if (!Array.isArray(r.face) || !r.w || !r.h) return 'object-position:50% 4%';
-  // contain in the square, then scale to `zoom` x cover and move the head's centre to the middle of the circle
-  const ar = r.w / r.h;
-  const s = z * Math.max(ar, 1 / ar);
-  const px = ar < 1 ? 0.5 + (r.face[0] - 0.5) * ar : r.face[0];
-  const py = ar < 1 ? r.face[1] : 0.5 + (r.face[1] - 0.5) / ar;
-  const t = (p) => ((0.5 - 0.5 - s * (p - 0.5)) * 100).toFixed(2);
-  return `object-fit:contain;transform:translate(${t(px)}%, ${t(py)}%) scale(${s.toFixed(3)})`;
-})();
-const medal = (cls = '') => (ganeshRef
-  ? `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"><img style="${medalFit}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
-  : '');
-const ganesh = () => (ganeshRef
-  ? `<div class="mg-gan" id="gan" aria-hidden="true"><i class="mg-gan__glow" id="ganglow"></i><img class="mg-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="(max-width: 700px) 80vw, 560px" alt="" decoding="async" /></div>`
-  : '');
+// The medallion frames his head (doorway.js medalFit).
+const medal = (cls = '') => medalHTML(ganeshRef, cls);
 
 // ───────────────────────── Dates ─────────────────────────
 function adParts(iso) {
@@ -198,23 +187,15 @@ const T = {
   married: { en: 'Married, with your blessings', ne: 'हजुरहरूको आशीर्वादसहित, विवाहित' },
 };
 
-const names = () => `<span class="mg-n">${bi(c.bride.name)}</span> <span class="mg-n"><span class="mg-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
+const names = () => namesHTML(bi, c);
 const symbol = txt('hero.symbol');
 const invocation = txt('hero.invocation');
 const title = txt('hero.title');
 const blessing = txt('hero.blessing');
 
-const damask = (() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" viewBox="0 0 84 84">${rosette(21, 21, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}${rosette(63, 63, 9, { petals: 8, fill: '#000', stroke: '#000', inner: '#000' })}<circle cx="63" cy="21" r="1.6" fill="#000"/><circle cx="21" cy="63" r="1.6" fill="#000"/></svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg.replace('<svg ', '<svg opacity=".09" '))}")`;
-})();
-const DHAKA = dhakaTile(3);
-document.documentElement.style.setProperty('--mg-damask', damask);
-document.documentElement.style.setProperty('--mg-dhaka', DHAKA.url);
-document.documentElement.style.setProperty('--mg-dhaka-w', `${DHAKA.w}px`);
-document.documentElement.style.setProperty('--mg-dhaka-h', `${DHAKA.h}px`);
+for (const [k, v] of Object.entries(paperVars().vars)) document.documentElement.style.setProperty(k, v);
 
-const diyo = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true"><i class="mg-diyo__halo"></i>${diyoSVG(w, Math.round(w * 1.6))}</div>`;
+const diyo = diyoHTML;
 const head = (kicker, h, id, cls = '') => `<header class="mg-head ${cls} mg-rise">${dividerSVG(200)}${kicker ? `<p class="mg-kicker">${bi(kicker)}</p>` : ''}<h2 class="mg-h2" id="${id}">${bi(h)}</h2></header>`;
 
 // The date under the scratch foil: AD and B.S. (B.S. leads in Nepali), the time and the place.
@@ -228,56 +209,22 @@ const stripFig = (g, i, dup) => `<figure class="mg-ph"><button type="button" cla
 const countCell = (u, label) => `<li class="mg-count__cell"><b class="mg-count__n" data-u="${u}">${bi({ en: '00', ne: '००' })}</b><span class="mg-count__l">${bi(label)}</span></li>`;
 
 // ───────────────────────── Markup ─────────────────────────
+// the red card inside the doorway (card.js)
+const CARD = cardHTML({
+  ganeshRef, symbol, invocation, title, blessing, names: names(),
+  cue: `<a class="mg-cue" id="cue" href="#${lead ? 'portrait' : 'date'}"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>`,
+}, { ids: true });
 const main = document.getElementById('main');
 document.body.insertAdjacentHTML('afterbegin', DEFS);
 main.innerHTML = `
   <section class="mg-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
-    <div class="mg-inside" id="inside" aria-hidden="true"><i class="mg-inside__rule"></i></div>
-    <div class="mg-door" id="door">
-      <div class="mg-panel" id="panel">
-        <div class="mg-panel__bg"></div>
-        <div class="mg-light" id="light" aria-hidden="true"><i class="mg-light__gap" id="gap"></i></div>
-        <div class="mg-panel__border" id="pborder"></div>
-      </div>
-      <div class="mg-leaves" id="leaves" aria-hidden="true">
-        <div class="mg-leaf mg-leaf--l" id="leafL"><i class="mg-leaf__shade"></i></div>
-        <div class="mg-leaf mg-leaf--r" id="leafR"><i class="mg-leaf__shade"></i></div>
-      </div>
-      <div class="mg-framewrap" id="framewrap" aria-hidden="true"></div>
-      ${medal('mg-medal--door')}
-      <div class="mg-diyos" id="diyos" aria-hidden="true">${diyo('mg-diyo--l')}${diyo('mg-diyo--r')}</div>
-      <div class="mg-gate" id="gate">
-        <div class="mg-plaque">
-          <p class="mg-plaque__line">${bi(txt('gate.line'))}</p>
-          <p class="mg-plaque__names">${names()}</p>
-        </div>
-        <button class="mg-latch" id="open" type="button" disabled>
-          <span class="mg-latch__disc" aria-hidden="true"><svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="38" fill="url(#mg-brass)" stroke="#5A3A0A" stroke-width="1.2"/><circle cx="40" cy="40" r="31" fill="none" stroke="#FCEDB9" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="0 5.2" stroke-linecap="round"/>${rosette(40, 40, 22, { petals: 12 })}</svg></span>
-          <span class="mg-latch__label">${bi(txt('gate.open'))}</span>
-        </button>
-        <button class="mg-quiet" id="quiet" type="button" disabled>${bi(txt('gate.quiet'))}</button>
-      </div>
-    </div>
-    <div class="mg-spill" id="spill" aria-hidden="true"></div>
-    <div class="mg-bells" id="bells" aria-hidden="true"></div>
-    <div class="mg-garland" id="garland" aria-hidden="true"><img class="mg-drape" id="drape" src="${DECOR}drape-gate-md.webp?v=5" alt="" decoding="async" fetchpriority="high" /></div>
-    <div class="mg-kalashes" id="kalashes" aria-hidden="true">${['l', 'r'].map((k) => `<div class="mg-gkalash mg-gkalash--${k}"><img src="${DECOR}kalash-gate-sm.webp?v=5" srcset="${DECOR}kalash-gate-sm.webp?v=5 280w, ${DECOR}kalash-gate.webp?v=5 560w" sizes="(max-width: 700px) 90px, 240px" alt="" decoding="async" /></div>`).join('')}${diyo('mg-gdiyo mg-diyo--l')}${diyo('mg-gdiyo mg-diyo--r')}</div>
-    <div class="mg-beam" id="beam" aria-hidden="true"></div>
-    <div class="mg-threshold" id="threshold" aria-hidden="true"></div>
-    <div class="mg-panel__content" id="pcontent">
-      ${ganesh()}
-      <div class="mg-panel__inner" id="pinner">
-        <div class="mg-hero__text" id="htext">
-          ${!ganeshRef && on(symbol) ? `<p class="mg-symbol mg-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
-          ${on(invocation) ? `<p class="mg-invoke mg-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
-          <h1 class="mg-title mg-in"><span class="mg-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
-          <span class="mg-hero__div mg-in">${dividerSVG(180)}</span>
-          <p class="mg-names mg-in" id="names">${names()}</p>
-          ${on(blessing) ? `<p class="mg-bless mg-in">${bi(blessing)}</p>` : ''}
-        </div>
-      </div>
-      <a class="mg-cue" id="cue" href="#${lead ? 'portrait' : 'date'}"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
-    </div>
+    ${CARD.inside}
+    ${mix.gate ? '' : doorwayHTML({
+    ids: true,
+    medal: medal('mg-medal--door'),
+    gate: gateHTML({ bi, line: txt('gate.line'), names: names(), open: txt('gate.open'), quiet: txt('gate.quiet') }),
+  })}
+    ${CARD.content}
   </section>
 
   ${lead ? `
@@ -580,190 +527,35 @@ modal.addEventListener('click', (e) => { if (e.target === modal || e.target.clos
 
 // ───────────────────────── The doorway: layout at the exact screen size ─────────────────────────
 const hero = document.querySelector('.mg-hero');
-const door = document.getElementById('door');
-const panel = document.getElementById('panel');
-const pcontent = document.getElementById('pcontent');
-const pinner = document.getElementById('pinner');
-const htext = document.getElementById('htext');
-const ganEl = document.getElementById('gan');
-const ganImg = document.getElementById('ganimg');
-const ganGlow = document.getElementById('ganglow');
-const WATERMARK = 0.16;
-const leafL = document.getElementById('leafL');
-const leafR = document.getElementById('leafR');
-const gate = document.getElementById('gate');
-const bellsEl = document.getElementById('bells');
-const openBtn = document.getElementById('open');
-const quietBtn = document.getElementById('quiet');
-const inside = document.getElementById('inside');
-const garlandEl = document.getElementById('garland');
-const drapeEl = document.getElementById('drape');
-const kalashEl = document.getElementById('kalashes');
-const beamEl = document.getElementById('beam');
-const spillEl = document.getElementById('spill');
-const thresholdEl = document.getElementById('threshold');
+// Another theme's first screen takes the red card's place; Mangal's calm scroll continues below it.
+if (!ownHero) mix.mountHero(hero);
+const C = ownHero ? cardRefs(hero) : {};
+const { pcontent, pinner, htext, ganEl, ganImg, ganGlow } = C;
+const inside = C.inside || null;
 const root = document.documentElement;
-// Geometry of the art in public/themes/mangal/decor (written by tools/gate.py): height / width, the side margin
-// beyond the end rosettes (fraction of width), the top of the heading band (fraction of height); the kalash's
-// ground line (fraction of its height, where the flower bed meets the floor).
-const DRAPE = { lg: { ar: 0.1451, mx: 0.0536, band: 0.0154 }, sm: { ar: 0.178, mx: 0.0763, band: 0.0212 } };
-const KALASH = { ar: 1.1085, ground: 0.9525 };
+// The doorway's elements (doorway.js); none when another theme's gate opens the page.
+const D = mix.gate ? null : doorRefs(hero);
+const gate = D?.gate || null;
+const leafL = D?.leafL;
+const leafR = D?.leafR;
+const spillEl = D?.spill;
+const openBtn = D ? document.getElementById('open') : null;
+const quietBtn = D ? document.getElementById('quiet') : null;
 let L = null;
 
-/** The whole gate (torana, doorway, pillars, step and the two kalash) is sized from the width AND the height of
- *  the screen, as large as fits, so the plaque and both buttons are always in view. */
-function computeLayout(W, H) {
-  const phone = W < 700;
-  const beam = phone ? 12 : 22;
-  const drop = phone ? 7 : 14;
-  const thr = phone ? 28 : Math.round(Math.min(46, Math.max(30, H * 0.045)));
-  const top = phone ? 56 : Math.round(beam + drop + Math.max(12, H * 0.02));
-  let fh = H - thr - top;
-  let fw; let kh;
-  if (phone) {
-    fw = W - 24;
-    kh = Math.round(Math.min(fh * 0.115, 96));
-  } else {
-    // a wide door on wide screens, a squarer one on squarer screens; a kalash on each side of it
-    const a = Math.min(1.55, Math.max(1.0, (W / H) * 0.72));
-    fw = (fh * a) / 1.09;
-    kh = fh * 0.25;
-    // (and, on the floor between each kalash and its pillar, a brass diyo)
-    const comp = fw * 1.09 + ((2 * kh) / KALASH.ar) * 0.8 + 2 * Math.min(72, kh * 0.3);
-    const maxW = W - 2 * Math.max(16, W * 0.025);
-    if (comp > maxW) { const k = maxW / comp; fw *= k; fh *= k; kh *= k; }
-    fw = Math.round(fw); fh = Math.round(fh); kh = Math.round(kh);
-  }
-  const pw = phone ? 16 : Math.round(Math.min(64, Math.max(34, fw * 0.058)));
-  const ext = phone ? 4 : Math.round(pw * 0.8);
-  const DW = fw + 2 * ext;
-  const lh = phone ? 22 : Math.round(Math.min(48, Math.max(28, fw * 0.042)));
-  const sill = phone ? 8 : 14;
-  const tw = Math.round(fw * (phone ? 0.52 : 0.34));
-  const th = Math.round(Math.min(tw * 0.5, phone ? Infinity : fh * 0.2));
-  const fy = H - thr - fh;
-  const fx = Math.round((W - DW) / 2);
-  const ox = ext + pw; const oy = th + lh; const ow = fw - 2 * pw; const oh = fh - oy - sill;
-  const medal = Math.round(Math.min(th * 0.74, tw * 0.4));
-  const medalY = Math.round(th * 0.58);
-  const diyoW = phone ? 30 : Math.round(Math.min(72, Math.max(44, kh * 0.28)));
-  const bellW = phone ? 22 : Math.round(Math.min(50, Math.max(28, ext * 0.95)));
-  // the silk drape, hung under the lintel: its end rosettes sit on the pillar capitals
-  const D = phone ? DRAPE.sm : DRAPE.lg;
-  const span = phone ? ow - 8 : fw - pw;
-  const tW = span / (1 - 2 * D.mx);
-  const tH = tW * D.ar;
-  const tX = fx + DW / 2 - tW / 2;
-  const tY = fy + th + lh - tH * D.band - Math.round(lh * 0.3);
-  const gTop = Math.round(tY + tH - (fy + oy) + (phone ? 8 : 12));
-  const gBottom = phone ? Math.round(diyoW * 1.6 + 6) : 12;
-  // the kalash stand on the floor at the foot of the pillars (in front of them on phones)
-  const kw = Math.round(kh / KALASH.ar);
-  const ground = H - thr;
-  const kY = Math.round(ground - kh * KALASH.ground);
-  // desktop: a diyo stands on the floor against each pillar's foot, facing the door; the kalash just outside it
-  const dH = Math.round(diyoW * 1.6);
-  const dXL = Math.round(fx + ext - diyoW * 1.04);
-  const dXR = W - dXL - diyoW;
-  const dY = Math.round(ground - dH * 0.985);
-  const kL = phone ? Math.max(2, fx - 2) : Math.max(8, Math.round(dXL + diyoW * 0.22 - kw));
-  const kR = W - kL - kw;
-  const ctop = phone ? 62 : Math.round(Math.max(72, H * 0.09));
-  const cbottom = thr + (phone ? 6 : 10);
-  return { W, H, phone, beam, drop, thr, fw, pw, ext, lh, sill, tw, th, fx, fy, DW, fh, ox, oy, ow, oh, medal, medalY, diyoW, bellW, tX, tW, tY, tH, gTop, gBottom, kh, kw, kY, kL, kR, dH, dXL, dXR, dY, ctop, cbottom, ganesh: !!ganeshRef };
-}
-
-function placeBells(L) {
-  const list = [];
-  const bw = L.bellW; const bh = Math.round(bw * 2.75);
-  if (L.phone) {
-    // phones: under the end rosettes of the drape, in front of the pillars
-    const y = Math.round(L.tY + L.tH * 0.3);
-    list.push({ x: L.fx + L.ext + L.pw / 2 - bw / 2, y });
-    list.push({ x: L.fx + L.DW - L.ext - L.pw / 2 - bw / 2, y });
-  } else {
-    // from the ends of the lintel, outside the pillars
-    const y = L.fy + L.th + L.lh - 2;
-    list.push({ x: L.fx + L.ext / 2 - bw / 2, y });
-    list.push({ x: L.fx + L.DW - L.ext / 2 - bw / 2, y });
-  }
-  bellsEl.innerHTML = list.map((b, i) => `<div class="mg-bell" style="left:${Math.round(b.x)}px;top:${Math.round(b.y)}px;width:${bw}px;height:${bh}px" data-i="${i}">${bellSVG(bw, bh, { links: 4 })}</div>`).join('');
-}
-
-/** The plaque and the two buttons scale down together only when the doorway is short. */
-function fitGate() {
-  gate.style.setProperty('--gk', '1');
-  const avail = gate.clientHeight;
-  const kids = [...gate.children];
-  const need = () => {
-    const gap = parseFloat(getComputedStyle(gate).rowGap) || 0;
-    return kids.reduce((n, el) => n + el.offsetHeight, 0) + gap * (kids.length - 1);
-  };
-  let k = 1;
-  for (let i = 0; i < 14 && need() > avail && k > 0.6; i++) { k *= 0.95; gate.style.setProperty('--gk', k.toFixed(3)); }
-}
-
-/** The opening words inside: they shrink a little only when they must. */
-function fitContent() {
-  pinner.style.setProperty('--fit', '1');
-  const cs = getComputedStyle(pcontent);
-  const availH = pcontent.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  let k = 1;
-  for (let n = 0; n < 14; n++) {
-    const tooTall = pinner.scrollHeight > availH + 1;
-    const tooWide = [...pinner.querySelectorAll('.mg-n, .mg-title__ne')].some((el) => el.offsetWidth > htext.clientWidth + 1);
-    if (!tooTall && !tooWide) break;
-    k *= 0.94;
-    pinner.style.setProperty('--fit', k.toFixed(3));
-  }
-}
+/** The opening words inside: they shrink a little only when they must (card.js). */
+const fitContent = () => { if (ownHero) fitCard(C); };
 
 function applyLayout() {
   const W = root.clientWidth;
   const H = window.innerHeight;
-  L = computeLayout(W, H);
+  L = computeLayout(W, H, ganeshRef);
+  if (!ownHero) return;
   hero.style.height = `${H}px`;
   root.style.setProperty('--mg-thr', `${L.thr}px`);
-  Object.assign(door.style, { left: `${L.fx}px`, top: `${L.fy}px`, width: `${L.DW}px`, height: `${L.fh}px` });
-  const box = { left: `${L.ox}px`, top: `${L.oy}px`, width: `${L.ow}px`, height: `${L.oh}px` };
-  Object.assign(panel.style, box);
-  Object.assign(document.getElementById('leaves').style, box);
-  Object.assign(gate.style, { left: `${L.ox}px`, top: `${L.oy + L.gTop}px`, width: `${L.ow}px`, height: `${L.oh - L.gTop - L.gBottom}px` });
-  Object.assign(document.getElementById('diyos').style, { left: `${L.ox}px`, width: `${L.ow}px`, bottom: `${L.sill}px` });
-  const dm = door.querySelector('.mg-medal--door');
-  if (dm) Object.assign(dm.style, { width: `${L.medal}px`, left: `${Math.round(L.DW / 2 - L.medal / 2)}px`, top: `${Math.round(L.medalY - L.medal / 2)}px` });
-  document.getElementById('pborder').innerHTML = panelBorderSVG(L);
-  document.getElementById('framewrap').innerHTML = frameSVG(L);
-  beamEl.innerHTML = beamSVG(L.W, L.beam, L.drop);
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const drapeSrc = `${DECOR}${L.phone ? 'drape-gate-sm' : L.tW * dpr > 1250 ? 'drape-gate' : 'drape-gate-md'}.webp`;
-  if (!drapeEl.src.endsWith(drapeSrc)) drapeEl.src = drapeSrc;
-  Object.assign(drapeEl.style, { left: `${Math.round(L.tX)}px`, top: `${Math.round(L.tY)}px`, width: `${Math.round(L.tW)}px`, height: `${Math.round(L.tH)}px` });
-  const [kl, kr] = kalashEl.children;
-  Object.assign(kl.style, { left: `${L.kL}px`, top: `${L.kY}px`, width: `${L.kw}px`, height: `${L.kh}px` });
-  Object.assign(kr.style, { left: `${L.kR}px`, top: `${L.kY}px`, width: `${L.kw}px`, height: `${L.kh}px` });
-  Object.assign(spillEl.style, { left: `${L.fx + L.ox - L.ow * 0.1}px`, width: `${L.ow * 1.2}px`, bottom: `${L.thr}px`, height: `${Math.round(L.oh * 0.5)}px` });
+  if (D) layoutDoorway(D, L, root);
   Object.assign(pcontent.style, { top: `${L.ctop}px`, bottom: `${L.cbottom}px` });
-  const lw = L.ow / 2;
-  leafL.querySelector('svg')?.remove(); leafR.querySelector('svg')?.remove();
-  leafL.insertAdjacentHTML('afterbegin', leafSVG('l', lw, L.oh));
-  leafR.insertAdjacentHTML('afterbegin', leafSVG('r', lw, L.oh));
-  root.style.setProperty('--mg-diyo-w', `${L.diyoW}px`);
   fallEl?.style.setProperty('--fall', `${H}px`);
-  // on phones the kalash stand in front of the pillars, so the lamps move in beside them
-  root.style.setProperty('--mg-diyo-in', `${L.phone ? Math.max(Math.round(L.diyoW * 0.7), L.kL + L.kw + 2 - (L.fx + L.ox)) : Math.round(L.diyoW * 0.7)}px`);
-  door.querySelectorAll('.mg-diyos .mg-diyo').forEach((d) => { d.innerHTML = diyoSVG(L.diyoW, Math.round(L.diyoW * 1.6)); });
-  // the diyos stand inside the doorway on phones, on the floor outside it beside the pillars elsewhere
-  document.getElementById('diyos').hidden = !L.phone;
-  kalashEl.querySelectorAll('.mg-gdiyo').forEach((d, i) => {
-    d.hidden = L.phone;
-    if (L.phone) return;
-    Object.assign(d.style, { left: `${i ? L.dXR : L.dXL}px`, top: `${L.dY}px`, width: `${L.diyoW}px`, height: `${L.dH}px` });
-    d.querySelector('svg')?.remove();
-    d.insertAdjacentHTML('beforeend', diyoSVG(L.diyoW, L.dH));
-  });
-  placeBells(L);
-  fitGate();
   fitContent();
   maskFall();
 }
@@ -772,26 +564,8 @@ function applyLayout() {
 // A few rose and marigold petals and the odd leaf drift down from the top, slowly, swaying (CSS transforms only).
 // Paused when the tab is hidden or the doorway is scrolled away; none at all under reduced motion.
 const fallEl = (() => {
-  if (reduced) return null;
-  const box = document.createElement('div');
-  box.className = 'mg-fall';
-  box.setAttribute('aria-hidden', 'true');
-  const phone = root.clientWidth < 700;
-  const n = phone ? 5 : 9;
-  const kinds = ['marigold', 'rose', 'marigold', 'pink', 'marigold', 'rose', 'leaf', 'marigold', 'rose'];
-  const r = (a, b) => a + Math.random() * (b - a);
-  for (let i = 0; i < n; i++) {
-    const kind = kinds[i % kinds.length];
-    const size = Math.round((phone ? 14 : 19) * r(0.8, 1.25) * (kind === 'leaf' ? 1.15 : 1));
-    const fall = r(phone ? 13 : 15, phone ? 19 : 23);
-    const sway = r(3.2, 5.2);
-    const p = document.createElement('i');
-    p.className = 'mg-fall__p';
-    // spread across the width in lanes, so they never bunch up
-    p.style.cssText = `left:${(((i + r(0.15, 0.85)) / n) * 100).toFixed(1)}%;--dur:${fall.toFixed(1)}s;--del:${(-r(0, fall)).toFixed(1)}s;--dx:${Math.round(r(-60, 60))}px;--sdur:${sway.toFixed(1)}s;--sdel:${(-r(0, sway)).toFixed(1)}s;--sw:${Math.round(r(10, 26))}px;--r0:${Math.round(r(-40, 40))}deg`;
-    p.innerHTML = `<span>${petalSVG(kind, size)}</span>`;
-    box.append(p);
-  }
+  if (reduced || !ownHero) return null;
+  const box = fallBox(root.clientWidth < 700);
   hero.append(box);
   const sync = (off) => box.classList.toggle('is-off', off);
   let heroOff = false;
@@ -800,72 +574,27 @@ const fallEl = (() => {
   return box;
 })();
 /** On the doorway the petals pass behind the plaque and the two buttons, never over their words. */
-function maskFall() {
-  if (!fallEl) return;
-  const h = hero.getBoundingClientRect();
-  const rs = [...gate.children].map((k) => k.getBoundingClientRect()).filter((r) => r.width);
-  if (!rs.length) return;
-  const l = Math.min(...rs.map((r) => r.left)) - 8; const t = Math.min(...rs.map((r) => r.top)) - 8;
-  const r = Math.max(...rs.map((x) => x.right)) + 8; const b = Math.max(...rs.map((x) => x.bottom)) + 8;
-  Object.entries({ '--mx': l - h.left, '--my': t - h.top, '--mw': r - l, '--mh': b - t })
-    .forEach(([k, v]) => fallEl.style.setProperty(k, `${Math.round(v)}px`));
-}
+const maskFall = () => maskFallIn(fallEl, hero, gate);
 
 // ───────────────────────── Opening: the doors swing open ─────────────────────────
 document.body.classList.add('mg-locked');
 window.scrollTo(0, 0);
+// Another theme's gate covers the page: Mangal waits inside its doorway, the words hidden until the gate opens.
+if (!D && ownHero) { hero.classList.add('is-inside'); gsap.set(inside, { autoAlpha: 1 }); }
 applyLayout();
-document.fonts?.ready.then(() => { fitGate(); fitContent(); maskFall(); });
-openBtn.disabled = false;
-quietBtn.disabled = false;
-document.body.classList.add('is-ready');
+document.fonts?.ready.then(() => { if (gate) fitGate(gate); fitContent(); maskFall(); });
+if (D) {
+  openBtn.disabled = false;
+  quietBtn.disabled = false;
+  document.body.classList.add('is-ready');
+}
 
 let opened = false;
 let finished = false;
 
-/** A cubic-bezier easing (x1, y1, x2, y2), solved by bisection. */
-const bezier = (x1, y1, x2, y2) => {
-  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  return (x) => {
-    let lo = 0; let hi = 1; let t = x;
-    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
-    return bz(t, y1, y2);
-  };
-};
-// Heavy leaves: they take a moment to get going, then glide and settle softly.
-const easeDoor = bezier(0.52, 0.02, 0.16, 1);
-// Walking in: a slow first step, a long glide, a soft stop.
-const easeWalk = bezier(0.45, 0, 0.25, 1);
-
 function dropPetals() {
   if (reduced) return;
-  const box = document.createElement('div');
-  box.className = 'mg-petals';
-  box.setAttribute('aria-hidden', 'true');
-  const n = L.phone ? 7 : 10;
-  const kinds = ['marigold', 'rose', 'marigold', 'marigold'];
-  for (let i = 0; i < n; i++) {
-    const s = Math.round((L.phone ? 12 : 15) * (0.8 + Math.random() * 0.5));
-    const p = document.createElement('i');
-    p.innerHTML = petalSVG(kinds[i % 4], s);
-    p.style.left = `${Math.round(L.tX + L.tW * (0.12 + Math.random() * 0.76))}px`;
-    p.style.top = `${Math.round(L.tY + L.tH * (0.4 + Math.random() * 0.4))}px`;
-    box.append(p);
-    gsap.fromTo(p, { y: -6, x: 0, rotation: Math.random() * 180, opacity: 0 }, {
-      keyframes: { opacity: [0, 1, 1, 0] },
-      y: L.H * (0.35 + Math.random() * 0.3), x: (Math.random() - 0.5) * 90, rotation: `+=${160 + Math.random() * 200}`,
-      duration: 3 + Math.random() * 1.2, delay: 0.3 + Math.random() * 1, ease: 'sine.in',
-    });
-  }
-  document.body.append(box);
-  setTimeout(() => box.remove(), 6000);
-}
-
-function swayBells(strength = 1) {
-  bellsEl.querySelectorAll('.mg-bell').forEach((b, i) => {
-    const a = (i % 2 ? -1 : 1) * 8 * strength;
-    gsap.fromTo(b, { rotation: 0 }, { keyframes: { rotation: [a, -a * 0.7, a * 0.45, -a * 0.25, a * 0.1, 0] }, duration: 2.8 + i * 0.15, ease: 'sine.inOut', delay: i * 0.08 });
-  });
+  dropPetalsIn(L);
 }
 
 function open(withMusic) {
@@ -882,108 +611,23 @@ function open(withMusic) {
   setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
 }
 
-/** The card's lines settle into place, a few at a time (headings and the photo, no body text). */
-const cardGroups = () => {
-  const g = (sel) => [...pinner.querySelectorAll(sel)];
-  return [g('.mg-symbol, .mg-invoke'), g('.mg-title'), g('.mg-hero__div, .mg-names'), g('.mg-bless')].filter((a) => a.length);
-};
+// Walking in: a forward dolly through the gate (doorway.js openDoors; each layer at its own depth).
+const DEPTH = D ? depthOf(D) : [];
 
-// Walking in: a forward dolly through the gate. Each layer sits at its own distance from the camera (the
-// toran nearest, then the beam and bells, the threshold, the doorway itself); moving the camera forward by c
-// scales a layer at distance D by D / (D - c) about the vanishing point, so near things leave the frame first.
-const DEPTH = [[garlandEl, 2.7], [beamEl, 2.8], [bellsEl, 2.9], [kalashEl, 3.3], [spillEl, 3.4], [thresholdEl, 3.5], [door, 4]];
-
-/** The smallest scale of the doorway at which every corner of the screen lies inside its opening. */
-function throughScale(vx, vy) {
-  const { W, H, ow, oh } = L;
-  const x0 = L.fx + L.ox; const y0 = L.fy + L.oy;
-  const inside = (s) => [[0, 0], [W, 0], [0, H], [W, H]].every(([px, py]) => {
-    const x = vx + (px - vx) / s - x0; const y = vy + (py - vy) / s - y0;
-    return x >= 0 && x <= ow && y >= 0 && y <= oh;
-  });
-  let lo = 1; let hi = 8;
-  if (inside(lo)) return lo;
-  for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; }
-  return hi;
-}
-
-function dollyRig() {
-  const W = L.W; const H = L.H;
-  const vx = W / 2;
-  const vy = L.fy + L.oy + L.oh * 0.42;
-  const doorEnd = Math.max(throughScale(vx, vy) * 1.05, 1.6);
-  const C = 4 - 4 / doorEnd;
-  const layers = DEPTH.filter(([el]) => el && getComputedStyle(el).display !== 'none').map(([el, D]) => {
-    const kids = el.children.length ? [...el.children] : [el];
-    const rs = kids.map((k) => k.getBoundingClientRect()).filter((r) => r.width && r.height);
-    const box = rs.length ? { l: Math.min(...rs.map((r) => r.left)), t: Math.min(...rs.map((r) => r.top)), r: Math.max(...rs.map((r) => r.right)), b: Math.max(...rs.map((r) => r.bottom)) } : null;
-    el.style.transformOrigin = `${(vx - el.offsetLeft).toFixed(1)}px ${(vy - el.offsetTop).toFixed(1)}px`;
-    return { el, D, box, gone: false };
-  });
-  const set = (p) => {
-    const cc = C * p;
-    for (const ly of layers) {
-      if (ly.gone) continue;
-      const s = ly.D / (ly.D - cc);
-      if (ly.box) {
-        const l = vx + (ly.box.l - vx) * s; const r = vx + (ly.box.r - vx) * s;
-        const t = vy + (ly.box.t - vy) * s; const b = vy + (ly.box.b - vy) * s;
-        if (r < 0 || l > W || b < 0 || t > H) { ly.gone = true; ly.el.style.visibility = 'hidden'; continue; }
-      }
-      ly.el.style.transform = `translate3d(0,0,0) scale(${s.toFixed(4)})`;
-    }
-  };
-  return { set };
-}
+/** Inside: Shri Ganesh first, large and glowing (from `at`), then softly behind the words, which settle in (card.js). */
+const cardIn = (tl, at) => cardInP(tl, at, C, { phone: L.phone, cue: '#cue' });
 
 function walkIn() {
-  const phone = L.phone;
-  const SWING_AT = 0.55;
-  const SWING = phone ? 2.1 : 2.4;
-  const DOLLY_AT = SWING_AT + SWING * 0.6;
-  const DOLLY = phone ? 2.5 : 2.9;
-  const end = DOLLY_AT + DOLLY;
-  const rig = { p: 0 };
-  let cam = null;
-  const groups = cardGroups();
   const tl = gsap.timeline({ onComplete: afterOpen });
-  tl.to(gate, { autoAlpha: 0, y: -8, duration: 0.45, ease: 'power2.out' }, 0)
-    .add(() => swayBells(0.8), 0.1)
-    // the latch gives: the leaves ease off the frame by a hair
-    .to(leafL, { rotationY: 2.5, duration: 0.4, ease: 'power2.out' }, 0.2)
-    .to(leafR, { rotationY: -2.5, duration: 0.4, ease: 'power2.out' }, 0.2)
-    .fromTo('#gap', { opacity: 0, scaleX: 0.03 }, { opacity: 0.85, scaleX: 0.08, duration: 0.4, ease: 'power1.out' }, 0.2)
-    // then the heavy swing, with warm light pouring through the widening gap
-    .to(leafL, { rotationY: 80, duration: SWING, ease: easeDoor }, SWING_AT)
-    .to(leafR, { rotationY: -80, duration: SWING, ease: easeDoor }, SWING_AT)
-    .to('.mg-leaf__shade', { opacity: 0.5, duration: SWING, ease: 'power1.in' }, SWING_AT)
-    .to('#gap', { opacity: 1, scaleX: 1, duration: SWING * 0.8, ease: easeDoor }, SWING_AT)
-    .fromTo('#light', { opacity: 0 }, { opacity: 1, duration: SWING * 0.7, ease: 'power1.out' }, SWING_AT + 0.15)
-    .fromTo(spillEl, { opacity: 0, scaleX: 0.25 }, { opacity: 1, scaleX: 1, duration: SWING * 0.75, ease: 'power2.out' }, SWING_AT + 0.25)
-    .add(dropPetals, SWING_AT)
-    // as we step through, the glare settles to a warm glow for Ganesh
-    .to('#gap', { opacity: 0, duration: 1.2, ease: 'power1.inOut' }, DOLLY_AT + 0.1)
+  tl.to(gate, { autoAlpha: 0, y: -8, duration: 0.45, ease: 'power2.out' }, 0);
+  const { DOLLY_AT, end } = openDoors(tl, D, L, { depth: DEPTH, petals: dropPetals });
+  // as we step through, the glare settles to a warm glow for Ganesh
+  tl.to('#gap', { opacity: 0, duration: 1.2, ease: 'power1.inOut' }, DOLLY_AT + 0.1)
     .to('#light', { opacity: 0.22, duration: 1.4, ease: 'power1.inOut' }, DOLLY_AT + 0.2)
     .to(spillEl, { opacity: 0, duration: 1, ease: 'power1.inOut' }, DOLLY_AT + 0.3)
-    // the camera walks in through the open doors
-    .add(() => { cam = dollyRig(); }, DOLLY_AT - 0.02)
-    .to(rig, { p: 1, duration: DOLLY, ease: easeWalk, onUpdate: () => cam?.set(rig.p) }, DOLLY_AT)
     .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.55, ease: 'power1.inOut' }, end - 0.55)
     .add(() => hero.classList.add('is-inside'), end + 0.02);
-  let t = end + 0.1;
-  if (ganEl) {
-    // Shri Ganesh first, large and glowing; after a moment he settles softly behind the words
-    gsap.set([ganImg, ganGlow], { opacity: 0 });
-    tl.fromTo(ganImg, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out' }, end - 0.3)
-      .fromTo(ganGlow, { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 1.3, ease: 'power2.out' }, end - 0.3)
-      .to(ganImg, { opacity: WATERMARK, duration: 1.4, ease: 'power1.inOut' }, end + 1.7)
-      .to(ganGlow, { opacity: 0.4, duration: 1.4, ease: 'power1.inOut' }, end + 1.7);
-    t = end + 2.3;
-  }
-  gsap.set(groups.flat(), { opacity: 0 });
-  gsap.set(pinner, { opacity: 1 });
-  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, t + i * (phone ? 0.14 : 0.18)));
-  tl.fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.5 }, t + 0.7);
+  cardIn(tl, end - 0.3);
   return tl;
 }
 
@@ -993,34 +637,50 @@ function crossfadeIn() {
   tl.to(gate, { autoAlpha: 0, duration: 0.25 }, 0)
     .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, 0.1)
     .add(() => hero.classList.add('is-inside'), 0.62);
-  const t = 0.6;
-  if (ganEl) { gsap.set(ganImg, { opacity: WATERMARK }); gsap.set(ganGlow, { opacity: 0.4 }); }
-  tl.fromTo(pinner, { opacity: 0 }, { opacity: 1, duration: 0.45 }, t)
-    .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.2);
+  cardStill(tl, 0.6, C, { cue: '#cue' });
   return tl;
 }
 
-openBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+openBtn?.addEventListener('click', () => open(true));
+quietBtn?.addEventListener('click', () => open(false));
 
 let lenis = null;
 function afterOpen() {
   if (finished) return;
   finished = true;
-  hero.classList.add('is-inside');
+  if (ownHero) hero.classList.add('is-inside');
   document.body.classList.remove('mg-locked', 'is-opening');
   document.body.classList.add('is-open');
-  gate.hidden = true;
+  if (gate) gate.hidden = true;
   lenis = createSmooth();
   revealOnScroll();
   scrollStory();
   photoStrip();
-  document.getElementById('cue').addEventListener('click', (e) => {
+  if (ownHero) document.getElementById('cue').addEventListener('click', (e) => {
     e.preventDefault();
     const y = document.getElementById(lead ? 'portrait' : 'date').getBoundingClientRect().top + window.scrollY;
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
   });
 }
+
+// ───────────────────────── Another theme's gate (mix) ─────────────────────────
+// Its overlay covers the page until it has opened; the card then comes in as it does after the walk (Ganesh large
+// and glowing, settling behind the words), and afterOpen() runs once the overlay is gone.
+const mixRun = mix.gate ? mix.mountGate({
+  start(withMusic) {
+    opened = true;
+    document.body.classList.add('is-opening');
+    player.unlock();
+    if (withMusic) ringBell(player.ctx, { when: 0.05, gain: 0.22 });
+    player.start(withMusic);
+  },
+  intro(tl, at) {
+    if (mix.heroInst) mix.heroEnter(tl, at);
+    else if (reduced) cardStill(tl, at, C, { cue: '#cue' });
+    else cardIn(tl, at);
+  },
+  finish: () => afterOpen(),
+}) : null;
 
 // ───────────────────────── Scratch to reveal the date ─────────────────────────
 (function scratchCard() {
@@ -1217,10 +877,12 @@ function scrollStory() {
   const mm = gsap.matchMedia();
   // Depth only on larger screens with a fine pointer: phones get the plain reveals (no parallax).
   mm.add('(min-width: 900px) and (pointer: fine)', () => {
-    const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
-    gsap.to(inside, { scale: 1.1, ease: 'none', scrollTrigger: st });
-    gsap.to([pinner, ganEl].filter(Boolean), { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
-    gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
+    if (ownHero) {
+      const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
+      gsap.to(inside, { scale: 1.1, ease: 'none', scrollTrigger: st });
+      gsap.to([pinner, ganEl].filter(Boolean), { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
+      gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
+    }
     document.querySelectorAll('[data-depth]').forEach((el) => {
       const d = Number(el.dataset.depth) || 0.5;
       gsap.fromTo(el, { y: 90 * d }, { y: -50 * d, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 0.8 } });
@@ -1249,8 +911,10 @@ if (DEBUG) {
     gsap, ScrollTrigger,
     layout: () => L,
     lenis: () => lenis,
-    open: () => open(false),
+    open: () => (mixRun ? mixRun.open(false) : open(false)),
+    at: (t) => (mixRun ? mixRun.at(t) : -1),
     finish: () => {
+      if (mixRun) { mixRun.finish(); return; }
       opened = true;
       gsap.set(gate, { autoAlpha: 0 });
       gsap.set(leafL, { rotationY: 80 }); gsap.set(leafR, { rotationY: -80 });
@@ -1260,7 +924,7 @@ if (DEBUG) {
       gsap.set([pinner, '#cue'], { opacity: 1, scale: 1 });
       afterOpen();
     },
-    seek: (deg) => { gsap.set(leafL, { rotationY: deg }); gsap.set(leafR, { rotationY: -deg }); },
+    seek: (deg) => { if (!D) return; gsap.set(leafL, { rotationY: deg }); gsap.set(leafR, { rotationY: -deg }); },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;

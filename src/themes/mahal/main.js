@@ -23,15 +23,26 @@ import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
 import {
-  DEFS, frameSVG, panelBorderSVG, leafSVG, bellSVG, diyoSVG, dhakaTile, crownSVG, dividerSVG, petalSVG, rosette, beamSVG, medalSVG,
+  DEFS, diyoSVG, dhakaTile, crownSVG, dividerSVG, rosette,
 } from './art.js';
 import * as P from './palace.js';
 import { createRibbon } from './ribbon.js';
 import { createFireworks } from './fireworks.js';
+import { createMix } from '../../core/mix.js';
+import {
+  gateHTML, gateRefs, gateBox, buildGate as layGate, throughScale, gateScale, gateTiming, gateUntie, easeWalk, dropPetals as shower,
+  px,
+} from './gate-parts.js';
+import { balconyHTML, balconyRefs, buildScene as layScene, splitNames, fitWords, revealWords as wordsIn, depthOf, settle } from './balcony.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const config = await loadInvitation();
+// Mix (docs/MIX.md): another theme's gate may open this page, and another theme's first screen may replace the balcony
+// (Mahal's own gate then runs as its module, gate.js). Without a design both are null and the page is as before.
+const mix = await createMix({ host: 'mahal', manifest, config });
+const ownGate = !mix.gate; // the painted gate inside the hero, opening onto the balcony
+const ownHero = !mix.hero; // the balcony
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
@@ -79,12 +90,12 @@ const imgTag = (ref, alt, sizes, { eager = false } = {}) => {
 
 const TEMPLE = crownSVG('temple');
 /** The gold temple-arch frame (the main photo only): the crown sits above the photo, so it is always whole. */
-const archFrame = (ref, alt, sizes, { cls = '', eager = false } = {}) => `<figure class="mg-frame mg-frame--temple ${cls}" style="--crown:${(200 / TEMPLE.H).toFixed(4)}">
-    <span class="mg-frame__crown" aria-hidden="true">${TEMPLE.svg}</span>
-    <span class="mg-frame__body">${imgTag(ref, alt, sizes, { eager })}</span>
+const archFrame = (ref, alt, sizes, { cls = '', eager = false } = {}) => `<figure class="mhb-frame mhb-frame--temple ${cls}" style="--crown:${(200 / TEMPLE.H).toFixed(4)}">
+    <span class="mhb-frame__crown" aria-hidden="true">${TEMPLE.svg}</span>
+    <span class="mhb-frame__body">${imgTag(ref, alt, sizes, { eager })}</span>
   </figure>`;
 /** Every other photograph: a plain ivory mat and one thin gold line. */
-const plainFrame = (ref, alt, sizes, cls = '') => `<figure class="mg-plain ${cls}">${imgTag(ref, alt, sizes)}</figure>`;
+const plainFrame = (ref, alt, sizes, cls = '') => `<figure class="mhb-plain ${cls}">${imgTag(ref, alt, sizes)}</figure>`;
 
 // ───────────────────────── Which photo goes where ─────────────────────────
 const used = new Set();
@@ -121,26 +132,6 @@ const album = [...pair, ...row, ...galCouple, ...galMore].slice(0, 14);
 // and softly behind the opening words after that.
 const ganeshRef = on(txt('ganesh.show')) ? S.img('hero.ganesh') : null;
 const closeGanesh = ganeshRef ? S.img('close.ganesh') : null; // a different Ganesh, seated, between the closing diyos
-// The medallion frames his head: a picture may say where the head's centre is (`face`, fractions) and how far to
-// zoom (`zoom`, 1 = the picture just covers the circle; below 1 shows more of it, e.g. the whole head and crown).
-const medalFit = (() => {
-  const r = ganeshRef && typeof ganeshRef === 'object' ? ganeshRef : {};
-  const z = Number(r.zoom) || 1;
-  if (!Array.isArray(r.face) || !r.w || !r.h) return 'object-position:50% 4%';
-  // contain in the square, then scale to `zoom` x cover and move the head's centre to the middle of the circle
-  const ar = r.w / r.h;
-  const s = z * Math.max(ar, 1 / ar);
-  const px = ar < 1 ? 0.5 + (r.face[0] - 0.5) * ar : r.face[0];
-  const py = ar < 1 ? r.face[1] : 0.5 + (r.face[1] - 0.5) / ar;
-  const t = (p) => ((0.5 - 0.5 - s * (p - 0.5)) * 100).toFixed(2);
-  return `object-fit:contain;transform:translate(${t(px)}%, ${t(py)}%) scale(${s.toFixed(3)})`;
-})();
-const medal = (cls = '') => (ganeshRef
-  ? `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"><img style="${medalFit}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
-  : '');
-const ganesh = () => (ganeshRef
-  ? `<div class="mg-gan" id="gan" aria-hidden="true"><i class="mg-gan__glow" id="ganglow"></i><img class="mg-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="(max-width: 700px) 80vw, 560px" alt="" decoding="async" /></div>`
-  : '');
 
 // ───────────────────────── Dates ─────────────────────────
 function adParts(iso) {
@@ -200,7 +191,7 @@ const T = {
   married: { en: 'Married, with your blessings', ne: 'हजुरहरूको आशीर्वादसहित, विवाहित' },
 };
 
-const names = () => `<span class="mg-n">${bi(c.bride.name)}</span> <span class="mg-n"><span class="mg-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
+const names = () => `<span class="mhb-n">${bi(c.bride.name)}</span> <span class="mhb-n"><span class="mhb-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
 const symbol = txt('hero.symbol');
 const invocation = txt('hero.invocation');
 const title = txt('hero.title');
@@ -216,8 +207,8 @@ document.documentElement.style.setProperty('--mg-dhaka', DHAKA.url);
 document.documentElement.style.setProperty('--mg-dhaka-w', `${DHAKA.w}px`);
 document.documentElement.style.setProperty('--mg-dhaka-h', `${DHAKA.h}px`);
 
-const diyo = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true"><i class="mg-diyo__halo"></i>${diyoSVG(w, Math.round(w * 1.6))}</div>`;
-const head = (kicker, h, id, cls = '') => `<header class="mg-head ${cls} mg-rise">${dividerSVG(200)}${kicker ? `<p class="mg-kicker">${bi(kicker)}</p>` : ''}<h2 class="mg-h2" id="${id}">${bi(h)}</h2></header>`;
+const diyo = (cls = '', w = 70) => `<div class="mhb-diyo ${cls}" aria-hidden="true"><i class="mhb-diyo__halo"></i>${diyoSVG(w, Math.round(w * 1.6))}</div>`;
+const head = (kicker, h, id, cls = '') => `<header class="mhb-head ${cls} mhb-rise">${dividerSVG(200)}${kicker ? `<p class="mhb-kicker">${bi(kicker)}</p>` : ''}<h2 class="mhb-h2" id="${id}">${bi(h)}</h2></header>`;
 
 // The date under the scratch foil: AD and B.S. (B.S. leads in Nepali), the time and the place.
 const dateBig = { en: `${mainAD.day} ${mainAD.month.en}`, ne: mainBS.day ? `${mainBS.month} ${mainBS.day} गते` : mainBS.full.ne };
@@ -226,202 +217,168 @@ const dateAlt = { en: mainBS.enShort, ne: mainBS.year ? `वि.सं. ${mainBS
 const whenLine = mainEv ? timeLabel(mainEv) : null;
 const placeLine = mainEv?.venue?.en || mainEv?.venue?.ne ? mainEv.venue : config.city;
 
-const stripFig = (g, i, dup) => `<figure class="mg-ph"><button type="button" class="mg-ph__btn" data-idx="${i}" ${dup ? 'tabindex="-1"' : ''} aria-label="${esc(g.alt || 'Open photograph')}">${imgTag(g.photo, dup ? '' : g.alt, '(max-width: 700px) 70vw, 30vw')}</button></figure>`;
-const countCell = (u, label) => `<li class="mg-count__cell"><b class="mg-count__n" data-u="${u}">${bi({ en: '00', ne: '००' })}</b><span class="mg-count__l">${bi(label)}</span></li>`;
+const stripFig = (g, i, dup) => `<figure class="mhb-ph"><button type="button" class="mhb-ph__btn" data-idx="${i}" ${dup ? 'tabindex="-1"' : ''} aria-label="${esc(g.alt || 'Open photograph')}">${imgTag(g.photo, dup ? '' : g.alt, '(max-width: 700px) 70vw, 30vw')}</button></figure>`;
+const countCell = (u, label) => `<li class="mhb-count__cell"><b class="mhb-count__n" data-u="${u}">${bi({ en: '00', ne: '००' })}</b><span class="mhb-count__l">${bi(label)}</span></li>`;
 
 // ───────────────────────── Markup ─────────────────────────
+// the balcony (balcony.js)
+const BALCONY = balconyHTML({ ganeshRef, symbol, invocation, title, c }, { ids: true });
 const main = document.getElementById('main');
 document.body.insertAdjacentHTML('afterbegin', DEFS + P.MH_DEFS);
 main.innerHTML = `
-  <section class="mg-hero mh-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
-    <div class="mh-scene" id="scene" aria-hidden="true">
-      <div class="mh-ly" id="lyBack"></div>
-      <div class="mh-ly" id="lyFloor"></div>
-      <div class="mh-ly" id="lyRail"></div>
-      <canvas class="mh-fw" id="fw"></canvas>
-      <div class="mh-ly" id="lyCurt"></div>
-      <div class="mh-dust" id="dust"></div>
-      <i class="mh-pour" id="pour"></i>
-    </div>
-    <div class="mh-ganwrap" id="ganwrap">
-        ${ganeshRef ? `<div class="mh-gan" id="gan" aria-hidden="true"><i class="mh-gan__rays" id="ganrays"></i><i class="mh-gan__glow" id="ganglow"></i><img class="mh-gan__img" id="ganimg" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="160px" alt="" decoding="async" /></div>`
-          : on(symbol) ? `<p class="mh-symbol mh-in" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
-    </div>
-    <div class="mh-words" id="pcontent">
-      <div class="mh-words__in" id="pinner">
-        ${on(invocation) ? `<p class="mh-invoke mh-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
-        <p class="mh-title mh-in"><span lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></p>
-        <h1 class="mh-names" id="names">
-          <span class="mh-name">${bi(c.bride.name)}</span>
-          <span class="mh-weds mh-in"><i aria-hidden="true"></i>${bi({ en: 'weds', ne: 'तथा' })}<i aria-hidden="true"></i></span>
-          <span class="mh-name">${bi(c.groom.name)}</span>
-        </h1>
-      </div>
-    </div>
-    <div class="mh-gate" id="gateLy" aria-hidden="true">
-      <div class="mh-gatein" id="gateIn">
-        <i class="mh-gatebg" aria-hidden="true"></i>
-        <div class="mh-gbox" id="gbox">
-          <div class="mh-leaves" id="leaves"><div class="mh-leaf mh-leaf--l" id="leafL"></div><div class="mh-leaf mh-leaf--r" id="leafR"></div></div>
-          <i class="mh-seam" id="seam"></i>
-          <canvas class="mh-ribbon" id="ribbon"></canvas>
-          <div class="mh-frame" id="frame"></div>
-          <div class="mh-crest" id="crest"><i class="mh-crest__halo" id="crestHalo"></i>${ganeshRef ? medal('') : '<div class="mh-om" lang="ne">ॐ</div>'}</div>
-          <img class="mh-bowimg" id="bowImg" src="${DECOR}bow-sm.webp" srcset="${DECOR}bow-sm.webp 480w, ${DECOR}bow.webp 900w" sizes="(max-width: 700px) 50vw, 300px" alt="" decoding="async" fetchpriority="high" />
-          <i class="mh-hint" id="hint"></i>
-          <div class="mh-glints" id="gglints"></div>
-        </div>
-      </div>
-    </div>
+  <section class="mhb-hero mh-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
+    ${BALCONY.scene}
+    ${BALCONY.words}
+    ${ownGate ? `${gateHTML(ganeshRef)}
     <button class="mh-bowbtn" id="bowbtn" type="button" aria-label="${esc(txt('gate.open').en)}" disabled></button>
     <div class="mh-ui" id="gate">
       <p class="mh-ui__line">${bi(txt('gate.line'))}</p>
       <button class="mh-open" id="open" type="button" disabled>${bi(txt('gate.open'))}</button>
       <button class="mh-quiet" id="quiet" type="button" disabled>${bi(txt('gate.quiet'))}</button>
-    </div>
-    <a class="mg-cue" id="cue" href="#${lead ? 'portrait' : 'date'}"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
+    </div>` : ''}
+    <a class="mhb-cue" id="cue" href="#${lead ? 'portrait' : 'date'}"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
   </section>
   ${lead ? `
-  <section class="mg-sec mg-portrait" id="portrait" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
-    <div class="mg-portrait__in mg-rise">${archFrame(lead.photo, lead.alt, '(max-width: 700px) 84vw, 480px')}</div>
+  <section class="mhb-sec mhb-portrait" id="portrait" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
+    <div class="mhb-portrait__in mhb-rise">${archFrame(lead.photo, lead.alt, '(max-width: 700px) 84vw, 480px')}</div>
   </section>` : ''}
 
-  <section class="mg-sec mg-when" id="date" aria-labelledby="date-title">
+  <section class="mhb-sec mhb-when" id="date" aria-labelledby="date-title">
     ${head(txt('date.kicker'), txt('date.title'), 'date-title')}
-    <div class="mg-scratch mg-rise" id="scratch">
-      <div class="mg-scratch__card">
-        <div class="mg-scratch__date">
-          <p class="mg-scratch__wd">${bi(mainAD.wd)}</p>
-          <p class="mg-scratch__big">${bi(dateBig)}</p>
-          <p class="mg-scratch__alt">${bi(dateAlt)}</p>
-          ${whenLine ? `<p class="mg-scratch__time">${bi(whenLine)}</p>` : ''}
-          ${placeLine?.en || placeLine?.ne ? `<p class="mg-scratch__place">${bi(placeLine)}</p>` : ''}
+    <div class="mhb-scratch mhb-rise" id="scratch">
+      <div class="mhb-scratch__card">
+        <div class="mhb-scratch__date">
+          <p class="mhb-scratch__wd">${bi(mainAD.wd)}</p>
+          <p class="mhb-scratch__big">${bi(dateBig)}</p>
+          <p class="mhb-scratch__alt">${bi(dateAlt)}</p>
+          ${whenLine ? `<p class="mhb-scratch__time">${bi(whenLine)}</p>` : ''}
+          ${placeLine?.en || placeLine?.ne ? `<p class="mhb-scratch__place">${bi(placeLine)}</p>` : ''}
         </div>
-        <canvas class="mg-scratch__foil" id="foil" aria-hidden="true"></canvas>
+        <canvas class="mhb-scratch__foil" id="foil" aria-hidden="true"></canvas>
       </div>
-      <button class="mg-btn mg-btn--line" type="button" id="reveal">${bi(txt('scratch.button'))}</button>
+      <button class="mhb-btn mhb-btn--line" type="button" id="reveal">${bi(txt('scratch.button'))}</button>
     </div>
-    <div class="mg-count mg-rise" id="count">
-      <h3 class="mg-count__title">${bi(txt('count.title'))}</h3>
-      <ol class="mg-count__grid" id="countgrid" aria-label="${esc(txt('count.title').en)}">
+    <div class="mhb-count mhb-rise" id="count">
+      <h3 class="mhb-count__title">${bi(txt('count.title'))}</h3>
+      <ol class="mhb-count__grid" id="countgrid" aria-label="${esc(txt('count.title').en)}">
         ${countCell('d', T.days)}${countCell('h', T.hours)}${countCell('m', T.minutes)}${countCell('s', T.seconds)}
       </ol>
-      <p class="mg-count__done" id="countdone" hidden></p>
+      <p class="mhb-count__done" id="countdone" hidden></p>
     </div>
   </section>
 
   ${album.length ? `
-  <section class="mg-sec mg-strip" id="couple" aria-labelledby="couple-title">
-    <div class="mg-strip__pin" id="strippin">
+  <section class="mhb-sec mhb-strip" id="couple" aria-labelledby="couple-title">
+    <div class="mhb-strip__pin" id="strippin">
     ${head(null, txt('couple.title'), 'couple-title')}
-    <p class="mg-lede mg-rise">${bi(txt('couple.line'))}</p>
-    <div class="mg-strip__view" id="stripview">
-      <div class="mg-strip__track" id="track">
-        <div class="mg-strip__set">${album.map((g, i) => stripFig(g, i, false)).join('')}</div>
-        <div class="mg-strip__set mg-strip__set--dup" aria-hidden="true">${album.map((g, i) => stripFig(g, i, true)).join('')}</div>
+    <p class="mhb-lede mhb-rise">${bi(txt('couple.line'))}</p>
+    <div class="mhb-strip__view" id="stripview">
+      <div class="mhb-strip__track" id="track">
+        <div class="mhb-strip__set">${album.map((g, i) => stripFig(g, i, false)).join('')}</div>
+        <div class="mhb-strip__set mhb-strip__set--dup" aria-hidden="true">${album.map((g, i) => stripFig(g, i, true)).join('')}</div>
       </div>
     </div>
     </div>
   </section>` : ''}
 
-  <section class="mg-sec mg-fam" id="families" aria-labelledby="fam-title">
-    <div class="mg-fam__card mg-rise">
-      <img class="mg-fam__toran" src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="(max-width: 700px) 110vw, 1300px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="mg-fam__spray mg-fam__spray--tl" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <img class="mg-fam__spray mg-fam__spray--br" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
-      <div class="mg-fam__body">
+  <section class="mhb-sec mhb-fam" id="families" aria-labelledby="fam-title">
+    <div class="mhb-fam__card mhb-rise">
+      <img class="mhb-fam__toran" src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="(max-width: 700px) 110vw, 1300px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mhb-fam__spray mhb-fam__spray--tl" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img class="mhb-fam__spray mhb-fam__spray--br" src="${DECOR}corner-br-sm.webp?v=5" srcset="${DECOR}corner-br-sm.webp?v=5 400w, ${DECOR}corner-br.webp?v=5 720w" sizes="200px" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <div class="mhb-fam__body">
         ${dividerSVG(180)}
-        <h2 class="mg-h2" id="fam-title">${bi(txt('families.title'))}</h2>
-        <div class="mg-fam__grid">
-          <div class="mg-fam__side">
-            ${brideGroom ? plainFrame(bridePh, c.bride.name.en, '(max-width: 700px) 60vw, 240px', 'mg-fam__pic') : ''}
-            <p class="mg-kicker">${bi(txt('families.bride'))}</p>
-            <p class="mg-fam__name">${bi(c.bride.fullName)}</p>
-            ${(c.bride.parents?.en || c.bride.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.daughter'))}</p><p class="mg-fam__parents">${bi(c.bride.parents)}</p>` : ''}
-            ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="mg-fam__home">${bi(c.bride.home)}</p>` : ''}
+        <h2 class="mhb-h2" id="fam-title">${bi(txt('families.title'))}</h2>
+        <div class="mhb-fam__grid">
+          <div class="mhb-fam__side">
+            ${brideGroom ? plainFrame(bridePh, c.bride.name.en, '(max-width: 700px) 60vw, 240px', 'mhb-fam__pic') : ''}
+            <p class="mhb-kicker">${bi(txt('families.bride'))}</p>
+            <p class="mhb-fam__name">${bi(c.bride.fullName)}</p>
+            ${(c.bride.parents?.en || c.bride.parents?.ne) ? `<p class="mhb-fam__of">${bi(txt('families.daughter'))}</p><p class="mhb-fam__parents">${bi(c.bride.parents)}</p>` : ''}
+            ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="mhb-fam__home">${bi(c.bride.home)}</p>` : ''}
           </div>
-          <div class="mg-fam__mid" aria-hidden="true">
-            <img class="mg-fam__kalash" src="${DECOR}kalash-sm.webp?v=5" srcset="${DECOR}kalash-sm.webp?v=5 320w, ${DECOR}kalash.webp?v=5 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
+          <div class="mhb-fam__mid" aria-hidden="true">
+            <img class="mhb-fam__kalash" src="${DECOR}kalash-sm.webp?v=5" srcset="${DECOR}kalash-sm.webp?v=5 320w, ${DECOR}kalash.webp?v=5 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
           </div>
-          <div class="mg-fam__side">
-            ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 240px', 'mg-fam__pic') : ''}
-            <p class="mg-kicker">${bi(txt('families.groom'))}</p>
-            <p class="mg-fam__name">${bi(c.groom.fullName)}</p>
-            ${(c.groom.parents?.en || c.groom.parents?.ne) ? `<p class="mg-fam__of">${bi(txt('families.son'))}</p><p class="mg-fam__parents">${bi(c.groom.parents)}</p>` : ''}
-            ${(c.groom.home?.en || c.groom.home?.ne) ? `<p class="mg-fam__home">${bi(c.groom.home)}</p>` : ''}
+          <div class="mhb-fam__side">
+            ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 240px', 'mhb-fam__pic') : ''}
+            <p class="mhb-kicker">${bi(txt('families.groom'))}</p>
+            <p class="mhb-fam__name">${bi(c.groom.fullName)}</p>
+            ${(c.groom.parents?.en || c.groom.parents?.ne) ? `<p class="mhb-fam__of">${bi(txt('families.son'))}</p><p class="mhb-fam__parents">${bi(c.groom.parents)}</p>` : ''}
+            ${(c.groom.home?.en || c.groom.home?.ne) ? `<p class="mhb-fam__home">${bi(c.groom.home)}</p>` : ''}
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="mg-sec mg-card" id="card" aria-labelledby="card-title">
-    <article class="mg-card__sheet mg-rise">
-      <div class="mg-card__in">
-        <p class="mg-kicker mg-kicker--gold">${bi(txt('card.kicker'))}</p>
-        <p class="mg-card__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
-        <h2 class="mg-card__line" id="card-title">${bi(txt('card.line'))}</h2>
-        <p class="mg-card__hosts">${bi(config.hosts)}</p>
-        <button class="mg-btn mg-btn--gold" type="button" data-open-card>${bi(txt('card.button'))}</button>
+  <section class="mhb-sec mhb-card" id="card" aria-labelledby="card-title">
+    <article class="mhb-card__sheet mhb-rise">
+      <div class="mhb-card__in">
+        <p class="mhb-kicker mhb-kicker--gold">${bi(txt('card.kicker'))}</p>
+        <p class="mhb-card__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
+        <h2 class="mhb-card__line" id="card-title">${bi(txt('card.line'))}</h2>
+        <p class="mhb-card__hosts">${bi(config.hosts)}</p>
+        <button class="mhb-btn mhb-btn--gold" type="button" data-open-card>${bi(txt('card.button'))}</button>
       </div>
     </article>
   </section>
 
-  <section class="mg-sec mg-prog" id="programme" aria-labelledby="prog-title">
+  <section class="mhb-sec mhb-prog" id="programme" aria-labelledby="prog-title">
     ${head(txt('prog.kicker'), txt('prog.title'), 'prog-title')}
-    <ol class="mg-events">
+    <ol class="mhb-events">
       ${events.map((e) => {
         const ad = adParts(e.start);
         const bs = bsParts(e.start, e.dateBS);
         const sw = (e.dress?.colors || []).map(safeColor).filter(Boolean);
         const hasDress = !!(e.dress?.text?.en || e.dress?.text?.ne || sw.length);
         return `
-      <li class="mg-ev mg-rise" id="ev-${esc(e.id)}">
-        <div class="mg-ev__tile" aria-hidden="true">
-          <span class="mg-ev__wd">${bi(ad.wd)}</span>
-          <span class="mg-ev__day">${bi({ en: ad.day, ne: bs.day || neNum(ad.day) })}</span>
-          <span class="mg-ev__my">${bi({ en: ad.month.en, ne: bs.monthYear || ad.month.ne })}</span>
+      <li class="mhb-ev mhb-rise" id="ev-${esc(e.id)}">
+        <div class="mhb-ev__tile" aria-hidden="true">
+          <span class="mhb-ev__wd">${bi(ad.wd)}</span>
+          <span class="mhb-ev__day">${bi({ en: ad.day, ne: bs.day || neNum(ad.day) })}</span>
+          <span class="mhb-ev__my">${bi({ en: ad.month.en, ne: bs.monthYear || ad.month.ne })}</span>
         </div>
-        <div class="mg-ev__main">
-          <h3 class="mg-ev__title">${bi(e.title)}</h3>
-          <p class="mg-ev__when">${bi({ en: ad.full.en, ne: bs.full.ne })}<br />${bi({ en: bs.full.en, ne: ad.full.ne })}</p>
-          ${e.blurb ? `<p class="mg-ev__blurb">${bi(e.blurb)}</p>` : ''}
-          <dl class="mg-ev__facts">
+        <div class="mhb-ev__main">
+          <h3 class="mhb-ev__title">${bi(e.title)}</h3>
+          <p class="mhb-ev__when">${bi({ en: ad.full.en, ne: bs.full.ne })}<br />${bi({ en: bs.full.en, ne: ad.full.ne })}</p>
+          ${e.blurb ? `<p class="mhb-ev__blurb">${bi(e.blurb)}</p>` : ''}
+          <dl class="mhb-ev__facts">
             <div><dt>${bi(T.time)}</dt><dd>${bi(timeLabel(e))}</dd></div>
-            <div><dt>${bi(T.venue)}</dt><dd>${bi(e.venue)} <a class="mg-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span><span class="sr-only"> (${esc(e.venue?.en || '')}, opens Google Maps)</span></a></dd></div>
-            ${hasDress ? `<div><dt>${bi(T.wear)}</dt><dd class="mg-dress">${sw.length ? `<span class="mg-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text?.en || e.dress.text?.ne ? e.dress.text : T.wear)}</span></dd></div>` : ''}
+            <div><dt>${bi(T.venue)}</dt><dd>${bi(e.venue)} <a class="mhb-map" href="${esc(mapUrl(e.mapQuery || e.venue?.en || ''))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span><span class="sr-only"> (${esc(e.venue?.en || '')}, opens Google Maps)</span></a></dd></div>
+            ${hasDress ? `<div><dt>${bi(T.wear)}</dt><dd class="mhb-dress">${sw.length ? `<span class="mhb-sw" aria-hidden="true">${sw.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(e.dress.text?.en || e.dress.text?.ne ? e.dress.text : T.wear)}</span></dd></div>` : ''}
           </dl>
-          ${e.rituals?.length ? `<div class="mg-order"><p class="mg-order__label">${bi(T.order)}</p><ol>${e.rituals.map((r) => `<li><span class="mg-order__t">${bi(typeof r.time === 'string' ? { en: r.time, ne: neNum(r.time) } : r.time)}</span><span>${bi(r.title)}</span></li>`).join('')}</ol></div>` : ''}
+          ${e.rituals?.length ? `<div class="mhb-order"><p class="mhb-order__label">${bi(T.order)}</p><ol>${e.rituals.map((r) => `<li><span class="mhb-order__t">${bi(typeof r.time === 'string' ? { en: r.time, ne: neNum(r.time) } : r.time)}</span><span>${bi(r.title)}</span></li>`).join('')}</ol></div>` : ''}
         </div>
       </li>`;
       }).join('')}
     </ol>
-    <div class="mg-prog__foot mg-rise">
-      <button class="mg-btn" type="button" id="add-calendar">${bi(T.calendar)}</button>
+    <div class="mhb-prog__foot mhb-rise">
+      <button class="mhb-btn" type="button" id="add-calendar">${bi(T.calendar)}</button>
       ${(config.info?.travel || config.info?.stays?.length || config.info?.contacts?.length) ? `
-      <details class="mg-more">
+      <details class="mhb-more">
         <summary>${bi(txt('prog.more'))}</summary>
-        <div class="mg-more__grid">
+        <div class="mhb-more__grid">
           ${config.info?.travel ? `<div><h3>${bi(T.travel)}</h3><p>${bi(config.info.travel)}</p></div>` : ''}
-          ${config.info?.stays?.length ? `<div><h3>${bi(T.stays)}</h3><ul>${config.info.stays.map((s) => `<li><b>${bi(s.name)}</b><small>${bi(s.note)}</small><a class="mg-map" href="${esc(mapUrl(s.mapQuery || s.name.en))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span></a></li>`).join('')}</ul></div>` : ''}
-          ${config.info?.contacts?.length ? `<div><h3>${bi(T.contacts)}</h3><ul>${config.info.contacts.map((p) => `<li><b>${bi(p.name)}</b><small>${bi(p.role)}</small><span class="mg-links"><a class="mg-map" href="tel:${esc(tel(p.phone))}">${bi(T.call)}</a><a class="mg-map" href="https://wa.me/${esc(tel(p.phone).replace('+', ''))}" target="_blank" rel="noopener">WhatsApp</a></span></li>`).join('')}</ul>
-            ${safeHref(config.info.livestream) ? `<a class="mg-map" href="${esc(safeHref(config.info.livestream))}" target="_blank" rel="noopener">${bi(T.live)} ↗</a>` : ''}</div>` : ''}
+          ${config.info?.stays?.length ? `<div><h3>${bi(T.stays)}</h3><ul>${config.info.stays.map((s) => `<li><b>${bi(s.name)}</b><small>${bi(s.note)}</small><a class="mhb-map" href="${esc(mapUrl(s.mapQuery || s.name.en))}" target="_blank" rel="noopener">${bi(T.map)}<span aria-hidden="true"> ↗</span></a></li>`).join('')}</ul></div>` : ''}
+          ${config.info?.contacts?.length ? `<div><h3>${bi(T.contacts)}</h3><ul>${config.info.contacts.map((p) => `<li><b>${bi(p.name)}</b><small>${bi(p.role)}</small><span class="mhb-links"><a class="mhb-map" href="tel:${esc(tel(p.phone))}">${bi(T.call)}</a><a class="mhb-map" href="https://wa.me/${esc(tel(p.phone).replace('+', ''))}" target="_blank" rel="noopener">WhatsApp</a></span></li>`).join('')}</ul>
+            ${safeHref(config.info.livestream) ? `<a class="mhb-map" href="${esc(safeHref(config.info.livestream))}" target="_blank" rel="noopener">${bi(T.live)} ↗</a>` : ''}</div>` : ''}
         </div>
       </details>` : ''}
     </div>
   </section>
 
-  <section class="mg-sec mg-rsvp" id="rsvp" aria-labelledby="rsvp-title">
-    <div class="mg-rsvp__in">
-      <div class="mg-rsvp__note mg-rise">
+  <section class="mhb-sec mhb-rsvp" id="rsvp" aria-labelledby="rsvp-title">
+    <div class="mhb-rsvp__in">
+      <div class="mhb-rsvp__note mhb-rise">
         ${dividerSVG(200)}
-        <p class="mg-kicker mg-kicker--gold">${bi(countLine)}</p>
-        <h2 class="mg-h2 mg-h2--gold" id="rsvp-title">${bi(txt('rsvp.title'))}</h2>
-        ${(config.rsvp?.deadline?.en || config.rsvp?.deadline?.ne) ? `<p class="mg-lede mg-lede--light">${bi(config.rsvp.deadline)}</p>` : ''}
-        <p><button class="mg-link" type="button" id="share">${bi(T.shareIt)}</button></p>
+        <p class="mhb-kicker mhb-kicker--gold">${bi(countLine)}</p>
+        <h2 class="mhb-h2 mhb-h2--gold" id="rsvp-title">${bi(txt('rsvp.title'))}</h2>
+        ${(config.rsvp?.deadline?.en || config.rsvp?.deadline?.ne) ? `<p class="mhb-lede mhb-lede--light">${bi(config.rsvp.deadline)}</p>` : ''}
+        <p><button class="mhb-link" type="button" id="share">${bi(T.shareIt)}</button></p>
       </div>
-      <div class="mg-rsvp__card mg-rise">
-        <form class="rsvp mg-form" id="rsvp-form" novalidate>
+      <div class="mhb-rsvp__card mhb-rise">
+        <form class="rsvp mhb-form" id="rsvp-form" novalidate>
           <div class="field">
             <label for="f-name">${bi({ en: 'Your name', ne: 'नाम' })}</label>
             <input id="f-name" name="name" type="text" autocomplete="name" required maxlength="80" />
@@ -435,7 +392,7 @@ main.innerHTML = `
             </div>
           </fieldset>
           <div class="rsvp__when-yes">
-            <div class="mg-form__row">
+            <div class="mhb-form__row">
               <div class="field">
                 <label for="f-guests">${bi({ en: 'Guests, including you', ne: 'पाहुना संख्या' })}</label>
                 <select id="f-guests" name="guests"></select>
@@ -462,53 +419,53 @@ main.innerHTML = `
             <textarea id="f-msg" name="message" rows="2" maxlength="500"></textarea>
           </div>
           <div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-          <button class="mg-btn" type="submit" id="rsvp-submit">${bi(txt('rsvp.send'))}</button>
+          <button class="mhb-btn" type="submit" id="rsvp-submit">${bi(txt('rsvp.send'))}</button>
           <p class="rsvp__status" id="rsvp-status" role="status" aria-live="polite"></p>
         </form>
       </div>
     </div>
   </section>
 
-  <footer class="mg-close" aria-label="Blessing">
-    <div class="mg-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
-    <div class="mg-close__row">
-      <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
-      <div class="mg-close__text mg-rise">
-        ${closeGanesh ? `<figure class="mg-close__gan" aria-hidden="true"><i class="mg-close__glow"></i><img src="${esc(photoUrl(closeGanesh, 'sm'))}" srcset="${esc(photoUrl(closeGanesh, 'sm'))} 500w, ${esc(photoUrl(closeGanesh, 'lg'))} 1000w" sizes="260px" alt="" loading="lazy" decoding="async" /></figure>` : ''}
-        <p class="mg-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
-        <p class="mg-close__en l-en">${esc(config.closing?.en || '')}</p>
-        <p class="mg-close__names">${names()}</p>
-        ${c.hashtag ? `<p class="mg-close__tag">${esc(c.hashtag)}</p>` : ''}
+  <footer class="mhb-close" aria-label="Blessing">
+    <div class="mhb-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
+    <div class="mhb-close__row">
+      <div class="mhb-close__lamp">${diyo('mhb-diyo--close', 120)}</div>
+      <div class="mhb-close__text mhb-rise">
+        ${closeGanesh ? `<figure class="mhb-close__gan" aria-hidden="true"><i class="mhb-close__glow"></i><img src="${esc(photoUrl(closeGanesh, 'sm'))}" srcset="${esc(photoUrl(closeGanesh, 'sm'))} 500w, ${esc(photoUrl(closeGanesh, 'lg'))} 1000w" sizes="260px" alt="" loading="lazy" decoding="async" /></figure>` : ''}
+        <p class="mhb-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
+        <p class="mhb-close__en l-en">${esc(config.closing?.en || '')}</p>
+        <p class="mhb-close__names">${names()}</p>
+        ${c.hashtag ? `<p class="mhb-close__tag">${esc(c.hashtag)}</p>` : ''}
       </div>
-      <div class="mg-close__lamp">${diyo('mg-diyo--close', 120)}</div>
+      <div class="mhb-close__lamp">${diyo('mhb-diyo--close', 120)}</div>
     </div>
-    <div class="mg-band" aria-hidden="true"></div>
+    <div class="mhb-band" aria-hidden="true"></div>
     ${madeWith()}
   </footer>
 
-  <div class="mg-modal" id="cardmodal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title" data-lenis-prevent>
-    <div class="mg-modal__panel" id="cm-panel">
-      <button class="mg-modal__x" type="button" data-close><span aria-hidden="true">×</span><span class="sr-only">${esc(T.close.en)}</span></button>
-      ${on(symbol) ? `<p class="mg-modal__sym" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
-      <p class="mg-modal__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
-      <p class="mg-modal__shloka-en l-en">${esc(config.invitation?.shloka?.en || '')}</p>
-      <h2 class="mg-modal__title" id="cm-title"><span lang="ne">${esc(title.ne)}</span></h2>
-      <p class="mg-modal__p">${bi(config.invitation?.salutation || '')}</p>
-      <p class="mg-modal__p">${bi(config.invitation?.body || '')}</p>
-      <p class="mg-modal__p">${bi(config.invitation?.request || '')}</p>
-      <dl class="mg-modal__when">
+  <div class="mhb-modal" id="cardmodal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title" data-lenis-prevent>
+    <div class="mhb-modal__panel" id="cm-panel">
+      <button class="mhb-modal__x" type="button" data-close><span aria-hidden="true">×</span><span class="sr-only">${esc(T.close.en)}</span></button>
+      ${on(symbol) ? `<p class="mhb-modal__sym" lang="ne">${esc(symbol.ne || symbol.en)}</p>` : ''}
+      <p class="mhb-modal__shloka" lang="sa">${esc(config.invitation?.shloka?.sa || '')}</p>
+      <p class="mhb-modal__shloka-en l-en">${esc(config.invitation?.shloka?.en || '')}</p>
+      <h2 class="mhb-modal__title" id="cm-title"><span lang="ne">${esc(title.ne)}</span></h2>
+      <p class="mhb-modal__p">${bi(config.invitation?.salutation || '')}</p>
+      <p class="mhb-modal__p">${bi(config.invitation?.body || '')}</p>
+      <p class="mhb-modal__p">${bi(config.invitation?.request || '')}</p>
+      <dl class="mhb-modal__when">
         <div><dt>${bi({ en: 'Date', ne: 'मिति' })}</dt><dd>${bi(dateOf(mainIso))}<br />${bi({ en: mainBS.full.en, ne: mainBS.full.ne })}</dd></div>
         <div><dt>${bi({ en: 'Place', ne: 'स्थान' })}</dt><dd>${bi(config.city)}</dd></div>
       </dl>
-      <p class="mg-modal__sign">${bi(config.invitation?.signoff || '')}<br /><b>${bi(config.hosts)}</b></p>
+      <p class="mhb-modal__sign">${bi(config.invitation?.signoff || '')}<br /><b>${bi(config.hosts)}</b></p>
     </div>
   </div>
 
-  <div class="mg-lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photograph" data-lenis-prevent>
-    <button type="button" class="mg-lb__btn mg-lb__x" data-lb="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
-    <button type="button" class="mg-lb__btn mg-lb__prev" data-lb="prev"><span aria-hidden="true">←</span><span class="sr-only">Previous</span></button>
-    <figure class="mg-lb__fig"><img alt="" decoding="async" /></figure>
-    <button type="button" class="mg-lb__btn mg-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
+  <div class="mhb-lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photograph" data-lenis-prevent>
+    <button type="button" class="mhb-lb__btn mhb-lb__x" data-lb="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+    <button type="button" class="mhb-lb__btn mhb-lb__prev" data-lb="prev"><span aria-hidden="true">←</span><span class="sr-only">Previous</span></button>
+    <figure class="mhb-lb__fig"><img alt="" decoding="async" /></figure>
+    <button type="button" class="mhb-lb__btn mhb-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
   </div>`;
 
 
@@ -580,193 +537,56 @@ modal.addEventListener('click', (e) => { if (e.target === modal || e.target.clos
 }());
 
 // ───────────────────────── The doorway: layout at the exact screen size ─────────────────────────
-const hero = document.querySelector('.mh-hero');
+// Another theme's first screen takes the balcony's place; Mangal's calm scroll continues below it.
+if (!ownHero) mix.mountHero(document.getElementById('top'));
+const hero = ownHero ? document.querySelector('.mh-hero') : null;
 const $ = (id) => document.getElementById(id);
-const pcontent = $('pcontent');
-const pinner = $('pinner');
-const ganEl = $('gan');
-const ganImg = $('ganimg');
-const ganGlow = $('ganglow');
-const ganRays = $('ganrays');
-const gate = $('gate'); // the line and the two buttons on the closed gate
-const openBtn = $('open');
-const quietBtn = $('quiet');
-const bowBtn = $('bowbtn');
-const gateLy = $('gateLy');
-const gateIn = $('gateIn');
-const gbox = $('gbox');
-const leavesEl = $('leaves');
-const leafL = $('leafL');
-const leafR = $('leafR');
-const seam = $('seam');
-const frameEl = $('frame');
-const bowImg = $('bowImg');
-const crest = $('crest');
-const crestHalo = $('crestHalo');
-const hint = $('hint');
-const rib = createRibbon($('ribbon'));
-rib.setTexture(`${DECOR}ribbon.webp`);
-const fw = reduced ? null : createFireworks($('fw'));
-const inside = $('scene');
-const lyBack = $('lyBack');
-const lyFloor = $('lyFloor');
-const lyRail = $('lyRail');
-const lyCurt = $('lyCurt');
-const ganWrap = $('ganwrap');
-const dustEl = $('dust');
-const pour = $('pour');
+const B = ownHero ? balconyRefs(hero) : {};
+const { pcontent, pinner, ganEl, ganImg, ganGlow, ganRays } = B;
+// the painted gate (gate-parts.js), when it is Mahal's own and inside the hero
+const gate = ownGate ? $('gate') : null; // the line and the two buttons on the closed gate
+const openBtn = ownGate ? $('open') : null;
+const quietBtn = ownGate ? $('quiet') : null;
+const bowBtn = ownGate ? $('bowbtn') : null;
+const GR = ownGate ? gateRefs(hero) : {};
+const { gateLy, gateIn, hint } = GR;
+const rib = ownGate ? createRibbon(GR.ribbon) : null;
+rib?.setTexture(`${DECOR}ribbon.webp`);
+Object.assign(GR, { rib, ui: gate, bowBtn });
+const fw = reduced || !ownHero ? null : createFireworks(B.fwCanvas);
+const { inside, pour } = B;
 const root = document.documentElement;
-// the opening words sit between the moon and the waterline
-const ARCH = { x0: -70, y0: -430, x1: 1070, y1: 470 }; // the arch garland's box in gate units (tools/decor.py)
-const FOOT = { w: 300, h: 210 };
-const BOWK = 0.8;
 // how far each layer of the balcony is from the camera once it has walked in (the gate starts at distance 1)
-const DEPTH = [[lyBack, 4], [lyCurt, 1.6]];
+const DEPTH = ownHero ? depthOf(B) : [];
 let G = null; let SG = null; let CAM = 0.45;
-const px = (v) => `${Math.round(v * 10) / 10}px`;
-const place = (el, x, y, w, h) => Object.assign(el.style, { left: px(x), top: px(y), width: px(w), height: px(h) });
-const rnd = (a, b) => a + Math.random() * (b - a);
-const glowTag = ([x, y, r]) => `<i class="mh-glow" style="left:${px(x - r / 2)};top:${px(y - r / 2)};width:${px(r)};height:${px(r)};--d:${rnd(2.4, 4).toFixed(2)}s;--dl:${(-rnd(0, 3)).toFixed(2)}s"></i>`;
 
-// The painted balcony (decor/scene-*.webp, made with Canva AI): where things sit in it, as fractions of the picture.
-const SCENE = {
-  p: {
-    w: 1152, h: 2048, moon: [0.5026, 0.0951, 0.0505], dome: 0.225, floor: 0.75,
-    pool: [[0.415, 0.452], [0.59, 0.452], [0.85, 0.62], [0.16, 0.62]],
-    lamps: [[0.249, 0.497, 0.03], [0.754, 0.496, 0.025], [0.832, 0.518, 0.035], [0.053, 0.55, 0.044], [0.942, 0.553, 0.048], [0.217, 0.6, 0.056], [0.78, 0.601, 0.064], [0.094, 0.73, 0.054], [0.908, 0.728, 0.058], [0.188, 0.946, 0.11], [0.82, 0.944, 0.09]],
-  },
-  l: {
-    w: 2048, h: 1152, moon: [0.5043, 0.102, 0.0176], dome: 0.17, floor: 0.86,
-    pool: [[0.37, 0.49], [0.63, 0.49], [0.8, 0.69], [0.2, 0.69]],
-    lamps: [[0.07, 0.58, 0.04], [0.158, 0.56, 0.035], [0.233, 0.53, 0.03], [0.842, 0.56, 0.035], [0.925, 0.58, 0.04], [0.767, 0.53, 0.03]],
-  },
-};
-/** cover-fit the painting to the screen (kept near the top on tall screens so the moon is never cut) */
-function sceneMap(W, H) {
-  const k = W / H < 0.8 ? 'p' : 'l'; const S = SCENE[k];
-  const s = Math.max(W / S.w, H / S.h);
-  const iw = S.w * s; const ih = S.h * s;
-  const ox = (W - iw) / 2; const oy = (H - ih) * (k === 'p' ? 0.12 : 0.3);
-  return { k, S, iw, ih, ox, oy, at: (fx, fy) => [ox + fx * iw, oy + fy * ih] };
-}
-
+/** The balcony at the exact screen size (balcony.js). */
 function buildScene(W, H) {
-  SG = P.sceneGeo(W, H);
-  const M = sceneMap(W, H);
-  const src = M.k === 'p' ? 'scene-portrait' : 'scene-landscape';
-  const scene = `<img class="mh-paint" style="left:${px(M.ox)};top:${px(M.oy)};width:${px(M.iw)};height:${px(M.ih)}" src="${DECOR}${src}-sm.webp" srcset="${DECOR}${src}-sm.webp ${M.k === 'p' ? 720 : 1280}w, ${DECOR}${src}.webp ${M.S.w}w" sizes="${Math.round(M.iw)}px" alt="" decoding="async" fetchpriority="high" />`;
-  // the pool glistens: slow broken streaks of light drifting over the water
-  const pool = M.S.pool.map(([x, y]) => M.at(x, y));
-  const xs = pool.map((q) => q[0]); const ys = pool.map((q) => q[1]);
-  const bx = Math.min(...xs); const by = Math.min(...ys);
-  const water = `<div class="mh-water" style="left:${px(bx)};top:${px(by)};width:${px(Math.max(...xs) - bx)};height:${px(Math.max(...ys) - by)};clip-path:polygon(${pool.map(([x, y]) => `${px(x - bx)} ${px(y - by)}`).join(',')})"><i></i><i></i></div>`;
-  const [mx, my] = M.at(M.S.moon[0], M.S.moon[1]);
-  const moonGlow = `<i class="mh-moonglow" style="left:${px(mx)};top:${px(my)};--r:${px(Math.max(18, M.S.moon[2] * M.iw))}"></i>`;
-  const lamps = M.S.lamps.map(([x, y, z]) => { const [lx, ly] = M.at(x, y); return `<i class="mh-lamp mh-lamp--glow" style="left:${px(lx)};top:${px(ly)};--s:${px(z * M.iw * 2.4)};--d:${rnd(2.4, 4).toFixed(2)}s;--dl:${(-rnd(0, 3)).toFixed(2)}s"></i>`; }).join('');
-  lyBack.innerHTML = scene + water + moonGlow + lamps;
-  lyFloor.innerHTML = '';
-  lyRail.innerHTML = '';
-  // velvet curtains frame it, tied back above the painted floor
-  if (SG.tall) SG.cw = W * 0.17;
-  SG.bot = Math.min(H + 20, M.at(0, M.S.floor)[1] + H * 0.03);
-  SG.ty = SG.bot * 0.74;
-  const cur = P.curtainSVG(SG);
-  const sw = cur.swag;
-  const swag = (r) => `<img class="mh-swag${r ? ' mh-swag--r' : ''}" style="left:${px(r ? W - sw.x - sw.w : sw.x)};top:${px(sw.y)};width:${px(sw.w)}" src="${DECOR}swag-curtain-sm.webp" srcset="${DECOR}swag-curtain-sm.webp 340w, ${DECOR}swag-curtain.webp 640w" sizes="${Math.round(sw.w)}px" alt="" decoding="async" />`;
-  lyCurt.innerHTML = cur.svg + swag(false) + swag(true);
-  // Ganesh, with the painted moon as the halo behind his head; the words below him, down to the pool
-  const gh = Math.min(H * 0.17, 160); const gw = gh * 0.62;
-  const gTop = Math.max(6, my - gh * 0.3);
-  place(ganWrap, mx - gw / 2, gTop, gw, gh);
-  SG.wordsTop = gTop + gh + 2;
-  SG.wordsBottom = H - (M.at(0, M.k === 'p' ? M.S.pool[0][1] : 0.6)[1] + H * 0.02);
-  const domeY = M.at(0, M.S.dome)[1];
-  if (fw) fw.size(W, H, { x0: SG.cw * 1.05, x1: W - SG.cw * 1.05, y0: H * 0.04, y1: Math.max(H * 0.12, domeY - 10), base: M.at(0, M.S.pool[0][1])[1], avoid: [mx, gw] });
-  dustEl.innerHTML = reduced ? '' : Array.from({ length: SG.tall ? 12 : 22 }, () => `<i style="left:${rnd(4, 96).toFixed(1)}%;top:${rnd(45, 95).toFixed(1)}%;--dx:${Math.round(rnd(-40, 40))}px;--d:${rnd(7, 12).toFixed(1)}s;--dl:${(-rnd(0, 12)).toFixed(1)}s"></i>`).join('');
+  SG = layScene(W, H, B, { reduced, fw });
 }
 
-// The painted gate (decor/gate-frame, gate-leaf-l/-r and bow: Canva AI, the black keyed out and the two leaves cut
-// along their arched tops): positions as fractions of the 1152 x 2048 painting.
-const GATE = { w: 1152, h: 2048, leaf: [0.2049, 0.1968, 0.5026, 0.9473, 0.8082], disc: [0.503, 0.11, 0.068], bowAr: 1.0871, knot: [0.498, 0.261] };
-
+/** The painted gate at the exact screen size (gate-parts.js); under another gate, only its geometry (the camera's aim). */
 function buildGate(W, H) {
-  const tall = W / H < 0.62;
-  const s = tall ? Math.max(W / GATE.w, H / GATE.h) : H / GATE.h;
-  const iw = GATE.w * s; const ih = GATE.h * s;
-  const ox = (W - iw) / 2; const oy = tall ? (H - ih) * 0.2 : 0;
-  const [lx0, ly0, lxc, ly1, lx1] = GATE.leaf;
-  G = { W, H, full: tall, iw, ih, gx: ox, gw: iw, u: iw / 1000,
-    door: { x0: ox + lx0 * iw, x1: ox + lx1 * iw, y0: oy + ly0 * ih, y1: oy + ly1 * ih } };
-  place(gbox, ox, oy, iw, ih);
-  const pic = (n, big, sm, w) => `src="${DECOR}${n}-sm.webp" srcset="${DECOR}${n}-sm.webp ${sm}w, ${DECOR}${n}.webp ${big}w" sizes="${Math.round(w)}px" alt="" decoding="async"`;
-  frameEl.innerHTML = `<img class="mh-frame__img" style="width:${px(iw)};height:${px(ih)}" ${pic('gate-frame', 1152, 634, iw)} fetchpriority="high" />`;
-  place(leavesEl, lx0 * iw, ly0 * ih, (lx1 - lx0) * iw, (ly1 - ly0) * ih);
-  leavesEl.style.perspective = px(iw * 2.4);
-  place(leafL, 0, 0, (lxc - lx0) * iw, (ly1 - ly0) * ih);
-  place(leafR, (lxc - lx0) * iw, 0, (lx1 - lxc) * iw, (ly1 - ly0) * ih);
-  const leaf = (side, big, sm, w) => `<img class="mh-leaf__img" ${pic(`gate-leaf-${side}`, big, sm, w)} /><img class="mh-leaf__img mh-leaf__dark" ${pic(`gate-leaf-${side}`, big, sm, w)} />`;
-  leafL.innerHTML = leaf('l', 343, 189, (lxc - lx0) * iw);
-  leafR.innerHTML = leaf('r', 352, 194, (lx1 - lxc) * iw);
-  place(seam, lxc * iw - 0.02 * iw, ly0 * ih, 0.04 * iw, (ly1 - ly0) * ih);
-  const [dx, dy, dr] = GATE.disc; const md = 2 * dr * iw * 1.16;
-  place(crest, dx * iw - md / 2, dy * ih - md / 2, md, md);
-  // the bow sits below the door medallions and above the line and buttons; satin bands run to it from the pillars
-  const uiTop = gate.getBoundingClientRect().top - oy;
-  const bw = iw * 0.4; const bh = bw * GATE.bowAr;
-  const kx = lxc * iw;
-  const ky = Math.max(ih * 0.58, Math.min(ih * 0.69, uiTop - (1 - GATE.knot[1]) * bh - 8));
-  place(bowImg, kx - GATE.knot[0] * bw, ky - GATE.knot[1] * bh, bw, bh);
-  gsap.set(bowImg, { transformOrigin: `${GATE.knot[0] * 100}% ${GATE.knot[1] * 100}%`, x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 });
-  const u = iw / 1000;
-  rib.layout({ gw: iw, H: ih, u, K: [kx / u, ky / u], ax: 70, ay: (ky - ih * 0.09) / u, k: 0.75, bandsOnly: true });
-  place(hint, kx - bw * 0.62, ky - bw * 0.62, bw * 1.24, bw * 1.24);
-  place(bowBtn, ox + kx - bw * 0.7, oy + ky - bh * 0.35, bw * 1.4, bh * 1.1);
-  // a few glints on the gold
-  const gl = [[0.503, 0.075], [0.33, 0.585], [0.675, 0.585], [0.12, 0.42], [0.885, 0.42], [0.503, 0.24], [0.27, 0.86], [0.735, 0.86]];
-  $('gglints').innerHTML = reduced ? '' : gl.map(([x, y], i) => `<i class="mh-glint" style="left:${px(x * iw)};top:${px(y * ih)};--d:${(4 + i * 0.7).toFixed(1)}s;--dl:${(-i * 1.3).toFixed(1)}s"></i>`).join('');
+  G = ownGate ? layGate(W, H, GR, { reduced }) : gateBox(W, H);
 }
 
-/** The opening words fit between the moon and the waterline; they shrink a little only when they must. */
-function fitContent() {
-  pinner.style.setProperty('--fit', '1');
-  const avail = pcontent.clientHeight;
-  let k = 1;
-  for (let n = 0; n < 16; n++) {
-    const tooTall = pinner.scrollHeight > avail + 1;
-    const tooWide = [...pinner.querySelectorAll('.mh-name')].some((el) => el.scrollWidth > pcontent.clientWidth - 24);
-    if (!tooTall && !tooWide) break;
-    k *= 0.94;
-    pinner.style.setProperty('--fit', k.toFixed(3));
-  }
-}
+/** The opening words fit between the moon and the waterline (balcony.js). */
+const fitContent = () => fitWords(B);
 
-/** The smallest scale of the gate at which every corner of the screen lies inside its doorway. */
-function throughScale(vx, vy) {
-  const { W, H } = G;
-  const { x0, x1, y0, y1 } = G.door;
-  const ok = (s) => [[0, 0], [W, 0], [0, H], [W, H]].every(([qx, qy]) => {
-    const x = vx + (qx - vx) / s; const y = vy + (qy - vy) / s;
-    return x >= x0 && x <= x1 && y >= y0 && y <= y1;
-  });
-  let lo = 1; let hi = 10;
-  for (let i = 0; i < 32; i++) { const m = (lo + hi) / 2; if (ok(m)) hi = m; else lo = m; }
-  return hi;
-}
 let VP = [0, 0];
 /** The camera: 0 = in front of the gate, 1 = through it, on the balcony. A layer at distance D (once inside)
  *  is D + CAM - c from the camera at c, so it scales by D / (D + CAM - c); the gate, at 1 - c, by 1 / (1 - c). */
 function camera(p) {
   const c = CAM * p;
-  gateLy.style.transform = `translate3d(0,0,0) scale(${(1 / (1 - c)).toFixed(4)})`;
+  if (gateLy) gateLy.style.transform = gateScale(c);
   // the balcony starts a touch close and settles as the gate passes (nearer layers settle more); never leaves a gap
-  for (const [el, D] of DEPTH) el.style.transform = `translate3d(0,0,0) scale(${(1 + (1 - p) * (0.16 / D)).toFixed(4)})`;
+  settle(DEPTH, p);
 }
 function rigCamera() {
   VP = [G.W / 2, G.door.y0 + (G.door.y1 - G.door.y0) * 0.45];
-  CAM = 1 - 1 / Math.max(throughScale(...VP) * 1.06, 1.35);
+  CAM = 1 - 1 / Math.max(throughScale(G, ...VP) * 1.06, 1.35);
   const o = `${px(VP[0])} ${px(VP[1])}`;
-  gateLy.style.transformOrigin = o;
-  gateIn.style.transformOrigin = o;
+  if (gateLy) { gateLy.style.transformOrigin = o; gateIn.style.transformOrigin = o; }
   for (const [el] of DEPTH) el.style.transformOrigin = o;
 }
 
@@ -776,7 +596,7 @@ let curTl = null;
 let safety = 0;
 
 function applyLayout() {
-  if (opened && !finished) return;
+  if ((opened && !finished) || !ownHero) return;
   const W = root.clientWidth;
   const H = window.innerHeight;
   hero.style.height = `${H}px`;
@@ -785,7 +605,7 @@ function applyLayout() {
   Object.assign(pcontent.style, { top: px(SG.wordsTop), bottom: px(SG.wordsBottom) });
   rigCamera();
   camera(finished ? 1 : 0);
-  if (finished) { gateLy.hidden = true; }
+  if (finished && gateLy) { gateLy.hidden = true; }
   fitContent();
   maskFall();
 }
@@ -794,9 +614,9 @@ function applyLayout() {
 // Blush, ivory and rose-pink petals drift down, slowly, swaying (CSS transforms only). Paused when the tab is
 // hidden or the hero is scrolled away; none under reduced motion.
 const fallEl = (() => {
-  if (reduced) return null;
+  if (reduced || !ownGate) return null;
   const box = document.createElement('div');
-  box.className = 'mg-fall';
+  box.className = 'mhb-fall';
   box.setAttribute('aria-hidden', 'true');
   const phone = root.clientWidth < 700;
   const n = phone ? 6 : 10;
@@ -807,7 +627,7 @@ const fallEl = (() => {
     const fall = r(phone ? 13 : 15, phone ? 19 : 23);
     const sway = r(3.2, 5.2);
     const p = document.createElement('i');
-    p.className = 'mg-fall__p';
+    p.className = 'mhb-fall__p';
     p.style.cssText = `left:${(((i + r(0.15, 0.85)) / n) * 100).toFixed(1)}%;--dur:${fall.toFixed(1)}s;--del:${(-r(0, fall)).toFixed(1)}s;--dx:${Math.round(r(-60, 60))}px;--sdur:${sway.toFixed(1)}s;--sdel:${(-r(0, sway)).toFixed(1)}s;--sw:${Math.round(r(10, 26))}px;--r0:${Math.round(r(-40, 40))}deg`;
     p.innerHTML = `<span>${P.petal(kinds[i % kinds.length], size)}</span>`;
     box.append(p);
@@ -830,67 +650,18 @@ function maskFall() {
 }
 
 // ───────────────────────── Opening: the ribbon comes undone, the gate swings open, we walk through ─────────────────────────
-document.body.classList.add('mg-locked');
+document.body.classList.add('mhb-locked');
 window.scrollTo(0, 0);
 // the names write themselves in, a letter at a time (Latin) or a word at a time (Devanagari, never split)
-pinner.querySelectorAll('.mh-name .l-en, .mh-name .l-ne').forEach((el) => {
-  const ne = el.classList.contains('l-ne');
-  const parts = ne ? el.textContent.split(/(\s+)/) : [...el.textContent];
-  el.textContent = '';
-  el.setAttribute('aria-label', parts.join(''));
-  for (const t of parts) {
-    if (/^\s+$/.test(t)) { el.append(t); continue; }
-    const s = document.createElement('span');
-    s.className = 'mh-ch';
-    s.setAttribute('aria-hidden', 'true');
-    s.textContent = t;
-    el.append(s);
-  }
-});
+if (ownHero) splitNames(pinner);
 applyLayout();
-document.fonts?.ready.then(() => { if (!opened) applyLayout(); else fitContent(); });
-[openBtn, quietBtn, bowBtn].forEach((b) => { b.disabled = false; });
+document.fonts?.ready.then(() => { if (!opened) applyLayout(); else if (ownHero) fitContent(); });
+if (ownGate) [openBtn, quietBtn, bowBtn].forEach((b) => { b.disabled = false; });
 document.body.classList.add('is-ready');
 
-/** A cubic-bezier easing (x1, y1, x2, y2), solved by bisection. */
-const bezier = (x1, y1, x2, y2) => {
-  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  return (x) => {
-    let lo = 0; let hi = 1; let t = x;
-    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
-    return bz(t, y1, y2);
-  };
-};
-// Heavy gold leaves: a moment to get going, then a glide and a soft settle.
-const easeDoor = bezier(0.55, 0.02, 0.18, 1);
-// Walking in: a slow first step, a long glide, a soft stop.
-const easeWalk = bezier(0.45, 0, 0.22, 1);
-
-function dropPetals() {
-  if (reduced) return;
-  const box = document.createElement('div');
-  box.className = 'mg-petals';
-  box.setAttribute('aria-hidden', 'true');
-  const n = G.full ? 16 : 28;
-  const kinds = ['blush', 'ivory', 'pink', 'blush', 'ivory'];
-  for (let i = 0; i < n; i++) {
-    const p = document.createElement('i');
-    p.innerHTML = P.petal(kinds[i % 5], Math.round((G.full ? 13 : 17) * rnd(0.8, 1.35)));
-    p.style.left = `${((i + rnd(0.1, 0.9)) / n) * 100}%`;
-    p.style.top = `${-rnd(20, 90)}px`;
-    box.append(p);
-    gsap.fromTo(p, { y: 0, x: 0, rotation: rnd(0, 180), opacity: 0 }, {
-      keyframes: { opacity: [0, 1, 1, 1, 0] },
-      y: G.H * rnd(0.75, 1.15), x: rnd(-90, 90), rotation: `+=${Math.round(rnd(200, 480))}`,
-      duration: rnd(4, 6), delay: rnd(0, 1.6), ease: 'sine.in',
-    });
-  }
-  document.body.append(box);
-  setTimeout(() => box.remove(), 8500);
-}
-
-function open(withMusic) {
-  if (opened) return;
+/** Into the page, inside the guest's tap: music and the bell, the opening's GPU layers. */
+function startOpen(withMusic) {
+  if (opened) return false;
   opened = true;
   try {
     player.unlock();
@@ -898,6 +669,11 @@ function open(withMusic) {
     player.start(withMusic);
   } catch { /* audio is optional */ }
   document.body.classList.add('is-opening');
+  return true;
+}
+function open(withMusic) {
+  if (mixGate) { mixGate.open(withMusic); return; }
+  if (!startOpen(withMusic)) return;
   bowBtn.hidden = true;
   const tl = reduced ? crossfadeIn() : walkIn();
   curTl = tl;
@@ -905,65 +681,21 @@ function open(withMusic) {
   safety = setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
 }
 
-/** The words on the balcony, in order: Ganesh, the invocation and title, the names, a letter at a time. */
-function revealWords(tl, t) {
-  const g = (sel) => [...pinner.querySelectorAll(sel)];
-  gsap.set(pinner, { opacity: 1 });
-  gsap.set([...g('.mh-in'), ...g('.mh-ch')], { opacity: 0 });
-  if (ganEl) {
-    gsap.set([ganImg, ganGlow, ganRays], { opacity: 0 });
-    tl.fromTo(ganGlow, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 1.4, ease: 'power2.out' }, t)
-      .fromTo(ganRays, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 1.8, ease: 'power2.out' }, t + 0.1)
-      .fromTo(ganImg, { opacity: 0, scale: 0.86, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: 'power3.out' }, t + 0.15);
-    t += 0.9;
-  }
-  const lines = g('.mh-symbol, .mh-invoke, .mh-title');
-  if (lines.length) { tl.fromTo(lines, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.16 }, t); t += 0.5; }
-  const [n1, n2] = g('.mh-name');
-  const chars = (el) => [...el.querySelectorAll('.mh-ch')];
-  tl.fromTo(chars(n1), { opacity: 0, y: 20, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.045 }, t)
-    .fromTo(g('.mh-weds'), { opacity: 0, letterSpacing: '0.9em' }, { opacity: 1, letterSpacing: '0.5em', duration: 0.9, ease: 'power2.out' }, t + 0.55)
-    .fromTo(chars(n2), { opacity: 0, y: 20, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.045 }, t + 0.8)
-    .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.6 }, t + 1.6);
-  return t + 1.6;
-}
+/** The words on the balcony, in order: Ganesh, the invocation and title, the names, a letter at a time (balcony.js). */
+const revealWords = (tl, t) => wordsIn(tl, t, B, { cue: '#cue' });
 
 function walkIn() {
-  const SWING_AT = 1.75;
-  const SWING = G.full ? 2.1 : 2.4;
-  const ZOOM_AT = SWING_AT + SWING * 0.55;
-  const ZOOM = G.full ? 1.6 : 1.8;
-  const end = ZOOM_AT + ZOOM;
+  const T = gateTiming(G);
+  const { SWING_AT, SWING, ZOOM_AT, ZOOM, end } = T;
   const rig = { p: 0 };
-  const pull = { p: 0 };
   const tl = gsap.timeline({ onComplete: afterOpen });
-  tl.to([gate, hint], { autoAlpha: 0, duration: 0.4, ease: 'power2.out' }, 0)
-    // Shri Ganesh first: the crest glows as the bell rings
-    .fromTo(crestHalo, { opacity: 0.3, scale: 0.7 }, { opacity: 1, scale: 1.25, duration: 0.9, ease: 'power2.out' }, 0)
-    .to(crestHalo, { opacity: 0.45, scale: 1.08, duration: 1.4, ease: 'sine.inOut' }, 0.9)
-    // one tail is pulled and the loops slip through the knot; it gives, the bands swing down from the posts, then fall
-    .to(pull, { p: 1, duration: 0.75, ease: 'power1.in', onUpdate: () => rib.pull(pull.p) }, 0.2)
-    .to(bowImg, { scaleY: 0.93, scaleX: 1.05, y: -5, duration: 0.18, ease: 'power2.out' }, 0.2)
-    .to(bowImg, { scaleY: 1, scaleX: 1, y: 0, duration: 0.25, ease: 'power2.inOut' }, 0.38)
-    .to(bowImg, { keyframes: { rotation: [0, 6, -5, 4, -2, 0] }, duration: 0.42, ease: 'sine.inOut' }, 0.54)
-    .add(() => rib.release(), 0.96)
-    .to(bowImg, { y: G.H * 0.62, x: G.W * 0.05, rotation: 26, scale: 0.92, duration: 1.25, ease: 'power2.in' }, 0.96)
-    .to(bowImg, { opacity: 0, duration: 0.45, ease: 'power1.in' }, 1.75)
-    .add(() => rib.drop(), 2.3)
-    // we lean in; the latch gives; light at the seam
-    .to(gateIn, { scale: 1.03, duration: 1.1, ease: 'sine.inOut' }, 1.0)
-    .to(leafL, { rotationY: 3, duration: 0.35, ease: 'power2.out' }, 1.4)
-    .to(leafR, { rotationY: -3, duration: 0.35, ease: 'power2.out' }, 1.4)
-    .fromTo(seam, { opacity: 0, scaleX: 0.25 }, { opacity: 1, scaleX: 1, duration: 0.4, ease: 'power1.out' }, 1.4)
-    // the heavy swing, warm light pouring through
-    .to(leafL, { rotationY: 104, duration: SWING, ease: easeDoor }, SWING_AT)
-    .to(leafR, { rotationY: -104, duration: SWING, ease: easeDoor }, SWING_AT)
-    .to('.mh-leaf__dark', { opacity: 0.85, duration: SWING * 0.8, ease: 'power1.in' }, SWING_AT)
-    .to(seam, { opacity: 0, scaleX: 4, duration: 0.9, ease: 'power1.in' }, SWING_AT + 0.1)
-    .fromTo(pour, { opacity: 0 }, { opacity: 1, duration: SWING * 0.45, ease: 'power1.out' }, SWING_AT + 0.05)
+  // the crest glows, the bow comes undone and the ribbon falls, the latch gives, the heavy leaves swing (gate-parts.js)
+  gateUntie(tl, GR, G, T, [gate, hint]);
+  // warm light pouring through
+  tl.fromTo(pour, { opacity: 0 }, { opacity: 1, duration: SWING * 0.45, ease: 'power1.out' }, SWING_AT + 0.05)
     .to(pour, { opacity: 0, duration: 1.4, ease: 'power1.inOut' }, SWING_AT + SWING * 0.5)
     .add(() => hero.classList.add('is-lit'), SWING_AT + 0.3)
-    .add(dropPetals, SWING_AT + 0.4)
+    .add(() => shower(G), SWING_AT + 0.4)
     // through the gate: a short soft zoom; the balcony settles into place
     .to(rig, { p: 1, duration: ZOOM, ease: easeWalk, onUpdate: () => camera(rig.p) }, ZOOM_AT)
     .to(gateIn, { scale: 1, duration: ZOOM, ease: easeWalk }, ZOOM_AT)
@@ -986,6 +718,31 @@ function crossfadeIn() {
   return tl;
 }
 
+/**
+ * The balcony comes in from `at`, when another theme's gate has opened onto it: no walk through Mahal's gate; the
+ * balcony settles from a touch close as the lanterns light, Ganesh appears in the moon, the words write themselves
+ * in, then the fireworks. (Another theme's first screen brings its own entrance.)
+ */
+function heroIntro(tl, at) {
+  if (mix.heroInst) { mix.heroEnter(tl, at); return; }
+  if (reduced) {
+    camera(1);
+    hero.classList.add('is-lit', 'is-inside');
+    gsap.set(pinner.querySelectorAll('.mh-in, .mh-ch'), { opacity: 1 });
+    tl.fromTo([pinner, ganImg, ganGlow, ganRays].filter(Boolean), { opacity: 0 }, { opacity: 1, duration: 0.5 }, at)
+      .fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, at + 0.2);
+    return;
+  }
+  const rig = { p: 0 };
+  tl.add(() => hero.classList.add('is-lit'), at)
+    .to(rig, { p: 1, duration: 1.8, ease: easeWalk, onUpdate: () => camera(rig.p) }, at)
+    .add(() => hero.classList.add('is-inside'), at + 1.4)
+    .add(() => { fw?.salvo(G.full ? 3 : 5); fw?.play(); }, at + 2.6);
+  revealWords(tl, at + 0.3);
+}
+// Another theme's gate (or Mahal's own, as a module, over another theme's first screen) opens this page.
+const mixGate = mix.gate ? mix.mountGate({ start: startOpen, intro: heroIntro, finish: () => afterOpen() }) : null;
+
 if (fw) {
   let on = true;
   const sync = () => fw.setVisible(on && !document.hidden);
@@ -993,25 +750,23 @@ if (fw) {
   document.addEventListener('visibilitychange', sync);
 }
 
-openBtn.addEventListener('click', () => open(true));
-bowBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+openBtn?.addEventListener('click', () => open(true));
+bowBtn?.addEventListener('click', () => open(true));
+quietBtn?.addEventListener('click', () => open(false));
 
 let lenis = null;
 function afterOpen() {
   if (finished) return;
   finished = true;
-  hero.classList.add('is-inside');
-  document.body.classList.remove('mg-locked', 'is-opening');
+  hero?.classList.add('is-inside');
+  document.body.classList.remove('mhb-locked', 'is-opening');
   document.body.classList.add('is-open');
-  gate.hidden = true;
-  gateLy.hidden = true;
-  bowBtn.hidden = true;
+  if (gate) { gate.hidden = true; gateLy.hidden = true; bowBtn.hidden = true; }
   lenis = createSmooth();
   revealOnScroll();
   scrollStory();
   photoStrip();
-  document.getElementById('cue').addEventListener('click', (e) => {
+  if (ownHero) document.getElementById('cue').addEventListener('click', (e) => {
     e.preventDefault();
     const y = document.getElementById(lead ? 'portrait' : 'date').getBoundingClientRect().top + window.scrollY;
     if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
@@ -1076,7 +831,7 @@ function afterOpen() {
     revealed = true;
     wrap.classList.add('is-revealed');
     btn.hidden = true;
-    if (!reduced) gsap.fromTo(wrap.querySelector('.mg-scratch__date'), { scale: 0.97 }, { scale: 1, duration: 0.6, ease: 'power3.out' });
+    if (!reduced) gsap.fromTo(wrap.querySelector('.mhb-scratch__date'), { scale: 0.97 }, { scale: 1, duration: 0.6, ease: 'power3.out' });
     setTimeout(() => { cv.hidden = true; }, 700);
   }
   const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
@@ -1139,7 +894,7 @@ function photoStrip() {
   const view = document.getElementById('stripview');
   const track = document.getElementById('track');
   if (!view || !track) return;
-  const set0 = track.querySelector('.mg-strip__set');
+  const set0 = track.querySelector('.mhb-strip__set');
   if (reduced) { view.classList.add('is-static'); return; }
   const mm = gsap.matchMedia();
   // Desktop: the strip is tied to the scroll (scrubbed), uncropped photographs in plain mounts.
@@ -1200,7 +955,7 @@ function photoStrip() {
 
 // ───────────────────────── The scroll: panels rise, ornament layers settle ─────────────────────────
 function revealOnScroll() {
-  const els = document.querySelectorAll('.mg-rise');
+  const els = document.querySelectorAll('.mhb-rise');
   if (reduced) { els.forEach((el) => el.classList.add('is-in')); return; }
   const io = new IntersectionObserver((entries) => entries.forEach((en) => {
     if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
@@ -1213,10 +968,12 @@ function scrollStory() {
   const mm = gsap.matchMedia();
   // Depth only on larger screens with a fine pointer: phones get the plain reveals (no parallax).
   mm.add('(min-width: 900px) and (pointer: fine)', () => {
-    const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
-    gsap.to(inside, { yPercent: 10, ease: 'none', scrollTrigger: st });
-    gsap.to([pinner, ganEl].filter(Boolean), { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
-    gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
+    if (hero) {
+      const st = { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.6 };
+      gsap.to(inside, { yPercent: 10, ease: 'none', scrollTrigger: st });
+      gsap.to([pinner, ganEl].filter(Boolean), { scale: 1.05, opacity: 0.3, ease: 'none', scrollTrigger: st });
+      gsap.to('#cue', { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '20% top', scrub: true } });
+    }
     document.querySelectorAll('[data-depth]').forEach((el) => {
       const d = Number(el.dataset.depth) || 0.5;
       gsap.fromTo(el, { y: 90 * d }, { y: -50 * d, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 0.8 } });
@@ -1247,8 +1004,12 @@ if (DEBUG) {
     layout: () => ({ G, SG, CAM }),
     lenis: () => lenis,
     open: () => open(false),
-    at: (t) => { if (!opened) open(false); clearTimeout(safety); curTl.pause(); curTl.seek(t, false); return curTl.duration(); },
+    at: (t) => {
+      if (mixGate) return mixGate.at(t);
+      if (!opened) open(false); clearTimeout(safety); curTl.pause(); curTl.seek(t, false); return curTl.duration();
+    },
     finish: () => {
+      if (mixGate) { mixGate.finish(); return; }
       if (!opened) { opened = true; bowBtn.hidden = true; }
       curTl?.kill();
       gsap.set(gate, { autoAlpha: 0 });
@@ -1264,7 +1025,7 @@ if (DEBUG) {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;
       if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y);
-      document.querySelectorAll('.mg-rise').forEach((n) => n.classList.add('is-in'));
+      document.querySelectorAll('.mhb-rise').forEach((n) => n.classList.add('is-in'));
       ScrollTrigger.update();
     },
   };

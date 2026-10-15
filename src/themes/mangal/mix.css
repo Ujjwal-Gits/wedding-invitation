@@ -1,0 +1,22 @@
+/* Mangal's gate and first screen on another theme's page (docs/MIX.md). mangal.css styles both (its tokens are also
+   declared on .mx-part.theme-mangal); here: the handmade paper the page itself gives them on Mangal's own page, and
+   what Mangal's page gives through body state, restated for the mix wrappers. */
+
+/* ───────── the gate: the doorway on its paper ───────── */
+.mx-gate--mangal .mx-gate__scene { isolation: isolate; overflow: hidden;
+  background: linear-gradient(var(--mg-paper-tint), var(--mg-paper-tint)), url('/themes/mangal/decor/paper.webp') repeat var(--mg-ivory);
+  background-size: auto, 520px; background-blend-mode: multiply, normal; }
+/* GPU layers for the walk only while it runs (Mangal's own page holds them while its doorway is closed) */
+.mx-gate--mangal.is-opening :is(.mg-door, .mg-bells, .mg-garland, .mg-kalashes, .mg-beam, .mg-spill, .mg-threshold) { will-change: transform; }
+/* the petals pass behind the plaque and the buttons only while the doors are closed */
+.mx-part.mx-gate--mangal.is-opening .mg-fall { -webkit-mask: none; mask: none; }
+.mx-gate--mangal .mg-gate :focus-visible { outline-color: #FFE7A6; }
+
+/* ───────── the first screen: the red card ───────── */
+.mx-part.mx-hero--mangal { background: var(--mg-deep); color: #FFF1CC; }
+.mx-hero--mangal .mg-hero { height: 100svh; min-height: 520px; }
+.mx-hero--mangal .mg-inside { opacity: 1; visibility: visible; }
+.mx-hero--mangal.is-open .mg-panel__content { pointer-events: auto; }
+.mx-hero--mangal .mx-cue { bottom: calc(var(--mg-thr, 40px) + 6px); color: var(--mg-gold-lt); }
+.mx-hero--mangal .mx-cue i { background: linear-gradient(var(--mg-gold-lt), transparent); }
+.mx-hero--mangal .mg-panel__inner { opacity: 0; }

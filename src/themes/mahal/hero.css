@@ -1,5 +1,5 @@
 /* Mahal (महल) · the palace gate and the balcony behind it. Everything below the hero is Mangal's (mahal.css). */
-body.theme-mahal {
+body.theme-mahal, .mx-part.theme-mahal {
   --mh-night: #050E2A;
   --mh-ivory: #FFF8EA;
   --mh-gold-lt: #F6D98C;
@@ -21,7 +21,7 @@ body.theme-mahal {
 /* A client's colours (inline on <body>): each shade sits against the client's colour as the default shade sits against
    the default, rounded to whole steps so the defaults land on the very same colours (see mahal.css). */
 @supports (color: rgb(from red round(r * .5) g b)) {
-  body.theme-mahal {
+  body.theme-mahal, .mx-part.theme-mahal {
     --mh-vig-0: rgb(from var(--mh-night) round(r * .571429 + 1.1429) round(g * .571429) round(b * .571429) / .2);
     --mh-vig-1: rgb(from var(--mh-night) round(r * .571429 + 1.1429) round(g * .571429) round(b * .571429) / .82);
     --mh-shade-55: rgb(from var(--mh-night) round(r * .952381 + .2381) round(g * .952381 - 1.3333) round(b * .952381) / .55);
@@ -49,7 +49,7 @@ body.theme-mahal {
   .theme-mahal .mh-words::before { background-image: radial-gradient(closest-side in srgb, var(--mh-shade-55), var(--mh-shade-32) 50%, var(--mh-shade-0) 100%); }
   .theme-mahal .mh-weds i { background-image: linear-gradient(90deg in srgb, var(--mh-weds-0), var(--mh-weds)); }
   .theme-mahal .mh-weds i:last-child { background-image: linear-gradient(90deg in srgb, var(--mh-weds), var(--mh-weds-0)); }
-  .theme-mahal .mh-hero .mg-cue i { background-image: linear-gradient(in srgb, var(--mh-weds), transparent); }
+  .theme-mahal .mh-hero .mhb-cue i { background-image: linear-gradient(in srgb, var(--mh-weds), transparent); }
 }
 .mh-hero { background: var(--mh-night); }
 
@@ -183,7 +183,7 @@ body.is-opening .mh-leaf__dark { will-change: opacity; }
 .mh-arch, .mh-foot { position: absolute; display: block; max-width: none; pointer-events: none; }
 .mh-foot--r { transform: scaleX(-1); }
 .mh-crest { position: absolute; }
-.mh-crest .mg-medal { width: 100%; }
+.mh-crest .mhb-medal { width: 100%; }
 .mh-crest__halo { position: absolute; left: 50%; top: 50%; width: 240%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0.35; will-change: transform, opacity;
   background: radial-gradient(closest-side, rgba(255, 236, 170, 0.8), rgba(255, 196, 90, 0.26) 48%, rgba(255, 196, 90, 0)); }
 .mh-om { position: absolute; inset: 12%; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #FFF3C6, #E2A848 55%, #8A5A14); color: #6A0A12; font: 400 52px/1 var(--f-deva-display); }
@@ -215,9 +215,9 @@ body.is-opening .mh-leaf__dark { will-change: opacity; }
 .theme-mahal .mh-ui :focus-visible { outline-color: #FFE7A6; }
 
 .mh-hero.is-inside .mh-gate { visibility: hidden; }
-.mh-hero .mg-cue { z-index: 4; color: var(--mh-weds); text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
-.mh-hero .mg-cue i { background: linear-gradient(var(--mh-weds), transparent); }
-.mh-hero .mg-fall { z-index: 8; }
+.mh-hero .mhb-cue { z-index: 4; color: var(--mh-weds); text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
+.mh-hero .mhb-cue i { background: linear-gradient(var(--mh-weds), transparent); }
+.mh-hero .mhb-fall { z-index: 8; }
 
 @media (max-width: 699px) {
   .mh-ui { padding: 12px 14px 8px; gap: 6px; }

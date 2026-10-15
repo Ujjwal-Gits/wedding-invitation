@@ -27,10 +27,19 @@ balcony: a painted scene (`decor/scene-portrait|landscape.webp`, generated with 
 long reflecting pool lined with lanterns, under a full moon, seen over a marble balustrade, framed by velvet curtains.
 It is there from the start (seen through the gate). The pool glistens (drifting streaks of light), the moon glow
 breathes, the painted lanterns flicker, gold dust rises and a few fireworks burst now and then. Positions of the moon,
-pool and lanterns in each painting are in `SCENE` (main.js); the painting is cover-fitted and kept near the top.
+pool and lanterns in each painting are in `SCENE` (balcony.js); the painting is cover-fitted and kept near the top.
 Ganesh appears with the painted moon as the halo behind his head, in a glow with slow rays, then ॥ श्री गणेशाय नमः ॥, शुभ विवाह and the names, a letter at a time.
 Reduced motion: a crossfade, no fireworks. Photographs credited in `flora-credits.js`.
 
 ## Debug
 `?debug` exposes `window.__mg`: `at(t)` (the opening paused at t seconds), `open()`, `finish()`, `to(selector)`,
 `layout()`; `?debug&open` skips the gate; `?still` forces reduced motion; `?lang=ne`.
+
+## Mix (docs/MIX.md)
+Gives its gate (`gate.js`, from `gate-parts.js`) and its first screen, the balcony (`hero.js`, from `balcony.js`);
+hosts other themes' gates and first screens (with another first screen, its own gate runs as `gate.js`). As a module
+the gate stands in a night forecourt round its doorway (the page beyond seen through the bars), or, when the host
+offers `--mx-dusk` (Mangal does), in that dusk with the page glowing through and round it (Rajdwar's look); its leaf
+shade is a mask, not a filter. Module-only CSS: `mix.css`. Class prefixes: `mh-` (gate, balcony) and `mhb-` (the
+page body, Mangal's copy; it was `mg-`, which Mangal and Rajdwar also use). Colour tokens keep their `--mg-*` /
+`--mh-*` names (clients' saved colours use them).

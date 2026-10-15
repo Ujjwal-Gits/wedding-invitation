@@ -1,0 +1,39 @@
+/* Mahal's gate on another theme's page (docs/MIX.md). hero.css and mahal.css style the gate itself (their tokens are
+   also declared on .mx-part.theme-mahal); here: what Mahal's own page gives the gate through body state, restated for
+   the mix wrapper, and what only the module has. Everything is scoped to .mx-gate--mahal. */
+
+/* the forecourt: night all round the doorway, the page beyond it seen through the bars (a hole cut by a spread shadow,
+   painted once; it scales with the gate, so as the camera walks through, the doorway opens onto the whole page) */
+.mx-gate--mahal .mh-gate .mh-gatebg { background: radial-gradient(ellipse 40% 62% at 50% 52%, rgba(255, 214, 150, 0.14), rgba(255, 214, 150, 0) 72%); } /* warm air round the gate */
+.mx-gate--mahal .mh-court { position: absolute; pointer-events: none; border-radius: 46% 46% 2px 2px / 9% 9% 2px 2px;
+  box-shadow: 0 0 0 300vmax var(--mh-night), 0 0 36px 22px var(--mh-night), inset 0 0 72px 16px color-mix(in srgb, var(--mh-night) 45%, transparent); }
+/* a host that offers a dusk of its own (--mx-dusk, e.g. Mangal's dark red) sees its first screen glow through and round
+   the gate instead (Rajdwar's look): a see-through vignette in that dusk, no night court */
+.mx-gate--mahal .is-dusk .mh-court { display: none; }
+.mx-gate--mahal .is-dusk .mh-gate .mh-gatebg {
+  background: radial-gradient(ellipse 60% 70% at 50% 55%, color-mix(in srgb, var(--mx-dusk) 18%, transparent), color-mix(in srgb, var(--mx-dusk) 80%, transparent)); }
+.mx-gate--mahal .is-dusk .mh-gate.is-wide .mh-gatebg {
+  background: radial-gradient(ellipse 42% 82% at 50% 52%, color-mix(in srgb, var(--mx-dusk) 12%, transparent) 0%,
+    color-mix(in srgb, var(--mx-dusk) 40%, transparent) 46%, color-mix(in srgb, var(--mx-dusk) 90%, transparent) 100%); }
+/* the warm light that pours through the opening leaves, beneath the gate (it does not travel with the camera) */
+.mx-gate--mahal .mh-pour { z-index: 0; }
+.mx-gate--mahal .mh-gate { z-index: 1; }
+/* the shade on a swinging leaf: a dark wash cut to the leaf's own shape (a mask, no filter on a moving piece) */
+.mx-gate--mahal .mh-leaf__dark--mask { position: absolute; inset: 0; opacity: 0; pointer-events: none; filter: none; background: rgba(14, 4, 2, 0.7);
+  -webkit-mask: var(--m) 0 0 / 100% 100% no-repeat; mask: var(--m) 0 0 / 100% 100% no-repeat; }
+
+/* GPU memory: the big layers are promoted only while the gate opens (body.is-opening on Mahal's own page) */
+.mx-gate--mahal:not(.is-opening) .mh-leaf__dark { display: none; }
+.mx-gate--mahal.is-opening .mh-leaf__dark { display: block; will-change: opacity; }
+.mx-gate--mahal.is-opening :is(.mh-gate, .mh-gatein, .mh-leaf, .mh-bowimg) { will-change: transform, opacity; }
+.mx-gate--mahal.is-opening .mh-pour { will-change: opacity; }
+/* the petals pass behind the line and the buttons only while the gate is closed */
+.mx-part.mx-gate--mahal.is-opening .mhb-fall { -webkit-mask: none; mask: none; }
+
+.mx-gate--mahal .mh-ui :focus-visible { outline: 2px solid #FFE7A6; outline-offset: 3px; }
+
+/* ───────── the balcony as another theme's first screen ───────── */
+.mx-part.mx-hero--mahal { background: var(--mh-night); }
+.mx-hero--mahal.is-entering :is(.mh-ly, .mh-ch, .mh-gan__img, .mh-gan__glow, .mh-gan__rays) { will-change: transform, opacity; }
+.mx-hero--mahal .mx-cue { z-index: 4; color: var(--mh-weds); text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
+.mx-hero--mahal .mx-cue i { background: linear-gradient(var(--mh-weds), transparent); }

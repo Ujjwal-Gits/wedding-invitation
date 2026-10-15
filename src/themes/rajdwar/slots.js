@@ -77,4 +77,16 @@ export default {
     '--rj-red-dk': { label: 'Inside: the shadowed edges', default: '#640911', note: 'A little darker than the wall.' },
     '--rj-gold': { label: 'Inside: the gold arch line, invocation and scroll cue', default: '#F4D896', note: 'Keep it light: it is text on the red.' },
   },
+  // Mix (docs/MIX.md). Rajdwar is itself a mix: Mahal's gate opening onto Mangal's page, kept as its own page for the
+  // invitations made with it. Its parts are given by those two themes, so it neither gives nor takes any.
+  parts: {
+    gate: false, hero: false, hostGate: false, hostHero: false,
+    ownGateNeedsHero: true,
+    why: {
+      gate: 'This gate is Mahal’s: choose Mahal’s gate.',
+      hero: 'This first screen is Mangal’s: choose Mangal’s first screen.',
+      hostGate: 'Rajdwar is Mangal’s page with Mahal’s gate: for another gate, choose Mangal as the theme.',
+      hostHero: 'Rajdwar is Mangal’s page with Mahal’s gate: for another first screen, choose Mangal as the theme.',
+    },
+  },
 };

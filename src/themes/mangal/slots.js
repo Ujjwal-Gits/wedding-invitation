@@ -76,4 +76,14 @@ export default {
     '--mg-gold-lt': { label: 'Light gold (gate lettering and button, glow behind Ganesh)', default: '#F4D896', note: 'Keep it light: it is text on the red.' },
     '--mg-ivory': { label: 'Page ivory', default: '#F8F1E3', note: 'Tints the handmade paper around the doorway and down the page.' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: true, // the camera walks through Mangal's doors into its red card: with another first screen, gate.js runs instead
+    // the gate: the plaque (line and names), the latch and "open without music", Ganesh in the torana; red lacquer,
+    // gold lettering, the paper round the doorway
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--mg-red', '--mg-gold-lt', '--mg-ivory'] },
+    // the first screen: the red card with Ganesh and the opening words
+    heroUses: { texts: ['hero.symbol', 'hero.invocation', 'hero.title', 'hero.blessing', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--mg-red', '--mg-gold-lt'] },
+  },
 };

@@ -77,4 +77,14 @@ export default {
     '--mg-red': { label: 'Main red', default: '#8C1018', note: 'The velvet curtains on the balcony and the card under the gate; also frames, buttons and headings below.' },
     '--mg-ivory': { label: 'Page ivory', default: '#F8F1E3', note: 'Tints the handmade paper of the page below the opening.' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: true, // the camera walks through Mahal's gate onto its balcony: with another first screen, gate.js runs instead
+    // the gate: its line and buttons, Ganesh in the crest; the night of the forecourt round it, the red of the card under it
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--mh-night', '--mg-red'] },
+    // the balcony: Ganesh in the moon, the invocation (or ॐ without Ganesh), the title, the names; the night behind the
+    // words, the light gold of WEDS and the cue, the red of the curtains
+    heroUses: { texts: ['hero.symbol', 'hero.invocation', 'hero.title', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--mh-night', '--mh-gold-lt', '--mg-red'] },
+  },
 };

@@ -61,5 +61,12 @@ strip, in that order, then the invitation gallery), `families.bride` / `families
 `families.*`, `card.*`, `prog.*`, `rsvp.*`. Religious marks are optional ("off" / "-").
 
 ## Debug
-`?debug` exposes `window.__mg` (`open()`, `finish()`, `seek(deg)`, `to(selector)`, `layout()`);
+`?debug` exposes `window.__mg` (`open()`, `finish()`, `at(t)` on a mixed opening, `seek(deg)`, `to(selector)`, `layout()`);
 `?debug&open` skips the doors; `?still` forces the reduced-motion path; `?lang=ne`.
+
+## Mix (docs/MIX.md)
+Gives its gate (the doorway: `gate.js`, from `doorway.js`; it ends with the doorway full of warm light, fading onto
+the page) and its first screen (the red card: `hero.js`, from `card.js`); hosts other themes' gates and first screens
+(with another first screen, its own doorway runs as `gate.js`). Under another gate the red card is there from the
+start, seen through it; `--mx-dusk` (on `body.theme-mangal`) offers a foreign gate a dark-red dusk to stand in.
+Module-only CSS: `mix.css`. Mahal and Rajdwar no longer share its `mg-` classes on any page that mixes.

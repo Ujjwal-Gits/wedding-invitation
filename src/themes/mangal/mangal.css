@@ -1,6 +1,6 @@
 /* Mangal (मंगल) · the red-and-gold card come alive.
    Ivory handmade paper, deep sindoor red, gold leaf; one accent colour (sindoor), gold as the metal. */
-body.theme-mangal {
+body.theme-mangal, .mx-part.theme-mangal {
   --mg-red: #8C1018;
   --mg-red-dk: #6A0A12;
   --mg-red-lt: #A9161F;
@@ -55,7 +55,10 @@ body.theme-mangal {
   --f-deva-display: 'Yatra One', 'Mukta', serif;
   --f-cal: 'Yatra One', 'Mukta', serif;
   --mg-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-
+}
+/* the page itself (not the mix wrapper: a gate or first screen paints its own ground) */
+body.theme-mangal {
+  --mx-dusk: #160204; /* another theme's gate may stand in this dusk, the red card glowing beyond it (docs/MIX.md) */
   background: linear-gradient(var(--mg-paper-tint), var(--mg-paper-tint)), url('/themes/mangal/decor/paper.webp') repeat var(--mg-ivory);
   background-size: auto, 520px;
   background-blend-mode: multiply, normal;
@@ -69,7 +72,7 @@ body.theme-mangal {
    the same lift), rounded to whole steps so the defaults land on the very same colours. Browsers without relative
    colours keep the fixed shades above. */
 @supports (color: rgb(from red round(r * .5) g b)) {
-  body.theme-mangal {
+  body.theme-mangal, .mx-part.theme-mangal {
     --mg-red-dk: rgb(from var(--mg-red) round(r * .757143) round(g * .757143 - 2.1143) round(b * .757143 - .1714));
     --mg-red-lt: rgb(from var(--mg-red) calc(r + 29) calc(g + 6) calc(b + 7));
     --mg-ox: rgb(from var(--mg-red) round(r * .557143) round(g * .557143 - 1.9143) round(b * .557143 - .3714));
