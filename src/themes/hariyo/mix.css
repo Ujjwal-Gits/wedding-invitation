@@ -1,0 +1,20 @@
+/* Hariyo's gate and hero on another theme's page (docs/MIX.md): what hariyo.css gives the suite's gate and hero
+   wrappers (.su-gate, .su-gate__ui, .su-hero, .su-cue), restated for the mix wrappers. */
+.mx-gate--hariyo { --g: max(58vmin, 42vmax); --aw: min(340px, 78vw); --ah: min(660px, 72svh); color: var(--su-ink); }
+.mx-gate--hariyo .mx-gate__scene { cursor: pointer; }
+/* the line and buttons sit inside the arch, under the names */
+.mx-gate--hariyo .mx-ui { bottom: calc(50% - var(--ah) / 2 + 26px); width: min(calc(var(--aw) - 40px), 320px); gap: 8px; z-index: 4; }
+.mx-gate--hariyo .mx-ui__line { margin-bottom: 6px; font: 400 18px/1.4 var(--su-f-display); color: var(--su-ink-2); }
+.mx-gate--hariyo .mx-ui__line .l-ne { font: 400 16px/1.6 'Mukta', sans-serif; }
+.mx-gate--hariyo .mx-ui__quiet { color: var(--su-ink-2); }
+.mx-gate--hariyo .mx-ui__open { font-weight: 500; letter-spacing: 0.16em; }
+.mx-gate--hariyo .mx-ui__open .l-ne { font-weight: 500; }
+
+/* the hero lies on Hariyo's own lokta paper (on its page the paper is the body's) */
+.mx-part.mx-hero--hariyo { min-height: max(100svh, 640px); background: var(--hy-paper) var(--hy-lokta); }
+.mx-hero--hariyo .mx-cue { bottom: 8px; color: var(--su-ink-2); }
+
+@media (min-width: 900px) {
+  .mx-gate--hariyo { --aw: min(390px, 78vw); --ah: min(690px, 84svh); }
+  .mx-hero--hariyo .mx-cue { left: 25%; }
+}

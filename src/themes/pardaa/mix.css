@@ -1,0 +1,11 @@
+/* Pardaa's gate and hero on another theme's page (docs/MIX.md): what pardaa.css gives the suite's gate and hero
+   wrappers (.su-gate__ui, .su-btn--open, .su-quiet, .su-hero, .su-cue), restated for the mix wrappers. */
+.mx-gate--pardaa { --mx-ui-ink: #F6E3B4; --mx-btn-radius: 3px; }
+.mx-gate--pardaa .mx-ui::before { content: ''; position: absolute; inset: -40px -50px -26px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(36, 3, 5, 0.86) 0%, rgba(36, 3, 5, 0.6) 55%, rgba(36, 3, 5, 0) 100%); }
+.mx-gate--pardaa .mx-ui__line { font: 500 italic 18px/1.4 var(--su-f-display); color: #F6E3B4; }
+.mx-gate--pardaa .mx-ui__line .l-ne { font: 500 18px/1.5 var(--su-f-deva); }
+.mx-gate--pardaa .mx-ui__open { background: linear-gradient(180deg, #F1D594, #D3A957); border-color: #F1D594; color: #4A0A0D; }
+.mx-gate--pardaa .mx-ui__quiet { color: #F1DCAA; }
+
+.mx-part.mx-hero--pardaa { background: var(--su-bg); }

@@ -267,4 +267,11 @@ export default {
     '--su-gold': { label: 'Gold', default: '#B88A3E' },
     '--su-bg': { label: 'Paper', default: '#FBF6EE' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the curtains open onto whatever first screen is behind them
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--pd-gold-hi'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line'], images: [], colors: ['--su-accent', '--su-bg'] },
+  },
 };

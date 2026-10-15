@@ -1,7 +1,7 @@
 /* Swayambar (स्वयम्बर): the jaimala. Wine-red silk and fresh marigold on ivory paper; the groom's side in saffron
    silk on the left, the bride's side in rose silk on the right. Motion is transform and opacity only; no filters. */
 html:has(body.theme-swayambar) { background: #FBF5EA; }
-body.theme-swayambar {
+body.theme-swayambar, .mx-part.theme-swayambar { /* the page, and a Swayambar gate or first screen on another page (docs/MIX.md) */
   --sw-wine: #6B1024;          /* the one accent: headings, buttons (11:1 on ivory) */
   --sw-gate: #4A0915;          /* the opening's silk */
   --sw-marigold: #E7A33A;      /* ornaments, the gate title (7:1 on the gate silk) */

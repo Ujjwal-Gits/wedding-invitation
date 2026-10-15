@@ -9,32 +9,14 @@
 import { gsap } from 'gsap';
 import { mountSuite } from '../_suite/suite.js';
 import manifest from './slots.js';
-import { lamp, flame, kalash as npKalash, ganthi, initNepali } from '../_suite/nepali.js';
+import { kalash as npKalash, ganthi, initNepali } from '../_suite/nepali.js';
 import './pardaa.css';
-
-const A = '/themes/pardaa/art/';
+import { A, rule, lotus, archLines, heroHtml, gateScene, gateExit, heroEnter, fitRoom, heroAmbient, heroScroll } from './parts.js';
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const L = {
   saveDate: { en: 'Save the date', ne: 'शुभ साइत' },
   knot: { en: 'Two families, tied in one knot', ne: 'दुई परिवार, एउटै गाँठोमा' },
 };
-const rnd = (a, b) => a + Math.random() * (b - a);
-
-// ───────── ornaments (inline SVG, gold line art) ─────────
-/** a fine Dhaka-diamond rule */
-const rule = (cls = '') => `<svg class="pd-rule ${cls}" viewBox="0 0 240 14" aria-hidden="true" focusable="false">
-  <path d="M0 7H96M144 7H240" /><path d="M120 1l6 6-6 6-6-6z" /><path d="M120 4l3 3-3 3-3-3z" class="pd-f" />
-  <path d="M106 4l3 3-3 3-3-3zM134 4l3 3-3 3-3-3z" class="pd-f" /></svg>`;
-/** a small lotus-mandala crown for section heads */
-const lotus = (cls = '') => `<svg class="pd-lotus ${cls}" viewBox="0 0 64 30" aria-hidden="true" focusable="false">
-  <path d="M32 3c5 6 6 14 0 22-6-8-5-16 0-22z" /><path d="M32 25c-3-7-10-11-18-11 2 7 9 11 18 11zM32 25c3-7 10-11 18-11-2 7-9 11-18 11z" />
-  <path d="M32 25c-6-3-14-3-22 0M32 25c6-3 14-3 22 0" /><path d="M2 27h60" /><circle cx="32" cy="27" r="1.6" class="pd-f" /></svg>`;
-/** the mandap-arch (ogee) outline used by frames and the diya columns; drawn in a 100x100 box, stretched */
-const OGEE = 'M0 100V24C0 14 22 12 34 8C42 5 47 3 50 0C53 3 58 5 66 8C78 12 100 14 100 24V100Z';
-const archLines = () => `<svg class="pd-archline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="${OGEE}" /></svg>`;
-const PETALS = ['#F29A1F', '#E9781A', '#C8263A', '#F4B63A', '#B3122A'];
-const petal = (i) => `<svg class="pd-petal" viewBox="0 0 20 24" aria-hidden="true"><path d="M10 .5C15.5 4 19.6 10.6 15.4 18.6 13.4 22.4 6.6 22.4 4.6 18.6.4 10.6 4.5 4 10 .5Z" fill="${PETALS[i % PETALS.length]}" /></svg>`;
-
 /** which ceremony is this? → its look */
 function kind(ev) {
   const s = `${ev.id} ${ev.title?.en || ''} ${ev.title?.ne || ''}`.toLowerCase();
@@ -88,30 +70,7 @@ function page(ctx) {
   const head = (title, id, kick = null, cls = '') => `<header class="pd-head pd-up ${cls}">${lotus()}${kick && on(kick) ? `<p class="pd-kick">${bi(kick)}</p>` : ''}<h2 class="pd-h2" id="${id}">${bi(title)}</h2>${rule('pd-head__rule')}</header>`;
   const time = mainEv ? { en: AD.time, ne: ctx.timeLabel(mainEv).ne } : null;
   const bsShort = BS.full.short?.en ? (/B\.S\./.test(BS.full.short.en) ? BS.full.short.en : `${BS.full.short.en} B.S.`) : BS.full.en;
-  const inv = txt('hero.invocation');
   const lead = P.lead;
-
-  const hero = `
-    <div class="pd-hero">
-      <div class="pd-hero__glow" aria-hidden="true"></div>
-      <div class="pd-band pd-band--l" aria-hidden="true"><i></i></div><div class="pd-band pd-band--r" aria-hidden="true"><i></i></div>
-      <div class="pd-tied pd-tied--l" aria-hidden="true"><i></i></div><div class="pd-tied pd-tied--r" aria-hidden="true"><i></i></div>
-      <div class="pd-htoran" aria-hidden="true"></div>
-      <div class="pd-hero__body">
-        <div class="pd-hero__text">
-          ${on(inv) ? `<p class="pd-inv su-in" lang="ne">${esc(inv.ne || inv.en)}</p>` : ''}
-          <p class="pd-title su-in" lang="ne">${esc(txt('hero.title').ne || 'शुभ विवाह')}</p>
-          <h1 class="su-names pd-names su-in">${ctx.names('&amp;')}</h1>
-          ${on(txt('hero.line')) ? `<p class="pd-line su-in">${bi(txt('hero.line'))}</p>` : ''}
-          <p class="pd-hdate su-in">${bi({ en: `${AD.wd.en}, ${AD.day} ${AD.month.en} ${AD.year}`, ne: BS.day && BS.month && BS.year ? `${AD.wd.ne}, ${BS.month} ${BS.day}, ${BS.year}` : (BS.full.ne || AD.full.ne) })}</p>
-        </div>
-        <figure class="pd-mandap"><img src="${A}mandap-sm.webp" srcset="${A}mandap-sm.webp 560w, ${A}mandap.webp 1120w" sizes="(max-width: 700px) 80vw, 46vw" alt="A red and gold Nepali mandap with marigold garlands and a sacred fire; the bride in red and the groom in daura suruwal and Dhaka topi sit before it" fetchpriority="high" decoding="async" />
-          <span class="pd-fire" aria-hidden="true">${[[46.6, 0.78], [48.9, 1], [51.2, 0.92], [53.4, 0.74]].map(([x, k]) => `<span class="pd-fire__w" style="left:${x}%;--k:${k}">${flame()}</span>`).join('')}</span>
-          ${lamp('panas', { cls: 'pd-panas pd-panas--l', sizes: '70px' })}${lamp('panas', { cls: 'pd-panas pd-panas--r', sizes: '70px' })}
-        </figure>
-      </div>
-      <div class="pd-petals" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(petal).join('')}</div>
-    </div>`;
 
   const envelope = `<div class="pd-env">
       <p class="pd-env__k">${bi(L.saveDate)}</p>
@@ -169,7 +128,7 @@ function page(ctx) {
 
   return `
   <section class="su-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
-    ${hero}
+    ${heroHtml(ctx)}
     ${P.cue(lead ? 'couple' : 'date')}
   </section>
 
@@ -237,103 +196,32 @@ function page(ctx) {
   </div>`;
 }
 
-/** one petal drifting down; inside the opening timeline when `tl` is given */
-function fall(el, tl, at, { x0, drift, dur, rot }) {
-  const set = { x: x0, y: -30, rotation: rot, opacity: 0, scale: rnd(0.6, 1.05) };
-  const to = { x: x0 + drift, y: `${rnd(50, 80)}vh`, rotation: rot + rnd(-200, 200), duration: dur, ease: 'sine.in' };
-  if (tl) {
-    tl.set(el, set, at).to(el, to, at).to(el, { opacity: 0.95, duration: 0.4 }, at).to(el, { opacity: 0, duration: 0.8 }, at + dur - 0.8);
-  } else {
-    gsap.set(el, set); gsap.to(el, to); gsap.to(el, { opacity: 0.9, duration: 0.6 });
-    gsap.to(el, { opacity: 0, duration: 1, delay: dur - 1, onComplete: () => el.remove() });
-  }
-}
-
 const T = {
   slug: 'pardaa',
   manifest,
   art: A,
 
-  gate: (ctx) => `
-    <div class="pd-g">
-      <div class="pd-g__bg"></div>
-      <div class="pd-g__light"></div>
-      <div class="pd-g__half pd-g__half--l"></div><div class="pd-g__half pd-g__half--r"></div>
-      <div class="pd-g__front">
-        <div class="pd-g__vig"></div>
-        ${ctx.ganeshRef ? `<div class="pd-g__medal">${ctx.ganesh('pd-g__gan', '(max-width: 700px) 120px, 150px')}</div>` : ''}
-        <p class="pd-g__title" lang="ne">${ctx.esc(ctx.txt('hero.title').ne || 'शुभ विवाह')}</p>
-        ${rule('pd-g__rule')}
-        <p class="pd-g__names">${ctx.names('&amp;')}</p>
-      </div>
-    </div>`,
+  gate: gateScene,
 
   page,
 
-  // the mandap takes whatever room the words leave, so the hero fits one screen
   ready() {
     initNepali();
     const ne = document.getElementById('f-name-err'); if (ne) { ne.hidden = false; ne.setAttribute('role', 'alert'); } // engine leaves it [hidden]
-    const hero = document.querySelector('.pd-hero');
-    const body = document.querySelector('.pd-hero__body');
-    const text = document.querySelector('.pd-hero__text');
-    const root = document.documentElement;
-    const fit = () => {
-      const cs = getComputedStyle(body);
-      const room = hero.offsetHeight - text.offsetHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - parseFloat(cs.rowGap || 0);
-      root.style.setProperty('--pd-room', `${Math.round(room)}px`);
-    };
-    fit();
-    document.fonts?.ready.then(fit);
-    let raf = 0;
-    addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); });
-    document.addEventListener('langchange', () => requestAnimationFrame(fit));
+    // the mandap takes whatever room the words leave, so the hero fits one screen (another theme's first screen: skipped)
+    fitRoom(document, document.documentElement);
   },
 
-  open(ctx, tl) {
-    const q = (s) => document.querySelector(s);
-    const halves = [q('.pd-g__half--l'), q('.pd-g__half--r')];
-    // in front: Ganesh, the title and the names lift away
-    tl.to('.pd-g__front', { autoAlpha: 0, y: -16, scale: 0.97, duration: 0.6, ease: 'power2.in' }, 0.05);
-    // the halves draw apart under the valance, gathering toward the outer edges; a slight sway as they settle
-    halves.forEach((el, i) => {
-      const s = i ? 1 : -1;
-      tl.fromTo(el, { xPercent: 0, scaleX: 1, skewY: 0 }, { xPercent: s * 78, scaleX: 0.55, skewY: s * -0.6, transformOrigin: i ? '100% 0%' : '0% 0%', duration: 2.1, ease: 'power2.inOut' }, 0.3 + i * 0.06);
-      tl.to(el, { skewY: 0, duration: 0.6, ease: 'sine.out' }, 2.4);
-    });
-    // warm light rises behind, then the scene takes its place
-    tl.fromTo('.pd-g__light', { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 1.2, ease: 'sine.out' }, 0.45);
-    tl.to('.pd-g__bg', { opacity: 0, duration: 0.9, ease: 'sine.inOut' }, 0.9);
-    tl.to('.pd-g__light', { opacity: 0, duration: 1.0, ease: 'sine.inOut' }, 1.6);
-    tl.to(halves, { opacity: 0, duration: 0.8, ease: 'sine.in' }, 2.0);
-    // the hero: tied-back curtains come in from the sides, the mandap rises, petals fall
-    tl.fromTo('.pd-tied--l', { opacity: 0, xPercent: -18 }, { opacity: 1, xPercent: 0, duration: 1.3, ease: 'power2.out' }, 1.5);
-    tl.fromTo('.pd-tied--r', { opacity: 0, xPercent: 18 }, { opacity: 1, xPercent: 0, duration: 1.3, ease: 'power2.out' }, 1.5);
-    tl.fromTo('.pd-band', { opacity: 0 }, { opacity: 1, duration: 1.0 }, 1.7);
-    tl.fromTo('.pd-hero__glow', { opacity: 0 }, { opacity: 1, duration: 1.2 }, 1.0);
-    tl.fromTo('.pd-mandap', { opacity: 0, y: 70, rotateX: -14, transformPerspective: 900, transformOrigin: '50% 100%' }, { opacity: 1, y: 0, rotateX: 0, duration: 1.6, ease: 'power3.out', clearProps: 'transform' }, 1.15);
-    document.querySelectorAll('.pd-petals .pd-petal').forEach((p, i) => {
-      fall(p, tl, 0.9 + i * 0.14 + rnd(0, 0.1), { x0: rnd(0.1, 0.9) * innerWidth, drift: rnd(-60, 60), dur: rnd(3.0, 3.9), rot: rnd(0, 360) });
-    });
+  open(ctx, tl, gate) {
+    // the curtains draw apart and the warm light clears; the hero comes in behind them
+    gateExit(tl, gate);
+    heroEnter(tl, 0.9, document.getElementById('top'));
     return 1.95;
   },
 
   ambient(ctx) {
+    heroAmbient(document.getElementById('top'), ctx.reduced);
     if (ctx.reduced) return;
-    // an occasional petal over the mandap, only while the hero is in view
-    const hero = document.querySelector('.pd-hero');
-    const box = document.querySelector('.pd-petals');
-    let inView = true;
-    new IntersectionObserver(([e]) => { inView = e.isIntersecting; }).observe(hero);
-    let n = 0;
-    const drop = () => {
-      if (inView && !document.hidden) {
-        box.insertAdjacentHTML('beforeend', petal(n++));
-        fall(box.lastElementChild, null, 0, { x0: rnd(0.2, 0.8) * innerWidth, drift: rnd(-50, 50), dur: rnd(5.5, 7), rot: rnd(0, 360) });
-      }
-      setTimeout(drop, rnd(7000, 11000));
-    };
-    setTimeout(drop, 5000);
     // the diya flames flicker only while the countdown is on screen
     const count = document.querySelector('.pd-count');
     if (count) new IntersectionObserver(([e]) => count.classList.toggle('is-lit', e.isIntersecting)).observe(count);
@@ -343,8 +231,7 @@ const T = {
     const { ScrollTrigger } = ctx;
     if (ctx.reduced) return;
     // slow parallax: the mandap sinks a little slower than the page, the tied curtains a touch faster
-    gsap.to('.pd-mandap', { y: 60, ease: 'none', scrollTrigger: { trigger: '#top', start: 'top top', end: 'bottom top', scrub: true } });
-    gsap.to('.pd-tied, .pd-band', { y: -40, ease: 'none', scrollTrigger: { trigger: '#top', start: 'top top', end: 'bottom top', scrub: true } });
+    heroScroll(document.getElementById('top'));
     // each section's pieces rise with a slight tilt that settles flat
     document.querySelectorAll('.pd-up').forEach((el) => {
       gsap.fromTo(el, { opacity: 0, y: 46, rotateX: -10, transformPerspective: 1000, transformOrigin: '50% 100%' }, {

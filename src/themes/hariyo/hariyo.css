@@ -1,5 +1,5 @@
 /* Hariyo (हरियो): sage-green watercolour garden on handmade lokta paper. */
-body.theme-hariyo {
+body.theme-hariyo, .mx-part.theme-hariyo { /* the page, and a Hariyo gate or first screen on another page (docs/MIX.md) */
   --hy-paper: #FAFBF6;
   --hy-sage: #4E6B4F;
   --hy-olive: #7C8B5C;
@@ -64,9 +64,10 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 .hy-crest { margin: 0; font: 400 26px/1.5 var(--su-f-deva); color: var(--hy-sage); }
 .hy-dhaka { display: block; width: 150px; height: 11px; margin: 2px auto; color: var(--hy-sage); }
 .hy-arch__names { margin: 4px 0 0; font: 400 clamp(44px, 13vw, 58px)/1.05 var(--su-f-script); color: var(--su-ink); }
-.theme-hariyo .su-names { flex-flow: row wrap; justify-content: center; column-gap: 0.22em; }
-.theme-hariyo .su-amp { font-size: 0.78em; color: var(--hy-gold); align-self: center; }
-.theme-hariyo .su-names .l-ne { font: 400 0.56em/1.5 var(--su-f-deva); }
+/* :where(…) keeps these off another theme's gate or first screen on this page (docs/MIX.md §4), at no specificity */
+.theme-hariyo .su-names:where(:not(.mx-part:not(.theme-hariyo) *)) { flex-flow: row wrap; justify-content: center; column-gap: 0.22em; }
+.theme-hariyo .su-amp:where(:not(.mx-part:not(.theme-hariyo) *)) { font-size: 0.78em; color: var(--hy-gold); align-self: center; }
+.theme-hariyo .su-names:where(:not(.mx-part:not(.theme-hariyo) *)) .l-ne { font: 400 0.56em/1.5 var(--su-f-deva); }
 
 .theme-hariyo .su-gate__ui { bottom: calc(50% - var(--ah) / 2 + 26px); width: min(calc(var(--aw) - 40px), 320px); gap: 8px; z-index: 4; }
 .theme-hariyo .su-gate__line { font: 400 18px/1.4 var(--su-f-display); color: var(--su-ink-2); margin-bottom: 6px; }
@@ -329,9 +330,9 @@ html[data-lang='ne'] .hy-close__en { display: none; }
 }
 
 /* Nepali: Gotu for display lines only; reading text stays in Mukta */
-.theme-hariyo.su .l-ne { font-family: 'Mukta', sans-serif; }
+.theme-hariyo.su .l-ne:where(:not(.mx-part:not(.theme-hariyo) *)) { font-family: 'Mukta', sans-serif; }
 .theme-hariyo .hy-h2 .l-ne, .theme-hariyo .hy-sign__t .l-ne, .theme-hariyo .hy-arbour__name .l-ne, .theme-hariyo .hy-letter__line .l-ne,
-.theme-hariyo .su-modal__title .l-ne, .theme-hariyo .su-names .l-ne, .theme-hariyo .hy-pk__month .l-ne, .theme-hariyo .hy-lawn__done .l-ne, .theme-hariyo .hy-crest { font-family: var(--su-f-deva); }
+.theme-hariyo .su-modal__title .l-ne, .theme-hariyo .su-names:where(:not(.mx-part:not(.theme-hariyo) *)) .l-ne, .theme-hariyo .hy-pk__month .l-ne, .theme-hariyo .hy-lawn__done .l-ne, .theme-hariyo .hy-crest { font-family: var(--su-f-deva); }
 .theme-hariyo input[type='radio'], .theme-hariyo input[type='checkbox'] { accent-color: var(--hy-sage); }
 
 /* chrome: solid ivory pills, no glass (a backdrop blur over a moving page costs a GPU layer every frame) */

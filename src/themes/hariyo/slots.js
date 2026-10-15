@@ -266,4 +266,11 @@ export default {
     '--hy-gold': { label: 'Gold', default: '#B8A06A' },
     '--hy-paper': { label: 'Paper', default: '#FAFBF6' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the garden parts and the paper clears onto whatever first screen is beneath
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--hy-sage', '--hy-gold', '--hy-paper'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line'], images: [], colors: ['--hy-sage', '--hy-gold', '--hy-paper'] },
+  },
 };

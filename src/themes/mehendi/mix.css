@@ -1,0 +1,12 @@
+/* Mehendi's gate and hero on another theme's page (docs/MIX.md): what mehendi.css gives the suite's gate and hero
+   wrappers (.su-gate, .su-hero, .su-gate__line, .su-quiet, .su-cue), restated for the mix wrappers. */
+.mx-gate--mehendi { color: var(--su-ink); }
+.mx-gate--mehendi .mx-gate__scene { pointer-events: none; } /* only the mandala takes a tap */
+.mx-gate--mehendi .mx-ui__line { font: 400 19px/1.4 var(--su-f-display); color: var(--su-ink); }
+.mx-gate--mehendi .mx-ui__line .l-ne { font: 500 19px/1.5 var(--su-f-body); }
+.mx-gate--mehendi .mx-ui__quiet { color: var(--su-ink-2); }
+
+.mx-part.mx-hero--mehendi { display: grid; place-items: center; background: var(--su-bg); }
+@media (min-width: 720px) and (min-height: 560px) {
+  .mx-part.mx-hero--mehendi { background: linear-gradient(#F4ECDF 72%, var(--su-bg)); }
+}

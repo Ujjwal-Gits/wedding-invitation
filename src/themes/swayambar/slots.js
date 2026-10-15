@@ -297,8 +297,9 @@ export default {
   },
   // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
   parts: {
-    gate: false, hero: false, hostGate: true, hostHero: false,
-    ownGateNeedsHero: true, // the Ganesh medallion flies from the gate into the hero; the gate garlands land beside it
-    why: { gate: 'Not converted yet (batch work).', hero: 'Not converted yet (batch work).', hostHero: 'Needs its gate as a module first (the opening reaches into the hero).' },
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: true, // the Ganesh medallion flies from the gate into the hero: with another hero, gate.js runs instead
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--sw-gate', '--sw-marigold'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.line', 'ganesh.show'], images: ['hero.ganesh', 'hero.couple'], colors: ['--sw-wine', '--sw-ivory', '--sw-marigold'] },
   },
 };

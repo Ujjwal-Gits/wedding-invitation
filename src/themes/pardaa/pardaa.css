@@ -1,6 +1,6 @@
 /* Pardaa (पर्दा): red velvet curtains open once on a Nepali mandap. Ivory paper, sindoor red, antique gold;
    thin gold rules, lots of white space. Motion is transform and opacity only; no filters anywhere. */
-body.theme-pardaa {
+body.theme-pardaa, .mx-part.theme-pardaa { /* the page, and a Pardaa gate or first screen on another page (docs/MIX.md) */
   --su-bg: #FBF6EE;
   --su-paper: #FFFDF8;
   --su-ink: #2E1A14;

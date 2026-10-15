@@ -16,31 +16,19 @@ import { mountSuite } from '../_suite/suite.js';
 import manifest from './slots.js';
 import { lamp, kalash as npKalash, ganthi, initNepali } from '../_suite/nepali.js';
 import './swayambar.css';
+import { A, rule, heroHtml, gateScene, placeGate, gateSwing, heroEnter, heroScroll } from './parts.js';
 
 // a reload mid-page must start at the gate, not at the restored scroll position behind it
 // (ScrollTrigger owns history.scrollRestoration and resets it on every refresh, so set it through ScrollTrigger)
 ScrollTrigger.clearScrollMemory('manual');
 
-const A = '/themes/swayambar/art/';
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const L = {
   knot: { en: 'Tied in one knot', ne: 'एउटै गाँठोमा' },
   ceremony: (i, neNum) => ({ en: `Ceremony ${ROMAN[i] || i + 1}`, ne: `कार्यक्रम ${neNum(String(i + 1))}` }),
 };
 
-/** a garland picture (the U hangs from above the frame) */
-const garlandImg = (sizes, eager = false) => `<img src="${A}garland-sm.webp" srcset="${A}garland-sm.webp 421w, ${A}garland.webp 983w" sizes="${sizes}" width="983" height="1400" alt="" decoding="async"${eager ? ' fetchpriority="high"' : ''} />`;
-const GW = '(max-width: 700px) 80vw, 420px';
-const garlands = (cls, eager) => `<div class="sw-garls ${cls}" aria-hidden="true">
-    <div class="sw-garl sw-garl--l"><div class="sw-garl__sway">${garlandImg(GW, eager)}</div></div>
-    <div class="sw-garl sw-garl--r"><div class="sw-garl__sway">${garlandImg(GW, eager)}</div></div>
-  </div>`;
 const ring = (sizes) => `<img class="sw-ring" src="${A}ring-sm.webp" srcset="${A}ring-sm.webp 480w, ${A}ring.webp 1000w" sizes="${sizes}" width="1000" height="1000" alt="" loading="lazy" decoding="async" aria-hidden="true" />`;
-
-/** a fine gold rule with a small marigold bud in the middle */
-const rule = (cls = '') => `<svg class="sw-rule ${cls}" viewBox="0 0 220 14" aria-hidden="true" focusable="false">
-  <path d="M0 7H92M128 7H220" /><circle cx="110" cy="7" r="4.2" class="sw-rule__bud" /><circle cx="110" cy="7" r="1.6" class="sw-rule__eye" />
-  <circle cx="99" cy="7" r="1.5" class="sw-rule__dot" /><circle cx="121" cy="7" r="1.5" class="sw-rule__dot" /></svg>`;
 
 // ───────── the scratch cover: a wine silk disc inside the garland ─────────
 function paintSeal(c, w, h, dpr, hint) {
@@ -83,31 +71,13 @@ function paintSeal(c, w, h, dpr, hint) {
 
 // ───────── the page after the gate ─────────
 function page(ctx) {
-  const { bi, esc, txt, on, AD, BS, mainEv, placeLine, config, c, imgTag, parts: P, S, photoUrl } = ctx;
+  const { bi, esc, txt, on, AD, BS, mainEv, placeLine, config, c, imgTag, parts: P } = ctx;
   const head = (title, id, kick = null, cls = '') => `<header class="sw-head ${cls}">${kick && on(kick) ? `<p class="sw-kick">${bi(kick)}</p>` : ''}<h2 class="sw-h2" id="${id}">${bi(title)}</h2>${rule('sw-head__rule')}</header>`;
   // the seal shows the start time only (as the English does): the whole range in Nepali spills onto the garland
   const time = mainEv ? { en: AD.time, ne: ctx.timeLabel(mainEv).ne.split(/\s+[–-]\s+/)[0] } : null;
   const bsShort = BS.full.short?.en ? (/B\.S\./.test(BS.full.short.en) ? BS.full.short.en : `${BS.full.short.en} B.S.`) : BS.full.en;
-  const inv = txt('hero.invocation');
   const lead = P.lead;
-  const coupleRef = S.img('hero.couple');
   const g = c.groom; const b = c.bride;
-
-  const hero = `
-    <div class="sw-hero">
-      ${garlands('sw-hero__garls', false)}
-      <div class="sw-hero__body">
-        ${ctx.ganeshRef ? `<div class="sw-medal sw-hero__gan" aria-hidden="false">${ctx.ganesh('sw-medal__img', '96px')}</div>` : ''}
-        ${on(inv) ? `<p class="sw-inv su-in" lang="ne">${esc(inv.ne || inv.en)}</p>` : ''}
-        <p class="sw-title su-in">${bi(txt('hero.title'))}</p>
-        ${coupleRef ? `<figure class="sw-couple su-in"><img src="${esc(photoUrl(coupleRef, 'sm'))}" srcset="${esc(photoUrl(coupleRef, 'sm'))} 600w, ${esc(photoUrl(coupleRef, 'lg'))} 1400w" sizes="(max-width: 700px) 74vw, 400px" alt="${esc(S.alt('hero.couple') || 'The bride and groom exchange garlands')}" fetchpriority="high" decoding="async" /></figure>` : ''}
-        <h1 class="sw-names su-in">
-          <span class="sw-names__g">${bi(g.name)}</span><span class="sw-names__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span><span class="sw-names__b">${bi(b.name)}</span>
-        </h1>
-        ${on(txt('hero.line')) ? `<p class="sw-hline su-in">${bi(txt('hero.line'))}</p>` : ''}
-        <p class="sw-hdate su-in">${bi({ en: `${AD.wd.en} · ${AD.day} ${AD.month.en} ${AD.year}`, ne: BS.day && BS.month && BS.year ? `${AD.wd.ne} · ${BS.month} ${BS.day}, ${BS.year}` : (BS.full.ne || AD.full.ne) })}</p>
-      </div>
-    </div>`;
 
   // the two families' panels: the groom's side on the left (saffron silk, a Dhaka band), the bride's on the right
   // (rose silk, a string of green pote)
@@ -169,7 +139,7 @@ function page(ctx) {
 
   return `
   <section class="su-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
-    ${hero}
+    ${heroHtml(ctx)}
     ${P.cue('families')}
   </section>
 
@@ -262,20 +232,6 @@ function page(ctx) {
   </div>`;
 }
 
-// ───────── the gate's closed pose: the two garlands interlocked in the middle ─────────
-const CLOSED_TILT = 5.5;
-function closedPose() {
-  const els = [...document.querySelectorAll('.sw-g .sw-garl')];
-  if (!els.length) return [];
-  const gw = els[0].offsetWidth;
-  const mid = document.querySelector('.sw-g').offsetWidth / 2;
-  return els.map((el, i) => {
-    const centre = el.offsetLeft + gw / 2;
-    const target = mid + (i ? 1 : -1) * gw * 0.13;
-    return { el, x: target - centre, r: (i ? 1 : -1) * CLOSED_TILT };
-  });
-}
-
 /** photographs hang on silk cords: 2 a line on phones, 3 on wider screens; each sits a little lower toward the sag */
 function hangPhotos() {
   const cord = document.getElementById('sw-cord');
@@ -309,19 +265,7 @@ const T = {
   manifest,
   art: A,
 
-  gate: (ctx) => `
-    <div class="sw-g">
-      <div class="sw-g__bg sw-g__bg--l"></div><div class="sw-g__bg sw-g__bg--r"></div>
-      <div class="sw-g__frame"></div>
-      ${garlands('sw-g__garls', true)}
-      <div class="sw-g__front">
-        ${ctx.ganeshRef ? `<div class="sw-medal sw-g__gan">${ctx.ganesh('sw-medal__img', '96px')}</div>` : ''}
-      </div>
-      <div class="sw-g__words">
-        <p class="sw-g__title">${ctx.bi(ctx.txt('hero.title'))}</p>
-        <p class="sw-g__names"><span>${ctx.bi(ctx.c.groom.name)}</span><span class="sw-g__amp" aria-hidden="true">&amp;</span><span>${ctx.bi(ctx.c.bride.name)}</span></p>
-      </div>
-    </div>`,
+  gate: gateScene,
 
   page,
 
@@ -329,60 +273,37 @@ const T = {
     initNepali();
     const ne = document.getElementById('f-name-err'); if (ne) { ne.hidden = false; ne.setAttribute('role', 'alert'); }
     hangPhotos();
-    // the garlands interlock in the gate; the Ganesh medallion sits in their shared loop
-    const place = () => {
-      if (document.body.classList.contains('is-opening') || document.body.classList.contains('is-open')) return;
-      const pose = closedPose();
-      pose.forEach(({ el, x, r }) => gsap.set(el, { x, rotation: r }));
-      const gan = document.querySelector('.sw-g__gan');
-      if (gan && pose.length) {
-        const gw = pose[0].el.offsetWidth;
-        gan.style.top = `${Math.round(gw * 1.4238 * 0.2)}px`;
-      }
-    };
-    place();
-    addEventListener('resize', place);
+    // the garlands interlock in the gate; the Ganesh medallion sits in their shared loop (another theme's gate, or
+    // Swayambar's own as a module, places itself: docs/MIX.md)
+    const gate = document.querySelector('.su-gate');
+    if (gate) {
+      const place = () => {
+        if (document.body.classList.contains('is-opening') || document.body.classList.contains('is-open')) return;
+        placeGate(gate);
+      };
+      place();
+      addEventListener('resize', place);
+    }
     if (ctx.reduced) document.body.classList.add('sw-still');
   },
 
-  open(ctx, tl) {
+  open(ctx, tl, gate) {
     const q = (s) => document.querySelector(s);
-    const [gl, gr] = [q('.sw-g .sw-garl--l'), q('.sw-g .sw-garl--r')];
     document.body.classList.add('sw-swing');
     // the medallion rises to its place in the hero (FLIP), the words fall quiet
-    tl.to('.sw-g__words', { autoAlpha: 0, y: 12, duration: 0.5, ease: 'power2.in' }, 0.02);
     const from = q('.sw-g__gan'); const to = q('.sw-hero__gan');
     if (from && to) {
       const a = from.getBoundingClientRect(); const b = to.getBoundingClientRect();
       tl.to(from, { x: b.left + b.width / 2 - (a.left + a.width / 2), y: b.top + b.height / 2 - (a.top + a.height / 2), scale: b.width / a.width, duration: 1.5, ease: 'power3.inOut' }, 0.35);
     }
-    // the hanging points draw apart; each garland lags behind, swings past, and settles: a heavy pendulum
-    [gl, gr].forEach((el, i) => {
-      if (!el) return;
-      const s = i ? 1 : -1; // the way this garland travels
-      const at = 0.18 + i * 0.07;
-      tl.to(el, { x: 0, duration: 1.7, ease: 'power2.inOut' }, at);
-      tl.to(el, { keyframes: [
-        { rotation: s * 15, duration: 0.62, ease: 'power1.out' },  // the bottom lags toward the middle
-        { rotation: -s * 10, duration: 0.82, ease: 'sine.inOut' }, // and swings out past the vertical
-        { rotation: s * 4.6, duration: 0.72, ease: 'sine.inOut' },
-        { rotation: -s * 1.8, duration: 0.62, ease: 'sine.inOut' },
-        { rotation: 0, duration: 0.6, ease: 'sine.out' },
-      ] }, at);
-    });
-    // the wine silk parts behind them like a curtain, from the middle out, onto the ivory hero
-    tl.to('.sw-g__frame', { opacity: 0, duration: 0.5, ease: 'sine.in' }, 0.2);
-    tl.to('.sw-g__bg--l', { xPercent: -101, duration: 1.45, ease: 'power3.inOut' }, 0.4);
-    tl.to('.sw-g__bg--r', { xPercent: 101, duration: 1.45, ease: 'power3.inOut' }, 0.4);
+    // the garlands swing apart like heavy pendulums and the wine silk parts onto the ivory hero
+    gateSwing(tl, gate);
     return 1.2;
   },
 
   // after another theme's gate (docs/MIX.md): the hero's garlands and medallion come down into place themselves
   heroIntro(ctx, tl, t) {
-    const els = [...document.querySelectorAll('.sw-hero__garls, .sw-hero__gan')];
-    if (ctx.reduced) { tl.fromTo(els, { opacity: 0 }, { opacity: 1, duration: 0.5 }, t); return; }
-    tl.fromTo('.sw-hero__garls', { opacity: 0, y: -36 }, { opacity: 1, y: 0, duration: 1.3, ease: 'power3.out' }, t)
-      .fromTo('.sw-hero__gan', { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.9, ease: 'power3.out' }, t + 0.35);
+    heroEnter(tl, t, document.getElementById('top'), ctx.reduced);
   },
 
   scroll(ctx) {
@@ -393,9 +314,7 @@ const T = {
       gsap.fromTo(el, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.95, ease: 'power3.out', clearProps: 'transform', scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
     });
     // as the hero leaves, its garlands lift a little and the picture sinks (wider screens only)
-    if (!phone) {
-      gsap.to('.sw-hero__garls', { y: -50, ease: 'none', scrollTrigger: { trigger: '#top', start: 'top top', end: 'bottom top', scrub: true } });
-    }
+    heroScroll(document.getElementById('top'));
     const conv = (sel, trigger, from, end = 'center 58%') => {
       document.querySelectorAll(sel).forEach((el) => {
         gsap.fromTo(el, from(el), { x: 0, xPercent: 0, rotateY: 0, opacity: 1, ease: 'none',

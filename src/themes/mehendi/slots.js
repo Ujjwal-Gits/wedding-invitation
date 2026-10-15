@@ -266,4 +266,11 @@ export default {
     '--su-bg': { label: 'Paper', default: '#FBF6EE' },
     '--su-gold': { label: 'Copper', default: '#B9774A' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the mandala draws itself and the paper clears onto whatever first screen is beneath
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet', 'hero.title'], images: [], colors: ['--su-accent', '--su-gold', '--su-bg'] },
+    heroUses: { texts: ['hero.invocation', 'hero.line', 'ganesh.show'], images: ['hero.ganesh'], colors: ['--su-accent', '--su-gold', '--su-bg'] },
+  },
 };

@@ -1,0 +1,13 @@
+/* Swayambar's gate and hero on another theme's page (docs/MIX.md): what swayambar.css gives the suite's gate and hero
+   wrappers (.su-gate__ui, .su-btn--open, .su-quiet, .su-hero), restated for the mix wrappers, and the body-state rules
+   (body.is-opening, body.sw-swing, body.is-open) moved onto the part's own wrapper. */
+.mx-gate--swayambar { --mx-ui-ink: var(--sw-cream); --mx-btn-bg: var(--sw-marigold); --mx-btn-ink: #3A0610; --mx-btn-radius: 2px; }
+.mx-gate--swayambar .mx-ui__line { font: 400 italic 17px/1.4 var(--su-f-display); color: var(--sw-cream); }
+.mx-gate--swayambar .mx-ui__line .l-ne { font: 500 18px/1.5 var(--su-f-deva); }
+.mx-gate--swayambar .mx-ui__open .l-en { letter-spacing: 0.16em; }
+.mx-gate--swayambar .mx-ui__quiet { color: var(--sw-cream); }
+.mx-gate--swayambar.is-opening .sw-garl__sway { animation: none; }
+.mx-gate--swayambar.is-opening .sw-g__bg, .mx-gate--swayambar.is-opening .sw-garl, .mx-gate--swayambar.is-opening .sw-g__gan { will-change: transform; }
+
+.mx-part.mx-hero--swayambar { background: var(--sw-ivory); }
+.mx-hero--swayambar.is-open .sw-hero__garls, .mx-hero--swayambar.is-open .sw-hero__gan { opacity: 1; }
