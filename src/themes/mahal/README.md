@@ -24,10 +24,12 @@ Verlet chains with length and bending constraints, drawn as shaded satin strips 
 it comes undone): one tail is pulled and the loops slip through the knot, the knot gives, the two bands swing down
 and hang from the posts, then slip off and fall. We lean in, the latch gives with light at the seam, the heavy leaves
 swing in to 104 degrees as warm light pours through and petals fall, and a short soft zoom carries us onto the
-balcony. There, all along, **Jal Mahal** stands lit on its lake under a large full moon (real night photographs,
-their skies keyed out), with warm lamps along the pond and their reflections; stars twinkle, gold dust rises and a
-few **fireworks** (`fireworks.js`, additive sparks) burst over the palace, then now and then while the hero is on screen.
-Ganesh appears inside the moon in a glow with slow rays, then ॥ श्री गणेशाय नमः ॥, शुभ विवाह and the names, a letter at a time.
+balcony: a painted scene (`decor/scene-portrait|landscape.webp`, generated with Canva AI) of an ivory palace beyond a
+long reflecting pool lined with lanterns, under a full moon, seen over a marble balustrade, framed by velvet curtains.
+It is there from the start (seen through the gate). The pool glistens (drifting streaks of light), the moon glow
+breathes, the painted lanterns flicker, gold dust rises and a few fireworks burst now and then. Positions of the moon,
+pool and lanterns in each painting are in `SCENE` (main.js); the painting is cover-fitted and kept near the top.
+Ganesh appears with the painted moon as the halo behind his head, in a glow with slow rays, then ॥ श्री गणेशाय नमः ॥, शुभ विवाह and the names, a letter at a time.
 Reduced motion: a crossfade, no fireworks. Photographs credited in `flora-credits.js`.
 
 ## Debug

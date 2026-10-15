@@ -23,6 +23,24 @@ body.theme-mahal {
 .mh-swag { position: absolute; display: block; height: auto; max-width: none; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(20, 2, 4, 0.45)); }
 .mh-swag--r { transform: scaleX(-1); }
 
+/* the painted balcony (there from the start); the pool glistens, the moon breathes, the lanterns flicker */
+.mh-paint { position: absolute; display: block; max-width: none; }
+.mh-water { position: absolute; overflow: hidden; pointer-events: none; mix-blend-mode: screen; opacity: 0.6; }
+.mh-water i { position: absolute; left: -60%; top: 0; width: 220%; height: 100%; will-change: transform;
+  background: repeating-linear-gradient(180deg, rgba(255, 228, 170, 0) 0 5px, rgba(255, 238, 200, 0.55) 6px, rgba(255, 228, 170, 0) 8px 13px);
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 26px, transparent 26px 64px, #000 64px 80px, transparent 80px 130px);
+  mask-image: repeating-linear-gradient(90deg, #000 0 26px, transparent 26px 64px, #000 64px 80px, transparent 80px 130px);
+  animation: mh-glisten 11s linear infinite; }
+.mh-water i + i { top: 4px; opacity: 0.7; animation-duration: 17s; animation-direction: reverse; }
+@keyframes mh-glisten { from { transform: translateX(0); } to { transform: translateX(130px); } }
+.mh-moonglow { position: absolute; width: calc(var(--r) * 8); height: calc(var(--r) * 8); margin: calc(var(--r) * -4) 0 0 calc(var(--r) * -4); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(236, 242, 255, 0.42), rgba(200, 215, 255, 0.12) 45%, rgba(200, 215, 255, 0)); will-change: opacity;
+  animation: mh-moon 6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes mh-moon { from { opacity: 0.65; } to { opacity: 1; } }
+.mh-lamp--glow { mix-blend-mode: screen; opacity: 0.6; }
+.mh-lamp--glow::after { display: none; }
+.mh-ganwrap .mh-gan__glow, .mh-ganwrap .mh-gan__rays { top: 30%; }
+
 /* the palace on the lake (there from the start), the moon above it, lamps along the pond */
 .mh-jal { position: absolute; display: block; max-width: none; }
 .mh-moon { position: absolute; }
@@ -35,7 +53,7 @@ body.theme-mahal {
 .mh-lamp::after { content: ''; position: absolute; left: 35%; top: 70%; width: 30%; height: 420%; border-radius: 50%;
   background: linear-gradient(rgba(255, 200, 110, 0.5), rgba(255, 200, 110, 0)); }
 .mh-ganwrap { position: absolute; z-index: 3; display: grid; place-items: center; pointer-events: none; }
-.mh-ganwrap .mh-gan { height: 66%; margin: 0; }
+.mh-ganwrap .mh-gan { height: 100%; margin: 0; }
 .mh-ganwrap .mh-gan__img, .mh-ganwrap .mh-gan__glow, .mh-ganwrap .mh-gan__rays { opacity: 0; }
 .mh-words::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(150%, 1100px); height: 115%; translate: -50% -46%; z-index: -1; border-radius: 50%; opacity: 0; transition: opacity 1.2s var(--mh-ease);
   background: radial-gradient(closest-side, rgba(5, 12, 40, 0.55), rgba(5, 12, 40, 0.32) 50%, rgba(5, 12, 40, 0) 100%); }
@@ -143,8 +161,8 @@ html[data-lang='ne'] .mh-weds { letter-spacing: 0 !important; }
 .theme-mahal .mh-ui :focus-visible { outline-color: #FFE7A6; }
 
 .mh-hero.is-inside .mh-gate { visibility: hidden; }
-.mh-hero .mg-cue { z-index: 4; color: #6A0A12; }
-.mh-hero .mg-cue i { background: linear-gradient(#6A0A12, transparent); }
+.mh-hero .mg-cue { z-index: 4; color: #F6DC95; text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
+.mh-hero .mg-cue i { background: linear-gradient(#F6DC95, transparent); }
 .mh-hero .mg-fall { z-index: 8; }
 
 @media (max-width: 699px) {
@@ -154,5 +172,5 @@ html[data-lang='ne'] .mh-weds { letter-spacing: 0 !important; }
   .mh-name { font-size: calc(64px * var(--fit)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mh-star, .mh-glow, .mh-glint, .mh-dust i, .mh-hero.is-inside .mh-gan__rays, .mh-hint, .mh-lamp { animation: none; }
+  .mh-star, .mh-glow, .mh-glint, .mh-dust i, .mh-hero.is-inside .mh-gan__rays, .mh-hint, .mh-lamp, .mh-water i, .mh-moonglow { animation: none; }
 }
