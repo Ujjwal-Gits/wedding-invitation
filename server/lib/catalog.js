@@ -29,6 +29,11 @@ const KNOWN = {
   shree: { name: 'Shree', concept: 'Plum and gold; a lotus opens on Ganesh and hanging diyas descend' },
   pardaa: { name: 'Pardaa', concept: 'Red velvet curtains part on a dressed mandap with a living fire' },
   rajdwar: { name: 'Rajdwar', concept: 'A painted gold palace gate tied with a satin bow; it opens onto the red-and-gold Mangal card' },
+  agni: { name: 'Agni', concept: 'The sacred fire at night; the couple walk the seven rounds and the vows appear' },
+  janti: { name: 'Janti', concept: 'The wedding procession with the Naumati Baja and the doli through an old Newari street' },
+  swayambar: { name: 'Swayambar', concept: 'Fresh garlands part on the jaimala; the bride’s and groom’s sides come together' },
+  sindoor: { name: 'Sindoor', concept: 'Minimal red, white and black; the sindoor box opens and a red parting line runs through the story' },
+  rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');

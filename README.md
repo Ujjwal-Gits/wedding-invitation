@@ -27,6 +27,11 @@ dashboard to create, customise, publish and track invitations.
 | 20 | **Shree** `/shree/` | Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend. |
 | 21 | **Pardaa** `/pardaa/` | Red velvet curtains part on a dressed mandap with a living fire; each ceremony (Mehendi, Haldi, Wedding, Reception) in its own colours. |
 | 22 | **Rajdwar** `/rajdwar/` | Mahal's painted gold palace gate and satin bow; untie it and walk through onto the red-and-gold Mangal card. |
+| 23 | **Agni** `/agni/` | The sacred fire at night: a tap lights the fire in the havan kunda, then the couple walk the seven rounds and the vows appear. |
+| 24 | **Janti** `/janti/` | The wedding procession: walk with the Naumati Baja and the doli down an old Newari street to the bride's door. |
+| 25 | **Swayambar** `/swayambar/` | Two fresh garlands swing apart on the jaimala; the bride's and groom's sides converge as you scroll. |
+| 26 | **Sindoor** `/sindoor/` | Minimal red, white and black: the sindoor box opens in a bloom of red and a parting line threads the story. |
+| 27 | **Rangoli** `/rangoli/` | A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day. |
 
 The showroom at `/` links every theme and the studio.
 

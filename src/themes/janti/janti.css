@@ -1,0 +1,378 @@
+/* Janti (जन्ती): the groom's procession down an old Newari street at golden hour. Painted street, carved dark wood with
+   fine gold lines, sindoor red for the doli and the names, cream paper for everything you read. Type: Yeseva One (Latin
+   display), Sura (Devanagari display), Mukta (reading). Motion is transform and opacity only; no filters anywhere. */
+body.theme-janti {
+  --jt-red: #A3261B;       /* the one accent: doli curtain, names, headings (7.1:1 on cream) */
+  --jt-gold: #D9A847;      /* carving lines and ornament only, never text on cream */
+  --jt-wood: #3B2015;      /* carved wood */
+  --jt-dusk: #1E120D;      /* the dusk wash at the gate */
+  --jt-cream: #FBF4E6;     /* paper */
+  --jt-gold-ink: #7A5418;  /* gold as text on cream, 5.9:1 */
+  --jt-gold-hi: #F3DCA2;   /* gold as text on wood or red */
+  --jt-brick: #A44A2B;
+  --jt-mortar: rgba(74, 28, 14, 0.5);
+  --su-bg: #F6EDDD;
+  --su-paper: #FFFBF3;
+  --su-ink: #2A1A12;
+  --su-ink-2: #5C4535;
+  --su-accent: var(--jt-red);
+  --su-accent-ink: #FFF8EC;
+  --su-gold: var(--jt-gold);
+  --su-line: rgba(59, 32, 21, 0.2);
+  --su-f-display: 'Yeseva One', Georgia, serif;
+  --su-f-script: 'Yeseva One', Georgia, serif;
+  --su-f-body: 'Mukta', sans-serif;
+  --su-f-deva: 'Sura', 'Mukta', serif;
+  --su-radius: 4px;
+  --jt-dent: repeating-linear-gradient(90deg, var(--jt-gold) 0 2px, transparent 2px 8px);
+  --jt-woodg: linear-gradient(180deg, #5A3522, var(--jt-wood) 55%, #24120A);
+  --jt-bricks: url('/themes/janti/art/brick.svg') 0 0 / 240px 120px;
+  --jt-light: linear-gradient(100deg, rgba(255, 214, 160, 0.16), rgba(255, 214, 160, 0) 45%, rgba(50, 16, 6, 0.22));
+  background: var(--su-bg);
+}
+.theme-janti .su-btn { border-radius: 3px; }
+.theme-janti .su-h2, .theme-janti .jt-names .l-en { font-weight: 400; }
+.theme-janti .l-ne { font-family: var(--su-f-body); } /* reading text in Mukta; display classes below set Sura */
+.jt-toranstrip { background: url('/themes/_nepali/toran-sm.webp') 50% 0 / auto 100% repeat-x; }
+
+/* ───────── the carved torana (SVG) ───────── */
+.jt-torana { position: relative; }
+.jt-torana__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.jt-torana .jt-wd { fill: var(--jt-wood); }
+.jt-torana .jt-ln { fill: none; stroke: var(--jt-gold); stroke-width: 1.3; stroke-linejoin: round; }
+.jt-torana .jt-ln--thin { stroke-width: 0.8; opacity: 0.8; }
+.jt-torana .jt-fl { fill: var(--jt-gold); }
+.jt-torana__in { position: absolute; left: 50%; bottom: 3%; translate: -50% 0; height: 78%; display: flex; align-items: flex-end; justify-content: center; }
+.jt-torana__in img, .jt-torana__in .np-pic { display: block; height: 100%; width: auto; }
+.jt-torana__in .np-pic img { height: 100%; width: auto; }
+
+/* ───────── gate: the same street at dusk ───────── */
+.jt-g { position: absolute; inset: 0; pointer-events: none; }
+.jt-g__dusk { position: absolute; inset: 0;
+  background:
+    radial-gradient(46% 40% at 50% 40%, color-mix(in srgb, var(--jt-dusk) 18%, transparent), color-mix(in srgb, var(--jt-dusk) 72%, transparent) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--jt-dusk) 30%, transparent), transparent 30%, transparent 55%, color-mix(in srgb, var(--jt-dusk) 80%, transparent)); }
+.theme-janti .su-gate__ui { color: var(--jt-cream); }
+.theme-janti .su-gate__ui::before { content: ''; position: absolute; inset: -36px -48px -24px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--jt-dusk) 82%, transparent), color-mix(in srgb, var(--jt-dusk) 50%, transparent) 60%, transparent); }
+.theme-janti .su-gate__line { font: 400 20px/1.35 var(--su-f-display); letter-spacing: 0.01em; color: var(--jt-gold-hi); }
+.theme-janti .su-gate__line .l-ne { font: 700 21px/1.5 var(--su-f-deva); }
+.theme-janti .su-btn--open { background: linear-gradient(180deg, #F3D995, #CF9E45); border-color: #F3D995; color: #3A1A0C; }
+.theme-janti .su-quiet { color: var(--jt-gold-hi); }
+
+/* ───────── hero ───────── */
+.theme-janti .su-hero { display: block; place-items: normal; background: var(--jt-dusk); }
+.jt-hero { --tor: clamp(70px, 11.5svh, 124px); --jh: clamp(96px, 16.5svh, 220px); position: relative; height: max(100svh, 580px); overflow: hidden; isolation: isolate; }
+.jt-hero__street { position: absolute; inset: 0; }
+.jt-hero__street img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 57% 62%; }
+.jt-hero__toran { position: absolute; z-index: 3; left: -6%; right: -6%; top: 0; height: var(--tor); transform-origin: 50% 0; }
+body.is-opening .jt-hero__toran, body.is-opening .jt-hero__janti img { will-change: transform; }
+
+.jt-arch { position: absolute; z-index: 2; left: 50%; top: calc(var(--tor) * 0.58); translate: -50% 0; width: min(84vw, 340px); display: flex; flex-direction: column; }
+.jt-arch__torana { width: 92%; margin: 0 auto; }
+.jt-arch__lintel { position: relative; height: 15px; margin: -1px -3% 0; background: var(--jt-dent) 0 4px / 100% 7px no-repeat, var(--jt-wood); border-top: 2px solid var(--jt-gold); border-bottom: 2px solid var(--jt-gold); }
+.jt-arch__win { position: relative; overflow: hidden; background: var(--jt-cream); border: 9px solid var(--jt-wood);
+  box-shadow: inset 0 0 0 1px var(--jt-gold), inset 0 0 0 5px var(--jt-cream), inset 0 0 0 6px color-mix(in srgb, var(--jt-gold) 70%, transparent), 0 20px 44px rgba(18, 7, 3, 0.45); }
+.jt-arch__text { display: flex; flex-direction: column; align-items: center; padding: 46px 16px 20px; text-align: center; }
+.jt-inv { margin: 0; font: 400 14px/1.4 var(--su-f-deva); color: var(--jt-red); }
+.jt-title { margin: 2px 0 0; font: 700 clamp(24px, 3.6svh, 34px)/1.3 var(--su-f-deva); color: var(--jt-gold-ink); }
+.jt-names { margin: 2px 0 0; font: 400 clamp(36px, 5.6svh, 60px)/1.04 var(--su-f-display); color: var(--jt-red); }
+.jt-names .su-amp { margin: 2px 0; font-size: 0.56em; color: var(--jt-gold-ink); }
+.jt-names .l-ne { font: 700 0.86em/1.3 var(--su-f-deva); }
+.jt-hline { margin: 10px 0 0; font: 400 15px/1.4 var(--su-f-body); color: var(--su-ink-2); }
+.jt-hdate { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--jt-gold) 70%, transparent); font: 500 15px/1.45 var(--su-f-body); letter-spacing: 0.04em; color: var(--su-ink); }
+.jt-hplace { margin: 2px 0 0; font: 400 14px/1.4 var(--su-f-body); color: var(--su-ink-2); }
+
+/* the doli curtain: the valance stays; the cloth rolls up into it, its weighted hem keeping its own size */
+.jt-cur { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.jt-cur__val { position: absolute; left: 0; right: 0; top: 0; height: 24px;
+  background: linear-gradient(180deg, transparent 17px, var(--jt-gold) 17px 20px, transparent 20px), linear-gradient(180deg, color-mix(in srgb, var(--jt-red) 75%, #000), var(--jt-red)); }
+.jt-cur__val::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 7px; background: radial-gradient(circle at 6px 0, var(--jt-gold) 4px, transparent 4.5px) 0 0 / 12px 7px repeat-x; }
+.jt-cur__cloth { position: absolute; left: 0; right: 0; top: 20px; bottom: 0; transform-origin: 50% 0; transform: scaleY(0.04);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--jt-gold) 60%, transparent) 1.3px, transparent 1.8px) 11px 30px / 22px 22px,
+    linear-gradient(180deg, rgba(20, 0, 0, 0.35), rgba(20, 0, 0, 0) 30%, rgba(20, 0, 0, 0) 78%, rgba(20, 0, 0, 0.32)),
+    repeating-linear-gradient(90deg, rgba(25, 0, 0, 0.34) 0, rgba(255, 220, 200, 0.1) 13px, rgba(255, 230, 210, 0.16) 16px, rgba(25, 0, 0, 0.34) 30px),
+    var(--jt-red); }
+.jt-cur__hem { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; transform-origin: 50% 100%; transform: scaleY(25);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--jt-red) 60%, #000), var(--jt-red) 30%, color-mix(in srgb, var(--jt-red) 70%, #000) 60%, var(--jt-gold) 60% 74%, transparent 74%),
+    repeating-linear-gradient(90deg, var(--jt-gold) 0 2px, transparent 2px 5px) 0 100% / 100% 26% no-repeat; }
+.jt-cur__hem i { position: absolute; left: 50%; bottom: -12px; width: 10px; height: 16px; translate: -50% 0; border-radius: 50% 50% 2px 2px; background: linear-gradient(90deg, #8A5E1C, #F6DE9C, #8A5E1C); }
+.jt-cur.is-closed .jt-cur__cloth, .jt-cur.is-closed .jt-cur__hem { transform: none; }
+body.is-opening .jt-cur__cloth, body.is-opening .jt-cur__hem { will-change: transform; }
+
+.jt-arch__sill { position: relative; height: 12px; margin: 0 -7%; background: var(--jt-woodg); border-top: 2px solid var(--jt-gold); border-radius: 0 0 3px 3px; }
+.jt-arch__sill .np-lamp { position: absolute; bottom: calc(100% - 2px); width: clamp(38px, 4.4svh, 58px); }
+.jt-arch__sill .np-lamp:first-child { left: 3%; }
+.jt-arch__sill .np-lamp:last-child { right: 3%; transform: scaleX(-1); }
+
+.jt-janti { position: relative; display: block; aspect-ratio: 1400 / 513; pointer-events: none; }
+.jt-janti__m { position: absolute; inset: 0; transform: scaleX(-1); } /* the art walks left; mirrored, the band leads to the right */
+.jt-janti img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
+.jt-janti__a { clip-path: inset(0 50.4% 0 0); }
+.jt-janti__b { clip-path: inset(0 0 0 49.5%); }
+.jt-hero__janti { position: absolute; z-index: 4; bottom: max(8px, 1.4svh); left: 50%; height: var(--jh); margin-left: calc(var(--jh) * -1.42); } /* no CSS translate: GSAP owns this transform */
+.theme-janti .su-cue { left: auto; right: 10px; bottom: 10px; translate: none; z-index: 5; padding: 8px 12px; border-radius: 999px; color: var(--jt-cream); background: color-mix(in srgb, var(--jt-dusk) 72%, transparent); }
+
+/* ───────── the walk ───────── */
+.jt-walk { --wt: clamp(52px, 7.6svh, 82px); --wb: clamp(104px, 16svh, 196px); --stopw: 86vw; --gap: 14vw; --pad: 7vw; --room: calc(100svh - var(--wt) - var(--wb));
+  position: relative; height: 100svh; overflow: hidden; overflow: clip; background: #3A2016; } /* clip: focus can never scroll the street sideways */
+.jt-walk__far img { position: absolute; left: 0; bottom: 0; display: block; height: max(100%, 75vw); width: auto; max-width: none; }
+.jt-walk__track { position: absolute; z-index: 1; left: 0; top: var(--wt); bottom: var(--wb); display: flex; align-items: stretch; gap: var(--gap); width: max-content; padding: 0 var(--pad); }
+.jt-stop { position: relative; flex: none; width: var(--stopw); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.jt-stop__in { flex: none; width: 100%; display: flex; flex-direction: column; align-items: center; gap: clamp(10px, 1.8svh, 18px); }
+.jt-stop--fam, .jt-stop--gal { width: auto; }
+.jt-walk__janti { position: absolute; z-index: 2; bottom: 6px; left: 50%; translate: -50% 0; height: calc(var(--wb) - 10px); }
+.jt-walk__near { position: absolute; z-index: 3; left: 0; bottom: 0; width: 0; height: 0; }
+.jt-prop { position: absolute; bottom: 0; translate: -50% 0; line-height: 0; }
+/* the lamps stand taller than the band (their flames burn above the turbans, against the street, not on white
+   clothes), and a thin dark edge keeps the brass from melting into the band as they pass in front */
+.jt-prop .np-lamp { width: calc((var(--wb) - 10px) * 1.3 / 2.6042); }
+.jt-prop .np-kalash { width: clamp(70px, calc((var(--wb) - 10px) * 0.62), 110px); }
+.jt-prop .np-lamp__img, .jt-prop .np-kalash img { filter: drop-shadow(0 0 1px rgba(46, 18, 6, 0.95)) drop-shadow(0 4px 8px rgba(30, 10, 4, 0.5)); }
+.jt-walk__bunt { position: absolute; z-index: 4; top: -2px; left: 0; height: var(--wt); width: calc(100% + var(--wt) * 3); background-position: 0 0; }
+.jt-walk__janti.is-walking .jt-janti__a { animation: jt-step 0.26s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+.jt-walk__janti.is-walking .jt-janti__b { animation: jt-step 0.3s cubic-bezier(0.45, 0, 0.55, 1) -0.15s infinite alternate; }
+@keyframes jt-step { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+
+/* the enamel street-name plaque that heads each stop */
+.jt-plaque { position: relative; margin: 0; padding: 4px; background: var(--jt-red); border-radius: 6px; box-shadow: 0 8px 18px rgba(18, 7, 3, 0.35); max-width: 100%; }
+.jt-plaque > span { display: block; padding: 6px 18px 5px; border: 1px solid color-mix(in srgb, var(--jt-cream) 65%, transparent); border-radius: 3px; text-align: center;
+  font: 400 clamp(17px, 2.5svh, 23px)/1.2 var(--su-f-display); color: var(--jt-cream); text-wrap: balance; }
+.jt-plaque .l-ne { font: 700 1.05em/1.35 var(--su-f-deva); }
+
+/* hanging shop signs: a post, an arm with a brace, two chains, the board */
+.jt-hang { position: relative; width: 100%; padding-top: 38px; }
+.jt-hang__post { position: absolute; z-index: -1; left: 2px; top: 4px; width: 11px; height: 200svh; background: linear-gradient(90deg, #22100A, #5A3522 45%, #22100A); }
+.jt-hang__arm { position: absolute; z-index: -1; left: 0; right: 6%; top: 6px; height: 10px; border-radius: 0 6px 6px 0; background: var(--jt-woodg); box-shadow: inset 0 -2px 0 rgba(217, 168, 71, 0.5); }
+.jt-hang__arm::after { content: ''; position: absolute; left: 8px; top: 9px; width: 54px; height: 7px; border-radius: 3px; background: var(--jt-wood); transform-origin: 0 50%; rotate: 38deg; }
+.jt-hang__chain { position: absolute; z-index: -1; left: 22%; right: 22%; top: 15px; height: 26px; border-inline: 2px dotted var(--jt-gold); }
+.jt-board { position: relative; background: var(--jt-cream); border: 7px solid var(--jt-wood); transform-origin: 50% -30px; text-align: center; padding: clamp(14px, 2.4svh, 24px) clamp(14px, 4vw, 26px);
+  box-shadow: inset 0 0 0 1px var(--jt-gold), inset 0 0 0 5px var(--jt-cream), inset 0 0 0 6px color-mix(in srgb, var(--jt-gold) 55%, transparent), 0 16px 34px rgba(18, 7, 3, 0.38); }
+.jt-kick { margin: 0; font: 600 12px/1.35 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--jt-gold-ink); }
+.jt-kick .l-ne { font: 600 14.5px/1.4 var(--su-f-body); letter-spacing: 0; text-transform: none; }
+
+/* the signpost */
+.jt-post { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.jt-post__pole { position: absolute; z-index: -1; left: 50%; top: 16px; width: 13px; height: 200svh; translate: -50% 0; background: linear-gradient(90deg, #22100A, #5A3522 45%, #22100A); }
+.jt-post__title { margin: 0 0 6px; padding: 5px; background: var(--jt-red); border-radius: 8px; box-shadow: 0 10px 22px rgba(18, 7, 3, 0.4); }
+.jt-post__title > span { display: block; padding: 8px 20px 6px; border: 1px solid color-mix(in srgb, var(--jt-cream) 65%, transparent); border-radius: 4px; font: 400 clamp(22px, 3.4svh, 30px)/1.15 var(--su-f-display); color: var(--jt-cream); text-align: center; }
+.jt-post__title .l-ne { font: 700 1.05em/1.35 var(--su-f-deva); }
+.jt-post__signs { display: grid; gap: clamp(6px, 1.2svh, 10px); margin: 0; padding: 0; list-style: none; }
+.jt-post__signs li { rotate: var(--r); }
+.jt-post__signs li:nth-child(even) { translate: 22px 0; }
+.jt-post__signs li:nth-child(odd) { translate: -14px 0; }
+.jt-arrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 210px; min-height: 40px; padding: 6px 30px 5px 16px; box-sizing: border-box;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%); background: var(--jt-woodg); color: var(--jt-gold-hi); text-decoration: none;
+  font: 400 clamp(15px, 2.2svh, 18px)/1.2 var(--su-f-display); transition: transform 200ms var(--su-ease); }
+.jt-arrow .l-ne { font: 700 1.05em/1.3 var(--su-f-deva); }
+.jt-arrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--jt-gold); flex: none; }
+.jt-arrow:hover { transform: translateX(4px); }
+.jt-post__line { max-width: 30ch; margin: 6px 0 0; padding: 10px 16px; border-radius: 4px; background: color-mix(in srgb, var(--jt-dusk) 70%, transparent); color: var(--jt-cream); font: 400 15px/1.45 var(--su-f-body); text-align: center; }
+
+/* carved windows in a brick facade (the couple, the photographs) */
+.jt-facade { position: relative; padding: 22px 24px 0; background: var(--jt-light), var(--jt-bricks); border-top: 10px solid var(--jt-wood); box-shadow: 0 -2px 0 var(--jt-gold); }
+.jt-facade::after { content: ''; position: absolute; z-index: -1; left: 0; right: 0; top: 100%; height: 200svh; background: linear-gradient(180deg, rgba(50, 16, 6, 0.1), rgba(50, 16, 6, 0.3)), var(--jt-bricks); }
+.jt-facade--row { display: flex; align-items: flex-start; gap: clamp(22px, 4vw, 40px); padding-inline: clamp(24px, 4vw, 44px); }
+.jt-win { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; }
+.jt-win__lintel { display: block; width: calc(100% + 22px); height: 14px; background: var(--jt-dent) 0 4px / 100% 6px no-repeat, var(--jt-woodg); border-radius: 2px; }
+.jt-win__pic { display: block; padding: 0; border: 8px solid var(--jt-wood); background: var(--jt-wood); line-height: 0; cursor: zoom-in; border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--jt-gold), 0 10px 22px rgba(30, 10, 4, 0.35); }
+.jt-win__pic img { display: block; width: auto; height: auto; max-width: min(74vw, 520px); max-height: var(--winh, 300px); min-width: 120px; }
+.jt-win__sill { display: block; width: calc(100% + 18px); height: 10px; background: var(--jt-woodg); border-top: 2px solid var(--jt-gold); border-radius: 0 0 3px 3px; }
+.jt-facade--row .jt-win { --winh: min(calc(var(--room) - 180px), 360px); }
+.jt-win--lo { margin-top: 36px; }
+.jt-facade--one { padding-bottom: 0; }
+.jt-win--lead { --winh: min(calc(var(--room) - 240px), 440px); }
+.jt-win--lead .jt-win__pic { cursor: default; }
+.jt-note { max-width: 32ch; margin: 0; padding: 8px 14px; border-radius: 4px; background: color-mix(in srgb, var(--jt-cream) 94%, transparent); color: var(--su-ink); font: 400 15px/1.45 var(--su-f-body); text-align: center; text-wrap: balance; }
+
+/* the doli: a pagoda roof, gilded poles, the cabin whose curtain is the scratch card, set down on a brick plinth */
+.jt-doli { position: relative; width: min(100%, 320px); }
+.jt-doli__top { position: relative; width: 118%; margin: 0 -9% -3px; }
+.jt-doli__roof { display: block; width: 100%; height: auto; }
+.jt-doli__roof .jt-rf { fill: var(--jt-red); }
+.jt-doli__roof .jt-gl { fill: none; stroke: var(--jt-gold); stroke-width: 2; }
+.jt-doli__roof .jt-gd { fill: var(--jt-gold); }
+.jt-doli__pole { position: absolute; z-index: 3; left: -14%; right: -14%; bottom: 2px; height: 9px; border-radius: 5px; pointer-events: none;
+  background: linear-gradient(180deg, #F3D58C, #B07F2C 60%, #6E4A12); box-shadow: 0 3px 6px rgba(20, 8, 4, 0.35); }
+.jt-scratch { gap: 12px; }
+.jt-scratch .su-scratch__face { background: var(--jt-cream); box-shadow: inset 7px 0 0 #C9963F, inset -7px 0 0 #C9963F, inset 0 -10px 0 var(--jt-red), inset 0 -12px 0 var(--jt-gold); }
+.jt-scratch .su-scratch__face::after { content: ''; position: absolute; z-index: -1; left: 6%; right: 6%; top: calc(100% - 4px); height: 200svh;
+  background: linear-gradient(180deg, rgba(50, 16, 6, 0.35), rgba(50, 16, 6, 0.12) 40px, rgba(50, 16, 6, 0.3)), var(--jt-bricks); border-top: 8px solid #7A6E64; }
+.jt-scratch .su-btn { background: var(--jt-cream); color: var(--jt-red); border-color: var(--jt-cream); min-height: 44px; padding: 10px 22px; }
+.jt-dface { display: flex; flex-direction: column; align-items: center; padding: 34px 18px 26px; text-align: center; }
+.jt-dface__k { margin: 0; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--jt-gold-ink); }
+.jt-dface__k .l-ne { font-size: 15px; letter-spacing: 0; }
+.jt-dface__wd { margin: 6px 0 0; font: 500 15px/1.3 var(--su-f-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--su-ink-2); }
+.jt-dface__wd .l-ne { letter-spacing: 0; text-transform: none; font-size: 17px; }
+.jt-dface__day { margin: 2px 0 0; font: 400 clamp(64px, 10svh, 88px)/1 var(--su-f-display); color: var(--jt-red); }
+.jt-dface__day .l-ne { font: 700 0.9em/1.1 var(--su-f-deva); }
+.jt-dface__my { margin: 4px 0 0; font: 400 20px/1.3 var(--su-f-display); color: var(--su-ink); }
+.jt-dface__my .l-ne { font: 700 21px/1.4 var(--su-f-deva); }
+.jt-dface__t { margin: 6px 0 0; font: 600 15px/1.3 var(--su-f-body); color: var(--jt-red); }
+.jt-dface__alt { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--jt-gold) 70%, transparent); font: 400 14px/1.45 var(--su-f-body); color: var(--su-ink-2); }
+.jt-dface__place { margin: 4px 0 0; font: 500 14.5px/1.4 var(--su-f-body); color: var(--su-ink); }
+
+/* the countdown under a temple bell */
+.jt-hang--bell { padding-top: 104px; }
+.jt-hang--bell .jt-hang__chain { top: 15px; height: 92px; }
+.jt-bell { position: absolute; z-index: 0; left: 50%; top: 10px; width: 56px; height: auto; margin-left: -28px; transform-origin: 50% 0; }
+.jt-countb__t { margin: 0 0 12px; font: 400 clamp(19px, 2.8svh, 24px)/1.25 var(--su-f-display); color: var(--jt-red); text-wrap: balance; }
+.jt-countb__t .l-ne { font: 700 1.05em/1.4 var(--su-f-deva); }
+.jt-count { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: none; margin: 0; padding: 0; list-style: none; gap: 0; }
+.jt-count__c { display: flex; flex-direction: column; align-items: center; padding: 4px 2px; }
+.jt-count__c + .jt-count__c { border-left: 1px solid color-mix(in srgb, var(--jt-gold) 70%, transparent); }
+.jt-count__n { display: block; font: 400 clamp(32px, 5.4svh, 46px)/1 var(--su-f-display); color: var(--jt-red); font-variant-numeric: tabular-nums; }
+.jt-count__n .l-ne { font: 700 0.92em/1.1 var(--su-f-deva); }
+.jt-count__l { margin-top: 6px; font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--su-ink-2); }
+.jt-count__l .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
+.jt-count__done { margin: 0; font: 400 22px/1.4 var(--su-f-display); color: var(--jt-red); }
+
+/* the families: two shop signs and a kalash between them */
+.jt-fam { display: flex; align-items: center; gap: clamp(14px, 3vw, 36px); }
+.jt-fam .jt-hang { width: var(--famw, var(--stopw)); }
+.jt-fam__mid { flex: none; width: clamp(60px, 7vw, 96px); align-self: flex-end; }
+.jt-fam__kalash { width: 100%; }
+.jt-famb__pic { width: 96px; margin: 0 auto 10px; overflow: hidden; border-radius: 50% 50% 6px 6px; border: 2px solid var(--jt-gold); }
+.jt-famb__pic img { display: block; width: 100%; height: auto; }
+.jt-famb__name { margin: 6px 0 0; font: 400 clamp(23px, 3.3svh, 30px)/1.2 var(--su-f-display); color: var(--jt-red); text-wrap: balance; }
+.jt-famb__name .l-ne { font: 700 0.95em/1.35 var(--su-f-deva); }
+.jt-famb__of { margin: 10px 0 0; font-size: 14px; color: var(--su-ink-2); }
+.jt-famb__par { margin: 0; font-weight: 500; text-wrap: balance; }
+.jt-famb__home { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--jt-gold) 60%, transparent); font-size: 15px; color: var(--su-ink-2); }
+
+/* one hanging sign per ceremony */
+.jt-ev { text-align: left; }
+.jt-ev__title { margin: 4px 0 10px; font: 400 clamp(25px, 3.6svh, 34px)/1.12 var(--su-f-display); color: var(--jt-red); text-wrap: balance; }
+.jt-ev__title .l-ne { font: 700 0.95em/1.35 var(--su-f-deva); }
+.jt-ev__when { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-block: 1px solid color-mix(in srgb, var(--jt-gold) 65%, transparent); }
+.jt-ev__day { flex: none; margin: 0; min-width: 1.3em; font: 400 clamp(42px, 6.4svh, 56px)/1 var(--su-f-display); color: var(--jt-red); text-align: center; }
+.jt-ev__day .l-ne { font: 700 0.9em/1.15 var(--su-f-deva); }
+.jt-ev__my { margin: 0; font: 500 15px/1.35 var(--su-f-body); color: var(--su-ink); }
+.jt-ev__time { margin: 0; font: 600 15px/1.35 var(--su-f-body); color: var(--jt-red); }
+.jt-ev__alt { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--su-ink-2); }
+.jt-ev__blurb { margin: 6px 0 0; font-size: 15.5px; line-height: 1.45; color: var(--su-ink-2); }
+.jt-ev__venue, .jt-ev__dress { margin: 6px 0 0; font-size: 15.5px; line-height: 1.45; }
+.jt-ev__venue { font-weight: 500; }
+.jt-order { position: relative; margin-top: 8px; }
+.jt-order summary { cursor: pointer; font-weight: 600; color: var(--jt-red); }
+.jt-order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.jt-order li { display: grid; grid-template-columns: 84px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--su-line); font-size: 15px; }
+.jt-order li span:first-child { font-weight: 600; color: var(--su-ink-2); }
+.jt-walk .jt-order[open] ol { position: absolute; z-index: 6; left: -12px; right: -12px; bottom: calc(100% + 6px); max-height: calc(var(--room) * 0.6); overflow: auto; overscroll-behavior: contain;
+  padding: 10px 16px; background: var(--su-paper); border: 1px solid var(--jt-gold); border-radius: 4px; box-shadow: 0 14px 30px rgba(18, 7, 3, 0.3); }
+
+/* the bride's house */
+.jt-gate2 { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; }
+.jt-gate2__toran { position: relative; z-index: 1; width: 112%; margin: 0 -6% -8px; }
+.jt-arriveb { width: 100%; box-sizing: border-box; }
+.jt-arriveb__t { margin: 0; font: 400 clamp(26px, 4svh, 36px)/1.15 var(--su-f-display); color: var(--jt-red); }
+.jt-arriveb__t .l-ne { font: 700 1em/1.35 var(--su-f-deva); }
+.jt-arriveb__l { margin: 8px auto 0; max-width: 30ch; color: var(--su-ink-2); text-wrap: balance; }
+.jt-arriveb__go { display: inline-flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--jt-red); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.jt-arriveb__go i { width: 9px; height: 9px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; rotate: 45deg; translate: 0 -3px; }
+.jt-gate2__step { display: flex; align-items: flex-end; justify-content: center; gap: clamp(10px, 3vw, 26px); margin-top: 14px; }
+.jt-gate2__kal { width: clamp(54px, 7svh, 80px); }
+.jt-gate2__lamp { width: clamp(30px, 4svh, 44px); }
+
+/* ───────── the house: the invitation, the RSVP at the door, the blessing ───────── */
+.jt-house { position: relative; z-index: 1; background: var(--su-bg); overflow-x: clip; }
+.jt-house__lintel { height: 24px; background: var(--jt-dent) 0 8px / 100% 8px no-repeat, var(--jt-woodg); border-bottom: 2px solid var(--jt-gold); }
+.jt-house__toran { height: clamp(64px, 9vw, 116px); margin-top: -1px; }
+.jt-sec { position: relative; padding: clamp(48px, 8vh, 96px) 20px; }
+.jt-card { padding-top: clamp(28px, 5vh, 56px); }
+.jt-card__in { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.jt-card__gan { display: block; width: 104px; height: auto; margin: 0 auto 6px; }
+.jt-card__line { margin: 0; font: 400 clamp(26px, 3.4vw, 40px)/1.3 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.jt-card__line .l-ne { font: 700 0.95em/1.5 var(--su-f-deva); }
+.jt-card__hosts { margin: 0; color: var(--su-ink-2); font-size: 17px; }
+.jt-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.jt-card .su-more { width: 100%; box-sizing: border-box; margin-top: 18px; text-align: left; border: 1px solid var(--su-line); }
+
+.jt-door { position: relative; max-width: 620px; margin: 0 auto; }
+.jt-door__torana { width: 78%; margin: 0 auto -1px; }
+.jt-door__torana .jt-torana__in { height: 62%; }
+.jt-door__lintel { position: relative; padding: 14px 16px 12px; background: var(--jt-dent) 0 4px / 100% 6px no-repeat, var(--jt-woodg); border-top: 2px solid var(--jt-gold); border-bottom: 2px solid var(--jt-gold); text-align: center; margin: 0 -3%; }
+.jt-door__title { margin: 6px 0 0; font: 400 clamp(26px, 3.6vw, 36px)/1.2 var(--su-f-display); color: var(--jt-gold-hi); }
+.jt-door__title .l-ne { font: 700 1em/1.4 var(--su-f-deva); }
+.jt-door__frame { padding: clamp(22px, 5vw, 40px) clamp(18px, 5vw, 40px) clamp(26px, 5vw, 40px); background: var(--su-paper); border: 14px solid var(--jt-wood); border-top: 0;
+  box-shadow: inset 0 0 0 1px var(--jt-gold), inset 0 0 0 6px var(--su-paper), inset 0 0 0 7px color-mix(in srgb, var(--jt-gold) 55%, transparent); }
+.jt-door__dl { margin: 0 0 18px; text-align: center; color: var(--su-ink-2); text-wrap: balance; }
+.jt-door__step { position: relative; height: 18px; margin: 0 -7%; background: linear-gradient(180deg, #8C8279, #5E554E); border-radius: 2px; }
+.jt-door__step .np-lamp { position: absolute; bottom: calc(100% - 3px); width: clamp(48px, 9vw, 70px); }
+.jt-door__step .np-lamp:first-child { left: 0; }
+.jt-door__step .np-lamp:last-child { right: 0; transform: scaleX(-1); }
+.jt-door .su-field input[type='text'], .jt-door .su-field input[type='tel'], .jt-door .su-field textarea, .jt-door .su-field select { background: #FFFDF8; border-color: rgba(59, 32, 21, 0.28); }
+
+.jt-close { position: relative; padding: 0 20px 28px; text-align: center; overflow: hidden; }
+.jt-close__toran { height: clamp(64px, 9vw, 116px); margin: 0 -20px; }
+.jt-close__text { max-width: 560px; margin: clamp(30px, 6vh, 56px) auto 0; }
+.jt-close__ne { margin: 0; font: 700 23px/1.6 var(--su-f-deva); color: var(--su-ink); }
+.jt-close__en { margin: 6px 0 0; font: 400 19px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+html[data-lang='ne'] .jt-close__en { display: none; }
+.jt-close__names { margin: 22px 0 0; font: 400 clamp(36px, 5vw, 54px)/1.15 var(--su-f-display); color: var(--jt-red); }
+.jt-close__names .su-n, .jt-close__names .su-amp { display: inline; }
+.jt-close__names .su-amp { margin: 0 0.25em; font-size: 0.6em; color: var(--jt-gold-ink); }
+.jt-close__names .l-ne { font: 700 0.86em/1.3 var(--su-f-deva); }
+.jt-close__tag { margin: 10px 0 0; color: var(--su-ink-2); letter-spacing: 0.06em; }
+.jt-close__lamps { display: flex; justify-content: center; gap: 120px; margin: 26px auto 10px; }
+.jt-close__lamp { width: 54px; }
+
+/* ───────── wide screens ───────── */
+@media (min-width: 761px) {
+  .jt-hero__janti { left: 6vw; margin-left: 0; }
+  .jt-arch { width: clamp(340px, 33vw, 470px); }
+  .jt-hero { --jh: clamp(110px, 23svh, 250px); }
+  .jt-doli { width: min(100%, 380px); }
+  .jt-walk { --wb: clamp(120px, 21svh, 230px); --stopw: clamp(340px, 34vw, 480px); --gap: clamp(100px, 13vw, 230px); --pad: calc(50vw - var(--stopw) / 2); }
+  .jt-walk__janti { left: 5vw; translate: none; }
+  .jt-fam { --famw: clamp(300px, 27vw, 400px); }
+  .jt-post__signs li:nth-child(even) { translate: 34px 0; }
+  .jt-card__in { max-width: 980px; display: grid; grid-template-columns: 240px minmax(0, 1fr); column-gap: clamp(36px, 5vw, 72px); row-gap: 14px; align-items: start; text-align: left; }
+  .jt-card__gan { grid-row: 1 / span 5; width: 100%; margin: 0; }
+  .jt-card__in > :not(.jt-card__gan) { grid-column: 2; }
+  .jt-btns { justify-content: flex-start; }
+  .jt-card .su-more { margin-top: 6px; }
+}
+@media (max-width: 760px) {
+  .jt-stop--fam .jt-plaque { align-self: flex-start; margin-left: 4px; }
+  .jt-fam { --famw: var(--stopw); }
+}
+@media (max-height: 700px) and (max-width: 760px) {
+  .jt-arch { width: min(80vw, 300px); }
+  .jt-arch__text { padding: 40px 12px 14px; }
+  .jt-hdate { margin-top: 6px; padding-top: 6px; }
+}
+
+/* ───────── flat street: reduced motion, very short screens, or a stop that would not fit ───────── */
+.jt-flat .jt-walk { display: flex; flex-direction: column; height: auto; overflow: hidden; overflow: clip; background: var(--su-bg); }
+.jt-flat .jt-walk__bunt { order: -2; position: relative; width: 100%; height: clamp(60px, 9vw, 100px); background-position: 50% 0; transform: none !important; }
+.jt-flat .jt-walk__far { order: -1; }
+.jt-flat .jt-walk__far img { position: static; width: 100%; height: auto; transform: none !important; }
+.jt-flat .jt-walk__track { position: static; flex-direction: column; align-items: center; width: auto; gap: clamp(56px, 9vh, 88px); padding: clamp(40px, 7vh, 72px) 16px; transform: none !important; }
+.jt-flat .jt-stop { width: 100%; max-width: 560px; }
+.jt-flat .jt-stop--fam, .jt-flat .jt-stop--gal { max-width: 1100px; }
+.jt-flat .jt-hang__post, .jt-flat .jt-post__pole, .jt-flat .jt-facade::after, .jt-flat .jt-scratch .su-scratch__face::after, .jt-flat .jt-walk__near { display: none; }
+.jt-flat .jt-hang__arm { left: 12%; right: 12%; border-radius: 6px; }
+.jt-flat .jt-hang__arm::after { display: none; }
+.jt-flat .jt-walk__janti { position: relative; left: auto; bottom: auto; translate: none; height: clamp(110px, 16vw, 180px); margin: 0 auto 20px; }
+.jt-flat .jt-fam { flex-wrap: wrap; justify-content: center; }
+.jt-flat .jt-fam .jt-hang { width: min(100%, 420px); }
+.jt-flat .jt-fam__mid { order: 3; align-self: center; }
+.jt-flat .jt-facade--row { flex-wrap: wrap; justify-content: center; padding-bottom: 26px; }
+.jt-flat .jt-facade--one { padding-bottom: 22px; }
+.jt-flat .jt-win--lo { margin-top: 0; }
+.jt-flat .jt-facade--row .jt-win, .jt-flat .jt-win--lead { --winh: 420px; }
+.jt-flat .jt-stop--fam .jt-plaque { align-self: center; margin-left: 0; }
+.jt-flat .jt-post__signs li { translate: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jt-walk__janti.is-walking img { animation: none; }
+  .jt-arrow { transition: none; }
+}
+
+/* QA: the lightbox on carved-wood dusk, not a grey wash over the cream page */
+.theme-janti .su-lb { background: rgba(30, 18, 13, 0.94); }
+/* QA: solid carved-wood HUD pills (the engine's 45% scrim read as grey over the cream pages) */
+.theme-janti .hud__btn, .theme-janti .pill { background: rgba(59, 32, 21, 0.9); color: #F3DCA2; border-color: rgba(217, 168, 71, 0.45); }

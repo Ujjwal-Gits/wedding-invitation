@@ -64,6 +64,8 @@ export function initScratch(wrap, { paint = goldFoil(), hint = () => 'Scratch to
     const [x, y] = pos(e);
     ctx.globalCompositeOperation = 'destination-out';
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // a cover painter may leave a translucent or shadowed stroke behind; the eraser must always be opaque
+    ctx.strokeStyle = '#000'; ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.filter = 'none';
     ctx.lineWidth = Math.max(34, Math.min(56, cv.width / dpr / 9)) * dpr;
     ctx.beginPath();
     if (last) ctx.moveTo(last[0], last[1]); else ctx.moveTo(x - 0.1, y);

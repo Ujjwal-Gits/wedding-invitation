@@ -1,0 +1,352 @@
+/* Swayambar (स्वयम्बर): the jaimala. Wine-red silk and fresh marigold on ivory paper; the groom's side in saffron
+   silk on the left, the bride's side in rose silk on the right. Motion is transform and opacity only; no filters. */
+html:has(body.theme-swayambar) { background: #FBF5EA; }
+body.theme-swayambar {
+  --sw-wine: #6B1024;          /* the one accent: headings, buttons (11:1 on ivory) */
+  --sw-gate: #4A0915;          /* the opening's silk */
+  --sw-marigold: #E7A33A;      /* ornaments, the gate title (7:1 on the gate silk) */
+  --sw-ivory: #FBF5EA;         /* paper */
+  --sw-paper: #FFFCF6;
+  --sw-ink: #2C1517;
+  --sw-ink-2: #654842;         /* 7.4:1 on ivory */
+  --sw-gold: #B8873A;          /* rules and hairlines, never text */
+  --sw-gold-ink: #7A5520;      /* gold as text on ivory, 5.9:1 */
+  --sw-cream: #F7E7C9;         /* text on wine */
+  --sw-saffron: #F7E5C3; --sw-saffron-2: #EFD29C;  /* the groom's side */
+  --sw-rose: #F7E0DA; --sw-rose-2: #EDC3B9;        /* the bride's side */
+  --su-bg: var(--sw-ivory);
+  --su-paper: var(--sw-paper);
+  --su-ink: var(--sw-ink);
+  --su-ink-2: var(--sw-ink-2);
+  --su-accent: var(--sw-wine);
+  --su-accent-ink: #FFF6E8;
+  --su-gold: var(--sw-gold);
+  --su-line: rgba(107, 16, 36, 0.2);
+  --su-f-display: 'Prata', Georgia, serif;
+  --su-f-script: 'Pinyon Script', cursive;
+  --su-f-body: 'Mukta', sans-serif;
+  --su-f-deva: 'Halant', 'Mukta', serif;
+  --su-radius: 3px;
+  --sw-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  background: var(--su-bg);
+}
+.theme-swayambar .su-btn { border-radius: 2px; }
+.theme-swayambar .su-btn .l-en { letter-spacing: 0.16em; }
+.theme-swayambar .su-cue { color: var(--sw-ink-2); }
+
+/* ───────── ornaments ───────── */
+.sw-rule { display: block; width: 168px; max-width: 70%; height: 12px; margin: 0 auto; overflow: visible; }
+.sw-rule path { fill: none; stroke: var(--sw-gold); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.sw-rule__bud { fill: var(--sw-marigold); }
+.sw-rule__eye { fill: #C8263A; }
+.sw-rule__dot { fill: var(--sw-gold); }
+.sw-rule--light path { stroke: rgba(247, 231, 201, 0.7); }
+.sw-rule--light .sw-rule__dot { fill: rgba(247, 231, 201, 0.8); }
+
+/* the Ganesh medallion: ivory, a gold double ring */
+.sw-medal { --md: clamp(84px, 22vw, 104px); position: relative; display: grid; place-items: center; width: var(--md); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 42% 36%, #FFFDF8, #F8EBD3 78%); box-shadow: 0 0 0 1.5px #D3A75A, 0 0 0 5px rgba(255, 252, 246, 0.9), 0 0 0 6px rgba(211, 167, 90, 0.75); }
+.sw-medal__img { display: block; width: 66%; height: auto; margin-top: -4%; }
+
+/* ───────── the garlands (the same box in the gate and the hero, so they hand over without a jump) ───────── */
+.sw-garls { --gw: min(80vw, calc(60svh / 1.4238), 420px); --half: clamp(116px, calc(50vw - 64px), 400px);
+  position: absolute; top: 0; bottom: 0; left: 0; width: 100vw; pointer-events: none; } /* 100vw: the gate has no scrollbar, the page may */
+.sw-garl { position: absolute; top: calc(var(--gw) * -0.08); width: var(--gw); aspect-ratio: 983 / 1400; transform-origin: 50% 0; }
+.sw-garl--l { left: calc(50% - var(--half) - var(--gw) * 0.985); }
+.sw-garl--r { right: calc(50% - var(--half) - var(--gw) * 0.985); }
+.sw-garl__sway { width: 100%; height: 100%; transform-origin: 50% 0; }
+.sw-garl img { display: block; width: 100%; height: auto; max-width: none; }
+.sw-garl--r img { transform: scaleX(-1); }
+
+/* ───────── gate: the garlands interlocked on wine silk ───────── */
+.sw-g { position: absolute; inset: 0; overflow: hidden; color: var(--sw-cream); }
+.sw-g__bg { position: absolute; top: 0; bottom: 0; width: calc(50% + 1px); background-size: 200% 100% !important;
+  background:
+    repeating-linear-gradient(115deg, rgba(255, 220, 200, 0.022) 0 2px, rgba(0, 0, 0, 0) 2px 7px),
+    radial-gradient(90% 60% at 50% 30%, color-mix(in srgb, var(--sw-gate) 70%, #B2304A), var(--sw-gate) 72%),
+    var(--sw-gate); }
+.sw-g__bg--l { left: 0; background-position: 0 0 !important; }
+.sw-g__bg--r { right: 0; background-position: 100% 0 !important; }
+body.is-opening .sw-g__bg { will-change: transform; }
+.sw-g__frame { position: absolute; inset: 12px; border: 1px solid rgba(231, 163, 58, 0.45); pointer-events: none; }
+.sw-g__frame::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(231, 163, 58, 0.22); }
+.sw-g__front { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.sw-g__gan { position: absolute; left: 50%; top: 18%; translate: -50% 0; }
+.sw-g .sw-garl__sway { animation: sw-idle 5.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+.sw-g .sw-garl--r .sw-garl__sway { animation-delay: -2.9s; }
+@keyframes sw-idle { from { rotate: -0.7deg; } to { rotate: 0.7deg; } }
+body.sw-swing .sw-g .sw-garl__sway { animation: none; }
+body.is-opening .sw-g .sw-garl, body.is-opening .sw-g__gan { will-change: transform; }
+.sw-g__words { position: absolute; z-index: 2; left: 50%; translate: -50% 0; top: calc(min(80vw, calc(60svh / 1.4238), 420px) * 1.34); bottom: 176px; width: min(92%, 460px);
+  display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.sw-g__title { margin: 0; font: 400 15px/1.4 var(--su-f-display); letter-spacing: 0.34em; text-transform: uppercase; color: var(--sw-marigold); }
+.sw-g__title .l-ne { font: 500 24px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.sw-g__names { margin: 2px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 14px;
+  font: 400 clamp(42px, 12vw, 60px)/1.25 var(--su-f-script); color: #FBEFD9; }
+.sw-g__amp { font-size: 0.62em; color: var(--sw-marigold); }
+.sw-g__names .l-ne { font: 500 0.7em/1.5 var(--su-f-deva); }
+.theme-swayambar .su-gate__ui { color: var(--sw-cream); }
+.theme-swayambar .su-gate__line { font: 400 italic 17px/1.4 var(--su-f-display); color: var(--sw-cream); }
+.theme-swayambar .su-gate__line .l-ne { font: 500 18px/1.5 var(--su-f-deva); }
+.theme-swayambar .su-btn--open { background: var(--sw-marigold); border-color: var(--sw-marigold); color: #3A0610; }
+.theme-swayambar .su-quiet { color: var(--sw-cream); }
+
+/* ───────── hero: ivory silk, the jaimala, the names on their own sides ───────── */
+.theme-swayambar .su-hero { display: block; place-items: normal; background: var(--sw-ivory); }
+.sw-hero { position: relative; min-height: max(100svh, 640px); overflow: hidden;
+  background: radial-gradient(70% 50% at 50% 46%, #FFFDF7 0%, rgba(255, 253, 247, 0) 70%), linear-gradient(180deg, var(--sw-ivory), color-mix(in srgb, var(--sw-ivory) 88%, var(--sw-marigold))); }
+.sw-hero__garls, .sw-hero__gan { opacity: 0; }
+body.is-open .sw-hero__garls, body.is-open .sw-hero__gan, body.sw-still .sw-hero__garls, body.sw-still .sw-hero__gan { opacity: 1; }
+.sw-hero__body { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-height: max(100svh, 640px);
+  padding: max(22px, 3svh) 16px 66px; text-align: center; }
+.sw-hero__body p { margin: 0; }
+.sw-hero__gan { --md: clamp(76px, 20vw, 92px); flex: none; }
+.sw-inv { margin-top: 12px !important; font: 500 13.5px/1.5 var(--su-f-deva); color: var(--sw-gold-ink); }
+.sw-title { margin-top: 2px !important; font: 400 13px/1.5 var(--su-f-display); letter-spacing: 0.34em; text-transform: uppercase; color: var(--sw-wine); }
+.sw-title .l-ne { font: 500 22px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.sw-couple { flex: none; margin: auto 0 0; padding-top: 10px; width: clamp(220px, min(80vw, calc((100svh - 400px) * 1.22)), 430px); }
+.sw-couple img { display: block; width: 100%; height: auto; -webkit-mask-image: linear-gradient(#000 80%, transparent 99%); mask-image: linear-gradient(#000 80%, transparent 99%); }
+.sw-names { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 0 12px; width: min(100%, 620px); margin: 6px 0 0;
+  font: 400 clamp(40px, 11.4vw, 66px)/1.15 var(--su-f-script); color: var(--sw-wine); }
+.sw-names__g { text-align: right; }
+.sw-names__b { text-align: left; }
+.sw-names__amp { font-size: 0.55em; color: var(--sw-gold-ink); }
+.sw-names .l-ne { font: 500 0.68em/1.5 var(--su-f-deva); }
+.sw-hline { margin-top: 8px !important; max-width: 30ch; font-size: 15px; line-height: 1.5; color: var(--sw-ink-2); text-wrap: balance; }
+.sw-hdate { margin: 12px 0 auto !important; padding: 7px 0; border-block: 1px solid rgba(184, 135, 58, 0.55); font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--sw-wine); }
+.sw-hdate .l-ne { font-size: 15px; font-weight: 500; letter-spacing: 0; }
+
+/* ───────── sections ───────── */
+.sw-page { position: relative; overflow-x: clip; }
+.sw-sec { position: relative; padding: clamp(76px, 11vh, 124px) 20px; }
+.sw-head { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0 auto clamp(30px, 5vh, 52px); text-align: center; }
+.sw-kick { margin: 0; font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--sw-gold-ink); }
+.sw-kick .l-ne { font-size: 15px; letter-spacing: 0; text-transform: none; }
+.sw-h2 { margin: 0; max-width: 18ch; font: 400 clamp(30px, 4.2vw, 46px)/1.2 var(--su-f-display); color: var(--sw-wine); text-wrap: balance; }
+.sw-h2 .l-ne { font: 500 0.92em/1.4 var(--su-f-deva); }
+.sw-lede { max-width: 34ch; margin: 26px auto 0; text-align: center; color: var(--sw-ink-2); text-wrap: balance; }
+.sw-link { color: var(--sw-wine); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+
+/* the journey: the groom's side and the bride's side, converging */
+.sw-journey { position: relative; perspective: 1400px; }
+
+/* 1 · the families */
+.sw-fam__stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: clamp(16px, 3vw, 36px); max-width: 960px; margin: 0 auto; }
+.sw-side { position: relative; display: flex; flex-direction: column; min-width: 0; padding: clamp(54px, 7vw, 76px) clamp(20px, 3vw, 36px) 0; text-align: center;
+  border-radius: 50% 50% 4px 4px / 150px 150px 4px 4px; box-shadow: 0 24px 50px -36px rgba(74, 9, 21, 0.55); backface-visibility: hidden; }
+.sw-side::before { content: ''; position: absolute; inset: 9px 9px 29px; border: 1px solid rgba(184, 135, 58, 0.55); border-radius: inherit; pointer-events: none; }
+.sw-side--g { background: linear-gradient(165deg, #FBEBCB 0%, var(--sw-saffron) 40%, var(--sw-saffron-2) 100%); }
+.sw-side--b { background: linear-gradient(195deg, #FBE7E2 0%, var(--sw-rose) 40%, var(--sw-rose-2) 100%); }
+.sw-side__in { flex: 1; display: flex; flex-direction: column; align-items: center; padding-bottom: 54px; }
+.sw-side__in p { margin: 0; }
+.sw-side__k { font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--sw-gold-ink); }
+.sw-side__k .l-ne { font: 500 17px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; color: var(--sw-wine); }
+.sw-side__pic { width: min(150px, 60%); margin: 16px 0 0; overflow: hidden; border-radius: 999px 999px 6px 6px; border: 3px solid #FFFCF6; }
+.sw-side__pic img { display: block; width: 100%; height: auto; }
+.sw-side__first { margin-top: 10px !important; font: 400 clamp(44px, 6vw, 58px)/1.15 var(--su-f-script); color: var(--sw-wine); }
+.sw-side__first .l-ne { font: 500 0.62em/1.5 var(--su-f-deva); }
+.sw-side__name { margin: 2px 0 0; font: 400 clamp(19px, 2.2vw, 23px)/1.3 var(--su-f-display); color: var(--sw-ink); }
+.sw-side__name .l-ne { font: 500 1em/1.45 var(--su-f-deva); }
+.sw-side__of { margin-top: 16px !important; font-size: 13.5px; letter-spacing: 0.08em; color: var(--sw-ink-2); }
+.sw-side__of .l-ne { letter-spacing: 0; }
+.sw-side__par { max-width: 26ch; font-weight: 500; line-height: 1.5; text-wrap: balance; }
+.sw-side__home { margin-top: 8px !important; font-size: 15px; color: var(--sw-ink-2); }
+.sw-side__band { position: absolute; left: 0; right: 0; bottom: 0; height: 20px; border-radius: 0 0 4px 4px; }
+.sw-side--g .sw-side__band { background: url('/themes/_nepali/dhaka-sm.webp') 0 50% / auto 100% repeat-x; }
+/* pote: the bride's green glass beads, with a small gold tilhari in the middle */
+.sw-side--b .sw-side__band { background:
+    radial-gradient(ellipse 7px 9px at 50% 50%, #F2D48C 0 40%, #B8873A 70%, transparent 74%) 50% 50% / 100% 100% no-repeat,
+    radial-gradient(circle at 42% 40%, #8FD39A 0 1.2px, #2F8552 2.6px, #1F5E3A 3.6px, transparent 4px) 0 50% / 8px 10px repeat-x,
+    rgba(255, 252, 246, 0.6); }
+.sw-fam__mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.sw-fam__mid i { width: 1px; flex: 1; max-height: 120px; background: linear-gradient(transparent, var(--sw-gold), transparent); }
+.sw-fam__kalash { width: clamp(64px, 8vw, 84px); }
+
+/* 2 · the couple: two silk wings close around the photograph */
+.sw-pair__stage { position: relative; display: grid; place-items: center; width: min(500px, 92vw); margin: 0 auto;
+  padding: clamp(64px, 10vw, 92px) clamp(26px, 6vw, 52px) clamp(26px, 5vw, 40px); }
+.sw-wing { position: absolute; top: 0; bottom: 0; width: 50%; backface-visibility: hidden; }
+.sw-wing::before { content: ''; position: absolute; inset: 9px; border: 1px solid rgba(184, 135, 58, 0.55); border-radius: inherit; }
+.sw-wing--g { left: 0; border-radius: 100% 0 0 4px / 190px 0 0 4px; background: linear-gradient(165deg, #FBEBCB, var(--sw-saffron-2)); }
+.sw-wing--g::before { right: 0; border-right: 0; }
+.sw-wing--b { right: 0; border-radius: 0 100% 4px 0 / 0 190px 4px 0; background: linear-gradient(195deg, #FBE7E2, var(--sw-rose-2)); }
+.sw-wing--b::before { left: 0; border-left: 0; }
+.sw-pair__pic { position: relative; z-index: 1; width: 100%; margin: 0; padding: 7px; background: var(--sw-paper); box-shadow: 0 22px 44px -28px rgba(74, 9, 21, 0.6); }
+.sw-pair__pic img { display: block; width: 100%; height: auto; }
+
+/* 3 · the day: two half-moons meet behind the garlanded medallion */
+.sw-day { overflow-x: clip; }
+.sw-meet { --m: min(360px, 74vw); position: relative; width: var(--m); margin: 0 auto; }
+.sw-moon { position: absolute; top: calc(var(--m) * -0.09); width: calc(var(--m) * 0.59); height: calc(var(--m) * 1.18); backface-visibility: hidden; }
+.sw-moon--g { left: calc(var(--m) * -0.09); border-radius: 999px 0 0 999px; background: linear-gradient(160deg, #FBEBCB, var(--sw-saffron-2)); }
+.sw-moon--b { right: calc(var(--m) * -0.09); border-radius: 0 999px 999px 0; background: linear-gradient(200deg, #FBE7E2, var(--sw-rose-2)); }
+.sw-ring { position: absolute; z-index: 3; left: 0; top: 0; width: var(--m); height: var(--m); max-width: none; pointer-events: none; }
+.sw-scratch { position: relative; z-index: 2; }
+.sw-scratch .su-scratch__face { width: var(--m); }
+.sw-scratch .su-scratch__foil { height: var(--m); }
+.sw-scratch .su-scratch__btn { margin-top: 12px; }
+.sw-scratch.is-revealed { padding-bottom: 74px; } /* the button leaves; keep its room so nothing jumps under the lamps */
+.sw-seal { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle, var(--sw-paper) 0 60%, #F8EAD2 75%); }
+.sw-seal__date { display: flex; flex-direction: column; align-items: center; width: 60%; text-align: center; }
+.sw-seal__date p { margin: 0; }
+.sw-seal__wd { font: 600 11.5px/1.3 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--sw-gold-ink); }
+.sw-seal__wd .l-ne { font-size: 15px; letter-spacing: 0; }
+.sw-seal__day { font: 400 calc(var(--m) * 0.22)/1 var(--su-f-display); color: var(--sw-wine); }
+.sw-seal__day .l-ne { font: 500 1em/1.1 var(--su-f-deva); }
+.sw-seal__my { margin-top: 4px !important; font: 400 15px/1.3 var(--su-f-display); letter-spacing: 0.12em; color: var(--sw-ink); }
+.sw-seal__my .l-ne { font: 500 16px/1.4 var(--su-f-deva); letter-spacing: 0; }
+.sw-seal__t { margin-top: 6px !important; padding-top: 6px; border-top: 1px solid rgba(184, 135, 58, 0.55); font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.16em; color: var(--sw-wine); }
+.sw-seal__t .l-ne { font-size: 14px; letter-spacing: 0; }
+.sw-meet__diyo { position: absolute; z-index: 4; top: calc(var(--m) * 0.8); width: clamp(56px, 15vw, 86px); }
+.sw-meet__diyo--l { left: calc(var(--m) * -0.12); }
+.sw-meet__diyo--r { right: calc(var(--m) * -0.12); }
+.sw-meet__diyo--r .np-lamp__img { transform: scaleX(-1); }
+.sw-meet__diyo--r .np-lamp__wick { left: 7.5% !important; }
+.sw-day__under { margin: 22px auto 0; text-align: center; }
+.sw-day__under p { margin: 0; }
+.sw-day__alt { font-size: 15px; color: var(--sw-ink-2); }
+.sw-day__place { margin-top: 4px !important; font: 400 19px/1.4 var(--su-f-display); color: var(--sw-ink); }
+.sw-day__place .l-ne { font: 500 18px/1.5 var(--su-f-deva); }
+.sw-count { margin: clamp(40px, 6vh, 60px) auto 0; text-align: center; }
+.sw-count__title { margin: 0 0 18px; font: 400 italic 19px/1.4 var(--su-f-display); color: var(--sw-ink-2); }
+.sw-count__title .l-ne { font: 500 18px/1.5 var(--su-f-deva); font-style: normal; }
+.sw-count__row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 440px; margin: 0 auto; padding: 0; list-style: none; }
+.sw-count__cell { position: relative; padding: 4px 6px; }
+.sw-count__cell + .sw-count__cell::before { content: ''; position: absolute; left: 0; top: 18%; bottom: 18%; width: 1px; background: rgba(184, 135, 58, 0.55); }
+.sw-count__n { display: block; font: 400 clamp(34px, 6vw, 46px)/1.1 var(--su-f-display); color: var(--sw-wine); font-variant-numeric: tabular-nums; }
+.sw-count__n .l-ne { font-family: var(--su-f-deva); font-weight: 500; }
+.sw-count__l { display: block; margin-top: 4px; font: 600 10.5px/1.2 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--sw-ink-2); }
+.sw-count__l .l-ne { font-size: 14px; letter-spacing: 0; }
+.sw-count__done { font: 400 26px/1.4 var(--su-f-script); color: var(--sw-wine); }
+
+/* ───────── the ceremonies: gatefold cards that open on their spine ───────── */
+.sw-prog { background: linear-gradient(180deg, var(--sw-ivory), color-mix(in srgb, var(--sw-ivory) 92%, var(--sw-wine)) 50%, var(--sw-ivory)); }
+.sw-evs { display: grid; gap: clamp(36px, 6vh, 64px); max-width: 860px; margin: 0 auto; padding: 0; list-style: none; perspective: 1400px; }
+.sw-ev { display: grid; grid-template-columns: minmax(200px, 270px) minmax(0, 1fr); width: min(100%, 780px); }
+.sw-ev:not(.sw-ev--flip) { margin-right: auto; }
+.sw-ev--flip { grid-template-columns: minmax(0, 1fr) minmax(200px, 270px); margin-left: auto; }
+.sw-ev--flip .sw-ev__leaf--date { order: 2; }
+.sw-ev__leaf { position: relative; min-width: 0; backface-visibility: hidden; }
+.sw-ev__leaf p { margin: 0; }
+.sw-ev__leaf--date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 30px 20px; text-align: center; color: var(--sw-cream);
+  background: repeating-linear-gradient(115deg, rgba(255, 220, 200, 0.03) 0 2px, rgba(0, 0, 0, 0) 2px 7px), linear-gradient(160deg, color-mix(in srgb, var(--sw-wine) 90%, #fff), var(--sw-wine) 55%, color-mix(in srgb, var(--sw-wine) 75%, #000)); }
+.sw-ev__leaf--date::before { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(231, 163, 58, 0.4); pointer-events: none; }
+.sw-ev__no { font: 600 11px/1.3 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--sw-marigold); }
+.sw-ev__no .l-ne { font-size: 14px; letter-spacing: 0; }
+.sw-ev__wd { margin-top: 10px !important; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; }
+.sw-ev__wd .l-ne { font-size: 15px; letter-spacing: 0; }
+.sw-ev__day { font: 400 64px/1.05 var(--su-f-display); color: #FFF4E2; }
+.sw-ev__day .l-ne { font: 500 0.86em/1.2 var(--su-f-deva); }
+.sw-ev__my { font: 400 16px/1.3 var(--su-f-display); letter-spacing: 0.1em; }
+.sw-ev__my .l-ne { font: 500 17px/1.4 var(--su-f-deva); letter-spacing: 0; }
+.sw-ev__alt { margin-top: 8px !important; font-size: 13.5px; opacity: 0.86; }
+.sw-ev__time { margin-top: 10px !important; padding-top: 8px; border-top: 1px solid rgba(231, 163, 58, 0.45); font-weight: 600; font-size: 15px; color: var(--sw-marigold); }
+.sw-ev__leaf--text { padding: clamp(26px, 4vw, 40px) clamp(22px, 4vw, 40px); background: var(--sw-paper);
+  box-shadow: 0 26px 50px -38px rgba(74, 9, 21, 0.6); }
+.sw-ev:not(.sw-ev--flip) .sw-ev__leaf--text { background: linear-gradient(90deg, rgba(107, 16, 36, 0.06), rgba(107, 16, 36, 0) 28px), var(--sw-paper); }
+.sw-ev--flip .sw-ev__leaf--text { background: linear-gradient(270deg, rgba(107, 16, 36, 0.06), rgba(107, 16, 36, 0) 28px), var(--sw-paper); }
+.sw-ev__title { margin: 0; font: 400 clamp(24px, 3vw, 30px)/1.25 var(--su-f-display); color: var(--sw-wine); }
+.sw-ev__title .l-ne { font: 500 1em/1.4 var(--su-f-deva); }
+.sw-ev__rule { margin: 12px 0 14px; width: 120px; }
+.sw-ev__blurb { color: var(--sw-ink-2); }
+.sw-ev__venue, .sw-ev__dress { margin-top: 8px !important; }
+.sw-ev__venue { font-weight: 500; }
+.sw-sw { display: inline-flex; gap: 4px; margin-right: 8px; vertical-align: -2px; }
+.sw-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.sw-ev__order { margin-top: 12px; }
+.sw-ev__order summary { cursor: pointer; font-weight: 600; color: var(--sw-wine); }
+.sw-ev__order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.sw-ev__order li { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--su-line); }
+.sw-ev__order li span:first-child { font-weight: 600; color: var(--sw-ink-2); }
+.sw-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: clamp(40px, 6vh, 56px) auto 0; }
+.sw-more { max-width: 780px; margin: 22px auto 0; }
+.sw-more .su-more { margin: 0; background: var(--sw-paper); border: 1px solid rgba(184, 135, 58, 0.4); }
+.sw-more .su-more summary { color: var(--sw-wine); }
+.sw-more .su-more h3 { font-family: var(--su-f-display); color: var(--sw-wine); }
+
+/* ───────── photographs hanging on silk cords ───────── */
+.sw-cord { max-width: 920px; margin: 0 auto; }
+.sw-line { position: relative; display: flex; justify-content: space-evenly; align-items: flex-start; padding-top: 4px; margin-bottom: clamp(26px, 4vh, 40px); }
+.sw-line__cord { position: absolute; left: -3%; top: 0; width: 106%; height: 40px; overflow: visible; }
+.sw-line__cord path { fill: none; stroke: var(--sw-marigold); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sw-line--2 .sw-hang, .sw-line--1 .sw-hang { --w: min(250px, 40vw); }
+.sw-hang { --w: min(250px, 27vw); position: relative; width: var(--w); margin: calc(4px + var(--drop, 0) * 20px + 22px) 0 0; transform-origin: 50% -22px; }
+.sw-hang::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 22px; background: var(--sw-gold); }
+.sw-hang::after { content: ''; position: absolute; left: 50%; top: -6px; width: 10px; height: 10px; translate: -50% 0; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #FFD27A, var(--sw-marigold) 55%, #C0701A); }
+.sw-hang__btn { display: block; width: 100%; padding: 7px 7px 20px; border: 0; background: var(--sw-paper); cursor: zoom-in; box-shadow: 0 18px 34px -24px rgba(74, 9, 21, 0.55); }
+.sw-hang__btn img { display: block; width: 100%; height: auto; }
+
+/* ───────── the bond and the card wording ───────── */
+.sw-card__in { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: clamp(28px, 5vw, 64px); max-width: 940px; margin: 0 auto; }
+.sw-card__knot { margin: 0; text-align: center; }
+.sw-card__ganthi { width: 100%; }
+.sw-card__knot figcaption { margin-top: 10px; font: 400 26px/1.3 var(--su-f-script); color: var(--sw-wine); }
+.sw-card__knot figcaption .l-ne { font: 500 17px/1.5 var(--su-f-deva); }
+.sw-card__text { padding: clamp(32px, 5vw, 52px) clamp(22px, 4vw, 44px); text-align: center; background: var(--sw-paper); border: 1px solid rgba(184, 135, 58, 0.45); outline: 1px solid rgba(184, 135, 58, 0.25); outline-offset: 5px; }
+.sw-card__gan { display: block; width: 62px; height: auto; margin: 0 auto 14px; }
+.sw-card__line { margin: 0 0 16px; font: 400 clamp(21px, 2.4vw, 26px)/1.5 var(--su-f-display); color: var(--sw-ink); text-wrap: balance; }
+.sw-card__line .l-ne { font: 500 1em/1.6 var(--su-f-deva); }
+.sw-card__hosts { margin: 14px 0 24px; color: var(--sw-ink-2); }
+
+/* ───────── RSVP ───────── */
+.sw-rsvp__card { max-width: 640px; margin: 0 auto; background: var(--sw-paper); box-shadow: 0 30px 60px -44px rgba(74, 9, 21, 0.7); }
+.sw-rsvp__head { padding: 34px 24px 26px; text-align: center; color: var(--sw-cream);
+  background: repeating-linear-gradient(115deg, rgba(255, 220, 200, 0.03) 0 2px, rgba(0, 0, 0, 0) 2px 7px), linear-gradient(160deg, #84162F, var(--sw-wine) 55%, #4E0A19); }
+.sw-rsvp__title { margin: 0; font: 400 clamp(28px, 4vw, 38px)/1.25 var(--su-f-display); color: #FFF4E2; }
+.sw-rsvp__title .l-ne { font: 500 0.92em/1.4 var(--su-f-deva); }
+.sw-rsvp__dl { margin: 6px 0 12px; font-size: 15px; }
+.sw-rsvp__head .sw-rule { margin-top: 12px; }
+.sw-rsvp__body { padding: clamp(24px, 5vw, 40px); }
+
+/* ───────── closing ───────── */
+.sw-close { position: relative; padding: clamp(76px, 12vh, 120px) 16px 0; text-align: center; }
+.sw-close__row { display: grid; grid-template-columns: auto minmax(0, 560px) auto; align-items: end; justify-content: center; gap: clamp(8px, 4vw, 48px); }
+.sw-close__diyo { width: clamp(52px, 11vw, 80px); }
+.sw-close__diyo--r .np-lamp__img { transform: scaleX(-1); }
+.sw-close__diyo--r .np-lamp__wick { left: 7.5% !important; }
+.sw-close__text p { margin: 0; }
+.sw-close__ne { font: 500 22px/1.6 var(--su-f-deva); color: var(--sw-ink); }
+.sw-close__en { margin-top: 6px !important; font: 400 italic 18px/1.5 var(--su-f-display); color: var(--sw-ink-2); text-wrap: balance; }
+html[data-lang='ne'] .sw-close__en { display: none; }
+.sw-close__names { margin-top: 18px !important; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 12px; font: 400 clamp(40px, 6vw, 56px)/1.2 var(--su-f-script); color: var(--sw-wine); }
+.sw-close__names .l-ne { font: 500 0.6em/1.5 var(--su-f-deva); }
+.sw-close__amp { font-size: 0.6em; color: var(--sw-gold-ink); }
+.sw-close__tag { margin-top: 8px !important; color: var(--sw-ink-2); letter-spacing: 0.06em; }
+.sw-dhaka { height: 26px; margin: clamp(48px, 8vh, 72px) -16px 0; background: url('/themes/_nepali/dhaka-sm.webp') 0 50% / auto 100% repeat-x; }
+.sw-close .made-with, .sw-close > :last-child { margin-top: 0; }
+
+/* ───────── phones ───────── */
+@media (max-width: 699px) {
+  .sw-sec { padding: 72px 16px; }
+  .sw-fam__stage { display: flex; flex-direction: column; gap: 0; }
+  .sw-side { width: 88%; border-radius: 50% 50% 4px 4px / 110px 110px 4px 4px; padding-top: 52px; }
+  .sw-side--g { align-self: flex-start; }
+  .sw-side--b { align-self: flex-end; }
+  .sw-fam__mid { flex-direction: row; margin: -12px 0; position: relative; z-index: 1; }
+  .sw-fam__mid i { display: none; }
+  .sw-ev, .sw-ev--flip { grid-template-columns: 1fr; width: 100%; }
+  .sw-ev--flip .sw-ev__leaf--date { order: 0; }
+  .sw-ev__leaf--date { padding: 24px 16px 20px; }
+  .sw-ev__day { font-size: 56px; }
+  .sw-ev:not(.sw-ev--flip) .sw-ev__leaf--text, .sw-ev--flip .sw-ev__leaf--text { background: linear-gradient(180deg, rgba(107, 16, 36, 0.06), rgba(107, 16, 36, 0) 22px), var(--sw-paper); }
+  .sw-ev__order li { grid-template-columns: 82px 1fr; }
+  .sw-card__in { grid-template-columns: 1fr; }
+  .sw-card__knot { width: min(320px, 82%); margin: 0 auto; }
+  .sw-close__row { grid-template-columns: 1fr 1fr; column-gap: 64px; }
+  .sw-close__text { grid-column: 1 / -1; grid-row: 1; }
+  .sw-close__diyo { justify-self: end; margin-top: 18px; }
+  .sw-close__diyo--r { justify-self: start; }
+}
+@media (min-width: 700px) {
+  .sw-hero__body { padding-top: max(28px, 4svh); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-g .sw-garl__sway { animation: none; }
+}
+
+/* QA: the lightbox on deep wine silk, not a grey wash over the ivory page */
+.theme-swayambar .su-lb { background: rgba(38, 6, 14, 0.94); }
+/* QA: solid wine HUD pills (the engine's 45% scrim read as grey over the ivory and the garlands) */
+.theme-swayambar .hud__btn, .theme-swayambar .pill { background: rgba(84, 11, 27, 0.92); color: #F7E7C9; border-color: rgba(231, 163, 58, 0.5); }

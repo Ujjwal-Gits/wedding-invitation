@@ -20,6 +20,8 @@ import { photoUrl } from '../../photos.js';
 import { initScratch } from './scratch.js';
 
 gsap.registerPlugin(ScrollTrigger);
+// a reload must start at the gate, not at a restored scroll position (ScrollTrigger re-enables 'auto' itself)
+ScrollTrigger.clearScrollMemory('manual');
 
 const UI = {
   map: { en: 'Map', ne: 'नक्सा' }, time: { en: 'Time', ne: 'समय' }, venue: { en: 'Venue', ne: 'स्थान' }, wear: { en: 'Wear', ne: 'पहिरन' },

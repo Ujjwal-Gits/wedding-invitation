@@ -1,0 +1,336 @@
+/* Rangoli (रंगोली) · a flower rangoli on a sunlit Newari courtyard.
+   Tokens first, then the hero (the floor, the camera, the rangoli), the gate, the courtyard path, the door. */
+html:has(body.theme-rangoli) { background: #2A1008; }
+body.su.theme-rangoli {
+  --rg-lime: #FFF3DC;        /* names and words in the shade, 13:1 on the shade */
+  --rg-shade: #2A1008;       /* the eave's morning shadow over the bricks */
+  --rg-clay: #5C1F10;        /* smooth red clay (rato mato) under headings */
+  --su-bg: #B4613E;          /* the bricks, under the picture */
+  --su-paper: #FFF6E6;       /* lime-washed tablets */
+  --su-ink: #3A1C10;
+  --su-ink-2: #6B3F28;       /* 7.6:1 on the tablets */
+  --su-accent: #A2321B;      /* sindoor red, the one accent: buttons, headings on lime; 6.4:1 on the tablets */
+  --su-accent-ink: #FFF6E6;
+  --su-gold: #D9A54A;        /* brass: rules, plates, small labels on clay and shade only */
+  --su-line: rgba(107, 63, 40, 0.24);
+  --su-f-display: 'DM Serif Display', Georgia, serif;
+  --su-f-script: 'DM Serif Display', Georgia, serif;
+  --su-f-body: 'Mukta', sans-serif;
+  --su-f-deva: 'Karma', 'Mukta', serif;
+  --su-radius: 6px;
+  --rg-tile: 560px;          /* the herringbone tile (seamless), as wide on screen */
+  --rg-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  /* shared chrome (language + music pills) */
+  --accent-2: #A2321B; --hair: rgba(58, 28, 16, 0.22); --ink-dim: #6B3F28; --scrim: 255, 246, 230;
+  background: var(--su-bg) url('/themes/rangoli/art/floor.webp') repeat 50% 0 / var(--rg-tile) auto;
+  overflow-x: clip;
+}
+@media (min-width: 720px) { body.su.theme-rangoli { --rg-tile: 760px; } }
+.theme-rangoli .hud__btn, .theme-rangoli .pill { color: var(--su-ink); }
+
+/* textures: lime wash and clay carry a fine grain (one small tile) */
+.rg-slab, .rg-h, .rg-disc, .rg-pill, .rg-close { position: relative; isolation: isolate; }
+.rg-h::before, .rg-disc::before, .rg-pill::before, .rg-close::before, .rg-slab::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: url('/themes/rangoli/art/grain.webp') 0 0 / 256px; opacity: 0.5; }
+.rg-slab::before { opacity: 0.2; }
+
+/* ───────── the rangoli: four ring layers on one centre ───────── */
+.rg-rangoli { position: relative; aspect-ratio: 1; container-type: inline-size; }
+/* centred with left/top, never the translate property: GSAP folds that into the transform as pixels */
+.rg-ring { position: absolute; left: calc(50% - var(--f) * 50%); top: calc(50% - var(--f) * 50%); display: block; width: calc(var(--f) * 100%); height: auto; aspect-ratio: 1; max-width: none; }
+.rg-halo { position: absolute; left: 35%; top: 32.5%; width: 30%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.5), rgba(255, 170, 70, 0.16) 55%, rgba(255, 150, 50, 0)); }
+.rg-wick { position: absolute; width: 0; height: 0; }
+.rg-rangoli .rg-cflame { --np-flame: 8.5cqw; }
+
+/* ───────── hero: the courtyard floor ───────── */
+.theme-rangoli .rg-hero { --k: 1; --th0: 62deg; --ty0: -24svh; --tx0: 0px; --below: 56svh;
+  display: block; height: 100svh; min-height: 560px; background: var(--rg-shade); }
+.rg-sky { position: absolute; inset: 0 0 auto; height: 62svh; z-index: 0; pointer-events: none; }
+.rg-sky__wall { position: absolute; inset: 0;
+  background: radial-gradient(70% 45% at 50% 52%, color-mix(in srgb, #8A4A22 40%, var(--rg-shade)) 0%, var(--rg-shade) 100%); }
+.rg-sky__toran { position: absolute; left: 50%; top: -3svh; width: max(120vw, 460px); translate: -50% 0; }
+.rg-cam { position: absolute; inset: 0; z-index: 1; perspective: 760px; perspective-origin: 50% 30%; pointer-events: none; }
+.rg-floor { position: absolute; left: 50%; top: 0; width: 180vw; margin-left: -90vw; height: calc(100% + var(--below)); transform-style: preserve-3d;
+  transform-origin: 50% calc(100% - var(--below));
+  transform: translate3d(calc(var(--k) * var(--tx0)), calc(var(--k) * var(--ty0)), 0) rotateX(calc(var(--k) * var(--th0)));
+  background: url('/themes/rangoli/art/floor.webp') repeat 50% 0 / var(--rg-tile) auto; }
+/* everything on the floor is placed in a hero-sized box centred on the screen */
+.rg-shade, .rg-sun { position: absolute; pointer-events: none; }
+.rg-bb { position: absolute; translate: -50% -100%; transform-origin: 50% 100%; transform: rotateX(calc(var(--k) * var(--th0) * -1)); line-height: 0; }
+
+/* phone layout (portrait): words in the shade above, the rangoli in the sun below */
+.rg-hero { --D: min(84vw, 42svh); --cx: 0px; --cy: calc(100svh - var(--D) / 2 - max(64px, 8svh)); --gh: clamp(66px, 10.5svh, 104px); --top: calc(env(safe-area-inset-top, 0px) + 16px); }
+.rg-shade { left: 0; right: 0; top: 0; height: calc(var(--cy) - var(--D) / 2 + 40px);
+  background: linear-gradient(180deg, var(--rg-shade) 0%, var(--rg-shade) 5%, color-mix(in srgb, var(--rg-shade) 88%, transparent) 14%, color-mix(in srgb, var(--rg-shade) 84%, transparent) calc(100% - 64px), color-mix(in srgb, var(--rg-shade) 0%, transparent) 100%); }
+.rg-sun { left: calc(50% + var(--cx)); top: var(--cy); width: calc(var(--D) * 1.9); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 222, 160, 0.26), rgba(255, 200, 120, 0.08) 60%, rgba(255, 200, 120, 0)); }
+.rg-hero-r { position: absolute; left: calc(50% + var(--cx)); top: var(--cy); width: var(--D); translate: -50% -50%; }
+.rg-shrine { left: calc(50% + var(--sx, 0px)); top: calc(var(--top) + var(--gh)); }
+.rg-gan { display: block; height: var(--gh); width: auto; }
+.rg-hl { width: calc(var(--D) * 0.13); }
+.rg-hlamp--sl, .rg-hlamp--sr { top: calc(var(--top) + var(--gh)); }
+.rg-hlamp--sl { left: calc(50% + var(--sx, 0px) - var(--gh) * 0.62 - 26px); }
+.rg-hlamp--sr { left: calc(50% + var(--sx, 0px) + var(--gh) * 0.62 + 26px); }
+.rg-hlamp--sl .rg-hl, .rg-hlamp--sr .rg-hl { width: calc(var(--gh) * 0.42); }
+/* four diyos set on the rangoli's rim (anchor = the lamp's foot) */
+.rg-hlamp--a { left: calc(50% + var(--cx) - var(--D) * 0.47); top: calc(var(--cy) + var(--D) * 0.06); }
+.rg-hlamp--b { left: calc(50% + var(--cx) + var(--D) * 0.47); top: calc(var(--cy) + var(--D) * 0.06); }
+.rg-hlamp--c { left: calc(50% + var(--cx) - var(--D) * 0.33); top: calc(var(--cy) + var(--D) * 0.38); }
+.rg-hlamp--d { left: calc(50% + var(--cx) + var(--D) * 0.33); top: calc(var(--cy) + var(--D) * 0.38); }
+
+.rg-words { position: absolute; z-index: 2; left: 16px; right: 16px; top: calc(var(--top) + var(--gh) + 6px); bottom: calc(100svh - var(--cy) + var(--D) / 2 + 34px);
+  display: flex; flex-direction: column; align-items: center; justify-content: safe center; text-align: center; color: var(--rg-lime); pointer-events: none; }
+.rg-words a, .rg-words button { pointer-events: auto; }
+.rg-invo { margin: 0; font: 500 clamp(12.5px, 1.6svh, 15px)/1.4 var(--su-f-body); color: var(--su-gold); }
+.rg-title { margin: 0.7svh 0 0; font: 400 clamp(11px, 1.35svh, 13px)/1.3 var(--su-f-body); letter-spacing: 0.32em; text-transform: uppercase; color: color-mix(in srgb, var(--rg-lime) 80%, transparent); }
+.rg-title .l-ne { font: 500 clamp(15px, 1.9svh, 18px)/1.4 var(--su-f-deva); }
+.rg-line { max-width: 32ch; margin: 1svh 0 0; font: 400 clamp(13px, 1.65svh, 16px)/1.45 var(--su-f-body); color: color-mix(in srgb, var(--rg-lime) 82%, transparent); text-wrap: balance; }
+.rg-names { display: flex; flex-direction: column; align-items: center; margin: 1.1svh 0 0; font: 400 min(6.4svh, 12.5vw, 76px)/1.06 var(--su-f-display); color: var(--rg-lime); letter-spacing: -0.01em; }
+.rg-n { display: block; white-space: nowrap; }
+.rg-n .l-ne { font: 600 0.82em/1.3 var(--su-f-deva); }
+.rg-and { display: block; margin: 0.06em 0; font: 400 0.5em/1 var(--su-f-display); color: var(--su-gold); }
+.rg-and .l-ne { font: 500 0.7em/1 var(--su-f-deva); }
+html[data-lang='ne'] .rg-and { margin: -0.12em 0 -0.06em; }
+html[data-lang='ne'] .rg-and .l-ne { font-size: 1.05em; line-height: 1.2; } /* र is a short glyph: set it as large as the ampersand */
+html[data-lang='ne'] .rg-names { margin-top: 0.4svh; }
+html[data-lang='ne'] .rg-n .l-ne { font-size: 0.74em; line-height: 1.22; }
+.rg-when { margin-top: 1.6svh; padding-top: 1.2svh; border-top: 1px solid color-mix(in srgb, var(--su-gold) 55%, transparent); }
+.rg-date { margin: 0; font: 500 clamp(12px, 1.5svh, 14.5px)/1.4 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; }
+.rg-date .l-ne { font-size: 1.12em; }
+.rg-alt { margin: 0.2svh 0 0; font: 500 clamp(13.5px, 1.65svh, 16px)/1.5 var(--su-f-body); color: var(--su-gold); }
+.rg-place { margin: 0.2svh 0 0; font: 400 clamp(12.5px, 1.5svh, 15px)/1.4 var(--su-f-body); color: color-mix(in srgb, var(--rg-lime) 80%, transparent); }
+/* short phones (≤ 800 px tall): a smaller rangoli and Ganesh so the words never run onto the flowers */
+@media (max-aspect-ratio: 1/1) and (max-height: 800px) {
+  .rg-hero { --D: min(84vw, 33svh); --gh: clamp(56px, 9svh, 80px); --cy: calc(100svh - var(--D) / 2 - max(56px, 7svh)); }
+  .rg-names { font-size: min(5.8svh, 12vw, 76px); }
+}
+.theme-rangoli .rg-hero .su-cue { z-index: 3; bottom: 8px; gap: 2px; color: var(--rg-lime); padding: 5px 14px 4px; border-radius: 999px; background: color-mix(in srgb, var(--rg-shade) 82%, transparent); }
+.theme-rangoli .rg-hero .su-cue i { height: 12px; }
+.rg-shrine { transform: rotateX(calc(var(--k) * var(--th0) * -1)) scale(calc(1 + var(--k) * 0.5)); }
+
+/* desktop and tablets in landscape: the eave's shade on the left holds the words, the rangoli lies in the sun */
+@media (min-width: 720px) and (min-aspect-ratio: 1/1) {
+  .theme-rangoli .rg-hero { --tx0: -22vw; --th0: 60deg; --ty0: -34svh; }
+  .rg-floor { width: 270vw; margin-left: -135vw; } /* wide enough that its far right corner never shows in the low view */
+  .rg-hero { --D: min(44vw, 80svh); --cx: 22vw; --cy: 51svh; --gh: clamp(80px, 13svh, 128px); --sx: -24vw; --top: max(4svh, 28px); }
+  .rg-shade { left: 0; right: 0; top: 0; height: 100%;
+    background: linear-gradient(100deg, color-mix(in srgb, var(--rg-shade) 90%, transparent) 0%, color-mix(in srgb, var(--rg-shade) 84%, transparent) calc(50% - 4vw), color-mix(in srgb, var(--rg-shade) 0%, transparent) calc(50% + 4vw)); }
+  .rg-words { left: 3vw; right: auto; width: 46vw; top: calc(var(--top) + var(--gh) + 8px); bottom: 8svh; }
+  .rg-names { font-size: min(10svh, 6.4vw, 104px); }
+  .rg-words { justify-content: safe center; padding-bottom: 4svh; }
+  .rg-sky__toran { width: max(100vw, 900px); top: calc(24svh - max(100vw, 900px) * 0.346); }
+  /* in the eave's shade under Ganesh, never on the rangoli */
+  .rg-gate .rg-gate__title { top: 31svh; left: 0; right: auto; width: 50vw; }
+  .rg-hero .rg-shrine { transform: rotateX(calc(var(--k) * var(--th0) * -1)) scale(calc(1 + var(--k) * 0.9)); }
+  .rg-invo { font-size: clamp(14px, 1.9svh, 17px); }
+  .rg-title { font-size: clamp(12px, 1.5svh, 14px); }
+  .rg-title .l-ne { font-size: clamp(17px, 2.2svh, 21px); }
+  .rg-line { font-size: clamp(16px, 2.1svh, 19px); }
+  .rg-date { font-size: clamp(13.5px, 1.75svh, 16px); }
+  .rg-alt { font-size: clamp(15px, 1.95svh, 18px); }
+  .rg-place { font-size: clamp(14px, 1.8svh, 17px); }
+}
+
+/* ───────── gate: the low view across the courtyard ───────── */
+.rg-gate__gan { display: none; position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + max(5svh, 32px)); translate: -50% 0; line-height: 0; }
+.rg-gate__gan img { display: block; height: clamp(80px, 12svh, 120px); width: auto; }
+.theme-rangoli .su-gate { color: var(--rg-lime); }
+.theme-rangoli .su-gate__scene { pointer-events: auto; cursor: pointer; }
+.rg-gate { position: absolute; inset: 0; }
+.rg-gate__title { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + max(17.5svh, 128px)); margin: 0; text-align: center;
+  font: 600 clamp(30px, 4.6svh, 46px)/1.3 var(--su-f-deva); color: var(--rg-lime); }
+.rg-gate__scrim { position: absolute; inset: auto 0 0; height: 42svh; pointer-events: none;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--rg-shade) 92%, transparent) 0%, color-mix(in srgb, var(--rg-shade) 70%, transparent) 46%, color-mix(in srgb, var(--rg-shade) 0%, transparent) 100%); }
+.theme-rangoli .su-gate__line { font: 400 20px/1.35 var(--su-f-display); color: var(--rg-lime); }
+.theme-rangoli .su-gate__line .l-ne { font: 500 19px/1.5 var(--su-f-deva); }
+.theme-rangoli .su-quiet { color: color-mix(in srgb, var(--rg-lime) 86%, transparent); }
+.theme-rangoli .su-btn--open { background: var(--su-accent); border-color: color-mix(in srgb, var(--su-gold) 70%, transparent); box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.7); }
+
+@media (prefers-reduced-motion: no-preference) {
+  body.su-locked:not(.is-opening) #top .rg-ring--0, body.su-locked:not(.is-opening) #top .rg-ring--1,
+  body.su-locked:not(.is-opening) #top .rg-wick, body.su-locked:not(.is-opening) #top .rg-halo,
+  body.su-locked:not(.is-opening) .rg-words .su-in { opacity: 0; }
+  body.su-locked:not(.is-opening) #top .rg-ring--3 { transform: rotate(-28deg); }
+  body.su-locked:not(.is-opening) #top .rg-ring--2 { transform: rotate(70deg); }
+}
+/* only while the camera moves */
+body.rg-moving .rg-floor, body.rg-moving #top .rg-ring, body.rg-moving .rg-sky { will-change: transform, opacity; }
+/* landed: the floor is a flat picture again (no 3D layer kept alive) */
+body.rg-landed .rg-hero { --k: 0; }
+body.rg-landed .rg-floor { transform: none; transform-style: flat; }
+body.rg-landed .rg-bb { transform: none; }
+body.rg-landed .rg-sky { display: none; }
+
+/* ───────── the courtyard path ───────── */
+body.su-locked .rg-path, body.su-locked .rg-close { visibility: hidden; }
+.rg-path { position: relative; overflow-x: clip; }
+.rg-sec { position: relative; display: flex; flex-direction: column; align-items: center; gap: clamp(26px, 4vh, 40px); padding: clamp(84px, 12vh, 128px) 18px clamp(40px, 6vh, 64px); }
+/* the diyos lining the path, a pair at the start of each stretch */
+.rg-lamps { position: absolute; left: 0; right: 0; top: clamp(16px, 3vh, 34px); height: 0; pointer-events: none; }
+.rg-lamps .np-lamp { position: absolute; top: 0; width: clamp(34px, 4.4vw, 56px); }
+.rg-lamps .np-lamp:first-child { left: clamp(10px, 5vw, 90px); }
+.rg-lamps .np-lamp:last-child { right: clamp(10px, 5vw, 90px); }
+
+/* headings: lime letters on a smooth band of red clay laid in the bricks */
+.rg-h { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: min(100%, 640px); margin: 0; padding: 14px clamp(26px, 5vw, 44px) 15px; border-radius: 999px; text-align: center;
+  background: var(--rg-clay); color: var(--rg-lime);
+  box-shadow: inset 0 0 0 1px rgba(217, 165, 74, 0.55), inset 0 0 0 5px var(--rg-clay), inset 0 0 0 6px rgba(217, 165, 74, 0.3), 0 12px 26px -16px rgba(30, 8, 2, 0.8); }
+.rg-kicker { margin: 0; font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--su-gold); }
+.rg-kicker .l-ne { font-size: 14px; }
+.rg-h2 { margin: 0; font: 400 clamp(27px, 3.6vw, 42px)/1.15 var(--su-f-display); text-wrap: balance; }
+.rg-h2 .l-ne { font: 600 0.9em/1.4 var(--su-f-deva); }
+
+/* lime-washed tablets */
+.rg-slab { border-radius: var(--su-radius); background: var(--su-paper); color: var(--su-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 2px 3px rgba(40, 12, 2, 0.28), 0 18px 34px -20px rgba(40, 12, 2, 0.85); }
+.rg-slab::after { content: ''; position: absolute; inset: 9px; border: 1px solid rgba(162, 50, 27, 0.22); border-radius: 3px; pointer-events: none; }
+.rg-kicker2 { margin: 0; font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--su-accent); }
+.rg-kicker2 .l-ne { font-size: 14px; }
+.rg-pill { margin: 0; padding: 8px 22px; border-radius: 999px; background: var(--rg-clay); color: var(--rg-lime); font: 500 16px/1.4 var(--su-f-body); text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(217, 165, 74, 0.45), 0 10px 20px -14px rgba(30, 8, 2, 0.8); }
+
+/* the couple: a large photograph laid on the bricks, fresh flowers on its corner */
+.rg-photo { position: relative; width: min(84vw, 440px); margin: 0; padding: 12px 12px 0; background: #FFFCF5; transform: rotate(-1.6deg);
+  box-shadow: 0 2px 3px rgba(40, 12, 2, 0.3), 0 22px 40px -22px rgba(40, 12, 2, 0.9); }
+.rg-photo__pic img { display: block; width: 100%; height: auto; }
+.rg-photo__cap { padding: 14px 10px 18px; text-align: center; font: 400 17px/1.45 var(--su-f-display); color: var(--su-ink-2); text-wrap: balance; }
+.rg-photo__cap .l-ne { font: 500 17px/1.6 var(--su-f-deva); }
+.rg-photo__fl { position: absolute; z-index: 2; top: -38px; left: -34px; width: clamp(110px, 30vw, 150px); pointer-events: none; }
+.rg-photo:not(:has(.rg-photo__cap)) { padding-bottom: 12px; }
+
+/* the date: a brass thal heaped with flowers; brush them aside */
+.rg-scratch { --plate: min(84vw, 400px); }
+.rg-scratch .su-scratch__face { width: var(--plate); }
+.rg-scratch .su-scratch__foil { left: 50%; width: var(--plate); height: var(--plate); translate: -50% 0; border-radius: 50%; }
+.rg-scratch .su-scratch__btn, .rg-scratch .su-scratch__btn.su-btn--line { background: var(--su-paper); color: var(--su-accent); border-color: var(--su-paper); box-shadow: 0 10px 20px -14px rgba(30, 8, 2, 0.8); }
+.rg-thal, .rg-ev__thal { border-radius: 50%; box-shadow: 0 2px 3px rgba(40, 12, 2, 0.35), 0 20px 36px -18px rgba(40, 12, 2, 0.9);
+  background:
+    radial-gradient(circle, transparent 0 69%, rgba(110, 66, 14, 0.4) 69.6%, transparent 70.6%, transparent 86%, rgba(255, 244, 210, 0.6) 86.6%, transparent 88%, transparent 93%, rgba(110, 66, 14, 0.45) 93.6%, transparent 95%),
+    conic-gradient(from 24deg, #E4BE6E, #FBE6AE, #D3A24C, #F2D38D, #C38E3A, #F7DE9E, #D9AC5A, #EFCD86, #E4BE6E); }
+.rg-thal { position: relative; width: var(--plate); aspect-ratio: 1; display: grid; place-items: center; }
+.rg-thal__in { width: 66%; aspect-ratio: 1; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--su-ink);
+  background: radial-gradient(circle at 42% 36%, #FFF4D6 0%, #F6DFA4 55%, #E9C67A 100%); box-shadow: inset 0 2px 8px rgba(120, 70, 10, 0.35), 0 0 0 1px rgba(120, 70, 10, 0.3); }
+.rg-td__wd { font: 600 clamp(11px, 2.9vw, 13px)/1.3 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--su-ink-2); }
+.rg-td__wd .l-ne { font-size: 1.15em; }
+.rg-td__day { font: 400 clamp(56px, 17vw, 88px)/1 var(--su-f-display); color: var(--su-accent); }
+.rg-td__day .l-ne { font: 500 0.86em/1.15 var(--su-f-deva); }
+.rg-td__my { font: 400 clamp(16px, 4.4vw, 20px)/1.3 var(--su-f-display); }
+.rg-td__my .l-ne { font: 500 1em/1.4 var(--su-f-deva); }
+.rg-td__alt { margin-top: 2px; font: 500 clamp(12.5px, 3.4vw, 14.5px)/1.4 var(--su-f-body); color: var(--su-ink-2); }
+.rg-td__time { margin-top: 4px; font: 600 clamp(12px, 3.2vw, 14px)/1.3 var(--su-f-body); letter-spacing: 0.08em; color: var(--su-accent); }
+
+/* the countdown: a disc of smooth clay inside a ring of lit diyos */
+.rg-dial { --dial: min(92vw, 460px); --spin: 0deg; position: relative; width: var(--dial); aspect-ratio: 1; display: grid; place-items: center; }
+.rg-orbit { position: absolute; inset: 0; pointer-events: none; }
+.rg-orbit__p { position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+  transform: rotate(calc(var(--a) + var(--spin))) translateY(calc(var(--dial) * -0.415)) rotate(calc(-1 * (var(--a) + var(--spin)))); }
+.rg-orbit__p .np-lamp { position: absolute; left: 0; top: 0; width: calc(var(--dial) * 0.105); translate: -50% -62%; }
+.rg-disc { width: 64%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; color: var(--rg-lime);
+  background: radial-gradient(circle at 50% 40%, #742A16 0%, var(--rg-clay) 62%, #4A170B 100%);
+  box-shadow: inset 0 0 0 1px rgba(217, 165, 74, 0.5), inset 0 0 0 7px var(--rg-clay), inset 0 0 0 8px rgba(217, 165, 74, 0.3), 0 16px 30px -16px rgba(30, 8, 2, 0.85); }
+.rg-cd { display: grid; grid-template-columns: repeat(2, auto); gap: 6px clamp(18px, 6vw, 34px); margin: 0; padding: 0; list-style: none; }
+.rg-cd__cell { display: flex; flex-direction: column; align-items: center; }
+.rg-cd .su-count__n { font: 400 clamp(32px, 9vw, 48px)/1 var(--su-f-display); color: var(--rg-lime); font-variant-numeric: tabular-nums; }
+.rg-cd .su-count__n .l-ne { font-family: var(--su-f-deva); font-weight: 500; }
+.rg-cd__l { margin-top: 3px; font: 600 10.5px/1.2 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--su-gold); }
+.rg-cd__l .l-ne { font-size: 13px; }
+.rg-cd__done { max-width: 70%; margin: 0; text-align: center; font: 400 22px/1.35 var(--su-f-display); color: var(--rg-lime); }
+
+/* the families: two lime-washed tablets either side of the kalash */
+.rg-fam { display: grid; grid-template-columns: 1fr; justify-items: center; gap: 18px; width: 100%; max-width: 940px; }
+.rg-fam__side { width: min(100%, 380px); padding: 30px 24px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.rg-fam__pic { width: 132px; margin: 0 0 12px; overflow: hidden; border-radius: 50%; box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgba(162, 50, 27, 0.3); }
+.rg-fam__pic img { display: block; width: 100%; height: auto; }
+.rg-fam__name { margin: 6px 0 0; font: 400 clamp(24px, 3vw, 30px)/1.2 var(--su-f-display); color: var(--su-accent); }
+.rg-fam__name .l-ne { font: 500 0.92em/1.4 var(--su-f-deva); }
+.rg-fam__of { margin: 10px 0 0; font-size: 14.5px; color: var(--su-ink-2); }
+.rg-fam__parents { margin: 0; font-weight: 500; }
+.rg-fam__home { margin: 6px 0 0; font-size: 15px; color: var(--su-ink-2); }
+.rg-kalash { display: block; width: clamp(96px, 26vw, 140px); filter: none; }
+
+/* the programme: a brass thal set on each tablet */
+.rg-evs { display: grid; gap: clamp(40px, 6vh, 64px); width: 100%; max-width: 900px; margin: 0; padding: 0; list-style: none; }
+.rg-ev { position: relative; width: min(100%, 560px); justify-self: center; padding-top: 50px; }
+.rg-ev__thal { position: absolute; z-index: 2; top: 0; left: 50%; margin-left: -54px; width: 108px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.rg-ev__thal::before { content: ''; position: absolute; inset: 17%; z-index: -1; border-radius: 50%; background: radial-gradient(circle at 42% 36%, #FFF4D6, #F1D592 60%, #E2BC6C); box-shadow: inset 0 1px 5px rgba(120, 70, 10, 0.35); }
+.rg-ev__thal { isolation: isolate; }
+.rg-ev__thal b { font: 400 34px/1 var(--su-f-display); color: var(--su-accent); }
+.rg-ev__thal b .l-ne { font: 500 30px/1.1 var(--su-f-deva); }
+.rg-ev__thal > span { font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--su-ink-2); }
+.rg-ev__thal > span .l-ne { font-size: 13px; }
+.rg-ev__card { padding: 74px clamp(20px, 5vw, 36px) 28px; text-align: center; }
+.rg-ev__title { margin: 0; font: 400 clamp(25px, 3vw, 30px)/1.2 var(--su-f-display); color: var(--su-accent); }
+.rg-ev__title .l-ne { font: 500 0.95em/1.4 var(--su-f-deva); }
+.rg-ev__when, .rg-ev__time, .rg-ev__venue, .rg-ev__dress, .rg-ev__blurb { margin: 6px 0 0; }
+.rg-ev__time { font-weight: 600; }
+.rg-ev__blurb { color: var(--su-ink-2); }
+.rg-ev__dress { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; color: var(--su-ink-2); }
+.rg-order { margin-top: 12px; text-align: left; }
+.rg-order summary { cursor: pointer; text-align: center; font-weight: 600; color: var(--su-accent); }
+.rg-order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.rg-order li { display: grid; grid-template-columns: 84px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--su-line); }
+.rg-order li span:first-child { font-weight: 600; color: var(--su-ink-2); }
+.rg-prog__foot { display: flex; flex-direction: column; align-items: center; gap: 18px; width: min(100%, 760px); }
+.rg-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.theme-rangoli .rg-btns .su-btn--line, .theme-rangoli .rg-path > .rg-sec .su-btn--line { background: var(--su-paper); border-color: var(--su-paper); color: var(--su-accent); }
+.theme-rangoli .su-btn { box-shadow: 0 10px 22px -14px rgba(30, 8, 2, 0.85); }
+.theme-rangoli .su-more { width: 100%; background: var(--su-paper); color: var(--su-ink); border-radius: var(--su-radius); box-shadow: 0 16px 30px -20px rgba(40, 12, 2, 0.85); }
+
+/* the photographs: polaroids set down on the bricks */
+.rg-pols { columns: 2; column-gap: 14px; width: min(100%, 1040px); }
+.rg-pol { break-inside: avoid; margin: 0 0 18px; padding: 8px 8px 26px; background: #FFFCF4; transform: rotate(var(--r));
+  box-shadow: 0 2px 3px rgba(40, 12, 2, 0.3), 0 16px 28px -18px rgba(40, 12, 2, 0.9); }
+.rg-pol__btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.rg-pol__btn img { display: block; width: 100%; height: auto; }
+
+/* the door: the card wording, then the RSVP at the threshold under the toran */
+.rg-door { padding-bottom: 0; }
+.rg-word { width: min(100%, 560px); padding: 34px clamp(22px, 6vw, 44px) 32px; text-align: center; }
+.rg-word__line { margin: 0; font: 400 clamp(21px, 2.6vw, 26px)/1.45 var(--su-f-display); text-wrap: balance; }
+.rg-word__line .l-ne { font: 500 0.95em/1.6 var(--su-f-deva); }
+.rg-word__hosts { margin: 14px 0 22px; color: var(--su-ink-2); }
+.rg-sill { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 720px; padding-top: clamp(44px, 9vw, 72px); }
+.rg-sill__toran { position: absolute; z-index: 2; top: 0; left: 50%; width: min(108%, 760px); translate: -50% 0; pointer-events: none; }
+.rg-rsvp { width: min(100%, 620px); padding: calc(min(108vw, 760px) * 0.346 - clamp(44px, 9vw, 72px) + 22px) clamp(20px, 5vw, 40px) 34px; }
+.rg-rsvp .rg-h { margin: 0 auto 18px; }
+.rg-rsvp__by { margin: 0 0 18px; text-align: center; color: var(--su-ink-2); }
+.theme-rangoli .su-field input[type='text'], .theme-rangoli .su-field input[type='tel'], .theme-rangoli .su-field textarea, .theme-rangoli .su-field select { background: #FFFDF8; border-color: rgba(107, 63, 40, 0.3); }
+.theme-rangoli .gstep__b { background: #FFFDF8; }
+/* the wooden sill of the door, brass studs along it */
+.rg-door::after { content: ''; display: block; width: 100vw; height: 30px; margin-top: clamp(40px, 6vh, 64px);
+  background: radial-gradient(circle, #E9C77A 0 2.5px, transparent 3.2px) 0 50% / 48px 30px repeat-x, linear-gradient(#5A2C16, #3B1A0C 55%, #26100A); box-shadow: 0 -6px 14px -6px rgba(20, 6, 0, 0.6); }
+
+/* past the door: the blessing in the dark of the house */
+.rg-close { padding: clamp(56px, 9vh, 96px) 20px 28px; text-align: center; color: var(--rg-lime); background: var(--rg-shade); }
+.rg-close__in { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+.rg-close__r .rg-rangoli { width: min(52vw, 260px); margin-bottom: 26px; }
+.rg-close__ne { margin: 0; font: 500 22px/1.6 var(--su-f-deva); }
+.rg-close__en { margin: 6px 0 0; font: 400 19px/1.5 var(--su-f-display); color: color-mix(in srgb, var(--rg-lime) 82%, transparent); }
+html[data-lang='ne'] .rg-close__en { display: none; }
+.rg-close__names { margin: 22px 0 0; font: 400 clamp(36px, 5vw, 52px)/1.2 var(--su-f-display); }
+.rg-close__names .l-ne { font: 600 0.82em/1.3 var(--su-f-deva); }
+.rg-close__amp { margin: 0 0.3em; color: var(--su-gold); }
+.rg-close__tag { margin: 10px 0 0; color: var(--su-gold); letter-spacing: 0.06em; }
+.theme-rangoli .rg-close .madewith { color: var(--rg-lime); }
+
+@media (min-width: 720px) {
+  .rg-fam { grid-template-columns: 1fr auto 1fr; align-items: center; gap: clamp(18px, 3vw, 40px); }
+  .rg-fam__side { justify-self: stretch; width: auto; }
+  .rg-ev:nth-child(odd) { justify-self: start; }
+  .rg-ev:nth-child(even) { justify-self: end; }
+  .rg-ev { width: min(62%, 560px); }
+  .rg-pols { columns: 3; column-gap: 26px; }
+  .rg-pol { margin-bottom: 30px; padding: 10px 10px 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-rangoli .rg-hero { --k: 0; }
+  .rg-sky { display: none; }
+  .rg-gate { background: var(--rg-shade); }
+  /* the calm gate keeps Ganesh at the top, above शुभ विवाह */
+  .rg-gate__gan { display: block; }
+  .rg-gate .rg-gate__title { top: calc(env(safe-area-inset-top, 0px) + max(17.5svh, 128px) + 24px); left: 0; right: 0; width: auto; }
+}
+.theme-rangoli .su-more__grid { grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
