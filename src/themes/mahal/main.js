@@ -260,16 +260,14 @@ main.innerHTML = `
     </div>
     <div class="mh-gate" id="gateLy" aria-hidden="true">
       <div class="mh-gatein" id="gateIn">
-        <div class="mh-wall" id="wall"></div>
+        <i class="mh-gatebg" aria-hidden="true"></i>
         <div class="mh-gbox" id="gbox">
           <div class="mh-leaves" id="leaves"><div class="mh-leaf mh-leaf--l" id="leafL"></div><div class="mh-leaf mh-leaf--r" id="leafR"></div></div>
           <i class="mh-seam" id="seam"></i>
           <div class="mh-frame" id="frame"></div>
-          <img class="mh-arch" id="archImg" src="${DECOR}arch-sm.webp" srcset="${DECOR}arch-sm.webp 820w, ${DECOR}arch.webp 1596w" sizes="(max-width: 700px) 115vw, 760px" alt="" decoding="async" fetchpriority="high" />
-          <img class="mh-foot mh-foot--l" src="${DECOR}foot-sm.webp" srcset="${DECOR}foot-sm.webp 220w, ${DECOR}foot.webp 420w" sizes="160px" alt="" decoding="async" />
-          <img class="mh-foot mh-foot--r" src="${DECOR}foot-sm.webp" srcset="${DECOR}foot-sm.webp 220w, ${DECOR}foot.webp 420w" sizes="160px" alt="" decoding="async" />
           <div class="mh-crest" id="crest"><i class="mh-crest__halo" id="crestHalo"></i>${ganeshRef ? medal('') : '<div class="mh-om" lang="ne">ॐ</div>'}</div>
           <canvas class="mh-ribbon" id="ribbon"></canvas>
+          <img class="mh-bowimg" id="bowImg" src="${DECOR}bow-sm.webp" srcset="${DECOR}bow-sm.webp 480w, ${DECOR}bow.webp 900w" sizes="(max-width: 700px) 50vw, 300px" alt="" decoding="async" fetchpriority="high" />
           <i class="mh-hint" id="hint"></i>
           <div class="mh-glints" id="gglints"></div>
         </div>
@@ -596,15 +594,13 @@ const quietBtn = $('quiet');
 const bowBtn = $('bowbtn');
 const gateLy = $('gateLy');
 const gateIn = $('gateIn');
-const wallEl = $('wall');
 const gbox = $('gbox');
 const leavesEl = $('leaves');
 const leafL = $('leafL');
 const leafR = $('leafR');
 const seam = $('seam');
 const frameEl = $('frame');
-const archImg = $('archImg');
-const feet = [...document.querySelectorAll('.mh-foot')];
+const bowImg = $('bowImg');
 const crest = $('crest');
 const crestHalo = $('crestHalo');
 const hint = $('hint');
@@ -688,38 +684,45 @@ function buildScene(W, H) {
   dustEl.innerHTML = reduced ? '' : Array.from({ length: SG.tall ? 12 : 22 }, () => `<i style="left:${rnd(4, 96).toFixed(1)}%;top:${rnd(45, 95).toFixed(1)}%;--dx:${Math.round(rnd(-40, 40))}px;--d:${rnd(7, 12).toFixed(1)}s;--dl:${(-rnd(0, 12)).toFixed(1)}s"></i>`).join('');
 }
 
+// The painted gate (decor/gate-frame, gate-leaf-l/-r and bow: Canva AI, the black keyed out and the two leaves cut
+// along their arched tops): positions as fractions of the 1152 x 2048 painting.
+const GATE = { w: 1152, h: 2048, leaf: [0.2049, 0.1968, 0.5026, 0.9473, 0.8082], disc: [0.503, 0.11, 0.068], bowAr: 1.0871, knot: [0.498, 0.261] };
+
 function buildGate(W, H) {
-  G = P.gateGeo(W, H);
-  const { u, gx, gw, S, F, leafTop, dh, mR, yc, leaf } = G;
-  wallEl.innerHTML = G.full ? '' : P.wallSVG(G);
-  place(gbox, gx, 0, gw, H);
-  frameEl.innerHTML = P.frameSVG(G);
-  place(leavesEl, 90 * u, leafTop * u, 820 * u, dh * u);
-  leavesEl.style.perspective = px(gw * 2.4);
-  const art = (side) => {
-    const s = P.leafSVG(G, side, { w: 422 * u, h: (dh + 12) * u });
-    const at = `style="left:${px(-6 * u)};top:${px(-6 * u)}"`;
-    return `<div class="mh-leaf__art" ${at}>${s}</div><div class="mh-leaf__art mh-leaf__dark" ${at}>${s}</div>`;
-  };
-  leafL.innerHTML = art('l');
-  leafR.innerHTML = art('r');
-  place(seam, 480 * u, leafTop * u, 40 * u, dh * u);
-  place(archImg, ARCH.x0 * u, (S + ARCH.y0) * u, (ARCH.x1 - ARCH.x0) * u, (ARCH.y1 - ARCH.y0) * u);
-  place(feet[0], -70 * u, (F - FOOT.h * 0.72) * u, FOOT.w * u, FOOT.h * u);
-  place(feet[1], (1070 - FOOT.w) * u, (F - FOOT.h * 0.72) * u, FOOT.w * u, FOOT.h * u);
-  place(crest, (500 - mR) * u, (yc - mR) * u, 2 * mR * u, 2 * mR * u);
-  // the ribbon: two bands from the posts down to the bow; the bow sits above the line and buttons
-  const uiTop = gate.getBoundingClientRect().top;
-  let by = leafTop + Math.max(dh * 0.56, leaf.my + leaf.ry + 95);
-  by = Math.min(by, (uiTop - 14) / u - 320 * BOWK);
-  by = Math.max(by, leafTop + leaf.my);
-  const ax = 58; const ay = by - 150;
-  rib.layout({ gw, H, u, K: [500, by], ax, ay, k: BOWK });
-  place(hint, (500 - 150) * u, (by - 150) * u, 300 * u, 300 * u);
-  place(bowBtn, gx + (500 - 170) * u, (by - 150) * u, 340 * u, 300 * u);
+  const tall = W / H < 0.62;
+  const s = tall ? Math.max(W / GATE.w, H / GATE.h) : H / GATE.h;
+  const iw = GATE.w * s; const ih = GATE.h * s;
+  const ox = (W - iw) / 2; const oy = tall ? (H - ih) * 0.2 : 0;
+  const [lx0, ly0, lxc, ly1, lx1] = GATE.leaf;
+  G = { W, H, full: tall, iw, ih, gx: ox, gw: iw, u: iw / 1000,
+    door: { x0: ox + lx0 * iw, x1: ox + lx1 * iw, y0: oy + ly0 * ih, y1: oy + ly1 * ih } };
+  place(gbox, ox, oy, iw, ih);
+  const pic = (n, big, sm, w) => `src="${DECOR}${n}-sm.webp" srcset="${DECOR}${n}-sm.webp ${sm}w, ${DECOR}${n}.webp ${big}w" sizes="${Math.round(w)}px" alt="" decoding="async"`;
+  frameEl.innerHTML = `<img class="mh-frame__img" style="width:${px(iw)};height:${px(ih)}" ${pic('gate-frame', 1152, 634, iw)} fetchpriority="high" />`;
+  place(leavesEl, lx0 * iw, ly0 * ih, (lx1 - lx0) * iw, (ly1 - ly0) * ih);
+  leavesEl.style.perspective = px(iw * 2.4);
+  place(leafL, 0, 0, (lxc - lx0) * iw, (ly1 - ly0) * ih);
+  place(leafR, (lxc - lx0) * iw, 0, (lx1 - lxc) * iw, (ly1 - ly0) * ih);
+  const leaf = (side, big, sm, w) => `<img class="mh-leaf__img" ${pic(`gate-leaf-${side}`, big, sm, w)} /><img class="mh-leaf__img mh-leaf__dark" ${pic(`gate-leaf-${side}`, big, sm, w)} />`;
+  leafL.innerHTML = leaf('l', 343, 189, (lxc - lx0) * iw);
+  leafR.innerHTML = leaf('r', 352, 194, (lx1 - lxc) * iw);
+  place(seam, lxc * iw - 0.02 * iw, ly0 * ih, 0.04 * iw, (ly1 - ly0) * ih);
+  const [dx, dy, dr] = GATE.disc; const md = 2 * dr * iw * 1.16;
+  place(crest, dx * iw - md / 2, dy * ih - md / 2, md, md);
+  // the bow sits below the door medallions and above the line and buttons; satin bands run to it from the pillars
+  const uiTop = gate.getBoundingClientRect().top - oy;
+  const bw = iw * 0.4; const bh = bw * GATE.bowAr;
+  const kx = lxc * iw;
+  const ky = Math.max(ih * 0.58, Math.min(ih * 0.69, uiTop - (1 - GATE.knot[1]) * bh - 8));
+  place(bowImg, kx - GATE.knot[0] * bw, ky - GATE.knot[1] * bh, bw, bh);
+  gsap.set(bowImg, { transformOrigin: `${GATE.knot[0] * 100}% ${GATE.knot[1] * 100}%`, x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 });
+  const u = iw / 1000;
+  rib.layout({ gw: iw, H: ih, u, K: [kx / u, ky / u], ax: 150, ay: (ky - ih * 0.085) / u, k: 0.75, bandsOnly: true });
+  place(hint, kx - bw * 0.62, ky - bw * 0.62, bw * 1.24, bw * 1.24);
+  place(bowBtn, ox + kx - bw * 0.7, oy + ky - bh * 0.35, bw * 1.4, bh * 1.1);
   // a few glints on the gold
-  const gl = [[500, yc - mR - 80], [45, S - 30], [955, S - 30], [295, leafTop + leaf.my - leaf.ry * 0.6], [705, leafTop + leaf.my + leaf.ry * 0.4], [500, S - 4], [240, S - 230], [760, S - 230]];
-  $('gglints').innerHTML = reduced ? '' : gl.map(([x, y], i) => `<i class="mh-glint" style="left:${px(x * u)};top:${px(y * u)};--d:${(4 + i * 0.7).toFixed(1)}s;--dl:${(-i * 1.3).toFixed(1)}s"></i>`).join('');
+  const gl = [[0.503, 0.075], [0.33, 0.585], [0.675, 0.585], [0.12, 0.42], [0.885, 0.42], [0.503, 0.24], [0.27, 0.86], [0.735, 0.86]];
+  $('gglints').innerHTML = reduced ? '' : gl.map(([x, y], i) => `<i class="mh-glint" style="left:${px(x * iw)};top:${px(y * ih)};--d:${(4 + i * 0.7).toFixed(1)}s;--dl:${(-i * 1.3).toFixed(1)}s"></i>`).join('');
 }
 
 /** The opening words fit between the moon and the waterline; they shrink a little only when they must. */
@@ -738,8 +741,8 @@ function fitContent() {
 
 /** The smallest scale of the gate at which every corner of the screen lies inside its doorway. */
 function throughScale(vx, vy) {
-  const { W, H, u, gx } = G;
-  const x0 = gx + 90 * u; const x1 = gx + 910 * u; const y0 = G.leafTop * u; const y1 = G.F * u;
+  const { W, H } = G;
+  const { x0, x1, y0, y1 } = G.door;
   const ok = (s) => [[0, 0], [W, 0], [0, H], [W, H]].every(([qx, qy]) => {
     const x = vx + (qx - vx) / s; const y = vy + (qy - vy) / s;
     return x >= x0 && x <= x1 && y >= y0 && y <= y1;
@@ -754,10 +757,11 @@ let VP = [0, 0];
 function camera(p) {
   const c = CAM * p;
   gateLy.style.transform = `translate3d(0,0,0) scale(${(1 / (1 - c)).toFixed(4)})`;
-  for (const [el, D] of DEPTH) el.style.transform = `translate3d(0,0,0) scale(${(D / (D + CAM - c)).toFixed(4)})`;
+  // the balcony starts a touch close and settles as the gate passes (nearer layers settle more); never leaves a gap
+  for (const [el, D] of DEPTH) el.style.transform = `translate3d(0,0,0) scale(${(1 + (1 - p) * (0.16 / D)).toFixed(4)})`;
 }
 function rigCamera() {
-  VP = [G.W / 2, (G.leafTop + G.dh * 0.42) * G.u];
+  VP = [G.W / 2, G.door.y0 + (G.door.y1 - G.door.y0) * 0.45];
   CAM = 1 - 1 / Math.max(throughScale(...VP) * 1.06, 1.35);
   const o = `${px(VP[0])} ${px(VP[1])}`;
   gateLy.style.transformOrigin = o;
@@ -938,7 +942,12 @@ function walkIn() {
     .to(crestHalo, { opacity: 0.45, scale: 1.08, duration: 1.4, ease: 'sine.inOut' }, 0.9)
     // one tail is pulled and the loops slip through the knot; it gives, the bands swing down from the posts, then fall
     .to(pull, { p: 1, duration: 0.75, ease: 'power1.in', onUpdate: () => rib.pull(pull.p) }, 0.2)
+    .to(bowImg, { scaleY: 0.93, scaleX: 1.05, y: -5, duration: 0.18, ease: 'power2.out' }, 0.2)
+    .to(bowImg, { scaleY: 1, scaleX: 1, y: 0, duration: 0.25, ease: 'power2.inOut' }, 0.38)
+    .to(bowImg, { keyframes: { rotation: [0, 6, -5, 4, -2, 0] }, duration: 0.42, ease: 'sine.inOut' }, 0.54)
     .add(() => rib.release(), 0.96)
+    .to(bowImg, { y: G.H * 0.62, x: G.W * 0.05, rotation: 26, scale: 0.92, duration: 1.25, ease: 'power2.in' }, 0.96)
+    .to(bowImg, { opacity: 0, duration: 0.45, ease: 'power1.in' }, 1.75)
     .add(() => rib.drop(), 2.3)
     // we lean in; the latch gives; light at the seam
     .to(gateIn, { scale: 1.03, duration: 1.1, ease: 'sine.inOut' }, 1.0)

@@ -66,12 +66,15 @@ export function createRibbon(canvas) {
       chain(bezierPts(loopL, 60), 78 * k / 0.8, 'loop'),
       chain(bezierPts(mirror(loopL), 60), 78 * k / 0.8, 'loop'),
     ];
-    // pins: posts and the knot hold everything at rest
+    // pins: posts and the knot hold everything at rest (with a painted bow, only the two bands are cloth)
     const pinAt = (c, i) => { c.p[i].pin = [c.p[i].x, c.p[i].y]; };
     pinAt(C[0], 0); pinAt(C[0], 29); pinAt(C[1], 0); pinAt(C[1], 29);
-    pinAt(C[2], 0); pinAt(C[3], 0);
-    pinAt(C[4], 0); pinAt(C[4], C[4].p.length - 1); pinAt(C[5], 0); pinAt(C[5], C[5].p.length - 1);
-    S.tailEnd = { x: C[3].p.at(-1).x, y: C[3].p.at(-1).y };
+    if (o.bandsOnly) C = C.slice(0, 2);
+    else {
+      pinAt(C[2], 0); pinAt(C[3], 0);
+      pinAt(C[4], 0); pinAt(C[4], C[4].p.length - 1); pinAt(C[5], 0); pinAt(C[5], C[5].p.length - 1);
+      S.tailEnd = { x: C[3].p.at(-1).x, y: C[3].p.at(-1).y };
+    }
     phase = 'rest'; pullP = 0; knotA = 1; alpha = 1;
     draw();
   }
@@ -126,6 +129,7 @@ export function createRibbon(canvas) {
   /** p 0..1: the right tail is pulled down and out; the loops shorten through the knot. */
   function pull(p) {
     start();
+    if (geo.bandsOnly) return;
     phase = 'pull'; pullP = p;
     const lt = C[3];
     const e = lt.p.at(-1);
@@ -147,7 +151,7 @@ export function createRibbon(canvas) {
     // a little kick: the freed ends spring apart and down
     const kick = (q, vx, vy) => { q.px = q.x - vx; q.py = q.y - vy; };
     kick(C[0].p.at(-1), -3, 1); kick(C[1].p.at(-1), 3, 1);
-    kick(C[3].p.at(-1), 4, 2);
+    if (C[3]) kick(C[3].p.at(-1), 4, 2);
   }
   /** the bands slip off the posts and everything falls away */
   function drop() {
@@ -235,7 +239,7 @@ export function createRibbon(canvas) {
     for (const c of C) strip(c, true);
     // (each quad is also stroked in its own colour, so neighbouring quads never show a hairline seam)
     for (const c of C) strip(c, false);
-    if (knotA > 0) {
+    if (knotA > 0 && !geo.bandsOnly) {
       // the knot: a wrap of the same satin, gathered, with two soft creases
       const [kx, ky] = geo.K; const k = geo.k * (1 - pullP * 0.2);
       ctx.globalAlpha = alpha * knotA;
