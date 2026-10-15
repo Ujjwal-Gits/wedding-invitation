@@ -23,6 +23,11 @@ export const THEMES = [
   ['shree', 'Shree', 'श्री', 'Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend.', 'a gold line-art Ganesh on deep plum with hanging diyas'],
   ['pardaa', 'Pardaa', 'पर्दा', 'Red velvet curtains part on a dressed mandap with a living fire; each ceremony in its own colours.', 'red and gold velvet curtains tied back around a marigold-dressed mandap'],
   ['rajdwar', 'Rajdwar', 'राजद्वार', 'A painted gold palace gate tied with a satin bow; untie it and walk through onto the red-and-gold Mangal card.', 'a painted gold palace gate with Ganesh on its crest, tied with an ivory satin bow'],
+  ['agni', 'Agni', 'अग्नि', 'The sacred fire at night: the fire catches on a tap, then the couple walk the seven rounds and the vows appear.', 'a brass havan kunda with a living fire under Ganesh'],
+  ['janti', 'Janti', 'जन्ती', 'The janti strikes up: walk with the Naumati Baja and the doli down an old Newari street to the bride’s door.', 'the Naumati Baja and a red doli in a golden Newari street'],
+  ['swayambar', 'Swayambar', 'स्वयम्बर', 'Two fresh garlands swing apart on the jaimala; the bride’s and groom’s sides come together as you scroll.', 'the bride and groom exchanging marigold garlands'],
+  ['sindoor', 'Sindoor', 'सिन्दूर', 'Minimal red, white and black: the sindoor box opens in a bloom of red and a parting line threads the story.', 'a red-and-gold sindoor box on white with a red line-drawn Ganesh'],
+  ['rangoli', 'Rangoli', 'रंगोली', 'A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos'],
 ].map(([slug, name, ne, concept, alt]) => ({ slug, name, ne, concept, alt, thumb: `/themes/${slug}/thumb.jpg`, demo: `/${slug}/` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));

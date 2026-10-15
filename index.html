@@ -4,23 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Nimtto · Nepali wedding invitation websites</title>
-  <meta name="description" content="Premium Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and one link to share on WhatsApp. Choose a design; we set it up with your photos." />
+  <meta name="description" content="Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and one link to share on WhatsApp. Choose from twenty-seven designs; we set yours up with your photos." />
   <link rel="canonical" href="https://nimtto.com/" />
-  <meta name="theme-color" content="#FBF7F0" />
+  <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Nimtto" />
   <meta property="og:title" content="Nimtto · Nepali wedding invitation websites" />
-  <meta property="og:description" content="Twenty-two premium designs with music, Bikram Sambat dates and RSVP. One link for WhatsApp." />
+  <meta property="og:description" content="Twenty-seven invitation websites with music, Bikram Sambat dates and RSVP. One link for WhatsApp." />
   <meta property="og:url" content="https://nimtto.com/" />
   <meta property="og:image" content="https://nimtto.com/site/og.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Nimtto: Nepali wedding invitations on a phone" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&family=Mukta:wght@400;500&family=Tiro+Devanagari+Hindi&display=swap" />
-  <link rel="preload" as="image" href="/site/phones/mahal.webp" />
+  <link rel="preload" href="/site/fonts/gambetta-var.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/site/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" as="image" href="/site/phones/mahal.webp" fetchpriority="high" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -33,7 +33,7 @@
         "url": "https://nimtto.com/",
         "logo": "https://nimtto.com/favicon.svg",
         "image": "https://nimtto.com/site/og.jpg",
-        "description": "Premium Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and WhatsApp sharing.",
+        "description": "Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and WhatsApp sharing.",
         "areaServed": { "@type": "Country", "name": "Nepal" },
         "address": { "@type": "PostalAddress", "addressCountry": "NP" },
         "knowsLanguage": ["en", "ne"]
@@ -43,7 +43,7 @@
         "name": "Nimtto wedding invitation website",
         "brand": { "@type": "Brand", "name": "Nimtto" },
         "image": "https://nimtto.com/site/og.jpg",
-        "description": "A Nepali wedding invitation website in one of twenty-two designs, set up with the couple's photos, families and events, with music, RSVP and Bikram Sambat dates.",
+        "description": "A Nepali wedding invitation website in one of twenty-seven designs, set up with the couple's photos, families and events, with music, RSVP and Bikram Sambat dates.",
         "category": "Wedding invitations"
       }
     ]
@@ -56,181 +56,166 @@
 
   <header class="bar" id="top">
     <div class="bar__in">
-      <a class="mark" href="#top" aria-label="Nimtto, home">
-        <span class="mark__en">Nimtto</span><span class="mark__ne" lang="ne">निम्तो</span>
-      </a>
-      <nav class="bar__nav" aria-label="Sections">
+      <a class="mark" href="#top" aria-label="Nimtto, home">Nimtto<span class="mark__ne" lang="ne" aria-hidden="true">निम्तो</span></a>
+      <nav class="bar__nav" id="nav" aria-label="Sections">
         <a href="#how">How it works</a>
         <a href="#designs">Designs</a>
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
         <a href="#contact">Contact</a>
       </nav>
-      <a class="btn btn--sm btn--ink" href="#order">Order yours</a>
+      <a class="btn btn--ink btn--sm" href="#order">Order</a>
+      <button class="bar__menu" type="button" id="menu-btn" aria-expanded="false" aria-controls="nav">Menu</button>
     </div>
   </header>
 
   <main id="main">
-    <!-- HERO -->
+    <!-- HERO + signature motion: one phone flips through real designs as you scroll -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero__copy">
-        <p class="eyebrow"><span lang="ne" class="ne">शुभ विवाह</span><span class="eyebrow__dot" aria-hidden="true"></span>Wedding invitations, online</p>
-        <h1 class="hero__title" id="hero-title" data-site="hero-title">Your wedding invitation, <em>as a website your guests will keep.</em></h1>
-        <p class="hero__sub" data-site="hero-subtitle">Premium Nepali invitation websites with music, Bikram Sambat dates and RSVP. Choose a design, send us your photos, and share one link.</p>
-        <div class="hero__cta">
-          <a class="btn btn--accent" href="#designs">See the designs</a>
-          <a class="btn btn--line" href="#order">Order yours</a>
+        <h1 class="hero__title" id="hero-title" data-site="hero-title">Wedding invitations, made to be opened.</h1>
+        <div class="hero__aside">
+          <p class="hero__sub" data-site="hero-subtitle">Nepali invitation websites with music, Bikram Sambat dates and RSVP. Choose a design, send us your photos, and share one link on WhatsApp.</p>
+          <p class="hero__act">
+            <a class="btn btn--accent" href="#designs"><span>See all <span class="js-num">27</span> designs</span></a>
+            <a class="link" href="#order" data-kind="custom">Or ask for a custom design</a>
+          </p>
         </div>
-        <p class="hero__note"><span lang="ne" class="ne">निम्तो</span> means invitation. <span class="js-count" data-cap="1">Twenty-two</span> designs, in English and Nepali.</p>
       </div>
 
-      <div class="hero__art">
-        <div class="fan" id="fan" aria-hidden="false">
-          <div class="fan__intro">
-            <div class="fan__stage">
-              <span class="fan__ring" aria-hidden="true"></span>
-              <figure class="phone phone--l">
-                <img src="/site/phones/mangal.webp" width="540" height="1169" alt="The Mangal design on a phone: a red temple doorway with marigold garlands" decoding="async" />
-              </figure>
-              <figure class="phone phone--r">
-                <img src="/site/phones/nimantrana.webp" width="540" height="1169" alt="The Nimantrana design on a phone: a red and gold card reading शुभ विवाह" decoding="async" />
-              </figure>
-              <figure class="phone phone--c">
-                <img src="/site/phones/mahal.webp" width="540" height="1169" alt="The Mahal design on a phone: a golden palace gate tied with an ivory satin bow" fetchpriority="high" decoding="async" />
-              </figure>
+      <div class="stage" id="stage">
+        <div class="stage__pin">
+          <div class="phone" id="phone">
+            <div class="phone__screen" id="screens">
+              <img class="scr" src="/site/phones/mahal.webp" width="540" height="1169" alt="The Mahal design on a phone: a golden palace gate tied with an ivory satin bow" fetchpriority="high" decoding="async" data-slug="mahal" />
             </div>
           </div>
+          <div class="cap" id="cap" aria-live="polite">
+            <p class="cap__n"><span id="cap-i">01</span> / <span id="cap-total">06</span></p>
+            <p class="cap__name"><span id="cap-name">Mahal</span> <span class="cap__ne" id="cap-ne" lang="ne">महल</span></p>
+            <p class="cap__text" id="cap-text">A golden palace gate tied with a satin bow; it swings open onto a palace balcony at night.</p>
+            <a class="link link--sm" id="cap-link" href="/mahal/" target="_blank" rel="noopener">Open it live<span class="vh"> (new tab)</span> <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="ticks" id="ticks" role="group" aria-label="Designs shown in the phone"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE WORD -->
+    <section class="word" aria-labelledby="word-title">
+      <div class="word__in">
+        <p class="word__ne" lang="ne" aria-hidden="true">निम्तो</p>
+        <div class="word__body">
+          <h2 class="word__head" id="word-title"><span lang="ne" class="vh">निम्तो, </span>nimtto <span class="word__pos">noun</span></h2>
+          <p class="word__def">An invitation. In Nepal it is still carried from house to house by hand. Ours arrives on WhatsApp, opens with your song, and gives every ceremony in both calendars.</p>
         </div>
       </div>
     </section>
 
     <!-- HOW IT WORKS -->
     <section class="how" id="how" aria-labelledby="how-title">
-      <header class="sec-head">
-        <p class="eyebrow"><span lang="ne" class="ne">कसरी</span><span class="eyebrow__dot" aria-hidden="true"></span>How it works</p>
-        <h2 class="sec-title" id="how-title">From a design you love <em>to replies on your phone.</em></h2>
-      </header>
+      <div class="how__head">
+        <p class="label">How it works <span lang="ne">कसरी</span></p>
+        <h2 class="h2" id="how-title">From a design you love to replies on your phone.</h2>
+      </div>
       <ol class="steps">
         <li class="step">
-          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="7" width="15" height="20" rx="1.5"/><path d="M12 5h13.5A1.5 1.5 0 0 1 27 6.5v17"/><path d="M9 21h7M9 17.5h7"/><path d="M12.5 10.5c0 1.6-1.2 2.8-2.5 3.5 1.3-.7 2.5-1.9 2.5-3.5Zm0 0c0 1.6 1.2 2.8 2.5 3.5"/></svg></span>
-          <span class="step__num">01</span>
-          <h3 class="step__title">Choose a design</h3>
-          <p class="step__ne" lang="ne">डिजाइन छान्नुहोस्</p>
-          <p class="step__text"><span class="js-count" data-cap="1">Twenty-two</span> openings, from a carved Patan door to a palace gate. Open each one live before you decide.</p>
+          <span class="step__n" aria-hidden="true">1</span>
+          <div>
+            <h3 class="step__t">Choose a design <span lang="ne">डिजाइन छान्नुहोस्</span></h3>
+            <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a palace gate. Open each one live before you decide.</p>
+          </div>
         </li>
         <li class="step">
-          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="17" rx="1.5"/><circle cx="16" cy="16.5" r="4.5"/><path d="M11 8l1.6-3h6.8L21 8"/><path d="M24 11.5h.01"/></svg></span>
-          <span class="step__num">02</span>
-          <h3 class="step__title">We set it up</h3>
-          <p class="step__ne" lang="ne">हामी सजाउँछौं</p>
-          <p class="step__text">Send your photos, names, families and events. We set everything in place, in English and Nepali.</p>
+          <span class="step__n" aria-hidden="true">2</span>
+          <div>
+            <h3 class="step__t">We set it up <span lang="ne">हामी सजाउँछौं</span></h3>
+            <p>Send your photos, names, families and events. We put everything in place, in English and Nepali.</p>
+          </div>
         </li>
         <li class="step">
-          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M13.5 18.5a5 5 0 0 0 7.1 0l4-4a5 5 0 0 0-7.1-7.1l-1.3 1.3"/><path d="M18.5 13.5a5 5 0 0 0-7.1 0l-4 4a5 5 0 0 0 7.1 7.1l1.3-1.3"/></svg></span>
-          <span class="step__num">03</span>
-          <h3 class="step__title">Share one link</h3>
-          <p class="step__ne" lang="ne">एउटै लिङ्क</p>
-          <p class="step__text">One link for WhatsApp, Viber and Messenger, with a preview card that shows your names.</p>
+          <span class="step__n" aria-hidden="true">3</span>
+          <div>
+            <h3 class="step__t">Share one link <span lang="ne">एउटै लिङ्क</span></h3>
+            <p>One link for WhatsApp, Viber and Messenger, with a preview card that shows your names.</p>
+          </div>
         </li>
         <li class="step">
-          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 9.5A1.5 1.5 0 0 1 6.5 8h19A1.5 1.5 0 0 1 27 9.5v13a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 5 22.5z"/><path d="M5.5 9l10.5 8 10.5-8"/><path d="M19.5 21l2 2 4-4.5" class="step__tick"/></svg></span>
-          <span class="step__num">04</span>
-          <h3 class="step__title">Guests reply</h3>
-          <p class="step__ne" lang="ne">पाहुनाको जवाफ</p>
-          <p class="step__text">Guests RSVP in a tap. Every reply waits for you in your private dashboard.</p>
+          <span class="step__n" aria-hidden="true">4</span>
+          <div>
+            <h3 class="step__t">Guests reply <span lang="ne">पाहुनाको जवाफ</span></h3>
+            <p>Guests RSVP in a tap. Every reply waits for you in your private dashboard.</p>
+          </div>
         </li>
       </ol>
     </section>
 
     <!-- DESIGNS -->
     <section class="designs" id="designs" aria-labelledby="designs-title">
-      <header class="sec-head sec-head--split">
-        <div>
-          <p class="eyebrow"><span lang="ne" class="ne">डिजाइन</span><span class="eyebrow__dot" aria-hidden="true"></span>The designs</p>
-          <h2 class="sec-title" id="designs-title"><span class="js-count" data-cap="1">Twenty-two</span> ways <em>to open the door.</em></h2>
-        </div>
-        <p class="sec-lede">Every design carries the same couple, ceremonies, music and RSVP. Only the opening and the mood change. Open any of them live.</p>
+      <header class="designs__head">
+        <h2 class="h2 h2--xl" id="designs-title"><span class="js-count" data-cap="1">Twenty-seven</span> designs.</h2>
+        <p class="designs__lede">Each one carries the same couple, ceremonies, music and RSVP. Only the opening and the mood change. Open any of them live.</p>
       </header>
-      <ol class="gallery" id="gallery" aria-live="polite"></ol>
-      <div class="gallery__more">
-        <button class="btn btn--line" type="button" id="gallery-more" hidden>Show all designs</button>
+      <div class="index" id="index">
+        <ol class="list" id="gallery"></ol>
+        <div class="view" id="view" aria-hidden="true">
+          <div class="view__shot" id="view-shot"><img id="view-img" src="/site/thumbs/mahal-800.webp" alt="" width="1200" height="900" decoding="async" /></div>
+          <p class="view__text" id="view-text"></p>
+        </div>
       </div>
+      <p class="designs__more"><button class="btn btn--line" type="button" id="gallery-more" hidden>Show all designs</button></p>
     </section>
 
     <!-- FEATURES -->
     <section class="features" id="features" aria-labelledby="features-title">
-      <div class="features__art">
-        <figure class="features__fig">
-          <img src="/themes/_nepali/ganthi.webp" srcset="/themes/_nepali/ganthi-sm.webp 480w, /themes/_nepali/ganthi.webp 1000w" sizes="(min-width: 960px) 34vw, 70vw" width="1000" height="867" alt="A painted ganthi bandhan: a red silk shawl knotted to an ivory and gold one" loading="lazy" decoding="async" />
-          <figcaption><span lang="ne" class="ne">गाँठी बन्धन</span> The knot that ties two families.</figcaption>
-        </figure>
-      </div>
-      <div class="features__body">
-        <header class="sec-head">
-          <p class="eyebrow"><span lang="ne" class="ne">विशेषता</span><span class="eyebrow__dot" aria-hidden="true"></span>In every invitation</p>
-          <h2 class="sec-title" id="features-title">Everything a Nepali wedding asks for, <em>nothing it doesn’t.</em></h2>
+      <div class="features__in">
+        <header class="features__head">
+          <p class="label label--dark">In every invitation <span lang="ne">विशेषता</span></p>
+          <h2 class="h2" id="features-title">Everything a Nepali wedding asks for, and nothing it doesn’t.</h2>
         </header>
-        <ul class="feats">
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M12 23V8l14-3v15"/><circle cx="8.5" cy="23" r="3.5"/><circle cx="22.5" cy="20" r="3.5"/></svg></span>
-            <h3>Live music</h3><p>A song of your choice starts when the invitation opens. Guests can mute it any time.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="6" y="5" width="20" height="23" rx="1.5"/><path d="M11 11h10M11 15.5h10"/><path d="M11 21.5l2.5 2.5 5-5"/></svg></span>
-            <h3>RSVP collection</h3><p>Who is coming, to which ceremony, and how many. All in one list.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="7" width="22" height="20" rx="1.5"/><path d="M5 12.5h22M11 4.5v5M21 4.5v5"/></svg></span>
-            <h3>Bikram Sambat dates</h3><p>Each date in both calendars: <span class="specimen" lang="ne">माघ २९, २०८३</span> beside 12 February 2027.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 8h13M10.5 5v3M7 8c.8 4.5 3.5 8 8 10M14 8c-.8 4.5-3.5 8-8 10"/><path d="M17 27l5-12 5 12M18.7 23h6.6"/></svg></span>
-            <h3>English and Nepali</h3><p>One tap switches the language: <span class="specimen">Aarati &amp; Sameer</span> becomes <span class="specimen" lang="ne">आरती र समीर</span>.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6.5 25.5l1.4-4.6A10 10 0 1 1 11.6 24z"/><path d="M12.5 12.5c0 4 3 7 7 7l1.5-2-2.5-1.2-1 1c-1.5-.6-2.6-1.7-3.2-3.2l1-1L14.5 11z"/></svg></span>
-            <h3>Share on WhatsApp</h3><p>A link with your names and photo in the preview, ready for every family group.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M10 4.5h12M10 27.5h12"/><path d="M11 4.5c0 6 10 7 10 11.5S11 21.5 11 27.5M21 4.5c0 6-10 7-10 11.5s10 5.5 10 11.5"/></svg></span>
-            <h3>Countdown and a hidden date</h3><p>Days to the wedding, and a date guests scratch to reveal, like a sealed card.</p>
-          </li>
-          <li class="feat">
-            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="7" y="14" width="18" height="13" rx="1.5"/><path d="M11 14v-3.5a5 5 0 0 1 10 0V14"/><path d="M16 19v3"/></svg></span>
-            <h3>Your private dashboard</h3><p>A private link for the couple: update details, add photos and read every reply.</p>
-          </li>
-        </ul>
+        <div class="specimens">
+          <figure class="spec">
+            <p class="spec__big"><span lang="ne">माघ २९, २०८३</span></p>
+            <p class="spec__small">12 February 2027</p>
+            <figcaption><strong>Bikram Sambat dates.</strong> Every date in both calendars, side by side.</figcaption>
+          </figure>
+          <figure class="spec spec--lang">
+            <p class="spec__big">Aarati &amp; Sameer</p>
+            <p class="spec__small"><span lang="ne">आरती र समीर</span></p>
+            <figcaption><strong>English and Nepali.</strong> One tap switches the whole invitation.</figcaption>
+          </figure>
+        </div>
+        <dl class="feats">
+          <div><dt>Your song</dt><dd>The music you choose starts when the invitation opens. Guests can mute it at any time.</dd></div>
+          <div><dt>RSVP</dt><dd>Who is coming, to which ceremony, and how many. All in one list.</dd></div>
+          <div><dt>Made for WhatsApp</dt><dd>A link with your names and photo in the preview, ready for every family group.</dd></div>
+          <div><dt>Countdown and a hidden date</dt><dd>Days to the wedding, and a date guests scratch to reveal, like a sealed card.</dd></div>
+          <div><dt>A private dashboard</dt><dd>Your own link to update details, add photos and read every reply.</dd></div>
+        </dl>
       </div>
     </section>
 
     <!-- PRICING -->
     <section class="pricing" id="pricing" aria-labelledby="pricing-title">
-      <div class="pricing__in">
-        <header class="sec-head sec-head--split">
-          <div>
-            <p class="eyebrow eyebrow--light"><span lang="ne" class="ne">मूल्य</span><span class="eyebrow__dot" aria-hidden="true"></span>Pricing</p>
-            <h2 class="sec-title" id="pricing-title">Simple plans, <em>set up by hand.</em></h2>
-          </div>
-          <p class="sec-lede">Prices are in Nepali rupees. No payment online: send a request and we will call you to talk it through.</p>
-        </header>
-        <ol class="plans" id="plans"></ol>
-      </div>
+      <header class="pricing__head">
+        <p class="label">Pricing <span lang="ne">मूल्य</span></p>
+        <h2 class="h2" id="pricing-title">Set up by hand, priced in rupees.</h2>
+        <p class="pricing__lede">No payment online. Send a request and we will call you to talk it through.</p>
+      </header>
+      <ol class="plans" id="plans"></ol>
     </section>
 
     <!-- ORDER -->
     <section class="order" id="order" aria-labelledby="order-title">
       <div class="order__aside">
-        <header class="sec-head">
-          <p class="eyebrow"><span lang="ne" class="ne">अर्डर</span><span class="eyebrow__dot" aria-hidden="true"></span>Order or request</p>
-          <h2 class="sec-title" id="order-title">Tell us about <em>your wedding.</em></h2>
-        </header>
-        <p class="order__lede">Send a request and we will call or message you within a day. Nothing is charged here.</p>
-        <ol class="order__next">
-          <li><span>1</span>We call you to confirm the design, plan and dates.</li>
-          <li><span>2</span>You send photos and details on WhatsApp or by email.</li>
-          <li><span>3</span>You see a private preview before anything is shared.</li>
+        <p class="label">Order or request <span lang="ne">अर्डर</span></p>
+        <h2 class="h2" id="order-title">Tell us about your wedding.</h2>
+        <p class="order__lede">We call or message you within a day. Nothing is charged here.</p>
+        <ol class="next">
+          <li>We call you to confirm the design, plan and dates.</li>
+          <li>You send photos and details on WhatsApp or by email.</li>
+          <li>You see a private preview before anything is shared.</li>
         </ol>
-        <img class="order__kalash" src="/themes/_nepali/kalash-sm.webp" width="460" height="577" alt="" loading="lazy" decoding="async" />
       </div>
 
       <div class="order__panel">
@@ -284,12 +269,12 @@
             <button class="btn btn--accent btn--wide" type="submit" id="order-submit">Send request</button>
             <p class="form__fine">We use your details only to contact you about your invitation.</p>
           </div>
-          <p class="form__status form__status--err" id="order-error" role="alert" hidden></p>
+          <p class="form__status" id="order-error" role="alert" hidden></p>
         </form>
 
         <div class="done" id="order-done" hidden tabindex="-1">
           <p class="done__ne" lang="ne">धन्यवाद</p>
-          <h3 class="done__title">Thank you. <em>We have your request.</em></h3>
+          <h3 class="done__title">Thank you. We have your request.</h3>
           <p>We will call or message you within a day. If it is urgent, write to us on WhatsApp.</p>
           <button class="btn btn--line" type="button" id="order-again">Send another request</button>
         </div>
@@ -298,10 +283,9 @@
 
     <!-- CONTACT -->
     <section class="contact" id="contact" aria-labelledby="contact-title">
-      <div class="contact__lamp" id="contact-lamp" aria-hidden="true"></div>
+      <p class="contact__ne" lang="ne" aria-hidden="true">नमस्ते</p>
       <div class="contact__body">
-        <p class="contact__ne" lang="ne">नमस्ते</p>
-        <h2 class="sec-title" id="contact-title">Talk to us <em>before you decide.</em></h2>
+        <h2 class="h2" id="contact-title">Talk to us before you decide.</h2>
         <dl class="contact__list" id="contact-list"></dl>
         <p class="contact__empty" id="contact-empty" hidden>Send a request through the form above and we will call you back.</p>
       </div>
@@ -309,10 +293,9 @@
   </main>
 
   <footer class="foot">
-    <div class="foot__band" aria-hidden="true"></div>
     <div class="foot__in">
-      <a class="mark mark--foot" href="#top" aria-label="Nimtto, back to top"><span class="mark__en">Nimtto</span><span class="mark__ne" lang="ne">निम्तो</span></a>
-      <p class="foot__credits">Photographs, flowers and music by Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA. <a href="/credits/">Credits</a></p>
+      <a class="mark mark--foot" href="#top" aria-label="Nimtto, back to top">Nimtto<span class="mark__ne" lang="ne" aria-hidden="true">निम्तो</span></a>
+      <p class="foot__credits">Photographs, flowers and music in the designs are by Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA. <a href="/credits/">Credits</a></p>
       <p class="foot__meta"><span>© <span id="year">2026</span> Nimtto</span><a href="/studio/">Studio sign in</a></p>
     </div>
   </footer>

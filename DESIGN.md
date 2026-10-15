@@ -113,3 +113,37 @@ Banned: "Unlock", "Seamlessly", "Elevate your", "Supercharge", "in seconds",
 - Never letter-space or uppercase Devanagari (breaks conjuncts).
 - RSVP: validated client and server side; endpoint URL from config; honeypot
   field; no secrets in client code.
+
+---
+
+## Website (home page) design
+
+Applies to the public site at `/` only (`index.html`, `src/site/**`, `public/site/**`). The invitation themes keep
+their own ornate type; the website must not borrow it.
+
+Feeling: a fashion-house catalogue for invitations. White, ink, one crimson. The colour and warmth come from the real
+designs (phone screens and thumbnails), shown big, never from the chrome.
+
+Fonts (self-hosted in `public/site/fonts/`, licences beside them):
+- Display: Gambetta variable (Indian Type Foundry, ITF Free Font License), weight 400-500, upright only, tight tracking
+  (-0.025 to -0.035em). Never italic.
+- UI and body: Geist (OFL) 400-600, same as the studio.
+- Nepali text: Mukta (OFL). Nepali display words (निम्तो, नमस्ते, dates): Noto Serif Devanagari 500 (OFL), with
+  `locl` off so ८ never reads as ५.
+- Banned here: Cormorant, Playfair, Bodoni, Pinyon, Great Vibes or any script; Inter/Roboto/system-ui as display.
+
+Tokens (`src/site/site.css`): white `#FFFFFF`, mist `#F4F5F7` (alternate bands), mist-2 `#ECEEF1`, line `#E1E3E8`,
+ink `#121116`, ink-2 `#45434C`, ink-3 `#66636E` (min. 5.3:1), crimson `#B3122F` (the only accent; hover
+`#8E0E25`), on-dark `#F6F6F7` / `#B4B1BA` / `#8E8B96`, error `#B42318`. No beige or ivory, no gold hairlines, no
+gradients.
+
+Structure (no two sections built alike): hero with a pinned phone; a crimson dictionary band (निम्तो, noun); how it
+works as a numbered list beside a sticky heading; designs as an index with a sticky picture (desktop) or a
+wide-and-pair card rhythm (phone); features on ink as two type specimens plus a two-column list; pricing as a price
+list; order form on mist; contact and footer on ink.
+
+Motion: one signature moment only. In the hero a single phone stays pinned while six real designs slide up into
+its screen as you scroll (transform/opacity, custom ease). Everything else is quiet: hover fades of 150-280 ms.
+Reduced motion: no pinning; the buttons under the phone switch designs instantly.
+
+Copy: plain and specific. No "Elevate / Seamless / Unlock", no em-dash asides, no eyebrow-and-dot labels.
