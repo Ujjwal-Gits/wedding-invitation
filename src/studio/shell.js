@@ -54,13 +54,14 @@ export function createShell(opts) {
   const title = h('h1.page__title');
   const sub = h('p.page__sub');
   const actions = h('div.page__actions');
+  const strip = h('div.page__strip', { hidden: true });
   const pvBtn = h('button.btn.btn--quiet.page__pv', { type: 'button', onclick: () => openSheet(), hidden: true }, icon('eye', 17), h('span', 'Preview'));
-  const topbar = h('header.page__bar', h('div.page__heading', kicker, title, sub), h('div.page__right', actions, pvBtn));
+  const topbar = h('header.page__bar', h('div.page__barin', h('div.page__heading', kicker, title, sub), strip, h('div.page__right', actions, pvBtn)));
   const content = h('div.page__content');
   const main = h('main.sh__main#main', { tabindex: -1 }, h('div.page', topbar, content));
   const pvSlot = h('div.sh__preview');
   const scrim = h('div.sh__scrim', { onclick: () => closeSheet() });
-  const root = h('div.sh', nav, main, pvSlot, tabs, scrim);
+  const root = h('div.sh', { class: opts.kind ? `sh--${opts.kind}` : '' }, nav, main, pvSlot, tabs, scrim);
 
   function setCollapsed(on) {
     root.classList.toggle('is-collapsed', on);
@@ -153,7 +154,13 @@ export function createShell(opts) {
       sub.textContent = s;
       sub.hidden = !s;
       fill(actions, ...[acts].flat().filter(Boolean));
+      clear(strip);
+      strip.hidden = true;
     },
+    /** Replace the short context line under the title. */
+    setSub(s2) { sub.textContent = s2 || ''; sub.hidden = !s2; },
+    /** A compact strip of key figures in the page header (or null to remove it). */
+    setStrip(node) { clear(strip); if (node) strip.append(node); strip.hidden = !node; },
     /** Attach a preview controller (or null). */
     attachPreview(p) {
       preview = p;

@@ -138,6 +138,7 @@ function openAdmin(mod, params) {
   if (S.ws?.kind !== 'admin') {
     teardown();
     const shell = createShell({
+      kind: 'admin',
       brand: brand(),
       groups: [
         { items: ADMIN_MODULES.filter((m) => m.group === 'main').map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
@@ -190,6 +191,7 @@ async function openInvitation(slug, modId) {
     };
     drawCtx();
     const shell = createShell({
+      kind: 'inv',
       brand: brand(),
       context: ctxBox,
       groups: [

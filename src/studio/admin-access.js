@@ -145,10 +145,11 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
   return root;
 }
 
+const dotStatus = (tone, text) => h('span.st', { class: `st--${tone}` }, h('span.st__dot', { 'aria-hidden': 'true' }), h('span.st__t', text));
 export const accessSummary = (l) => {
-  if (!l) return h('span.pill.pill--muted', 'No link');
-  if (!l.hasPassword) return h('span.pill.pill--warn', icon('alert', 12), 'No password');
-  return h('span.pill.pill--ok', icon('check', 12), 'Active');
+  if (!l) return dotStatus('none', 'No link');
+  if (!l.hasPassword) return dotStatus('warn', 'No password');
+  return dotStatus('ok', 'Active');
 };
 
 export const permsText = (l) => {
