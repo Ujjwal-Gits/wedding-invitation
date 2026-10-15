@@ -34,15 +34,7 @@ Then vertical again: travel/contacts, the RSVP as a letter rising out of a blush
 All arches are computed in JS from each element's layout size (clip-path polygon + fine gold double/cusped line).
 Reduced motion: no pin, the same panels simply stack.
 
-## Nepali wedding touches (shared kit, src/themes/_suite/nepali.js)
-- Real photographic flames burn inside the Mughal lanterns (hero, gallery foreground, closing).
-- Two brass Panas lamps with live flames flank the couple at the foot of the hero arch; fresh marigold-and-rose
-  sprays sit with the peonies in the hero corners.
-- A fresh marigold toran hangs across the crown of the gallery's first panel.
-- A gold-edged band of real Palpali Dhaka weave sits under every panel title.
-- The bond moment: the ganthi bandhan. The bride's red shawl knotted to the groom's ivory patuka ties the two family
-  arches; as that panel comes in, the arches slide toward the knot in 3D and the knot tightens into view.
-- The palette is used richly: a rose-deepening gallery stage, a blush-to-rose envelope ground, a berry closing.
+A real photographic flame (shared kit, `_suite/nepali.js`) burns inside each Mughal lantern.
 
 ## Art
 Canva AI, generated for this theme: `public/themes/laali/art/` couple, lantern, flowers (peony corner, mirrored

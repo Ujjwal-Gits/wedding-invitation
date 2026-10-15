@@ -5,7 +5,7 @@ import './laali.css';
 import { gsap } from 'gsap';
 import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
-import { lamp, flame, toran, ganthi, flowers, initNepali } from '../_suite/nepali.js';
+import { flame, initNepali } from '../_suite/nepali.js';
 
 const A = '/themes/laali/art/';
 const art = {
@@ -233,7 +233,7 @@ function page(ctx) {
   const { bi, esc, txt, on, parts: P, c } = ctx;
   P.bi = bi;
   const ch = []; // [id, title, html]
-  const head = (title, kicker) => `<header class="la-ph">${kicker && on(kicker) ? `<p class="la-k">${bi(kicker)}</p>` : ''}<h2 class="la-h">${bi(title)}</h2><i class="la-weave" aria-hidden="true"></i></header>`;
+  const head = (title, kicker) => `<header class="la-ph">${dhakaBand('la-dhaka--ph')}${kicker && on(kicker) ? `<p class="la-k">${bi(kicker)}</p>` : ''}<h2 class="la-h">${bi(title)}</h2></header>`;
   const panel = (id, cls, k, inner, after = '') => `<article class="la-pan ${cls}" id="${id}" data-arch="${k}">
       <div class="la-shape"></div>
       <div class="la-pan__in"><div class="la-pan__fit">${inner}</div></div>${after}
@@ -254,7 +254,7 @@ function page(ctx) {
     </div>
     <div class="la-btns">${P.calendarBtn()}${P.shareBtn()}</div>`)]);
   ch.push(['ch-fam', txt('families.title'), panel('ch-fam', 'la-pan--fam', 0.74, `${head(txt('families.title'))}
-    <div class="la-fam">${P.families.map((f) => `<div class="la-fam__arch la-fam__arch--${f.key}" data-arch="0.95">
+    <div class="la-fam">${P.families.map((f, i) => `${i ? '<span class="la-fam__and" aria-hidden="true">&amp;</span>' : ''}<div class="la-fam__arch la-fam__arch--${f.key}" data-arch="0.95">
         <div class="la-shape"></div>
         <div class="la-fam__in">
           ${P.brideGroom ? `<figure class="la-fam__pic">${ctx.imgTag(f.photo, f.person.name.en, '120px')}</figure>` : ''}
@@ -263,14 +263,14 @@ function page(ctx) {
           ${(f.person.parents?.en || f.person.parents?.ne) ? `<p class="la-fam__of">${bi(f.of)}</p><p class="la-fam__par">${bi(f.person.parents)}</p>` : ''}
           ${(f.person.home?.en || f.person.home?.ne) ? `<p class="la-fam__home">${bi(f.person.home)}</p>` : ''}
         </div>
-      </div>`).join('')}${ganthi('la-knot', '(max-width: 700px) 50vw, 240px')}</div>`)]);
+      </div>`).join('')}</div>`)]);
   P.events.forEach((ev, n) => {
     const stub = `<div class="la-tk__stub" aria-hidden="true">
         <span class="la-tk__day">${bi({ en: ev.ad.day, ne: ev.bs.day || ctx.neNum(ev.ad.day) })}</span>
         <span class="la-tk__my"><b>${bi({ en: ev.ad.month.en, ne: ev.bs.month || ev.ad.month.ne })}</b><small>${bi({ en: `${ev.ad.wd.en} · ${ev.ad.year}`, ne: `${ev.ad.wd.ne} · ${ev.bs.year || ctx.neNum(ev.ad.year)}` })}</small></span>
       </div>`;
     const hasDress = !!(ev.dress.text?.en || ev.dress.text?.ne || ev.dress.colors.length);
-    ch.push([`ch-ev-${n}`, ev.title, panel(`ch-ev-${n}`, 'la-pan--tk', 0.6, `<header class="la-ph"><p class="la-k">${bi(txt('prog.title'))}</p><h2 class="la-h la-tk__title">${bi(ev.title)}</h2><i class="la-weave" aria-hidden="true"></i></header>
+    ch.push([`ch-ev-${n}`, ev.title, panel(`ch-ev-${n}`, 'la-pan--tk', 0.6, `<header class="la-ph">${dhakaBand('la-dhaka--ph')}<p class="la-k">${bi(txt('prog.title'))}</p><h2 class="la-h la-tk__title">${bi(ev.title)}</h2></header>
       <p class="sr-only">${bi(ev.ad.full)}</p>
       <p class="la-tk__time">${bi(ev.time)}</p>
       ${ev.blurb ? `<p class="la-tk__blurb">${bi(ev.blurb)}</p>` : ''}
@@ -285,7 +285,6 @@ function page(ctx) {
       </div>
       <div class="la-cf__nav"><button type="button" class="la-cf__b" data-cf="-1"><span aria-hidden="true">‹</span><span class="sr-only">Previous photograph</span></button><span class="la-cf__n" aria-live="polite"></span><button type="button" class="la-cf__b" data-cf="1"><span aria-hidden="true">›</span><span class="sr-only">Next photograph</span></button></div>`)]);
   }
-  if (ch.length) ch[0][2] = ch[0][2].replace('class="la-pan ', 'class="la-pan la-pan--first ').replace('<div class="la-shape"></div>', `<div class="la-shape"></div>${toran('la-toran', '(max-width: 700px) 90vw, 440px')}`);
   const nums = (i) => bi({ en: String(i + 1).padStart(2, '0'), ne: ctx.neNum(String(i + 1).padStart(2, '0')) });
 
   return `
@@ -450,20 +449,6 @@ function scroll(ctx) {
   document.fonts?.ready.then(fitPanels);
   let cur = -1;
   const proxy = { p: 0 };
-  const famI = panels.findIndex((p) => p.id === 'ch-fam');
-  const famB = sec.querySelector('.la-fam__arch--bride'); const famG = sec.querySelector('.la-fam__arch--groom'); const knot = sec.querySelector('.la-knot');
-  let famLast = -1;
-  const bond = (pos) => {
-    const t = Math.max(0, Math.min(1, 1 - Math.abs(famI - pos) * 1.15));
-    const e = 1 - (1 - t) ** 3;
-    if (Math.abs(e - famLast) < 0.002) return;
-    famLast = e;
-    const off = (1 - e) * 46; const z = (1 - e) * -90; const r = 16 + (1 - e) * 24;
-    famB.style.transform = `translate3d(${(-off).toFixed(1)}px,0,${z.toFixed(1)}px) rotateY(${r.toFixed(1)}deg)`;
-    famG.style.transform = `translate3d(${off.toFixed(1)}px,0,${z.toFixed(1)}px) rotateY(${(-r).toFixed(1)}deg)`;
-    knot.style.transform = `translateX(-50%) scale(${(0.7 + 0.3 * e).toFixed(3)})`;
-    knot.style.opacity = (0.15 + 0.85 * e).toFixed(3);
-  };
   const render = () => {
     const pos = proxy.p * (N - 1);
     panels.forEach((el, i) => {
@@ -485,7 +470,6 @@ function scroll(ctx) {
       // they fade as they pass under the language and music buttons (top right), so the two never pile up
       fgSw[i].style.opacity = String(Math.max(0, Math.min(1, (W - 116 - x - fgW[i] * 0.15) / 90)).toFixed(2));
     });
-    if (famI >= 0 && famB && famG && knot) bond(pos);
     const k = Math.round(pos);
     if (k !== cur) {
       cur = k;
@@ -556,8 +540,6 @@ const SPEC = {
         <svg class="la-arch" id="la-arch" aria-hidden="true" focusable="false"></svg>
         ${lantern('l')}${lantern('r')}
         ${flower('l')}${flower('r')}
-        ${flowers('bl', 'la-mari la-mari--l', '220px')}${flowers('br', 'la-mari la-mari--r', '220px')}
-        ${lamp('panas', { cls: 'la-panas la-panas--l', sizes: '70px' })}${lamp('panas', { cls: 'la-panas la-panas--r', sizes: '70px' })}
         <div class="la-body">
           ${ctx.ganeshRef ? `<div class="la-crown">${ctx.ganesh('la-gan la-gan--hero', '80px')}<i class="la-shine" aria-hidden="true"></i></div>` : ''}
           ${ctx.on(inv) ? `<p class="la-inv su-in">${ctx.bi(inv)}</p>` : ''}
@@ -630,12 +612,8 @@ const SPEC = {
     document.querySelectorAll('.la-flower').forEach((el, i) => {
       tl.fromTo(el, { opacity: 0, scale: 0.55, rotation: i ? 8 : -8 }, { opacity: 1, scale: 1, rotation: 0, duration: 1.3, ease: 'power3.out' }, 1.15 + i * 0.08);
     });
-    document.querySelectorAll('.la-mari').forEach((el, i) => {
-      tl.fromTo(el, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 1.3, ease: 'power3.out' }, 1.3 + i * 0.08);
-    });
-    tl.fromTo('.la-panas', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 }, 1.45);
     // hand the settled pieces back to plain CSS, so no compositor layers linger
-    tl.set('.la-card .la-lantern__drop, .la-flower, .la-mari, .la-panas', { clearProps: 'transform' }, 4.5);
+    tl.set('.la-card .la-lantern__drop, .la-flower', { clearProps: 'transform' }, 4.5);
     return 1.25;
   },
 

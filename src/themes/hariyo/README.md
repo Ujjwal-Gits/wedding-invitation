@@ -23,13 +23,6 @@ Then the pin releases for long content: the programme as wooden signposts on a p
 you step through a greenery arch to enter), the full card as a letter with a Dhaka border, a calm RSVP, the blessing.
 Phones: the same walk, every scene sized to one screen. Reduced motion: scenes stack, no pin, no sway.
 
-**Nepali wedding touches (shared kit `_suite/nepali.js`).** The bond moment is the **Saptapadi**: after the walk,
-seven stepping places along a winding garden path, each a pair of red alta footprints (SVG) with marigold petals and that
-vow from `config.saptapadi`; each step lights as you reach it and a small brass diyo with a real flame glows beside it.
-A fresh marigold toran drapes the couple's hedge arch, a brass kalash stands between the family arbours, two Panas
-lamps with live flames flank the RSVP, and the letter card has a fine Palpali Dhaka edge. Marigold and sindoor red are
-the accents on the sage garden.
-
 **Palette / type.** Paper #FAFBF6, sage #4E6B4F (accent, AA on paper and white), olive, blush, gold hairlines #B8A06A.
 Bellefair (Latin display), Corinthia (names), Gotu (Devanagari display), Mukta (body, both scripts).
 

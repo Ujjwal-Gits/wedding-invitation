@@ -242,8 +242,6 @@ export default {
     },
     "scratch.hint": {"label": "Scratch card: line on the cover", "default": {"en": "Scratch to reveal the date", "ne": "मिति हेर्न कोर्नुहोस्"}, "max": 32},
     "scratch.button": {"label": "Scratch card: button that reveals it at once", "default": {"en": "Tap to reveal", "ne": "थिचेर हेर्नुहोस्"}, "max": 24},
-    "vows.kicker": {"label": "Seven vows: small label (type - to remove)", "default": {"en": "Saptapadi", "ne": "सप्तपदी"}, "max": 28},
-    "vows.title": {"label": "Seven vows: title", "default": {"en": "Seven steps, seven vows", "ne": "सात पाइला, सात वचन"}, "max": 36},
     "rsvp.title": {
       "shared": "reply.title",
       "label": "RSVP: title",

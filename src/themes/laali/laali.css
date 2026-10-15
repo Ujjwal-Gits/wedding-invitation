@@ -350,52 +350,8 @@ body.is-open.theme-laali .su-cue i { animation-iteration-count: 5; }
 /* stacked (reduced motion): the arch outlines and the turned family arches may lean a pixel past the edge */
 .la-chap { overflow-x: clip; }
 
-/* ───────── Nepali wedding round: real flames, marigolds, Panas lamps, Dhaka weave, the ganthi bandhan ───────── */
-/* a real flame burns inside each Mughal lantern's glass */
+/* a real flame burns inside each Mughal lantern's glass (shared kit: _suite/nepali.js) */
 .la-lantern__drop, .la-fg__sw { container-type: inline-size; }
 .la-wick { position: absolute; left: 50%; top: 71%; width: 0; height: 0; z-index: 1; }
 .la-wick .np-flame { --np-flame: 50cqw; }
 .la-lantern__glow { display: none; }
-
-/* hero: fresh marigolds and roses beside the peonies, Panas lamps at the foot of the arch */
-.la-mari { position: absolute; z-index: 2; bottom: -4px; width: clamp(96px, calc(var(--cw, 400px) * 0.27), 190px); pointer-events: none; }
-.la-mari--l { left: calc(var(--cw, 400px) * -0.05); transform-origin: 0 100%; }
-.la-mari--r { right: calc(var(--cw, 400px) * -0.05); transform-origin: 100% 100%; }
-.la-flower { z-index: 2; }
-.la-card .la-panas { position: absolute; z-index: 3; bottom: calc(var(--la-side, 34px) + 18px); width: clamp(34px, calc(var(--cw, 400px) * 0.1), 50px); }
-.la-card .la-panas--l { left: calc(var(--cw, 400px) * 0.17); }
-.la-card .la-panas--r { right: calc(var(--cw, 400px) * 0.17); }
-@media (min-width: 700px) {
-  .la-mari { width: calc(var(--cw, 500px) * 0.34); max-width: 210px; }
-  .la-mari--l { left: calc(var(--cw, 500px) * -0.2); }
-  .la-mari--r { right: calc(var(--cw, 500px) * -0.2); }
-}
-
-/* the Dhaka weave under every panel title, edged in gold */
-.la-weave { display: block; width: 116px; height: 12px; margin-top: 6px; box-sizing: border-box; border-block: 1px solid var(--su-gold);
-  background: #7E1F2E url('/themes/_nepali/dhaka-sm.webp') 0 50% / 34px auto repeat-x; }
-.la-ph { gap: 4px; }
-
-/* the first panel wears a fresh marigold toran across its crown */
-.la-pan { container-type: inline-size; }
-.la-toran { position: absolute; z-index: 3; left: 9%; width: 82%; top: calc(var(--crown, 150px) * 0.5); pointer-events: none; }
-.la-pan--first .la-pan__in { padding-top: calc(var(--crown, 150px) * 0.5 + 28.4cqw + 6px); }
-
-/* the ganthi bandhan: the bride's red shawl knotted to the groom's ivory patuka, tying the two family arches */
-.la-fam { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: stretch; }
-.la-fam__arch { max-width: none; }
-.la-knot { grid-column: 1 / -1; justify-self: center; width: 52%; max-width: 220px; margin-top: -40px; position: relative; z-index: 2; }
-.is-h .la-knot { justify-self: start; margin-left: 50%; transform: translateX(-50%); }
-.la-fam__and { display: none; }
-
-/* the palette, used richly: a rose-deepening stage for the gallery, a berry ground for the blessing */
-.la-chap.is-h { background: radial-gradient(120% 80% at 50% 38%, #FCEFF1 0%, #F6DCE1 55%, #EDC5CE 100%); }
-.la-env { background: linear-gradient(to bottom, var(--su-bg), #F1D3D9 70%, #EAC2CB); }
-.la-close { background: radial-gradient(110% 70% at 50% 0%, #93294D 0%, #7A1C3E 55%, #5E1530 100%); color: #FBEFF0; }
-.la-close__ne { color: #FBE3E8; }
-.la-close__en { color: #F1CBD4; }
-.la-close__names { color: #F0D49A; }
-.la-close__names .su-amp { color: #E2B866; }
-.la-close__tag { color: #F1CBD4; }
-.la-close .la-dhaka--close { color: #E2B866; }
-.la-close .madewith { color: #F6DCE1; }

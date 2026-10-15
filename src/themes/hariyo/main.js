@@ -7,7 +7,6 @@ import { gsap } from 'gsap';
 import { mountSuite } from '../_suite/suite.js';
 import './hariyo.css';
 import manifest from './slots.js';
-import { lamp, kalash, toran, initNepali } from '../_suite/nepali.js';
 
 const ART = '/themes/hariyo/art/';
 const mobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -21,8 +20,8 @@ const dhaka = (cls = '') => `<svg class="hy-dhaka ${cls}" viewBox="0 0 168 12" a
     <path d="M62 6l3-3 3 3-3 3z"/><path d="M100 6l3-3 3 3-3 3z"/>
   </g>
   <path d="M72 6l3.5-4 3.5 4-3.5 4zM89 6l3.5-4 3.5 4-3.5 4z" fill="currentColor" opacity=".8"/>
-  <path d="M80 6l4-5 4 5-4 5z" fill="none" stroke="var(--hy-marigold)" stroke-width="1"/>
-  <circle cx="84" cy="6" r="1.4" fill="var(--hy-sindoor)"/>
+  <path d="M80 6l4-5 4 5-4 5z" fill="none" stroke="var(--hy-gold)" stroke-width=".9"/>
+  <circle cx="84" cy="6" r="1.3" fill="var(--hy-gold)"/>
 </svg>`;
 
 // The gate's greenery: [class, exit {xPercent, yPercent, rotation}, start, duration]. Near sprigs part fastest.
@@ -71,21 +70,12 @@ const gArch = (v = 0) => `<div class="hy-ga hy-ga--v${v % 3}" aria-hidden="true"
   </div>`;
 const scene = (id, v, body, label) => `<div class="hy-sc" id="${id}" data-scene role="group" aria-label="${label}">${gArch(v)}<div class="hy-sc__body">${body}</div></div>`;
 const head = (bi, title, kicker, id) => `<header class="hy-head">${kicker ? `<p class="hy-kicker">${bi(kicker)}</p>` : ''}<h2 class="hy-h2" id="${id}">${bi(title)}</h2>${dhaka()}</header>`;
-const SEVEN = { title: { en: 'The seven steps', ne: 'सप्तपदी' }, kicker: { en: 'Saptapadi · seven promises', ne: 'सात पाइला, सात वचन' } };
-const TRAIL = 'M30 0 C30 25 30 25 30 50 C30 100 70 100 70 150 C70 200 30 200 30 250 C30 300 70 300 70 350 C70 400 30 400 30 450 C30 500 70 500 70 550 C70 600 30 600 30 650 C30 675 30 690 30 700';
-/** a pair of red alta footprints, with a few marigold petals */
-const FOOT = 'M22 22C31 22 35 30 34 42C33 52 28 58 28 66C28 76 29 84 23 89C17 93 11 89 11 81C11 71 13 64 11 56C9 46 8 36 11 29C13 24 17 22 22 22Z';
-const TOES = [[13.5, 15.5, 5], [21.5, 12.5, 3.5], [27.5, 13.8, 3.1], [32, 17.2, 2.7], [35, 22, 2.3]];
-const foot = (x, y, flip, r) => `<g transform="translate(${x} ${y}) rotate(${r} 21 50)${flip ? ' translate(42 0) scale(-1 1)' : ''}"><path d="${FOOT}"/>${TOES.map(([cx, cy, rr]) => `<circle cx="${cx}" cy="${cy}" r="${rr}"/>`).join('')}<path d="${FOOT}" transform="translate(21 54) scale(.42) translate(-21 -54)" fill="#F4DCD3" opacity=".5"/></g>`;
-const FEET = `<svg class="hy-feet" viewBox="0 0 110 110" aria-hidden="true" focusable="false"><g fill="#B3242C">${foot(10, 4, true, -8)}${foot(56, 10, false, 8)}</g>
-  <g fill="#E58A1F">${[[6, 96, 3], [100, 20, 2.6], [52, 104, 2.4], [102, 92, 3], [4, 40, 2.2]].map(([cx, cy, r]) => `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${(r * 0.62).toFixed(2)}" transform="rotate(${cx * 3} ${cx} ${cy})"/>`).join('')}</g></svg>`;
 const stripBS = (s) => `${String(s || '').replace(/\s*B\.?S\.?\s*$/i, '')} B.S.`;
 
 function pageHtml(ctx) {
   const { bi, esc, txt, on, names, parts: P, AD, BS, placeLine, c, config, imgTag, reduced, mainEv } = ctx;
   const UI = P.UI;
   const scenes = [];
-  const steps = (config.saptapadi || []).slice(0, 7);
 
   // 1 · the couple, in a living hedge arch
   if (P.lead) {
@@ -94,7 +84,6 @@ function pageHtml(ctx) {
       <figure class="hy-hedge">
         <span class="hy-hedge__g hy-hedge__g--l">${img(`${ART}greenery-sm.webp`, '', 'loading="lazy"')}</span>
         <span class="hy-hedge__g hy-hedge__g--r">${img(`${ART}greenery-sm.webp`, '', 'loading="lazy"')}</span>
-        ${toran('hy-hedge__toran', '(max-width: 700px) 86vw, 460px')}
         <div class="hy-hedge__pic">${imgTag(P.lead.photo, P.lead.alt, '(max-width: 700px) 76vw, 380px')}</div>
       </figure>
       ${on(txt('couple.line')) ? `<p class="hy-lede">${bi(txt('couple.line'))}</p>` : ''}`, esc(txt('couple.title').en)));
@@ -140,7 +129,7 @@ function pageHtml(ctx) {
             ${(f.person.parents?.en || f.person.parents?.ne) ? `<p class="hy-arbour__of">${bi(f.of)}</p><p class="hy-arbour__par">${bi(f.person.parents)}</p>` : ''}
             ${(f.person.home?.en || f.person.home?.ne) ? `<p class="hy-arbour__home">${bi(f.person.home)}</p>` : ''}
           </div>
-        </div>`).join(`<span class="hy-arbours__mid" aria-hidden="true"><span class="hy-arbours__and">&amp;</span>${kalash('hy-arbours__kalash', '90px')}</span>`)}
+        </div>`).join('<span class="hy-arbours__and" aria-hidden="true">&amp;</span>')}
       </div>`, esc(txt('families.title').en)));
 
   // the programme: wooden signposts along the path (normal scroll; they turn to face you)
@@ -174,20 +163,6 @@ function pageHtml(ctx) {
     </div>
   </section>
 
-  ${steps.length ? `
-  <section class="hy-seven" id="saptapadi" aria-labelledby="seven-title">
-    ${head(bi, SEVEN.title, SEVEN.kicker, 'seven-title')}
-    <div class="hy-seven__path">
-      <svg class="hy-seven__trail" viewBox="0 0 100 700" preserveAspectRatio="none" aria-hidden="true"><path d="${TRAIL}" fill="none" stroke="#ECE4CF" stroke-width="34" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="${TRAIL}" fill="none" stroke="#C9B98E" stroke-width="1.2" stroke-dasharray="2 7" vector-effect="non-scaling-stroke"/></svg>
-      <ol class="hy-seven__list">
-      ${steps.map((v, i) => `<li class="hy-step hy-step--${i % 2 ? 'r' : 'l'}${reduced ? ' is-lit' : ''}">
-        <span class="hy-step__pad" aria-hidden="true">${FEET}${lamp('diyo', { cls: 'hy-step__diyo', sizes: '60px' })}</span>
-        <span class="hy-step__txt"><b class="hy-step__n">${bi({ en: String(i + 1), ne: ctx.neNum(String(i + 1)) })}</b><span class="hy-step__vow">${bi(v)}</span></span>
-      </li>`).join('')}
-      </ol>
-    </div>
-  </section>` : ''}
-
   <section class="hy-path" id="programme" aria-labelledby="prog-title">
     ${head(bi, txt('prog.title'), txt('prog.kicker'), 'prog-title')}
     <ol class="hy-signs"><i class="hy-signs__post" aria-hidden="true"></i>${P.events.map(sign).join('')}</ol>
@@ -217,12 +192,9 @@ function pageHtml(ctx) {
   </section>
 
   <section class="hy-reply" id="rsvp" aria-labelledby="rsvp-title">
-    <div class="hy-reply__stage">
-    ${lamp('panas', { cls: 'hy-reply__panas hy-reply__panas--l', sizes: '120px' })}${lamp('panas', { cls: 'hy-reply__panas hy-reply__panas--r', sizes: '120px' })}
     ${head(bi, txt('rsvp.title'), null, 'rsvp-title')}
     ${P.deadline?.en || P.deadline?.ne ? `<p class="hy-lede">${bi(P.deadline)}</p>` : ''}
-    <div class="hy-reply__card">${P.rsvpForm()}</div>
-    </div>
+    <div class="hy-reply__card"><span class="hy-reply__g" aria-hidden="true">${img(`${ART}greenery-sm.webp`, '', 'loading="lazy"')}</span>${P.rsvpForm()}</div>
   </section>
 
   <footer class="hy-close" aria-label="Blessing">
@@ -309,11 +281,6 @@ function walkScroll(ctx) {
     onToggle: (self) => walk.classList.toggle('is-walking', self.isActive),
   });
 
-  // the seven steps light up, one by one, as you reach them
-  document.querySelectorAll('.hy-step').forEach((li) => {
-    ScrollTrigger.create({ trigger: li, start: 'top 70%', onEnter: () => li.classList.add('is-lit'), onLeaveBack: () => li.classList.remove('is-lit') });
-  });
-
   // the signposts turn to face you as you come up the path
   document.querySelectorAll('.hy-sign').forEach((li) => {
     const side = li.classList.contains('hy-sign--l') ? -1 : 1;
@@ -338,7 +305,6 @@ function walkScroll(ctx) {
     });
     ScrollTrigger.create({ trigger: grove, start: 'top bottom', end: 'bottom top', onToggle: (self) => (self.isActive ? sway.play() : sway.pause()) });
   }
-  initNepali();
 }
 
 // keep the scratch cover drawn at full size: the packet's scene may be scaled while the language changes
@@ -425,7 +391,6 @@ export default mountSuite({
   },
 
   page: (ctx) => { guardScratch(); return pageHtml(ctx); },
-  ready: () => initNepali(),
   scroll: (ctx) => walkScroll(ctx),
   scratch: { paint: leafCover },
 });

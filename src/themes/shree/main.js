@@ -6,7 +6,7 @@
 import { gsap } from 'gsap';
 import { mountSuite } from '../_suite/suite.js';
 import manifest from './slots.js';
-import { lamp, flame, kalash, toran, saptapadi, flowers, initNepali } from '../_suite/nepali.js';
+import { flame, initNepali } from '../_suite/nepali.js';
 import './shree.css';
 
 const ART = {
@@ -77,8 +77,6 @@ function hero({ bi, esc, txt, names, ganesh, AD, BS, on }) {
   <div class="sh-hero">
     ${diyaImg('sh-diya--l', '(min-width: 900px) 170px, 24vw', true)}
     ${diyaImg('sh-diya--r', '(min-width: 900px) 170px, 24vw', true)}
-    <span class="sh-panas sh-panas--l su-in">${lamp('panas', { sizes: '(min-width: 900px) 150px, 20vw' })}</span>
-    <span class="sh-panas sh-panas--r su-in">${lamp('panas', { sizes: '(min-width: 900px) 150px, 20vw' })}</span>
     <div class="sh-hero__col">
       <div class="sh-gan">
         <div class="sh-halo" aria-hidden="true"><div class="sh-halo__spin">${lotusSVG('hl')}</div><i class="sh-bloom"></i></div>
@@ -254,15 +252,13 @@ function dial(ctx) {
 
 function page(ctx) {
   const { bi, esc, txt, on, c, config, parts: P, AD, BS, placeLine, mainEv, imgTag, names } = ctx;
-  const vows = (config.saptapadi || []).filter((v) => v && (v.en || v.ne)).slice(0, 7);
   const fam = P.families.map((x) => `
     <div class="sh-niche sh-niche--${x.key === 'bride' ? 'l' : 'r'}"><div class="sh-niche__arch">
-      ${P.brideGroom ? `<figure class="sh-niche__pic">${imgTag(x.photo, x.person.name.en, '(max-width: 700px) 30vw, 160px')}</figure>` : ''}
+      ${P.brideGroom ? `<figure class="sh-niche__pic">${imgTag(x.photo, x.person.name.en, '(max-width: 700px) 30vw, 160px')}</figure>` : `<span class="sh-niche__lamp" aria-hidden="true">${BUD}</span>`}
       <p class="sh-niche__k">${bi(x.label)}</p>
       <p class="sh-niche__name">${bi(x.person.fullName)}</p>
       ${(x.person.parents?.en || x.person.parents?.ne) ? `<p class="sh-niche__of">${bi(x.of)}</p><p class="sh-niche__par">${bi(x.person.parents)}</p>` : ''}
       ${(x.person.home?.en || x.person.home?.ne) ? `<p class="sh-niche__home">${bi(x.person.home)}</p>` : ''}
-      ${kalash('sh-niche__kalash', '(min-width: 900px) 110px, 70px')}
     </div></div>`);
   const tNe = mainEv ? String(ctx.timeLabel(mainEv).ne || '').split(/\s[–-]\s/)[0] : '';
   const coinFace = `<div class="sh-coin__face">
@@ -289,12 +285,6 @@ function page(ctx) {
     leaf('families', `
       ${head(bi, on, txt('families.title'), 'families-t')}
       <div class="sh-niches">${fam[0]}<div class="sh-niches__mid" aria-hidden="true">${DIAMOND}</div>${fam[1]}</div>`, 'sh-leaf--fam'),
-    vows.length ? leaf('vows', `
-      ${head(bi, on, txt('vows.title'), 'vows-t', txt('vows.kicker'))}
-      <div class="sh-vows">
-        ${saptapadi('sh-vows__feet', '(min-width: 900px) 190px, 26vw')}
-        <ol class="sh-vows__list">${vows.map((v) => `<li>${bi(v)}</li>`).join('')}</ol>
-      </div>`, 'sh-leaf--vows') : '',
   ].filter(Boolean).join('');
 
   const dress = (x) => {
@@ -344,7 +334,6 @@ function page(ctx) {
     <div class="sh-scroll">
       <div class="sh-scroll__rod sh-scroll__rod--top" aria-hidden="true"><i></i></div>
       <div class="sh-scroll__paper">
-        ${toran('sh-scroll__toran', '(min-width: 760px) 720px, 100vw')}
         <p class="sh-scroll__head" lang="ne">॥ शुभ मुहूर्त ॥</p>
         <ol class="sh-mus">${rows}</ol>
         <div class="sh-scroll__acts">${P.calendarBtn('sh-btn')}${P.shareBtn('sh-btn sh-btn--line')}</div>
@@ -357,8 +346,6 @@ function page(ctx) {
   ${photos}
 
   <section class="sh-sec sh-cardsec" id="card" aria-labelledby="card-t">
-    ${flowers('tl', 'sh-plate__fl sh-plate__fl--tl', '(min-width: 900px) 220px, 34vw')}
-    ${flowers('br', 'sh-plate__fl sh-plate__fl--br', '(min-width: 900px) 220px, 34vw')}
     <div class="sh-plate">
       ${BUD}
       <h2 class="sh-plate__line" id="card-t">${bi(txt('card.line'))}</h2>
@@ -368,10 +355,10 @@ function page(ctx) {
   </section>
 
   <section class="sh-sec sh-rsvp" id="rsvp" aria-labelledby="rsvp-t">
-    <div class="sh-cream-edge"><div class="sh-cream">
+    <div class="sh-cream">
       <header class="sh-head">${DIVIDER}<h2 class="sh-h2" id="rsvp-t">${bi(txt('rsvp.title'))}</h2>${P.deadline && (P.deadline.en || P.deadline.ne) ? `<p class="sh-cream__by">${bi(P.deadline)}</p>` : ''}</header>
       ${P.rsvpForm()}
-    </div></div>
+    </div>
   </section>
 
   <footer class="sh-closing" aria-label="Blessing">
@@ -380,8 +367,6 @@ function page(ctx) {
       ${diyaImg('sh-diya--cr', '120px', false)}
       <div class="sh-close__lotus">${lotusSVG('cl')}</div>
       <i class="sh-band sh-close__band"></i>
-      ${lamp('panas', { cls: 'sh-cpanas sh-cpanas--l', sizes: '(min-width: 900px) 130px, 18vw' })}
-      ${lamp('panas', { cls: 'sh-cpanas sh-cpanas--r', sizes: '(min-width: 900px) 130px, 18vw' })}
     </div>
     <div class="sh-close__text">
       <p class="sh-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>

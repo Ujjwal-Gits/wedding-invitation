@@ -17,8 +17,6 @@ body.theme-shree {
   --sh-plum-deep: #240B21;
   --sh-gold-hi: #E8CB8C;
   --sh-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --sh-marigold: #F0A030;
-  --sh-sindoor: #A3242C;
   /* core tokens (HUD, sheet, RSVP helpers) */
   --bg: #2E0F2A; --bg-2: #3A1435; --ink: #F3E6CC; --ink-dim: rgba(243, 230, 204, 0.78); --accent: #D8B46A; --accent-2: #E8CB8C;
   --hair: rgba(201, 163, 90, 0.4); --scrim: 30, 8, 27;
@@ -423,60 +421,7 @@ html[data-lang='ne'] .sh-close__en { display: none; }
 }
 
 
-/* ───────── Nepali touches: live flames, Panas lamps, kalash, toran, saptapadi, Dhaka ───────── */
+/* ───────── live flames on the hanging diyas' wicks (shared kit, _suite/nepali.js) ───────── */
 .sh-diya { container-type: inline-size; }
 .sh-wick { position: absolute; left: 50%; top: 76%; width: 0; height: 0; }
 .sh-wick .np-flame { --np-flame: 34cqw; }
-.sh-panas { position: absolute; z-index: 1; bottom: 16px; width: clamp(48px, 14vw, 78px); line-height: 0; pointer-events: none; }
-.sh-panas .np-lamp { width: 100%; }
-.sh-panas--l { left: max(6px, 2.5vw); }
-.sh-panas--r { right: max(6px, 2.5vw); }
-.theme-shree .sh-kicker, .theme-shree .sh-coin__wd { color: var(--sh-marigold); }
-.sh-dial__ptr { fill: #E0503A; }
-.sh-mu__date { border-color: var(--sh-sindoor); color: var(--sh-sindoor); }
-.sh-seal__disc span { color: #7A1A1F; }
-
-.sh-niche__arch { justify-content: flex-start; }
-.sh-niche__kalash { position: relative; z-index: 1; width: clamp(64px, 19vw, 112px); margin-top: auto; padding-top: 10px; }
-.sh-niche__arch::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: 4px; height: 38%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(240, 160, 48, 0.22), rgba(240, 160, 48, 0)); }
-
-.sh-vows { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(14px, 3vw, 36px); width: 100%; max-width: 640px; }
-.sh-vows__feet { width: clamp(78px, 23vw, 180px); border-radius: 4px; box-shadow: 0 0 0 1px rgba(232, 203, 140, 0.6), 0 14px 24px -12px rgba(0, 0, 0, 0.8); }
-.sh-vows__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
-.sh-vows__list li { position: relative; padding: 7px 0 7px 18px; color: var(--sh-gold-hi); font: 400 16.5px/1.35 var(--su-f-display); border-bottom: 1px solid rgba(201, 163, 90, 0.2); text-wrap: balance; }
-.sh-vows__list li:last-child { border-bottom: 0; }
-.sh-vows__list li::before { content: ''; position: absolute; left: 2px; top: calc(7px + 0.6em); width: 6px; height: 6px; transform: rotate(45deg); background: var(--sh-marigold); }
-.sh-vows__list .l-ne { font: 500 15.5px/1.5 var(--su-f-body); }
-
-.sh-scroll__paper { --px: clamp(16px, 4vw, 40px); padding-left: var(--px); padding-right: var(--px); }
-.sh-scroll__toran { display: block; width: calc(100% + 2 * var(--px)); margin: -22px calc(var(--px) * -1) 2px; }
-
-.sh-cream-edge { position: relative; max-width: 660px; margin: 0 auto; padding: 9px; border-radius: 14px;
-  background: url('/themes/_nepali/dhaka-sm.webp') 0 0 / 84px auto repeat; box-shadow: 0 0 0 1px rgba(232, 203, 140, 0.85), 0 24px 40px -22px rgba(0, 0, 0, 0.9); }
-.sh-cream-edge .sh-cream { max-width: none; box-shadow: inset 0 0 0 6px #F3E6CC, inset 0 0 0 7px rgba(138, 100, 32, 0.5), 0 0 0 1px rgba(46, 15, 42, 0.6); }
-
-.sh-cardsec { overflow: hidden; padding-top: clamp(130px, 18svh, 170px); padding-bottom: clamp(130px, 18svh, 170px); }
-.sh-plate__fl { position: absolute; width: clamp(110px, 30vw, 230px); pointer-events: none; }
-.sh-plate__fl--tl { left: 0; top: 0; }
-.sh-plate__fl--br { right: 0; bottom: 0; }
-
-.sh-cpanas.np-lamp { position: absolute; bottom: 12px; width: clamp(46px, 13vw, 96px); }
-.sh-cpanas--l { left: max(8px, calc(50% - 320px)); }
-.sh-cpanas--r { right: max(8px, calc(50% - 320px)); }
-.sh-closing { padding-bottom: clamp(150px, 22svh, 240px); }
-
-@media (min-width: 900px) {
-  .sh-panas { width: clamp(84px, 8vw, 120px); bottom: 20px; }
-  .sh-panas--l { left: calc(50% - min(37vw, 450px) + 26px); }
-  .sh-panas--r { right: calc(50% - min(37vw, 450px) + 26px); }
-  .sh-book.is-3d .sh-leaf--vows .sh-leaf__in { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); }
-  .sh-book.is-3d .sh-leaf--vows .sh-vows { grid-column: 2; grid-row: 1 / span 3; }
-  .sh-vows__feet { width: clamp(110px, 11vw, 150px); }
-  .sh-vows__list li { font-size: 18px; }
-}
-@media (max-width: 399px) {
-  .sh-when__ad { letter-spacing: 0.12em; font-size: 14px; }
-  .sh-vows__list li { font-size: 15px; padding-block: 5px; }
-  .sh-vows__list .l-ne { font-size: 14.5px; }
-}

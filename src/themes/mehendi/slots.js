@@ -196,8 +196,6 @@ export default {
       },
       "max": 48
     },
-    "bond.kicker": {"label": "Sindoor daan: small label", "default": {"en": "Sindoor daan", "ne": "सिन्दूर दान"}, "max": 28},
-    "bond.line": {"label": "Sindoor daan: one short line (type - to remove)", "default": {"en": "One line of sindoor, and two lives become one.", "ne": "सिन्दूरको एउटा रेखासँगै, दुई जीवन एउटै बन्छन्।"}, "max": 80, "multiline": true},
     "prog.kicker": {
       "label": "Programme: small label",
       "default": {

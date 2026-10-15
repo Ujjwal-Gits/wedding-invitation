@@ -27,15 +27,9 @@ and settle with a damped swing. Then the hero lines fade in.
 - **Behind and in front:** a great faint mandala turns with scroll progress, and two small diyas hang in the foreground
   with parallax, swaying.
 
-## Nepali wedding touches (shared kit `_suite/nepali.js`)
-- The hanging diyas burn with live photographic flames on their wicks. The painted flame was removed from the art
-  (`diya-nf`), and the chains and sway are kept.
-- Brass Panas lamps with live flames flank the hero and the closing.
-- **The bond: the seven vows.** A fifth leaf in the pothi holds the seven vows of the saptapadi (`config.saptapadi`) in
-  gold, beside the alta-footprint runner.
-- A kalash stands in each family niche over a warm glow. A fresh marigold toran heads the muhurta patra. A Palpali
-  Dhaka weave edges the RSVP leaf, and marigold-and-rose sprays frame the श्री seal. Marigold and sindoor accents are used
-  for kickers, markers, the dial pointer and the event dates.
+## Live flames
+The hanging diyas burn with live photographic flames from the shared kit (`_suite/nepali.js`). The painted flame was
+removed from the art (`diya-nf`), and the chains and sway are kept.
 
 ## Reduced motion
 The engine crossfades the gate. Leaves stack one under another and nothing turns. The scroll is shown already unrolled,

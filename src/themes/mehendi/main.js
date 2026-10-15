@@ -6,7 +6,6 @@
 // alternately left and right of it like a story, each joined by a tendril and a bud that blooms as you reach it.
 import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
-import { lamp, kalash, toran, sindoorDaan, initNepali } from '../_suite/nepali.js';
 import './mehendi.css'; // after the suite's CSS, so the theme wins ties
 
 const ART = '/themes/mehendi/art/';
@@ -227,14 +226,6 @@ function vine(ctx) {
       main.setAttribute('d', `M${cx} 0C${cx} ${y(0.22)} ${cx + sw} ${y(0.28)} ${cx + sw} ${y(0.5)}S${x1} ${y(0.78)} ${x1} ${r2(y1 - (endEl ? endEl.offsetHeight * 0.42 : 0))}`);
       main.setAttribute('class', 'mh-vine'); main.setAttribute('pathLength', '1');
       svg.append(main); sec.prepend(svg);
-      sec.querySelectorAll(':scope > .mh-diyo').forEach((d) => d.remove());
-      const sindoor = sec.hasAttribute('data-sindoor');
-      const diyos = sec.hasAttribute('data-diyo');
-      let red = null;
-      if (sindoor) { // a sindoor trail laid beside the henna for this stretch
-        red = main.cloneNode(); red.setAttribute('class', 'mh-sindoor'); red.setAttribute('transform', `translate(${phone ? 3 : 4} 2)`);
-        svg.insertBefore(red, main);
-      }
       const len = main.getTotalLength();
       const at = (L) => main.getPointAtLength(Math.max(0, Math.min(len, L)));
       let html = '';
@@ -247,7 +238,6 @@ function vine(ctx) {
           ? `<path d="${PAISLEY}" transform="scale(${phone ? 0.34 : 0.42})"/>`
           : `<path d="${lens(1, phone ? 12 : 15, phone ? 3.4 : 4.2)}"/>`;
         html += `<g transform="translate(${r2(p.x)} ${r2(p.y)}) rotate(${r2(ang + side * 58 - 90)})"><g class="mh-lf" data-t="${r2(L / len)}">${shape}</g></g>`;
-        if (sindoor) { const m = at(L + step / 2); html += `<g transform="translate(${r2(m.x + (k % 2 ? 7 : -2))} ${r2(m.y)})"><circle class="mh-lf mh-sd" data-t="${r2((L + step / 2) / len)}" r="${k % 3 ? 1.3 : 1.9}"/></g>`; }
       }
       sec.querySelectorAll('[data-bud]').forEach((el) => {
         const side = el.dataset.side;
@@ -262,21 +252,16 @@ function vine(ctx) {
         let best = 0; let bd = 1e9;
         for (let L = 0; L <= len; L += 5) { const d = Math.abs(at(L).y - (by - (phone ? 22 : 34))); if (d < bd) { bd = d; best = L; } }
         const p = at(best); const t = r2(best / len);
-        html += `<path class="mh-tendril" pathLength="1" data-t="${t}" d="M${r2(p.x)} ${r2(p.y)}C${r2(p.x)} ${r2(p.y + 14)} ${r2(bx + (p.x - bx) * 0.45)} ${by - 2} ${r2(bx)} ${by}"/>`;
-        if (diyos) { // a brass diyo stands at the end of the tendril; its flame catches when the vine arrives
-          sec.insertAdjacentHTML('beforeend', `<span class="mh-diyo" data-t="${t}" style="left:${r2(bx)}px;top:${by}px">${lamp('diyo', { sizes: '48px' })}</span>`);
-          return;
-        }
-        html += `<g transform="translate(${r2(bx)} ${by})"><g class="mh-bud" data-t="${t}">${around(6, (a) => `<path d="${lens(2.5, 12, 4.4)}" transform="rotate(${a})"/>`)}<circle class="d" r="2.6"/></g></g>`;
+        html += `<path class="mh-tendril" pathLength="1" data-t="${t}" d="M${r2(p.x)} ${r2(p.y)}C${r2(p.x)} ${r2(p.y + 14)} ${r2(bx + (p.x - bx) * 0.45)} ${by - 2} ${r2(bx)} ${by}"/>`
+          + `<g transform="translate(${r2(bx)} ${by})"><g class="mh-bud" data-t="${t}">${around(6, (a) => `<path d="${lens(2.5, 12, 4.4)}" transform="rotate(${a})"/>`)}<circle class="d" r="2.6"/></g></g>`;
       });
       svg.insertAdjacentHTML('beforeend', html);
       const leaves = [...svg.querySelectorAll('.mh-lf')].map((e) => ({ e, t: +e.dataset.t, on: false }));
       const tendrils = [...svg.querySelectorAll('.mh-tendril')].map((e) => ({ e, t: +e.dataset.t }));
-      const buds = [...svg.querySelectorAll('.mh-bud'), ...sec.querySelectorAll(':scope > .mh-diyo')].map((e) => ({ e, t: +e.dataset.t + 0.09, on: false }));
+      const buds = [...svg.querySelectorAll('.mh-bud')].map((e) => ({ e, t: +e.dataset.t + 0.09, on: false }));
       const flip = (o, on) => { if (on !== o.on) { o.on = on; o.e.classList.toggle('is-on', on); } };
       const paint = (pr) => {
         main.style.strokeDashoffset = String(1.0001 - pr);
-        if (red) red.style.strokeDashoffset = String(1.0001 - Math.max(0, pr - 0.04) / 0.96);
         leaves.forEach((o) => flip(o, pr >= o.t));
         tendrils.forEach((o) => { o.e.style.strokeDashoffset = String(1 - Math.min(1, Math.max(0, (pr - o.t) / 0.09))); });
         buds.forEach((o) => flip(o, pr >= o.t));
@@ -290,9 +275,8 @@ function vine(ctx) {
     });
   };
   build();
-  initNepali(story);
   let w = innerWidth; let hgt = story.offsetHeight; let tm = 0;
-  const again = () => { clearTimeout(tm); tm = setTimeout(() => { build(); initNepali(story); ST.refresh(); }, 200); };
+  const again = () => { clearTimeout(tm); tm = setTimeout(() => { build(); ST.refresh(); }, 200); };
   addEventListener('resize', () => { if (innerWidth !== w) { w = innerWidth; again(); } });
   new ResizeObserver(() => { const nh = story.offsetHeight; if (Math.abs(nh - hgt) > 4) { hgt = nh; again(); } }).observe(story);
 }
@@ -366,32 +350,17 @@ function page(ctx) {
     ${f.person.parents?.en || f.person.parents?.ne ? `<p class="mh-fam__of">${bi(f.of)}</p><p class="mh-fam__parents">${bi(f.person.parents)}</p>` : ''}
     ${f.person.home?.en || f.person.home?.ne ? `<p class="mh-fam__home">${bi(f.person.home)}</p>` : ''}`;
   const famSec = `
-  <section class="mh-sec mh-fams" id="families" aria-labelledby="fam-title" data-diyo>
+  <section class="mh-sec mh-fams" id="families" aria-labelledby="fam-title">
     <div class="mh-sec__in">
       <div class="mh-blk" data-side="l" data-bud>${hd('fam-title', txt('families.title'))}</div>
       <div class="mh-blk mh-fam" data-side="c">
         <div class="mh-fam__side mh-fam__side--a">${fam(P.families[0])}</div>
-        <div class="mh-fam__m" aria-hidden="true"><div class="mh-fam__half mh-fam__half--a">${mandala('mh-fm')}</div><div class="mh-fam__half mh-fam__half--b">${mandala('mh-fm')}</div>${kalash('mh-fam__kalash', '120px')}</div>
+        <div class="mh-fam__m" aria-hidden="true"><div class="mh-fam__half mh-fam__half--a">${mandala('mh-fm')}</div><div class="mh-fam__half mh-fam__half--b">${mandala('mh-fm')}</div></div>
         <div class="mh-fam__side mh-fam__side--b">${fam(P.families[1])}</div>
       </div>
     </div>
   </section>`;
 
-
-  const bondLine = txt('bond.line');
-  const bondSec = `
-  <section class="mh-sec mh-bond" id="bond" aria-labelledby="bond-title" data-sindoor data-diyo>
-    <div class="mh-sec__in">
-      <div class="mh-blk mh-bond__words" data-side="l" data-bud>
-        <header class="mh-h"><p class="mh-kicker">${bi(txt('bond.kicker'))}</p></header>
-        ${on(bondLine) ? `<p class="mh-bond__line" id="bond-title">${bi(bondLine)}</p>` : `<p class="sr-only" id="bond-title">${bi(txt('bond.kicker'))}</p>`}
-        ${dhaka('mh-div')}
-      </div>
-      <div class="mh-blk mh-bond__art" data-side="r">
-        <figure class="mh-bond__fig">${sindoorDaan('mh-bond__pic', '(max-width: 719px) 80vw, 440px', 'The groom places sindoor in the bride’s parting')}</figure>
-      </div>
-    </div>
-  </section>`;
 
   const evs = P.events.map((v, k) => `
       <article class="mh-blk mh-ev" data-side="${k % 2 ? 'l' : 'r'}" data-bud id="ev-${esc(v.id)}">
@@ -408,7 +377,7 @@ function page(ctx) {
         ${v.rituals.length ? `<details class="mh-order"><summary>${bi(P.UI.order)}</summary><ol>${v.rituals.map((r) => `<li><span>${bi(r.time)}</span><span>${bi(r.title)}</span></li>`).join('')}</ol></details>` : ''}
       </article>`).join('');
   const progSec = `
-  <section class="mh-sec mh-prog" id="programme" aria-labelledby="prog-title" data-diyo>
+  <section class="mh-sec mh-prog" id="programme" aria-labelledby="prog-title">
     <div class="mh-sec__in">
       <div class="mh-blk" data-side="l" data-bud>${hd('prog-title', txt('prog.title'), txt('prog.kicker'))}</div>
       ${evs}
@@ -441,8 +410,7 @@ function page(ctx) {
         ${P.cardBtn()}
       </div>
       <div class="mh-blk mh-rsvp" data-side="r" data-bud>
-        ${toran('mh-rsvp__toran', '(max-width: 719px) 100vw, 560px')}
-        ${corner('bl')}${corner('br')}
+        ${corner('tl')}${corner('tr')}${corner('bl')}${corner('br')}
         ${hd('rsvp-title', txt('rsvp.title'))}
         ${P.deadline?.en || P.deadline?.ne ? `<p class="mh-rsvp__by">${bi(P.deadline)}</p>` : ''}
         ${P.rsvpForm()}
@@ -461,7 +429,6 @@ function page(ctx) {
         ${c.hashtag ? `<p class="mh-close__tag">${esc(c.hashtag)}</p>` : ''}
       </div>
     </div>
-    <div class="mh-close__dhaka" aria-hidden="true"></div>
     ${P.madeWith()}
   </footer>`;
 
@@ -470,7 +437,7 @@ function page(ctx) {
     ${hero(ctx)}
     ${P.cue(P.lead ? 'couple' : 'date')}
   </section>
-  <div class="mh-story">${couple}${dateSec}${famSec}${bondSec}${progSec}${photoSec}${rsvpSec}${closing}</div>`;
+  <div class="mh-story">${couple}${dateSec}${famSec}${progSec}${photoSec}${rsvpSec}${closing}</div>`;
 }
 
 /** the scroll: the vine draws, the hands tilt, the families' mandala closes, the polaroids lift */
@@ -482,7 +449,7 @@ function scroll(ctx) {
   gsap.to('.mh-hands', { rotationX: 18, rotationY: -10, z: -40, transformPerspective: 900, transformOrigin: '50% 0%', ease: 'none', scrollTrigger: st('#top') });
   if (document.querySelector('.mh-gan')) gsap.to('.mh-gan', { y: () => window.innerHeight * 0.1, ease: 'none', scrollTrigger: st('#top') });
 
-  document.querySelectorAll('.mh-story .mh-blk:not(.mh-fam):not(.mh-cloth):not(.su-rise):not(.mh-bond__art)').forEach((el) => {
+  document.querySelectorAll('.mh-story .mh-blk:not(.mh-fam):not(.mh-cloth):not(.su-rise)').forEach((el) => {
     const side = el.dataset.side;
     gsap.from(el, { x: side === 'l' ? -32 : side === 'r' ? 32 : 0, y: 26, opacity: 0, duration: 0.9, ease: 'power3.out', clearProps: 'transform', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
   });
@@ -494,15 +461,10 @@ function scroll(ctx) {
     gsap.fromTo('.mh-fam__half--a', { [prop]: -d }, { [prop]: 0, ease: 'none', scrollTrigger: t });
     gsap.fromTo('.mh-fam__half--b', { [prop]: d }, { [prop]: 0, ease: 'none', scrollTrigger: t });
     gsap.fromTo('.mh-fam__side--a', { [axis]: axis === 'x' ? -50 : -24, opacity: 0.15 }, { [axis]: 0, opacity: 1, ease: 'none', scrollTrigger: t });
-    gsap.fromTo('.mh-fam__kalash', { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, ease: 'none', scrollTrigger: { ...t, start: 'top 70%' } });
     gsap.fromTo('.mh-fam__side--b', { [axis]: axis === 'x' ? 50 : 24, opacity: 0.15 }, { [axis]: 0, opacity: 1, ease: 'none', scrollTrigger: t });
   };
   mm.add('(min-width: 720px)', () => fam('x', 26));
   mm.add('(max-width: 719px)', () => fam('y', 22));
-
-  // the sindoor daan rises, gently, in 3D as the vine reaches it
-  gsap.fromTo('.mh-bond__fig', { rotationX: 26, rotationY: -8, y: 90, scale: 0.9, opacity: 0, transformPerspective: 1000, transformOrigin: '50% 100%' },
-    { rotationX: 0, rotationY: 0, y: 0, scale: 1, opacity: 1, ease: 'power1.out', scrollTrigger: { trigger: '.mh-bond', start: 'top 82%', end: 'center 58%', scrub: 0.6 } });
 
   document.querySelectorAll('.mh-pol').forEach((el, i) => {
     const r = POL_TILT[i % POL_TILT.length];
@@ -520,7 +482,7 @@ mountSuite({
   open,
   scroll,
   scratch: { paint: hennaPalm },
-  ready(ctx) { rings(ctx); initNepali(); },
+  ready: rings,
   gateTap(ctx, go) {
     document.querySelector('.mh-gate__m')?.addEventListener('click', go);
   },

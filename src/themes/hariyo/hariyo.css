@@ -5,8 +5,6 @@ body.theme-hariyo {
   --hy-olive: #7C8B5C;
   --hy-blush: #D9A5A0;
   --hy-gold: #B8A06A;
-  --hy-marigold: #E2861C;
-  --hy-sindoor: #B3242C;
   /* lokta: a static fibre noise, drawn once as a background image (never a live filter) */
   --hy-lokta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .35' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .42 0 0 0 0 .3 0 0 0 .5 -.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --su-bg: var(--hy-paper);
@@ -67,7 +65,7 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 .hy-dhaka { display: block; width: 150px; height: 11px; margin: 2px auto; color: var(--hy-sage); }
 .hy-arch__names { margin: 4px 0 0; font: 400 clamp(44px, 13vw, 58px)/1.05 var(--su-f-script); color: var(--su-ink); }
 .theme-hariyo .su-names { flex-flow: row wrap; justify-content: center; column-gap: 0.22em; }
-.theme-hariyo .su-amp { font-size: 0.78em; color: var(--hy-marigold); align-self: center; }
+.theme-hariyo .su-amp { font-size: 0.78em; color: var(--hy-gold); align-self: center; }
 .theme-hariyo .su-names .l-ne { font: 400 0.56em/1.5 var(--su-f-deva); }
 
 .theme-hariyo .su-gate__ui { bottom: calc(50% - var(--ah) / 2 + 26px); width: min(calc(var(--aw) - 40px), 320px); gap: 8px; z-index: 4; }
@@ -169,7 +167,6 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 
 /* the couple in a living hedge arch */
 .hy-hedge { position: relative; margin: 6px 0 0; }
-.hy-hedge__toran { position: absolute; z-index: 3; left: -6%; top: -5%; width: 112%; pointer-events: none; }
 .hy-hedge__pic { overflow: hidden; border-radius: 999px 999px 14px 14px; box-shadow: 0 0 0 6px #FFFFFF, 0 0 0 7px rgba(184, 160, 106, 0.55); }
 .hy-hedge__pic img { display: block; height: min(calc(100svh - 400px), 540px); width: auto; max-width: min(74vw, 420px); object-fit: cover; }
 .hy-hedge__g { position: absolute; z-index: 2; top: -11%; width: 46%; pointer-events: none; }
@@ -217,7 +214,7 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 
 /* the families: two arbours facing each other */
 .hy-arbours { display: flex; align-items: flex-end; justify-content: center; gap: 6px; perspective: 900px; }
-.hy-arbour { position: relative; width: min(250px, 38vw); padding: 0 0 12px; }
+.hy-arbour { position: relative; width: min(250px, 42vw); padding: 0 0 12px; }
 .hy-arbour--l { transform: rotateY(14deg); transform-origin: 100% 50%; }
 .hy-arbour--r { transform: rotateY(-14deg); transform-origin: 0 50%; }
 .hy-arbour::before { content: ''; position: absolute; inset: 0 0 12px; border: 2px solid rgba(124, 139, 92, 0.5); border-bottom: 0; border-radius: 999px 999px 0 0; background: rgba(255, 255, 255, 0.55); }
@@ -235,9 +232,7 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 .hy-arbour__of { margin-top: 8px !important; font-size: 12.5px; color: var(--su-ink-2); }
 .hy-arbour__par { font: 500 clamp(12.5px, 3.4vw, 14.5px)/1.4 var(--su-f-body); text-wrap: balance; }
 .hy-arbour__home { margin-top: 4px !important; font-size: 12.5px; color: var(--su-ink-2); }
-.hy-arbours__mid { align-self: flex-end; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 4px; }
-.hy-arbours__and { font: 400 clamp(36px, 9vw, 52px)/1 var(--su-f-script); color: var(--hy-marigold); }
-.hy-arbours__kalash { width: clamp(42px, 11vw, 74px); }
+.hy-arbours__and { align-self: center; font: 400 52px/1 var(--su-f-script); color: var(--hy-gold); }
 
 /* ───────── the programme: signposts along the path ───────── */
 .hy-path { position: relative; padding: clamp(80px, 12vh, 120px) 16px clamp(60px, 8vh, 90px); }
@@ -292,41 +287,15 @@ html:has(body.theme-hariyo) { background: #FAFBF6; }
 /* ───────── the full card, as a letter ───────── */
 .hy-letter { padding: clamp(60px, 10vh, 100px) 16px; }
 .hy-letter__sheet { position: relative; max-width: 600px; margin: 0 auto; padding: clamp(36px, 6vw, 56px) clamp(20px, 5vw, 52px); text-align: center; background: #FFFFFF var(--hy-lokta); border: 1px solid rgba(184, 160, 106, 0.5); }
-.hy-letter__sheet::before, .hy-letter__sheet::after { content: ''; position: absolute; left: 0; right: 0; height: 12px;
-  background: url("/themes/_nepali/dhaka-sm.webp") repeat-x 0 50% / 30px 30px; border-block: 1px solid var(--hy-gold); }
-.hy-letter__sheet::before { top: 0; } .hy-letter__sheet::after { bottom: 0; }
-.hy-letter__sheet { padding-top: clamp(48px, 7vw, 64px); padding-bottom: clamp(48px, 7vw, 64px); }
+.hy-letter__sheet::before, .hy-letter__sheet::after { content: ''; position: absolute; left: 14px; right: 14px; height: 10px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M10 1l4 4-4 4-4-4z' fill='none' stroke='%237C8B5C' stroke-width='.9'/%3E%3Cpath d='M0 5h5M15 5h5' stroke='%23B8A06A' stroke-width='.7'/%3E%3C/svg%3E") repeat-x center; }
+.hy-letter__sheet::before { top: 12px; } .hy-letter__sheet::after { bottom: 12px; }
 .hy-letter__gan { display: block; width: 76px; height: auto; margin: 0 auto 12px; }
 .hy-letter__line { margin: 0; font: 400 clamp(22px, 2.8vw, 28px)/1.5 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
 .hy-letter__hosts { margin: 16px 0 24px; color: var(--su-ink-2); }
 
-/* ───────── the seven steps: a garden path, lit as you walk it ───────── */
-.hy-seven { padding: clamp(80px, 12vh, 120px) 16px clamp(50px, 8vh, 80px); }
-.hy-seven__path { position: relative; max-width: 720px; margin: 20px auto 0; }
-.hy-seven__trail { position: absolute; inset: 0; width: 100%; height: 100%; }
-.hy-seven__list { position: relative; margin: 0; padding: 0; list-style: none; }
-.hy-step { position: relative; display: flex; align-items: center; min-height: clamp(150px, 20vh, 170px); }
-.hy-step__pad { position: absolute; top: 50%; left: 30%; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; background: #FBF6E8; box-shadow: 0 0 0 1px rgba(184, 160, 106, 0.55), 0 0 0 5px rgba(251, 246, 232, 0.9), 0 0 0 6px rgba(226, 134, 28, 0.35); }
-.hy-step--r .hy-step__pad { left: 70%; }
-.hy-feet { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); opacity: 0.22; transform: scale(0.9); transition: opacity 0.6s var(--su-ease), transform 0.6s var(--su-ease); }
-.hy-step .hy-step__diyo { position: absolute; bottom: -8px; left: -44px; width: 40px !important; opacity: 0.55; transition: opacity 0.6s var(--su-ease); }
-.hy-step.hy-step--r .hy-step__diyo { left: auto; right: -44px; }
-.hy-step .np-lamp__wick { opacity: 0; transition: opacity 0.7s var(--su-ease); }
-.hy-step__txt { display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; width: 100%; padding-left: calc(30% + 66px); opacity: 0.4; transform: translateY(8px); transition: opacity 0.6s var(--su-ease), transform 0.6s var(--su-ease); }
-.hy-step--r .hy-step__txt { align-items: flex-end; padding: 0 calc(30% + 66px) 0 0; text-align: right; }
-.hy-step__n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--hy-marigold); font: 400 15px/1 var(--su-f-display); color: var(--hy-sindoor); }
-.hy-step__vow { font: 400 clamp(17px, 2.2vw, 21px)/1.35 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
-.hy-step__vow .l-ne { font-size: 16px; line-height: 1.6; }
-.hy-step.is-lit .hy-feet { opacity: 1; transform: none; }
-.hy-step.is-lit .hy-step__diyo, .hy-step.is-lit .np-lamp__wick, .hy-step.is-lit .hy-step__txt { opacity: 1; }
-.hy-step.is-lit .hy-step__txt { transform: none; }
-
 /* ───────── RSVP: calm ───────── */
 .hy-reply { padding: clamp(60px, 10vh, 100px) 16px; }
-.hy-reply__stage { position: relative; max-width: 900px; margin: 0 auto; }
-.hy-reply .hy-reply__panas { position: absolute; top: -4px; width: 40px !important; }
-.hy-reply__panas--l { left: 0; } .hy-reply__panas--r { right: 0; }
-.hy-reply .hy-head, .hy-reply > .hy-reply__stage > .hy-lede { padding: 0 38px; }
 .hy-reply__card { position: relative; max-width: 600px; margin: 26px auto 0; padding: clamp(28px, 5vw, 42px) clamp(18px, 5vw, 40px); background: #FFFFFF; border: 1px solid var(--su-line); border-radius: 22px; }
 .hy-reply__g { position: absolute; right: -26px; top: -56px; width: 120px; pointer-events: none; }
 .hy-reply__g img { display: block; width: 100%; height: auto; transform: scaleX(-1); }
@@ -357,10 +326,6 @@ html[data-lang='ne'] .hy-close__en { display: none; }
   .hy-sign--l .hy-sign__board::before { left: auto; right: 9px; }
   .hy-sign--l .hy-sign__note { border-radius: 16px 4px 16px 16px; }
   .hy-sign + .hy-sign { margin-top: -40px; }
-  .hy-reply .hy-reply__panas { top: 38%; width: 92px !important; }
-  .hy-step__pad { width: 124px; height: 124px; margin: -62px 0 0 -62px; }
-  .hy-step .hy-step__diyo { width: 50px !important; left: -54px; } .hy-step.hy-step--r .hy-step__diyo { right: -54px; }
-  .hy-step__txt { padding-left: calc(30% + 84px); } .hy-step--r .hy-step__txt { padding-right: calc(30% + 84px); }
 }
 
 /* Nepali: Gotu for display lines only; reading text stays in Mukta */
