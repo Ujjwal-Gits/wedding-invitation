@@ -13,6 +13,7 @@ import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
 import * as site from './lib/site.js';
 import { sharePage } from './lib/share.js';
+import { themePageGate } from './lib/gate.js';
 import { stopDepth } from './lib/depth.js';
 
 assertConfigured();
@@ -104,11 +105,14 @@ app.use('/uploads', (req, res) => res.status(404).end());
 
 if (IS_PROD) {
   if (!existsSync(DIST_DIR)) console.warn('[studio] dist/ not found: run `npm run build` in the project root.');
+  // Theme pages (/<theme>/) only for a published invitation's guests or a studio session; see lib/gate.js.
+  app.use(themePageGate(DIST_DIR));
   app.use(express.static(DIST_DIR, {
     index: 'index.html',
     redirect: true,
     dotfiles: 'deny',
     setHeaders(res, path) {
+      if (res.locals.gatedPage) return; // the gate already set private, no-store
       res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache');
     },
   }));

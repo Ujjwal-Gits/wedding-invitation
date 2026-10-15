@@ -94,7 +94,7 @@
             <p class="cap__n"><span id="cap-i">01</span> / <span id="cap-total">06</span></p>
             <p class="cap__name"><span id="cap-name">Mahal</span> <span class="cap__ne" id="cap-ne" lang="ne">महल</span></p>
             <p class="cap__text" id="cap-text">A golden palace gate tied with a satin bow; it swings open onto a palace balcony at night.</p>
-            <a class="link link--sm" id="cap-link" href="/mahal/" target="_blank" rel="noopener">Open it live<span class="vh"> (new tab)</span> <span aria-hidden="true">↗</span></a>
+            <a class="link link--sm" id="cap-link" href="#order" data-theme="mahal">Order this design</a>
           </div>
           <div class="ticks" id="ticks" role="group" aria-label="Designs shown in the phone"></div>
         </div>
@@ -123,7 +123,7 @@
           <span class="step__n" aria-hidden="true">1</span>
           <div>
             <h3 class="step__t">Choose a design <span lang="ne">डिजाइन छान्नुहोस्</span></h3>
-            <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a palace gate. Open each one live before you decide.</p>
+            <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a palace gate. Ask us for a private preview before you decide.</p>
           </div>
         </li>
         <li class="step">
@@ -154,7 +154,7 @@
     <section class="designs" id="designs" aria-labelledby="designs-title">
       <header class="designs__head">
         <h2 class="h2 h2--xl" id="designs-title"><span class="js-count" data-cap="1">Twenty-seven</span> designs.</h2>
-        <p class="designs__lede">Each one carries the same couple, ceremonies, music and RSVP. Only the opening and the mood change. Open any of them live.</p>
+        <p class="designs__lede">Each one carries the same couple, ceremonies, music and RSVP. Only the opening and the mood change. Ask us for a private preview of any of them, made with your names.</p>
       </header>
       <div class="index" id="index">
         <ol class="list" id="gallery"></ol>
@@ -300,18 +300,22 @@
     </div>
   </footer>
 
-  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
-    <div class="viewer__bar">
-      <p class="viewer__title" id="viewer-title"></p>
-      <div class="seg" role="group" aria-label="Preview size">
-        <button type="button" class="seg__btn" data-mode="phone" aria-pressed="true">Phone</button>
-        <button type="button" class="seg__btn" data-mode="desktop" aria-pressed="false">Desktop</button>
+  <dialog class="lb" id="lb" aria-labelledby="lb-name">
+    <div class="lb__in">
+      <figure class="lb__shot"><img id="lb-img" alt="" width="1200" height="900" decoding="async" /></figure>
+      <div class="lb__body">
+        <p class="lb__n"><span id="lb-i">01</span> / <span id="lb-total">27</span></p>
+        <h2 class="lb__name" id="lb-name"></h2>
+        <p class="lb__ne" id="lb-ne" lang="ne"></p>
+        <p class="lb__text" id="lb-text"></p>
+        <a class="btn btn--accent lb__cta" id="lb-order" href="#order">Order this design</a>
+        <p class="lb__fine">Want to see it move? Ask us for a private preview.</p>
+        <div class="lb__nav">
+          <button type="button" class="lb__btn" id="lb-prev" aria-label="Previous design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <button type="button" class="lb__btn" id="lb-next" aria-label="Next design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
       </div>
-      <a class="viewer__open" id="viewer-open" href="/" target="_blank" rel="noopener">Open in new tab <span aria-hidden="true">↗</span></a>
-      <button type="button" class="viewer__close" id="viewer-close" aria-label="Close preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    </div>
-    <div class="viewer__stage" id="viewer-stage">
-      <div class="viewer__frame" id="viewer-frame"><iframe id="viewer-iframe" title="Design preview" loading="lazy"></iframe></div>
+      <button type="button" class="lb__btn lb__close" id="lb-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
   </dialog>
 </body>

@@ -102,7 +102,8 @@ function setCaption(i) {
   $('#cap-name').textContent = t.name;
   $('#cap-ne').textContent = t.ne;
   $('#cap-text').textContent = t.concept;
-  $('#cap-link').href = t.demo;
+  $('#cap-link').dataset.theme = t.slug;
+  $('#cap-link').setAttribute('aria-label', `Order the ${t.name} design`);
   $('#ticks').querySelectorAll('.tick').forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
   // a short fade on the words that changed (transform + opacity only)
   for (const n of [$('#cap')]) {
@@ -249,7 +250,6 @@ function normaliseThemes(api, site) {
         concept: local.concept || str(t.concept, 240) || '',
         alt: local.alt || `${str(t.name, 60) || t.slug} design`,
         thumb: localPath(t.thumb, local.thumb || `/themes/${t.slug}/thumb.jpg`),
-        demo: localPath(t.demo, `/${t.slug}/`),
       };
     })
     : THEMES.filter((t) => !hidden.has(t.slug));
@@ -277,7 +277,7 @@ function initView() {
   view.front.classList.add('is-on');
   view.back = el('img', { alt: '', width: 1200, height: 900, decoding: 'async' });
   shot.append(view.back);
-  shot.addEventListener('click', () => { const t = view.themes[view.i]; if (t) openViewer(t, document.activeElement); });
+  shot.addEventListener('click', () => { if (view.themes[view.i]) openLightbox(view.i, document.activeElement); });
 }
 function setView(i) {
   if (i === view.i || !view.themes[i]) return;
@@ -315,14 +315,13 @@ function renderGallery(themes) {
     });
     img.addEventListener('error', () => img.replaceWith(el('span', { class: 'item__ph', 'aria-hidden': 'true', text: t.ne || t.name })), { once: true });
     const li = el('li', { class: `item${i % 5 === 0 ? ' item--wide' : ''}${i >= MOBILE_FIRST ? ' is-more' : ''}`, 'data-i': i },
-      el('a', { class: 'item__link', href: t.demo, target: '_blank', rel: 'noopener' },
+      el('button', { type: 'button', class: 'item__link', 'aria-haspopup': 'dialog' },
         el('span', { class: 'item__shot' }, img),
         el('span', { class: 'item__n', 'aria-hidden': 'true', text: pad(i + 1) }),
         el('span', { class: 'item__name' }, document.createTextNode(t.name), t.ne ? el('span', { class: 'item__ne', lang: 'ne', text: t.ne }) : null),
         t.featured ? el('span', { class: 'item__tag', text: 'Featured' }) : null,
-        el('span', { class: 'item__go', 'aria-hidden': 'true', text: '↗' }),
-        el('span', { class: 'vh', text: `: ${t.concept} Opens the live design in a new tab.` })),
-      el('button', { type: 'button', class: 'item__pv', 'data-slug': t.slug, 'aria-label': `Preview ${t.name} on a phone`, text: 'Preview' }),
+        el('span', { class: 'item__go', 'aria-hidden': 'true', text: 'View' }),
+        el('span', { class: 'vh', text: `: ${t.concept} View larger.` })),
     );
     ol.append(li);
   });
@@ -332,12 +331,11 @@ function renderGallery(themes) {
   more.onclick = () => {
     ol.classList.add('is-open');
     more.hidden = true;
-    ol.children[MOBILE_FIRST]?.querySelector('a')?.focus({ preventScroll: true });
+    ol.children[MOBILE_FIRST]?.querySelector('button')?.focus({ preventScroll: true });
   };
-  const byslug = Object.fromEntries(themes.map((t) => [t.slug, t]));
   ol.onclick = (e) => {
-    const b = e.target.closest('button[data-slug]');
-    if (b && byslug[b.dataset.slug]) openViewer(byslug[b.dataset.slug], b);
+    const b = e.target.closest('.item__link');
+    if (b) openLightbox(Number(b.closest('.item').dataset.i), b);
   };
   const pick = (e) => { const li = e.target.closest?.('.item'); if (li && wide.matches) setView(Number(li.dataset.i)); };
   ol.onmouseover = pick;
@@ -349,48 +347,73 @@ function renderGallery(themes) {
   sel.replaceChildren(el('option', { value: '', text: 'Not sure yet' }), ...themes.map((t) => el('option', { value: t.slug, text: t.ne ? `${t.name} · ${t.ne}` : t.name })));
 }
 
-/* ---------------- preview dialog ---------------- */
-const viewer = $('#viewer');
-const frame = $('#viewer-frame');
-const iframe = $('#viewer-iframe');
-let mode = 'phone';
-let opener = null;
-function fitViewer() {
-  if (!viewer.open) return;
-  const st = $('#viewer-stage').getBoundingClientRect();
-  const [w, h] = mode === 'phone' ? [410, 864] : [1440, 900];
-  const s = Math.min(1, (st.width - 24) / w, (st.height - 24) / h);
-  frame.style.transform = `translate(-50%, -50%) scale(${s.toFixed(4)})`;
+/* ---------------- lightbox: a larger still of one design (never the live page) ---------------- */
+const lb = $('#lb');
+const lbImg = $('#lb-img');
+const lightbox = { i: -1, opener: null, order: false };
+function showInLightbox(i) {
+  const list = view.themes;
+  if (!list.length) return;
+  i = (i + list.length) % list.length;
+  lightbox.i = i;
+  const t = list[i];
+  $('#lb-i').textContent = pad(i + 1);
+  $('#lb-total').textContent = pad(list.length);
+  $('#lb-name').textContent = t.name;
+  $('#lb-ne').textContent = t.ne || '';
+  $('#lb-ne').hidden = !t.ne;
+  $('#lb-text').textContent = t.concept;
+  $('#lb-order').setAttribute('aria-label', `Order the ${t.name} design`);
+  lbImg.alt = `The ${t.name} design: ${t.alt}`;
+  const ss = srcsetFor(t);
+  if (ss) { lbImg.srcset = ss; lbImg.sizes = '(min-width: 860px) 62vw, 100vw'; } else { lbImg.removeAttribute('srcset'); lbImg.removeAttribute('sizes'); }
+  lbImg.src = t.thumb;
 }
-function setMode(m) {
-  mode = m;
-  frame.classList.toggle('is-phone', m === 'phone');
-  frame.classList.toggle('is-desktop', m === 'desktop');
-  viewer.querySelectorAll('.seg__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
-  fitViewer();
-}
-function openViewer(t, from) {
-  opener = from;
-  const title = $('#viewer-title');
-  title.replaceChildren(document.createTextNode(t.name), t.ne ? el('span', { lang: 'ne', text: t.ne }) : null);
-  $('#viewer-open').href = t.demo;
-  iframe.title = `${t.name} design, live preview`;
-  iframe.src = t.demo;
-  setMode(mode);
-  viewer.showModal();
+function openLightbox(i, from) {
+  if (!view.themes[i]) return;
+  lightbox.opener = from;
+  lightbox.order = false;
+  showInLightbox(i);
+  lb.showModal();
   document.documentElement.style.overflow = 'hidden';
-  fitViewer();
 }
-function closeViewer() { viewer.close(); }
-viewer.addEventListener('close', () => {
-  iframe.src = 'about:blank';
+/** Preselects a design in the order form (the gallery fills the options; the hero may ask before it has). */
+function chooseTheme(slug) {
+  const sel = $('#f-theme');
+  if (!SLUG_RE.test(slug)) return;
+  if (![...sel.options].some((o) => o.value === slug)) {
+    const t = BY_SLUG[slug];
+    if (!t) return;
+    sel.append(el('option', { value: slug, text: t.ne ? `${t.name} · ${t.ne}` : t.name }));
+  }
+  setKind('order');
+  sel.value = slug;
+}
+lb.addEventListener('close', () => {
   document.documentElement.style.overflow = '';
-  opener?.focus?.({ preventScroll: true });
+  if (lightbox.order) {
+    $('#order').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+    $('#f-name').focus({ preventScroll: true });
+  } else {
+    lightbox.opener?.focus?.({ preventScroll: true });
+  }
 });
-viewer.addEventListener('click', (e) => { if (e.target === viewer) closeViewer(); });
-$('#viewer-close').addEventListener('click', closeViewer);
-viewer.querySelectorAll('.seg__btn').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
-window.addEventListener('resize', fitViewer, { passive: true });
+lb.addEventListener('click', (e) => { if (e.target === lb) lb.close(); });
+lb.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') { e.preventDefault(); showInLightbox(lightbox.i - 1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); showInLightbox(lightbox.i + 1); }
+});
+$('#lb-close').addEventListener('click', () => lb.close());
+$('#lb-prev').addEventListener('click', () => showInLightbox(lightbox.i - 1));
+$('#lb-next').addEventListener('click', () => showInLightbox(lightbox.i + 1));
+$('#lb-order').addEventListener('click', (e) => {
+  e.preventDefault();
+  const t = view.themes[lightbox.i];
+  if (t) chooseTheme(t.slug);
+  lightbox.order = true;
+  lb.close();
+});
+$('#cap-link').addEventListener('click', (e) => { chooseTheme(e.currentTarget.dataset.theme || ''); });
 
 /* ---------------- order form ---------------- */
 const form = $('#order-form');

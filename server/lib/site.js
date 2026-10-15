@@ -107,7 +107,10 @@ export async function putSite(req, res) {
   res.json(clean);
 }
 
-/** GET /api/themes (public): ready themes for the website gallery, minus hiddenThemes. */
+/**
+ * GET /api/themes (public): ready themes for the website gallery, minus hiddenThemes. No page URLs: the theme
+ * pages themselves are only served to the studios and to guests of a published invitation (lib/gate.js).
+ */
 export async function publicThemes(req, res) {
   const { hiddenThemes } = await readSite();
   const hidden = new Set(hiddenThemes);
@@ -115,7 +118,7 @@ export async function publicThemes(req, res) {
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, demo: `/${t.slug}/` });
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb });
   }
   res.set('Cache-Control', 'no-cache');
   res.json(out);

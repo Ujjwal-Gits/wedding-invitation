@@ -247,6 +247,21 @@ export function logout(req, res) {
   res.json({ ok: true });
 }
 
+/**
+ * True when this request carries a live studio session: the planner, or a couple whose link is still active
+ * (a revoked or replaced link ends the session here too). Used to let the studios open any design page.
+ */
+export async function hasStudioSession(req) {
+  const s = req.session;
+  if (!s) return false;
+  if (s.role === 'admin') return true;
+  if (s.role !== 'client') return false;
+  const doc = await getInvitation(s.slug);
+  if (doc?.access?.tokenHash && safeEqual(doc.access.tokenHash, s.tokenHash)) return true;
+  sessions.delete(req.sessionKey);
+  return false;
+}
+
 export async function me(req, res) {
   if (!req.session) return res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;

@@ -24,7 +24,7 @@ The client token is the part after `#/c/` in the link (43 chars base64url). Sess
 | Route | Body | Response |
 |---|---|---|
 | `GET /site` | – | `Site` (defaults when nothing saved yet) |
-| `GET /themes` | – | `[{ slug, name, concept, thumb, demo: '/<slug>/' }]`, ready themes only, minus `hiddenThemes` |
+| `GET /themes` | – | `[{ slug, name, concept, thumb }]`, ready themes only, minus `hiddenThemes` (no page URLs: see "Theme pages") |
 | `POST /orders` | `{ kind: 'order'\|'custom', name, phone, email?, weddingDate?, theme?, plan?, message?, website }` | `201 { ok: true }` · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
 | `GET /invitations/:slug/public` | – | published data (a signed-in editor of that invitation gets the draft) |
 | `POST /invitations/:slug/rsvp` | `{ name, phone?, attending: 'yes'\|'no', guests, events?, meal?, message?, website }` | `{ ok: true }` |
@@ -97,6 +97,23 @@ until the admin sets a password with `PATCH /access`.
   omitted when absent, `null` or `id: ''`.
 - `share.image`: a photo ref (library slug, upload object or https URL) or `''`. In `/public` it becomes a URL string
   (`share.image` else the first couple portrait).
+
+## Theme pages (not under /api)
+
+The designs are the product, so a theme's HTML (`/<theme>/`, `/<theme>/index.html`, any case or encoding) is gated in
+production (`server/lib/gate.js`, before `express.static`). It is served only when:
+- `?id=<slug>` names a **published** invitation whose theme is this one (another theme → `302` to `/<its theme>/?<same query>`);
+- the request carries an admin session; or
+- it carries a client session whose link is still active (the client studio's preview and Themes module).
+
+Otherwise: no `id` → `302 /#designs`; unknown, malformed or unpublished `id` → `404` with a small "This invitation
+isn't available" page (the same for both, so a draft's existence never leaks). Gated responses carry
+`Cache-Control: private, no-store` and `Vary: Cookie`. Static files (`/assets/*`, `/themes/*`, `/site/*`, uploads)
+stay public because invitations need them; `Cross-Origin-Resource-Policy: same-origin` keeps other sites from
+loading the theme bundles. The public website shows only thumbnails and phone screenshots.
+
+**Dev:** Vite serves the pages, so the gate does not run there (`localhost:5195/<theme>/` opens freely). Test it
+against a production instance (`npm run build`, then `node server/index.js --production`).
 
 ## Share page (not under /api)
 

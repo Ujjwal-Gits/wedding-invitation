@@ -1,5 +1,5 @@
 // Static theme list: the fallback when GET /api/themes is unavailable, and the source of the Nepali names and
-// alt text (the API returns { slug, name, concept, thumb, demo } only).
+// alt text (the API returns { slug, name, concept, thumb } only; designs are never linked live from the website).
 export const THEMES = [
   ['kham', 'Kham', 'खाम', 'A handmade-paper envelope sealed with the endless knot; the card unfolds into a clear programme.', 'a handmade-paper envelope with a sindoor wax seal'],
   ['dhoka', 'Dhoka', 'ढोका', 'White editorial print. The Golden Door of Patan opens in 3D.', 'the Golden Door of Patan beside the couple’s names'],
@@ -28,7 +28,7 @@ export const THEMES = [
   ['swayambar', 'Swayambar', 'स्वयम्बर', 'Two fresh garlands swing apart on the jaimala; the bride’s and groom’s sides come together as you scroll.', 'the bride and groom exchanging marigold garlands'],
   ['sindoor', 'Sindoor', 'सिन्दूर', 'Minimal red, white and black: the sindoor box opens in a bloom of red and a parting line threads the story.', 'a red-and-gold sindoor box on white with a red line-drawn Ganesh'],
   ['rangoli', 'Rangoli', 'रंगोली', 'A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos'],
-].map(([slug, name, ne, concept, alt]) => ({ slug, name, ne, concept, alt, thumb: `/themes/${slug}/thumb.jpg`, demo: `/${slug}/` }));
+].map(([slug, name, ne, concept, alt]) => ({ slug, name, ne, concept, alt, thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));
 // Nepali names for designs that the API lists but the static fallback does not carry yet
