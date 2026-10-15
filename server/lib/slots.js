@@ -27,6 +27,8 @@ export async function loadVocab() {
 }
 
 const ID_RE = /^[a-z0-9][a-zA-Z0-9._-]{0,63}$/;
+export const COLOR_TOKEN_RE = /^--[a-z0-9-]{1,40}$/;
+export const COLOR_HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 function clean(raw, theme) {
   const m = raw?.default ?? raw;
@@ -54,9 +56,19 @@ function clean(raw, theme) {
       shared: typeof s.shared === 'string' && ID_RE.test(s.shared) ? s.shared : null,
     };
   }
+  // colors: { '--token': { label, default: '#hex', note? } } (PLATFORM.md: theme colour manifests)
+  const colors = {};
+  for (const [token, s] of Object.entries(m.colors && typeof m.colors === 'object' ? m.colors : {})) {
+    if (!COLOR_TOKEN_RE.test(token) || !s || typeof s !== 'object') continue;
+    colors[token] = {
+      label: String(s.label || token).slice(0, 160),
+      default: typeof s.default === 'string' && COLOR_HEX_RE.test(s.default) ? s.default.toLowerCase() : '',
+      note: s.note ? String(s.note).slice(0, 300) : '',
+    };
+  }
   const name = typeof m.name === 'string' ? m.name.slice(0, 40) : '';
   const description = typeof m.description === 'string' ? m.description.slice(0, 160) : '';
-  return { theme, name, description, images, texts };
+  return { theme, name, description, images, texts, colors };
 }
 
 /** The manifest for a theme, or null while the theme has not published one. Reloaded when the file changes. */

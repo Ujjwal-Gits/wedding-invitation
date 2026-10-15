@@ -64,4 +64,11 @@ export default {
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
     'close.kicker': { label: 'Blessing: small line above the closing words', default: { en: 'With love', ne: 'मायासहित' }, max: 32 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--rose': { label: 'Rose (buttons, links)', default: '#9E4659' },
+    '--gold-text': { label: 'Gold text', default: '#8A6731' },
+    '--sage-deep': { label: 'Deep sage', default: '#43574A' },
+    '--paper': { label: 'Paper', default: '#FBF7F3' },
+  },
 };

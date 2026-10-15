@@ -5,6 +5,7 @@ import { verify as argonVerify, hash as argonHash } from '@node-rs/argon2';
 import { verify as bcryptVerify } from '@node-rs/bcrypt';
 import { IS_PROD, ADMIN_EMAIL, ADMIN_PASSWORD_HASH } from './env.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
+import { getInvitation, listInvitations } from './store.js';
 
 export const COOKIE = IS_PROD ? '__Host-studio' : 'studio_sid';
 const IDLE_MS = 12 * 60 * 60 * 1000; // 12 h without activity
@@ -100,7 +101,7 @@ export function requireEditor(getInvitation) {
       if (!canEdit(req, req.params.slug)) return res.status(403).json({ error: 'You do not have access to this invitation.' });
       if (req.session.role === 'client') {
         const doc = await getInvitation(req.params.slug);
-        if (!doc?.clientAccess?.tokenHash || !safeEqual(doc.clientAccess.tokenHash, req.session.tokenHash)) {
+        if (!doc?.access?.tokenHash || !safeEqual(doc.access.tokenHash, req.session.tokenHash)) {
           sessions.delete(req.sessionKey);
           return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
         }
@@ -122,10 +123,24 @@ export function revokeClientSessions(slug) {
   for (const [k, s] of sessions) if (s.role === 'client' && s.slug === slug) sessions.delete(k);
 }
 
-const linkLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
+const linkLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 }); // failed attempts per IP
+const slugLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }); // wrong passwords per invitation
+export const PASSWORD_MIN = 6;
+export const PASSWORD_MAX = 128;
+const ARGON = { algorithm: 2, memoryCost: 19456, timeCost: 2, parallelism: 1 }; // argon2id, OWASP parameters
 
-/** POST /api/client/session { token }: trade the link token for a session limited to one invitation. */
-export function clientSession(listInvitations) {
+/** argon2id hash of a couple's link password (NFC, so the same Devanagari typed twice matches). */
+export const hashLinkPassword = (pw) => argonHash(String(pw).normalize('NFC'), ARGON);
+
+/** What the couple may change: { themes: 'all' | string[], canChangeTheme, canChangeColors }. */
+export const permsOf = (access) => ({
+  themes: access?.themes === 'all' || !Array.isArray(access?.themes) ? 'all' : [...access.themes],
+  canChangeTheme: access?.canChangeTheme === true,
+  canChangeColors: access?.canChangeColors === true,
+});
+
+/** POST /api/client/session { token, password }: trade the link token + password for a session limited to one invitation. */
+export function clientSession() {
   return async (req, res) => {
     const ip = clientIp(req);
     const st = linkLimiter.peek(ip);
@@ -135,23 +150,43 @@ export function clientSession(listInvitations) {
     }
     if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
-    const fail = () => {
+    const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, PASSWORD_MAX * 4).normalize('NFC') : '';
+    const fail = (slug) => {
       linkLimiter.hit(ip);
+      if (slug) slugLimiter.hit(slug);
       console.warn(`[auth] bad client link ip=${ip}`);
-      return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
+      return res.status(401).json({ error: 'That link or password is not right. Please check it, or ask your planner.' });
     };
-    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return fail();
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+      await argonVerify(dummyHash, password || 'x').catch(() => false); // same timing as a real check
+      return fail();
+    }
     const h = hashToken(token);
     const docs = await listInvitations();
-    const doc = docs.find((d) => d.clientAccess?.tokenHash && safeEqual(d.clientAccess.tokenHash, h));
-    if (!doc) return fail();
+    let doc = null;
+    for (const d of docs) if (d.access?.tokenHash && safeEqual(d.access.tokenHash, h)) doc = d; // no early exit
+    if (!doc) {
+      await argonVerify(dummyHash, password || 'x').catch(() => false);
+      return fail();
+    }
+    const ss = slugLimiter.peek(doc.slug);
+    if (!ss.ok) {
+      res.set('Retry-After', String(ss.retryAfter));
+      return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
+    }
+    // Links made before passwords existed (passwordHash null) still open with the token alone, until the planner sets one.
+    if (doc.access.passwordHash) {
+      const ok = password ? await argonVerify(doc.access.passwordHash, password).catch(() => false) : false;
+      if (!ok) return fail(doc.slug);
+    }
     if (req.sessionKey) sessions.delete(req.sessionKey);
     const id = randomBytes(32).toString('base64url');
     const s = { role: 'client', slug: doc.slug, tokenHash: h, csrf: randomBytes(32).toString('base64url'), created: Date.now(), seen: Date.now() };
     sessions.set(keyOf(id), s);
     setCookie(res, id, Math.floor(ABSOLUTE_MS / 1000));
+    linkLimiter.reset(ip);
     console.info(`[auth] client link ok slug=${doc.slug} ip=${ip}`);
-    res.json({ role: 'client', slug: doc.slug, csrf: s.csrf });
+    res.json({ role: 'client', slug: doc.slug, csrf: s.csrf, perms: permsOf(doc.access) });
   };
 }
 
@@ -212,8 +247,14 @@ export function logout(req, res) {
   res.json({ ok: true });
 }
 
-export function me(req, res) {
+export async function me(req, res) {
   if (!req.session) return res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
-  res.json(s.role === 'client' ? { role: 'client', slug: s.slug, csrf: s.csrf } : { role: 'admin', email: s.email, csrf: s.csrf });
+  if (s.role !== 'client') return res.json({ role: 'admin', email: s.email, csrf: s.csrf });
+  const doc = await getInvitation(s.slug);
+  if (!doc?.access?.tokenHash || !safeEqual(doc.access.tokenHash, s.tokenHash)) {
+    sessions.delete(req.sessionKey);
+    return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
+  }
+  res.json({ role: 'client', slug: s.slug, csrf: s.csrf, perms: permsOf(doc.access) });
 }

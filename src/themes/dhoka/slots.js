@@ -84,4 +84,10 @@ export default {
     'reply.send': { label: 'Send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
     'reply.daysToGo': { label: 'Words after the countdown number', default: { en: 'days to go', ne: 'दिन बाँकी' }, max: 20 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--gold': { label: 'Accent red (Ganesh, ampersand)', default: '#A3161F' },
+    '--gold-rule': { label: 'Thin lines', default: '#B8323A' },
+    '--paper': { label: 'Background', default: '#FFFFFF' },
+  },
 };

@@ -37,4 +37,12 @@ export default {
     'nav.gallery': { label: 'Side menu: photos', default: { en: 'Photos', ne: 'तस्बिर' }, max: 20 },
     'nav.reply': { label: 'Side menu: reply', default: { en: 'Reply', ne: 'जवाफ' }, max: 20 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--red': { label: 'Red (names)', default: '#8E1C22' },
+    '--saffron': { label: 'Saffron (date)', default: '#E8890C' },
+    '--saffron-ink': { label: 'Deep saffron (small lines)', default: '#9A4A06' },
+    '--leaf': { label: 'Leaf green', default: '#2E4A27' },
+    '--white': { label: 'Background', default: '#FFFFFF' },
+  },
 };

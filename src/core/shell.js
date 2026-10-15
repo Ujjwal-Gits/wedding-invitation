@@ -3,6 +3,7 @@
 import { config } from '../config.js';
 import { bi, initLang } from './i18n.js';
 import { createPlayer, playerMarkup } from './audio.js';
+import { bundledTracks } from './data.js';
 
 const SVG = `
 <svg class="svg-defs" aria-hidden="true" focusable="false">
@@ -34,7 +35,7 @@ export function mountShell({ chapters = [] } = {}) {
     document.body.append(nav);
   }
   initLang(document.getElementById('lang-toggle'));
-  const player = createPlayer(config.music);
+  const player = createPlayer({ ...config.music, fallbackTracks: bundledTracks });
   return { player, setChapter };
 }
 

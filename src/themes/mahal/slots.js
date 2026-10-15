@@ -70,4 +70,11 @@ export default {
     'rsvp.title': { shared: 'reply.title', label: 'RSVP: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 32 },
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--mh-night': { label: 'Night shade around the gate', default: '#050E2A', note: 'The dark that frames the painted gate and sits behind the names on the balcony (the gate and the palace are paintings and keep their colours).' },
+    '--mh-gold-lt': { label: 'Light gold (invocation, WEDS, scroll cue)', default: '#F6D98C', note: 'Keep it light: it is text on the night.' },
+    '--mg-red': { label: 'Main red', default: '#8C1018', note: 'The velvet curtains on the balcony and the card under the gate; also frames, buttons and headings below.' },
+    '--mg-ivory': { label: 'Page ivory', default: '#F8F1E3', note: 'Tints the handmade paper of the page below the opening.' },
+  },
 };

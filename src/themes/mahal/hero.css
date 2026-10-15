@@ -4,6 +4,52 @@ body.theme-mahal {
   --mh-ivory: #FFF8EA;
   --mh-gold-lt: #F6D98C;
   --mh-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  /* shades of the night (gate vignette, the dark behind the words), of the light gold (WEDS, the scroll cue) and of
+     the main red (the velvet curtains, the gate's card); derived from --mh-night, --mh-gold-lt and --mg-red below */
+  --mh-vig-0: rgba(4, 8, 24, 0.2);
+  --mh-vig-1: rgba(4, 8, 24, 0.82);
+  --mh-shade-55: rgba(5, 12, 40, 0.55);
+  --mh-shade-32: rgba(5, 12, 40, 0.32);
+  --mh-shade-0: rgba(5, 12, 40, 0);
+  --mh-weds: #F6DC95;
+  --mh-weds-0: rgba(246, 220, 149, 0);
+  --mh-card: rgba(42, 8, 12, 0.84);
+  --mh-v1: #3E0309; --mh-v2: #8E0F1D; --mh-v3: #B71C2C; --mh-v4: #6C0A15; --mh-v5: #A3172A;
+  --mh-v6: #C62A3A; --mh-v7: #7A0B17; --mh-v8: #A51A2B; --mh-v9: #5A0610;
+  --mh-vfold: #24010A; --mh-vlight: #E8505E; --mh-vedge: #3A0207; --mh-vdeep: #2A0105;
+}
+/* A client's colours (inline on <body>): each shade sits against the client's colour as the default shade sits against
+   the default, rounded to whole steps so the defaults land on the very same colours (see mahal.css). */
+@supports (color: rgb(from red round(r * .5) g b)) {
+  body.theme-mahal {
+    --mh-vig-0: rgb(from var(--mh-night) round(r * .571429 + 1.1429) round(g * .571429) round(b * .571429) / .2);
+    --mh-vig-1: rgb(from var(--mh-night) round(r * .571429 + 1.1429) round(g * .571429) round(b * .571429) / .82);
+    --mh-shade-55: rgb(from var(--mh-night) round(r * .952381 + .2381) round(g * .952381 - 1.3333) round(b * .952381) / .55);
+    --mh-shade-32: rgb(from var(--mh-night) round(r * .952381 + .2381) round(g * .952381 - 1.3333) round(b * .952381) / .32);
+    --mh-shade-0: rgb(from var(--mh-night) round(r * .952381 + .2381) round(g * .952381 - 1.3333) round(b * .952381) / 0);
+    --mh-weds: rgb(from var(--mh-gold-lt) r calc(g + 3) calc(b + 9));
+    --mh-weds-0: rgb(from var(--mh-gold-lt) r calc(g + 3) calc(b + 9) / 0);
+    --mh-card: rgb(from var(--mg-red) round(r * .3) round(g * .3 + 3.2) round(b * .3 + 4.8) / .84);
+    --mh-v1: rgb(from var(--mg-red) round(r * .442857) round(g * .442857 - 4.0857) round(b * .442857 - 1.6286));
+    --mh-v2: rgb(from var(--mg-red) calc(r + 2) calc(g - 1) calc(b + 5));
+    --mh-v3: rgb(from var(--mg-red) calc(r + 43) calc(g + 12) calc(b + 20));
+    --mh-v4: rgb(from var(--mg-red) round(r * .771429) round(g * .771429 - 2.3429) round(b * .771429 + 2.4857));
+    --mh-v5: rgb(from var(--mg-red) calc(r + 23) calc(g + 7) calc(b + 18));
+    --mh-v6: rgb(from var(--mg-red) calc(r + 58) calc(g + 26) calc(b + 34));
+    --mh-v7: rgb(from var(--mg-red) round(r * .871429) round(g * .871429 - 2.9429) round(b * .871429 + 2.0857));
+    --mh-v8: rgb(from var(--mg-red) calc(r + 25) calc(g + 10) calc(b + 19));
+    --mh-v9: rgb(from var(--mg-red) round(r * .642857) round(g * .642857 - 4.2857) round(b * .642857 + .5714));
+    --mh-vfold: rgb(from var(--mg-red) round(r * .257143) round(g * .257143 - 3.1143) round(b * .257143 + 3.8286));
+    --mh-vlight: rgb(from var(--mg-red) calc(r + 92) calc(g + 64) calc(b + 70));
+    --mh-vedge: rgb(from var(--mg-red) round(r * .414286) round(g * .414286 - 4.6286) round(b * .414286 - 2.9429));
+    --mh-vdeep: rgb(from var(--mg-red) round(r * .3) round(g * .3 - 3.8) round(b * .3 - 2.2));
+  }
+  /* relative colours are not "legacy" rgb, so gradients made of them would blend in Oklab; keep them in sRGB as before */
+  .theme-mahal .mh-gatebg { background-image: radial-gradient(ellipse 60% 70% at 50% 55% in srgb, var(--mh-vig-0), var(--mh-vig-1)); }
+  .theme-mahal .mh-words::before { background-image: radial-gradient(closest-side in srgb, var(--mh-shade-55), var(--mh-shade-32) 50%, var(--mh-shade-0) 100%); }
+  .theme-mahal .mh-weds i { background-image: linear-gradient(90deg in srgb, var(--mh-weds-0), var(--mh-weds)); }
+  .theme-mahal .mh-weds i:last-child { background-image: linear-gradient(90deg in srgb, var(--mh-weds), var(--mh-weds-0)); }
+  .theme-mahal .mh-hero .mg-cue i { background-image: linear-gradient(in srgb, var(--mh-weds), transparent); }
 }
 .mh-hero { background: var(--mh-night); }
 
@@ -56,7 +102,7 @@ body.theme-mahal {
 .mh-ganwrap .mh-gan { height: 100%; margin: 0; }
 .mh-ganwrap .mh-gan__img, .mh-ganwrap .mh-gan__glow, .mh-ganwrap .mh-gan__rays { opacity: 0; }
 .mh-words::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(150%, 1100px); height: 115%; translate: -50% -46%; z-index: -1; border-radius: 50%; opacity: 0; transition: opacity 1.2s var(--mh-ease);
-  background: radial-gradient(closest-side, rgba(5, 12, 40, 0.55), rgba(5, 12, 40, 0.32) 50%, rgba(5, 12, 40, 0) 100%); }
+  background: radial-gradient(closest-side, var(--mh-shade-55), var(--mh-shade-32) 50%, var(--mh-shade-0) 100%); }
 .mh-hero.is-inside .mh-words::before { opacity: 1; }
 
 .mh-fw { position: absolute; left: 0; top: 0; pointer-events: none; }
@@ -102,10 +148,10 @@ body.theme-mahal {
 .mh-name { display: block; white-space: nowrap; font: 400 calc(clamp(62px, 7.6vw, 120px) * var(--fit))/1.02 'Great Vibes', 'Cormorant Garamond', cursive; }
 .mh-name .l-ne { font: 700 0.8em/1.45 'Amita', var(--f-deva-display); }
 .mh-ch { display: inline-block; }
-.mh-weds { display: flex; align-items: center; gap: 0.9em; margin: calc(2px * var(--fit)) 0 calc(6px * var(--fit)); font: 500 calc(12px * var(--fit))/1.2 'Cinzel', serif; letter-spacing: 0.5em; text-transform: uppercase; color: #F6DC95; }
+.mh-weds { display: flex; align-items: center; gap: 0.9em; margin: calc(2px * var(--fit)) 0 calc(6px * var(--fit)); font: 500 calc(12px * var(--fit))/1.2 'Cinzel', serif; letter-spacing: 0.5em; text-transform: uppercase; color: var(--mh-weds); }
 .mh-weds > span { padding-left: 0.5em; }
-.mh-weds i { display: block; width: calc(46px * var(--fit)); height: 1px; background: linear-gradient(90deg, rgba(246, 220, 149, 0), #F6DC95); }
-.mh-weds i:last-child { background: linear-gradient(90deg, #F6DC95, rgba(246, 220, 149, 0)); }
+.mh-weds i { display: block; width: calc(46px * var(--fit)); height: 1px; background: linear-gradient(90deg, var(--mh-weds-0), var(--mh-weds)); }
+.mh-weds i:last-child { background: linear-gradient(90deg, var(--mh-weds), var(--mh-weds-0)); }
 .mh-weds .l-ne { padding: 0; font: 700 calc(19px * var(--fit))/1.3 'Amita', var(--f-deva-display); letter-spacing: 0; text-transform: none; }
 html[data-lang='ne'] .mh-weds { letter-spacing: 0 !important; }
 
@@ -125,7 +171,7 @@ html[data-lang='ne'] .mh-weds { letter-spacing: 0 !important; }
 .mh-leaf__img { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; max-width: none; }
 .mh-frame__img { display: block; max-width: none; }
 .mh-bowimg { position: absolute; display: block; max-width: none; }
-.mh-gatebg { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 70% at 50% 55%, rgba(4, 8, 24, 0.2), rgba(4, 8, 24, 0.82)); }
+.mh-gatebg { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 70% at 50% 55%, var(--mh-vig-0), var(--mh-vig-1)); }
 .mh-leaf__art svg { display: block; }
 .mh-leaf__dark { opacity: 0; filter: brightness(0.32) saturate(0.7); }
 /* GPU memory: big layers are reserved only for the few seconds of the opening (phones at 3x run out otherwise) */
@@ -153,7 +199,7 @@ body.is-opening .mh-leaf__dark { will-change: opacity; }
 .mh-bowbtn:focus-visible { outline: 2px solid #FFE7A6; outline-offset: -6px; }
 .mh-ui { position: absolute; z-index: 10; left: 50%; bottom: max(14px, 2.4vh); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
   width: min(calc(100% - 32px), 420px); padding: 14px 18px 10px; border-radius: 20px; text-align: center;
-  background: rgba(42, 8, 12, 0.84); border: 1px solid rgba(244, 216, 150, 0.5); box-shadow: 0 12px 30px rgba(10, 2, 0, 0.4);
+  background: var(--mh-card); border: 1px solid rgba(244, 216, 150, 0.5); box-shadow: 0 12px 30px rgba(10, 2, 0, 0.4);
 }
 .mh-ui__line { margin: 0; font: 500 italic 18px/1.35 var(--f-display); color: #FBE7B0; text-wrap: balance; }
 .mh-ui__line .l-ne { font: 400 18px/1.5 var(--f-deva-display); font-style: normal; }
@@ -169,8 +215,8 @@ body.is-opening .mh-leaf__dark { will-change: opacity; }
 .theme-mahal .mh-ui :focus-visible { outline-color: #FFE7A6; }
 
 .mh-hero.is-inside .mh-gate { visibility: hidden; }
-.mh-hero .mg-cue { z-index: 4; color: #F6DC95; text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
-.mh-hero .mg-cue i { background: linear-gradient(#F6DC95, transparent); }
+.mh-hero .mg-cue { z-index: 4; color: var(--mh-weds); text-shadow: 0 1px 6px rgba(3, 8, 30, 0.9); }
+.mh-hero .mg-cue i { background: linear-gradient(var(--mh-weds), transparent); }
 .mh-hero .mg-fall { z-index: 8; }
 
 @media (max-width: 699px) {

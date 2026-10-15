@@ -13,7 +13,7 @@ export const MAX_BYTES = 15 * 1024 * 1024;
 const MAX_PIXELS = 80_000_000; // decompression-bomb guard
 
 sharp.cache(false);
-sharp.concurrency(2);
+// libvips threads per image: the default (one per core); withSlot() bounds how many images run at once.
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 
@@ -50,28 +50,63 @@ function readMultipart(req) {
 
 const newId = () => randomBytes(18).toString('base64url'); // 24 chars, unguessable
 
+/** A HEIF container holding HEVC (iPhone HEIC). The prebuilt sharp decodes AVIF but not HEVC (patents). */
+function looksLikeHeic(b) {
+  if (b.length < 16 || b.toString('latin1', 4, 8) !== 'ftyp') return false;
+  const brands = b.toString('latin1', 8, Math.min(b.length, Math.max(16, b.readUInt32BE(0))));
+  return /hei[cxms]|hev[cxms]/.test(brands) && !/avi[fs]/.test(brands);
+}
+const HEIC_MSG = 'iPhone HEIC photos cannot be read here yet. Please upload a JPEG instead: on the iPhone choose Settings > Camera > Formats > Most Compatible, or export the photo as JPEG first.';
+
+// WebP effort 2 encodes about twice as fast as 4 for files ~3% larger at the same quality.
+const WEBP_EFFORT = 2;
+// At most two photos are processed at once (each already uses every core); the rest wait their turn.
+let active = 0;
+const waiting = [];
+async function withSlot(fn) {
+  while (active >= 2) await new Promise((r) => waiting.push(r));
+  active += 1;
+  try { return await fn(); } finally { active -= 1; waiting.shift()?.(); }
+}
+
 async function saveImage(slug, buffer) {
   let meta;
   try {
     meta = await sharp(buffer, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).metadata();
   } catch {
-    throw httpError(415, 'That file is not an image we can read. Please upload a JPEG, PNG, WebP, HEIC or AVIF photo.');
+    if (looksLikeHeic(buffer)) throw httpError(415, HEIC_MSG);
+    throw httpError(415, 'That file is not an image we can read. Please upload a JPEG, PNG, WebP or AVIF photo.');
   }
+  if (meta.format === 'heif' && meta.compression !== 'av1') throw httpError(415, HEIC_MSG);
   if (!meta.width || !meta.height || !['jpeg', 'png', 'webp', 'avif', 'heif', 'tiff', 'gif'].includes(meta.format)) {
-    throw httpError(415, 'Please upload a JPEG, PNG, WebP, HEIC or AVIF photo.');
+    throw httpError(415, 'Please upload a JPEG, PNG, WebP or AVIF photo.');
   }
+  if (meta.width * meta.height > MAX_PIXELS) throw httpError(413, 'That photo has too many pixels (over 80 megapixels).');
   const dir = uploadDir(slug);
   await fs.mkdir(dir, { recursive: true });
   const id = newId();
-  // .rotate() bakes in the EXIF orientation; sharp drops EXIF/GPS/XMP/ICC by default on output.
-  const base = sharp(buffer, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).rotate().toColourspace('srgb');
   let lgInfo;
   try {
-    lgInfo = await base.clone().resize({ width: 2560, withoutEnlargement: true }).webp({ quality: 82, effort: 4 }).toFile(resolve(dir, `${id}-lg.webp`));
-    await base.clone().resize({ width: 1280, withoutEnlargement: true }).webp({ quality: 80, effort: 4 }).toFile(resolve(dir, `${id}-sm.webp`));
+    lgInfo = await withSlot(async () => {
+      // Decode once: bake in the EXIF orientation, shrink (JPEG shrink-on-load keeps this cheap) and convert to
+      // raw sRGB pixels. Raw pixels carry no metadata, so EXIF/GPS/XMP never reach the files. Both sizes are
+      // then encoded in parallel from that one buffer.
+      const { data, info } = await sharp(buffer, { limitInputPixels: MAX_PIXELS, failOn: 'error' })
+        .rotate()
+        .resize({ width: 2560, withoutEnlargement: true })
+        .toColourspace('srgb')
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const raw = { raw: { width: info.width, height: info.height, channels: info.channels } };
+      const [lg] = await Promise.all([
+        sharp(data, raw).webp({ quality: 82, effort: WEBP_EFFORT }).toFile(resolve(dir, `${id}-lg.webp`)),
+        sharp(data, raw).resize({ width: 1280, withoutEnlargement: true }).webp({ quality: 80, effort: WEBP_EFFORT }).toFile(resolve(dir, `${id}-sm.webp`)),
+      ]);
+      return lg;
+    });
   } catch {
     await Promise.all(['lg', 'sm'].map((s) => fs.rm(resolve(dir, `${id}-${s}.webp`), { force: true })));
-    throw httpError(415, 'That image could not be processed.');
+    throw httpError(415, looksLikeHeic(buffer) ? HEIC_MSG : 'That image could not be processed.');
   }
   const photo = {
     lg: `/uploads/${slug}/${id}-lg.webp`,
@@ -81,7 +116,7 @@ async function saveImage(slug, buffer) {
     w: lgInfo.width,
     h: lgInfo.height,
   };
-  queueDepth(slug, id);
+  queueDepth(slug, id); // background job, never awaited
   return photo;
 }
 
@@ -118,7 +153,10 @@ export async function handleUpload(req, res) {
   if (len > MAX_BYTES + 64 * 1024) throw httpError(413, 'That file is larger than 15 MB.');
   const { fields, file } = await readMultipart(req);
   const kind = fields.kind === 'audio' ? 'audio' : 'image';
+  const t0 = performance.now();
   const out = kind === 'audio' ? await saveAudio(req.params.slug, file.buffer) : await saveImage(req.params.slug, file.buffer);
-  console.info(`[admin] upload ${kind} slug=${req.params.slug} bytes=${file.size}`);
+  const ms = Math.round(performance.now() - t0);
+  console.info(`[upload] ${kind} slug=${req.params.slug} bytes=${file.size} ms=${ms}`);
+  res.set('Server-Timing', `process;dur=${ms}`);
   res.status(201).json(out);
 }

@@ -1,6 +1,6 @@
 // Invitation documents: a draft the studio edits and a published snapshot guests see.
 // File: data/invitations/<slug>.json = { slug, version, status, createdAt, updatedAt, publishedAt, draft, published,
-//   clientAccess?, lastEdit? {at, by, type}, activity? [{at, by, type, sections}], adminSeenAt? }
+//   access? { tokenHash, passwordHash, createdAt, themes, canChangeTheme, canChangeColors }, lastEdit? {at, by, type}, activity? [{at, by, type, sections}], adminSeenAt? }
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, withLock, invPath, getInvitation, listInvitations, writeJsonAtomic, trashInvitation, uploadDir, readJson, rsvpPath } from './store.js';
@@ -8,7 +8,8 @@ import { sanitizeInvitation, publishProblems } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
-import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions } from './auth.js';
+import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
+import { originAllowed } from './security.js';
 import { bsDateOf } from '../../src/core/i18n.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
@@ -36,6 +37,9 @@ function logActivity(doc, entry) {
 /** The couple changed something the planner has not opened since. */
 const unseenByAdmin = (doc) => doc.lastEdit?.by === 'couple' && (!doc.adminSeenAt || doc.lastEdit.at > doc.adminSeenAt);
 
+/** The couple's link as the planner sees it (never the hashes). */
+const linkOut = (a) => (a ? { createdAt: a.createdAt, hasPassword: Boolean(a.passwordHash), ...permsOf(a) } : null);
+
 const nameText = (v, max = 60) => (typeof v === 'string' ? v.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 
 function summary(doc, rsvpCount = 0) {
@@ -56,13 +60,13 @@ function summary(doc, rsvpCount = 0) {
     hero,
     lastEdit: doc.lastEdit || null,
     unseen: unseenByAdmin(doc),
-    clientLink: doc.clientAccess ? { createdAt: doc.clientAccess.createdAt } : null,
+    clientLink: linkOut(doc.access),
   };
 }
 
 const docOut = (doc, admin = true) => ({
   slug: doc.slug,
-  clientLink: admin && doc.clientAccess ? { createdAt: doc.clientAccess.createdAt } : null,
+  clientLink: admin ? linkOut(doc.access) : null,
   version: doc.version,
   status: doc.status,
   changed: doc.status === 'published' && !same(doc.draft, doc.published),
@@ -195,6 +199,7 @@ export async function update(req, res) {
     const cur = await load(slug);
     if (b.version !== cur.version) throw httpError(409, 'This invitation was changed in another tab. Reload to get the latest version.', { current: cur.version });
     const draft = sanitizeInvitation(b.data, slug, slots);
+    if (req.session.role === 'client') clientLimits(cur, draft, slots.manifests);
     attachDepth(slug, draft);
     if (same(cur.draft, draft)) return cur; // nothing changed: no new version, nothing to log
     const sections = changedAreas(cur.draft, draft);
@@ -206,6 +211,22 @@ export async function update(req, res) {
     return cur;
   });
   res.json({ version: doc.version, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null, changed: doc.status === 'published' && !same(doc.draft, doc.published), data: doc.draft });
+}
+
+/** What a couple may not change without the planner's permission (PLATFORM.md: access). */
+function clientLimits(cur, draft, manifests = {}) {
+  const p = permsOf(cur.access);
+  // Colours compared by value, not key order, and only tokens the manifests still declare (the sanitiser drops
+  // the others from the new draft, so a stale token in the saved one must not block every save).
+  const colorKey = (tc) => JSON.stringify(Object.entries(tc || {}).flatMap(([theme, toks]) => Object.entries(toks || {})
+    .filter(([k]) => Object.hasOwn(manifests[theme]?.colors || {}, k)).map(([k, v]) => `${theme} ${k} ${String(v).toLowerCase()}`)).sort());
+  if (draft.theme !== cur.draft.theme) {
+    if (!p.canChangeTheme) throw httpError(403, 'Your planner has not turned on changing the design.');
+    if (p.themes !== 'all' && !p.themes.includes(draft.theme)) throw httpError(403, 'That design is not one your planner chose for you.');
+  }
+  if (!p.canChangeColors && colorKey(cur.draft.themeColors) !== colorKey(draft.themeColors)) {
+    throw httpError(403, 'Your planner has not turned on changing the colours.');
+  }
 }
 
 export async function publish(req, res) {
@@ -269,20 +290,67 @@ export async function remove(req, res) {
   res.json({ ok: true });
 }
 
-/** POST /api/invitations/:slug/client-link: a new link for the couple (the old one stops working). */
+/** Validates the couple's link options. `partial`: only the fields that were sent (PATCH). */
+function accessInput(b, { partial }) {
+  const out = {};
+  const errors = [];
+  if (!partial || b.password !== undefined) {
+    if (typeof b.password !== 'string' || b.password.length < PASSWORD_MIN || b.password.length > PASSWORD_MAX) {
+      errors.push({ path: 'password', message: `must be ${PASSWORD_MIN}-${PASSWORD_MAX} characters` });
+    } else out.password = b.password;
+  }
+  if (b.themes !== undefined || !partial) {
+    const t = b.themes ?? 'all';
+    if (t === 'all') out.themes = 'all';
+    else if (Array.isArray(t) && t.length <= 100 && t.every((x) => typeof x === 'string' && isTheme(x))) out.themes = [...new Set(t)];
+    else errors.push({ path: 'themes', message: "must be 'all' or a list of theme slugs" });
+  }
+  for (const [k, dflt] of [['canChangeTheme', false], ['canChangeColors', true]]) {
+    if (b[k] === undefined) { if (!partial) out[k] = dflt; } else if (typeof b[k] === 'boolean') out[k] = b[k];
+    else errors.push({ path: k, message: 'must be true or false' });
+  }
+  if (errors.length) throw httpError(400, 'Please check the link settings.', { errors });
+  return out;
+}
+
+/** The public origin for links we hand out: the configured one, else this request's (allowed) Origin. */
+const linkOrigin = (req) => PUBLIC_ORIGINS[0] || (originAllowed(req) ? req.get('origin') : '');
+
+/** POST /api/invitations/:slug/client-link: a new password-protected link for the couple (the old one stops working). */
 export async function createClientLink(req, res) {
   const { slug } = req.params;
+  const opts = accessInput(req.body || {}, { partial: false });
+  await load(slug);
   const token = newClientToken();
+  const passwordHash = await hashLinkPassword(opts.password);
   const doc = await withLock(`inv:${slug}`, async () => {
     const cur = await load(slug);
-    cur.clientAccess = { tokenHash: hashToken(token), createdAt: new Date().toISOString() };
+    cur.access = { tokenHash: hashToken(token), passwordHash, createdAt: new Date().toISOString(), themes: opts.themes, canChangeTheme: opts.canChangeTheme, canChangeColors: opts.canChangeColors };
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
   revokeClientSessions(slug);
   console.info(`[admin] client link created slug=${slug}`);
   // The token is shown once; only its hash is stored.
-  res.status(201).json({ token, createdAt: doc.clientAccess.createdAt });
+  res.status(201).json({ url: `${linkOrigin(req)}/studio/#/c/${token}`, token, createdAt: doc.access.createdAt, clientLink: linkOut(doc.access) });
+}
+
+/** PATCH /api/invitations/:slug/access: change what the couple may do, or their password (ends their sessions). */
+export async function patchAccess(req, res) {
+  const { slug } = req.params;
+  const opts = accessInput(req.body || {}, { partial: true });
+  const passwordHash = opts.password ? await hashLinkPassword(opts.password) : null;
+  const doc = await withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    if (!cur.access) throw httpError(404, 'This invitation has no couple link yet.');
+    for (const k of ['themes', 'canChangeTheme', 'canChangeColors']) if (opts[k] !== undefined) cur.access[k] = opts[k];
+    if (passwordHash) cur.access.passwordHash = passwordHash;
+    await writeJsonAtomic(invPath(slug), cur);
+    return cur;
+  });
+  if (passwordHash) revokeClientSessions(slug);
+  console.info(`[admin] client access changed slug=${slug}${passwordHash ? ' (password)' : ''}`);
+  res.json({ clientLink: linkOut(doc.access) });
 }
 
 /** DELETE /api/invitations/:slug/client-link: turn the couple's link off. */
@@ -290,6 +358,7 @@ export async function deleteClientLink(req, res) {
   const { slug } = req.params;
   await withLock(`inv:${slug}`, async () => {
     const cur = await load(slug);
+    delete cur.access;
     delete cur.clientAccess;
     await writeJsonAtomic(invPath(slug), cur);
   });
@@ -307,13 +376,22 @@ export async function meta(req, res) {
   });
   const themes = await Promise.all(listThemes().map(async (t) => {
     const m = await loadManifest(t.slug);
-    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept };
+    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {} };
   }));
   res.json({ themes, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
 
 
 // ── Public ─────────────────────────────────────────────────────────────────
+
+/** A photo ref as a site path or https URL ('' when none): library slug, upload object or https link. */
+export function photoUrl(ref) {
+  if (!ref) return '';
+  if (typeof ref === 'object') return typeof ref.sm === 'string' ? ref.sm : typeof ref.lg === 'string' ? ref.lg : '';
+  if (typeof ref !== 'string') return '';
+  if (ref.startsWith('https://')) return ref;
+  return /^[a-z0-9-]{2,64}$/.test(ref) ? `/photos/${ref}-sm.webp` : '';
+}
 
 /**
  * GET /api/invitations/:slug/public: the published snapshot only, with the RSVP endpoint filled in.
@@ -332,8 +410,7 @@ export async function publicData(req, res) {
   for (const e of out.events) {
     if (e.start && !e.end) { e.end = new Date(Date.parse(e.start) + 5 * 3600e3).toISOString().replace(/\.\d{3}Z$/, '+00:00'); e.openEnded = true; }
   }
-  const hero = out.couple.portraits[0]?.photo;
-  out.share.image = hero ? (typeof hero === 'object' ? hero.sm : hero.startsWith('https://') ? hero : `/photos/${hero}-sm.webp`) : '';
+  out.share.image = photoUrl(out.share.image) || photoUrl(out.couple.portraits[0]?.photo);
   out.share.siteUrl = PUBLIC_ORIGINS[0] || '';
   // The B.S. wedding date is worked out from the date unless the planner typed their own (§12).
   if (out.weddingDate && !out.weddingDateBS?.en && !out.weddingDateBS?.ne) {
@@ -346,4 +423,18 @@ export async function publicData(req, res) {
   if (preview) res.set('X-Invitation-Preview', 'draft');
   res.set('Cache-Control', preview ? 'no-store' : 'no-cache');
   res.json(out);
+}
+
+/** GET /api/admin/stats: counts for the planner's overview. `attending` = guests (people) who said yes. */
+export async function stats(req, res, newOrders) {
+  const docs = await listInvitations();
+  let rsvps = 0;
+  let attending = 0;
+  for (const d of docs) {
+    const replies = await readJson(rsvpPath(d.slug), []).catch(() => []);
+    rsvps += replies.length;
+    for (const r of replies) if (r.attending === 'yes') attending += Number(r.guests) || 0;
+  }
+  const published = docs.filter((d) => d.status === 'published').length;
+  res.json({ invitations: docs.length, published, drafts: docs.length - published, rsvps, attending, newOrders: await newOrders() });
 }

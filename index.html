@@ -3,76 +3,333 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nimtto · Nepali wedding invitations</title>
-  <meta name="description" content="Twenty-one premium Nepali wedding invitation themes." />
-  <meta name="theme-color" content="#FFFFFF" />
+  <title>Nimtto · Nepali wedding invitation websites</title>
+  <meta name="description" content="Premium Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and one link to share on WhatsApp. Choose a design; we set it up with your photos." />
+  <link rel="canonical" href="https://nimtto.com/" />
+  <meta name="theme-color" content="#FBF7F0" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Nimtto" />
+  <meta property="og:title" content="Nimtto · Nepali wedding invitation websites" />
+  <meta property="og:description" content="Twenty-two premium designs with music, Bikram Sambat dates and RSVP. One link for WhatsApp." />
+  <meta property="og:url" content="https://nimtto.com/" />
+  <meta property="og:image" content="https://nimtto.com/site/og.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&family=Noto+Serif+Devanagari:wght@500&display=swap" />
-  <style>
-    :root { --bg: #FFFFFF; --ink: #191512; --dim: #5B6068; --hair: rgba(25, 21, 18, 0.14); --accent: #A3122A; --ease: cubic-bezier(0.22, 0.8, 0.24, 1); }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 'Hanken Grotesk', 'Segoe UI', sans-serif; }
-    a { color: inherit; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-    .wrap { max-width: 1320px; margin: 0 auto; padding: calc(48px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 48px) 80px; }
-    header { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding-bottom: 36px; border-bottom: 1px solid var(--hair); }
-    .kicker { margin: 0 0 10px; font: 600 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.24em; text-transform: uppercase; color: var(--accent); }
-    h1 { margin: 0; font: italic 400 clamp(40px, 6vw, 80px)/1 'Bodoni Moda', serif; }
-    .lede { margin: 14px 0 0; max-width: 54ch; color: var(--dim); font-size: 20px; line-height: 1.5; }
-    .studio { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; background: var(--ink); color: var(--bg); text-decoration: none; font: 600 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; }
-    .studio:hover { background: #3a302a; }
-    ol { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 28px; }
-    .card { display: grid; gap: 12px; text-decoration: none; }
-    .shot { aspect-ratio: 4 / 3; overflow: hidden; background: #EEF0F2; position: relative; }
-    .shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 800ms var(--ease); }
-    .card:hover .shot img, .card:focus-visible .shot img { transform: scale(1.04); }
-    .num { font: 500 12px/1 'Hanken Grotesk', sans-serif; letter-spacing: 0.2em; color: var(--dim); }
-    .name { display: flex; align-items: baseline; gap: 10px; margin: 0; font: italic 400 30px/1.1 'Bodoni Moda', serif; }
-    .name span { font: 500 20px/1.2 'Noto Serif Devanagari', serif; font-style: normal; color: var(--accent); }
-    .desc { margin: 0; color: var(--dim); font-size: 16px; line-height: 1.5; }
-    footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--hair); color: var(--dim); font-size: 12px; }
-    .credits-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; text-underline-offset: 4px; }
-    .credits-link:hover { color: var(--accent); }
-    @media (max-width: 1100px) { ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 640px) { header { grid-template-columns: 1fr; } ol { grid-template-columns: 1fr; gap: 40px; } .studio { justify-self: start; } }
-  </style>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&family=Mukta:wght@400;500&family=Tiro+Devanagari+Hindi&display=swap" />
+  <link rel="preload" as="image" href="/site/phones/mahal.webp" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ProfessionalService",
+        "@id": "https://nimtto.com/#business",
+        "name": "Nimtto",
+        "alternateName": "निम्तो",
+        "url": "https://nimtto.com/",
+        "logo": "https://nimtto.com/favicon.svg",
+        "image": "https://nimtto.com/site/og.jpg",
+        "description": "Premium Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and WhatsApp sharing.",
+        "areaServed": { "@type": "Country", "name": "Nepal" },
+        "address": { "@type": "PostalAddress", "addressCountry": "NP" },
+        "knowsLanguage": ["en", "ne"]
+      },
+      {
+        "@type": "Product",
+        "name": "Nimtto wedding invitation website",
+        "brand": { "@type": "Brand", "name": "Nimtto" },
+        "image": "https://nimtto.com/site/og.jpg",
+        "description": "A Nepali wedding invitation website in one of twenty-two designs, set up with the couple's photos, families and events, with music, RSVP and Bikram Sambat dates.",
+        "category": "Wedding invitations"
+      }
+    ]
+  }
+  </script>
+  <script type="module" src="/src/site/main.js"></script>
 </head>
 <body>
-  <main class="wrap">
-    <header>
-      <div>
-        <p class="kicker">Nimtto · निम्तो · Wedding invitations</p>
-        <h1>Twenty-one ways to invite</h1>
-        <p class="lede">Each theme carries the same couple, ceremonies, music and RSVP. Create an invitation in the studio, upload the couple's photos, choose a theme, and share the link.</p>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="bar" id="top">
+    <div class="bar__in">
+      <a class="mark" href="#top" aria-label="Nimtto, home">
+        <span class="mark__en">Nimtto</span><span class="mark__ne" lang="ne">निम्तो</span>
+      </a>
+      <nav class="bar__nav" aria-label="Sections">
+        <a href="#how">How it works</a>
+        <a href="#designs">Designs</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="btn btn--sm btn--ink" href="#order">Order yours</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__copy">
+        <p class="eyebrow"><span lang="ne" class="ne">शुभ विवाह</span><span class="eyebrow__dot" aria-hidden="true"></span>Wedding invitations, online</p>
+        <h1 class="hero__title" id="hero-title" data-site="hero-title">Your wedding invitation, <em>as a website your guests will keep.</em></h1>
+        <p class="hero__sub" data-site="hero-subtitle">Premium Nepali invitation websites with music, Bikram Sambat dates and RSVP. Choose a design, send us your photos, and share one link.</p>
+        <div class="hero__cta">
+          <a class="btn btn--accent" href="#designs">See the designs</a>
+          <a class="btn btn--line" href="#order">Order yours</a>
+        </div>
+        <p class="hero__note"><span lang="ne" class="ne">निम्तो</span> means invitation. <span class="js-count" data-cap="1">Twenty-two</span> designs, in English and Nepali.</p>
       </div>
-      <a class="studio" href="/studio/">Open the studio →</a>
-    </header>
-    <ol>
-      <li><a class="card" href="/kham/"><span class="shot"><img src="/themes/kham/thumb.jpg" alt="Kham theme: a handmade-paper envelope with a sindoor wax seal" loading="lazy" /></span><span class="num">01</span><h2 class="name">Kham <span lang="ne">खाम</span></h2><p class="desc">A handmade-paper envelope sealed with the endless knot; the card unfolds into a clear programme.</p></a></li>
-      <li><a class="card" href="/dhoka/"><span class="shot"><img src="/themes/dhoka/thumb.jpg" alt="Dhoka theme: the Golden Door of Patan beside the couple’s names" loading="lazy" /></span><span class="num">02</span><h2 class="name">Dhoka <span lang="ne">ढोका</span></h2><p class="desc">White editorial print. The Golden Door of Patan opens in 3D.</p></a></li>
-      <li><a class="card" href="/mala/"><span class="shot"><img src="/themes/mala/thumb.jpg" alt="Mala theme: red silk drapes with marigold rosettes and brass kalash" loading="lazy" /></span><span class="num">03</span><h2 class="name">Mala <span lang="ne">माला</span></h2><p class="desc">A dressed Nepali mandap: silk drapes, marigold strings and brass kalash of fresh flowers.</p></a></li>
-      <li><a class="card" href="/durbar/"><span class="shot"><img src="/themes/durbar/thumb.jpg" alt="Durbar theme: the Nyatapola temple of Bhaktapur in 3D" loading="lazy" /></span><span class="num">04</span><h2 class="name">Durbar <span lang="ne">दरबार</span></h2><p class="desc">A 3D morning walk through Bhaktapur Durbar Square, under flower arches, past the Nyatapola.</p></a></li>
-      <li><a class="card" href="/gurans/"><span class="shot"><img src="/themes/gurans/thumb.jpg" alt="Phoolbari theme: a flower gate with शुभ विवाह on an ivory crest" loading="lazy" /></span><span class="num">05</span><h2 class="name">Phoolbari <span lang="ne">फूलबारी</span></h2><p class="desc">A flower gate opens on शुभ विवाह; then a calm, paper-soft invitation.</p></a></li>
-      <li><a class="card" href="/dhaka/"><span class="shot"><img src="/themes/dhaka/thumb.jpg" alt="Dhaka theme: an ivory envelope with a Dhaka band and wax seal" loading="lazy" /></span><span class="num">06</span><h2 class="name">Dhaka <span lang="ne">ढाका</span></h2><p class="desc">Break the seal, slip off the Dhaka band, and the couple rise from the envelope into flowers.</p></a></li>
-      <li><a class="card" href="/sayapatri/"><span class="shot"><img src="/themes/sayapatri/thumb.jpg" alt="Sayapatri theme: a doorway hung with marigold strings and mango leaves" loading="lazy" /></span><span class="num">07</span><h2 class="name">Sayapatri <span lang="ne">सयपत्री</span></h2><p class="desc">A doorway hung with real marigold strings; they lift to open a calm ivory invitation.</p></a></li>
-      <li><a class="card" href="/himal/"><span class="shot"><img src="/themes/himal/thumb.jpg" alt="Himal theme: Machhapuchhre at dawn with the couple’s names" loading="lazy" /></span><span class="num">08</span><h2 class="name">Himal <span lang="ne">हिमाल</span></h2><p class="desc">Quiet luxury. Sunrise over the Himalaya and a photo essay of the couple.</p></a></li>
-      <li><a class="card" href="/chitra/"><span class="shot"><img src="/themes/chitra/thumb.jpg" alt="Chitra theme: illustrated couple walking around the sacred fire" loading="lazy" /></span><span class="num">09</span><h2 class="name">Chitra <span lang="ne">चित्र</span></h2><p class="desc">A Mithila picture book: janti, swayambar, seven rounds, sindoor, the dance.</p></a></li>
-      <li><a class="card" href="/mandap/"><span class="shot"><img src="/themes/mandap/thumb.jpg" alt="Mandap theme: a 3D mandap with the bride by the sacred fire" loading="lazy" /></span><span class="num">10</span><h2 class="name">Mandap <span lang="ne">मण्डप</span></h2><p class="desc">A 3D mandap on a bright morning; the couple exchange garlands and walk seven rounds.</p></a></li>
-      <li><a class="card" href="/bagaicha/"><span class="shot"><img src="/themes/bagaicha/thumb.jpg" alt="Bagaicha theme: a 3D garden with a domed pavilion and reflecting pool" loading="lazy" /></span><span class="num">11</span><h2 class="name">Bagaicha <span lang="ne">बगैंचा</span></h2><p class="desc">A 3D garden wedding: through the rose arch, seven rounds of the fire, on to the reception.</p></a></li>
-      <li><a class="card" href="/ghar/"><span class="shot"><img src="/themes/ghar/thumb.jpg" alt="Ghar theme: a Newar courtyard at dusk in film framing" loading="lazy" /></span><span class="num">12</span><h2 class="name">Ghar <span lang="ne">घर</span></h2><p class="desc">A lamplit film walking through a Newar house, room by room.</p></a></li>
-      <li><a class="card" href="/mangal/"><span class="shot"><img src="/themes/mangal/thumb.jpg" alt="Mangal theme: a red carved doorway hung with marigold garlands and brass bells" loading="lazy" /></span><span class="num">13</span><h2 class="name">Mangal <span lang="ne">मंगल</span></h2><p class="desc">A wide red temple doorway with garlands and bells; the doors swing open on शुभ विवाह.</p></a></li>
-      <li><a class="card" href="/nimantrana/"><span class="shot"><img src="/themes/nimantrana/thumb.jpg" alt="Nimantrana theme: a red and gold tri-fold wedding card with Ganesh, the couple and the programme" loading="lazy" /></span><span class="num">14</span><h2 class="name">Nimantrana <span lang="ne">निमन्त्रणा</span></h2><p class="desc">A traditional tri-fold card that unfolds in 3D: Ganesh, the couple, the programme.</p></a></li>
-      <li><a class="card" href="/jhyal/"><span class="shot"><img src="/themes/jhyal/thumb.jpg" alt="Jhyal theme: a carved Newari wooden window with a marigold toran and two brass diyos" loading="lazy" /></span><span class="num">15</span><h2 class="name">Jhyal <span lang="ne">झ्याल</span></h2><p class="desc">A carved Newari window on handmade paper; the lattice shutters swing open on शुभ विवाह.</p></a></li>
-      <li><a class="card" href="/mahal/"><span class="shot"><img src="/themes/mahal/thumb.jpg" alt="Mahal theme: a golden palace gate under roses and wisteria, Ganesh in the crest, tied with an ivory satin bow" loading="lazy" /></span><span class="num">16</span><h2 class="name">Mahal <span lang="ne">महल</span></h2><p class="desc">A golden palace gate tied with a satin bow; it swings open onto a palace balcony at night.</p></a></li>
-      <li><a class="card" href="/laali/"><span class="shot"><img src="/themes/laali/thumb.jpg" alt="Laali theme: a blush pink arched card with gold lanterns, peonies and an illustrated Nepali couple" loading="lazy" /></span><span class="num">17</span><h2 class="name">Laali <span lang="ne">लाली</span></h2><p class="desc">Blush pink and gold: an arched card under hanging lanterns; the gold arch draws itself and the lanterns drop in.</p></a></li>
-      <li><a class="card" href="/mehendi/"><span class="shot"><img src="/themes/mehendi/thumb.jpg" alt="Mehendi theme: ivory card with joined henna hands and a henna Ganesh" loading="lazy" /></span><span class="num">18</span><h2 class="name">Mehendi <span lang="ne">मेहन्दी</span></h2><p class="desc">Henna on ivory: a henna mandala draws itself, then the joined, hennaed hands glide in.</p></a></li>
-      <li><a class="card" href="/hariyo/"><span class="shot"><img src="/themes/hariyo/thumb.jpg" alt="Hariyo theme: sage watercolour greenery around a white garden pavilion with the couple and peacocks" loading="lazy" /></span><span class="num">19</span><h2 class="name">Hariyo <span lang="ne">हरियो</span></h2><p class="desc">Sage-green watercolour garden: the leaves part on a white pavilion with the couple and two peacocks.</p></a></li>
-      <li><a class="card" href="/shree/"><span class="shot"><img src="/themes/shree/thumb.jpg" alt="Shree theme: a gold line-art Ganesh on deep plum with hanging diyas" loading="lazy" /></span><span class="num">20</span><h2 class="name">Shree <span lang="ne">श्री</span></h2><p class="desc">Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend.</p></a></li>
-      <li><a class="card" href="/pardaa/"><span class="shot"><img src="/themes/pardaa/thumb.jpg" alt="Pardaa theme: red and gold velvet curtains tied back around a marigold-dressed mandap with a burning agni" loading="lazy" /></span><span class="num">21</span><h2 class="name">Pardaa <span lang="ne">पर्दा</span></h2><p class="desc">Red velvet curtains part on a dressed mandap with a living fire; each ceremony in its own colours.</p></a></li>
-    </ol>
-    <footer><span>Photographs, flowers and music by Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA.</span> <a class="credits-link" href="/credits/">Credits</a></footer>
+
+      <div class="hero__art">
+        <div class="fan" id="fan" aria-hidden="false">
+          <div class="fan__intro">
+            <div class="fan__stage">
+              <span class="fan__ring" aria-hidden="true"></span>
+              <figure class="phone phone--l">
+                <img src="/site/phones/mangal.webp" width="540" height="1169" alt="The Mangal design on a phone: a red temple doorway with marigold garlands" decoding="async" />
+              </figure>
+              <figure class="phone phone--r">
+                <img src="/site/phones/nimantrana.webp" width="540" height="1169" alt="The Nimantrana design on a phone: a red and gold card reading शुभ विवाह" decoding="async" />
+              </figure>
+              <figure class="phone phone--c">
+                <img src="/site/phones/mahal.webp" width="540" height="1169" alt="The Mahal design on a phone: a golden palace gate tied with an ivory satin bow" fetchpriority="high" decoding="async" />
+              </figure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <header class="sec-head">
+        <p class="eyebrow"><span lang="ne" class="ne">कसरी</span><span class="eyebrow__dot" aria-hidden="true"></span>How it works</p>
+        <h2 class="sec-title" id="how-title">From a design you love <em>to replies on your phone.</em></h2>
+      </header>
+      <ol class="steps">
+        <li class="step">
+          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="7" width="15" height="20" rx="1.5"/><path d="M12 5h13.5A1.5 1.5 0 0 1 27 6.5v17"/><path d="M9 21h7M9 17.5h7"/><path d="M12.5 10.5c0 1.6-1.2 2.8-2.5 3.5 1.3-.7 2.5-1.9 2.5-3.5Zm0 0c0 1.6 1.2 2.8 2.5 3.5"/></svg></span>
+          <span class="step__num">01</span>
+          <h3 class="step__title">Choose a design</h3>
+          <p class="step__ne" lang="ne">डिजाइन छान्नुहोस्</p>
+          <p class="step__text"><span class="js-count" data-cap="1">Twenty-two</span> openings, from a carved Patan door to a palace gate. Open each one live before you decide.</p>
+        </li>
+        <li class="step">
+          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="17" rx="1.5"/><circle cx="16" cy="16.5" r="4.5"/><path d="M11 8l1.6-3h6.8L21 8"/><path d="M24 11.5h.01"/></svg></span>
+          <span class="step__num">02</span>
+          <h3 class="step__title">We set it up</h3>
+          <p class="step__ne" lang="ne">हामी सजाउँछौं</p>
+          <p class="step__text">Send your photos, names, families and events. We set everything in place, in English and Nepali.</p>
+        </li>
+        <li class="step">
+          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M13.5 18.5a5 5 0 0 0 7.1 0l4-4a5 5 0 0 0-7.1-7.1l-1.3 1.3"/><path d="M18.5 13.5a5 5 0 0 0-7.1 0l-4 4a5 5 0 0 0 7.1 7.1l1.3-1.3"/></svg></span>
+          <span class="step__num">03</span>
+          <h3 class="step__title">Share one link</h3>
+          <p class="step__ne" lang="ne">एउटै लिङ्क</p>
+          <p class="step__text">One link for WhatsApp, Viber and Messenger, with a preview card that shows your names.</p>
+        </li>
+        <li class="step">
+          <span class="step__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 9.5A1.5 1.5 0 0 1 6.5 8h19A1.5 1.5 0 0 1 27 9.5v13a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 5 22.5z"/><path d="M5.5 9l10.5 8 10.5-8"/><path d="M19.5 21l2 2 4-4.5" class="step__tick"/></svg></span>
+          <span class="step__num">04</span>
+          <h3 class="step__title">Guests reply</h3>
+          <p class="step__ne" lang="ne">पाहुनाको जवाफ</p>
+          <p class="step__text">Guests RSVP in a tap. Every reply waits for you in your private dashboard.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- DESIGNS -->
+    <section class="designs" id="designs" aria-labelledby="designs-title">
+      <header class="sec-head sec-head--split">
+        <div>
+          <p class="eyebrow"><span lang="ne" class="ne">डिजाइन</span><span class="eyebrow__dot" aria-hidden="true"></span>The designs</p>
+          <h2 class="sec-title" id="designs-title"><span class="js-count" data-cap="1">Twenty-two</span> ways <em>to open the door.</em></h2>
+        </div>
+        <p class="sec-lede">Every design carries the same couple, ceremonies, music and RSVP. Only the opening and the mood change. Open any of them live.</p>
+      </header>
+      <ol class="gallery" id="gallery" aria-live="polite"></ol>
+      <div class="gallery__more">
+        <button class="btn btn--line" type="button" id="gallery-more" hidden>Show all designs</button>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features" aria-labelledby="features-title">
+      <div class="features__art">
+        <figure class="features__fig">
+          <img src="/themes/_nepali/ganthi.webp" srcset="/themes/_nepali/ganthi-sm.webp 480w, /themes/_nepali/ganthi.webp 1000w" sizes="(min-width: 960px) 34vw, 70vw" width="1000" height="867" alt="A painted ganthi bandhan: a red silk shawl knotted to an ivory and gold one" loading="lazy" decoding="async" />
+          <figcaption><span lang="ne" class="ne">गाँठी बन्धन</span> The knot that ties two families.</figcaption>
+        </figure>
+      </div>
+      <div class="features__body">
+        <header class="sec-head">
+          <p class="eyebrow"><span lang="ne" class="ne">विशेषता</span><span class="eyebrow__dot" aria-hidden="true"></span>In every invitation</p>
+          <h2 class="sec-title" id="features-title">Everything a Nepali wedding asks for, <em>nothing it doesn’t.</em></h2>
+        </header>
+        <ul class="feats">
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M12 23V8l14-3v15"/><circle cx="8.5" cy="23" r="3.5"/><circle cx="22.5" cy="20" r="3.5"/></svg></span>
+            <h3>Live music</h3><p>A song of your choice starts when the invitation opens. Guests can mute it any time.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="6" y="5" width="20" height="23" rx="1.5"/><path d="M11 11h10M11 15.5h10"/><path d="M11 21.5l2.5 2.5 5-5"/></svg></span>
+            <h3>RSVP collection</h3><p>Who is coming, to which ceremony, and how many. All in one list.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="7" width="22" height="20" rx="1.5"/><path d="M5 12.5h22M11 4.5v5M21 4.5v5"/></svg></span>
+            <h3>Bikram Sambat dates</h3><p>Each date in both calendars: <span class="specimen" lang="ne">माघ २९, २०८३</span> beside 12 February 2027.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 8h13M10.5 5v3M7 8c.8 4.5 3.5 8 8 10M14 8c-.8 4.5-3.5 8-8 10"/><path d="M17 27l5-12 5 12M18.7 23h6.6"/></svg></span>
+            <h3>English and Nepali</h3><p>One tap switches the language: <span class="specimen">Aarati &amp; Sameer</span> becomes <span class="specimen" lang="ne">आरती र समीर</span>.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6.5 25.5l1.4-4.6A10 10 0 1 1 11.6 24z"/><path d="M12.5 12.5c0 4 3 7 7 7l1.5-2-2.5-1.2-1 1c-1.5-.6-2.6-1.7-3.2-3.2l1-1L14.5 11z"/></svg></span>
+            <h3>Share on WhatsApp</h3><p>A link with your names and photo in the preview, ready for every family group.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M10 4.5h12M10 27.5h12"/><path d="M11 4.5c0 6 10 7 10 11.5S11 21.5 11 27.5M21 4.5c0 6-10 7-10 11.5s10 5.5 10 11.5"/></svg></span>
+            <h3>Countdown and a hidden date</h3><p>Days to the wedding, and a date guests scratch to reveal, like a sealed card.</p>
+          </li>
+          <li class="feat">
+            <span class="feat__icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="7" y="14" width="18" height="13" rx="1.5"/><path d="M11 14v-3.5a5 5 0 0 1 10 0V14"/><path d="M16 19v3"/></svg></span>
+            <h3>Your private dashboard</h3><p>A private link for the couple: update details, add photos and read every reply.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="pricing__in">
+        <header class="sec-head sec-head--split">
+          <div>
+            <p class="eyebrow eyebrow--light"><span lang="ne" class="ne">मूल्य</span><span class="eyebrow__dot" aria-hidden="true"></span>Pricing</p>
+            <h2 class="sec-title" id="pricing-title">Simple plans, <em>set up by hand.</em></h2>
+          </div>
+          <p class="sec-lede">Prices are in Nepali rupees. No payment online: send a request and we will call you to talk it through.</p>
+        </header>
+        <ol class="plans" id="plans"></ol>
+      </div>
+    </section>
+
+    <!-- ORDER -->
+    <section class="order" id="order" aria-labelledby="order-title">
+      <div class="order__aside">
+        <header class="sec-head">
+          <p class="eyebrow"><span lang="ne" class="ne">अर्डर</span><span class="eyebrow__dot" aria-hidden="true"></span>Order or request</p>
+          <h2 class="sec-title" id="order-title">Tell us about <em>your wedding.</em></h2>
+        </header>
+        <p class="order__lede">Send a request and we will call or message you within a day. Nothing is charged here.</p>
+        <ol class="order__next">
+          <li><span>1</span>We call you to confirm the design, plan and dates.</li>
+          <li><span>2</span>You send photos and details on WhatsApp or by email.</li>
+          <li><span>3</span>You see a private preview before anything is shared.</li>
+        </ol>
+        <img class="order__kalash" src="/themes/_nepali/kalash-sm.webp" width="460" height="577" alt="" loading="lazy" decoding="async" />
+      </div>
+
+      <div class="order__panel">
+        <form class="form" id="order-form" novalidate>
+          <fieldset class="kind">
+            <legend class="vh">What would you like?</legend>
+            <label class="kind__opt"><input type="radio" name="kind" value="order" checked /><span>Order a design</span></label>
+            <label class="kind__opt"><input type="radio" name="kind" value="custom" /><span>Request a custom design</span></label>
+          </fieldset>
+          <p class="kind__hint" id="kind-hint">Pick a design and a plan, or leave them for the call.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="f-name">Your name <span class="req" aria-hidden="true">*</span></label>
+              <input id="f-name" name="name" type="text" autocomplete="name" maxlength="80" required />
+              <p class="field__err" id="e-name" hidden>Please write your name.</p>
+            </div>
+            <div class="field">
+              <label for="f-phone">Phone <span class="req" aria-hidden="true">*</span></label>
+              <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="98XXXXXXXX" required />
+              <p class="field__err" id="e-phone" hidden>Please give a phone number we can call.</p>
+            </div>
+            <div class="field">
+              <label for="f-email">Email <span class="opt">optional</span></label>
+              <input id="f-email" name="email" type="email" autocomplete="email" maxlength="254" />
+              <p class="field__err" id="e-email" hidden>That email does not look right.</p>
+            </div>
+            <div class="field">
+              <label for="f-date">Wedding date <span class="opt">optional</span></label>
+              <input id="f-date" name="weddingDate" type="date" />
+            </div>
+            <div class="field" data-for="order">
+              <label for="f-theme">Design</label>
+              <select id="f-theme" name="theme"><option value="">Not sure yet</option></select>
+            </div>
+            <div class="field" data-for="order">
+              <label for="f-plan">Plan</label>
+              <select id="f-plan" name="plan"><option value="">Not sure yet</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-message" id="l-message">Anything we should know? <span class="opt">optional</span></label>
+            <textarea id="f-message" name="message" rows="4" maxlength="2000"></textarea>
+            <p class="field__err" id="e-message" hidden>Please describe the design you have in mind.</p>
+          </div>
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Website</label>
+            <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="form__foot">
+            <button class="btn btn--accent btn--wide" type="submit" id="order-submit">Send request</button>
+            <p class="form__fine">We use your details only to contact you about your invitation.</p>
+          </div>
+          <p class="form__status form__status--err" id="order-error" role="alert" hidden></p>
+        </form>
+
+        <div class="done" id="order-done" hidden tabindex="-1">
+          <p class="done__ne" lang="ne">धन्यवाद</p>
+          <h3 class="done__title">Thank you. <em>We have your request.</em></h3>
+          <p>We will call or message you within a day. If it is urgent, write to us on WhatsApp.</p>
+          <button class="btn btn--line" type="button" id="order-again">Send another request</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact" id="contact" aria-labelledby="contact-title">
+      <div class="contact__lamp" id="contact-lamp" aria-hidden="true"></div>
+      <div class="contact__body">
+        <p class="contact__ne" lang="ne">नमस्ते</p>
+        <h2 class="sec-title" id="contact-title">Talk to us <em>before you decide.</em></h2>
+        <dl class="contact__list" id="contact-list"></dl>
+        <p class="contact__empty" id="contact-empty" hidden>Send a request through the form above and we will call you back.</p>
+      </div>
+    </section>
   </main>
+
+  <footer class="foot">
+    <div class="foot__band" aria-hidden="true"></div>
+    <div class="foot__in">
+      <a class="mark mark--foot" href="#top" aria-label="Nimtto, back to top"><span class="mark__en">Nimtto</span><span class="mark__ne" lang="ne">निम्तो</span></a>
+      <p class="foot__credits">Photographs, flowers and music by Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA. <a href="/credits/">Credits</a></p>
+      <p class="foot__meta"><span>© <span id="year">2026</span> Nimtto</span><a href="/studio/">Studio sign in</a></p>
+    </div>
+  </footer>
+
+  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+    <div class="viewer__bar">
+      <p class="viewer__title" id="viewer-title"></p>
+      <div class="seg" role="group" aria-label="Preview size">
+        <button type="button" class="seg__btn" data-mode="phone" aria-pressed="true">Phone</button>
+        <button type="button" class="seg__btn" data-mode="desktop" aria-pressed="false">Desktop</button>
+      </div>
+      <a class="viewer__open" id="viewer-open" href="/" target="_blank" rel="noopener">Open in new tab <span aria-hidden="true">↗</span></a>
+      <button type="button" class="viewer__close" id="viewer-close" aria-label="Close preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="viewer__stage" id="viewer-stage">
+      <div class="viewer__frame" id="viewer-frame"><iframe id="viewer-iframe" title="Design preview" loading="lazy"></iframe></div>
+    </div>
+  </dialog>
 </body>
 </html>

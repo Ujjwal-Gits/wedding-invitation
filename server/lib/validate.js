@@ -3,6 +3,7 @@
 //   Drafts may be incomplete, so empty strings are allowed here.
 // publishProblems(): what is still missing before an invitation can go live.
 import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
+import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -19,6 +20,7 @@ const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const EVENT_ID_RE = /^[a-z0-9-]{2,32}$/;
 const LIB_SLUG_RE = /^[a-z0-9-]{2,64}$/;
 const FILE_ID = '[A-Za-z0-9_-]{16,40}';
+const YT_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
 /** Validation context: collects errors with their JSON paths. */
 function ctx(slug) {
@@ -147,6 +149,44 @@ function sharedContentOf(c, v, { vocab, sharedMax }) {
     const b = bi(c, t, `content.texts.${key}`, Number.isFinite(sharedMax[key]) ? sharedMax[key] : 200, { multiline: true });
     if (b.en || b.ne) out.texts[key] = b;
   }
+  return out;
+}
+
+/**
+ * themeColors[theme] = { '--token': '#hex' }: only tokens the theme's slots.js `colors` manifest declares
+ * (others are dropped, like unknown slot ids); values #rgb or #rrggbb, stored lowercase. Empty = theme default.
+ */
+function themeColorsOf(c, v, manifests) {
+  const out = {};
+  if (v == null) return out;
+  if (typeof v !== 'object' || Array.isArray(v)) return c.fail('themeColors', 'must be an object') ?? {};
+  for (const [theme, colors] of Object.entries(v)) {
+    const man = isTheme(theme) ? manifests[theme]?.colors : null;
+    if (!man || !colors || typeof colors !== 'object' || Array.isArray(colors)) continue;
+    const t = {};
+    for (const [token, val] of Object.entries(colors)) {
+      if (!COLOR_TOKEN_RE.test(token) || !Object.hasOwn(man, token) || val == null || val === '') continue;
+      if (typeof val !== 'string' || !COLOR_HEX_RE.test(val)) { c.fail(`themeColors.${theme}.${token}`, 'must be a colour like #8e1424'); continue; }
+      t[token] = val.toLowerCase();
+    }
+    if (Object.keys(t).length) out[theme] = t;
+  }
+  return out;
+}
+
+/** music.youtube = { id, start?, title? } or nothing. We only ever embed YouTube's own player. */
+function youtubeOf(c, v) {
+  if (v == null || v === '') return undefined;
+  if (typeof v !== 'object' || Array.isArray(v)) return c.fail('music.youtube', 'must be an object') ?? undefined;
+  if (v.id == null || v.id === '') return undefined;
+  if (typeof v.id !== 'string' || !YT_ID_RE.test(v.id)) return c.fail('music.youtube.id', 'must be an 11-character YouTube video id') ?? undefined;
+  const out = { id: v.id };
+  if (v.start != null && v.start !== '') {
+    if (typeof v.start === 'number' && Number.isInteger(v.start) && v.start >= 0 && v.start <= 36000) out.start = v.start;
+    else c.fail('music.youtube.start', 'must be a whole number of seconds from 0 to 36000');
+  }
+  const title = text(c, v.title, 'music.youtube.title', 120);
+  if (title) out.title = title;
   return out;
 }
 
@@ -298,10 +338,16 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
     share: {
       title: text(c, share.title, 'share.title', 140),
       description: text(c, share.description, 'share.description', 300),
-      image: '',
+      image: photoRef(c, share.image, 'share.image') ?? '',
       siteUrl: '',
     },
   };
+
+  // Optional keys only when set, so older saved data compares equal (no false "unpublished changes").
+  const colors = themeColorsOf(c, d.themeColors, slots.manifests);
+  if (Object.keys(colors).length) out.themeColors = colors;
+  const yt = youtubeOf(c, music.youtube);
+  if (yt) out.music.youtube = yt;
 
   if (c.errors.length) throw new ValidationError(c.errors.slice(0, 50));
   return out;

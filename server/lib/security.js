@@ -30,10 +30,11 @@ export function rateLimiter({ windowMs, max }) {
 const PAGE_CSP = [
   "default-src 'self'",
   // 'wasm-unsafe-eval' lets the 3D themes compile their mesh/texture decoders (WebAssembly only; JS eval stays blocked)
-  "script-src 'self' 'wasm-unsafe-eval'",
+  // YouTube IFrame API (music.youtube): iframe_api + its widget script come from www.youtube.com
+  "script-src 'self' 'wasm-unsafe-eval' https://www.youtube.com https://www.youtube-nocookie.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https: https://i.ytimg.com",
   "media-src 'self' blob:",
   // GLTFLoader reads embedded textures through blob: URLs; data: for inline buffers
   "connect-src 'self' blob: data:",

@@ -93,8 +93,9 @@ WhatsApp, personal guest links). Replies have their own page with totals, a tabl
   `GET /api/invitations/:slug/public`. That returns the published snapshot with
   `rsvp.endpoint = /api/invitations/:slug/rsvp`. A signed-in admin gets the draft instead, which is
   what the studio's live preview iframe shows.
-- Guest links: `/<theme>/?id=<slug>`; in production also `/i/<slug>`, which redirects to the
-  current theme (so links keep working after a theme change). Add `?to=Name` to greet a guest and
+- Guest links: `/<theme>/?id=<slug>`; in production also `/i/<slug>`, a small link-preview page
+  (Open Graph tags for WhatsApp/Facebook) that forwards to the current theme (so links keep working
+  after a theme change). Full route reference: `docs/API.md`. Add `?to=Name` to greet a guest and
   `&e=wedding,reception` to show only some ceremonies.
 
 ## Theme content (every image and text)

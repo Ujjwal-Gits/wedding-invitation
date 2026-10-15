@@ -1,0 +1,84 @@
+/* Rajdwar (राजद्वार) · the painted gold gate (Mahal's) in front of Mangal's red inside. The inside, the opening
+   words and everything below the hero are Mangal's (rajdwar.css). */
+body.theme-rajdwar {
+  --rj-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.rj-hero { background: var(--rj-red-dk); }
+
+/* warm light pouring through the gate as it swings open, over the red arch */
+.rj-pour { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse 46% 58% at 50% 56%, rgba(255, 238, 186, 0.85), rgba(255, 190, 92, 0.34) 45%, rgba(255, 176, 80, 0) 78%); }
+
+/* ───────── the gate ───────── */
+.rj-gate { position: absolute; inset: 0; z-index: 5; }
+.rj-gatein { position: absolute; inset: 0; }
+/* outside the gate it is dusk; the red arch glows beyond the bars */
+.rj-gatebg { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 70% at 50% 55%, rgba(26, 2, 5, 0.18), rgba(26, 2, 5, 0.8)); }
+/* wider screens: the gate stands in the dusk of a forecourt; the red arch glows only beyond it */
+.rj-gate.is-wide .rj-gatebg { background: radial-gradient(ellipse 42% 82% at 50% 52%, rgba(22, 2, 4, 0.12) 0%, rgba(22, 2, 4, 0.4) 46%, rgba(22, 2, 4, 0.9) 100%); }
+.rj-gbox { position: absolute; }
+.rj-frame { position: absolute; left: 0; top: 0; }
+.rj-frame__img { display: block; max-width: none; }
+.rj-leaves { position: absolute; }
+.rj-leaf { position: absolute; top: 0; width: 50%; height: 100%; }
+.rj-leaf--l { left: 0; transform-origin: 0 50%; }
+.rj-leaf--r { left: 50%; transform-origin: 100% 50%; }
+.rj-leaf__img { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; max-width: none; }
+/* the shade on a swinging leaf: a dark wash cut to the leaf's own shape (a mask, no filter) */
+.rj-leaf__dark { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: rgba(14, 4, 2, 0.7);
+  -webkit-mask: var(--m) 0 0 / 100% 100% no-repeat; mask: var(--m) 0 0 / 100% 100% no-repeat; }
+/* GPU memory: big layers are reserved only for the few seconds of the opening (phones at 3x run out otherwise) */
+body:not(.is-opening) .rj-leaf__dark { display: none; }
+body.is-opening .rj-gate, body.is-opening .rj-gatein, body.is-opening .rj-leaf, body.is-opening .rj-bowimg, body.is-opening .mg-inside,
+body.is-opening .mg-gan__img, body.is-opening .mg-gan__glow { will-change: transform, opacity; }
+body.is-opening .rj-leaf__dark, body.is-opening .rj-pour { will-change: opacity; }
+.rj-seam { position: absolute; opacity: 0; pointer-events: none; will-change: transform, opacity;
+  background: linear-gradient(90deg, rgba(255, 232, 170, 0), rgba(255, 248, 225, 0.95) 50%, rgba(255, 232, 170, 0)); }
+.rj-bowimg { position: absolute; display: block; max-width: none; }
+.rj-ribbon { position: absolute; top: 0; display: block; pointer-events: none; }
+.rj-crest { position: absolute; }
+.rj-crest .mg-medal { width: 100%; }
+.rj-crest__halo { position: absolute; left: 50%; top: 50%; width: 240%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0.35; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgba(255, 236, 170, 0.8), rgba(255, 196, 90, 0.26) 48%, rgba(255, 196, 90, 0)); }
+.rj-om { position: absolute; inset: 12%; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #FFF3C6, #E2A848 55%, #8A5A14); color: #6A0A12; font: 400 52px/1 var(--f-deva-display); }
+/* a soft ring that invites the tap on the bow */
+.rj-hint { position: absolute; border-radius: 50%; pointer-events: none; border: 2px solid rgba(255, 240, 200, 0.85); box-shadow: 0 0 22px rgba(255, 220, 150, 0.6);
+  opacity: 0; will-change: transform, opacity; animation: rj-hint 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) 1.2s infinite; }
+@keyframes rj-hint { 0% { opacity: 0; transform: scale(0.55); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.25); } }
+.rj-glints { position: absolute; inset: 0; pointer-events: none; }
+.rj-glint { position: absolute; width: 18px; height: 18px; margin: -9px; pointer-events: none; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle, #FFFFFF 0 1.4px, rgba(255, 255, 255, 0) 3px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0) 56%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0) 56%);
+  animation: rj-glint var(--d) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite; }
+@keyframes rj-glint { 0%, 68%, 100% { opacity: 0; transform: scale(0.3) rotate(-45deg); } 80% { opacity: 1; transform: scale(1) rotate(0deg); } }
+
+/* the bow itself is the button; a line and two buttons on a dark red card at the foot of the gate */
+.rj-bowbtn { position: absolute; z-index: 9; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.rj-bowbtn:focus-visible { outline: 2px solid #FFE7A6; outline-offset: -6px; }
+.rj-ui { position: absolute; z-index: 10; left: 50%; bottom: max(14px, 2.4vh); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: min(calc(100% - 32px), 420px); padding: 14px 18px 10px; border-radius: 20px; text-align: center;
+  background: rgba(42, 8, 12, 0.84); border: 1px solid rgba(244, 216, 150, 0.5); box-shadow: 0 12px 30px rgba(10, 2, 0, 0.4); }
+.rj-ui__line { margin: 0; font: 500 italic 18px/1.35 var(--f-display); color: #FBE7B0; text-wrap: balance; }
+.rj-ui__line .l-ne { font: 400 18px/1.5 var(--f-deva-display); font-style: normal; }
+.rj-open { min-height: 46px; padding: 10px 28px; border: 0; border-radius: 999px; cursor: pointer; color: #4A1A06; background: var(--mg-foil);
+  font: 600 13.5px/1.2 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 6px 16px rgba(20, 6, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 180ms var(--rj-ease); }
+.rj-open .l-ne { font: 500 16px/1.3 var(--f-deva); letter-spacing: 0; text-transform: none; }
+.rj-open:hover { transform: translateY(-1px); }
+.rj-open:active { transform: scale(0.98); }
+.rj-quiet { padding: 4px 10px; border: 0; background: none; color: #F4D896; font: 500 13px/1.3 var(--f-body); letter-spacing: 0.1em; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.rj-quiet .l-ne { font: 500 15px/1.4 var(--f-deva); letter-spacing: 0; }
+.rj-open[disabled], .rj-quiet[disabled] { opacity: 0.6; cursor: progress; }
+.theme-rajdwar .rj-ui :focus-visible { outline-color: #FFE7A6; }
+
+.mg-hero.is-inside .rj-gate { visibility: hidden; }
+
+@media (max-width: 699px) {
+  .rj-ui { padding: 12px 14px 8px; gap: 6px; }
+  .rj-ui__line { font-size: 16px; }
+  .rj-ui__line .l-ne { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rj-glint, .rj-hint { animation: none; }
+}

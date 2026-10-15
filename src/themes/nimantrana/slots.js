@@ -67,4 +67,12 @@ export default {
     'rsvp.title': { shared: 'reply.title', label: 'RSVP: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 32 },
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--nm-table': { label: 'Table green', default: '#0F3B2F' },
+    '--nm-red': { label: 'Red (titles)', default: '#A3161F' },
+    '--nm-gold': { label: 'Gold', default: '#B88A2E' },
+    '--nm-ivory': { label: 'Card ivory', default: '#FBF6EB' },
+    '--nm-cream': { label: 'Cream', default: '#F6EEDC' },
+  },
 };

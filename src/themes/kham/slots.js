@@ -52,4 +52,10 @@ export default {
     'rsvp.title': { shared: 'reply.title', label: 'RSVP: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 32 },
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--kh-sindoor': { label: 'Sindoor red', default: '#9A1B1F' },
+    '--kh-card': { label: 'Card', default: '#FCFAF5' },
+    '--kh-page': { label: 'Page', default: '#F7F3EB' },
+  },
 };

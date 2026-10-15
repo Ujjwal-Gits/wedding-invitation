@@ -38,4 +38,10 @@ export default {
     'reply.send': { label: 'Reply: send button', default: { en: 'Send reply', ne: 'जवाफ पठाउनुहोस्' }, max: 24 },
     'closing.line': { shared: 'closing.line', label: 'Closing line (empty = the invitation closing)', default: { en: '', ne: '' }, max: 110 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--env': { label: 'Envelope paper', default: '#FAF5EB' },
+    '--stock': { label: 'Background', default: '#EFE6D6' },
+    '--sindoor': { label: 'Sindoor red', default: '#9C1C26' },
+  },
 };

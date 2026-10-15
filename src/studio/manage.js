@@ -1,85 +1,9 @@
-// Planner tools shared by the home list and the editor: the couple's link, the activity log,
-// the "⋯" menu and the delete confirmation.
-import { h, icon, clear, copyText, openDialog, confirmDialog, toast, fmtDate } from './dom.js';
+// Owner tools: the activity log, the "⋯" menu and the delete confirmation.
+import { h, icon, clear, openDialog, toast, fmtDate, fill } from './dom.js';
 import { api } from './api.js';
 import { areaList } from '../core/draft-areas.js';
 
 const TZ = 'Asia/Kathmandu';
-
-// ── Couple's link ──────────────────────────────────────────────────────────
-
-const coupleUrl = (token) => `${location.origin}/studio/#/c/${token}`;
-
-/**
- * The one couple's-link component (Share dialog, Couple's link dialog, step 6).
- * States: no link -> "Create"; just made -> the full URL with Copy / WhatsApp / Open;
- * active -> date and why it cannot be shown again. Only the token's hash is stored,
- * so an existing link can never be shown again.
- */
-export function coupleLinkPanel({ slug, link, onChange = () => {}, title = null }) {
-  const box = h('div.clink');
-  let current = link || null;
-  const since = () => fmtDate(current.createdAt, { day: 'numeric', month: 'short', year: 'numeric' });
-  const draw = (fresh) => {
-    clear(box).append(
-      ...(title ? [title] : []),
-      h('p.card__help.clink__help', 'The couple can change their photos, words, ceremonies and theme themselves, and see replies. Only for this invitation.'),
-    );
-    if (fresh) {
-      const url = coupleUrl(fresh);
-      const field = h('input.input.linkrow__field.clink__field', { type: 'text', readonly: true, value: url, 'aria-label': 'Link for the couple to edit their invitation', onfocus: (e) => e.target.select() });
-      box.append(
-        h('div.linkrow', field, h('div.linkrow__actions',
-          h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(url) }, icon('copy', 16), 'Copy link'),
-          h('a.btn', { href: `https://wa.me/?text=${encodeURIComponent(`Here is your private link to edit your wedding invitation: ${url}`)}`, target: '_blank', rel: 'noopener' }, icon('send', 16), 'WhatsApp'),
-          h('a.btn.btn--icon', { href: url, target: '_blank', rel: 'noopener', 'aria-label': 'Open the couple’s link', title: 'Open the couple’s link (signs you out of the planner here)' }, icon('external')))),
-        h('p.notice.clink__now', 'Copy or send it now. For safety the link is shown only once. Lost it? Make a new one; the old one stops working.'),
-      );
-    } else if (current) {
-      box.append(
-        h('p.clink__status', h('span.pill.pill--ok', `Active since ${since()}`), h('span', 'For safety it’s shown only once.')),
-        h('p.hint', 'Lost it? Make a new one; the old one stops working.'),
-      );
-    } else {
-      box.append(h('p.hint', 'For safety the link is shown only once. Lost it? Make a new one; the old one stops working.'));
-    }
-    box.append(h('div.linkrow__actions.clink__actions', current
-      ? [h('button.btn', { type: 'button', onclick: make }, icon('link', 16), 'Make a new link (old one stops working)'),
-        h('button.btn.btn--quiet', { type: 'button', onclick: off }, 'Turn off')]
-      : h('button.btn.btn--primary', { type: 'button', onclick: make }, icon('link', 16), 'Create the couple’s link')));
-  };
-  async function make(e) {
-    const btn = e?.currentTarget;
-    if (btn) btn.disabled = true;
-    try {
-      const out = await api(`/invitations/${slug}/client-link`, { method: 'POST' });
-      current = { createdAt: out.createdAt };
-      onChange(current);
-      draw(out.token);
-      box.querySelector('.clink__field')?.focus();
-    } catch (err) { toast(err.message, 'error'); if (btn) btn.disabled = false; }
-  }
-  async function off() {
-    if (!(await confirmDialog({ title: 'Turn the couple’s link off?', message: 'Anyone using it will be signed out straight away.', confirm: 'Turn off', danger: true }))) return;
-    try {
-      await api(`/invitations/${slug}/client-link`, { method: 'DELETE' });
-      current = null;
-      onChange(null);
-      draw();
-      toast('Link turned off', 'success');
-    } catch (err) { toast(err.message, 'error'); }
-  }
-  draw();
-  return box;
-}
-
-export function coupleLinkDialog({ slug, names, link, onChange }) {
-  openDialog({
-    title: 'Link for the couple to edit their invitation',
-    body: [names ? h('p.dialog__text.clink__names', names) : null, coupleLinkPanel({ slug, link, onChange })],
-    wide: true,
-  });
-}
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -112,13 +36,13 @@ export async function activityDialog({ slug, names }) {
   try {
     const doc = await api(`/invitations/${slug}`);
     const items = [...(doc.activity || [])].reverse();
-    clear(list).append(items.length
+    fill(list, items.length
       ? h('ol.activity__list', items.map((e) => h('li.activity__item', { class: e.by === 'couple' ? 'is-couple' : '' },
         h('span.activity__text', activityText(e)),
         h('time.activity__when', { datetime: e.at }, whenText(e.at)))))
       : h('p.muted', 'Nothing yet. Every change, publish and unpublish will show here.'));
   } catch (err) {
-    clear(list).append(h('p.notice.notice--error', err.message));
+    fill(list, h('p.notice.notice--error', err.message));
   }
 }
 

@@ -28,6 +28,7 @@ const KNOWN = {
   hariyo: { name: 'Hariyo', concept: 'A watercolour garden; the leaves part on a white pavilion and peacocks' },
   shree: { name: 'Shree', concept: 'Plum and gold; a lotus opens on Ganesh and hanging diyas descend' },
   pardaa: { name: 'Pardaa', concept: 'Red velvet curtains part on a dressed mandap with a living fire' },
+  rajdwar: { name: 'Rajdwar', concept: 'A painted gold palace gate tied with a satin bow; it opens onto the red-and-gold Mangal card' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');

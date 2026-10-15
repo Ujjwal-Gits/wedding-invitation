@@ -65,6 +65,37 @@ const ICONS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
   history: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
   dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+  home: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  cards: '<rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-1.2-1-1.6-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  door: '<path d="M5 21V8a7 7 0 0 1 14 0v13"/><path d="M12 4v17M3 21h18"/><circle cx="10" cy="13" r=".6"/><circle cx="14" cy="13" r=".6"/>',
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/>',
+  sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+  play: '<path d="M8 5.5v13l11-6.5z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  qr: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+  call: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  wand: '<path d="M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.6 1.4 1.4.6-1.4.6L19 15l-.6-1.4L17 13l1.4-.4z"/>',
+  drag: '<circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  collapse: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M9 4v16"/>',
+  youtube: '<rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.5 9.5v5l4-2.5z"/>',
+  more: '<circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>',
 };
 
 export function icon(name, size = 18) {
@@ -90,7 +121,7 @@ export const iconBtn = (name, label, onclick, cls = '') =>
 let toastTimer;
 export function toast(message, kind = 'info') {
   const box = document.getElementById('toasts');
-  const t = h('div.toast', { class: `toast--${kind}` }, message);
+  const t = h('div.toast', { class: `toast--${kind}` }, icon(kind === 'error' ? 'alert' : kind === 'success' ? 'check' : 'info', 16), h('span', message));
   box.append(t);
   requestAnimationFrame(() => t.classList.add('is-in'));
   clearTimeout(toastTimer);
@@ -108,7 +139,7 @@ function lockScroll() {
   Object.assign(document.body.style, { position: 'fixed', top: `-${savedY}px`, left: '0', right: '0', width: '100%', overflow: 'hidden' });
   document.documentElement.style.overscrollBehavior = 'none';
   // The editor's own scroll columns too.
-  for (const el of document.querySelectorAll('.ed__center, .ed__nav')) {
+  for (const el of document.querySelectorAll('.sh__main, .sh__nav')) {
     lockedScrollers.push([el, el.style.overflow]);
     el.style.overflow = 'hidden';
   }
@@ -155,10 +186,10 @@ export function confirmDialog({ title, message, confirm = 'Confirm', danger = fa
   });
 }
 
-export async function copyText(text) {
+export async function copyText(text, what = 'Link copied') {
   try {
     await navigator.clipboard.writeText(text);
-    toast('Link copied', 'success');
+    toast(what, 'success');
   } catch {
     toast('Could not copy. Select the link and copy it by hand.', 'error');
   }
@@ -178,3 +209,28 @@ export const fmtRelative = (iso) => {
   if (s < 86400) return `${Math.round(s / 3600)} h ago`;
   return fmtDate(iso);
 };
+
+/** Grey placeholder blocks while data loads. */
+export const skeleton = (rows = 3, cls = '') => h('div.skel', { class: cls, 'aria-hidden': 'true' },
+  Array.from({ length: rows }, (_, i) => h('span.skel__line', { style: { width: `${[92, 74, 84, 60, 88][i % 5]}%` } })));
+
+/** An empty state: icon, title, a line, and optional actions. */
+export const emptyState = (ic, title, text, ...actions) => h('div.empty',
+  h('span.empty__icon', icon(ic, 22)), h('h3.empty__title', title), text ? h('p.empty__text', text) : null,
+  actions.length ? h('div.empty__actions', actions) : null);
+
+/** A white card. */
+export const card = (title, help, ...children) => h('section.card',
+  title || help ? h('header.card__head', title ? h('h2.card__title', title) : null, help ? h('p.card__help', help) : null) : null,
+  ...children);
+
+/** Switch control bound to a callback. */
+export function toggle({ label, hint, checked, onChange, id }) {
+  const input = h('input.switch__input', { type: 'checkbox', role: 'switch', id, checked, onchange: (e) => onChange(e.target.checked) });
+  return h('label.switch', input, h('span.switch__track', { 'aria-hidden': 'true' }), h('span.switch__text', h('b', label), hint ? h('small', hint) : null));
+}
+
+export const debounce = (fn, ms) => { let t; const d = (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; d.cancel = () => clearTimeout(t); return d; };
+
+/** Empties `el` and appends children (null/false skipped, strings as text). */
+export const fill = (el, ...children) => append(clear(el), children);

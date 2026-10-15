@@ -1,6 +1,6 @@
 # Nimtto (निम्तो) — premium Nepali wedding invitations
 
-Twenty-one bilingual (English / नेपाली) wedding-invitation themes and a studio
+Twenty-two bilingual (English / नेपाली) wedding-invitation themes and a studio
 dashboard to create, customise, publish and track invitations.
 
 | # | Theme | Concept |
@@ -26,6 +26,7 @@ dashboard to create, customise, publish and track invitations.
 | 19 | **Hariyo** `/hariyo/` | Sage-green watercolour garden: the leaves part on a white pavilion with the couple and two peacocks. |
 | 20 | **Shree** `/shree/` | Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend. |
 | 21 | **Pardaa** `/pardaa/` | Red velvet curtains part on a dressed mandap with a living fire; each ceremony (Mehendi, Haldi, Wedding, Reception) in its own colours. |
+| 22 | **Rajdwar** `/rajdwar/` | Mahal's painted gold palace gate and satin bow; untie it and walk through onto the red-and-gold Mangal card. |
 
 The showroom at `/` links every theme and the studio.
 

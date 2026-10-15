@@ -41,4 +41,10 @@ export default {
     'card.button': { shared: 'card.button', label: 'Button that opens the full card', default: { en: 'Read the invitation card', ne: 'निमन्त्रणा पत्र पढ्नुहोस्' }, max: 32 },
     'card.title': { label: 'Title on the invitation card', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 32 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--b-sage-deep': { label: 'Deep sage (button)', default: '#3F5A47' },
+    '--b-gold': { label: 'Gold accents', default: '#B08A3E' },
+    '--b-gold-text': { label: 'Gold text', default: '#7A5E26' },
+  },
 };

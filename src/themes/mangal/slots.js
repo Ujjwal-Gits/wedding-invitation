@@ -70,4 +70,10 @@ export default {
     'rsvp.title': { shared: 'reply.title', label: 'RSVP: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 32 },
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send your reply', ne: 'जवाफ पठाउनुहोस्' }, max: 28 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--mg-red': { label: 'Main red', default: '#8C1018', note: 'The lacquered doorway: doors, pillars, torana, plaque and the red inside, with its light and dark shades; also frames, buttons and headings below.' },
+    '--mg-gold-lt': { label: 'Light gold (gate lettering and button, glow behind Ganesh)', default: '#F4D896', note: 'Keep it light: it is text on the red.' },
+    '--mg-ivory': { label: 'Page ivory', default: '#F8F1E3', note: 'Tints the handmade paper around the doorway and down the page.' },
+  },
 };

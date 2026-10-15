@@ -79,4 +79,10 @@ export default {
     'roll.of': { label: 'Credits: first heading', default: { en: 'The wedding of', ne: 'शुभ विवाह' }, max: 40 },
     'roll.blessings': { label: 'Credits: blessings heading', default: { en: 'With the blessings of', ne: 'आशीर्वादसहित' }, max: 40 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--bg': { label: 'Night background', default: '#05070c' },
+    '--accent': { label: 'Gold', default: '#e3a857' },
+    '--accent-2': { label: 'Light gold', default: '#f3d3a0' },
+  },
 };

@@ -19,13 +19,13 @@ export const DEFS = `
       <stop offset=".42" stop-color="#D9A442"/><stop offset=".78" stop-color="#8A5E16"/><stop offset="1" stop-color="#4E3208"/>
     </linearGradient>
     <linearGradient id="mg-lacquer" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7E0E17"/><stop offset=".55" stop-color="#9C1620"/><stop offset="1" stop-color="#86101A"/>
+      <stop offset="0" style="stop-color:var(--mg-lq-1)"/><stop offset=".55" style="stop-color:var(--mg-lq-2)"/><stop offset="1" style="stop-color:var(--mg-lq-3)"/>
     </linearGradient>
     <linearGradient id="mg-lacquer-r" x1="1" y1="0" x2="0" y2="0">
-      <stop offset="0" stop-color="#7E0E17"/><stop offset=".55" stop-color="#9C1620"/><stop offset="1" stop-color="#86101A"/>
+      <stop offset="0" style="stop-color:var(--mg-lq-1)"/><stop offset=".55" style="stop-color:var(--mg-lq-2)"/><stop offset="1" style="stop-color:var(--mg-lq-3)"/>
     </linearGradient>
     <linearGradient id="mg-ox" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5C0911"/><stop offset="1" stop-color="#43050B"/>
+      <stop offset="0" style="stop-color:var(--mg-ox-1)"/><stop offset="1" style="stop-color:var(--mg-ox-2)"/>
     </linearGradient>
     <linearGradient id="mg-sheen" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fff" stop-opacity=".10"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/>
@@ -97,7 +97,7 @@ export function cuspPath(x, y, w, h, spring, lobes = 7) {
 }
 
 /** A lotus rosette: two rings of petals, a beaded ring and a boss. */
-export function rosette(cx, cy, r, { petals = 12, fill = 'url(#mg-gold)', stroke = '#6A3F0C', inner = '#7A0E17', sw = 0.8 } = {}) {
+export function rosette(cx, cy, r, { petals = 12, fill = 'url(#mg-gold)', stroke = '#6A3F0C', inner = 'var(--mg-boss)', sw = 0.8 } = {}) {
   const petal = (rad, n, rot, wf) => {
     let d = '';
     for (let k = 0; k < n; k++) {
@@ -115,9 +115,9 @@ export function rosette(cx, cy, r, { petals = 12, fill = 'url(#mg-gold)', stroke
     dots += `<circle cx="${r1(cx + Math.cos(a) * r * 0.42)}" cy="${r1(cy + Math.sin(a) * r * 0.42)}" r="${r1(Math.max(0.6, r * 0.045))}"/>`;
   }
   return `<g class="mg-ros"><path d="${petal(r, petals, 0, 0.9)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-opacity=".55"/>`
-    + `<path d="${petal(r * 0.72, petals, Math.PI / petals, 0.85)}" fill="${inner}" stroke="${fill}" stroke-width="${sw}"/>`
+    + `<path d="${petal(r * 0.72, petals, Math.PI / petals, 0.85)}" style="fill:${inner}" stroke="${fill}" stroke-width="${sw}"/>`
     + `<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r * 0.34)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-opacity=".6"/>`
-    + `<g fill="${inner}">${dots}</g><circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r * 0.16)}" fill="${inner}"/>`
+    + `<g style="fill:${inner}">${dots}</g><circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r * 0.16)}" style="fill:${inner}"/>`
     + `<circle cx="${r1(cx - r * 0.05)}" cy="${r1(cy - r * 0.05)}" r="${r1(r * 0.07)}" fill="#FFF3C8" opacity=".8"/></g>`;
 }
 
@@ -169,7 +169,7 @@ export function medalSVG() {
   }
   return `<svg class="mg-medal__ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
     <path d="${pet}" fill="url(#mg-gold)" stroke="#7A5214" stroke-width=".35" stroke-opacity=".6"/>
-    <circle cx="50" cy="50" r="39.6" fill="none" stroke="#6A0A12" stroke-width="3.4"/>
+    <circle cx="50" cy="50" r="39.6" fill="none" style="stroke:var(--mg-red-dk)" stroke-width="3.4"/>
     <circle cx="50" cy="50" r="39.2" fill="none" stroke="url(#mg-gold)" stroke-width="2.6"/>
     <circle cx="50" cy="50" r="37" fill="none" stroke="#F6DB92" stroke-width="1.5" stroke-dasharray="0 2.9" stroke-linecap="round"/>
     <circle cx="50" cy="50" r="36.2" fill="none" stroke="#7A5214" stroke-width=".7"/>
@@ -205,7 +205,7 @@ function pillar(x, y, w, h, s) {
     const m = Math.max(1, Math.floor((b - a) / (pr * 3.6)));
     for (let k = 0; k <= m; k++) {
       const yy = a + pr * 1.6 + (k / m) * (b - a - pr * 3.2);
-      chain += `<path d="M${r1(cx)} ${r1(yy - pr * 1.35)}L${r1(cx + pr)} ${r1(yy)}L${r1(cx)} ${r1(yy + pr * 1.35)}L${r1(cx - pr)} ${r1(yy)}Z" fill="url(#mg-gold)" stroke="#5A3A0A" stroke-width=".5" stroke-opacity=".5"/><circle cx="${r1(cx)}" cy="${r1(yy)}" r="${r1(pr * 0.34)}" fill="#5C0911"/>`;
+      chain += `<path d="M${r1(cx)} ${r1(yy - pr * 1.35)}L${r1(cx + pr)} ${r1(yy)}L${r1(cx)} ${r1(yy + pr * 1.35)}L${r1(cx - pr)} ${r1(yy)}Z" fill="url(#mg-gold)" stroke="#5A3A0A" stroke-width=".5" stroke-opacity=".5"/><circle cx="${r1(cx)}" cy="${r1(yy)}" r="${r1(pr * 0.34)}" style="fill:var(--mg-ox-1)"/>`;
     }
   };
   span(y0 + 4 * s, mid - ringH / 2 - 4 * s);
@@ -218,7 +218,7 @@ function pillar(x, y, w, h, s) {
     <path d="M${r1(sx0)} ${r1(y0)}V${r1(y1)}M${r1(sx1)} ${r1(y0)}V${r1(y1)}" stroke="url(#mg-gold-v)" stroke-width="${r1(1.8 * s)}"/>
     ${chain}
     <rect x="${r1(sx0 - o * 0.5)}" y="${r1(mid - ringH / 2)}" width="${r1(sw + o)}" height="${r1(ringH)}" fill="url(#mg-ox)" ${gold}/>
-    ${w > 30 ? rosette(cx, mid, ringH * 0.36, { petals: 8, inner: '#5C0911', sw: 0.4 }) : ''}
+    ${w > 30 ? rosette(cx, mid, ringH * 0.36, { petals: 8, inner: 'var(--mg-ox-1)', sw: 0.4 }) : ''}
     <path d="${bell}" fill="url(#mg-lacquer)" ${gold}/>
     ${petalRow(y + capH * 0.26, capH * 0.44, false)}
     <rect x="${r1(x - o)}" y="${r1(y)}" width="${r1(w + 2 * o)}" height="${r1(capH * 0.24)}" fill="url(#mg-ox)" ${gold}/>
@@ -254,7 +254,7 @@ export function frameSVG(L) {
   let n = Math.max(5, Math.round(DW / (lh * 1.9)));
   if (!(n % 2)) n += 1;
   let ros = '';
-  for (let k = 0; k < n; k++) ros += rosette((k + 0.5) * DW / n, ly + lh / 2, rr, { petals: 8, inner: '#5C0911', sw: 0.45 });
+  for (let k = 0; k < n; k++) ros += rosette((k + 0.5) * DW / n, ly + lh / 2, rr, { petals: 8, inner: 'var(--mg-ox-1)', sw: 0.45 });
   const lintel = `<rect x="0" y="${r1(ly)}" width="${r1(DW)}" height="${r1(lh)}" fill="url(#mg-ox)"/><rect x="0" y="${r1(ly)}" width="${r1(DW)}" height="${r1(lh)}" fill="url(#mg-sheen)"/>
     <path d="M0 ${r1(ly + 1.2 * s)}H${r1(DW)}M0 ${r1(ly + lh - 1.2 * s)}H${r1(DW)}" stroke="url(#mg-gold)" stroke-width="${r1(2.4 * s)}"/>
     <path d="M0 ${r1(ly + 5 * s)}H${r1(DW)}M0 ${r1(ly + lh - 5 * s)}H${r1(DW)}" stroke="#D9AA52" stroke-opacity=".6" stroke-width="${r1(0.8 * s)}"/>
@@ -262,7 +262,7 @@ export function frameSVG(L) {
     ${lh > 26 ? ros : ''}`;
   // the step
   const sy = fh - sill;
-  const step = `<rect x="0" y="${r1(sy)}" width="${r1(DW)}" height="${r1(sill)}" fill="#4E070D"/><path d="M0 ${r1(sy + 1)}H${r1(DW)}" stroke="url(#mg-gold)" stroke-width="${r1(2 * s)}"/>`;
+  const step = `<rect x="0" y="${r1(sy)}" width="${r1(DW)}" height="${r1(sill)}" style="fill:var(--mg-ox)"/><path d="M0 ${r1(sy + 1)}H${r1(DW)}" stroke="url(#mg-gold)" stroke-width="${r1(2 * s)}"/>`;
   const py = ly + lh; const ph = sy - py;
   const reveal = `<rect x="${r1(ox - 1)}" y="${r1(oy - 1)}" width="${r1(ow + 2)}" height="${r1(oh + 2)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(1.6 * s)}"/>`;
   return `<svg class="mg-frame-svg" width="${r1(DW)}" height="${r1(fh)}" viewBox="0 0 ${r1(DW)} ${r1(fh)}" aria-hidden="true" focusable="false">
@@ -302,7 +302,7 @@ export function leafSVG(side, w, h) {
   const px0 = m; const px1 = w - m;
   const uy0 = h * 0.07; const uy1 = h * 0.25;
   const ly0 = h * 0.3; const ly1 = h - h * 0.07;
-  const panel = (y0, y1) => `<rect x="${r1(px0)}" y="${r1(y0)}" width="${r1(px1 - px0)}" height="${r1(y1 - y0)}" fill="#6E0A13"/>`
+  const panel = (y0, y1) => `<rect x="${r1(px0)}" y="${r1(y0)}" width="${r1(px1 - px0)}" height="${r1(y1 - y0)}" style="fill:var(--mg-leafpanel)"/>`
     + `<rect x="${r1(px0)}" y="${r1(y0)}" width="${r1(px1 - px0)}" height="${r1(y1 - y0)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(2.2 * s)}"/>`
     + `<rect x="${r1(px0 + 6 * s)}" y="${r1(y0 + 6 * s)}" width="${r1(px1 - px0 - 12 * s)}" height="${r1(y1 - y0 - 12 * s)}" fill="none" stroke="#D9AA52" stroke-opacity=".6" stroke-width="${r1(0.8 * s)}"/>`;
   let lat = '';
@@ -326,9 +326,9 @@ export function leafSVG(side, w, h) {
     ${studs(px0, h - h * 0.035, px1, h - h * 0.035, 3.4 * s, 24 * s)}
     <rect x="${r1(5 * s)}" y="${r1(5 * s)}" width="${r1(w - 10 * s)}" height="${r1(h - 10 * s)}" fill="none" stroke="url(#mg-gold)" stroke-width="${r1(1.6 * s)}"/>
     <path d="M${r1(seam - dir * 4 * s)} 0V${r1(h)}" stroke="url(#mg-gold-v)" stroke-width="${r1(7 * s)}"/>
-    <path d="M${r1(seam - dir * 9.5 * s)} 0V${r1(h)}" stroke="#4E070D" stroke-opacity=".5" stroke-width="${r1(1.2 * s)}"/>
+    <path d="M${r1(seam - dir * 9.5 * s)} 0V${r1(h)}" style="stroke:var(--mg-ox)" stroke-opacity=".5" stroke-width="${r1(1.2 * s)}"/>
     <rect width="${r1(w)}" height="${r1(h)}" fill="url(#mg-sheen)"/>
-    <rect x=".75" y=".75" width="${r1(w - 1.5)}" height="${r1(h - 1.5)}" fill="none" stroke="#3E0409" stroke-width="1.5"/>
+    <rect x=".75" y=".75" width="${r1(w - 1.5)}" height="${r1(h - 1.5)}" fill="none" style="stroke:var(--mg-edge)" stroke-width="1.5"/>
   </svg>`;
 }
 
@@ -465,19 +465,19 @@ export function dhakaTile(p = 3) {
 
 /** Crowns above uncropped photos: three shapes so the frames vary. viewBox 200 × H. */
 export function crownSVG(kind) {
-  const red = '#8C1018';
+  const red = 'var(--mg-red)';
   if (kind === 'temple') {
     const H = 78;
     const d = `M0 ${H}V54C0 38 40 26 70 18C86 13 96 8 100 0C104 8 114 13 130 18C160 26 200 38 200 54V${H}Z`;
     const d2 = `M8 ${H}V56C8 43 44 32 72 25C87 21 96 16 100 9C104 16 113 21 128 25C156 32 192 43 192 56V${H}`;
-    return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" fill="${red}"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/><path d="${d2}" fill="none" stroke="#E2B65C" stroke-width="2.2" stroke-dasharray="0 6" stroke-linecap="round"/>${rosette(100, 52, 15, { petals: 12 })}<circle cx="100" cy="2.5" r="3.2" fill="url(#mg-stud)"/></svg>` };
+    return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" style="fill:${red}"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/><path d="${d2}" fill="none" stroke="#E2B65C" stroke-width="2.2" stroke-dasharray="0 6" stroke-linecap="round"/>${rosette(100, 52, 15, { petals: 12 })}<circle cx="100" cy="2.5" r="3.2" fill="url(#mg-stud)"/></svg>` };
   }
   if (kind === 'round') {
     const H = 62;
     const d = `M0 ${H}V60A100 58 0 0 1 200 60V${H}Z`;
     let rays = '';
     for (let k = 1; k < 12; k++) { const a = Math.PI - (k / 12) * Math.PI; rays += `M100 ${H}L${r1(100 + Math.cos(a) * 80)} ${r1(H - Math.sin(a) * 50)}`; }
-    return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" fill="${red}"/><path d="${rays}" stroke="#E2B65C" stroke-opacity=".6" stroke-width="1.2"/><path d="M8 ${H}V60A92 50 0 0 1 192 60V${H}" fill="none" stroke="#E2B65C" stroke-width="2.2" stroke-dasharray="0 6" stroke-linecap="round"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/>${rosette(100, H - 2, 13, { petals: 10 })}</svg>` };
+    return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" style="fill:${red}"/><path d="${rays}" stroke="#E2B65C" stroke-opacity=".6" stroke-width="1.2"/><path d="M8 ${H}V60A92 50 0 0 1 192 60V${H}" fill="none" stroke="#E2B65C" stroke-width="2.2" stroke-dasharray="0 6" stroke-linecap="round"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/>${rosette(100, H - 2, 13, { petals: 10 })}</svg>` };
   }
   // scalloped (multifoil) arch
   const H = 66;
@@ -489,7 +489,7 @@ export function crownSVG(kind) {
     d += `Q${r1(mx)} ${r1(my)} ${x1} ${y1}`;
   }
   d += `V${H}Z`;
-  return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" fill="${red}"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/>${rosette(100, 42, 12, { petals: 8 })}<circle cx="60" cy="48" r="3" fill="url(#mg-stud)"/><circle cx="140" cy="48" r="3" fill="url(#mg-stud)"/></svg>` };
+  return { H, svg: `<svg viewBox="0 0 200 ${H}" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false"><path d="${d}" style="fill:${red}"/><path d="${d}" fill="none" stroke="url(#mg-gold)" stroke-width="3"/>${rosette(100, 42, 12, { petals: 8 })}<circle cx="60" cy="48" r="3" fill="url(#mg-stud)"/><circle cx="140" cy="48" r="3" fill="url(#mg-stud)"/></svg>` };
 }
 
 /** Sindoor swastika painted on the kalash (only when the studio leaves it on). */

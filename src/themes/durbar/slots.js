@@ -43,4 +43,10 @@ export default {
     'gallery.title': { shared: 'gallery.title', label: 'Gallery title', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 40 },
     'reply.title': { shared: 'reply.title', label: 'RSVP title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 40 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--accent': { label: 'Accent red', default: '#9E361F' },
+    '--gilt': { label: 'Gilt gold', default: '#B08637' },
+    '--accent-2': { label: 'Deep red', default: '#7A2614' },
+  },
 };

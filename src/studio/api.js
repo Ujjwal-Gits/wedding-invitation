@@ -1,3 +1,5 @@
+import { shrinkImage } from './shrink.js';
+
 // API client. Sends the CSRF token on every state-changing request; cookies are HttpOnly.
 let csrf = '';
 export const setCsrf = (t) => { csrf = t || ''; };
@@ -25,13 +27,25 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
     throw new ApiError(0, { error: 'Cannot reach the studio server. Check your connection.' });
   }
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && !path.startsWith('/auth/')) onUnauthorized();
+  if (res.status === 401 && !path.startsWith('/auth/') && !path.startsWith('/client/')) onUnauthorized();
   if (!res.ok) throw new ApiError(res.status, data);
   return data;
 }
 
-/** Multipart upload with progress (fetch cannot report upload progress). */
-export function upload(slug, file, kind = 'image', onProgress = () => {}) {
+/**
+ * Multipart upload with progress (fetch cannot report upload progress). Photos are made smaller in
+ * the browser first; onStage('preparing' | 'uploading') reports the step.
+ */
+export async function upload(slug, file, kind = 'image', onProgress = () => {}, onStage = () => {}) {
+  if (kind === 'image') {
+    onStage('preparing');
+    try { file = await shrinkImage(file); } catch (err) { throw new ApiError(415, { error: err.message }); }
+  }
+  onStage('uploading');
+  return send(slug, file, kind, onProgress);
+}
+
+function send(slug, file, kind, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `/api/invitations/${encodeURIComponent(slug)}/uploads`);

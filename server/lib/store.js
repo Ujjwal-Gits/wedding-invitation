@@ -63,13 +63,33 @@ export const invPath = (slug) => resolve(INV_DIR, `${must(slug)}.json`);
 export const rsvpPath = (slug) => resolve(RSVP_DIR, `${must(slug)}.json`);
 export const uploadDir = (slug) => resolve(UPLOAD_DIR, must(slug));
 
-export const getInvitation = (slug) => readJson(invPath(slug));
+/**
+ * Client access, normalised. Older files stored `clientAccess: { tokenHash, createdAt }` (a link with no
+ * password, full rights); it becomes `access` with the same rights, and is written back on the next save.
+ */
+export function migrateDoc(doc) {
+  if (!doc || typeof doc !== 'object') return doc;
+  if (doc.clientAccess && !doc.access) {
+    doc.access = { tokenHash: doc.clientAccess.tokenHash, passwordHash: null, createdAt: doc.clientAccess.createdAt, themes: 'all', canChangeTheme: true, canChangeColors: true };
+  }
+  delete doc.clientAccess;
+  if (doc.access) {
+    const a = doc.access;
+    if (a.themes !== 'all' && !Array.isArray(a.themes)) a.themes = 'all';
+    a.canChangeTheme = a.canChangeTheme === true;
+    a.canChangeColors = a.canChangeColors === true;
+    if (typeof a.passwordHash !== 'string') a.passwordHash = null;
+  }
+  return doc;
+}
+
+export const getInvitation = async (slug) => migrateDoc(await readJson(invPath(slug)));
 
 export async function listInvitations() {
   await fs.mkdir(INV_DIR, { recursive: true });
   const files = (await fs.readdir(INV_DIR)).filter((f) => f.endsWith('.json') && SLUG_RE.test(f.slice(0, -5)));
   const docs = await Promise.all(files.map((f) => readJson(resolve(INV_DIR, f)).catch(() => null)));
-  return docs.filter(Boolean);
+  return docs.filter(Boolean).map(migrateDoc);
 }
 
 /** Moves an invitation, its replies and its uploads into data/trash/<slug>-<time>/ (recoverable). */

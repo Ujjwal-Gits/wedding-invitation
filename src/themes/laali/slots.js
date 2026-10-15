@@ -259,5 +259,12 @@ export default {
       },
       "max": 28
     }
-  }
+  },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--su-accent': { label: 'Rose red', default: '#9E2A4F' },
+    '--su-gold': { label: 'Gold', default: '#B8893B' },
+    '--su-bg': { label: 'Blush background', default: '#F7E1E4' },
+    '--la-card': { label: 'Card', default: '#FBEFF0' },
+  },
 };

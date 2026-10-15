@@ -259,5 +259,11 @@ export default {
       },
       "max": 28
     }
-  }
+  },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--hy-sage': { label: 'Sage green', default: '#4E6B4F' },
+    '--hy-gold': { label: 'Gold', default: '#B8A06A' },
+    '--hy-paper': { label: 'Paper', default: '#FAFBF6' },
+  },
 };

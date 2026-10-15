@@ -4,12 +4,15 @@ import express from 'express';
 import { existsSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { IS_PROD, PORT, TRUST_PROXY, UPLOAD_DIR, DIST_DIR, INV_DIR, RSVP_DIR, assertConfigured, DEPTH_ENABLED } from './lib/env.js';
-import { SLUG_RE, getInvitation, listInvitations } from './lib/store.js';
-import { securityHeaders } from './lib/security.js';
+import { SLUG_RE, getInvitation } from './lib/store.js';
+import { securityHeaders, rateLimiter } from './lib/security.js';
 import { loadSession, requireAdmin, requireSession, requireEditor, clientSession, login, logout, me } from './lib/auth.js';
 import * as inv from './lib/invitations.js';
 import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
+import * as orders from './lib/orders.js';
+import * as site from './lib/site.js';
+import { sharePage } from './lib/share.js';
 import { stopDepth } from './lib/depth.js';
 
 assertConfigured();
@@ -34,16 +37,24 @@ api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.s
 // Auth
 api.post('/auth/login', json('4kb'), wrap(login));
 api.post('/auth/logout', requireSession, logout);
-api.post('/client/session', json('1kb'), wrap(clientSession(listInvitations)));
-api.get('/auth/me', me);
+api.post('/client/session', json('1kb'), wrap(clientSession()));
+api.get('/auth/me', wrap(me));
 
 // Public
 api.get('/invitations/:slug/public', wrap(inv.publicData));
+api.get('/site', wrap(site.getSite));
+api.get('/themes', wrap(site.publicThemes));
+api.post('/orders', json('8kb'), wrap(orders.submit));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
 // Admin
 const editor = requireEditor(getInvitation);
 api.get('/meta', requireSession, wrap(inv.meta));
+api.get('/admin/stats', requireAdmin, wrap((req, res) => inv.stats(req, res, orders.newCount)));
+api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
+api.get('/orders', requireAdmin, wrap(orders.list));
+api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
+api.delete('/orders/:id', requireAdmin, wrap(orders.remove));
 
 api.get('/invitations', requireAdmin, wrap(inv.list));
 api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
@@ -53,10 +64,19 @@ api.get('/invitations/:slug/version', editor, wrap(inv.version));
 api.post('/invitations/:slug/seen', requireAdmin, wrap(inv.seen));
 api.delete('/invitations/:slug', requireAdmin, json('2kb'), wrap(inv.remove));
 api.post('/invitations/:slug/publish', editor, wrap(inv.publish));
-api.post('/invitations/:slug/client-link', requireAdmin, wrap(inv.createClientLink));
+api.post('/invitations/:slug/client-link', requireAdmin, json('2kb'), wrap(inv.createClientLink));
+api.patch('/invitations/:slug/access', requireAdmin, json('2kb'), wrap(inv.patchAccess));
 api.delete('/invitations/:slug/client-link', requireAdmin, wrap(inv.deleteClientLink));
 api.post('/invitations/:slug/unpublish', requireAdmin, wrap(inv.unpublish));
+// Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
+// cannot fill the disk.
+const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });
 api.post('/invitations/:slug/uploads', editor, wrap(async (req, res) => {
+  const lim = uploadLimiter.hit(req.params.slug);
+  if (!lim.ok) {
+    res.set('Retry-After', String(lim.retryAfter));
+    return res.status(429).json({ error: 'Too many uploads in the last hour. Please wait a little and try again.' });
+  }
   if (!existsSync(resolve(INV_DIR, `${req.params.slug}.json`))) return res.status(404).json({ error: 'No invitation with that link name.' });
   return handleUpload(req, res);
 }));
@@ -68,22 +88,8 @@ api.use((req, res) => res.status(404).json({ error: 'Not found.' }));
 app.get('/healthz', (req, res) => res.type('text').send('ok')); // container health check
 app.use('/api', api);
 
-// Short guest link: /i/<slug>?to=Name&e=wedding,reception -> the current theme page.
-// The target is built only from the stored theme enum and slug, so this is not an open redirect.
-app.get('/i/:slug', wrap(async (req, res) => {
-  const { slug } = req.params;
-  if (!SLUG_RE.test(slug)) return res.status(404).type('text/plain').send('Not found');
-  const doc = await getInvitation(slug);
-  if (!doc || doc.status !== 'published') return res.status(404).type('text/plain').send('Not found');
-  const q = new URLSearchParams({ id: slug });
-  const to = typeof req.query.to === 'string' ? req.query.to.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 60) : '';
-  if (to) q.set('to', to);
-  const ids = new Set(doc.published.events.map((e) => e.id));
-  const e = typeof req.query.e === 'string' ? req.query.e.split(',').filter((x) => ids.has(x)) : [];
-  if (e.length) q.set('e', e.join(','));
-  res.set('Cache-Control', 'no-cache');
-  res.redirect(302, `/${doc.published.theme}/?${q}`);
-}));
+// Short guest link: /i/<slug>?to=Name&e=wedding,reception -> a link-preview page that forwards to the theme page.
+app.get('/i/:slug', wrap(sharePage));
 
 // Uploaded files: only our own generated names and types, never a directory listing.
 app.get(/^\/uploads\/([a-z0-9-]{3,64})\/([A-Za-z0-9_-]{16,40}(?:-(?:lg|sm|depth))?\.(?:webp|mp3))$/, (req, res, next) => {

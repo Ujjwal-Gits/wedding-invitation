@@ -29,4 +29,11 @@ export default {
     'gallery.eyebrow': { shared: 'gallery.kicker', label: 'Photo section: small line', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 40 },
     'gallery.title': { shared: 'gallery.title', label: 'Photo section: title', default: { en: 'Soon, one family', ne: 'चाँडै, एउटै परिवार' }, max: 50 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--indigo': { label: 'Cover indigo', default: '#25345e' },
+    '--paper': { label: 'Paper', default: '#ffffff' },
+    '--turmeric': { label: 'Turmeric gold', default: '#e5a52a' },
+    '--verm': { label: 'Vermilion', default: '#b8321a' },
+  },
 };

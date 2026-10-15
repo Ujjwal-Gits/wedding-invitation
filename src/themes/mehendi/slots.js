@@ -259,5 +259,11 @@ export default {
       },
       "max": 28
     }
-  }
+  },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--su-accent': { label: 'Henna brown', default: '#7A2E1B' },
+    '--su-bg': { label: 'Paper', default: '#FBF6EE' },
+    '--su-gold': { label: 'Copper', default: '#B9774A' },
+  },
 };

@@ -1,607 +1,358 @@
-// Nimtto Studio: a simple, guided tool for wedding planners.
-// Home (invitation cards) → a six-step editor (autosaved) → replies.
-import { h, icon, clear, toast, openDialog, confirmDialog, fmtDate, fmtRelative, copyText } from './dom.js';
-import { api, setCsrf, whenSignedOut, ApiError } from './api.js';
-import { createModel } from './fields.js';
-import { STEPS } from './steps.js';
-import { responsesView } from './responses.js';
-import { shareDialog, shareUrl } from './publish.js';
-import { coupleLinkDialog, activityDialog, deleteDialog, actionMenu } from './manage.js';
-import { photoUrl } from '../photos.js';
-import { CREDIT_GROUPS } from '../core/asset-credits.js';
+// Nimtto Studio. Two dashboards on one design system:
+//   the owner (super admin): Overview, Invitations, Clients & access, Orders, Replies, Themes, Website, Settings;
+//   the couple (client link + password): Home, Opening, Couple & family, Dates, Photos, Music, Replies, Send, Themes.
+// The owner can open any invitation and use every couple module without limits.
+import { h, icon, clear, toast, openDialog, fmtDate, fill } from './dom.js';
+import { api, setCsrf, whenSignedOut } from './api.js';
+import { createShell } from './shell.js';
+import { createSession, coupleName } from './session.js';
+import { createPreview } from './preview.js';
+import { INV_MODULES } from './modules.js';
+import { ADMIN_MODULES } from './admin.js';
 
 const app = document.getElementById('app');
-const S = { me: null, meta: null, editor: null };
-const label = (v, f = '') => (v && (v.en || v.ne)) || f;
-const coupleName = (b, g) => [label(b), label(g)].filter(Boolean).join(' & ') || 'Untitled invitation';
+const S = { me: null, meta: null, ws: null };
 
 whenSignedOut(() => {
   const wasCouple = S.me?.role === 'client';
   S.me = null;
-  if (wasCouple) { renderLinkProblem(); return; }
+  teardown();
+  if (wasCouple) { linkProblem(); return; }
   toast('Please sign in again.', 'error');
   go('#/login');
 });
 
-/** Remembers on this device that the studio was opened through a couple's link (convenience only). */
+/** Whether this browser has signed in before (skips a pointless /auth/me call, and its 401, on the sign-in page). */
+function seenFlag(set) {
+  try {
+    if (set === true) localStorage.setItem('nimtto-session', '1');
+    else if (set === false) localStorage.removeItem('nimtto-session');
+    else return localStorage.getItem('nimtto-session') === '1';
+  } catch { return true; }
+  return false;
+}
+
 function coupleFlag(set) {
   try {
-    if (set === true) localStorage.setItem('sayapatri-couple', '1');
-    else if (set === false) localStorage.removeItem('sayapatri-couple');
-    else return localStorage.getItem('sayapatri-couple') === '1';
+    if (set === true) localStorage.setItem('nimtto-couple', '1');
+    else if (set === false) localStorage.removeItem('nimtto-couple');
+    else return localStorage.getItem('nimtto-couple') === '1';
   } catch { /* storage unavailable */ }
   return false;
 }
 
-/** Shown to a couple whose link was turned off or replaced. */
-function renderLinkProblem(message = 'This link is no longer active. Please ask your wedding planner for a new one.', heading = 'This link has expired') {
-  document.title = 'Nimtto';
-  clear(app).append(h('main.login.login--msg',
-    h('div.login__panel', h('div.login__inner',
-      h('span.brand.brand--lg', h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto')),
-      h('h1.login__title', heading),
-      h('p.login__lede', message),
-      h('button.link', { type: 'button', onclick: () => { coupleFlag(false); renderLogin(); } }, 'I am the planner: sign in')))));
-}
-
-// ── Routing ───────────────────────────────────────────────────────────────
-
-/**
- * Planner and couple share one browser session. Opening a couple's link while signed in as the
- * planner would silently replace the planner's session, so ask first.
- */
-async function okToOpenAsCouple() {
-  let who = S.me;
-  if (!who) { try { who = await api('/auth/me'); } catch { return true; } }
-  if (who.role !== 'admin') return true;
-  return new Promise((resolve) => {
-    let ok = false;
-    const d = openDialog({
-      title: 'Open as the couple?',
-      body: [
-        h('p.dialog__text', 'You’re signed in as the planner. Open as the couple? You’ll be signed out of the planner account here.'),
-        h('p.notice', h('b', 'Tip: '), 'open couple links in a private window, so you stay signed in here.'),
-      ],
-      actions: [
-        h('button.btn', { type: 'button', onclick: () => d.close() }, 'Stay as the planner'),
-        h('button.btn.btn--primary', { type: 'button', onclick: () => { ok = true; d.close(); } }, 'Open as the couple'),
-      ],
-      onClose: () => resolve(ok),
-    });
-  });
-}
-
-const go = (hash) => { if (location.hash !== hash) location.hash = hash; else route(); };
+export const go = (hash) => { if (location.hash !== hash) location.hash = hash; else route(); };
 window.addEventListener('hashchange', () => route());
 
-async function route() {
+const brand = (lg = false) => h('a.brand', { href: '#/', class: lg ? 'brand--lg' : '' },
+  h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio'));
+
+// ── Routing ────────────────────────────────────────────────────────────────
+
+let routing = Promise.resolve();
+function route() { routing = routing.then(doRoute).catch((err) => { console.error(err); fatal(err); }); return routing; }
+
+async function doRoute() {
   const hash = location.hash || '#/';
-  // The couple's private link: trade the token for a session, then drop it from the address bar.
-  const cm = /^#\/c\/([A-Za-z0-9_-]{43})$/.exec(hash);
-  if (cm) {
-    if (!(await okToOpenAsCouple())) {
-      history.replaceState(null, '', '#/'); // never leave the token in the address bar
-      return route();
-    }
-    try {
-      const s = await api('/client/session', { method: 'POST', body: { token: cm[1] } });
-      S.me = s;
-      setCsrf(s.csrf);
-      coupleFlag(true);
-      history.replaceState(null, '', `#/i/${s.slug}/theme`);
-    } catch (err) {
-      return err.status === 429 ? renderLinkProblem(err.message, 'Please wait a moment') : renderLinkProblem();
-    }
-    return route();
-  }
-  if (S.editor && !hash.startsWith(`#/i/${S.editor.slug}/`)) {
-    await S.editor.flush();
-    S.editor.destroy();
-    S.editor = null;
-  }
+  const cm = /^#\/c\/([A-Za-z0-9_-]{20,128})$/.exec(hash);
+  if (cm) return passwordPage(cm[1]);
+
   if (!S.me) {
     try {
+      if (!seenFlag()) throw new Error('not signed in');
       const me = await api('/auth/me');
       S.me = me;
       setCsrf(me.csrf);
     } catch {
-      // A couple whose link was turned off sees a plain message, not the planner's sign-in page.
-      return coupleFlag() ? renderLinkProblem() : renderLogin();
+      seenFlag(false);
+      teardown();
+      return coupleFlag() ? linkProblem() : loginPage();
     }
   }
-  if (S.me.role === 'client' && !hash.startsWith(`#/i/${S.me.slug}/`)) return go(`#/i/${S.me.slug}/theme`);
-  if (hash === '#/login') return go('#/');
-  if (hash === '#/credits') return S.me.role === 'admin' ? renderCredits() : go('#/');
-  try { S.meta = await api('/meta'); } catch (err) { if (!S.meta) return fatal(err); } // theme list can grow at any time
-  const m = /^#\/i\/([a-z0-9-]{3,64})\/([a-z-]+)$/.exec(hash);
-  if (m) {
-    if (S.editor?.slug === m[1]) return S.editor.show(m[2]);
-    return openEditor(m[1], m[2]);
+  if (!S.meta) {
+    try { S.meta = await api('/meta'); } catch (err) { return fatal(err); }
   }
-  return renderHome();
+
+  const im = /^#\/i\/([a-z0-9-]{3,64})(?:\/([a-z-]+))?$/.exec(hash);
+  if (S.me.role === 'client') {
+    if (!im || im[1] !== S.me.slug) return go(`#/i/${S.me.slug}/home`);
+    return openInvitation(im[1], im[2] || 'home');
+  }
+  if (hash === '#/login' || hash === '#/' || hash === '#') return go('#/overview');
+  if (im) return openInvitation(im[1], im[2] || 'home');
+  const am = /^#\/([a-z-]+)(?:\?(.*))?$/.exec(hash);
+  const mod = ADMIN_MODULES.find((x) => x.id === am?.[1]);
+  if (!mod) return go('#/overview');
+  return openAdmin(mod, new URLSearchParams(am[2] || ''));
+}
+
+function teardown() {
+  if (!S.ws) return;
+  S.ws.dispose?.();
+  S.ws.session?.destroy();
+  S.ws.shell?.destroy();
+  S.ws = null;
 }
 
 function fatal(err) {
-  clear(app).append(h('div.center', h('p.notice.notice--error', err.message), h('button.btn', { type: 'button', onclick: () => location.reload() }, 'Try again')));
+  teardown();
+  fill(app, h('div.fullmsg', h('div.fullmsg__card',
+    h('span.empty__icon', icon('alert', 22)),
+    h('h1.fullmsg__title', 'Something went wrong'),
+    h('p.fullmsg__text', err?.message || 'The studio could not load.'),
+    h('button.btn.btn--primary', { type: 'button', onclick: () => location.reload() }, icon('refresh', 16), 'Try again'))));
 }
 
-function topbar(extra) {
-  const bar = h('header.topbar',
-    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
-    extra || null,
-    h('div.topbar__right',
-      S.me.role === 'admin' ? h('a.topbar__link', { href: '#/credits', 'aria-current': location.hash === '#/credits' ? 'page' : null }, 'Credits') : null,
-      S.me.role === 'admin' ? h('span.topbar__user', S.me.email) : null,
-      S.me.role === 'admin' ? h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: signOut }, 'Sign out') : null,
-    ),
-  );
-  if (S.me.role !== 'client') return bar;
-  // The couple always sees whose session this is (it replaces a planner session in the same browser).
-  const frag = document.createDocumentFragment();
-  frag.append(h('div.asbar', { role: 'note' }, h('span', 'You’re editing as the couple'), h('span', { 'aria-hidden': 'true' }, '·'),
-    h('button.asbar__out', { type: 'button', onclick: signOut }, 'Sign out')), bar);
-  return frag;
+// ── Module host (shared by both dashboards) ──────────────────────────────
+
+/** Renders one module into the shell, with its own subscription scope. */
+function mount(ws, mod, ctx) {
+  ws.dispose?.();
+  const offs = [];
+  const scoped = { ...ctx, on: (k, fn) => { if (ctx.session) offs.push(ctx.session.on(k, fn)); }, cleanup: (fn) => offs.push(fn) };
+  ws.dispose = () => { offs.splice(0).forEach((f) => f()); };
+  ws.shell.setActive(mod.id);
+  ws.shell.setPage({ kicker: mod.kicker?.(scoped) || '', title: mod.title, sub: mod.sub || '', actions: [...(mod.actions?.(scoped) || []), ...(ctx.extraActions || [])] });
+  document.title = `${mod.title} · Nimtto Studio`;
+  const content = ws.shell.content;
+  clear(content);
+  content.classList.remove('is-in');
+  let node;
+  try { node = mod.render(scoped); } catch (err) { console.error(err); node = h('p.notice.notice--error', 'This section could not be shown. Reload to try again.'); }
+  content.append(...[node].flat().filter(Boolean));
+  requestAnimationFrame(() => content.classList.add('is-in'));
+  ws.shell.main.scrollTo({ top: 0 });
+  ws.shell.main.focus({ preventScroll: true });
+}
+
+// ── Owner dashboard ──────────────────────────────────────────────────────
+
+function adminFoot() {
+  return h('div.userbox',
+    h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.email || 'A').slice(0, 1).toUpperCase()),
+    h('span.userbox__text', h('b', 'Owner'), h('small', S.me.email || '')),
+    h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
+}
+
+function openAdmin(mod, params) {
+  if (S.ws?.kind !== 'admin') {
+    teardown();
+    const shell = createShell({
+      brand: brand(),
+      groups: [
+        { items: ADMIN_MODULES.filter((m) => m.group === 'main').map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
+        { label: 'Business', items: ADMIN_MODULES.filter((m) => m.group === 'business').map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
+      ],
+      foot: adminFoot(),
+      tabs: ['overview', 'invitations', 'orders', 'replies'],
+      onAction: (a) => { if (a === 'signout') signOut(); },
+    });
+    S.ws = { kind: 'admin', shell };
+    fill(app, shell.root);
+    shell.attachPreview(null);
+    api('/orders').then((list) => { const n = (Array.isArray(list) ? list : list.orders || []).filter((o) => o.status === 'new').length; shell.setBadge('orders', n ? String(n) : ''); }).catch(() => {});
+  }
+  mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, params, refreshMeta });
+}
+
+async function refreshMeta() { try { S.meta = await api('/meta'); } catch { /* keep the old one */ } return S.meta; }
+
+// ── Invitation workspace (couple, or the owner inside one invitation) ───
+
+async function openInvitation(slug, modId) {
+  let ws = S.ws;
+  if (ws?.kind !== 'inv' || ws.slug !== slug) {
+    if (ws?.session) await ws.session.flush();
+    teardown();
+    fill(app, h('div.boot', { role: 'status' }, h('span.boot__mark', { 'aria-hidden': 'true' }), h('span', 'Opening the invitation…')));
+    let doc;
+    try { doc = await api(`/invitations/${slug}`); } catch (err) {
+      if (S.me?.role === 'admin') { toast(err.message, 'error'); return go('#/invitations'); }
+      return fatal(err);
+    }
+    if (S.me.role === 'client' && !S.me.perms) {
+      try { const me = await api('/auth/me'); S.me = { ...S.me, ...me }; } catch { /* keep */ }
+    }
+    const session = createSession(doc, { meta: S.meta, me: S.me });
+    const isAdmin = S.me.role === 'admin';
+    const mods = INV_MODULES.filter((m) => !m.adminOnly || isAdmin);
+    const ctxBox = h('div.ctxbox',
+      isAdmin ? h('a.ctxbox__back', { href: '#/invitations' }, icon('back', 15), 'All invitations') : null,
+      h('p.ctxbox__names', session.names()),
+      h('p.ctxbox__meta', h('span.ctxbox__date', fmtDate(session.m.data.weddingDate, { day: 'numeric', month: 'short', year: 'numeric' })), h('span.ctxbox__status')));
+    const drawCtx = () => {
+      ctxBox.querySelector('.ctxbox__names').textContent = session.names();
+      ctxBox.querySelector('.ctxbox__date').textContent = fmtDate(session.m.data.weddingDate, { day: 'numeric', month: 'short', year: 'numeric' });
+      const st = ctxBox.querySelector('.ctxbox__status');
+      const live = doc.status === 'published';
+      st.className = `ctxbox__status pill ${live ? (doc.changed ? 'pill--warn' : 'pill--ok') : 'pill--muted'}`;
+      st.textContent = live ? (doc.changed ? 'Live · changes' : 'Live') : 'Draft';
+    };
+    drawCtx();
+    const shell = createShell({
+      brand: brand(),
+      context: ctxBox,
+      groups: [
+        { label: isAdmin ? 'Invitation' : null, items: mods.filter((m) => m.group === 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
+        { label: 'More', items: mods.filter((m) => m.group !== 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
+      ],
+      foot: isAdmin ? adminFoot() : h('div.userbox',
+        h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
+        h('span.userbox__text', h('b', 'Your invitation'), h('small', 'Saves as you type')),
+        h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18))),
+      tabs: ['home', 'opening', 'photos', 'send'],
+      onAction: (a) => { if (a === 'signout') signOut(); },
+    });
+    const preview = createPreview(session);
+    shell.attachPreview(preview);
+    session.on('saved', drawCtx);
+    session.on('status', drawCtx);
+    ws = S.ws = { kind: 'inv', slug, shell, session, preview, mods };
+    fill(app, shell.root);
+    if (isAdmin) api(`/invitations/${slug}/seen`, { method: 'POST' }).catch(() => {});
+  }
+  const mod = ws.mods.find((m) => m.id === modId);
+  if (!mod) return go(`#/i/${slug}/home`);
+  ws.shell.wantPreview(mod.preview !== false);
+  ws.preview.setOpening(Boolean(mod.opening));
+  ws.preview.setHint(mod.previewHint);
+  mount(ws, mod, { session: ws.session, m: ws.session.m, slug, meta: S.meta, me: S.me, isAdmin: ws.session.isAdmin, perms: ws.session.perms, shell: ws.shell, preview: ws.preview, go, refreshMeta, extraActions: [ws.session.saveEl] });
 }
 
 async function signOut() {
-  if (S.editor) { await S.editor.flush(); S.editor.destroy(); S.editor = null; }
+  if (S.ws?.session) await S.ws.session.flush();
   try { await api('/auth/logout', { method: 'POST' }); } catch { /* already gone */ }
   const wasCouple = S.me?.role === 'client';
+  seenFlag(false);
   S.me = null;
+  S.meta = null;
   setCsrf('');
-  if (wasCouple) { renderLinkProblem('You are signed out. Open your link again to continue.'); return; }
-  location.hash = '#/login';
+  teardown();
+  if (wasCouple) { linkProblem('You are signed out. Open your link again to continue.', 'Signed out'); return; }
+  history.replaceState(null, '', '#/login');
+  loginPage();
 }
 
-// ── Sign in ───────────────────────────────────────────────────────────────
+// ── Sign-in pages ─────────────────────────────────────────────────────────
 
-function renderLogin() {
+function authLayout(...panel) {
+  return h('main.auth', { id: 'main' },
+    h('div.auth__art', { 'aria-hidden': 'true' },
+      h('img', { src: '/photos/marigold-garland-lg.webp', alt: '' }),
+      h('div.auth__quote', h('p.auth__q', 'Every invitation begins with a welcome.'), h('p.auth__qne', { lang: 'ne' }, 'हार्दिक निमन्त्रणा'))),
+    h('div.auth__panel', h('div.auth__inner', ...panel)));
+}
+
+function passwordField(id, labelText, autocomplete) {
+  const input = h('input.input.input--lg', { id, name: id, type: 'password', autocomplete, required: true, maxlength: 1024, spellcheck: 'false' });
+  const eye = h('button.pwfield__eye', { type: 'button', 'aria-label': 'Show the password', title: 'Show', onclick: () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    eye.setAttribute('aria-label', show ? 'Hide the password' : 'Show the password');
+    eye.classList.toggle('is-on', show);
+    input.focus();
+  } }, icon('eye', 18));
+  return { input, el: h('div.field', h('label.label', { for: id }, labelText), h('div.pwfield', input, eye)) };
+}
+
+function loginPage() {
+  teardown();
   document.title = 'Sign in · Nimtto Studio';
   const err = h('p.form-error', { role: 'alert' });
-  const btn = h('button.btn.btn--primary.btn--block', { type: 'submit' }, 'Sign in');
-  const form = h('form.login__form', { novalidate: true },
-    h('div.field', h('label.label', { for: 'email' }, 'Email'), h('input.input', { id: 'email', name: 'email', type: 'email', autocomplete: 'username', required: true, maxlength: 254 })),
-    h('div.field', h('label.label', { for: 'password' }, 'Password'), h('input.input', { id: 'password', name: 'password', type: 'password', autocomplete: 'current-password', required: true, maxlength: 1024 })),
-    err, btn,
-  );
+  const btn = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Sign in');
+  const email = h('input.input.input--lg', { id: 'email', name: 'email', type: 'email', autocomplete: 'username', required: true, maxlength: 254 });
+  const pw = passwordField('password', 'Password', 'current-password');
+  const form = h('form.auth__form', { novalidate: true },
+    h('div.field', h('label.label', { for: 'email' }, 'Email'), email), pw.el, err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
-    const fd = new FormData(form);
-    if (!fd.get('email') || !fd.get('password')) { err.textContent = 'Enter your email and password.'; return; }
+    if (!email.value || !pw.input.value) { err.textContent = 'Enter your email and password.'; return; }
     btn.disabled = true;
     btn.textContent = 'Signing in…';
     try {
-      const me = await api('/auth/login', { method: 'POST', body: { email: fd.get('email'), password: fd.get('password') } });
+      const me = await api('/auth/login', { method: 'POST', body: { email: email.value, password: pw.input.value } });
       coupleFlag(false);
+      seenFlag(true);
       S.me = me;
       setCsrf(me.csrf);
-      location.hash = '#/';
-      route();
+      go('#/overview');
     } catch (ex) {
       err.textContent = ex.message;
-      form.querySelector('#password').value = '';
-      form.querySelector('#password').focus();
+      pw.input.value = '';
+      pw.input.focus();
     } finally {
       btn.disabled = false;
       btn.textContent = 'Sign in';
     }
   });
-  clear(app).append(h('main.login',
-    h('div.login__art', { 'aria-hidden': 'true' }, h('img', { src: '/photos/marigold-garland-lg.webp', alt: '' })),
-    h('div.login__panel',
-      h('div.login__inner',
-        h('a.brand.brand--lg', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio')),
-        h('h1.login__title', 'Welcome back'),
-        h('p.login__lede', 'Sign in to make and share wedding invitations.'),
-        form,
-      ),
-    ),
-  ));
-  form.querySelector('#email').focus();
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Welcome back'), h('p.auth__lede', 'Sign in to manage invitations, clients and orders.'), form));
+  email.focus();
 }
 
-// ── Home ──────────────────────────────────────────────────────────────────
-
-async function renderHome() {
-  document.title = 'Invitations · Nimtto Studio';
-  const body = h('main.home', { id: 'main' }, h('p.boot', 'Loading…'));
-  clear(app).append(topbar(), body);
-  let items;
-  try {
-    ({ invitations: items } = await api('/invitations'));
-  } catch (err) {
-    clear(body).append(h('p.notice.notice--error', err.message));
-    return;
+/** The couple's private link: a calm "Enter your password" page, then the token becomes a session. */
+async function passwordPage(token) {
+  teardown();
+  // Signed in as the owner in this browser? Opening the couple's link replaces that session.
+  let who = S.me;
+  if (!who && seenFlag()) { try { who = await api('/auth/me'); } catch { who = null; } }
+  if (who?.role === 'admin') {
+    const ok = await new Promise((resolve) => {
+      let yes = false;
+      const d = openDialog({
+        title: 'Open as the couple?',
+        body: [h('p.dialog__text', 'You are signed in as the owner. Continuing signs you out here and opens the couple’s view.'), h('p.notice', icon('info', 16), h('span', 'Tip: open couple links in a private window to stay signed in here.'))],
+        actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Stay as the owner'), h('button.btn.btn--primary', { type: 'button', onclick: () => { yes = true; d.close(); } }, 'Continue as the couple')],
+        onClose: () => resolve(yes),
+      });
+    });
+    if (!ok) { history.replaceState(null, '', '#/overview'); return route(); }
   }
-  const themeName = Object.fromEntries(S.meta.themes.map((t) => [t.slug, t.name]));
-  const head = h('header.home__head',
-    h('div', h('h1.home__title', 'Invitations'), h('p.home__meta', items.length ? `${items.length} invitation${items.length === 1 ? '' : 's'}` : '')),
-    h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: newInvitation }, icon('plus', 18), 'New invitation'),
-  );
-  const status = (i) => (i.status === 'published'
-    ? h('span.pill', { class: i.changed ? 'pill--warn' : 'pill--ok' }, i.changed ? 'Live · unpublished changes' : 'Live')
-    : h('span.pill.pill--muted', 'Draft'));
-
-  const share = async (i, names) => {
-    const doc = await api(`/invitations/${i.slug}`).catch(() => null);
-    shareDialog({ meta: S.meta, slug: i.slug, theme: i.theme, names, events: doc?.data.events || [], live: i.status === 'published',
-      couple: S.me.role === 'admin' ? { link: i.clientLink, onChange: (l) => { i.clientLink = l; } } : null });
-  };
-  const unpublishFromHome = async (i) => {
-    if (!(await confirmDialog({ title: 'Take the invitation offline?', message: 'Guests opening the link will see “not found” until you publish again. Replies are kept.', confirm: 'Unpublish', danger: true }))) return;
-    try {
-      await api(`/invitations/${i.slug}/unpublish`, { method: 'POST' });
-      toast('Unpublished', 'success');
-      renderHome();
-    } catch (err) { toast(err.message, 'error'); }
-  };
-  const isAdmin = S.me.role === 'admin';
-
-  const cards = items.map((i) => {
-    const names = coupleName(i.bride, i.groom);
-    const live = i.status === 'published';
-    const guestUrl = shareUrl(S.meta, i.slug, i.theme);
-    const byCouple = i.lastEdit?.by === 'couple';
-    const menu = actionMenu([
-      { label: 'Open the editor', icon: 'edit', href: `#/i/${i.slug}/theme` },
-      { label: live ? 'Open the live invitation' : 'Preview the invitation', icon: 'external', href: live ? guestUrl : `/${i.theme}/?id=${encodeURIComponent(i.slug)}`, newTab: true },
-      { label: 'Copy the guest link', icon: 'copy', onSelect: async () => { await copyText(guestUrl); if (!live) toast('Not published yet: guests see “not found” until you publish.'); } },
-      { label: 'Couple’s link', icon: 'link', onSelect: () => coupleLinkDialog({ slug: i.slug, names, link: i.clientLink, onChange: (l) => { i.clientLink = l; } }) },
-      { label: 'Replies', icon: 'menu', href: `#/i/${i.slug}/replies` },
-      isAdmin && live ? { label: 'Unpublish', icon: 'eye', onSelect: () => unpublishFromHome(i) } : null,
-      isAdmin ? { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => { if (await deleteDialog({ slug: i.slug, names })) renderHome(); } } : null,
-    ], { label: `More for ${names}` });
-    return h('article.icard',
-      h('a.icard__photo', { href: `#/i/${i.slug}/theme`, tabindex: -1, 'aria-hidden': 'true' },
-        i.hero ? h('img', { src: photoUrl(i.hero, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : h('span.icard__ph', icon('image', 28)),
-        h('span.icard__status', status(i))),
-      h('div.icard__body',
-        h('h2.icard__names', names),
-        h('p.icard__date', fmtDate(i.weddingDate, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })),
-        h('p.icard__meta', h('span', `${themeName[i.theme] || i.theme} theme`), h('span', { 'aria-hidden': 'true' }, '·'),
-          h('a', { href: `#/i/${i.slug}/replies` }, `${i.rsvpCount} repl${i.rsvpCount === 1 ? 'y' : 'ies'}`)),
-        byCouple ? h('p.icard__edit', { class: i.unseen ? 'is-new' : '', title: new Date(i.lastEdit.at).toLocaleString('en-GB', { timeZone: 'Asia/Kathmandu' }) },
-          i.unseen ? h('span.icard__dot', { 'aria-hidden': 'true' }) : null,
-          i.unseen ? h('span.sr-only', 'New: ') : null,
-          `Edited by the couple · ${fmtRelative(i.lastEdit.at)}`) : null,
-        h('div.icard__actions',
-          h('a.btn.btn--primary', { href: `#/i/${i.slug}/theme` }, 'Edit'),
-          h('button.btn', { type: 'button', onclick: () => share(i, names) }, icon('send', 16), 'Share'),
-          menu,
-          h('button.btn.icard__clink', { type: 'button', onclick: () => coupleLinkDialog({ slug: i.slug, names, link: i.clientLink, onChange: (l) => { i.clientLink = l; } }) },
-            icon('link', 16), 'Couple’s link', i.clientLink ? h('span.icard__on', 'On') : null),
-        ),
-      ),
-    );
-  });
-  clear(body).append(head, items.length
-    ? h('div.icards', cards)
-    : h('div.empty',
-      h('h2.empty__title', 'Make your first invitation'),
-      h('p', 'Six short steps: the couple, the dates, a theme, your own touches, music, and share.'),
-      h('button.btn.btn--primary.btn--lg', { type: 'button', onclick: newInvitation }, icon('plus', 18), 'New invitation')));
-}
-
-// ── Credits (planner only) ────────────────────────────────────────────────
-
-/** Every photo, flower and track the themes use, with author, licence and source. Guests never see this. */
-function renderCredits() {
-  document.title = 'Credits · Nimtto Studio';
-  const ext = (href, text) => (href ? h('a', { href, target: '_blank', rel: 'noopener' }, text) : text);
-  const groups = CREDIT_GROUPS.map((g) => h('section.card.credits', { 'aria-labelledby': `cr-${g.id}` },
-    h('h2.card__title', { id: `cr-${g.id}` }, g.title, h('span.credits__count', ` ${g.items.length}`)),
-    h('div.credits__scroll', h('table.credits__table',
-      h('thead', h('tr', h('th', { scope: 'col' }, 'Title'), h('th', { scope: 'col' }, 'Author'), h('th', { scope: 'col' }, 'Licence'), h('th', { scope: 'col' }, 'Source'))),
-      h('tbody', g.items.map((k) => h('tr',
-        h('td', k.title, k.usedIn?.length ? h('small.credits__used', `Used in ${k.usedIn.join(', ')}`) : null),
-        h('td', k.author || '—'),
-        h('td', ext(k.licenseUrl, k.license || 'See source')),
-        h('td', k.sourceUrl ? ext(k.sourceUrl, (() => { try { return new URL(k.sourceUrl).hostname.replace(/^www./, ''); } catch { return 'Source'; } })()) : '—'),
-      ))),
-    )),
-  ));
-  clear(app).append(topbar(), h('main.home', { id: 'main' },
-    h('header.home__head', h('div',
-      h('h1.home__title', 'Credits'),
-      h('p.home__meta', 'Every photo, flower and track in the themes. Invitations never show these; the same list is public at ', h('a', { href: '/credits/', target: '_blank', rel: 'noopener' }, '/credits/'), ' (linked from the showroom only).'))),
-    h('div.credits__groups', groups)));
-}
-
-const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
-
-function newInvitation() {
-  let slugTouched = false;
+  document.title = 'Your invitation · Nimtto';
   const err = h('p.form-error', { role: 'alert' });
-  const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Aarati' });
-  const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Sameer' });
-  const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, spellcheck: 'false' });
-  const auto = () => { if (!slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
-  bride.addEventListener('input', auto);
-  groom.addEventListener('input', auto);
-  slug.addEventListener('input', () => { slugTouched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'); });
-  const submit = h('button.btn.btn--primary', { type: 'submit', form: 'new-inv' }, 'Start');
-  const form = h('form#new-inv.stack', { novalidate: true },
-    h('div.pair',
-      h('div.field', h('label.label', { for: 'n-bride' }, 'Bride’s first name'), bride),
-      h('div.field', h('label.label', { for: 'n-groom' }, 'Groom’s first name'), groom)),
-    h('details.more.more--inline', h('summary', h('span', 'Web address'), icon('down', 16)),
-      h('div.more__body', h('div.field', h('label.label', { for: 'n-slug' }, 'Short name in the link'), h('p.hint', 'Lowercase letters, numbers and hyphens. It cannot be changed later.'), slug))),
-    err,
-  );
+  const btn = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Open my invitation', icon('right', 18));
+  const pw = passwordField('client-pw', 'Password · पासवर्ड', 'current-password');
+  const form = h('form.auth__form', { novalidate: true }, pw.el, err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
-    if (!bride.value.trim() || !groom.value.trim()) { err.textContent = 'Please enter both first names.'; return; }
-    if (!/^[a-z0-9-]{3,64}$/.test(slug.value)) { err.textContent = 'The web address needs 3 to 64 lowercase letters, numbers or hyphens.'; return; }
-    submit.disabled = true;
+    if (!pw.input.value) { err.textContent = 'Please enter the password you were given.'; pw.input.focus(); return; }
+    btn.disabled = true;
     try {
-      const theme = S.meta.themes.find((t) => t.ready)?.slug;
-      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme, sample: true } });
-      d.close();
-      go(`#/i/${doc.slug}/theme`);
+      const s = await api('/client/session', { method: 'POST', body: { token, password: pw.input.value } });
+      S.me = s;
+      S.meta = null;
+      setCsrf(s.csrf);
+      coupleFlag(true);
+      seenFlag(true);
+      history.replaceState(null, '', `#/i/${s.slug}/home`); // never leave the token in the address bar
+      route();
     } catch (ex) {
-      err.textContent = ex.status === 409 ? 'That web address is taken. Open “Web address” and change it.' : ex.message;
-    } finally {
-      submit.disabled = false;
+      btn.disabled = false;
+      if (ex.status === 429) err.textContent = ex.message || 'Too many tries. Please wait a few minutes.';
+      else if (ex.status === 401 || ex.status === 403) err.textContent = ex.body?.error || 'That password does not match. Please check it and try again.';
+      else err.textContent = ex.message;
+      pw.input.select();
     }
   });
-  const d = openDialog({ title: 'New invitation', body: [h('p.card__help', 'Start with the couple’s first names. Everything else comes step by step.'), form], actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), submit] });
-  bride.focus();
+  fill(app, authLayout(
+    brand(true),
+    h('span.auth__seal', { 'aria-hidden': 'true' }, icon('lock', 20)),
+    h('h1.auth__title', 'Enter your password'),
+    h('p.auth__lede', 'Your planner sent you a password with this link. Enter it to see and edit your wedding invitation.'),
+    h('p.auth__lede.auth__lede--ne', { lang: 'ne' }, 'आफ्नो निमन्त्रणा हेर्न र मिलाउन पासवर्ड राख्नुहोस्।'),
+    form,
+    h('p.auth__small', 'No password? Ask the person who sent you this link.')));
+  pw.input.focus();
 }
 
-// ── Editor ────────────────────────────────────────────────────────────────
-
-async function openEditor(slug, stepId) {
-  clear(app).append(topbar(), h('main.home', h('p.boot', 'Opening…')));
-  let doc;
-  try {
-    doc = await api(`/invitations/${slug}`);
-  } catch (err) {
-    clear(app).append(topbar(), h('main.home', h('p.notice.notice--error', err.message), h('a.btn', { href: '#/' }, 'Back to invitations')));
-    return;
-  }
-  S.editor = createEditor(doc);
-  S.editor.show(stepId);
-  if (S.me.role === 'admin') api(`/invitations/${slug}/seen`, { method: 'POST' }).catch(() => {}); // clears the home-card dot
+function linkProblem(message = 'This link is no longer active. Please ask your planner for a new one.', heading = 'This link has expired') {
+  teardown();
+  document.title = 'Nimtto';
+  fill(app, authLayout(brand(true),
+    h('h1.auth__title', heading), h('p.auth__lede', message),
+    h('button.link', { type: 'button', onclick: () => { coupleFlag(false); history.replaceState(null, '', '#/login'); loginPage(); } }, 'I am the owner: sign in')));
 }
 
-function createEditor(doc) {
-  const slug = doc.slug;
-  let version = doc.version;
-  let current = null;
-  let saveTimer = null;
-  let inflight = null;
-  let pending = false;
-  let lastErrors = [];
-
-  const saved = h('span.saved', { 'aria-live': 'polite', 'data-state': 'saved' }, icon('check', 14), h('span', 'Saved'));
-  const setSave = (state, text) => { saved.dataset.state = state; saved.lastChild.textContent = text; };
-  const names = () => coupleName(m.data.couple.bride.name, m.data.couple.groom.name);
-
-  const m = createModel(doc.data, () => {
-    pending = true;
-    setSave('dirty', 'Saving…');
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(save, 700);
-  });
-
-  async function save() {
-    clearTimeout(saveTimer);
-    saveTimer = null;
-    if (inflight) await inflight;
-    if (!pending || inflight) return;
-    pending = false;
-    setSave('saving', 'Saving…');
-    inflight = (async () => {
-      try {
-        const out = await api(`/invitations/${slug}`, { method: 'PUT', body: { version, data: m.data } });
-        version = out.version;
-        doc.changed = out.changed;
-        mergeDepth(m.data, out.data);
-        if (lastErrors.length) { lastErrors = []; showErrors(); }
-        if (!pending) setSave('saved', 'Saved');
-        title.textContent = names();
-        ctx.onSaved?.();
-        schedulePreview();
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 409) {
-          setSave('error', 'Not saved');
-          openDialog({ title: 'Changed in another window', body: h('p.dialog__text', 'This invitation was changed somewhere else. Reload to get the latest version.'), actions: [h('button.btn.btn--primary', { type: 'button', onclick: () => location.reload() }, 'Reload')] });
-        } else if (err instanceof ApiError && err.status === 400 && err.body.errors) {
-          lastErrors = err.body.errors;
-          setSave('error', 'Please check the highlighted field');
-          showErrors();
-        } else if (err instanceof ApiError && err.status === 401) {
-          pending = true;
-        } else {
-          pending = true;
-          setSave('error', 'Offline · retrying');
-          saveTimer = setTimeout(save, 4000);
-        }
-      } finally {
-        inflight = null;
-      }
-    })();
-    await inflight;
-  }
-
-  function mergeDepth(local, remote) {
-    if (!local || !remote || typeof local !== 'object' || typeof remote !== 'object') return;
-    if (local.lg && local.lg === remote.lg && remote.depth && !local.depth) local.depth = remote.depth;
-    for (const k of Object.keys(local)) if (local[k] && typeof local[k] === 'object') mergeDepth(local[k], remote[k]);
-  }
-
-  const flush = async () => { for (let i = 0; i < 3 && (pending || inflight); i++) await (inflight || save()); };
-  const beforeUnload = (e) => { if (pending || inflight) { e.preventDefault(); e.returnValue = ''; } };
-  window.addEventListener('beforeunload', beforeUnload);
-
-  const stepOfPath = (p) => (/^couple|^hosts/.test(p) ? 'couple'
-    : /^weddingDate|^city|^events/.test(p) ? 'dates'
-      : /^theme$/.test(p) ? 'theme'
-        : /^music/.test(p) ? 'music' : 'customise');
-
-  const errorsEl = h('div.ed2__errors', { hidden: true, role: 'alert' });
-  function showErrors() {
-    content.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
-    content.querySelectorAll('.field__err').forEach((el) => el.remove());
-    if (!lastErrors.length) { errorsEl.hidden = true; return; }
-    errorsEl.hidden = false;
-    clear(errorsEl).append(h('p', h('b', 'Not saved yet. '), 'One or more fields need a change:'),
-      h('ul', lastErrors.slice(0, 5).map((e) => {
-        const st = STEPS.find((s) => s.id === stepOfPath(e.path));
-        return h('li', `${e.message}${st && st.id !== current ? ` (in “${st.title}”)` : ''}`, st && st.id !== current ? [' ', h('a', { href: `#/i/${slug}/${st.id}` }, 'Go there')] : null);
-      })));
-    for (const e of lastErrors) {
-      const el = content.querySelector(`[data-path="${CSS.escape(e.path)}"]`);
-      if (!el) continue;
-      el.setAttribute('aria-invalid', 'true');
-      const host = el.closest('.bi__col, .field, .photo') || el.parentElement;
-      if (!host.querySelector('.field__err')) host.append(h('p.field__err', e.message));
-    }
-  }
-
-  async function publish() {
-    await flush();
-    if (lastErrors.length) { toast('Please fix the highlighted field first.', 'error'); return; }
-    try {
-      const out = await api(`/invitations/${slug}/publish`, { method: 'POST' });
-      Object.assign(doc, { status: out.status, changed: out.changed, publishedAt: out.publishedAt });
-      version = out.version;
-      toast('Published. Your invitation is live.', 'success');
-    } catch (err) {
-      if (err.body?.problems) {
-        openDialog({ title: 'Almost there', body: [h('p.dialog__text', 'Please add these first:'), h('ul.problems', err.body.problems.map((p) => h('li', p)))], actions: [h('button.btn.btn--primary', { type: 'button', onclick: (e) => e.target.closest('dialog').close() }, 'OK')] });
-      } else toast(err.message, 'error');
-    }
-  }
-
-  async function unpublish() {
-    if (!(await confirmDialog({ title: 'Take the invitation offline?', message: 'Guests opening the link will see “not found” until you publish again. Replies are kept.', confirm: 'Unpublish', danger: true }))) return;
-    try {
-      const out = await api(`/invitations/${slug}/unpublish`, { method: 'POST' });
-      Object.assign(doc, { status: out.status, changed: false });
-      version = out.version;
-      toast('Unpublished', 'success');
-    } catch (err) { toast(err.message, 'error'); }
-  }
-
-  async function remove() {
-    if (!(await deleteDialog({ slug, names: names() }))) return;
-    pending = false;
-    clearTimeout(saveTimer);
-    go('#/');
-  }
-
-  // ── Layout
-  const isAdmin = S.me.role === 'admin';
-  const title = h('span.ed2__names', names());
-  const repliesLink = h('a.btn.btn--quiet.btn--sm', { href: `#/i/${slug}/replies` }, 'Replies');
-  const head = h('div.ed2__head',
-    isAdmin ? h('a.btn.btn--quiet.btn--sm.ed2__back', { href: '#/' }, icon('back', 16), h('span', 'All invitations')) : null,
-    title, saved, repliesLink,
-    isAdmin ? h('button.btn.btn--quiet.btn--sm.ed2__tool', { type: 'button', 'aria-label': 'Couple’s link', title: 'Couple’s link', onclick: () => coupleLinkDialog({ slug, names: names(), link: doc.clientLink, onChange: (l) => { doc.clientLink = l; } }) }, icon('link', 16), h('span', 'Couple’s link')) : null,
-    isAdmin ? h('button.btn.btn--quiet.btn--sm.ed2__tool', { type: 'button', 'aria-label': 'Activity', title: 'Activity', onclick: () => activityDialog({ slug, names: names() }) }, icon('history', 16), h('span', 'Activity')) : null);
-  const progress = h('nav.steps', { 'aria-label': 'Steps' });
-  const content = h('div.ed2__content', { id: 'main', tabindex: -1 });
-  const foot = h('div.ed2__foot');
-
-  // Live preview: beside the editor on wide screens, one tap away (full screen) on phones.
-  // It loads only while visible: themes are full WebGL pages.
-  const wide = matchMedia('(min-width: 1100px)');
-  const previewSrc = () => `/${m.data.theme}/?id=${encodeURIComponent(slug)}&studio=${Date.now()}`;
-  const sideFrame = h('iframe.side__frame', { title: 'Live preview of the invitation' });
-  const sideDevice = h('div.side__device', sideFrame);
-  const side = h('aside.side', { 'aria-label': 'Live preview' },
-    h('div.side__stage', sideDevice),
-    h('div.side__bar', h('span.side__label', 'Live preview'),
-      h('button.btn.btn--quiet.btn--sm', { type: 'button', onclick: () => loadSide(true) }, icon('refresh', 14), 'Refresh')));
-  const fitSide = () => {
-    const r = sideDevice.parentElement.getBoundingClientRect();
-    if (!r.width) return;
-    const sc = Math.min((r.width - 24) / 390, (r.height - 24) / 844);
-    sideDevice.style.transform = `translate(-50%, -50%) scale(${sc})`;
-  };
-  new ResizeObserver(fitSide).observe(side);
-  const sideWanted = () => wide.matches && current !== 'publish' && current !== 'replies';
-  function loadSide(force) {
-    if (!sideWanted()) { if (sideFrame.getAttribute('src')) sideFrame.removeAttribute('src'); return; }
-    if (force || !sideFrame.getAttribute('src')) sideFrame.src = previewSrc();
-  }
-  let previewTimer;
-  function schedulePreview() { clearTimeout(previewTimer); previewTimer = setTimeout(() => loadSide(true), 1500); }
-  const onWide = () => { loadSide(false); requestAnimationFrame(fitSide); };
-  wide.addEventListener('change', onWide);
-  const openPreviewSheet = () => {
-    const frame = h('iframe.pv-sheet__frame', { title: 'Preview of the invitation', src: previewSrc() });
-    openDialog({ title: 'Preview', body: h('div.pv-sheet', frame), cls: 'dialog--sheet' });
-  };
-
-  const root = h('div.ed2', topbar(), h('div.ed2__bar', head, progress),
-    h('div.ed2__layout', h('main.ed2__main', errorsEl, content, foot), side));
-
-  const ctx = {
-    m, slug, meta: S.meta, doc, names, publish, unpublish, remove, isAdmin,
-    onTheme: () => schedulePreview(),
-  };
-
-  function drawProgress() {
-    const idx = STEPS.findIndex((s) => s.id === current);
-    clear(progress).append(
-      h('div.steps__track', { 'aria-hidden': 'true' }, h('span.steps__fill', { style: { transform: `scaleX(${idx < 0 ? 1 : (idx + 1) / STEPS.length})` } })),
-      h('ol.steps__list', STEPS.map((s, i) => h('li', h('a.steps__item', {
-        href: `#/i/${slug}/${s.id}`, 'aria-current': s.id === current ? 'step' : undefined, class: i < idx ? 'is-done' : '',
-      }, h('span.steps__n', i < idx ? icon('check', 12) : String(i + 1)), h('span.steps__t', s.title))))),
-    );
-  }
-
-  function show(id) {
-    if (id === 'replies') {
-      current = 'replies';
-    } else if (STEPS.some((s) => s.id === id)) {
-      current = id;
-    } else {
-      go(`#/i/${slug}/theme`);
-      return;
-    }
-    if (!app.contains(root)) clear(app).append(root);
-    ctx.onSaved = null;
-    const step = STEPS.find((s) => s.id === current);
-    const idx = STEPS.indexOf(step);
-    document.title = `${step ? step.title : 'Replies'} · ${names()} · Nimtto Studio`;
-    root.classList.toggle('is-replies', current === 'replies');
-    root.classList.toggle('no-side', ['publish', 'replies', 'theme'].includes(current));
-    loadSide(false);
-    requestAnimationFrame(fitSide);
-    repliesLink.setAttribute('aria-current', current === 'replies' ? 'page' : 'false');
-    drawProgress();
-    if (step) {
-      clear(content).append(
-        h('header.ed2__intro', h('p.ed2__kicker', `Step ${idx + 1} of ${STEPS.length}`), h('h1.ed2__title', step.title), h('p.ed2__lede', step.intro)),
-        ...[step.render(ctx)].flat().filter((n) => n != null && n !== false),
-      );
-      const prev = STEPS[idx - 1];
-      const next = STEPS[idx + 1];
-      clear(foot).append(
-        prev ? h('a.btn.btn--lg', { href: `#/i/${slug}/${prev.id}` }, icon('left', 16), 'Back') : h('span'),
-        current === 'publish' ? h('span') : h('button.btn.btn--lg.foot__preview', { type: 'button', onclick: openPreviewSheet, 'aria-label': 'Preview the invitation' }, icon('eye', 18), h('span.foot__pv-t', 'Preview')),
-        next ? h('a.btn.btn--primary.btn--lg', { href: `#/i/${slug}/${next.id}`, 'aria-label': `Next: ${next.title}` }, h('span', 'Next'), h('span.foot__more', `: ${next.title}`), icon('right', 16)) : h('a.btn.btn--lg', { href: `#/i/${slug}/replies` }, 'See replies', icon('right', 16)),
-      );
-    } else {
-      clear(content).append(responsesView(ctx));
-      clear(foot);
-    }
-    showErrors();
-    window.scrollTo({ top: 0 });
-    content.focus({ preventScroll: true });
-  }
-
-  return {
-    slug,
-    show,
-    flush,
-    destroy() { window.removeEventListener('beforeunload', beforeUnload); wide.removeEventListener('change', onWide); clearTimeout(previewTimer); },
-  };
-}
-
+export { coupleName };
 route();

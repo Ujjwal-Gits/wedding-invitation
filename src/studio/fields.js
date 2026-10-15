@@ -104,11 +104,11 @@ export function dateTimeField(m, path, { label, hint, timeOnlyLabel } = {}) {
 
 // ── Photos ────────────────────────────────────────────────────────────────
 
-const MAX_UPLOAD = 15 * 1024 * 1024;
+const MAX_UPLOAD = 40 * 1024 * 1024; // photos are made smaller in the browser before they are sent
 
 export function checkImageFile(file) {
   if (!file) return false;
-  if (file.size > MAX_UPLOAD) { toast(`${file.name} is larger than 15 MB.`, 'error'); return false; }
+  if (file.size > MAX_UPLOAD) { toast(`${file.name} is larger than 40 MB. Please choose a smaller photo.`, 'error'); return false; }
   if (file.type && !file.type.startsWith('image/')) { toast(`${file.name} is not an image.`, 'error'); return false; }
   return true;
 }
@@ -140,12 +140,48 @@ export function pickLibrary(ctx) {
   });
 }
 
+/** Click-to-set focus point on a large copy of the photo. Resolves to [x, y] or null. */
+export function focalDialog(ref) {
+  return new Promise((resolve) => {
+    let focal = Array.isArray(ref?.focal) ? [...ref.focal] : [0.5, 0.5];
+    let done = false;
+    const dot = h('span.focal__dot', { 'aria-hidden': 'true' });
+    const img = h('img', { src: photoUrl(ref, 'sm'), alt: '', draggable: 'false' });
+    const place = () => { dot.style.left = `${focal[0] * 100}%`; dot.style.top = `${focal[1] * 100}%`; };
+    const pad = h('button.focal__pad', {
+      type: 'button', 'aria-label': 'Photo: click the most important point, or use the arrow keys',
+      onclick: (e) => {
+        if (!e.clientX && !e.clientY) return;
+        const r = img.getBoundingClientRect();
+        focal = [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))].map((v) => Math.round(v * 1000) / 1000);
+        place();
+      },
+      onkeydown: (e) => {
+        const step = e.shiftKey ? 0.1 : 0.03;
+        const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        focal = [Math.min(1, Math.max(0, focal[0] + d[0])), Math.min(1, Math.max(0, focal[1] + d[1]))].map((v) => Math.round(v * 1000) / 1000);
+        place();
+      },
+    }, img, dot);
+    place();
+    const d = openDialog({
+      title: 'Set the focus point',
+      body: [h('p.dialog__text', 'Click the most important part (usually a face). Phones crop photos differently; this point always stays in view.'), h('div.focal', pad)],
+      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), h('button.btn.btn--primary', { type: 'button', onclick: () => { done = true; d.close(); } }, icon('check', 16), 'Use this point')],
+      onClose: () => resolve(done ? focal : null),
+    });
+    pad.focus();
+  });
+}
+
 /**
- * One photo slot: preview with focal-point picker, upload / replace / library / remove, alt text.
+ * One photo slot: preview, drop or tap to upload, replace, focus point, remove. No alt text needed.
  * The value at `path` is a photo reference (null, library slug, or uploaded object).
  */
-export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library = false, altPath = null } = {}) {
-  const root = h('div.photo', { class: `photo--${shape}`, 'data-path': pathStr(path) });
+export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library = false } = {}) {
+  const root = h('div.pslot', { class: `pslot--${shape}`, 'data-path': pathStr(path) });
   const file = h('input', { type: 'file', accept: 'image/*', hidden: true });
 
   const render = () => {
@@ -154,29 +190,13 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
     const isObj = ref && typeof ref === 'object';
     const bar = h('span.progress__bar');
     const progress = h('span.progress', { hidden: true }, bar);
-
-    let frame;
-    if (ref) {
-      const focal = isObj && Array.isArray(ref.focal) ? ref.focal : [0.5, 0.5];
-      const img = h('img', { src: photoUrl(ref, 'sm'), alt: '', decoding: 'async', style: { objectPosition: `${focal[0] * 100}% ${focal[1] * 100}%` } });
-      const dot = isObj ? h('span.photo__dot', { style: { left: `${focal[0] * 100}%`, top: `${focal[1] * 100}%` } }) : null;
-      frame = isObj
-        ? h('button.photo__frame', {
-          type: 'button', 'aria-label': 'Set the focus point: click the most important part of the photo (a face)', title: 'Click the most important point (a face) so it is never cropped',
-          onclick: (e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            const fx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-            const fy = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-            if (!e.clientX && !e.clientY) return; // keyboard activation: keep the current point
-            m.set([...path, 'focal'], [Math.round(fx * 1000) / 1000, Math.round(fy * 1000) / 1000]);
-            render();
-          },
-        }, h('span.photo__fit', img), dot, progress)
-        : h('div.photo__frame', h('span.photo__fit', img), progress);
-    } else {
-      frame = h('button.photo__frame.photo__frame--empty', { type: 'button', onclick: () => file.click() },
-        icon('image', 22), h('span', 'Upload a photo'), progress);
-    }
+    const focal = isObj && Array.isArray(ref.focal) ? ref.focal : [0.5, 0.5];
+    const frame = ref
+      ? h('button.pslot__frame', { type: 'button', onclick: () => file.click(), 'aria-label': `${label || 'Photo'}: replace` },
+        h('img', { src: photoUrl(ref, 'sm'), alt: '', decoding: 'async', style: { objectPosition: `${focal[0] * 100}% ${focal[1] * 100}%` } }),
+        h('span.pslot__hover', icon('upload', 16), 'Replace'), progress)
+      : h('button.pslot__frame.pslot__frame--empty', { type: 'button', onclick: () => file.click() },
+        icon('camera', 22), h('span', 'Drop or tap to add'), progress);
 
     const pick = async (f) => {
       progress.hidden = false;
@@ -185,10 +205,9 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
       root.classList.remove('is-busy');
       progress.hidden = true;
       if (photo) {
-        const prevAlt = isObj ? ref.alt : '';
-        m.set(path, { lg: photo.lg, sm: photo.sm, focal: photo.focal, alt: prevAlt || '', w: photo.w, h: photo.h });
+        m.set(path, { lg: photo.lg, sm: photo.sm, focal: photo.focal, w: photo.w, h: photo.h });
         render();
-        toast('Photo uploaded', 'success');
+        toast('Photo added', 'success');
       }
     };
     file.onchange = () => { if (file.files[0]) pick(file.files[0]); file.value = ''; };
@@ -196,20 +215,15 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
     root.ondragleave = () => root.classList.remove('is-drop');
     root.ondrop = (e) => { e.preventDefault(); root.classList.remove('is-drop'); const f = e.dataTransfer.files[0]; if (f) pick(f); };
 
-    const side = h('div.photo__side',
-      label ? h('p.label', label) : null,
+    root.append(frame, h('div.pslot__side',
+      label ? h('p.pslot__label', label) : null,
       hint ? h('p.hint', hint) : null,
-      h('div.photo__actions',
-        h('button.btn', { type: 'button', class: ref ? '' : 'btn--primary', onclick: () => file.click() }, icon('upload', 16), ref ? 'Replace photo' : 'Add a photo'),
-        library ? h('button.btn.btn--sm', { type: 'button', onclick: async () => { const s = await pickLibrary(ctx); if (s) { m.set(path, s); render(); } } }, 'Library') : null,
-        ref ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { m.set(path, null); render(); } }, 'Remove') : null,
-      ),
-      isObj && !altPath ? textField(m, [...path, 'alt'], { label: 'Describe the photo', hint: 'For guests using screen readers.', max: 200, placeholder: 'e.g. Aarati laughing in a red sari' }) : null,
-      altPath && ref ? textField(m, altPath, { label: 'Describe the photo', max: 200 }) : null,
-      isObj ? h('p.hint.photo__focal', ref.depth ? 'Focus point set by clicking the photo. Depth map ready for 3D motion.' : 'Click the photo to set its focus point.') : null,
-      file,
-    );
-    root.append(frame, side);
+      h('div.pslot__actions',
+        h('button.btn.btn--sm', { type: 'button', class: ref ? '' : 'btn--primary', onclick: () => file.click() }, icon('upload', 15), ref ? 'Replace' : 'Add photo'),
+        isObj ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const f = await focalDialog(ref); if (f) { m.set([...path, 'focal'], f); render(); } } }, icon('target', 15), 'Focus') : null,
+        library ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const s = await pickLibrary(ctx); if (s) { m.set(path, s); render(); } } }, icon('image', 15), 'Library') : null,
+        ref ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { m.set(path, null); render(); } }, 'Remove') : null),
+      file));
   };
   render();
   return root;

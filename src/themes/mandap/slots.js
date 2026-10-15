@@ -39,4 +39,12 @@ export default {
     'gallery.title': { shared: 'gallery.title', label: 'Photo section: title', default: { en: 'Before the sacred fire', ne: 'अग्निसाक्षी हुनुअघि' }, max: 50 },
     'reply.title': { shared: 'reply.title', label: 'Reply card: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 40 },
   },
+  // Hero/opening colours the client may change (see docs/PLATFORM.md); applied inline on <body>.
+  colors: {
+    '--accent-2': { label: 'Deep red (names, button)', default: '#6e170f' },
+    '--accent': { label: 'Red', default: '#8a1f14' },
+    '--gold': { label: 'Gold', default: '#a87a2a' },
+    '--paper': { label: 'Card paper', default: '#fffdf8' },
+    '--bg': { label: 'Background', default: '#f6efe2' },
+  },
 };

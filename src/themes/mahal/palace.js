@@ -38,8 +38,8 @@ export const MH_DEFS = `<svg width="0" height="0" style="position:absolute" aria
     <stop offset="0" stop-color="#FFFBE6"/><stop offset=".45" stop-color="#FFD979"/><stop offset="1" stop-color="#E08F24"/>
   </radialGradient>
   <linearGradient id="mhVelvetV" x1="0" x2="0" y1="0" y2="1">
-    <stop offset="0" stop-color="#3A0207" stop-opacity=".7"/><stop offset=".3" stop-color="#3A0207" stop-opacity="0"/>
-    <stop offset=".8" stop-color="#3A0207" stop-opacity=".05"/><stop offset="1" stop-color="#2A0105" stop-opacity=".55"/>
+    <stop offset="0" style="stop-color:var(--mh-vedge)" stop-opacity=".7"/><stop offset=".3" style="stop-color:var(--mh-vedge)" stop-opacity="0"/>
+    <stop offset=".8" style="stop-color:var(--mh-vedge)" stop-opacity=".05"/><stop offset="1" style="stop-color:var(--mh-vdeep)" stop-opacity=".55"/>
   </linearGradient>
   <radialGradient id="mhWarm" cx=".5" cy=".5" r=".5">
     <stop offset="0" stop-color="#FFD58A" stop-opacity=".55"/><stop offset=".5" stop-color="#F7A947" stop-opacity=".16"/><stop offset="1" stop-color="#F7A947" stop-opacity="0"/>
@@ -91,10 +91,10 @@ export function curtainSVG(Sg) {
     <path d="M${f(tx + cw * 0.06 - tr)} ${f(ty + tr * 1.6)}L${f(tx + cw * 0.06 - tr * 1.8)} ${f(ty + cw * 0.36)}H${f(tx + cw * 0.06 + tr * 1.8)}L${f(tx + cw * 0.06 + tr)} ${f(ty + tr * 1.6)}Z" fill="url(#mhCap)"/>
     <path d="M${f(tx + cw * 0.06 - tr * 1.5)} ${f(ty + cw * 0.2)}V${f(ty + cw * 0.35)}M${f(tx + cw * 0.06)} ${f(ty + cw * 0.2)}V${f(ty + cw * 0.35)}M${f(tx + cw * 0.06 + tr * 1.5)} ${f(ty + cw * 0.2)}V${f(ty + cw * 0.35)}" stroke="#7A4E0E" stroke-width="1.2"/>`;
   const side = `<g clip-path="url(#mhCurC)"><path d="${shape}" fill="url(#mhVelvet)"/>
-      <g fill="none" stroke="#24010A" stroke-opacity=".5" stroke-width="${f(cw * 0.06)}" filter="url(#mhSoft)">${folds}</g>
-      <g fill="none" stroke="#E8505E" stroke-opacity=".22" stroke-width="${f(cw * 0.022)}" filter="url(#mhSoft)">${lights}</g>
+      <g fill="none" style="stroke:var(--mh-vfold)" stroke-opacity=".5" stroke-width="${f(cw * 0.06)}" filter="url(#mhSoft)">${folds}</g>
+      <g fill="none" style="stroke:var(--mh-vlight)" stroke-opacity=".22" stroke-width="${f(cw * 0.022)}" filter="url(#mhSoft)">${lights}</g>
       <path d="${shape}" fill="url(#mhVelvetV)"/></g>
-    <path d="${inner}" fill="none" stroke="#3A0207" stroke-width="${f(Math.max(3, cw * 0.05))}"/>
+    <path d="${inner}" fill="none" style="stroke:var(--mh-vedge)" stroke-width="${f(Math.max(3, cw * 0.05))}"/>
     <path d="${inner}" fill="none" stroke="url(#mhGold)" stroke-width="${f(Math.max(2.4, cw * 0.032))}"/>
     ${tie}
     <path d="${val}" fill="url(#mhVelvet)"/><path d="${val}" fill="url(#mhVelvetV)"/>
@@ -104,8 +104,8 @@ export function curtainSVG(Sg) {
   return {
     svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true" focusable="false" style="overflow:visible">
     <defs><linearGradient id="mhVelvet" gradientUnits="userSpaceOnUse" x1="${f(X0)}" x2="${f(cw * 1.2)}" y1="0" y2="0">
-      <stop offset="0" stop-color="#3E0309"/><stop offset=".12" stop-color="#8E0F1D"/><stop offset=".22" stop-color="#B71C2C"/><stop offset=".34" stop-color="#6C0A15"/>
-      <stop offset=".48" stop-color="#A3172A"/><stop offset=".6" stop-color="#C62A3A"/><stop offset=".72" stop-color="#7A0B17"/><stop offset=".86" stop-color="#A51A2B"/><stop offset="1" stop-color="#5A0610"/></linearGradient>
+      <stop offset="0" style="stop-color:var(--mh-v1)"/><stop offset=".12" style="stop-color:var(--mh-v2)"/><stop offset=".22" style="stop-color:var(--mh-v3)"/><stop offset=".34" style="stop-color:var(--mh-v4)"/>
+      <stop offset=".48" style="stop-color:var(--mh-v5)"/><stop offset=".6" style="stop-color:var(--mh-v6)"/><stop offset=".72" style="stop-color:var(--mh-v7)"/><stop offset=".86" style="stop-color:var(--mh-v8)"/><stop offset="1" style="stop-color:var(--mh-v9)"/></linearGradient>
       <clipPath id="mhCurC"><path d="${shape}"/></clipPath>
       <filter id="mhSoft" x="-20%" y="-5%" width="140%" height="110%"><feGaussianBlur stdDeviation="${f(Math.max(1.5, cw * 0.014))}"/></filter></defs>
     <g>${side}</g><g transform="translate(${W} 0) scale(-1 1)">${side}</g></svg>`,
