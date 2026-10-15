@@ -264,9 +264,9 @@ main.innerHTML = `
         <div class="mh-gbox" id="gbox">
           <div class="mh-leaves" id="leaves"><div class="mh-leaf mh-leaf--l" id="leafL"></div><div class="mh-leaf mh-leaf--r" id="leafR"></div></div>
           <i class="mh-seam" id="seam"></i>
+          <canvas class="mh-ribbon" id="ribbon"></canvas>
           <div class="mh-frame" id="frame"></div>
           <div class="mh-crest" id="crest"><i class="mh-crest__halo" id="crestHalo"></i>${ganeshRef ? medal('') : '<div class="mh-om" lang="ne">ॐ</div>'}</div>
-          <canvas class="mh-ribbon" id="ribbon"></canvas>
           <img class="mh-bowimg" id="bowImg" src="${DECOR}bow-sm.webp" srcset="${DECOR}bow-sm.webp 480w, ${DECOR}bow.webp 900w" sizes="(max-width: 700px) 50vw, 300px" alt="" decoding="async" fetchpriority="high" />
           <i class="mh-hint" id="hint"></i>
           <div class="mh-glints" id="gglints"></div>
@@ -605,6 +605,7 @@ const crest = $('crest');
 const crestHalo = $('crestHalo');
 const hint = $('hint');
 const rib = createRibbon($('ribbon'));
+rib.setTexture(`${DECOR}ribbon.webp`);
 const fw = reduced ? null : createFireworks($('fw'));
 const inside = $('scene');
 const lyBack = $('lyBack');
@@ -717,7 +718,7 @@ function buildGate(W, H) {
   place(bowImg, kx - GATE.knot[0] * bw, ky - GATE.knot[1] * bh, bw, bh);
   gsap.set(bowImg, { transformOrigin: `${GATE.knot[0] * 100}% ${GATE.knot[1] * 100}%`, x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 });
   const u = iw / 1000;
-  rib.layout({ gw: iw, H: ih, u, K: [kx / u, ky / u], ax: 150, ay: (ky - ih * 0.085) / u, k: 0.75, bandsOnly: true });
+  rib.layout({ gw: iw, H: ih, u, K: [kx / u, ky / u], ax: 70, ay: (ky - ih * 0.09) / u, k: 0.75, bandsOnly: true });
   place(hint, kx - bw * 0.62, ky - bw * 0.62, bw * 1.24, bw * 1.24);
   place(bowBtn, ox + kx - bw * 0.7, oy + ky - bh * 0.35, bw * 1.4, bh * 1.1);
   // a few glints on the gold

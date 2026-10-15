@@ -40,6 +40,9 @@ export function createRibbon(canvas) {
   let C = []; let geo = null; let raf = 0; let last = 0; let acc = 0;
   let pullP = 0; let knotA = 1; let alpha = 1; let phase = 'rest'; let t0 = 0;
   const S = {};
+  let TEX = null;
+  /** a real satin strip (a painting) mapped along each band */
+  function setTexture(url) { const im = new Image(); im.decoding = 'async'; im.onload = () => { TEX = im; draw(); }; im.src = url; }
 
   function layout(o) {
     // o: { gw, H, u, K: [x, y] (units), ax, ay, k (bow scale) }
@@ -54,7 +57,7 @@ export function createRibbon(canvas) {
     S.scale = o.u * dpr;
     const [kx, ky] = o.K; const k = o.k;
     const B = (x, y) => [kx + (x - 300) * k, ky + (y - 200) * k];
-    const line = (a, b, n) => Array.from({ length: n }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / (n - 1), a[1] + ((b[1] - a[1]) * i) / (n - 1)]);
+    const line = (a, b, n) => Array.from({ length: n }, (_, i) => { const t = i / (n - 1); return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + Math.sin(Math.PI * t) * Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.035]; });
     const loopL = [[B(300, 200), B(246, 118), B(128, 52), B(64, 104)], [B(64, 104), B(14, 146), B(34, 246), B(106, 262)], [B(106, 262), B(178, 280), B(252, 236), B(300, 200)]];
     const mirror = (segs) => segs.map((s) => s.map(([x, y]) => [2 * kx - x, y]));
     const tailL = [[B(292, 214), B(268, 290), B(232, 372), B(196, 476)]];
@@ -189,6 +192,21 @@ export function createRibbon(canvas) {
       ctx.closePath();
     };
     if (shadow) { ctx.save(); ctx.translate(6, 11); outline(); ctx.fill(); ctx.restore(); return; }
+    if (TEX && c.kind === 'band') {
+      // the satin texture laid along the band, slice by slice, so it bends with the cloth
+      const k = TEX.height / c.w; let acc = 0;
+      for (let i = 0; i < n - 1; i++) {
+        const a = P[i]; const b = P[i + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        let sx = (acc * k) % (TEX.width - 4);
+        const sw = Math.max(1, Math.min(len * k + 2, TEX.width - sx));
+        ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
+        ctx.drawImage(TEX, sx, 0, sw, TEX.height, -0.6, -c.w / 2, len + 1.2, c.w);
+        ctx.restore();
+        acc += len;
+      }
+      return;
+    }
     if (c.kind === 'loop' && phase !== 'released' && phase !== 'dropped') {
       // the inside of the loop: the back of the satin, in soft shadow, so the loop reads full and puffy
       ctx.beginPath(); P.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); ctx.closePath();
@@ -262,5 +280,5 @@ export function createRibbon(canvas) {
     ctx.globalAlpha = 1;
   }
 
-  return { layout, pull, release, drop, stop, draw, get running() { return !!raf; } };
+  return { layout, setTexture, pull, release, drop, stop, draw, get running() { return !!raf; } };
 }
