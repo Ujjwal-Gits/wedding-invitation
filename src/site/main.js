@@ -1,12 +1,14 @@
 // Nimtto public website. Everything that comes from the API is rendered with textContent / attributes only.
 import './site.css';
 import { THEMES, BY_SLUG, NE_NAMES, FALLBACK_SITE, countWord } from './themes.js';
+import { enhance } from '../ui/enhance.js'; // Nimtto dropdowns and date picker on the order form
 import SMALL_THUMBS from './thumbs.json'; // slugs with /site/thumbs/<slug>-480|800.webp (node src/site/make-thumbs.mjs)
 
 const $ = (s, r = document) => r.querySelector(s);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const wide = matchMedia('(min-width: 960px)');
 const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
+enhance(document.getElementById('order') || document);
 const MOBILE_FIRST = 11; // cards shown on phones before "Show all"
 
 /** create an element with text and attributes (never HTML) */

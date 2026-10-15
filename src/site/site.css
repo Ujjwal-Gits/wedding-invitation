@@ -336,6 +336,14 @@ ol, ul { padding: 0; list-style: none; }
 .field input:hover, .field select:hover, .field textarea:hover { border-color: var(--ink-3); }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--ink); }
 .field [aria-invalid='true'] { border-color: var(--err); }
+/* Nimtto dropdown and date picker (src/ui): the same size and states as the fields around them. */
+.field { --ui-h: 50px; --ui-fs: 16px; --ui-radius: 6px; }
+.field .ui-sel__btn { min-height: 50px; padding: 12px 40px 12px 14px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--white); font-size: 16px; }
+.field .ui-sel__btn:hover { border-color: var(--ink-3); }
+.field .ui-sel__btn:focus, .field .ui-sel.is-open .ui-sel__btn, .field .ui-field.is-open .ui-field__input { border-color: var(--ink); box-shadow: none; }
+.field .ui-sel__chev { right: 14px; }
+.field .ui-field__ic { left: 14px; }
+.field .ui-field > .ui-field__input { padding-left: 42px; }
 .field__err { font-size: 14px; color: var(--err); }
 .hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .form__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: 26px; }
