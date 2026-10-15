@@ -5,6 +5,7 @@ import { h, icon, clear, append, toast, openDialog, fill, toggle } from './dom.j
 import { biField, uploadImage, checkImageFile, pickLibrary } from './fields.js';
 import { photoUrl } from '../photos.js';
 import { sharedKey, sharedTextMax } from './slotdata.js';
+import { sectionOfSlot } from './preview-sync.js';
 
 const isPortraitRef = (r) => r && typeof r === 'object' && !Array.isArray(r) && 'portrait' in r;
 const COUPLE_KINDS = new Set(['couple', 'bride', 'groom']);
@@ -66,7 +67,11 @@ export function slotTools(ctx) {
     const file = h('input', { type: 'file', accept: 'image/*', hidden: true });
     const bar = h('span.progress__bar');
     const progress = h('span.progress', { hidden: true }, bar);
-    const done = () => { d.close(); redraw(); };
+    const done = () => {
+      d.close();
+      redraw();
+      ctx.preview?.pointImage(effective(spec, valueOf('images', id, spec)), sectionOfSlot(id)); // show this photo in the preview
+    };
     const useUpload = async (f) => {
       if (!f || !checkImageFile(f)) return;
       progress.hidden = false;

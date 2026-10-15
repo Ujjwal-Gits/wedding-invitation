@@ -56,6 +56,9 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
+/* Thin, quiet scrollbars: present for orientation, never heavy (the preview frame shows none). */
+* { scrollbar-width: thin; scrollbar-color: rgba(17, 19, 24, 0.14) transparent; }
+*:hover { scrollbar-color: rgba(17, 19, 24, 0.3) transparent; }
 body {
   margin: 0;
   background: var(--canvas);
@@ -174,7 +177,8 @@ select.input--sm { padding-right: 32px; background-position: right 15px center, 
 .bi__lang { position: absolute; top: 9px; right: 10px; z-index: 1; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-4); pointer-events: none; }
 .bi__col .input { padding-right: 64px; }
 .bi__col textarea.input { padding-right: 12px; padding-top: 26px; }
-.dt__row, .when { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.dt__row, .when { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+.dt__row .input, .when .input { min-width: 0; width: 100%; }
 .dt__col { display: grid; gap: 4px; }
 .dt__col .bi__lang { position: static; }
 
@@ -506,7 +510,17 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .pv__device[data-device='desktop']::before { content: ''; position: absolute; top: 10px; left: 14px; width: 40px; height: 8px; background: radial-gradient(circle at 4px 4px, #c3c7cf 3.5px, transparent 4px), radial-gradient(circle at 20px 4px, #c3c7cf 3.5px, transparent 4px), radial-gradient(circle at 36px 4px, #c3c7cf 3.5px, transparent 4px); }
 .pv__screen { position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: #fff; }
 .pv__device[data-device='desktop'] .pv__screen { border-radius: 0 0 14px 14px; }
-.pv__frame { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.pv__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+/* A fresh render waits, invisible, above the page on screen; then fades in over it (opacity only). */
+.pv__frame.is-next { opacity: 0; pointer-events: none; }
+.pv__frame.is-in { animation: pv-in 140ms var(--ease-out) both; }
+@keyframes pv-in { from { opacity: 0; } to { opacity: 1; } }
+.pv__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: 0 var(--s3) var(--s2) var(--s4); }
+.pv__play { gap: 6px; }
+/* A field the client picked in the preview: a crimson ring that fades (opacity only). */
+.is-picked { position: relative; }
+.is-picked::after { content: ''; position: absolute; inset: -5px; border: 2px solid var(--accent); border-radius: 12px; pointer-events: none; opacity: 0; animation: pick-flash 1.7s var(--ease-out) both; }
+@keyframes pick-flash { 0% { opacity: 0; } 12% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0; } }
 .pv__veil { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(246, 247, 249, 0.7); opacity: 0; pointer-events: none; transition: opacity var(--t) var(--ease); }
 .pv__veil.is-on { opacity: 1; }
 .pv__spin { width: 54px; height: 54px; border-radius: 50%; border: 4px solid var(--line-2); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
@@ -796,7 +810,7 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 
 /* Dates */
 .cers { display: grid; gap: var(--s3); }
-.cer { display: grid; gap: var(--s4); padding: var(--s4); border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.cer { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: var(--s4); padding: var(--s4); border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
 .cer__head { display: flex; align-items: center; gap: var(--s3); }
 .cer__num { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; }
 .cer__name { flex: 1; font: 600 15px/1.3 var(--font-ui); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

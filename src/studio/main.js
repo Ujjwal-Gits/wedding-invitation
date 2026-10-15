@@ -7,10 +7,13 @@ import { api, setCsrf, whenSignedOut } from './api.js';
 import { createShell } from './shell.js';
 import { createSession, coupleName } from './session.js';
 import { createPreview } from './preview.js';
+import { handlePick } from './pick.js';
 import { INV_MODULES } from './modules.js';
 import { ADMIN_MODULES } from './admin.js';
+import { enhance } from '../ui/enhance.js'; // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
 
 const app = document.getElementById('app');
+enhance(document);
 const S = { me: null, meta: null, ws: null };
 
 whenSignedOut(() => {
@@ -89,6 +92,7 @@ async function doRoute() {
 function teardown() {
   if (!S.ws) return;
   S.ws.dispose?.();
+  S.ws.preview?.destroy?.();
   S.ws.session?.destroy();
   S.ws.shell?.destroy();
   S.ws = null;
@@ -205,7 +209,10 @@ async function openInvitation(slug, modId) {
       tabs: ['home', 'opening', 'photos', 'send'],
       onAction: (a) => { if (a === 'signout') signOut(); },
     });
-    const preview = createPreview(session);
+    const preview = createPreview(session, {
+      // "Click to edit": a click in the preview opens the field that changes it.
+      onPick: (t) => handlePick({ session, slug, go, isAdmin, perms: session.perms, preview }, t).catch((err) => console.error(err?.stack || err)),
+    });
     shell.attachPreview(preview);
     session.on('saved', drawCtx);
     session.on('status', drawCtx);
@@ -215,10 +222,11 @@ async function openInvitation(slug, modId) {
   }
   const mod = ws.mods.find((m) => m.id === modId);
   if (!mod) return go(`#/i/${slug}/home`);
+  ws.preview.setOpening(Boolean(mod.opening)); // first: the page loads straight into the right mode
   ws.shell.wantPreview(mod.preview !== false);
-  ws.preview.setOpening(Boolean(mod.opening));
   ws.preview.setHint(mod.previewHint);
   mount(ws, mod, { session: ws.session, m: ws.session.m, slug, meta: S.meta, me: S.me, isAdmin: ws.session.isAdmin, perms: ws.session.perms, shell: ws.shell, preview: ws.preview, go, refreshMeta, extraActions: [ws.session.saveEl] });
+  ws.preview.setModule(mod.id);
 }
 
 async function signOut() {

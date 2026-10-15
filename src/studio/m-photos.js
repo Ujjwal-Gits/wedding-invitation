@@ -69,6 +69,9 @@ export function dropArea(ctx, { title = 'Drop photos here', sub = 'or tap to cho
  */
 export function photoGrid(ctx, path, opts) {
   const m = ctx.m;
+  // Show the photo in the preview, exactly where it appears (the album, or the couple's photos).
+  const where = path[0] === 'gallery' ? 'gallery' : 'couple';
+  const show = (ref) => ctx.preview?.pointImage(ref, where);
   const root = h('div.pgrid-wrap');
   const items = () => m.get(path) || [];
   const queue = uploadQueue(ctx, {
@@ -77,9 +80,11 @@ export function photoGrid(ctx, path, opts) {
       if (!m.get(path)) m.set(path, []);
       const arr = m.get(path);
       const at = arr.findIndex((x) => typeof x.photo === 'string');
-      arr.splice(at < 0 ? arr.length : at, 0, opts.make(photo));
+      const item = opts.make(photo);
+      arr.splice(at < 0 ? arr.length : at, 0, item);
       m.touch(path);
       render();
+      show(item.photo);
     },
   });
   let dragFrom = null;
@@ -91,6 +96,7 @@ export function photoGrid(ctx, path, opts) {
     arr.splice(to, 0, it);
     m.touch(path);
     render();
+    show(it.photo);
     if (focusTool) requestAnimationFrame(() => root.querySelectorAll('.ptile')[to]?.querySelector(`[data-tool="${focusTool}"]`)?.focus());
   };
 
@@ -108,16 +114,18 @@ export function photoGrid(ctx, path, opts) {
         if ('shape' in it) it.shape = shapeOf(p);
         m.touch(path);
         render();
+        show(it.photo);
         toast('Photo replaced', 'success');
       } catch (err) { toast(err.message, 'error'); el.classList.remove('is-busy'); }
     } });
     const badge = opts.badge?.(i);
     const sample = typeof ref === 'string';
     const canFocus = ref && typeof ref === 'object';
-    const setFocus = async () => { const f = await focalDialog(ref); if (f) { ref.focal = f; m.touch(path); render(); } };
+    const setFocus = async () => { const f = await focalDialog(ref); if (f) { ref.focal = f; m.touch(path); render(); show(ref); } };
     const remove = async () => {
       if (!(await confirmDialog({ title: 'Remove this photo?', message: 'It disappears from the invitation. You can add it again any time.', confirm: 'Remove', danger: true }))) return;
       items().splice(i, 1); m.touch(path); render();
+      ctx.preview?.point({ section: where }, { now: false });
     };
     // Tap a photo: every action with words (the small icon row is a shortcut on bigger screens).
     const actions = () => {

@@ -1,0 +1,179 @@
+// What the live preview should show and how to update it (PLATFORM.md "Live preview protocol").
+//   diff(shown, now)      -> text and photo hot patches, live colours, or "needs a full render"
+//   targetForField(input) -> where in the invitation the field being edited appears
+//   imageTarget(...)      -> the place a photo appears
+import { photoUrl } from '../photos.js';
+
+const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/** Keys whose change re-shapes the page (dates, ids, links, layout switches): a full render. */
+const STRUCT = new Set(['start', 'end', 'weddingDate', 'theme', 'id', 'mapQuery', 'phone', 'livestream', 'openEnded', 'enabled',
+  'maxGuests', 'volume', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
+/** Parts of the model the invitation page never shows. */
+const UNSHOWN = new Set(['share', 'clientLink', 'access']);
+
+const blank = (v) => v == null || v === '' || (Array.isArray(v) ? v.length === 0 : isPlain(v) && Object.keys(v).length === 0);
+const isRef = (v) => typeof v === 'string' || (isPlain(v) && ('lg' in v || 'sm' in v || 'portrait' in v));
+const photoPath = (path) => {
+  const k = path[path.length - 1];
+  return k === 'photo' || k === 'image' || path.includes('images');
+};
+
+/** A photo reference as the theme will draw it ({ portrait: n } points at a couple photo). */
+export function resolveRef(ref, root) {
+  if (isPlain(ref) && 'portrait' in ref) {
+    const list = root?.couple?.portraits || [];
+    const n = Number(ref.portrait) || 0;
+    return list[n]?.photo ?? list[n % Math.max(list.length, 1)]?.photo ?? null;
+  }
+  return ref || null;
+}
+export const refUrls = (ref, root) => {
+  const r = resolveRef(ref, root);
+  return r ? [...new Set([photoUrl(r, 'lg'), photoUrl(r, 'sm')].filter(Boolean))] : [];
+};
+
+/**
+ * Compares the model the preview shows with the current one.
+ * Returns { structural, text: [...], images: [...], colors: {name: hex|''}|null, any }.
+ */
+export function diff(a, b) {
+  const out = { structural: false, text: [], images: [], colors: null };
+  const photo = (x, y, path) => {
+    const rx = resolveRef(x, a);
+    const ry = resolveRef(y, b);
+    if (!rx || !ry) { if (rx !== ry) out.structural = true; return; }
+    const lx = photoUrl(rx, 'lg');
+    const ly = photoUrl(ry, 'lg');
+    if (lx === ly) {
+      if (JSON.stringify(isPlain(rx) ? rx.focal : null) !== JSON.stringify(isPlain(ry) ? ry.focal : null)) out.structural = true;
+      return;
+    }
+    out.images.push({ path, pairs: [[lx, ly], [photoUrl(rx, 'sm'), photoUrl(ry, 'sm')]].filter(([p, q]) => p && q && p !== q) });
+  };
+  const walk = (x, y, path) => {
+    if (x === y) return; // (keeps collecting after a structural change: words still patch while the page re-renders)
+    if (blank(x) && blank(y)) return; // an empty {} or [] the editor created is not a change on the page
+    const top = path[0];
+    if (UNSHOWN.has(top)) return;
+    if (top === 'themeColors') return; // handled below
+    if (path.length && photoPath(path) && (isRef(x) || isRef(y) || x == null || y == null)) { photo(x, y, path); return; }
+    const key = path[path.length - 1];
+    if (typeof x === 'string' && typeof y === 'string') {
+      if (path.some((k) => STRUCT.has(k)) || !x.trim() || !y.trim()) out.structural = true;
+      else out.text.push({ kind: 'text', path, old: x, value: y });
+      return;
+    }
+    if (Array.isArray(x) && Array.isArray(y)) {
+      if (x.length !== y.length) { out.structural = true; return; }
+      x.forEach((v, i) => walk(v, y[i], [...path, i]));
+      return;
+    }
+    if (isPlain(x) && isPlain(y)) {
+      for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) walk(x[k], y[k], [...path, k]);
+      return;
+    }
+    if ((x == null || x === '') && (y == null || y === '')) return;
+    void key;
+    out.structural = true;
+  };
+  walk(a, b, []);
+  // Photos that trade places (a reorder) cannot be swapped one by one.
+  const froms = new Set(out.images.flatMap((c) => c.pairs.map((p) => p[0])));
+  if (out.images.some((c) => c.pairs.some((p) => froms.has(p[1])))) out.structural = true;
+  // Colours of the current design.
+  const theme = b.theme;
+  if (a.theme === theme) {
+    const ca = a.themeColors?.[theme] || {};
+    const cb = b.themeColors?.[theme] || {};
+    for (const k of new Set([...Object.keys(ca), ...Object.keys(cb)])) {
+      if (ca[k] !== cb[k]) (out.colors ||= {})[k] = cb[k] || '';
+    }
+  }
+  out.any = out.structural || out.text.length > 0 || out.images.length > 0 || Boolean(out.colors);
+  return out;
+}
+
+// ── Where things are ───────────────────────────────────────────────────────
+
+/** A theme's own words and pictures (slots.js ids) by their first part. */
+const SLOT_SECTIONS = [
+  [/^(gate|threshold|envelope|env|cover|seal|curtain|door|doors|lattice|window|torana|opening|band)$/, 'gate'],
+  [/^(hero|welcome|title|intro|arrival|ganesh|top|faith|still|scene|nav)$/, 'hero'],
+  [/^(couple|us|pair|two|bond|stage|swayambar|sway|line|walk|vows|blessing)$/, 'couple'],
+  [/^(families|fam|family)$/, 'families'],
+  [/^(date|day)$/, 'date'],
+  [/^(count|countdown)$/, 'countdown'],
+  [/^scratch$/, 'scratch'],
+  [/^(prog|programme|events|days|rites|rite|ceremonies|wedding|pheras|janti|reception|sindoor|courtyard|hall|ch\d)$/, 'events'],
+  [/^(gallery|album|photos|prints|print|stills|easel|frame|tile|roll|film|feature)$/, 'gallery'],
+  [/^(card|words|invitation)$/, 'card'],
+  [/^(rsvp|reply)$/, 'rsvp'],
+  [/^(close|closing|end|rooftop)$/, 'closing'],
+  [/^(travel|info)$/, 'info'],
+];
+export function sectionOfSlot(id) {
+  const head = String(id || '').split('.')[0];
+  return SLOT_SECTIONS.find(([re]) => re.test(head))?.[1] || null;
+}
+
+/** The part of the invitation a model path belongs to ("events[2].venue.en" -> "event:2"). */
+export function sectionOfPath(path) {
+  const p = String(path || '');
+  let m;
+  if ((m = /^events\[(\d+)\]/.exec(p))) return `event:${m[1]}`;
+  if (/^couple\.(bride|groom)\.name\b/.test(p)) return 'hero';
+  if (/^couple\.(bride|groom)\./.test(p)) return 'families';
+  if (/^couple\.hashtag/.test(p)) return 'closing';
+  if (/^couple\.portraits/.test(p)) return 'couple';
+  if (/^hosts/.test(p)) return 'card';
+  if (/^story/.test(p)) return 'story';
+  if (/^(invitation|saptapadi)/.test(p)) return 'card';
+  if (/^closing/.test(p)) return 'closing';
+  if (/^(weddingDate|city)/.test(p)) return 'date';
+  if (/^info/.test(p)) return 'info';
+  if (/^rsvp/.test(p)) return 'rsvp';
+  if (/^music/.test(p)) return 'music';
+  if (/^share/.test(p)) return 'hero';
+  if (/^gallery/.test(p)) return 'gallery';
+  return null;
+}
+
+/** Where the field the client is in appears on the invitation: its words, and the part of the page. */
+export function targetForField(input) {
+  if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return null;
+  const item = input.closest('[data-item]')?.dataset.item;
+  let path = input.dataset.path || '';
+  if (!path) {
+    // Time inputs and colour swatches sit next to the field that carries the path.
+    for (let a = input.parentElement, i = 0; a && i < 5 && !path; a = a.parentElement, i++) path = a.querySelector('[data-path]')?.dataset.path || '';
+  }
+  const cer = input.closest('.cer[data-index]');
+  let section = item ? sectionOfSlot(item) : sectionOfPath(path);
+  if (!section && cer) section = `event:${cer.dataset.index}`;
+  const isText = input instanceof HTMLTextAreaElement || ['text', 'search', ''].includes(input.type);
+  // An empty line of a theme's own words shows its original text (the placeholder).
+  const raw = isText ? (input.value.trim() || (item ? (input.placeholder || '').trim() : '')) : '';
+  const text = raw.split('\n')[0].trim().slice(0, 80);
+  if (text.length < 2 && !section) return null;
+  return { ...(text.length >= 2 ? { text } : {}), ...(section ? { section } : {}) };
+}
+
+/** Where a photo appears: its URLs (for the exact element) and the part of the page. */
+export function imageTarget(ref, root, section) {
+  const image = refUrls(ref, root);
+  if (!image.length && !section) return null;
+  return { ...(image.length ? { image } : {}), ...(section ? { section } : {}) };
+}
+
+/** Entering a module moves the preview to its part of the invitation. */
+export const MODULE_TARGETS = {
+  home: { section: 'hero' },
+  opening: { section: 'gate' },
+  couple: { section: 'couple' },
+  dates: { section: 'events' },
+  photos: { section: 'gallery' },
+  music: { section: 'music' },
+  replies: { section: 'rsvp' },
+  send: { section: 'hero' },
+};

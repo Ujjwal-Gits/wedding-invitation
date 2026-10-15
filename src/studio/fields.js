@@ -2,6 +2,7 @@
 import { h, icon, iconBtn, clear, toast, openDialog } from './dom.js';
 import { upload } from './api.js';
 import { photoUrl } from '../photos.js';
+import { sectionOfPath } from './preview-sync.js';
 
 let uid = 0;
 const nextId = (p = 'f') => `${p}-${++uid}`;
@@ -182,6 +183,7 @@ export function focalDialog(ref) {
  */
 export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library = false } = {}) {
   const root = h('div.pslot', { class: `pslot--${shape}`, 'data-path': pathStr(path) });
+  const show = () => { const ref = m.get(path); if (ref) ctx.preview?.pointImage(ref, sectionOfPath(pathStr(path))); else ctx.preview?.point({ section: sectionOfPath(pathStr(path)) }, { now: false }); };
   const file = h('input', { type: 'file', accept: 'image/*', hidden: true });
 
   const render = () => {
@@ -207,6 +209,7 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
       if (photo) {
         m.set(path, { lg: photo.lg, sm: photo.sm, focal: photo.focal, w: photo.w, h: photo.h });
         render();
+        show();
         toast('Photo added', 'success');
       }
     };
@@ -220,9 +223,9 @@ export function photoSlot(m, path, ctx, { label, hint, shape = 'port', library =
       hint ? h('p.hint', hint) : null,
       h('div.pslot__actions',
         h('button.btn.btn--sm', { type: 'button', class: ref ? '' : 'btn--primary', onclick: () => file.click() }, icon('upload', 15), ref ? 'Replace' : 'Add photo'),
-        isObj ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const f = await focalDialog(ref); if (f) { m.set([...path, 'focal'], f); render(); } } }, icon('target', 15), 'Focus') : null,
-        library ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const s = await pickLibrary(ctx); if (s) { m.set(path, s); render(); } } }, icon('image', 15), 'Library') : null,
-        ref ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { m.set(path, null); render(); } }, 'Remove') : null),
+        isObj ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const f = await focalDialog(ref); if (f) { m.set([...path, 'focal'], f); render(); show(); } } }, icon('target', 15), 'Focus') : null,
+        library ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const s = await pickLibrary(ctx); if (s) { m.set(path, s); render(); show(); } } }, icon('image', 15), 'Library') : null,
+        ref ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { m.set(path, null); render(); show(); } }, 'Remove') : null),
       file));
   };
   render();

@@ -4,7 +4,8 @@
 //
 // Live preview (docs/PLATFORM.md): with ?preview=1 inside an iframe, the page asks the
 // studio (same origin only) for the unsaved model first, tells it when the theme has
-// rendered, and outlines the text the client just edited when asked.
+// rendered, and points at what the client is editing (words, a photo or a part of the page; see
+// live-preview.js, loaded only then). Every message is same-origin only and validated here.
 import { config } from '../config.js';
 
 const SLUG = /^[a-z0-9-]{3,64}$/;
@@ -15,6 +16,29 @@ const PREVIEW_WAIT_MS = 1500;
 const params = new URLSearchParams(location.search);
 const inFrame = (() => { try { return window.parent !== window; } catch { return true; } })();
 const PREVIEW = inFrame && params.get('preview') === '1';
+
+// In the studio's phone and computer frames the page scrolls without visible scrollbars.
+const PREVIEW_STYLE = `
+html,body,*{scrollbar-width:none!important}
+::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+html.nimtto-hold body{opacity:0!important}
+html.nimtto-snap *,html.nimtto-snap *::before,html.nimtto-snap *::after{transition-duration:0s!important;transition-delay:0s!important}
+[data-nimtto-ring]{position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;box-sizing:border-box;border:2px solid #D4A24C;border-radius:6px;
+box-shadow:0 0 0 1px rgba(24,16,4,.55),0 0 0 5px rgba(212,162,76,.24),inset 0 0 0 1px rgba(255,255,255,.6);opacity:0;will-change:transform,opacity}
+[data-nimtto-hover]{position:fixed;left:0;top:0;z-index:2147483646;pointer-events:none;box-sizing:border-box;border:1.5px solid rgba(212,162,76,.95);border-radius:6px;
+box-shadow:0 0 0 1px rgba(24,16,4,.4),inset 0 0 0 1px rgba(255,255,255,.35);opacity:0;transition:opacity .16s cubic-bezier(.2,.8,.2,1);will-change:transform,opacity}
+[data-nimtto-hover] span{position:absolute;left:-1.5px;bottom:100%;margin-bottom:2px;padding:0 7px;border-radius:5px;background:#b3122f;color:#fff;
+font:600 11px/18px ui-sans-serif,"Segoe UI",sans-serif;letter-spacing:.02em}
+html.nimtto-pick,html.nimtto-pick *{cursor:pointer!important}`;
+let live = null;
+if (PREVIEW) {
+  const s = document.createElement('style');
+  s.id = 'nimtto-preview-style';
+  s.textContent = PREVIEW_STYLE;
+  document.head.append(s);
+  live = import('./live-preview.js');
+  live.catch((err) => console.warn('preview: helpers did not load', err));
+}
 
 /** The bundled demo music, kept before any invitation replaces the config (YouTube fallback). */
 export const bundledTracks = structuredClone(config.music?.tracks ?? []);
@@ -46,6 +70,9 @@ function normalisePreview(data, id) {
   return out;
 }
 
+let firstTarget = null;
+let firstPick = false;
+
 /** Asks the studio for the unsaved model; resolves null after 1.5 s or on anything unexpected. */
 function requestPreviewData() {
   return new Promise((resolve) => {
@@ -54,6 +81,13 @@ function requestPreviewData() {
       if (e.origin !== location.origin || e.source !== window.parent) return;
       const m = e.data;
       if (!isPlain(m) || m.type !== 'nimtto:data' || !isPlain(m.data) || !isPlain(m.data.couple)) return;
+      firstTarget = cleanTarget(m.focus);
+      firstPick = m.pick === true;
+      // Re-shown after a reload: keep the page hidden until it is back at the edited spot (no jump from the top).
+      if (firstTarget && params.has('open')) {
+        document.documentElement.classList.add('nimtto-hold');
+        setTimeout(() => document.documentElement.classList.remove('nimtto-hold'), 6000);
+      }
       finish(m.data);
     };
     const finish = (value) => {
@@ -100,7 +134,11 @@ export async function loadInvitation() {
     }
   }
   applyThemeColors();
-  if (PREVIEW) announceMounted();
+  if (PREVIEW) {
+    announceMounted();
+    // Runs after the theme's own rendering (the caller continues first).
+    live?.then((m) => { m.setPicking(firstPick); return m.start({ target: firstTarget }); }).catch(() => document.documentElement.classList.remove('nimtto-hold'));
+  }
   return config;
 }
 
@@ -130,6 +168,7 @@ function announceMounted() {
       quiet = setTimeout(done, 200);
     });
     post({ type: 'nimtto:mounted' });
+    live?.then((m) => m.mounted()).catch(() => {});
   }, 0);
 }
 
@@ -140,111 +179,69 @@ function startPreviewListener() {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || e.source !== window.parent) return;
     const m = e.data;
-    if (!isPlain(m) || m.type !== 'nimtto:focus' || typeof m.text !== 'string') return;
-    const text = m.text.slice(0, 500);
-    const el = findText(text);
-    if (el) focusElement(el);
+    if (!isPlain(m)) return;
+    if (m.type === 'nimtto:focus') {
+      const t = cleanTarget(m);
+      if (t) live?.then((x) => x.focus(t)).catch(() => {});
+    } else if (m.type === 'nimtto:mode' && typeof m.pick === 'boolean') {
+      live?.then((x) => x.setPicking(m.pick)).catch(() => {});
+    } else if (m.type === 'nimtto:play') {
+      live?.then((x) => x.play()).catch(() => {});
+    } else if (m.type === 'nimtto:patch' && Array.isArray(m.changes)) {
+      const changes = m.changes.slice(0, 60).map(cleanChange).filter(Boolean);
+      if (changes.length) live?.then((x) => x.patch(changes)).catch(() => {});
+    } else if (m.type === 'nimtto:colors' && isPlain(m.colors)) {
+      const out = {};
+      for (const [name, value] of Object.entries(m.colors).slice(0, 40)) {
+        if (!COLOR_NAME.test(name)) continue;
+        if (value === null || value === '') out[name] = '';
+        else if (typeof value === 'string' && COLOR_HEX.test(value)) out[name] = value;
+      }
+      live?.then((x) => x.colors(out)).catch(() => {});
+    }
   });
 }
 
-const norm = (s) => String(s).normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
-const SKIP = 'script, style, noscript, template, .hud, #music-sheet, .chapters, .skip, .svg-defs, [data-nimtto-ring]';
-
-const isVisible = (el) => {
-  if (!el.getClientRects().length) return false;
-  if (el.checkVisibility) return el.checkVisibility({ visibilityProperty: true });
-  return getComputedStyle(el).visibility !== 'hidden';
-};
-
-/** The visible element whose own text best contains `text` (smallest such element wins). */
-function findText(text) {
-  const needle = norm(text);
-  if (needle.length < 2) return null;
-  const cache = new Map();
-  const textOf = (el) => {
-    if (!cache.has(el)) cache.set(el, norm(el.textContent || ''));
-    return cache.get(el);
-  };
-  const candidates = new Set();
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    if (!n.nodeValue.trim()) continue;
-    let el = n.parentElement;
-    if (!el || el.closest(SKIP)) continue;
-    for (let i = 0; el && el !== document.body && i < 6; i++, el = el.parentElement) candidates.add(el);
+// A focus target: { text?, section?, image?, instant? } (docs/PLATFORM.md). Anything else is dropped.
+const SECTION = /^[a-z]{2,20}(?::\d{1,3})?$/;
+const IMG = /^(?:\/[^\s"'()<>\\]{1,400}|https:\/\/[^\s"'()<>\\]{1,400}|[a-z0-9][a-z0-9-]{1,79})$/i;
+function cleanImage(v) {
+  const out = [];
+  for (const x of (Array.isArray(v) ? v.slice(0, 6) : [v])) {
+    if (typeof x === 'string' && IMG.test(x)) out.push(x);
+    else if (isPlain(x)) for (const k of ['lg', 'sm']) if (typeof x[k] === 'string' && IMG.test(x[k])) out.push(x[k]);
   }
-  let best = null; let bestScore = Infinity; let bestVisible = false;
-  let partial = null; let partialLen = 0;
-  for (const el of candidates) {
-    const t = textOf(el);
-    if (!t) continue;
-    if (t.includes(needle)) {
-      const visible = isVisible(el);
-      const score = t.length;
-      if ((visible && !bestVisible) || (visible === bestVisible && score < bestScore)) {
-        best = el; bestScore = score; bestVisible = visible;
-      }
-    } else if (!best && t.length >= Math.min(4, needle.length) && needle.includes(t) && t.length > partialLen && isVisible(el)) {
-      partial = el; partialLen = t.length; // e.g. only the first name of an edited full name is shown
-    }
+  return out;
+}
+// A hot patch: { kind: 'text', path: [keys], old, value } or { kind: 'image', pairs: [[oldUrl, newUrl]] }.
+const KEY = /^[A-Za-z0-9_.-]{1,80}$/;
+const BAD_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+function cleanChange(c) {
+  if (!isPlain(c)) return null;
+  if (c.kind === 'text') {
+    if (!Array.isArray(c.path) || !c.path.length || c.path.length > 12) return null;
+    const okPath = c.path.every((k) => (typeof k === 'string' && KEY.test(k) && !BAD_KEYS.has(k)) || (Number.isInteger(k) && k >= 0 && k < 1000));
+    if (!okPath || typeof c.old !== 'string' || typeof c.value !== 'string' || c.old.length > 4000 || c.value.length > 4000) return null;
+    return { kind: 'text', path: c.path, old: c.old, value: c.value };
   }
-  let el = best || partial;
-  // A match in the hidden language: outline its nearest visible ancestor instead.
-  while (el && el !== document.body && !isVisible(el)) el = el.parentElement;
-  return el && el !== document.body ? el : null;
+  if (c.kind === 'image' && Array.isArray(c.pairs)) {
+    const pairs = c.pairs.slice(0, 6).filter((p) => Array.isArray(p) && p.length === 2 && p.every((u) => typeof u === 'string' && IMG.test(u) && /^(\/|https:\/\/)/.test(u)));
+    return pairs.length ? { kind: 'image', pairs } : null;
+  }
+  return null;
 }
 
-const RING_STYLE = `
-[data-nimtto-ring]{position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;box-sizing:border-box;
-border:2px solid #D4A24C;border-radius:6px;box-shadow:0 0 0 3px rgba(212,162,76,.22);opacity:0;will-change:transform,opacity}`;
-
-let ringRun = 0;
-function focusElement(el) {
-  if (!document.getElementById('nimtto-ring-style')) {
-    const s = document.createElement('style');
-    s.id = 'nimtto-ring-style';
-    s.textContent = RING_STYLE;
-    document.head.append(s);
-  }
-  document.querySelectorAll('[data-nimtto-ring]').forEach((r) => r.remove());
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  try { el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch { el.scrollIntoView(); }
-
-  const ring = document.createElement('div');
-  ring.setAttribute('data-nimtto-ring', '');
-  ring.setAttribute('aria-hidden', 'true');
-  document.body.append(ring);
-  const pad = 6;
-  let size = '';
-  const place = () => {
-    const r = el.getBoundingClientRect();
-    const next = `${Math.round(r.width + pad * 2)}x${Math.round(r.height + pad * 2)}`;
-    if (next !== size) { // sized once (and again only if the element itself resizes)
-      size = next;
-      ring.style.width = `${Math.round(r.width + pad * 2)}px`;
-      ring.style.height = `${Math.round(r.height + pad * 2)}px`;
-    }
-    ring.style.transform = `translate3d(${Math.round(r.left - pad)}px, ${Math.round(r.top - pad)}px, 0)`;
-  };
-  place();
-  // Fade in, hold while the scroll settles, then fade out over 1.6 s (opacity only).
-  const anim = ring.animate(
-    [
-      { opacity: 0, easing: 'cubic-bezier(0.22, 0.8, 0.24, 1)' },
-      { opacity: 1, offset: 0.08 },
-      { opacity: 1, offset: 0.33, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
-      { opacity: 0 },
-    ],
-    { duration: 2400, fill: 'forwards' },
-  );
-  const run = ++ringRun;
-  const track = () => {
-    if (run !== ringRun || !ring.isConnected) return;
-    place();
-    requestAnimationFrame(track);
-  };
-  requestAnimationFrame(track);
-  anim.finished.then(() => { if (run === ringRun) ring.remove(); }).catch(() => {});
+function cleanTarget(t) {
+  if (!isPlain(t)) return null;
+  const out = {};
+  if (typeof t.text === 'string' && t.text.trim().length >= 2) out.text = t.text.trim().slice(0, 500);
+  if (typeof t.section === 'string' && SECTION.test(t.section)) out.section = t.section;
+  const img = cleanImage(t.image);
+  if (img.length) out.image = img;
+  if (Number.isFinite(t.y) && t.y >= 0 && t.y < 1e6) out.y = t.y;
+  if (!out.text && !out.section && !out.image && out.y == null) return null;
+  if (t.instant === true) out.instant = true;
+  return out;
 }
 
 export { config };

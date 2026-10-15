@@ -7,7 +7,7 @@ contract, add a short note under "Change requests" at the bottom; don't silently
 
 | Surface | URL | Who | Purpose |
 |---|---|---|---|
-| Public website | `/` (root `index.html`) | everyone | One-page marketing site: hero, how it works, theme gallery (view only, live demo), pricing (from the API, editable by the admin), custom-order request form, contact, footer. |
+| Public website | `/` (root `index.html`) | everyone | One-page marketing site: hero, how it works, theme gallery (thumbnails and phone stills only, never the live pages), pricing (from the API, editable by the admin), custom-order request form, contact, footer. |
 | Super admin studio | `/studio/` after admin login | the owner | Modules (left vertical nav): Overview, Invitations, Clients & access, Orders & requests, Replies, Themes, Website (pricing + contact), Settings. |
 | Client studio | `/studio/#/c/<token>` + password | the couple / family | Clean, simple modules: Home, Opening (gate & hero), Couple & family, Dates & events, Photos, Music, Replies, Send invitation; plus Themes (view only) and Request a custom design. Live preview on the right (phone/desktop toggle). |
 | Invitation | `/<theme>/?id=<slug>` and share link `/i/<slug>` | guests | The theme page. |
@@ -41,7 +41,7 @@ Defaults (no file yet): three placeholder plans named "Classic", "Premium", "Cus
 
 Public:
 - `GET /api/site` → site.json (public fields).
-- `GET /api/themes` → `[{ slug, name, concept, thumb, demo: '/<slug>/' }]`, minus `hiddenThemes`.
+- `GET /api/themes` → `[{ slug, name, concept, thumb }]`, minus `hiddenThemes` (no demo URLs; theme pages are gated, see API.md "Theme pages").
 - `POST /api/orders` `{ kind, name, phone, email?, weddingDate?, theme?, plan?, message, website (honeypot) }` → `{ ok: true }`.
 
 Auth:
@@ -65,21 +65,85 @@ Share preview:
   `<meta http-equiv="refresh">` + link to `/<theme>/?id=<slug>` (keeping `to` and `e`). Everything escaped.
 - CSP gains `https://www.youtube.com` and `https://www.youtube-nocookie.com` for scripts/frames needed by the YouTube IFrame API.
 
-## Live preview protocol (studio ⇄ theme iframe), implemented in `src/core/data.js` + the studio
+## Live preview protocol (studio ⇄ theme iframe), implemented in `src/core/data.js` + `src/core/live-preview.js` + the studio (`src/studio/preview.js`, `preview-sync.js`)
 
-- The studio loads `/<theme>/?id=<slug>&preview=1` in an iframe (add `&debug&open` to skip the gate when the
-  module being edited is not the opening).
-- In a page with `preview=1` inside an iframe, `loadInvitation()` posts `{ type: 'nimtto:ready' }` to the parent
-  (targetOrigin = `location.origin`) and waits up to 1500 ms for `{ type: 'nimtto:data', data }` from the same
-  origin; if it arrives, that object is the config (unsaved edits show immediately). Otherwise it fetches as today.
-- After the theme has rendered, it posts `{ type: 'nimtto:mounted' }`. The studio may then post
-  `{ type: 'nimtto:focus', text }`: the page finds the visible element whose own text best contains `text`,
-  scrolls it to the centre and outlines it briefly (a gold 2px outline that fades out in 1.6 s). This shows the
-  client *where* the text they just edited appears.
-- The studio re-renders the preview on every edit (debounced ~350 ms) by reloading the iframe and answering its
-  `nimtto:ready` with the current model; the server save still happens on its own debounce as today.
-- Colours: after config loads, `data.js` applies `config.themeColors?.[config.theme]` as inline CSS custom
-  properties on `document.body` (validated names `^--[a-z0-9-]+$`, hex values), so they override the theme's tokens.
+All messages are same-origin only (`targetOrigin = location.origin`, `e.origin` and `e.source` checked) and every
+field is validated in `data.js` before use. `live-preview.js` is loaded only in a `preview=1` page inside an iframe.
+
+**Loading**
+- The studio loads `/<theme>/?id=<slug>&preview=1`. For every module except Opening it adds
+  `&debug&open&skip&station`, which skips the opening on every theme (suite and most themes: `open`; dhoka: `skip`;
+  bagaicha, durbar: `station`). A theme that ignores all three is opened by `live-preview.js` pressing its own quiet
+  button (`#quiet`, `#enter-quiet`, `#open-quiet`) once the button is enabled. The Opening module loads the page
+  without them, so the closed gate shows and stays closed across re-renders.
+- The page posts `{ type: 'nimtto:ready' }`; the studio answers `{ type: 'nimtto:data', data, focus? }` (the full
+  current model, plus where to look). Without an answer in 1.5 s the page fetches the saved draft as before.
+- `{ type: 'nimtto:mounted' }` after the theme has rendered (fonts, two frames, DOM quiet), then
+  `{ type: 'nimtto:settled' }` once the opening is skipped and the page sits at `focus` (scrolled instantly; the
+  page stays hidden until then, so there is no jump from the top).
+- In preview pages the scrollbars are hidden (`scrollbar-width: none`, `::-webkit-scrollbar`); scrolling still works.
+
+**Focus targets** — `{ type: 'nimtto:focus', text?, section?, image?, y?, instant? }`
+- `text`: words the client is editing; the smallest visible element containing them wins (a match in the hidden
+  language outlines its bilingual wrapper; a match in a closed `<details>` opens it; a match inside the invitation-card
+  dialog opens the card with its own button and closes it again for the next target).
+- `section`: `hero | gate | couple | families | date | countdown | scratch | events | event:<index> | gallery | card |
+  rsvp | closing | info | story | map | music`. Resolved from the shared markup (`#top`, `#couple`, `#families`,
+  `[data-countdown]`, `[data-scratch]`, `#programme`, `#ev-<id>` / `#pg-<id>` / `#st-ev-<id>` / `#ch-ev-<i>` / the
+  nth `.su-ev`, `#photos` / `#album` / `#stripview` / `[data-lb-idx]`, `[data-open-card]`, `#rsvp`, …, each with a
+  fallback part). With `text` or `image` it is the place to prefer among several matches and the fallback when they are
+  not found. `music` opens the music sheet from the pill.
+- `image`: the photo's URL(s) or a library slug; matched against `img` src/srcset/currentSrc, `<picture>` sources,
+  SVG `<image>`, inline and computed `background-image` (pseudo-elements last); the largest visible match wins.
+- `y`: a scroll position to land on when nothing else is given or found (a fresh render opening where the client was).
+- Order: image, then text, then section; nothing found → `{ type: 'nimtto:focused', ok: false, reason: 'missing' }`.
+  While the opening is shown, something behind the gate is not pointed at: `{ ok: false, reason: 'opening' }` (the
+  studio says "Press Play opening to see it").
+- Scrolling goes through Lenis when the theme has it (`immediate`/`force`) and keeps every ScrollTrigger in step
+  (`ScrollTrigger.update()`, scrub tweens completed; one `refresh()` per page). An element that rides a pinned,
+  scrubbed or sticky journey (Agni's pheras, Janti's horizontal walk) is found by sampling that journey's scroll range.
+  Inner scrollers (a photo strip, a dialog) are scrolled too. Late layout shifts are corrected until the client scrolls.
+- The outline: a fixed, pointer-events-none box (gold 2 px border with a dark and a light hairline, so it reads on
+  light and dark themes) that follows the element with transforms and fades out over 1.6 s. It never shifts layout.
+
+**Live edits without reloading**
+- `{ type: 'nimtto:patch', changes: [{ kind: 'text', path: [keys], old, value } | { kind: 'image', pairs: [[oldUrl, newUrl]] }] }`:
+  the page replaces the old words in every text node that shows them (both languages, dialogs too; one- to three-letter
+  values only as whole words; words a theme split into spans are replaced per element), remembers those nodes per
+  field for the next keystroke, updates its own config, swaps photos in `src`/`srcset`/SVG `href`/backgrounds, outlines
+  the patched spot nearest the middle without scrolling, and answers `{ type: 'nimtto:patched', ok, missed }`.
+- `{ type: 'nimtto:colors', colors: { '--token': '#hex' | '' } }`: inline custom properties on `body` ('' removes).
+- The studio keeps a copy of the model each page shows and diffs it with the current model on every edit (next frame):
+  changed words → text patches, swapped photos → image patches, `themeColors` → colours. Anything else (a ceremony or
+  photo added, removed or moved, dates and times, a focal point, a switch, the design) is *structural*.
+- Structural changes, a missed patch, the Reload button and switching to or from the Opening module render the page
+  again in a second, invisible iframe (full current model, same focus target, or the scroll position if the client
+  scrolled the preview themselves). On `nimtto:settled` it fades in over the old page (140 ms, opacity) and the old
+  frame is removed; edits made meanwhile are diffed and patched into it. No blank page, no gate replay, no jump.
+- Opening module: a "Play opening" control posts `{ type: 'nimtto:play' }` (the page presses its own quiet open button,
+  then returns to the last target); "Show gate again" renders the closed gate again the same way.
+- Modules point the preview: focusing any field sends its words and part; entering a module sends its part (Couple &
+  family → couple, Dates → events, Photos → gallery, Music → music sheet, Replies → rsvp, Home and Send → hero);
+  adding, replacing, moving or refocusing a photo points at that photo.
+**Click to edit (preview → editor)**
+- The studio's preview bar has "Click to edit" (default) | "Try it", remembered in `localStorage` (`nimtto-preview-pick`).
+  The mode goes to the page as `pick` in `nimtto:data` and as `{ type: 'nimtto:mode', pick }`.
+- With pick on, the page outlines what is under the pointer (a thin gold box with a small crimson "Edit" tag; opacity
+  and transform only) and, in the capture phase, stops the page's own pointer/click/submit handling (links, lightbox,
+  gate buttons, RSVP). A click outlines the spot and posts `{ type: 'nimtto:pick', target }`:
+  `{ image: [path], index?, section? }` for a photo (an `img`, or a library/upload background), else
+  `{ text, lang: 'en'|'ne', section? }` for the smallest block of words, else `{ section }` (same vocabulary as focus).
+  The page's own clicks (opening the card or music sheet, Play opening) pass through.
+- The studio (`src/studio/pick.js`) maps it to a field: model words (both languages, ceremonies, families, wording,
+  story, music titles) and the theme's slot words (override or the design's default) are scored (equal, contains,
+  contained; the same part of the page and language preferred); photos match by file (gallery, couple photos, bride
+  and groom, ceremony photos, slot pictures by their effective photo). It switches module, opens folds and `<details>`,
+  scrolls the editor to the field, focuses (and selects) it and flashes a crimson ring; photos open their own options
+  (the photo sheet, or the slot's picture dialog). Dates, times and the countdown open the date field; anything else
+  says it comes from the design (or that the planner sets it up). While the editor follows a pick, the preview holds
+  still: the field focus and the module change do not move it (no loop).
+- Colours on load: `data.js` applies `config.themeColors?.[theme]` as inline custom properties on `document.body`
+  (validated names `^--[a-z0-9-]+$`, hex values), so they override the theme's tokens.
 
 ## Theme colour manifests
 
@@ -144,3 +208,8 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 - Colours: `themeColors[<theme in the URL path>]` wins, else `themeColors[config.theme]`, so the preview of `/<theme>/` uses that theme's colours.
 - Theme agents: Mangal's and Mahal's painted doors/gate use literal colours, so their tokens recolour the page below and the hero text, not the doors. To make the opening itself recolourable, route those gate colours through the manifest tokens.
 - `music.youtube`: the player sits in the music sheet (`.sheet__yt`); YouTube errors or a failed API load (10 s) switch to the MP3 tracks.
+
+**server + website (2026-10-16): designs are never public live.**
+- Production gates the theme pages: `/<theme>/` is served only for `?id=<published slug>` in its own theme, an admin session, or an active client session; else `302 /#designs` or a 404 "not available" page (`server/lib/gate.js`, details in API.md "Theme pages"). `/i/<slug>` and static assets are unchanged.
+- `GET /api/themes` no longer returns `demo`. The website shows thumbnails/phone stills and a still-image lightbox with "Order this design"; no live links, no preview iframe.
+- Dev: Vite serves the pages, so the gate does not run on 5195. A Vite dev middleware was not added: editing `vite.config.js` restarts the running dev server.
