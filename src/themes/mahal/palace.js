@@ -269,8 +269,8 @@ export function sceneGeo(W, H) {
   const jh = jw * JAL.ar;
   const wl = H * (tall ? 0.56 : 0.6);
   const jy = wl - jh * JAL.water;
-  const mr = tall ? Math.min(W * 0.26, H * 0.125) : H * 0.125;
-  const my = tall ? H * 0.175 : H * 0.18;
+  const mr = tall ? Math.min(W * 0.25, H * 0.12) : H * 0.105;
+  const my = tall ? H * 0.165 : H * 0.135;
   return { W, H, tall, cx: W / 2, hy: wl, ry, rh, fy, cw, jw, jh, jx: W / 2 - jw / 2, jy, wl, palTop: jy + jh * JAL.top, mx: W / 2, my, mr,
     ty: H * (tall ? 0.6 : 0.62), bot: fy + (H - fy) * (tall ? 0.16 : 0.24) };
 }

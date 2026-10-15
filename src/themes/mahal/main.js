@@ -740,7 +740,7 @@ function applyLayout() {
   hero.style.height = `${H}px`;
   buildScene(W, H);
   buildGate(W, H);
-  Object.assign(pcontent.style, { top: px(SG.my + SG.mr + 4), bottom: px(H - SG.wl + SG.jh * 0.03) });
+  Object.assign(pcontent.style, { top: px(SG.my + SG.mr * 0.97), bottom: px(H - SG.wl - SG.jh * 0.09) });
   rigCamera();
   camera(finished ? 1 : 0);
   if (finished) { gateLy.hidden = true; }
@@ -1210,7 +1210,7 @@ if (DEBUG) {
       hero.classList.add('is-lit', 'is-inside');
       fw?.play();
       gsap.set([pinner, '#cue'], { opacity: 1 });
-      gsap.set(pinner.querySelectorAll('.mh-in, .mh-ch, #ganimg, #ganglow, #ganrays'), { opacity: 1, y: 0, scale: 1 });
+      gsap.set([...pinner.querySelectorAll('.mh-in, .mh-ch'), ganImg, ganGlow, ganRays].filter(Boolean), { opacity: 1, y: 0, scale: 1 });
       afterOpen();
     },
     to: (sel, offset = 0) => {
