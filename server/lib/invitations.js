@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, withLock, invPath, getInvitation, listInvitations, writeJsonAtomic, trashInvitation, uploadDir, readJson, rsvpPath } from './store.js';
-import { sanitizeInvitation, publishProblems } from './validate.js';
+import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
@@ -224,6 +224,18 @@ function clientLimits(cur, draft, manifests = {}) {
     if (!p.canChangeTheme) throw httpError(403, 'Your planner has not turned on changing the design.');
     if (p.themes !== 'all' && !p.themes.includes(draft.theme)) throw httpError(403, 'That design is not one your planner chose for you.');
   }
+  // The gate and first screen (docs/MIX.md) are part of the design: the same permission, and every theme they come
+  // from must be one the planner allowed. The saved design is re-checked first, so a part that stopped being
+  // offered (a manifest changed) does not block every save.
+  const was = designOf(cur.draft.design, cur.draft.theme, manifests) || {};
+  const now = draft.design || {};
+  const moved = ['gate', 'hero'].filter((k) => (was[k] || null) !== (now[k] || null));
+  if (moved.length) {
+    if (!p.canChangeTheme) throw httpError(403, 'Your planner has not turned on changing the design.');
+    if (p.themes !== 'all' && moved.some((k) => now[k] && !p.themes.includes(now[k]))) {
+      throw httpError(403, 'That gate or first screen comes from a design your planner did not choose for you.');
+    }
+  }
   if (!p.canChangeColors && colorKey(cur.draft.themeColors) !== colorKey(draft.themeColors)) {
     throw httpError(403, 'Your planner has not turned on changing the colours.');
   }
@@ -367,6 +379,12 @@ export async function deleteClientLink(req, res) {
   res.json({ ok: true });
 }
 
+/** Still pictures of a theme's gate and first screen (public/themes/<slug>/gate.jpg, hero.jpg), when shot. */
+function stillsOf(slug) {
+  const one = (name) => ([resolve(ROOT_DIR, 'public', 'themes', slug, name), resolve(ROOT_DIR, 'dist', 'themes', slug, name)].some(existsSync) ? `/themes/${slug}/${name}` : '');
+  return { gate: one('gate.jpg'), hero: one('hero.jpg') };
+}
+
 export async function meta(req, res) {
   let credits = [];
   try { credits = JSON.parse(readFileSync(resolve(ROOT_DIR, 'src', 'generated', 'credits.json'), 'utf8')); } catch { credits = []; }
@@ -376,7 +394,7 @@ export async function meta(req, res) {
   });
   const themes = await Promise.all(listThemes().map(async (t) => {
     const m = await loadManifest(t.slug);
-    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {} };
+    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, stills: stillsOf(t.slug) };
   }));
   res.json({ themes, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
@@ -417,9 +435,9 @@ export async function publicData(req, res) {
     const bs = bsDateOf(out.weddingDate);
     out.weddingDateBS = { en: bs.en, ne: bs.ne };
   }
-  // Only the selected theme's content overrides are needed by the page.
-  const tc = out.themeContent?.[out.theme];
-  out.themeContent = tc ? { [out.theme]: tc } : {};
+  // Only the content overrides the page shows: its theme's, and those of a borrowed gate or first screen (MIX.md).
+  const shown = new Set([out.theme, out.design?.gate, out.design?.hero].filter(Boolean));
+  out.themeContent = Object.fromEntries(Object.entries(out.themeContent || {}).filter(([t]) => shown.has(t)));
   if (preview) res.set('X-Invitation-Preview', 'draft');
   res.set('Cache-Control', preview ? 'no-store' : 'no-cache');
   res.json(out);

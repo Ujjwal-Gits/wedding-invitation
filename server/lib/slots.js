@@ -1,11 +1,12 @@
 // Theme slot manifests (src/themes/<slug>/slots.js, THEME-CONTRACT §9). Plain-data ES modules in
 // this repository, loaded with a dynamic import. Only the eight known theme slugs are ever loaded,
 // so no user input reaches the import path. A manifest that does not exist yet is simply null.
-import { statSync } from 'node:fs';
+import { statSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT_DIR } from './env.js';
 import { listThemes, isTheme } from './catalog.js';
+import { normParts } from '../../src/core/mix-rules.js';
 
 const cache = new Map(); // theme -> { mtime, manifest }
 let vocabCache = { mtime: -1, vocab: { images: {}, texts: {} } };
@@ -68,7 +69,17 @@ function clean(raw, theme) {
   }
   const name = typeof m.name === 'string' ? m.name.slice(0, 40) : '';
   const description = typeof m.description === 'string' ? m.description.slice(0, 160) : '';
-  return { theme, name, description, images, texts, colors };
+  // Mix (docs/MIX.md): what the theme gives and takes. Booleans only; `uses` lists keep only ids and tokens this
+  // manifest declares; `why` lines at most 200 characters. Whether the modules exist is checked on every load.
+  const rawParts = m.parts && typeof m.parts === 'object' && !Array.isArray(m.parts) ? m.parts : null;
+  return { theme, name, description, images, texts, colors, rawParts };
+}
+
+/** The theme's `parts`, given only when its module file exists (src/themes/<slug>/gate.js, hero.js). */
+function partsWithFiles(manifest) {
+  const dir = resolve(ROOT_DIR, 'src', 'themes', manifest.theme);
+  const files = { gate: existsSync(resolve(dir, 'gate.js')), hero: existsSync(resolve(dir, 'hero.js')) };
+  return normParts(manifest.rawParts, manifest.theme, manifest, files);
 }
 
 /** The manifest for a theme, or null while the theme has not published one. Reloaded when the file changes. */
@@ -78,7 +89,7 @@ export async function loadManifest(theme) {
   let mtime;
   try { mtime = statSync(file).mtimeMs; } catch { cache.delete(theme); return null; }
   const hit = cache.get(theme);
-  if (hit && hit.mtime === mtime) return hit.manifest;
+  if (hit && hit.mtime === mtime) return withParts(hit.manifest);
   let manifest = null;
   try {
     manifest = clean(await import(`${pathToFileURL(file).href}?v=${mtime}`), theme);
@@ -87,7 +98,14 @@ export async function loadManifest(theme) {
     manifest = hit?.manifest ?? null; // keep the last good one while a theme is mid-edit
   }
   cache.set(theme, { mtime, manifest });
-  return manifest;
+  return withParts(manifest);
+}
+
+/** A copy with `parts` resolved against the module files on disk now (a module can arrive after its manifest). */
+function withParts(manifest) {
+  if (!manifest) return null;
+  const { rawParts, ...rest } = manifest;
+  return { ...rest, parts: partsWithFiles(manifest) };
 }
 
 /**

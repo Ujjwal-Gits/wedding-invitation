@@ -13,9 +13,13 @@ const COUPLE_KINDS = new Set(['couple', 'bride', 'groom']);
 /** Ids that belong to the opening (gate / doors / hero). */
 export const OPENING_RE = /^(gate|hero|intro|cover|threshold|welcome|door|doors|window|lattice|band|seal|curtain|torana|opening|ganesh|envelope|title)\b/;
 
-export function slotTools(ctx) {
+/**
+ * opts.theme: another theme's words and pictures (a borrowed gate or first screen, docs/MIX.md). They are stored in
+ * themeContent[<that theme>]; every card and row carries data-theme so click-to-edit finds the right one.
+ */
+export function slotTools(ctx, { theme: forTheme, section: forSection } = {}) {
   const m = ctx.m;
-  const theme = m.get(['theme']);
+  const theme = forTheme || m.get(['theme']);
   const themeBase = ['themeContent', theme];
   const portraits = () => m.get(['couple', 'portraits']) || [];
   const portrait = (n) => { const l = portraits(); return l[n]?.photo ?? l[n % Math.max(l.length, 1)]?.photo ?? null; };
@@ -53,7 +57,7 @@ export function slotTools(ctx) {
   function photoCard(id, spec, redraw) {
     const o = valueOf('images', id, spec);
     const ref = effective(spec, o);
-    return h('button.scard', { type: 'button', 'data-item': id, onclick: () => photoDialog(id, spec, redraw), 'aria-label': `${spec.label}: change the photo` },
+    return h('button.scard', { type: 'button', 'data-item': id, 'data-theme': theme, onclick: () => photoDialog(id, spec, redraw), 'aria-label': `${spec.label}: change the photo` },
       h('span.scard__img', ref ? h('img', { src: photoUrl(ref, 'sm'), alt: '', loading: 'lazy', decoding: 'async' }) : h('span.scard__none', icon('image', 22)),
         h('span.scard__hover', icon('upload', 15), 'Change')),
       h('span.scard__label', spec.label),
@@ -70,7 +74,7 @@ export function slotTools(ctx) {
     const done = () => {
       d.close();
       redraw();
-      ctx.preview?.pointImage(effective(spec, valueOf('images', id, spec)), sectionOfSlot(id)); // show this photo in the preview
+      ctx.preview?.pointImage(effective(spec, valueOf('images', id, spec)), forSection || sectionOfSlot(id)); // show this photo in the preview
     };
     const useUpload = async (f) => {
       if (!f || !checkImageFile(f)) return;
@@ -127,7 +131,7 @@ export function slotTools(ctx) {
   const cleanLabel = (l) => l.replace(/\s*\(type[^)]*\)\s*$/i, '').trim();
 
   function switchRow(id, spec) {
-    const box = h('div.trow', { 'data-item': id });
+    const box = h('div.trow', { 'data-item': id, 'data-theme': theme });
     const draw = () => {
       const shown = !isHidden(valueOf('texts', id, spec));
       fill(box, toggle({ label: cleanLabel(spec.label), hint: shown ? 'Shown on the invitation. Turn off to hide it.' : 'Hidden on the invitation.', checked: shown,
@@ -142,7 +146,7 @@ export function slotTools(ctx) {
     const canHide = removable(spec);
     const key = sharedKey(spec, 'texts');
     const max = key ? Math.min(spec.max || 200, sharedTextMax(all, key, spec.max || 200)) : spec.max || 200;
-    const box = h('div.trow', { 'data-item': id });
+    const box = h('div.trow', { 'data-item': id, 'data-theme': theme });
     const draw = () => {
       clear(box);
       const o = valueOf('texts', id, spec);

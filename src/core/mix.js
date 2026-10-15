@@ -4,7 +4,9 @@
 // nothing.
 //
 // Modules live next to their theme: src/themes/<slug>/gate.js and hero.js (contract in docs/MIX.md). They are
-// loaded only when chosen (Vite splits each into its own chunk with its CSS).
+// loaded only when chosen (Vite splits each into its own chunk with its CSS). Which combinations are allowed is
+// decided in mix-rules.js (shared with the studio and the server). A see-through gate (agni, janti, rangoli,
+// sindoor, shree: OPENING_SCENES) is a pair module (`pair: true`) and comes only with its own first screen.
 import { gsap } from 'gsap';
 import './mix.css';
 import { bi, esc, neNum, timeLabel } from './i18n.js';
@@ -13,10 +15,10 @@ import { photoUrl } from '../photos.js';
 import { guestEvents } from './finale.js';
 import { reducedMotion, getLenis } from './smooth.js';
 import { on, adParts, bsParts, npDay } from '../themes/_suite/kit.js';
+import { normParts, resolveDesign, OPENING_SCENES } from './mix-rules.js';
 
 const GATES = import.meta.glob('../themes/*/gate.js');
 const HEROES = import.meta.glob('../themes/*/hero.js');
-const SLUG = /^[a-z0-9-]{2,30}$/;
 const COLOR_NAME = /^--[a-z0-9-]+$/;
 const COLOR_HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -26,23 +28,25 @@ const params = new URLSearchParams(location.search);
 const studioFrame = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch { return false; } })();
 const OVERRIDE = Boolean(import.meta.env.DEV) || (params.get('preview') === '1' && studioFrame);
 
-/** Which foreign parts this page shows. Invalid, unknown, own or not allowed by the host → null (the host's own). */
-export function designOf(config, host, hostManifest) {
-  const want = isPlain(config.design) ? { gate: config.design.gate, hero: config.design.hero } : {};
-  if (OVERRIDE) for (const k of ['gate', 'hero']) if (params.has(k)) want[k] = params.get(k);
-  const parts = hostManifest?.parts || {};
-  const pick = (kind, table, hostOk) => {
-    const s = want[kind];
-    if (typeof s !== 'string' || !SLUG.test(s) || s === host || !hostOk) return null;
-    return table[`../themes/${s}/${kind}.js`] ? s : null;
+/** This page's view of a theme's `parts`: the host's from its manifest, a giver's from which modules exist. */
+function partsFor(host, hostManifest) {
+  return (s) => {
+    if (s === host) return normParts(hostManifest?.parts, host, hostManifest || {}, { gate: Boolean(GATES[`../themes/${host}/gate.js`]), hero: Boolean(HEROES[`../themes/${host}/hero.js`]) });
+    const gate = Boolean(GATES[`../themes/${s}/gate.js`]);
+    return { gate: gate ? (OPENING_SCENES.includes(s) ? 'pair' : true) : false, hero: Boolean(HEROES[`../themes/${s}/hero.js`]) };
   };
-  let gate = pick('gate', GATES, parts.hostGate === true);
-  const hero = pick('hero', HEROES, parts.hostHero === true);
-  // The host's own opening reaches into its own hero (a FLIP, a see-through gate): with a foreign hero, its gate
-  // runs as its module instead, which ends in a neutral reveal of whatever is beneath.
-  if (hero && !gate && parts.ownGateNeedsHero) gate = GATES[`../themes/${host}/gate.js`] ? host : null;
-  if (hero && !gate && parts.ownGateNeedsHero) return { gate: null, hero: null };
-  return { gate, hero };
+}
+
+/**
+ * Which foreign parts this page shows (rules in mix-rules.js, shared with the studio and the server). Invalid,
+ * unknown, own or not allowed by the host → null (the host's own). `gate === host` means the host's own gate runs
+ * as its module (its own opening reaches into its own hero, which a foreign hero has replaced).
+ */
+export function designOf(config, host, hostManifest, { override = OVERRIDE } = {}) {
+  const want = isPlain(config.design) ? { gate: config.design.gate, hero: config.design.hero } : {};
+  if (override) for (const k of ['gate', 'hero']) if (params.has(k)) want[k] = params.get(k);
+  const r = resolveDesign(want, host, partsFor(host, hostManifest));
+  return { gate: r.ownGate ? host : r.gate, hero: r.hero };
 }
 
 // ───────── fonts: each module names its Google Fonts families; one <link> per family, never twice ─────────
@@ -103,8 +107,8 @@ function wrapper(tag, kind, mod, id) {
  * Prepare the mix for a host page. Call it right after loadInvitation(), before rendering: it loads the chosen
  * modules (their JS, CSS and fonts) so the page can render once. Without a design it resolves at once.
  */
-export async function createMix({ host, manifest, config }) {
-  const { gate, hero } = designOf(config, host, manifest);
+export async function createMix({ host, manifest, config, noOverride = false }) {
+  const { gate, hero } = designOf(config, host, manifest, { override: !noOverride });
   const mix = { gate, hero, gateMod: null, heroMod: null, heroInst: null, gateRun: null };
   if (!gate && !hero) return mix;
   if (params.has('debug')) window.__mx = mix; // screenshots: __mx.gateRun.at(t), .finish()
@@ -112,6 +116,11 @@ export async function createMix({ host, manifest, config }) {
     gate ? GATES[`../themes/${gate}/gate.js`]().then((m) => m.default) : null,
     hero ? HEROES[`../themes/${hero}/hero.js`]().then((m) => m.default) : null,
   ]);
+  // An opening scene (a see-through gate, docs/MIX.md §6.1) only travels with its own first screen.
+  if (g?.pair === true && h?.id !== g.id) {
+    console.warn(`[mix] ${g.id}'s gate is an opening scene: it needs its own first screen`);
+    return createMix({ host, manifest, config: { ...config, design: { hero: h?.id } }, noOverride: true });
+  }
   mix.gateMod = g; mix.heroMod = h;
   await loadFonts([...(g?.fonts || []), ...(h?.fonts || [])]);
   document.documentElement.classList.add('mx');
@@ -171,6 +180,13 @@ export async function createMix({ host, manifest, config }) {
     if (!g) return null;
     const ctx = partCtx(config, g.id, g.manifest);
     const el = wrapper('div', 'gate', g, 'gate');
+    // Opening scene (docs/MIX.md §6.1): a thin gate (its line, buttons and a wash) over its own first screen, which
+    // mix has already mounted beneath; its open(tl) lifts the wash and the hero's own entrance does the rest.
+    if (g.pair === true) {
+      el.classList.add('mx-gate--pair');
+      ctx.pair = true;
+      ctx.hero = mix.heroInst?.el || null;
+    }
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
     el.setAttribute('aria-label', `${config.couple.bride.name.en} and ${config.couple.groom.name.en}`);

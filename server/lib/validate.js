@@ -4,6 +4,7 @@
 // publishProblems(): what is still missing before an invitation can go live.
 import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
 import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
+import { cleanDesign } from '../../src/core/mix-rules.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -172,6 +173,17 @@ function themeColorsOf(c, v, manifests) {
     if (Object.keys(t).length) out[theme] = t;
   }
   return out;
+}
+
+/**
+ * design = { gate?, hero? } (docs/MIX.md): another theme's gate and first screen on this theme's page. Checked
+ * against both themes' `parts` (the giver gives it, the body takes it, opening scenes travel as a pair; rules in
+ * src/core/mix-rules.js). Anything else is dropped silently, like unknown slot ids. Null when it is all the theme's own.
+ */
+export function designOf(v, theme, manifests) {
+  if (v == null || typeof v !== 'object' || Array.isArray(v)) return null;
+  const want = { gate: typeof v.gate === 'string' ? v.gate : undefined, hero: typeof v.hero === 'string' ? v.hero : undefined };
+  return cleanDesign(want, theme, (slug) => (isTheme(slug) ? manifests[slug]?.parts || null : null));
 }
 
 /** music.youtube = { id, start?, title? } or nothing. We only ever embed YouTube's own player. */
@@ -346,6 +358,8 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
   // Optional keys only when set, so older saved data compares equal (no false "unpublished changes").
   const colors = themeColorsOf(c, d.themeColors, slots.manifests);
   if (Object.keys(colors).length) out.themeColors = colors;
+  const design = designOf(d.design, out.theme, slots.manifests);
+  if (design) out.design = design;
   const yt = youtubeOf(c, music.youtube);
   if (yt) out.music.youtube = yt;
 

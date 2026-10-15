@@ -6,6 +6,7 @@
 // studio (same origin only) for the unsaved model first, tells it when the theme has
 // rendered, and points at what the client is editing (words, a photo or a part of the page; see
 // live-preview.js, loaded only then). Every message is same-origin only and validated here.
+// The model's `design` ({ gate?, hero? }, docs/MIX.md) travels with it: mix.js reads it from the config.
 import { config } from '../config.js';
 
 const SLUG = /^[a-z0-9-]{3,64}$/;
@@ -197,13 +198,17 @@ function startPreviewListener() {
         if (value === null || value === '') out[name] = '';
         else if (typeof value === 'string' && COLOR_HEX.test(value)) out[name] = value;
       }
-      live?.then((x) => x.colors(out)).catch(() => {});
+      // theme: a borrowed gate or first screen (docs/MIX.md): its colours go on its own wrapper, not on <body>
+      const theme = typeof m.theme === 'string' && PART_SLUG.test(m.theme) ? m.theme : null;
+      live?.then((x) => x.colors(out, theme)).catch(() => {});
     }
   });
 }
 
-// A focus target: { text?, section?, image?, instant? } (docs/PLATFORM.md). Anything else is dropped.
+// A focus target: { text?, section?, image?, part?, theme?, instant? } (docs/PLATFORM.md). Anything else is dropped.
+// part + theme: the words or photo sit in a gate or first screen borrowed from another theme (docs/MIX.md).
 const SECTION = /^[a-z]{2,20}(?::\d{1,3})?$/;
+const PART_SLUG = /^[a-z0-9-]{2,30}$/;
 const IMG = /^(?:\/[^\s"'()<>\\]{1,400}|https:\/\/[^\s"'()<>\\]{1,400}|[a-z0-9][a-z0-9-]{1,79})$/i;
 function cleanImage(v) {
   const out = [];
@@ -239,6 +244,8 @@ function cleanTarget(t) {
   const img = cleanImage(t.image);
   if (img.length) out.image = img;
   if (Number.isFinite(t.y) && t.y >= 0 && t.y < 1e6) out.y = t.y;
+  if (t.part === 'gate' || t.part === 'hero') out.part = t.part;
+  if (typeof t.theme === 'string' && PART_SLUG.test(t.theme)) out.theme = t.theme;
   if (!out.text && !out.section && !out.image && out.y == null) return null;
   if (t.instant === true) out.instant = true;
   return out;

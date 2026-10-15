@@ -57,6 +57,7 @@ export function diff(a, b) {
     const top = path[0];
     if (UNSHOWN.has(top)) return;
     if (top === 'themeColors') return; // handled below
+    if (top === 'design') { out.structural = true; return; } // another gate or first screen: a fresh page
     if (path.length && photoPath(path) && (isRef(x) || isRef(y) || x == null || y == null)) { photo(x, y, path); return; }
     const key = path[path.length - 1];
     if (typeof x === 'string' && typeof y === 'string') {
@@ -90,7 +91,18 @@ export function diff(a, b) {
       if (ca[k] !== cb[k]) (out.colors ||= {})[k] = cb[k] || '';
     }
   }
-  out.any = out.structural || out.text.length > 0 || out.images.length > 0 || Boolean(out.colors);
+  // Colours of a borrowed gate or first screen (docs/MIX.md): live on that part's wrapper, while it is on the page.
+  out.partColors = null;
+  if (a.theme === theme && JSON.stringify(a.design || null) === JSON.stringify(b.design || null)) {
+    for (const slug of new Set([b.design?.gate, b.design?.hero].filter((x) => x && x !== theme))) {
+      const ca = a.themeColors?.[slug] || {};
+      const cb = b.themeColors?.[slug] || {};
+      for (const k of new Set([...Object.keys(ca), ...Object.keys(cb)])) {
+        if (ca[k] !== cb[k]) ((out.partColors ||= {})[slug] ||= {})[k] = cb[k] || '';
+      }
+    }
+  }
+  out.any = out.structural || out.text.length > 0 || out.images.length > 0 || Boolean(out.colors) || Boolean(out.partColors);
   return out;
 }
 
@@ -149,14 +161,17 @@ export function targetForField(input) {
     for (let a = input.parentElement, i = 0; a && i < 5 && !path; a = a.parentElement, i++) path = a.querySelector('[data-path]')?.dataset.path || '';
   }
   const cer = input.closest('.cer[data-index]');
-  let section = item ? sectionOfSlot(item) : sectionOfPath(path);
+  // A borrowed gate or first screen (docs/MIX.md): its own part of the page, in its own theme.
+  const part = input.closest('[data-mx-theme]');
+  const mx = part ? { theme: part.dataset.mxTheme, ...(part.dataset.mxPart ? { part: part.dataset.mxPart } : {}) } : null;
+  let section = mx?.part || (item ? sectionOfSlot(item) : sectionOfPath(path));
   if (!section && cer) section = `event:${cer.dataset.index}`;
   const isText = input instanceof HTMLTextAreaElement || ['text', 'search', ''].includes(input.type);
   // An empty line of a theme's own words shows its original text (the placeholder).
   const raw = isText ? (input.value.trim() || (item ? (input.placeholder || '').trim() : '')) : '';
   const text = raw.split('\n')[0].trim().slice(0, 80);
   if (text.length < 2 && !section) return null;
-  return { ...(text.length >= 2 ? { text } : {}), ...(section ? { section } : {}) };
+  return { ...(text.length >= 2 ? { text } : {}), ...(section ? { section } : {}), ...(mx || {}) };
 }
 
 /** Where a photo appears: its URLs (for the exact element) and the part of the page. */

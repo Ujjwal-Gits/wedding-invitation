@@ -334,6 +334,8 @@ function resolve(t) {
     return pill ? { el: pill, how: 'music', music: true } : null;
   }
   if (t.section) scope = sectionEl(t.section);
+  // Words or a photo of a borrowed gate or first screen: look in that part first.
+  if (t.theme) scope = [...document.querySelectorAll('.mx-part')].find((el) => el.dataset.mx === t.theme && (!t.part || el.classList.contains(`mx-${t.part}`))) || scope;
   if (t.image?.length) {
     const im = findImage(t.image, scope);
     if (im) return { ...im, how: 'image' };
@@ -712,11 +714,20 @@ export function patch(changes) {
   post({ type: 'nimtto:patched', ok: missed === 0, missed });
 }
 
-/** The theme's colours, live (the same inline custom properties data.js sets on load). */
-export function colors(map) {
-  for (const [name, value] of Object.entries(map)) {
-    if (value) document.body.style.setProperty(name, value);
-    else document.body.style.removeProperty(name);
+/**
+ * The theme's colours, live (the same inline custom properties data.js sets on load). With `theme` (a gate or first
+ * screen borrowed from another theme, docs/MIX.md): on that part's wrapper, where mix.js put them on load.
+ */
+export function colors(map, theme = null) {
+  const page = location.pathname.split('/')[1];
+  const els = theme && theme !== page && theme !== config.theme
+    ? [...document.querySelectorAll('.mx-part')].filter((el) => el.dataset.mx === theme)
+    : [document.body];
+  for (const el of els) {
+    for (const [name, value] of Object.entries(map)) {
+      if (value) el.style.setProperty(name, value);
+      else el.style.removeProperty(name);
+    }
   }
 }
 
@@ -777,8 +788,23 @@ function partOf(el) {
   return null;
 }
 
+/** A gate or first screen borrowed from another theme (docs/MIX.md): { part, theme } of its wrapper. */
+function mixOf(el) {
+  const w = el.closest('.mx-part');
+  const theme = w?.dataset.mx;
+  if (!theme || !/^[a-z0-9-]{2,30}$/.test(theme)) return null;
+  return { part: w.classList.contains('mx-gate') ? 'gate' : 'hero', theme };
+}
+
 function pickOf(target) {
   if (!(target instanceof Element) || target.closest('[data-nimtto-ring], [data-nimtto-hover], #lang-toggle')) return null;
+  const p = pickBase(target);
+  const mx = p && mixOf(target);
+  if (mx) Object.assign(p.target, mx, { section: mx.part });
+  return p;
+}
+
+function pickBase(target) {
   const section = partOf(target);
   const ph = photoOf(target);
   if (ph) {

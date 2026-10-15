@@ -349,9 +349,23 @@ The pickers follow these rules:
 - texts and images from `gateUses` / `heroUses`, stored in `themeContent[<part slug>]`;
 - colours from `gateUses.colors`, stored in `themeColors[<part slug>]`.
 
-**Thumbnails.** Static stills: `public/themes/<slug>/thumb-gate.webp` and `thumb-hero.webp` (to be shot).
+**Thumbnails.** Static stills: `public/themes/<slug>/gate.jpg` and `hero.jpg` (B0; `thumb.jpg` until shot).
 
-### Server (describe only; not edited in this phase)
+### B0 landed (shared files)
+
+- **Rules in one place:** `src/core/mix-rules.js` (`normParts`, `resolveDesign`, `cleanDesign`, `OPENING_SCENES`), used by
+  `mix.js` `designOf()`, the server validator and the studio. A see-through theme's gate is normalised to `gate: 'pair'`
+  (an opening scene), whatever its manifest says, and its gate module sets `pair: true`; mix gives a pair gate
+  `ctx.pair = true`, `ctx.hero` (the mounted hero section) and the wrapper class `mx-gate--pair`.
+- **Server:** `/api/meta` themes carry `parts` (sanitised, `gate`/`hero` only while `gate.js`/`hero.js` exist) and `stills`.
+  `design` is validated, permission-checked for couples and included in the public payload (see API.md).
+- **Preview:** `nimtto:colors` takes `theme` (applied on `.mx-part[data-mx=<slug>]`); picks carry `part` and `theme`; a
+  `design` change re-renders the preview.
+- **Studio:** Opening shows Design / Gate / First screen pickers, then a card per borrowed part with its `gateUses` /
+  `heroUses` words, pictures and colours. Stills: `public/themes/<slug>/gate.jpg` and `hero.jpg` (phone shots of the theme's
+  own page, closed and opened); `thumb.jpg` until a theme has them.
+
+### Server (as specified before B0; done)
 
 - **`server/lib/slots.js` `clean()`.** Pass `parts` through, sanitised: booleans; the `uses` lists filtered to declared ids and tokens; `why` strings of at most 200 characters. `/api/meta` then exposes it.
 - **`server/lib/validate.js`.** Add `design: { gate?, hero? }` with these checks:

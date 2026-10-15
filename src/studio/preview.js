@@ -191,13 +191,14 @@ export function createPreview(session, { onPick } = {}) {
     const d = diff(cur.shown, m.data);
     if (!d.any) return;
     if (d.colors) send(cur, { type: 'nimtto:colors', colors: d.colors });
+    for (const [theme, colors] of Object.entries(d.partColors || {})) send(cur, { type: 'nimtto:colors', colors, theme });
     const changes = [...d.text, ...d.images.map((c) => ({ kind: 'image', pairs: c.pairs }))];
     if (changes.length) send(cur, { type: 'nimtto:patch', changes });
     if (d.structural) {
       // Words, photos and colours show at once; the page re-renders (hidden) for the rest. A render already under
       // way gets the whole current model when it asks, or is patched up when it swaps in.
       for (const c of [...d.text, ...d.images]) setAt(cur.shown, c.path, clone(m.get(c.path)));
-      if (d.colors) cur.shown.themeColors = clone(m.data.themeColors);
+      if (d.colors || d.partColors) cur.shown.themeColors = clone(m.data.themeColors);
       if (!next) renderSoon();
       return;
     }

@@ -26,7 +26,7 @@ The client token is the part after `#/c/` in the link (43 chars base64url). Sess
 | `GET /site` | – | `Site` (defaults when nothing saved yet) |
 | `GET /themes` | – | `[{ slug, name, concept, thumb }]`, ready themes only, minus `hiddenThemes` (no page URLs: see "Theme pages") |
 | `POST /orders` | `{ kind: 'order'\|'custom', name, phone, email?, weddingDate?, theme?, plan?, message?, website }` | `201 { ok: true }` · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
-| `GET /invitations/:slug/public` | – | published data (a signed-in editor of that invitation gets the draft) |
+| `GET /invitations/:slug/public` | – | published data (a signed-in editor of that invitation gets the draft); includes `design`, and `themeContent` only for the theme and its borrowed gate / first screen |
 | `POST /invitations/:slug/rsvp` | `{ name, phone?, attending: 'yes'\|'no', guests, events?, meal?, message?, website }` | `{ ok: true }` |
 
 `POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254, `weddingDate` `YYYY-MM-DD`,
@@ -85,14 +85,29 @@ until the admin sets a password with `PATCH /access`.
 | `DELETE /invitations/:slug/rsvps/:id` | – | `{ ok: true }` |
 
 `meta.themes[].colors` = the theme's `slots.js` colour manifest `{ '--token': { label, default: '#hex', note } }` (`{}` if none).
+`meta.themes[].parts` = its mix manifest (docs/MIX.md), sanitised by the server, or `null` without a `slots.js`:
+`{ gate: false | true | 'pair', hero, hostGate, hostHero, ownGateNeedsHero (booleans), why: { gate?, hero?, hostGate?, hostHero? } (≤ 200 chars each),
+gateUses / heroUses: { texts: [slot ids], images: [slot ids], colors: ['--token'] } }`. The `uses` lists keep only ids and tokens the
+manifest declares; `gate` / `hero` are true only while `src/themes/<slug>/gate.js` / `hero.js` exists. `gate: 'pair'` = an opening
+scene (agni, janti, rangoli, sindoor, shree): its gate only comes with its own first screen.
+`meta.themes[].stills` = `{ gate, hero }`: `/themes/<slug>/gate.jpg` / `hero.jpg` when shot, else `''` (use `thumb`).
 
 **Couple session limits on `PUT`** (`403` with a readable `error`, nothing saved):
 - `data.theme` differs from the saved one → needs `canChangeTheme` and the new theme in `themes` (or `'all'`).
-- `data.themeColors` differs from the saved one → needs `canChangeColors`.
+- `data.themeColors` differs from the saved one → needs `canChangeColors` (this includes a borrowed part's colours).
+- `data.design.gate` or `.hero` differs from the saved one (after re-checking the saved one against today's manifests) → needs
+  `canChangeTheme`, and every newly chosen slug must be in `themes` (or `'all'`). Going back to the theme's own needs only `canChangeTheme`.
 
 ### Invitation data additions (validated in `server/lib/validate.js`)
 - `themeColors: { [themeSlug]: { '--token': '#rgb' | '#rrggbb' } }` — only tokens declared in that theme's
   `colors` manifest are kept (others silently dropped); bad colour → `400`. Stored lowercase; omitted when empty.
+- `design: { gate?: '<theme slug>', hero?: '<theme slug>' }` (docs/MIX.md): another theme's gate (entry screen and opening) and
+  first screen on this theme's page. Rules (`src/core/mix-rules.js`, shared with the page runtime and the studio): the giver has
+  `parts.gate` / `parts.hero`, the body has `parts.hostGate` / `parts.hostHero`; an opening-scene gate (`gate: 'pair'`) needs
+  `hero` = the same slug; a foreign hero on a body whose own opening needs its own hero (`ownGateNeedsHero`) needs a foreign gate,
+  unless the body gives a standalone gate module of its own. A value equal to `theme`, unknown, or not allowed is dropped
+  silently; the key is omitted when nothing is left. The part's words and pictures live in `themeContent[<its slug>]` and its
+  colours in `themeColors[<its slug>]`, each checked against that theme's own manifest.
 - `music.youtube: { id: /^[A-Za-z0-9_-]{11}$/, start?: integer 0..36000 (a JSON number), title?: ≤ 120 }` —
   omitted when absent, `null` or `id: ''`.
 - `share.image`: a photo ref (library slug, upload object or https URL) or `''`. In `/public` it becomes a URL string
