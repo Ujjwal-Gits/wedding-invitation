@@ -6,10 +6,11 @@ import SMALL_THUMBS from './thumbs.json'; // slugs with /site/thumbs/<slug>-480|
 
 const $ = (s, r = document) => r.querySelector(s);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const wide = matchMedia('(min-width: 960px)');
 const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
 enhance(document.getElementById('order') || document);
-const MOBILE_FIRST = 11; // cards shown on phones before "Show all"
+const FIRST_PHONE = 11; // cards shown before "Show all": 11 on phones (ends on a wide card), 12 from 600px (four rows of three)
+const FIRST_WIDE = 12;
+const from600 = matchMedia('(min-width: 600px)');
 
 /** create an element with text and attributes (never HTML) */
 function el(tag, props = {}, ...kids) {
@@ -28,7 +29,6 @@ const str = (v, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : 
 // only same-origin paths ('/x', never '//x' or 'javascript:')
 const localPath = (v, fallback) => (typeof v === 'string' && /^\/(?!\/)[A-Za-z0-9._~\-/]*$/.test(v) ? v : fallback);
 const pad = (n) => String(n).padStart(2, '0');
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 async function getJson(url, ms = 6000) {
   const ctl = new AbortController();
@@ -59,115 +59,89 @@ function initBar() {
   upd();
 }
 
-/* ---------------- hero stage: the one signature motion ----------------
-   A single phone stays pinned while real designs slide up into its screen, one per scroll step.
-   Reduced motion (or no JS): no pinning; the buttons under the phone switch designs instantly. */
-const STAGE = [
-  ['mahal', 'a golden palace gate tied with an ivory satin bow'],
-  ['swayambar', 'two marigold garlands around Ganesh, with Shubha Bibaha below'],
-  ['sindoor', 'a red and gold sindoor box on white under a line-drawn Ganesh'],
-  ['rangoli', 'a marigold rangoli on a brick courtyard floor under शुभ विवाह'],
-  ['shree', 'a gold lotus mandala on deep plum'],
-  ['nimantrana', 'a red and gold card reading शुभ विवाह'],
+/* ---------------- hero: the doors (the one signature motion) ----------------
+   Two blush leaves meet over a real design with निम्तो across the seam and swing open once (CSS keyframes, so it
+   runs without JS). JS only holds them shut until the picture has decoded, then hides the leaves to free the layers.
+   Under the arch, two quiet buttons crossfade between a few designs. Reduced motion: no leaves at all. */
+const HERO = [
+  ['gurans', 'a gate of fresh roses and marigold strings under शुभ विवाह', '50% 46%'],
+  ['dhaka', 'an ivory envelope with a Dhaka band and a wax seal among red roses', '50% 46%'],
+  ['sayapatri', 'a doorway hung with fresh marigold strings and mango leaves', '50% 16%'],
+  ['mangal', 'a red carved doorway hung with marigold garlands and brass bells', '50% 22%'],
+  ['swayambar', 'two marigold garlands around Ganesh', '50% 34%'],
+  ['mahal', 'a golden palace gate tied with an ivory satin bow', '50% 40%'],
 ];
-const stage = { list: [], imgs: [], idx: -1, motion: false };
+const hero = { list: [], imgs: [], i: 0 };
 
-function buildStage(hidden = new Set()) {
-  stage.list = STAGE.filter(([s]) => !hidden.has(s)).map(([slug, alt]) => ({ ...BY_SLUG[slug], slug, alt }));
-  const box = $('#screens');
-  const ticks = $('#ticks');
-  const first = box.querySelector('img');
-  box.replaceChildren();
-  ticks.replaceChildren();
-  stage.imgs = stage.list.map((t, i) => {
-    const img = i === 0 && first?.dataset.slug === t.slug ? first : el('img', {
-      class: 'scr', src: `/site/phones/${t.slug}.webp`, width: 540, height: 1169,
-      alt: `The ${t.name} design on a phone: ${t.alt}`, loading: i ? 'lazy' : null, decoding: 'async', 'data-slug': t.slug,
-    });
-    box.append(img);
-    ticks.append(el('button', { type: 'button', class: 'tick', 'aria-label': `Show ${t.name}`, 'aria-pressed': 'false', 'data-i': i }));
-    return img;
+function initDoor() {
+  const door = $('#door');
+  const first = $('#screens img');
+  first.style.setProperty('--pos', HERO[0][2]);
+  let held = true;
+  const release = () => { if (held) { held = false; door.classList.remove('is-waiting'); } };
+  if (!reduced.matches && !(first.complete && first.naturalWidth)) {
+    door.classList.add('is-waiting');
+    const fonts = document.fonts?.ready || Promise.resolve();
+    Promise.all([first.decode?.().catch(() => {}), fonts]).then(release);
+    setTimeout(release, 2500); // never keep the doors shut on a slow connection
+  }
+  door.querySelector('.door__leaf--r').addEventListener('animationend', () => door.classList.add('is-open'), { once: true });
+  $('#door-prev').addEventListener('click', () => showHero(hero.i - 1));
+  $('#door-next').addEventListener('click', () => showHero(hero.i + 1));
+  $('#door-arch').addEventListener('click', (e) => {
+    const t = hero.list[hero.i];
+    const i = t ? view.themes.findIndex((x) => x.slug === t.slug) : -1;
+    if (i >= 0) openLightbox(i, e.currentTarget);
   });
-  $('#cap-total').textContent = pad(stage.list.length);
-  $('#stage').style.setProperty('--n', String(stage.list.length));
-  stage.idx = -1;
-  renderStage();
+  buildHero();
 }
 
-function setCaption(i) {
-  if (i === stage.idx) return;
-  stage.idx = i;
-  const t = stage.list[i];
-  $('#cap-i').textContent = pad(i + 1);
+function buildHero(hidden = new Set()) {
+  hero.list = HERO.filter(([s]) => !hidden.has(s) && BY_SLUG[s]).map(([slug, alt, pos]) => ({ ...BY_SLUG[slug], slug, alt, pos }));
+  const box = $('#screens');
+  const first = box.querySelector('img');
+  // keep the first picture (it carries the doors' settle); drop any others and rebuild them on demand
+  [...box.querySelectorAll('img')].forEach((img) => { if (img !== first) img.remove(); });
+  hero.imgs = hero.list.map((t, i) => (i === 0 && first?.dataset.slug === t.slug ? first : null));
+  if (!hero.imgs[0] && first) first.remove();
+  $('#cap-total').textContent = String(hero.list.length);
+  $('.door__nav').hidden = hero.list.length < 2;
+  hero.i = -1;
+  showHero(0, true);
+}
+
+function heroImg(i) {
+  if (hero.imgs[i]) return hero.imgs[i];
+  const t = hero.list[i];
+  const img = el('img', {
+    class: 'scr', src: `/site/phones/${t.slug}.webp`, width: 780, height: 1688,
+    alt: `The ${t.name} design on a phone: ${t.alt}`, decoding: 'async', 'data-slug': t.slug,
+  });
+  img.style.setProperty('--pos', t.pos);
+  $('#screens').append(img);
+  hero.imgs[i] = img;
+  return img;
+}
+
+function showHero(i, instant = false) {
+  const n = hero.list.length;
+  if (!n) return;
+  i = (i + n) % n;
+  if (i === hero.i) return;
+  hero.i = i;
+  const t = hero.list[i];
+  const img = heroImg(i);
+  const swap = () => {
+    if (hero.i !== i) return;
+    hero.imgs.forEach((m) => m?.classList.toggle('is-on', m === img));
+  };
+  if (instant || (img.complete && img.naturalWidth)) swap(); else img.addEventListener('load', swap, { once: true });
+  $('#cap-i').textContent = String(i + 1);
   $('#cap-name').textContent = t.name;
   $('#cap-ne').textContent = t.ne;
-  $('#cap-text').textContent = t.concept;
-  $('#cap-link').dataset.theme = t.slug;
-  $('#cap-link').setAttribute('aria-label', `Order the ${t.name} design`);
-  $('#ticks').querySelectorAll('.tick').forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
-  // a short fade on the words that changed (transform + opacity only)
-  for (const n of [$('#cap')]) {
-    n.classList.remove('is-swap');
-    void n.offsetWidth;
-    n.classList.add('is-swap');
-  }
-}
-
-const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-let stageTicking = false;
-function renderStage() {
-  stageTicking = false;
-  const n = stage.list.length;
-  if (!n) return;
-  if (!stage.motion) {
-    const i = clamp(stage.idx < 0 ? 0 : stage.idx, 0, n - 1);
-    stage.imgs.forEach((img, k) => { img.style.transform = ''; img.style.opacity = k === i ? '1' : '0'; });
-    stage.idx = -1;
-    setCaption(i);
-    return;
-  }
-  const { top, travel, stick } = stageGeom();
-  const p = clamp((stick - top) / travel, 0, 1) * (n - 1);
-  let active = 0;
-  stage.imgs.forEach((img, k) => {
-    // each step: a short hold, then the next screen slides up over the last one
-    const t = k === 0 ? 1 : easeInOut(clamp((p - (k - 1) - 0.2) / 0.62, 0, 1));
-    const next = k + 1 < n ? easeInOut(clamp((p - k - 0.2) / 0.62, 0, 1)) : 0;
-    if (t > 0.5) active = k;
-    img.style.opacity = next >= 1 ? '0' : String(1 - next * 0.55);
-    img.style.transform = `translate3d(0, ${((1 - t) * 100).toFixed(3)}%, 0) scale(${(1 - next * 0.08).toFixed(4)})`;
-  });
-  setCaption(active);
-}
-function stageGeom() {
-  const box = $('#stage');
-  const pin = box.firstElementChild;
-  return { top: box.getBoundingClientRect().top, stick: parseFloat(getComputedStyle(pin).top) || 0, travel: Math.max(1, box.offsetHeight - pin.offsetHeight) };
-}
-function onStageScroll() { if (!stageTicking) { stageTicking = true; requestAnimationFrame(renderStage); } }
-
-function initStage() {
-  const root = document.documentElement;
-  const apply = () => {
-    stage.motion = !reduced.matches;
-    root.classList.toggle('js-motion', stage.motion);
-    stage.idx = -1;
-    renderStage();
-  };
-  $('#ticks').addEventListener('click', (e) => {
-    const b = e.target.closest('.tick');
-    if (!b) return;
-    const i = Number(b.dataset.i);
-    if (!stage.motion) { stage.idx = -1; stage.imgs.forEach((img, k) => { img.style.opacity = k === i ? '1' : '0'; }); setCaption(i); return; }
-    const { top, travel, stick } = stageGeom();
-    const y = window.scrollY + top - stick + travel * (i / Math.max(1, stage.list.length - 1));
-    window.scrollTo({ top: Math.round(y), behavior: 'smooth' });
-  });
-  window.addEventListener('scroll', onStageScroll, { passive: true });
-  window.addEventListener('resize', onStageScroll, { passive: true });
-  reduced.addEventListener?.('change', apply);
-  buildStage();
-  apply();
+  $('#door-arch').setAttribute('aria-label', `See the ${t.name} design larger`);
+  // warm the next picture once the page has settled
+  if (n > 1) (window.requestIdleCallback || setTimeout)(() => heroImg((i + 1) % n));
 }
 
 /* ---------------- site settings ---------------- */
@@ -258,8 +232,8 @@ function normaliseThemes(api, site) {
     const rank = (s) => { const i = featured.indexOf(s); return i < 0 ? Infinity : i; };
     list = list.map((t, i) => ({ t, i })).sort((a, b) => (rank(a.t.slug) - rank(b.t.slug)) || (a.i - b.i)).map(({ t }) => ({ ...t, featured: featured.includes(t.slug) }));
   } else {
-    // no featured list set: open with the most striking designs, newest first after them
-    const lead = ['mahal', 'swayambar', 'sindoor', 'rangoli', 'agni', 'janti', 'mangal', 'nimantrana', 'jhyal'];
+    // no featured list set: open with the lightest, freshest designs, then the richer ones
+    const lead = ['swayambar', 'gurans', 'sindoor', 'mala', 'dhaka', 'mahal', 'laali', 'rangoli', 'sayapatri', 'pardaa', 'hariyo', 'mangal', 'jhyal', 'nimantrana', 'agni', 'janti'];
     list = [...lead.map((s) => list.find((t) => t.slug === s)).filter(Boolean), ...list.filter((t) => !lead.includes(t.slug))];
   }
   return list;
@@ -269,34 +243,7 @@ const small = new Set(SMALL_THUMBS);
 const srcsetFor = (t) => (small.has(t.slug) && t.thumb === `/themes/${t.slug}/thumb.jpg`
   ? `/site/thumbs/${t.slug}-480.webp 480w, /site/thumbs/${t.slug}-800.webp 800w, ${t.thumb} 1200w` : null);
 
-/* desktop: a sticky picture beside the index; two layered images crossfade when a row is hovered or focused */
-const view = { i: -1, themes: [], front: null, back: null };
-function initView() {
-  const shot = $('#view-shot');
-  view.front = $('#view-img');
-  view.front.classList.add('is-on');
-  view.back = el('img', { alt: '', width: 1200, height: 900, decoding: 'async' });
-  shot.append(view.back);
-  shot.addEventListener('click', () => { if (view.themes[view.i]) openLightbox(view.i, document.activeElement); });
-}
-function setView(i) {
-  if (i === view.i || !view.themes[i]) return;
-  view.i = i;
-  const t = view.themes[i];
-  $('#view-text').textContent = t.concept;
-  const img = view.back;
-  img.onload = () => {
-    img.onload = null;
-    if (view.themes[view.i] !== t) return;
-    img.classList.add('is-on');
-    view.front.classList.remove('is-on');
-    [view.front, view.back] = [img, view.front];
-  };
-  const ss = srcsetFor(t);
-  if (ss) { img.srcset = ss; img.sizes = '(min-width: 960px) 58vw, 100vw'; } else { img.removeAttribute('srcset'); }
-  img.src = t.thumb;
-  if (img.complete && img.naturalWidth) img.onload?.();
-}
+const view = { themes: [] }; // the designs in gallery order (the lightbox walks this list)
 
 function renderGallery(themes) {
   const ol = $('#gallery');
@@ -308,43 +255,41 @@ function renderGallery(themes) {
   document.querySelectorAll('.js-count').forEach((n) => { n.textContent = n.dataset.cap ? word[0].toUpperCase() + word.slice(1) : word; });
   document.querySelectorAll('.js-num').forEach((n) => { n.textContent = String(themes.length); });
   themes.forEach((t, i) => {
+    const wideCard = i % 5 === 0; // phones only: one wide card, then two pairs
     const img = el('img', {
       src: t.thumb, srcset: srcsetFor(t),
-      sizes: i % 5 === 0 ? '(min-width: 600px) 92vw, calc(100vw - 32px)' : '(min-width: 600px) 46vw, calc(50vw - 22px)',
+      sizes: `(min-width: 1040px) 30vw, (min-width: 600px) 46vw, ${wideCard ? 'calc(100vw - 40px)' : 'calc(50vw - 27px)'}`,
       alt: '', width: 1200, height: 900, loading: 'lazy', decoding: 'async',
     });
-    img.addEventListener('error', () => img.replaceWith(el('span', { class: 'item__ph', 'aria-hidden': 'true', text: t.ne || t.name })), { once: true });
-    const li = el('li', { class: `item${i % 5 === 0 ? ' item--wide' : ''}${i >= MOBILE_FIRST ? ' is-more' : ''}`, 'data-i': i },
-      el('button', { type: 'button', class: 'item__link', 'aria-haspopup': 'dialog' },
-        el('span', { class: 'item__shot' }, img),
-        el('span', { class: 'item__n', 'aria-hidden': 'true', text: pad(i + 1) }),
-        el('span', { class: 'item__name' }, document.createTextNode(t.name), t.ne ? el('span', { class: 'item__ne', lang: 'ne', text: t.ne }) : null),
-        t.featured ? el('span', { class: 'item__tag', text: 'Featured' }) : null,
-        el('span', { class: 'item__go', 'aria-hidden': 'true', text: 'View' }),
+    img.addEventListener('error', () => img.replaceWith(el('span', { class: 'card__ph', 'aria-hidden': 'true', text: t.ne || t.name })), { once: true });
+    const fold = themes.length > FIRST_WIDE;
+    const li = el('li', { class: `card${wideCard ? ' card--wide' : ''}${fold && i >= FIRST_PHONE ? ' is-more' : ''}${fold && i >= FIRST_WIDE ? ' is-more-d' : ''}`, 'data-i': i },
+      el('button', { type: 'button', class: 'card__btn', 'aria-haspopup': 'dialog' },
+        el('span', { class: 'card__shot' }, img),
+        el('span', { class: 'card__cap' },
+          el('span', { class: 'card__name', text: t.name }),
+          t.ne ? el('span', { class: 'card__ne', lang: 'ne', text: t.ne }) : null,
+          t.featured ? el('span', { class: 'card__tag', text: 'Featured' }) : null),
         el('span', { class: 'vh', text: `: ${t.concept} View larger.` })),
     );
     ol.append(li);
   });
-  const rest = themes.length - MOBILE_FIRST;
-  more.hidden = rest <= 0;
+  more.hidden = themes.length <= FIRST_WIDE;
   more.textContent = `Show all ${themes.length} designs`;
   more.onclick = () => {
     ol.classList.add('is-open');
     more.hidden = true;
-    ol.children[MOBILE_FIRST]?.querySelector('button')?.focus({ preventScroll: true });
+    ol.children[from600.matches ? FIRST_WIDE : FIRST_PHONE]?.querySelector('button')?.focus({ preventScroll: true });
   };
   ol.onclick = (e) => {
-    const b = e.target.closest('.item__link');
-    if (b) openLightbox(Number(b.closest('.item').dataset.i), b);
+    const b = e.target.closest('.card__btn');
+    if (b) openLightbox(Number(b.closest('.card').dataset.i), b);
   };
-  const pick = (e) => { const li = e.target.closest?.('.item'); if (li && wide.matches) setView(Number(li.dataset.i)); };
-  ol.onmouseover = pick;
-  ol.onfocusin = pick;
-  view.i = -1;
-  setView(0);
 
   const sel = $('#f-theme');
+  const keep = sel.value;
   sel.replaceChildren(el('option', { value: '', text: 'Not sure yet' }), ...themes.map((t) => el('option', { value: t.slug, text: t.ne ? `${t.name} · ${t.ne}` : t.name })));
+  if (keep && themes.some((t) => t.slug === keep)) sel.value = keep;
 }
 
 /* ---------------- lightbox: a larger still of one design (never the live page) ---------------- */
@@ -357,8 +302,8 @@ function showInLightbox(i) {
   i = (i + list.length) % list.length;
   lightbox.i = i;
   const t = list[i];
-  $('#lb-i').textContent = pad(i + 1);
-  $('#lb-total').textContent = pad(list.length);
+  $('#lb-i').textContent = String(i + 1);
+  $('#lb-total').textContent = String(list.length);
   $('#lb-name').textContent = t.name;
   $('#lb-ne').textContent = t.ne || '';
   $('#lb-ne').hidden = !t.ne;
@@ -413,7 +358,6 @@ $('#lb-order').addEventListener('click', (e) => {
   lightbox.order = true;
   lb.close();
 });
-$('#cap-link').addEventListener('click', (e) => { chooseTheme(e.currentTarget.dataset.theme || ''); });
 
 /* ---------------- order form ---------------- */
 const form = $('#order-form');
@@ -532,8 +476,8 @@ $('#order-again').addEventListener('click', () => {
 async function boot() {
   $('#year').textContent = String(new Date().getFullYear());
   initBar();
-  initStage();
-  initView();
+  view.themes = normaliseThemes(null, FALLBACK_SITE); // until the API answers, the hero can still open the lightbox
+  initDoor();
   syncKind();
 
   // these sections sit below the fold: render once, from the API or (on 404 / timeout) from the static fallback,
@@ -545,6 +489,6 @@ async function boot() {
   renderContact(s);
   renderGallery(normaliseThemes(Array.isArray(themes) ? themes : null, s));
   const hidden = new Set(Array.isArray(s.hiddenThemes) ? s.hiddenThemes : []);
-  if (STAGE.some(([slug]) => hidden.has(slug))) buildStage(hidden);
+  if (HERO.some(([slug]) => hidden.has(slug))) buildHero(hidden);
 }
 boot();

@@ -121,29 +121,53 @@ Banned: "Unlock", "Seamlessly", "Elevate your", "Supercharge", "in seconds",
 Applies to the public site at `/` only (`index.html`, `src/site/**`, `public/site/**`). The invitation themes keep
 their own ornate type; the website must not borrow it.
 
-Feeling: a fashion-house catalogue for invitations. White, ink, one crimson. The colour and warmth come from the real
-designs (phone screens and thumbnails), shown big, never from the chrome.
+Feeling: a calm bridal stationer. Light, airy and romantic: rose-white paper, a blush second tint, deep wine ink and one
+sindoor red. Never black, never yellow parchment. The colour and the flowers come from the real designs, shown big;
+the chrome stays quiet. Text never sits on flowers.
 
-Fonts (self-hosted in `public/site/fonts/`, licences beside them):
-- Display: Gambetta variable (Indian Type Foundry, ITF Free Font License), weight 400-500, upright only, tight tracking
-  (-0.025 to -0.035em). Never italic.
-- UI and body: Geist (OFL) 400-600, same as the studio.
-- Nepali text: Mukta (OFL). Nepali display words (निम्तो, नमस्ते, dates): Noto Serif Devanagari 500 (OFL), with
-  `locl` off so ८ never reads as ५.
-- Banned here: Cormorant, Playfair, Bodoni, Pinyon, Great Vibes or any script; Inter/Roboto/system-ui as display.
+Fonts (self-hosted in `public/site/fonts/`, licences beside them; the first three are preloaded):
+- Display: Kalnia (OFL), light 200 for headings, 300 for small titles and names. Upright only, letter-spacing
+  about -0.012em at display sizes. Never bold, never italic.
+- UI and body: Switzer variable (Indian Type Foundry, ITF Free Font License), 400 for text, 500 for labels and buttons.
+- Nepali display (निम्तो, नमस्ते, dates, step numbers १-४, Nepali design names): Martel 300 (OFL).
+- Nepali text: Mukta 400 (OFL). Every `[lang=ne]` turns `locl` off so ८ never draws like ५.
+- Banned here: Cormorant, Playfair, Bodoni, Inter, Roboto, Open Sans, system-ui as display, and any script face.
 
-Tokens (`src/site/site.css`): white `#FFFFFF`, mist `#F4F5F7` (alternate bands), mist-2 `#ECEEF1`, line `#E1E3E8`,
-ink `#121116`, ink-2 `#45434C`, ink-3 `#66636E` (min. 5.3:1), crimson `#B3122F` (the only accent; hover
-`#8E0E25`), on-dark `#F6F6F7` / `#B4B1BA` / `#8E8B96`, error `#B42318`. No beige or ivory, no gold hairlines, no
-gradients.
+Tokens (`src/site/site.css`):
+- Surfaces: paper `#FCF8F7` (page), blush `#F7ECEA` (alternate sections, footer), blush-2 `#F1E1DE` (door leaves,
+  image wells), white `#FFFFFF` (form panel, specimens, lightbox).
+- Lines: `#EBDCD9` hairlines, `#DDC8C4` on blush and the arch frame, `#A88E8B` field borders (3:1 on white).
+- Ink: `#3D1E28` (14:1 on paper), ink-2 `#664C55` (7.3:1), ink-3 `#7E636C` (5.1:1 on paper, 4.7:1 on blush).
+- Accent: sindoor `#A3182F` (hover `#86132A`, soft `#F6E0E0` for focus halos and selection); text on it `#FFF8F6`.
+- Error `#B42318`. No gradients, no gold hairlines, no beige.
+- The shared dropdown and date picker (`src/ui`) take their colours from `--ui-*` variables set on `body`.
 
-Structure (no two sections built alike): hero with a pinned phone; a crimson dictionary band (निम्तो, noun); how it
-works as a numbered list beside a sticky heading; designs as an index with a sticky picture (desktop) or a
-wide-and-pair card rhythm (phone); features on ink as two type specimens plus a two-column list; pricing as a price
-list; order form on mist; contact and footer on ink.
+Structure (no two sections built alike, alternating paper and blush):
+1. Header: wordmark Nimtto + निम्तो, quiet text links, an outlined Order pill; a full-width menu sheet on phones.
+2. Hero: headline and copy on the left, an arched doorway on the right holding a real design (phone still). On phones:
+   headline, arch, then copy and buttons. Under the arch: the design name and two round buttons that crossfade
+   between six designs; tapping the arch opens the lightbox.
+3. The word: a centred dictionary entry on blush (निम्तो, nimtto, noun).
+4. Designs: heading beside a lede, then a catalogue grid of stills with name and Nepali name below (3 columns on
+   desktop, a wide card then two pairs on phones). 12 shown (11 on phones), then "Show all". Lightest designs lead
+   unless the admin sets featured designs.
+5. How it works on blush: two overlapping phone stills beside four steps numbered १-४.
+6. Features: two white type specimens (a Bikram Sambat date, bilingual names), then a three-column list.
+7. Pricing: a ruled price list; the highlighted plan sits on a blush row.
+8. Order on blush: heading and next steps beside a white form panel; fresh marigold, roses and jasmine dress the top-left
+   corner on desktop (never behind text).
+9. Contact: नमस्ते and the heading beside the contact list (or a "Send a request" prompt when none is set).
+10. Footer on blush: wordmark, credits, Credits link, Studio sign in.
 
-Motion: one signature moment only. In the hero a single phone stays pinned while six real designs slide up into
-its screen as you scroll (transform/opacity, custom ease). Everything else is quiet: hover fades of 150-280 ms.
-Reduced motion: no pinning; the buttons under the phone switch designs instantly.
+Motion: one signature moment. Two blush door leaves meet in the hero arch with निम्तो written across the seam and an
+inner arch line, ring handles and carved panels; after about a second they swing open (rotateY with perspective,
+1.7 s, custom ease) and the design beneath settles from 1.06 to 1. It is pure CSS keyframes (runs without JS); JS only
+holds it until the picture has decoded (at most 2.5 s) and removes the leaves afterwards. Everything else is quiet:
+colour and opacity fades of 180-380 ms, a 2.5% image lift on hover, the lightbox rising 12px over 300 ms.
+Reduced motion: no doors at all, the design is simply there. No scroll-driven motion and no parallax.
+
+Business rules shown on the page: no live demo links or iframes (designs open a still lightbox with "Order this
+design"); prices come from `/api/site` (`price: null` shows "Ask for price"); designs from `/api/themes` with the
+static fallback in `src/site/themes.js`.
 
 Copy: plain and specific. No "Elevate / Seamless / Unlock", no em-dash asides, no eyebrow-and-dot labels.
