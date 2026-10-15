@@ -1,0 +1,33 @@
+/* Nepali decor kit (nepali.js). Pictures keep their own proportions; size them with width on the wrapper. */
+.np-pic { display: inline-block; line-height: 0; }
+.np-pic img { display: block; width: 100%; height: auto; max-width: none; }
+.np-flowers--tr img { transform: scaleX(-1); }
+.np-flowers--bl img { transform: scaleY(-1); }
+.np-flowers--br img { transform: scale(-1, -1); }
+
+/* lamps: the brass picture, flames sitting on the wicks */
+.np-lamp { position: relative; display: inline-block; width: 110px; aspect-ratio: 1 / var(--ar, 1); line-height: 0; }
+.np-lamp__img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; }
+.np-lamp__wick { position: absolute; width: 0; height: 0; }
+.np-lamp { container-type: inline-size; }
+.np-lamp .np-flame { --np-flame: calc(var(--np-flame-k, 0.42) * 100cqw); }
+.np-lamp--panas .np-flame { --np-flame: calc(var(--np-flame-k, 0.42) * 100cqw * 0.55); }
+
+/* the flame: anchored at its wick (bottom centre) */
+.np-flame { position: absolute; left: 0; bottom: 0; display: block; width: calc(var(--np-flame, 46px) * 0.27); height: var(--np-flame, 46px); translate: -50% 4%; pointer-events: none; }
+.np-flame__glow { position: absolute; left: 50%; top: 60%; width: 360%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.55), rgba(255, 170, 70, 0.22) 45%, rgba(255, 150, 50, 0) 100%); }
+.np-flame__body { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.np-flame__body img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; object-position: 50% 100%; }
+.np-flame__b { opacity: 0; }
+.np-flame.is-live .np-flame__body { animation: np-sway var(--d1) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite alternate, np-stretch var(--d2) cubic-bezier(0.45, 0, 0.55, 1) var(--dl) infinite alternate; }
+.np-flame.is-live .np-flame__b { animation: np-swap var(--d3) ease-in-out var(--dl) infinite; }
+.np-flame.is-live .np-flame__glow { animation: np-glow var(--d2) ease-in-out var(--dl) infinite alternate; }
+@keyframes np-sway { 0% { rotate: -3deg; } 50% { rotate: 1.5deg; } 100% { rotate: 3.5deg; } }
+@keyframes np-stretch { 0% { scale: 0.96 1; } 40% { scale: 1.03 0.94; } 100% { scale: 0.98 1.07; } }
+@keyframes np-swap { 0%, 40% { opacity: 0; } 55%, 70% { opacity: 0.85; } 85%, 100% { opacity: 0; } }
+@keyframes np-glow { from { opacity: 0.82; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .np-flame .np-flame__body, .np-flame .np-flame__b, .np-flame .np-flame__glow { animation: none !important; }
+}

@@ -1,0 +1,401 @@
+/* Laali (लाली) · blush paper, berry ink, fine gold. One arched card; everything else stays quiet. */
+body.su.theme-laali {
+  --su-bg: #F7E1E4;
+  --su-paper: #FFF7F6;
+  --su-ink: #3B2129;
+  --su-ink-2: #6C4652;       /* 6.4:1 on the blush */
+  --su-accent: #9E2A4F;      /* 6.1:1 on the blush, 7.3:1 under white */
+  --su-accent-ink: #FFF7F6;
+  --su-gold: #B8893B;        /* lines and ornament only */
+  --la-gold-ink: #7A5617;    /* gold when it has to be read */
+  --la-card: #FBEFF0;
+  --su-line: rgba(110, 50, 70, 0.18);
+  --su-f-display: 'Gilda Display', Georgia, serif;
+  --su-f-script: 'Alex Brush', 'Gilda Display', cursive;
+  --su-f-body: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  --su-f-deva: 'Kurale', 'Mukta', serif;
+  --su-radius: 14px;
+  --la-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  /* the Dhaka weave, faint, in the paper itself */
+  --la-dhaka: url('/themes/laali/dhaka.png') 0 0 / 36px 36px repeat;
+  background: var(--su-bg);
+}
+.theme-laali .su-quiet { color: var(--su-ink-2); }
+
+/* the HUD: solid, no blur over a moving page */
+.theme-laali .hud__btn, .theme-laali .pill { background: rgba(255, 247, 246, 0.92); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--su-accent); border-color: rgba(184, 137, 59, 0.6); }
+
+/* ───────── gate: a closed blush card, Ganesh inside a small gold arch ───────── */
+.la-gate { position: absolute; inset: 0; }
+.la-gate__bg { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 38%, #FFF6F6 0%, var(--la-card) 46%, #F3D5DA 100%), var(--su-bg); }
+.la-gate__bg::after { content: ''; position: absolute; inset: 0; background: var(--la-dhaka); }
+.la-seal { position: absolute; left: 50%; top: 40%; width: min(60vw, 36svh, 270px); aspect-ratio: 220 / 300; translate: -50% -50%; }
+.la-seal__arch { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.la-seal__in { position: absolute; inset: 22% 18% 12%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6%; }
+.la-gan { display: block; height: auto; }
+.la-gan--gate { width: 74%; }
+.la-seal__title { margin: 0; font: 400 clamp(20px, 2.6svh, 26px)/1.2 var(--su-f-deva); color: var(--su-accent); white-space: nowrap; }
+.la-seal__names { position: absolute; top: calc(100% + 3svh); left: 50%; translate: -50% 0; width: 92vw; margin: 0; text-align: center; white-space: nowrap;
+  font: 400 clamp(34px, 5svh, 48px)/1.1 var(--su-f-script); color: var(--su-accent); }
+.la-seal__names .su-n, .la-seal__names .su-amp { display: inline; }
+.la-seal__names .su-amp { margin: 0 0.18em; font-size: 0.7em; color: var(--su-gold); }
+.la-seal__names .l-ne { font: 400 0.7em/1.3 var(--su-f-deva); }
+html[data-lang='ne'] .la-seal__names .su-amp { font-family: var(--su-f-display); font-size: 0.5em; }
+.theme-laali .su-gate__line { color: var(--su-ink); font: 400 19px/1.4 var(--su-f-display); }
+.theme-laali .su-gate__line .l-ne { font: 400 19px/1.5 var(--su-f-deva); }
+.theme-laali .su-gate__ui { bottom: max(28px, 5svh); }
+
+/* the arch lines */
+.la-ln { fill: none; stroke: var(--su-gold); stroke-linecap: round; stroke-linejoin: round; }
+.la-ln--o { stroke-width: 1.4; }
+.la-ln--i { stroke-width: 0.9; }
+.la-fin { fill: var(--su-gold); }
+
+/* ───────── hero: the card ───────── */
+.theme-laali .su-hero { background: transparent; }
+.la-stage { position: relative; width: 100%; height: 100svh; min-height: 620px; display: grid; place-items: center; background: var(--la-dhaka); }
+.la-card { position: relative; width: 100%; height: 100%; background: var(--la-card); }
+.la-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(90% 60% at 50% 30%, rgba(255, 255, 255, 0.6), transparent 70%); pointer-events: none; }
+.la-arch { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; pointer-events: none; }
+
+.la-lantern { position: absolute; z-index: 3; top: 44px; width: clamp(42px, calc(var(--cw, 400px) * 0.125), 72px); transform-origin: 50% -44px; }
+.la-lantern--l { left: calc(var(--cw, 400px) * 0.035); }
+.la-lantern--r { right: calc(var(--cw, 400px) * 0.035); }
+.la-lantern__drop { position: relative; transform-origin: 50% 0; }
+.la-lantern__drop::before { content: ''; position: absolute; left: 50%; bottom: 99%; width: 2px; height: 60vh; translate: -50% 0;
+  background: repeating-linear-gradient(to bottom, #C99A45 0 4px, rgba(201, 154, 69, 0.15) 4px 6px); }
+.la-lantern img { position: relative; display: block; width: 100%; height: auto; }
+.la-lantern__glow { position: absolute; left: -60%; right: -60%; top: 30%; aspect-ratio: 1; border-radius: 50%; opacity: 0.55;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, 0.55), rgba(255, 214, 140, 0) 100%); }
+
+.la-flower { position: absolute; z-index: 2; bottom: -2px; width: clamp(130px, calc(var(--cw, 400px) * 0.4), 250px); height: auto; pointer-events: none; }
+.la-flower--l { left: calc(var(--cw, 400px) * -0.05); transform-origin: 0 100%; }
+.la-flower--r { right: calc(var(--cw, 400px) * -0.05); transform-origin: 100% 100%; }
+.la-flower img { display: block; width: 100%; height: auto; }
+.la-flower--r img { transform: scaleX(-1); }
+
+.la-body { position: relative; z-index: 4; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: var(--la-top, 60px) var(--la-side, 34px) 0; }
+.la-crown { position: relative; width: clamp(40px, calc(var(--cw, 400px) * 0.115), 60px); flex: none; }
+.la-gan--hero { width: 100%; }
+.la-shine { position: absolute; inset: 0; overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; pointer-events: none; }
+.la-shine::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 60%; transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 246, 214, 0.95) 50%, transparent 80%); }
+
+.la-inv { margin: 6px 0 0; font: 400 14px/1.4 var(--su-f-deva); color: var(--la-gold-ink); white-space: nowrap; }
+.la-title { margin: 2px 0 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.la-title [lang='ne'] { font: 400 clamp(22px, calc(var(--cw, 400px) * 0.062), 30px)/1.25 var(--su-f-deva); color: var(--su-accent); }
+.la-title__en { font: 400 11.5px/1.3 var(--su-f-body); letter-spacing: 0.32em; text-transform: uppercase; color: var(--su-ink-2); padding-left: 0.32em; }
+.la-line { max-width: 30ch; margin: 12px 0 0; font: 400 15px/1.45 var(--su-f-display); color: var(--su-ink-2); text-wrap: balance; }
+.la-line .l-ne { font: 400 16px/1.6 var(--su-f-body); }
+.la-names { margin: 8px 0 0; width: 100%; font: 400 calc(clamp(42px, min(calc(var(--cw, 400px) * 0.15), calc(var(--ch, 800px) * 0.07)), 74px) * var(--la-nfit, 1))/1.02 var(--su-f-script); color: var(--su-accent); }
+.la-names .su-n { padding: 0 0.12em; }
+.la-names .l-ne { font: 400 0.66em/1.35 var(--su-f-deva); }
+.la-names .su-amp { margin: -0.08em 0 -0.06em; font: 400 0.48em/1.1 var(--su-f-script); color: var(--su-gold); }
+html[data-lang='ne'] .la-names .su-amp { font-family: var(--su-f-display); font-size: 0.36em; }
+
+.la-when { margin: 16px 0 0; display: grid; justify-items: center; gap: 10px; }
+.la-dhaka--hero { width: 150px; }
+.la-place { margin: 0; font: 500 12px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--su-ink-2); }
+.la-place .l-ne { font: 400 16px/1.4 var(--su-f-deva); }
+
+.la-couple { position: relative; flex: 1 1 auto; min-height: 110px; width: 100%; margin-top: 6px; display: flex; justify-content: center; align-items: flex-end; }
+.la-couple img { position: absolute; bottom: calc(var(--la-side, 34px) + 22px); left: 50%; translate: -50% 0; height: min(100% - var(--la-side, 34px) - 22px, calc(var(--ch, 800px) * 0.42)); width: auto; max-width: 70%; object-fit: contain; object-position: bottom; }
+
+/* the scroll cue sits below the couple's feet, on the paper */
+.theme-laali .su-cue { bottom: 6px; color: var(--su-ink-2); }
+
+/* desktop and tablets: the card sits on the table with room around it */
+@media (min-width: 700px) {
+  .la-stage { padding: 24px 0; box-sizing: border-box; min-height: 680px; }
+  .la-card { width: min(92vw, calc((100svh - 48px) * 0.68), 600px); height: 100%; max-height: 980px; outline: 1px solid rgba(184, 137, 59, 0.45); outline-offset: 7px;
+    box-shadow: 0 40px 80px -40px rgba(120, 30, 60, 0.35); }
+  .la-lantern { top: 0; transform-origin: 50% 0; }
+  .la-flower { width: calc(var(--cw, 500px) * 0.44); max-width: 270px; }
+  .la-flower--l { left: calc(var(--cw, 500px) * -0.16); }
+  .la-flower--r { right: calc(var(--cw, 500px) * -0.16); }
+}
+
+/* ambient, after the opening: lanterns breathe, Ganesh catches the light now and then */
+/* each loop runs only while its own part of the page is on screen (main.js sets .is-live) */
+.la-card.is-live .la-lantern { animation: la-sway 5.6s ease-in-out infinite alternate; }
+.la-card.is-live .la-lantern--r { animation-duration: 6.4s; animation-delay: -2.1s; }
+.is-live .la-lantern__glow { animation: la-glow 4.2s ease-in-out infinite alternate; }
+.la-card.is-live .la-shine::after { animation: la-shine 8s var(--la-ease) 1.2s infinite; }
+@keyframes la-sway { from { transform: rotate(-1.4deg); } to { transform: rotate(1.4deg); } }
+@keyframes la-glow { from { opacity: 0.4; } to { opacity: 0.8; } }
+@keyframes la-shine { 0% { transform: translateX(-120%); } 16%, 100% { transform: translateX(220%); } }
+
+/* ───────── the lantern gallery: chapters as arch panels ───────── */
+/* stacked by default (and under reduced motion); main.js adds .is-h for the pinned sideways 3D walk */
+.la-dhaka { display: block; width: 132px; height: auto; color: var(--su-gold); }
+.la-dhaka--ph { width: 92px; }
+.la-chap { position: relative; padding: 64px 16px 32px; }
+.la-chap__stage { position: relative; }
+.la-deck { display: grid; justify-items: center; gap: 40px; }
+.la-pan { position: relative; width: min(100%, 440px); box-sizing: border-box; }
+.la-shape { position: absolute; inset: 0; background: var(--su-paper); }
+.la-outline { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.la-outline .la-ln--o { stroke-width: 1.15; }
+.la-outline .la-ln--i { stroke-width: 0.75; }
+.la-pan__in { position: relative; box-sizing: border-box; display: flex; justify-content: center; padding: calc(var(--crown, 150px) * 0.56 + 6px) 24px 36px; }
+.la-pan__fit { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; transform-origin: 50% 0; }
+.la-fg, .la-nav { display: none; }
+
+.la-ph { display: grid; justify-items: center; gap: 6px; margin: 0 0 16px; }
+.la-k { margin: 0; font: 600 11px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--su-ink-2); }
+.la-k .l-ne { font-size: 14px; }
+.la-h { margin: 0; font: 400 clamp(26px, 7vw, 34px)/1.15 var(--su-f-display); color: var(--su-accent); text-wrap: balance; }
+.la-h .l-ne { font: 400 0.88em/1.35 var(--su-f-deva); }
+.la-lede { max-width: 30ch; margin: 14px auto 0; font: 400 15px/1.55 var(--su-f-display); color: var(--su-ink-2); text-wrap: balance; }
+.la-lede .l-ne { font: 400 16px/1.6 var(--su-f-body); }
+
+/* 1 · the couple, in an ogee arch */
+.la-portrait { display: inline-block; margin: 0; line-height: 0; }
+.la-portrait__img { display: block; max-width: min(100%, 300px); max-height: 46svh; width: auto; height: auto; }
+
+/* 2 · the date under rose-gold foil */
+.la-scratch { width: min(270px, 64vw); margin: 2px auto 0; }
+.la-sface { position: relative; width: 100%; aspect-ratio: 1 / 1.12; }
+.la-sface .la-shape { background: var(--la-card); }
+.la-sface__in { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: calc(var(--crown, 100px) * 0.5) 16px 18px; }
+.la-sface .su-strip { gap: 2px; }
+.la-sface .su-strip__month { font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase; padding-left: 0.3em; }
+.la-sface .su-strip__row { gap: 8px; }
+.la-sface .su-strip__side { font: 500 10.5px/1.3 var(--su-f-body); letter-spacing: 0.12em; padding: 4px 0; color: var(--su-ink); }
+.la-sface .su-strip__side .l-ne { font-size: 12px; }
+.la-sface .su-strip__day { font-size: 52px; line-height: 1; }
+.la-sface .su-strip__year { font-size: 13px; letter-spacing: 0.3em; padding-left: 0.3em; }
+.la-sface .su-strip__alt { margin-top: 4px; font-size: 12.5px; }
+.la-sface__place { margin: 4px 0 0; font: 500 13px/1.4 var(--su-f-body); color: var(--su-ink); }
+.la-sface__place .l-ne { font-size: 14px; }
+.la-scratch .su-scratch__btn { min-height: 44px; padding: 10px 22px; }
+
+/* 3 · the countdown: four lanterns, each holding a number */
+.la-count { width: 100%; }
+.la-cls { display: flex; justify-content: center; align-items: flex-start; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.la-cl { position: relative; width: clamp(54px, 15vw, 70px); padding-top: var(--drop); display: flex; flex-direction: column; align-items: center; transform-origin: 50% 0; }
+.la-cl::before { content: ''; position: absolute; top: 0; left: 50%; width: 1.5px; height: calc(var(--drop) + 2px); translate: -50% 0;
+  background: repeating-linear-gradient(to bottom, var(--su-gold) 0 3px, transparent 3px 5px); }
+.la-cl__swing { position: relative; width: 100%; transform-origin: 50% 0; }
+.la-cl__art { display: block; width: 100%; height: auto; color: var(--su-gold); }
+.la-cl__n { position: absolute; left: 0; right: 0; top: 47%; translate: 0 -50%; text-align: center; font: 400 clamp(20px, 6vw, 26px)/1 var(--su-f-display); color: var(--su-accent); font-variant-numeric: tabular-nums; }
+.la-cl__n .l-ne { font-family: var(--su-f-deva); }
+.la-cl__l { margin-top: 6px; font: 600 10px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--su-ink-2); }
+.la-cl__l .l-ne { font-size: 13px; }
+.la-count__done { margin: 10px 0 0; font: 400 24px/1.4 var(--su-f-display); color: var(--su-accent); }
+.la-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 26px; }
+.la-btns .su-btn { min-height: 44px; padding: 10px 20px; font-size: 12px; }
+body.la-count-live .la-cl { animation: la-sway 4.8s ease-in-out infinite alternate; }
+body.la-count-live .la-cl:nth-child(2) { animation-duration: 5.6s; animation-delay: -1.3s; }
+body.la-count-live .la-cl:nth-child(3) { animation-duration: 5.1s; animation-delay: -2.7s; }
+body.la-count-live .la-cl:nth-child(4) { animation-duration: 6.2s; animation-delay: -0.6s; }
+
+/* 4 · the families: two arches turned toward each other */
+.la-fam { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; perspective: 760px; }
+.la-fam__arch { position: relative; flex: 1 1 0; max-width: 176px; min-width: 0; }
+.la-fam__arch .la-shape { background: var(--la-card); }
+.la-fam__arch--bride { transform: rotateY(16deg); transform-origin: 100% 50%; }
+.la-fam__arch--groom { transform: rotateY(-16deg); transform-origin: 0 50%; }
+.la-fam__in { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: calc(var(--crown, 80px) * 0.62 + 8px) 10px 20px; }
+.la-fam__pic { width: 72%; margin: 0 0 8px; border-radius: 999px 999px 8px 8px; overflow: hidden; }
+.la-fam__pic img { display: block; width: 100%; height: auto; }
+.la-fam__name { margin: 4px 0 0; font: 400 19px/1.25 var(--su-f-display); color: var(--su-accent); }
+.la-fam__name .l-ne { font: 400 18px/1.4 var(--su-f-deva); }
+.la-fam__of { margin: 8px 0 0; font-size: 12.5px; line-height: 1.3; color: var(--su-ink-2); }
+.la-fam__par { margin: 0; font: 500 13.5px/1.4 var(--su-f-body); }
+.la-fam__home { margin: 6px 0 0; font-size: 12.5px; line-height: 1.35; color: var(--su-ink-2); }
+.la-fam__and { flex: none; font: 400 40px/1 var(--su-f-script); color: var(--su-gold); }
+
+/* 5 · the celebrations: arch-topped tickets with a torn-off stub */
+.la-pan--tk .la-pan__in { padding-bottom: 112px; }
+.la-tk__title { font-size: clamp(28px, 7.4vw, 36px); }
+.la-tk__time { margin: 0; font: 600 15px/1.4 var(--su-f-body); color: var(--su-ink); }
+.la-tk__blurb { max-width: 28ch; margin: 8px 0 0; font: 400 15px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+.la-tk__blurb .l-ne { font: 400 15.5px/1.6 var(--su-f-body); }
+.la-tk__venue { margin: 10px 0 0; font-size: 15px; line-height: 1.5; }
+.la-tk__dress { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 0; font-size: 14px; color: var(--su-ink-2); }
+.la-tk__dress .su-sw { margin: 0; }
+.la-tk__order { width: 100%; margin-top: 10px; text-align: left; }
+.la-tk__order summary { cursor: pointer; text-align: center; font-weight: 600; font-size: 14px; color: var(--su-accent); }
+.la-tk__order ol { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+.la-tk__order li { display: grid; grid-template-columns: 5.5em 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--su-line); }
+.la-tk__order li > :first-child { font-weight: 600; color: var(--su-ink-2); }
+.la-tk__stub { position: absolute; left: 16px; right: 16px; bottom: 14px; height: 84px; display: flex; align-items: center; justify-content: center; gap: 14px; border-top: 1.5px dashed rgba(184, 137, 59, 0.75); }
+.la-tk__stub::before, .la-tk__stub::after { content: ''; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--su-bg); }
+.la-tk__stub::before { left: -28px; }
+.la-tk__stub::after { right: -28px; }
+.la-tk__day { font: 400 46px/1 var(--su-f-display); color: var(--su-accent); }
+.la-tk__day .l-ne { font-family: var(--su-f-deva); }
+.la-tk__my { display: flex; flex-direction: column; text-align: left; }
+.la-tk__my b { font: 400 15px/1.3 var(--su-f-display); letter-spacing: 0.24em; text-transform: uppercase; color: var(--su-ink); }
+.la-tk__my b .l-ne { font: 400 18px/1.3 var(--su-f-deva); }
+.la-tk__my small { font-size: 12.5px; color: var(--su-ink-2); }
+
+/* 6 · the photographs: a little coverflow of their own */
+.la-cf { position: relative; width: 100%; height: min(46svh, 360px); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.la-cf__deck { position: absolute; inset: 0; perspective: 900px; }
+.la-cf__it { position: absolute; left: 50%; top: 50%; width: 66%; margin: 0; translate: -50% -50%; }
+.la-cf__it .su-gal__btn { display: block; width: fit-content; max-width: 100%; margin: 0 auto; padding: 4px; background: #FFFDFB; border-radius: 6px; box-shadow: 0 18px 30px -18px rgba(90, 30, 50, 0.45); cursor: zoom-in; }
+.la-cf__it img { display: block; max-width: 100%; max-height: min(42svh, 330px); width: auto; height: auto; border-radius: 3px; -webkit-user-drag: none; }
+.la-cf__nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
+.la-cf__b { width: 44px; height: 44px; border: 1px solid rgba(184, 137, 59, 0.7); border-radius: 50%; background: transparent; color: var(--su-accent); font: 400 26px/1 var(--su-f-display); cursor: pointer; }
+.la-cf__n { min-width: 4em; font: 500 13px/1 var(--su-f-body); letter-spacing: 0.12em; color: var(--su-ink-2); }
+
+/* the pinned walk */
+.la-chap.is-h { height: 100svh; padding: 0; overflow: hidden; }
+.is-h .la-chap__stage { position: absolute; inset: 0; }
+.is-h .la-deck { display: block; position: absolute; inset: 0; perspective: 1200px; perspective-origin: 50% 46%; }
+.is-h .la-pan { position: absolute; left: 50%; top: calc(50% - var(--ph) / 2 - 3svh); width: var(--pw); height: var(--ph); margin-left: calc(var(--pw) / -2); }
+.is-h .la-pan__in { position: absolute; inset: 0; align-items: flex-start; overflow: hidden; }
+.is-h .la-pan--tk .la-pan__in, .is-h .la-pan--ph .la-pan__in { align-items: center; }
+.is-h .la-pan--tk .la-pan__fit, .is-h .la-pan--ph .la-pan__fit { transform-origin: 50% 50%; }
+.is-h .la-fg { display: block; position: absolute; left: 0; right: 0; top: 0; height: 0; z-index: 80; pointer-events: none; }
+.la-fg__l { position: absolute; left: 0; top: calc(13svh - var(--w) * 2.875); width: var(--w); }
+.la-fg__l--0 { --w: 5.4svh; }
+.la-fg__l--1 { --w: 3.6svh; top: calc(9svh - var(--w) * 2.875); opacity: 0.85; }
+.la-fg__l--2 { --w: 6.4svh; top: calc(15svh - var(--w) * 2.875); }
+.la-fg__sw { position: relative; transform-origin: 50% 0; }
+.la-fg__sw::before { content: ''; position: absolute; left: 50%; bottom: 99%; width: 2px; height: 40svh; translate: -50% 0; background: repeating-linear-gradient(to bottom, #C99A45 0 4px, rgba(201, 154, 69, 0.15) 4px 6px); }
+.la-fg__sw img { display: block; width: 100%; height: auto; transform-origin: 50% 0; }
+.la-chap.is-live .la-fg__l--0 img { animation: la-sway 5s ease-in-out infinite alternate; }
+.la-chap.is-live .la-fg__l--2 img { animation: la-sway 6.2s ease-in-out -2s infinite alternate; }
+.is-h .la-nav { display: flex; position: absolute; left: 0; right: 0; bottom: max(10px, 2.2svh); z-index: 90; flex-direction: column; align-items: center; gap: 6px; }
+.la-nav__t { position: relative; width: 100%; height: 22px; margin: 0; }
+.la-nav__lab { position: absolute; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity 0.35s var(--la-ease), transform 0.35s var(--la-ease);
+  font: 500 12px/22px var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--su-ink-2); white-space: nowrap; }
+.la-nav__lab b { font-weight: 600; color: var(--la-gold-ink); margin-right: 6px; }
+.la-nav__lab .l-ne { font-size: 14px; }
+.la-nav__lab.is-on { opacity: 1; transform: none; }
+.la-nav__dots { display: flex; gap: 0; margin: 0; padding: 0; list-style: none; }
+.la-nav__dots button { position: relative; width: 26px; height: 26px; padding: 0; border: 0; background: none; cursor: pointer; }
+.la-nav__dots button::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(158, 42, 79, 0.28); transition: transform 0.3s var(--la-ease), background-color 0.3s; }
+.la-nav__dots button[aria-current]::after { background: var(--su-gold); transform: scale(1.6); }
+
+/* ───────── travel and contacts ───────── */
+.la-info { padding: 24px 16px 0; }
+.theme-laali .su-more { max-width: 560px; margin: 0 auto; background: var(--su-paper); border: 1px solid rgba(184, 137, 59, 0.4); }
+
+/* ───────── the RSVP: a letter rising out of a blush envelope ───────── */
+.la-env { padding: 88px 16px 24px; }
+.la-env__wrap { position: relative; max-width: 560px; margin: 0 auto; padding-top: 60px; }
+.la-env__back { position: absolute; left: 0; right: 0; bottom: 0; height: 560px; background: #EDC6CE; border-radius: 16px; }
+.la-env__flap { position: absolute; left: 0; right: 0; bottom: calc(100% - 1px); height: 170px; background: #E9BEC7; clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+.la-env__letter { position: relative; z-index: 1; margin: 0 12px; }
+.la-env__in { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(var(--crown, 150px) * 0.52 + 6px) clamp(18px, 5vw, 36px) 128px; }
+.la-env__in .su-form { width: 100%; margin-top: 22px; text-align: left; }
+.la-env__in .su-btn[type='submit'] { justify-self: center; }
+.la-env__pocket { position: relative; z-index: 2; margin-top: -100px; padding: 92px 24px 36px; text-align: center; background: #F4D5DB; border-radius: 0 0 16px 16px;
+  clip-path: polygon(0 0, 50% 70px, 100% 0, 100% 100%, 0 100%); }
+.la-env__pocket::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 70px;
+  background: linear-gradient(to top right, transparent calc(50% - 0.8px), rgba(184, 137, 59, 0.85) 50%, transparent calc(50% + 0.8px)) left / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 0.8px), rgba(184, 137, 59, 0.85) 50%, transparent calc(50% + 0.8px)) right / 50% 100% no-repeat; }
+.la-env__pocket-in { position: relative; max-width: 420px; margin: 0 auto; }
+.la-mark { display: block; width: 40px; height: auto; margin: 0 auto 14px; color: var(--su-gold); }
+.la-env__line { margin: 0; font: 400 clamp(19px, 2.4vw, 23px)/1.5 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.la-env__line .l-ne { font: 400 19px/1.65 var(--su-f-deva); }
+.la-env__hosts { margin: 12px 0 22px; color: var(--su-ink-2); }
+.theme-laali .su-field input[type='text'], .theme-laali .su-field input[type='tel'], .theme-laali .su-field textarea, .theme-laali .su-field select { background: #FFFDFC; border-color: rgba(110, 50, 70, 0.28); }
+
+/* ───────── closing: the lanterns again, small, above the blessing ───────── */
+.la-close { position: relative; padding: clamp(190px, 26vh, 240px) 20px 28px; text-align: center; overflow: hidden; }
+.la-close-deco { position: absolute; inset: 0 0 auto; height: 0; --cw: min(100vw, 620px); max-width: 620px; margin: 0 auto; }
+.la-close-deco .la-lantern { width: 50px; top: 0; }
+.la-close-deco .la-lantern--l { left: 14%; }
+.la-close-deco .la-lantern--r { right: 14%; }
+.la-dhaka--close { margin: 0 auto 26px; }
+.la-close__ne { max-width: 30ch; margin: 0 auto; font: 400 22px/1.6 var(--su-f-deva); color: var(--su-accent); }
+.la-close__en { margin: 6px auto 0; font: 400 18px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+html[data-lang='ne'] .la-close__en { display: none; }
+.la-close__names { margin: 22px 0 0; font: 400 clamp(40px, 6vw, 58px)/1.2 var(--su-f-script); color: var(--su-accent); }
+.la-close__names .su-n, .la-close__names .su-amp { display: inline; }
+.la-close__names .su-amp { margin: 0 0.22em; font-size: 0.7em; color: var(--su-gold); }
+.la-close__names .l-ne { font: 400 0.66em/1.3 var(--su-f-deva); }
+html[data-lang='ne'] .la-close__names .su-amp { font-family: var(--su-f-display); font-size: 0.5em; }
+.la-close__tag { margin: 10px 0 0; color: var(--su-ink-2); letter-spacing: 0.06em; }
+.la-close.is-live .la-close-deco .la-lantern { animation: la-sway 6s ease-in-out infinite alternate; }
+.la-close.is-live .la-close-deco .la-lantern--r { animation-delay: -2.4s; }
+
+@media (min-width: 700px) {
+  .la-h { font-size: 36px; }
+  .la-chap { padding-top: 96px; }
+}
+
+/* modal */
+.theme-laali .su-modal__panel { background: var(--su-paper); }
+.theme-laali .su-modal__shloka { font-family: var(--su-f-deva); color: var(--la-gold-ink); }
+
+/* phones: the lanterns hang clear of the language and music buttons (top right) */
+@media (max-width: 699px) {
+  .la-card .la-lantern { top: 66px; transform-origin: 50% -66px; }
+}
+/* laptops: a shorter card, so the names share one line and the couple keeps its size */
+@media (min-width: 700px) and (max-height: 920px) {
+  .la-names { flex-flow: row wrap; justify-content: center; align-items: baseline; }
+  .la-names .su-amp { margin: 0 0.22em; font-size: 0.6em; }
+}
+@media (max-height: 760px) and (max-width: 699px) {
+  .la-line { font-size: 14px; margin-top: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-live .la-lantern, .is-live .la-lantern__glow, .is-live .la-shine::after, .la-cl, .la-fg__l img { animation: none !important; }
+}
+.theme-laali .su-strip__year .l-ne, .theme-laali .su-strip__month .l-ne { font-family: var(--su-f-deva); letter-spacing: 0; }
+.la-seal { cursor: pointer; }
+
+/* the RSVP name error: the engine renders it [hidden] and the shared form code only fills its text */
+.theme-laali .su-err[hidden]:not(:empty) { display: block !important; }
+/* the scroll cue bobs a few times, then rests: an endless transform loop keeps the rest of the page in extra GPU layers */
+body.is-open.theme-laali .su-cue i { animation-iteration-count: 5; }
+/* stacked (reduced motion): the arch outlines and the turned family arches may lean a pixel past the edge */
+.la-chap { overflow-x: clip; }
+
+/* ───────── Nepali wedding round: real flames, marigolds, Panas lamps, Dhaka weave, the ganthi bandhan ───────── */
+/* a real flame burns inside each Mughal lantern's glass */
+.la-lantern__drop, .la-fg__sw { container-type: inline-size; }
+.la-wick { position: absolute; left: 50%; top: 71%; width: 0; height: 0; z-index: 1; }
+.la-wick .np-flame { --np-flame: 50cqw; }
+.la-lantern__glow { display: none; }
+
+/* hero: fresh marigolds and roses beside the peonies, Panas lamps at the foot of the arch */
+.la-mari { position: absolute; z-index: 2; bottom: -4px; width: clamp(96px, calc(var(--cw, 400px) * 0.27), 190px); pointer-events: none; }
+.la-mari--l { left: calc(var(--cw, 400px) * -0.05); transform-origin: 0 100%; }
+.la-mari--r { right: calc(var(--cw, 400px) * -0.05); transform-origin: 100% 100%; }
+.la-flower { z-index: 2; }
+.la-card .la-panas { position: absolute; z-index: 3; bottom: calc(var(--la-side, 34px) + 18px); width: clamp(34px, calc(var(--cw, 400px) * 0.1), 50px); }
+.la-card .la-panas--l { left: calc(var(--cw, 400px) * 0.17); }
+.la-card .la-panas--r { right: calc(var(--cw, 400px) * 0.17); }
+@media (min-width: 700px) {
+  .la-mari { width: calc(var(--cw, 500px) * 0.34); max-width: 210px; }
+  .la-mari--l { left: calc(var(--cw, 500px) * -0.2); }
+  .la-mari--r { right: calc(var(--cw, 500px) * -0.2); }
+}
+
+/* the Dhaka weave under every panel title, edged in gold */
+.la-weave { display: block; width: 116px; height: 12px; margin-top: 6px; box-sizing: border-box; border-block: 1px solid var(--su-gold);
+  background: #7E1F2E url('/themes/_nepali/dhaka-sm.webp') 0 50% / 34px auto repeat-x; }
+.la-ph { gap: 4px; }
+
+/* the first panel wears a fresh marigold toran across its crown */
+.la-pan { container-type: inline-size; }
+.la-toran { position: absolute; z-index: 3; left: 9%; width: 82%; top: calc(var(--crown, 150px) * 0.5); pointer-events: none; }
+.la-pan--first .la-pan__in { padding-top: calc(var(--crown, 150px) * 0.5 + 28.4cqw + 6px); }
+
+/* the ganthi bandhan: the bride's red shawl knotted to the groom's ivory patuka, tying the two family arches */
+.la-fam { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: stretch; }
+.la-fam__arch { max-width: none; }
+.la-knot { grid-column: 1 / -1; justify-self: center; width: 52%; max-width: 220px; margin-top: -40px; position: relative; z-index: 2; }
+.is-h .la-knot { justify-self: start; margin-left: 50%; transform: translateX(-50%); }
+.la-fam__and { display: none; }
+
+/* the palette, used richly: a rose-deepening stage for the gallery, a berry ground for the blessing */
+.la-chap.is-h { background: radial-gradient(120% 80% at 50% 38%, #FCEFF1 0%, #F6DCE1 55%, #EDC5CE 100%); }
+.la-env { background: linear-gradient(to bottom, var(--su-bg), #F1D3D9 70%, #EAC2CB); }
+.la-close { background: radial-gradient(110% 70% at 50% 0%, #93294D 0%, #7A1C3E 55%, #5E1530 100%); color: #FBEFF0; }
+.la-close__ne { color: #FBE3E8; }
+.la-close__en { color: #F1CBD4; }
+.la-close__names { color: #F0D49A; }
+.la-close__names .su-amp { color: #E2B866; }
+.la-close__tag { color: #F1CBD4; }
+.la-close .la-dhaka--close { color: #E2B866; }
+.la-close .madewith { color: #F6DCE1; }

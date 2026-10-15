@@ -1,0 +1,482 @@
+/* Shree (श्री): deep plum and antique gold. Tokens for the suite, then the gate, the hero and the ornaments. */
+body.theme-shree {
+  --su-bg: #2E0F2A;
+  --su-paper: #4A1C44;
+  --su-ink: #F3E6CC;
+  --su-ink-2: #D9C6A6;
+  --su-accent: #D8B46A;
+  --su-accent-ink: #2E0F2A;
+  --su-gold: #C9A35A;
+  --su-line: rgba(201, 163, 90, 0.34);
+  --su-f-display: 'Forum', 'Cormorant Garamond', Georgia, serif;
+  --su-f-script: 'Monsieur La Doulaise', 'Forum', serif;
+  --su-f-body: 'Mukta', 'Segoe UI', sans-serif;
+  --su-f-deva: 'Sahitya', 'Martel', 'Mukta', serif;
+  --su-radius: 6px;
+  --sh-plum-2: #3A1435;
+  --sh-plum-deep: #240B21;
+  --sh-gold-hi: #E8CB8C;
+  --sh-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --sh-marigold: #F0A030;
+  --sh-sindoor: #A3242C;
+  /* core tokens (HUD, sheet, RSVP helpers) */
+  --bg: #2E0F2A; --bg-2: #3A1435; --ink: #F3E6CC; --ink-dim: rgba(243, 230, 204, 0.78); --accent: #D8B46A; --accent-2: #E8CB8C;
+  --hair: rgba(201, 163, 90, 0.4); --scrim: 30, 8, 27;
+  --sh-dhaka: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cg fill='none' stroke='%23C9A35A' stroke-width='0.9'%3E%3Cpath d='M0 6 6 0.8 12 6 6 11.2Z'/%3E%3Cpath d='M12 6 18 0.8 24 6 18 11.2Z'/%3E%3C/g%3E%3Ccircle cx='6' cy='6' r='1.3' fill='%23C9A35A'/%3E%3Ccircle cx='18' cy='6' r='0.8' fill='%23C9A35A'/%3E%3C/svg%3E");
+}
+html:has(body.theme-shree) { background: #2E0F2A; }
+.theme-shree .su-h2 { letter-spacing: 0.02em; }
+.theme-shree .su-h2 .l-ne { font: 400 0.82em/1.45 var(--su-f-deva); }
+.theme-shree .su-kicker { color: var(--su-gold); }
+.theme-shree .l-ne { font-family: var(--su-f-body); }
+.theme-shree :focus-visible { outline-color: var(--sh-gold-hi); }
+
+/* HUD on plum: solid pills (no blur on phones), gold type */
+.theme-shree .hud__btn, .theme-shree .pill { background: rgba(36, 11, 33, 0.92); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--sh-gold-hi); border-color: rgba(201, 163, 90, 0.55); }
+.theme-shree .sheet__panel { background: #3A1435; color: var(--su-ink); border-color: rgba(201, 163, 90, 0.45); }
+.theme-shree .trk__text b, .theme-shree .sheet__close { color: var(--su-ink); }
+.theme-shree .trk__text small { color: var(--su-ink-2); }
+.theme-shree .sheet .eyebrow { color: var(--su-gold); }
+
+/* buttons */
+.theme-shree .su-btn { background: var(--su-gold); border-color: var(--su-gold); color: #2E0F2A; border-radius: 3px; }
+.theme-shree .su-btn--line { background: transparent; color: var(--sh-gold-hi); border-color: rgba(201, 163, 90, 0.7); }
+.theme-shree .su-link { color: var(--sh-gold-hi); }
+
+/* ───────── the lotus (shared by gate, hero halo and closing) ───────── */
+.sh-lotus { display: block; width: 100%; height: 100%; overflow: visible; }
+.sh-lotus__frame { fill: none; stroke: #C9A35A; }
+.sh-lotus__rays line { stroke-width: 0.7; opacity: 0.5; }
+.sh-lotus__c1 { stroke-width: 0.8; opacity: 0.7; }
+.sh-lotus__c2 { stroke-width: 1.3; }
+.sh-lotus__c3 { stroke-width: 0.8; opacity: 0.6; stroke-dasharray: 1.5 4; }
+.sh-lotus__beads { fill: #C9A35A; stroke: none; }
+.sh-p__body { stroke: #D9B66C; stroke-width: 1.2; stroke-linejoin: round; }
+.sh-p__in { fill: none; stroke: #E2C27E; stroke-width: 0.8; opacity: 0.8; }
+.sh-p__vein { stroke: #E2C27E; stroke-width: 0.8; opacity: 0.7; }
+.sh-p__dot { fill: #EBD196; }
+.sh-lotus__podc { fill: #3A1435; stroke: #E2C27E; stroke-width: 1.4; }
+.sh-lotus__seeds { fill: #E2C27E; }
+
+/* ───────── gate ───────── */
+.theme-shree .su-gate { color: var(--su-ink); --lotus: min(96vw, 50svh, 600px); --cy: 44%; }
+.sh-gate__bg { position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 30%, #4A1C44 0%, #3A1435 40%, #2E0F2A 78%); }
+.sh-gate__spot, .sh-gate__still { position: absolute; left: 50%; top: var(--cy); width: var(--lotus); height: var(--lotus); translate: -50% -50%; }
+.sh-gate__still { display: none; }
+.su-gate.sh-still .sh-gate__still { display: block; }
+.su-gate.sh-live .sh-gate__bg { display: none; }
+.sh-gate__inv { position: absolute; left: 0; right: 0; top: calc(var(--cy) - var(--lotus) / 2 - 2.6em); margin: 0; text-align: center; color: var(--sh-gold-hi); font: 400 clamp(17px, 2.2svh, 21px)/1.4 var(--su-f-deva); }
+.sh-gate__inv .l-ne, .sh-gate__inv .l-en { font-family: var(--su-f-deva); }
+.sh-gate__names { position: absolute; left: 0; right: 0; top: calc(var(--cy) + var(--lotus) / 2 + 4px); margin: 0; display: flex; justify-content: center; align-items: baseline; gap: 0.5em; color: var(--su-ink);
+  font: 400 clamp(19px, 2.6svh, 24px)/1.3 var(--su-f-display); letter-spacing: 0.26em; text-transform: uppercase; }
+.sh-gate__names .l-ne { font: 400 1.05em/1.4 var(--su-f-deva); }
+.sh-gate__amp { color: var(--su-gold); letter-spacing: 0; font-size: 0.9em; }
+.theme-shree .su-gate__ui { bottom: max(26px, calc(3.5svh + env(safe-area-inset-bottom, 0px))); }
+.theme-shree .su-gate__line { font: 400 17px/1.45 var(--su-f-display); letter-spacing: 0.04em; color: var(--su-ink-2); }
+.theme-shree .su-gate__line .l-ne { font: 400 17px/1.6 var(--su-f-body); }
+.theme-shree .su-quiet { color: var(--su-ink-2); }
+.theme-shree .su-gate .su-btn--open { min-width: 240px; }
+.su-gate.sh-live .su-gate__scene { cursor: pointer; }
+
+/* ───────── hero ───────── */
+.theme-shree .su-hero { background: radial-gradient(120% 70% at 50% 30%, #4A1C44 0%, #3A1435 40%, #2E0F2A 78%); color: var(--su-ink); }
+.theme-shree .su-cue { bottom: 22px; color: var(--su-ink-2); }
+.sh-hero { --gan-h: clamp(168px, 27svh, 290px); position: relative; width: 100%; min-height: 100svh; display: grid; place-items: center;
+  padding: calc(52px + env(safe-area-inset-top, 0px)) 16px 74px; box-sizing: border-box; }
+.sh-hero__col { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; width: min(100%, 640px); }
+.sh-gan { position: relative; z-index: 1; height: var(--gan-h); aspect-ratio: 1000 / 1311; margin: 0 auto 6px; }
+.sh-gan__img { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; }
+.sh-halo { position: absolute; z-index: -1; left: 50%; top: 52%; width: calc(var(--gan-h) * 1.6); height: calc(var(--gan-h) * 1.6); margin: calc(var(--gan-h) * -0.8) 0 0 calc(var(--gan-h) * -0.8); pointer-events: none; }
+.sh-halo__spin { position: absolute; inset: 0; }
+.sh-halo .sh-lotus { opacity: 0.17; }
+.sh-bloom { position: absolute; inset: 8%; border-radius: 50%; opacity: 0.7;
+  background: radial-gradient(circle, rgba(255, 232, 170, 0.62) 0%, rgba(232, 196, 120, 0.3) 24%, rgba(201, 163, 90, 0.1) 46%, rgba(201, 163, 90, 0) 66%); }
+.sh-inv { margin: 10px 0 0; color: var(--sh-gold-hi); font: 400 clamp(16px, 2svh, 19px)/1.5 var(--su-f-deva); }
+.sh-inv .l-en, .sh-inv .l-ne { font-family: var(--su-f-deva); }
+.sh-title { margin: 2px 0 0; color: var(--su-accent); font: 700 clamp(40px, 6svh, 60px)/1.35 var(--su-f-deva); }
+.sh-line { max-width: 30ch; margin: 2px auto 0; color: var(--su-ink-2); font: 400 15.5px/1.5 var(--su-f-body); text-wrap: balance; }
+.sh-line .l-en { font: 400 17px/1.4 var(--su-f-display); letter-spacing: 0.03em; }
+.sh-names { margin: clamp(6px, 1.4svh, 14px) 0 0; color: var(--su-ink); font: 400 clamp(50px, 7.4svh, 76px)/1.02 var(--su-f-script); }
+.sh-names .su-amp { margin: -0.06em 0; color: var(--su-gold); font: 400 0.42em/1.4 var(--su-f-display); }
+.sh-names .l-ne { font: 600 0.62em/1.35 var(--su-f-deva); }
+.sh-when { margin-top: clamp(10px, 2svh, 20px); }
+/* a short Dhaka diamond band, centred: an ornament, never an edge */
+.sh-band { display: block; width: min(168px, 50vw); height: 12px; margin: 0 auto; background: var(--sh-dhaka) center / 24px 12px repeat-x; opacity: 0.7; }
+.sh-when .sh-band { margin-bottom: 12px; }
+.sh-close__band { position: absolute; left: 50%; top: 28px; width: min(240px, 56vw); translate: -50% 0; }
+.sh-when p { margin: 0; }
+.sh-when__ad { color: var(--su-ink); font: 400 15px/1.5 var(--su-f-display); letter-spacing: 0.2em; text-transform: uppercase; }
+.sh-when__ad .l-ne { font: 500 17px/1.5 var(--su-f-body); }
+.sh-when__bs { margin-top: 2px !important; color: var(--sh-gold-hi); font: 500 16px/1.6 var(--su-f-body); }
+
+/* the hanging diyas: chain from the top edge */
+.sh-diya { position: absolute; top: 0; z-index: 1; height: clamp(150px, 23svh, 260px); aspect-ratio: 520 / 1132; pointer-events: none; }
+.sh-diya--l { left: max(4px, 2vw); }
+.sh-diya--r { right: max(4px, 2vw); }
+.sh-diya__swing { position: absolute; inset: 0; transform-origin: 50% 0; }
+.sh-diya img { display: block; width: 100%; height: 100%; }
+
+body.sh-amb .sh-halo__spin { animation: sh-spin 300s linear infinite; }
+body.sh-amb .su-hero .sh-diya__swing { animation: sh-sway 7s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+body.sh-amb .su-hero .sh-diya--r .sh-diya__swing { animation-duration: 7.8s; animation-delay: -1.3s; }
+/* off-screen, the loops hold still (no compositor work while the guest reads further down) */
+/* (removed, not paused: even a paused animation keeps its GPU layer, and makes Chrome give everything painted after it one too) */
+@keyframes sh-spin { to { transform: rotate(360deg); } }
+@keyframes sh-sway { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(1.1deg); } 75% { transform: rotate(-1.1deg); } }
+
+/* phones, tablets and small laptops: the language and music buttons sit where the chains meet the top edge, so the
+   hero's diyas hang a little lower and their chains fade up into the dark instead of running under the buttons */
+@media (max-width: 1199px) {
+  .su-hero .sh-diya { top: calc(50px + env(safe-area-inset-top, 0px)); }
+  .su-hero .sh-diya img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
+}
+/* short phones (360×740 and the like): a touch smaller, so the scroll cue keeps its breathing room */
+@media (max-width: 899px) and (max-height: 780px) {
+  .sh-hero { --gan-h: clamp(150px, 25svh, 290px); }
+  .sh-names { font-size: clamp(44px, 6.7svh, 76px); }
+}
+@media (min-width: 900px) {
+  .sh-hero { --gan-h: clamp(180px, 28svh, 290px); padding-top: 40px; }
+  .sh-diya { height: clamp(220px, 46svh, 440px); }
+  .sh-diya--l { left: calc(50% - min(37vw, 450px)); }
+  .sh-diya--r { right: calc(50% - min(37vw, 450px)); }
+  .sh-names { flex-direction: row; align-items: baseline; justify-content: center; gap: 0.32em; font-size: clamp(60px, 9svh, 86px); }
+  .sh-names .su-amp { margin: 0; }
+  .sh-line { max-width: 52ch; }
+}
+
+/* Devanagari digits always in Mukta: the display face's ८ is not trusted (see core/base.css) */
+.theme-shree :is(.su-count__n, .sh-coin__day, .sh-coin__y, .sh-mu__day) .l-ne, .sh-dial__nums.l-ne text { font-family: var(--su-f-body); }
+
+/* ───────── ornaments ───────── */
+.sh-bud { display: block; width: 46px; height: auto; color: var(--su-gold); }
+.sh-div { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--su-gold); }
+.sh-div i { width: clamp(36px, 10vw, 72px); height: 1px; background: linear-gradient(90deg, rgba(201, 163, 90, 0), rgba(201, 163, 90, 0.8)); }
+.sh-div i:last-child { transform: scaleX(-1); }
+.sh-dia { display: block; width: 30px; height: 30px; color: var(--su-gold); }
+.sh-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.sh-kicker { margin: 0; color: var(--su-gold); font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.28em; text-transform: uppercase; }
+.sh-kicker .l-ne { font-size: 15px; }
+.sh-h2 { margin: 0; color: var(--sh-gold-hi); font: 400 clamp(30px, 4vw, 46px)/1.15 var(--su-f-display); letter-spacing: 0.02em; text-wrap: balance; }
+.sh-h2 .l-ne { font: 400 0.84em/1.5 var(--su-f-deva); }
+.sh-lede { max-width: 34ch; margin: 0 auto; text-align: center; color: var(--su-ink-2); text-wrap: balance; }
+.sh-link { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.sh-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 24px; border: 1.5px solid #4A1C44; border-radius: 3px; background: #4A1C44; color: #F3E6CC;
+  font: 600 13px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: transform 180ms var(--sh-ease); }
+.sh-btn .l-ne { font-size: 16px; }
+.sh-btn--line { background: transparent; color: #4A1C44; }
+.sh-btn:active { transform: scale(0.98); }
+
+/* the fixed backdrop: the great mandala behind, two diyas in front */
+.sh-fx { position: fixed; inset: 0; z-index: 3; pointer-events: none; visibility: hidden; }
+.sh-bgm { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.theme-shree .su-hero { z-index: 3; }
+.sh-fx__mandala { position: absolute; left: 50%; top: 50%; width: max(118vw, 110svh); aspect-ratio: 1; margin: calc(max(118vw, 110svh) / -2) 0 0 calc(max(118vw, 110svh) / -2); opacity: 0.13; }
+.sh-fx__diya.sh-diya { top: 0; z-index: 2; height: clamp(110px, 15svh, 170px); }
+.sh-fx__diya--l { left: 2px; }
+.sh-fx__diya--r { right: 2px; }
+body.sh-amb .sh-fx .sh-diya__swing { animation: sh-sway 6.4s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+body.sh-amb .sh-fx .sh-diya--r .sh-diya__swing { animation-duration: 7.3s; animation-delay: -2s; }
+.sh-book, .sh-sec, .sh-closing { position: relative; }
+.sh-book { z-index: 2; }
+.sh-sec { z-index: 4; }
+
+/* ───────── the pothi ───────── */
+/* without 3D (reduced motion, before the opening) the leaves simply stack, one under the other */
+.sh-book__stage { display: grid; gap: 28px; padding: 40px 12px; }
+.sh-leaf { position: relative; }
+.sh-leaf__face { position: relative; height: 100%; box-sizing: border-box; padding: clamp(26px, 4svh, 40px) clamp(18px, 4vw, 56px);
+  background: repeating-linear-gradient(180deg, rgba(201, 163, 90, 0) 0 7px, rgba(201, 163, 90, 0.045) 7px 8px), linear-gradient(170deg, #521F4B 0%, #45193F 45%, #3A1435 100%);
+  border: 1px solid rgba(232, 203, 140, 0.75); border-radius: 10px;
+  box-shadow: inset 0 0 0 5px #45193F, inset 0 0 0 6px rgba(201, 163, 90, 0.4), 0 22px 40px -22px rgba(10, 2, 9, 0.9); }
+.sh-leaf__in { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 2.2svh, 24px); min-height: 100%; transform-origin: 50% 0; }
+.sh-leaf__shade { position: absolute; inset: 0; z-index: 3; border-radius: 10px; background: #12040F; opacity: 0; pointer-events: none; }
+.sh-leaf__back { display: none; }
+.sh-leaf__hole { position: absolute; z-index: 2; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: #1E081B; box-shadow: 0 0 0 1.5px rgba(232, 203, 140, 0.8), 0 0 0 5px rgba(201, 163, 90, 0.16); }
+.sh-leaf__hole--l { left: 9px; }
+.sh-leaf__hole--r { right: 9px; }
+
+.sh-book.is-3d { height: 100svh; }
+.sh-book.is-3d .sh-book__stage { position: relative; display: block; height: 100%; padding: 0; perspective: 1500px; perspective-origin: 50% 0%; }
+.sh-book.is-3d .sh-leaf { position: absolute; left: 10px; right: 10px; top: calc(60px + env(safe-area-inset-top, 0px)); bottom: 14px; transform-origin: 50% 0; transform-style: preserve-3d; }
+.sh-book.is-3d .sh-leaf__face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+.sh-book.is-3d .sh-leaf__back { display: grid; place-items: center; position: absolute; inset: 0; transform: rotateX(180deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; visibility: hidden; border-radius: 10px; color: var(--su-gold);
+  background: repeating-linear-gradient(180deg, rgba(201, 163, 90, 0) 0 7px, rgba(201, 163, 90, 0.05) 7px 8px), #2A0D26; border: 1px solid rgba(232, 203, 140, 0.6); }
+.sh-leaf__back .sh-bud { width: 80px; opacity: 0.5; }
+
+/* couple: the photograph in a gold temple arch, shown whole */
+.sh-arch { margin: 0; padding: 8px; border: 1px solid rgba(232, 203, 140, 0.7); border-radius: 999px 999px 8px 8px; }
+.sh-arch__pic { overflow: hidden; border-radius: 999px 999px 4px 4px; }
+.sh-arch__pic img { display: block; width: auto; max-width: min(74vw, 360px); height: auto; max-height: 52svh; }
+
+/* the date: a gold-leaf mandala coin */
+.sh-coin.su-scratch { width: min(76vw, 40svh, 330px); gap: 12px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sh-coin .su-scratch__face { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 40%, #5B2553 0%, #3A1435 70%); box-shadow: 0 0 0 2px #C9A35A, 0 0 0 7px #3A1435, 0 0 0 8px rgba(201, 163, 90, 0.55), 0 18px 30px -12px rgba(0, 0, 0, 0.7); }
+.sh-coin .su-scratch__foil { width: 100%; height: auto; aspect-ratio: 1; border-radius: 50%; }
+.sh-coin .su-scratch__btn { min-height: 44px; padding: 8px 18px; border: 1px solid rgba(201, 163, 90, 0.7); border-radius: 3px; background: transparent; color: var(--sh-gold-hi); font: 600 12px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.sh-coin .su-scratch__btn .l-ne { font-size: 15px; }
+.sh-coin__face { display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--su-ink); }
+.sh-coin__face p { margin: 0; }
+.sh-coin__m { color: var(--sh-gold-hi); font: 400 clamp(15px, 2.2svh, 19px)/1.2 var(--su-f-display); letter-spacing: 0.32em; text-transform: uppercase; }
+.sh-coin__m .l-ne { font: 600 1.1em/1.4 var(--su-f-body); }
+.sh-coin__day { color: var(--sh-gold-hi); font: 400 clamp(60px, 10svh, 92px)/1 var(--su-f-display); }
+.sh-coin__y { color: var(--su-ink); font: 400 clamp(15px, 2svh, 18px)/1.3 var(--su-f-display); letter-spacing: 0.3em; }
+.sh-coin__wd { margin-top: 8px !important; padding-top: 8px; border-top: 1px solid rgba(201, 163, 90, 0.5); color: var(--su-ink-2); font: 500 13px/1.3 var(--su-f-body); letter-spacing: 0.12em; text-transform: uppercase; }
+.sh-coin__wd .l-ne { font-size: 15px; }
+.sh-date__meta { text-align: center; }
+.sh-date__meta p { margin: 0; }
+.sh-date__alt { color: var(--sh-gold-hi); font: 500 16px/1.5 var(--su-f-body); }
+.sh-date__place { color: var(--su-ink-2); font-size: 15px; }
+
+/* the countdown: an astrological dial, each ring turned to its value */
+.sh-dial { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sh-dial__disc { position: relative; width: min(84vw, 46svh, 430px); aspect-ratio: 1; }
+.sh-dial__svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.sh-dial__rim { fill: #2C0E28; stroke: #C9A35A; stroke-width: 1.6; }
+.sh-dial__rim2 { fill: none; stroke: rgba(201, 163, 90, 0.5); stroke-width: 0.8; stroke-dasharray: 1 5; }
+.sh-dial__band { fill: none; stroke: rgba(201, 163, 90, 0.35); stroke-width: 0.8; }
+.sh-dial__ticks line { stroke: #C9A35A; stroke-width: 1; }
+.sh-dial__nums text { fill: #E8CB8C; font: 400 11px var(--su-f-display); text-anchor: middle; dominant-baseline: middle; }
+.sh-dial__nums.l-ne text { font-size: 12px; }
+.sh-dial__ring[data-ring='d'] .sh-dial__nums text { font-size: 12px; }
+.sh-dial__window { fill: rgba(232, 203, 140, 0.1); stroke: rgba(232, 203, 140, 0.55); stroke-width: 0.8; }
+.sh-dial__ptr { fill: #E8CB8C; }
+.sh-dial__core { position: absolute; left: 50%; top: 50%; width: 27%; aspect-ratio: 1; translate: -50% -50%; display: grid; place-content: center; text-align: center; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #5B2553, #3A1435); box-shadow: 0 0 0 1.5px #C9A35A, 0 0 0 5px #2C0E28, 0 0 0 6px rgba(201, 163, 90, 0.5); }
+.sh-dial__d .su-count__n { display: block; color: var(--sh-gold-hi); font: 400 clamp(30px, 5svh, 44px)/1 var(--su-f-display); font-variant-numeric: tabular-nums; }
+.sh-dial__dl { color: var(--su-ink-2); font: 600 10.5px/1.3 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; }
+.sh-dial__dl .l-ne { font-size: 13px; }
+.sh-dial__done { margin: 0; padding: 0 6px; color: var(--sh-gold-hi); font-size: 13px; line-height: 1.3; }
+.sh-dial__chips { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.sh-chip { position: absolute; left: 50%; translate: -50% -50%; min-width: 30px; padding: 1px 6px; border-radius: 99px; background: #2C0E28; text-align: center; }
+.sh-chip .su-count__n { display: block; color: #FBEFD2; font: 600 13px/1.25 var(--su-f-body); font-variant-numeric: tabular-nums; }
+.sh-chip--h { top: 16%; }
+.sh-chip--m { top: 25%; }
+.sh-chip--s { top: 34%; }
+.sh-dial__legend { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin: 0; color: var(--su-ink-2); font: 600 11px/1.3 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; }
+.sh-dial__legend .l-ne { font-size: 14px; }
+.sh-dial__legend i { width: 4px; height: 4px; transform: rotate(45deg); background: var(--su-gold); }
+
+/* families: two temple niches facing each other */
+.sh-niches { min-height: clamp(280px, 44svh, 460px); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 8px; width: 100%; max-width: 820px; perspective: 900px; }
+.sh-niches__mid { align-self: center; }
+.sh-niche--l { transform: rotateY(14deg); transform-origin: 0 50%; }
+.sh-niche--r { transform: rotateY(-14deg); transform-origin: 100% 50%; }
+.sh-niche__arch { position: relative; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: clamp(30px, 5svh, 48px) 10px 22px; text-align: center;
+  border-radius: 999px 999px 6px 6px; border: 1px solid rgba(232, 203, 140, 0.7);
+  background: radial-gradient(120% 70% at 50% 0%, #1A0617 0%, #2A0D26 45%, #3A1435 100%);
+  box-shadow: inset 0 22px 30px -10px rgba(0, 0, 0, 0.75), inset 0 0 0 5px #2A0D26, inset 0 0 0 6px rgba(201, 163, 90, 0.35), 0 16px 26px -16px rgba(0, 0, 0, 0.8); }
+.sh-niche__arch p { margin: 0; }
+.sh-niche__lamp .sh-bud { width: 40px; margin-bottom: 4px; }
+.sh-niche__pic { width: 72%; margin: 0 0 8px; overflow: hidden; border-radius: 999px 999px 6px 6px; box-shadow: 0 0 0 1px rgba(201, 163, 90, 0.7); }
+.sh-niche__pic img { display: block; width: 100%; height: auto; }
+.sh-niche__k { color: var(--su-gold); font: 600 11px/1.4 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; }
+.sh-niche__k .l-ne { font-size: 14px; }
+.sh-niche__name { color: var(--sh-gold-hi); font: 400 clamp(21px, 2.6vw, 30px)/1.2 var(--su-f-display); text-wrap: balance; }
+.sh-niche__name .l-ne { font: 400 0.9em/1.5 var(--su-f-deva); }
+.sh-niche__of { margin-top: 8px !important; color: var(--su-ink-2); font-size: 13px; }
+.sh-niche__par { color: var(--su-ink); font: 500 14.5px/1.45 var(--su-f-body); text-wrap: balance; }
+.sh-niche__home { margin-top: 4px !important; color: var(--su-ink-2); font-size: 13px; }
+
+/* ───────── the muhurta patra: a paper scroll on gold rods ───────── */
+.sh-sec { padding: clamp(80px, 12svh, 130px) 14px; }
+.sh-sec > .sh-head { margin-bottom: clamp(26px, 4svh, 40px); }
+.sh-scroll { position: relative; width: min(calc(100% - 24px), 720px); margin: 0 auto; } /* room for the rod's knobs: no sideways scroll */
+.sh-scroll__rod { position: relative; z-index: 2; height: 18px; margin: 0 -10px; border-radius: 9px; background: linear-gradient(180deg, #F2D892 0%, #C9A35A 40%, #8A6420 75%, #B48A44 100%); box-shadow: 0 6px 10px -4px rgba(0, 0, 0, 0.6); }
+.sh-scroll__rod i::before, .sh-scroll__rod i::after { content: ''; position: absolute; top: -5px; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FBE7B0, #C9A35A 50%, #7A5418); }
+.sh-scroll__rod i::before { left: -14px; }
+.sh-scroll__rod i::after { right: -14px; }
+.sh-scroll__paper { position: relative; z-index: 1; padding: 22px clamp(16px, 4vw, 40px) 26px; color: #2E0F2A;
+  background: linear-gradient(90deg, #E2CFA8 0%, #F6EBD3 6%, #F8EFDB 50%, #F6EBD3 94%, #E2CFA8 100%); }
+.sh-scroll__head { margin: 0 0 10px; text-align: center; color: #6E3E14; font: 400 22px/1.5 var(--su-f-deva); }
+.sh-mus { margin: 0; padding: 0; list-style: none; }
+.sh-mu { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-top: 1px dashed rgba(90, 42, 82, 0.35); }
+.sh-mu__date { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: start; aspect-ratio: 1; border-radius: 50%; border: 1px solid #8A6420; color: #5A2A52; }
+.sh-mu__day { font: 400 28px/1 var(--su-f-display); }
+.sh-mu__day .l-ne { font: 600 24px/1 var(--su-f-body); }
+.sh-mu__mon { font: 600 10.5px/1.3 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; }
+.sh-mu__mon .l-ne { font-size: 12px; }
+.sh-mu__main p { margin: 3px 0 0; }
+.sh-mu__t { margin: 0; color: #4A1C44; font: 400 24px/1.2 var(--su-f-display); }
+.sh-mu__t .l-ne { font: 700 0.92em/1.5 var(--su-f-deva); }
+.sh-mu__time { font-weight: 600; color: #5A2A52; }
+.sh-mu__blurb, .sh-mu__when { color: #4D3348; }
+.sh-mu__venue .sh-link { color: #5A2A52; margin-left: 4px; }
+.sh-sw { display: inline-flex; gap: 4px; margin-right: 8px; vertical-align: -2px; }
+.sh-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
+.sh-mu__order { margin-top: 8px; }
+.sh-mu__order summary { cursor: pointer; font-weight: 600; color: #5A2A52; }
+.sh-mu__order ol { margin: 6px 0 0; padding: 0; list-style: none; }
+.sh-mu__order li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 3px 0; border-bottom: 1px dotted rgba(90, 42, 82, 0.3); }
+.sh-scroll__acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-top: 20px; border-top: 1px dashed rgba(90, 42, 82, 0.35); }
+.sh-scroll .su-more { margin-top: 18px; padding: 12px 14px; border: 1px solid rgba(90, 42, 82, 0.3); border-radius: 6px; background: transparent; color: #2E0F2A; box-shadow: none; }
+.sh-scroll .sh-btn { background: #4A1C44; border-color: #4A1C44; color: #F3E6CC; border-radius: 3px; }
+.sh-scroll .sh-btn--line { background: transparent; color: #4A1C44; }
+.sh-scroll .su-more summary { cursor: pointer; font-weight: 600; color: #5A2A52; }
+.sh-scroll .su-more h3 { margin: 0 0 4px; color: #4A1C44; font: 400 19px/1.3 var(--su-f-display); }
+.sh-scroll .su-more small { color: #5E4458; }
+.sh-scroll .su-link { color: #5A2A52; }
+
+/* ───────── photos: temple windows ───────── */
+.sh-wins__grid { columns: 2 150px; column-gap: 14px; max-width: 1080px; margin: 0 auto; }
+.sh-win { break-inside: avoid; margin: 0 0 18px; perspective: 800px; }
+.sh-win__frame { padding: 7px; border-radius: 999px 999px 8px 8px; border: 1px solid rgba(232, 203, 140, 0.75); background: #2A0D26;
+  box-shadow: inset 0 0 0 4px #3A1435, inset 0 0 0 5px rgba(201, 163, 90, 0.35), 0 18px 26px -14px rgba(0, 0, 0, 0.85); }
+.sh-win__btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; overflow: hidden; border-radius: 999px 999px 4px 4px; box-shadow: inset 0 14px 20px -8px rgba(0, 0, 0, 0.7); }
+.sh-win__btn img { position: relative; z-index: -1; display: block; width: 100%; height: auto; }
+
+/* ───────── the card wording and its gold seal ───────── */
+.sh-plate { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 620px; margin: 0 auto; text-align: center; }
+.sh-plate .sh-bud { width: 56px; }
+.sh-plate__line { margin: 0; color: var(--su-ink); font: 400 clamp(22px, 2.8vw, 30px)/1.45 var(--su-f-display); text-wrap: balance; }
+.sh-plate__line .l-ne { font: 400 0.92em/1.7 var(--su-f-deva); }
+.sh-plate__hosts { margin: 0; color: var(--su-ink-2); }
+.sh-seal { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; padding: 0; border: 0; background: none; color: var(--sh-gold-hi); cursor: pointer; }
+.sh-seal__disc { display: grid; place-items: center; width: 116px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FBE7B0 0%, #E0B865 30%, #B0812F 70%, #7A5418 100%);
+  box-shadow: inset 0 0 0 5px rgba(122, 84, 24, 0.55), inset 0 0 0 8px rgba(251, 231, 176, 0.5), inset 0 0 0 9px rgba(122, 84, 24, 0.6), 0 14px 24px -10px rgba(0, 0, 0, 0.8);
+  transition: transform 260ms var(--sh-ease); }
+.sh-seal__disc span { color: #4A2A06; font: 700 40px/1 var(--su-f-deva); }
+.sh-seal:hover .sh-seal__disc { transform: rotate(-8deg) scale(1.04); }
+.sh-seal:active .sh-seal__disc { transform: scale(0.96); }
+.sh-seal__lbl { font: 600 13px/1.3 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: rgba(201, 163, 90, 0.6); }
+.sh-seal__lbl .l-ne { font-size: 16px; }
+
+/* ───────── RSVP: a champagne leaf ───────── */
+.sh-cream { --su-ink: #2E0F2A; --su-ink-2: #5A2A52; --su-accent: #5A2A52; --su-accent-ink: #F3E6CC; --su-bg: #FFFAF0; --su-line: rgba(46, 15, 42, 0.26);
+  position: relative; max-width: 640px; margin: 0 auto; padding: clamp(30px, 5vw, 48px) clamp(20px, 5vw, 48px); color: #2E0F2A; border-radius: 10px;
+  background: repeating-linear-gradient(180deg, rgba(138, 100, 32, 0) 0 7px, rgba(138, 100, 32, 0.05) 7px 8px), #F3E6CC;
+  box-shadow: inset 0 0 0 6px #F3E6CC, inset 0 0 0 7px rgba(138, 100, 32, 0.5), 0 24px 40px -22px rgba(0, 0, 0, 0.9); }
+.sh-cream .sh-head { margin-bottom: 22px; }
+.sh-cream .sh-h2 { color: #4A1C44; }
+.sh-cream .sh-div { color: #8A6420; }
+.sh-cream__by { margin: 4px 0 0; color: #5A2A52; font-size: 15px; }
+.sh-cream .su-btn { width: 100%; background: #4A1C44; border-color: #4A1C44; color: #F3E6CC; border-radius: 3px; }
+.sh-cream :focus-visible { outline-color: #4A1C44; }
+.sh-cream .su-err, .sh-cream .rsvp__status.is-error { color: #8E1B2A; }
+.theme-shree #f-name-err:empty { display: none; } /* ready() lifts the engine's [hidden], which rsvp.js never removes */
+.sh-cream .rsvp__status:empty { min-height: 0; margin-top: -18px; }
+
+/* ───────── closing: the diyas again, a quiet lotus ───────── */
+.sh-closing { z-index: 4; padding: clamp(250px, 34vh, 320px) 20px 28px; text-align: center; overflow: hidden; background: var(--sh-plum-deep); color: var(--su-ink); }
+.sh-close { position: absolute; inset: 0; pointer-events: none; }
+.sh-close .sh-diya { top: 0; height: clamp(150px, 22vh, 220px); }
+.sh-diya--cl { left: max(10px, calc(50% - 300px)); }
+.sh-diya--cr { right: max(10px, calc(50% - 300px)); }
+.sh-close__lotus { position: absolute; left: 50%; top: clamp(250px, 34vh, 320px); width: min(560px, 120vw); aspect-ratio: 1; translate: -50% -30%; opacity: 0.16; }
+.sh-close__band { position: absolute; left: 50%; top: 28px; width: min(240px, 56vw); translate: -50% 0; }
+.sh-close__text { position: relative; max-width: 560px; margin: 0 auto; }
+.sh-close__text p { margin: 0; }
+.sh-close__ne { color: var(--sh-gold-hi); font: 400 24px/1.6 var(--su-f-deva); }
+.sh-close__en { margin-top: 6px !important; color: var(--su-ink-2); font: 400 20px/1.5 var(--su-f-display); }
+html[data-lang='ne'] .sh-close__en { display: none; }
+.sh-close__names { margin-top: 22px !important; color: var(--su-ink); font: 400 clamp(36px, 5vw, 52px)/1.2 var(--su-f-script); }
+.sh-close__names .su-n, .sh-close__names .su-amp { display: inline; }
+.sh-close__names .su-amp { color: var(--su-gold); font: 400 0.5em/1 var(--su-f-display); margin: 0 0.45em; }
+.sh-close__names .l-ne { font: 600 0.62em/1.4 var(--su-f-deva); }
+.sh-close__tag { margin-top: 10px !important; color: var(--su-ink-2); letter-spacing: 0.06em; }
+.sh-closing .madewith { color: var(--su-ink-2); }
+
+/* ───────── desktop: landscape palm leaves, composed in two columns ───────── */
+@media (min-width: 900px) {
+  .sh-book.is-3d .sh-leaf { left: 50%; right: auto; width: min(1080px, 78vw); margin-left: calc(min(1080px, 78vw) / -2); top: max(70px, calc(50svh - min(310px, 41svh))); bottom: auto; height: min(620px, 82svh); }
+  .sh-leaf__hole--l { left: 22px; }
+  .sh-leaf__hole--r { right: 22px; }
+  .sh-book.is-3d .sh-leaf__in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: center; justify-items: center; column-gap: clamp(28px, 4vw, 64px); padding: 0 40px; }
+  .sh-book.is-3d .sh-leaf__in > .sh-head { grid-column: 1; align-self: end; }
+  .sh-book.is-3d .sh-leaf__in > :not(.sh-head) { grid-column: 1; }
+  .sh-book.is-3d .sh-leaf--couple .sh-arch, .sh-book.is-3d .sh-leaf--date .sh-coin, .sh-book.is-3d .sh-leaf--count .sh-dial { grid-column: 2; grid-row: 1 / span 3; }
+  .sh-book.is-3d .sh-leaf--couple .sh-lede, .sh-book.is-3d .sh-leaf--date .sh-date__meta { align-self: start; }
+  .sh-book.is-3d .sh-leaf--fam .sh-leaf__in { display: flex; }
+  .sh-arch__pic img { max-height: min(500px, 62svh); max-width: 420px; }
+  .sh-coin.su-scratch { width: min(380px, 52svh); }
+  .sh-date__alt { font-size: 19px; }
+  .sh-date__place { font-size: 17px; }
+  .sh-dial__disc { width: min(470px, 62svh); }
+  .sh-niches { gap: 24px; }
+  .sh-niche__arch { padding: 44px 26px 26px; }
+  .sh-fx__diya.sh-diya { height: clamp(200px, 33svh, 330px); }
+  .sh-fx__diya--l { left: max(8px, calc(50% - 640px)); }
+  .sh-fx__diya--r { right: max(8px, calc(50% - 640px)); }
+  .sh-wins__grid { columns: 3 260px; column-gap: 26px; }
+  .sh-win { margin-bottom: 26px; }
+  .sh-mu { grid-template-columns: 84px minmax(0, 1fr); gap: 24px; }
+  .sh-mu__day { font-size: 36px; }
+}
+@media (max-width: 899px) {
+  .sh-fx__diya { opacity: 0.92; }
+}
+
+/* dialogs */
+.theme-shree .su-modal, .theme-shree .su-lb { background: rgba(24, 6, 22, 0.78); }
+.theme-shree .su-modal__panel { background: var(--sh-plum-2); color: var(--su-ink); border: 1px solid rgba(201, 163, 90, 0.5); }
+.theme-shree .su-modal__x { background: rgba(243, 230, 204, 0.1); color: var(--su-ink); }
+.theme-shree .su-modal__gan { width: 110px; }
+.theme-shree .su-modal__shloka { color: var(--sh-gold-hi); font-family: var(--su-f-deva); }
+.theme-shree .su-modal__title { color: var(--su-accent); }
+.theme-shree .su-modal__title .l-ne { font: 700 0.95em/1.5 var(--su-f-deva); }
+.theme-shree .su-modal__when dt { color: var(--sh-gold-hi); }
+.theme-shree .su-modal__shloka-en { color: var(--su-ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+}
+
+
+/* ───────── Nepali touches: live flames, Panas lamps, kalash, toran, saptapadi, Dhaka ───────── */
+.sh-diya { container-type: inline-size; }
+.sh-wick { position: absolute; left: 50%; top: 76%; width: 0; height: 0; }
+.sh-wick .np-flame { --np-flame: 34cqw; }
+.sh-panas { position: absolute; z-index: 1; bottom: 16px; width: clamp(48px, 14vw, 78px); line-height: 0; pointer-events: none; }
+.sh-panas .np-lamp { width: 100%; }
+.sh-panas--l { left: max(6px, 2.5vw); }
+.sh-panas--r { right: max(6px, 2.5vw); }
+.theme-shree .sh-kicker, .theme-shree .sh-coin__wd { color: var(--sh-marigold); }
+.sh-dial__ptr { fill: #E0503A; }
+.sh-mu__date { border-color: var(--sh-sindoor); color: var(--sh-sindoor); }
+.sh-seal__disc span { color: #7A1A1F; }
+
+.sh-niche__arch { justify-content: flex-start; }
+.sh-niche__kalash { position: relative; z-index: 1; width: clamp(64px, 19vw, 112px); margin-top: auto; padding-top: 10px; }
+.sh-niche__arch::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: 4px; height: 38%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(240, 160, 48, 0.22), rgba(240, 160, 48, 0)); }
+
+.sh-vows { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(14px, 3vw, 36px); width: 100%; max-width: 640px; }
+.sh-vows__feet { width: clamp(78px, 23vw, 180px); border-radius: 4px; box-shadow: 0 0 0 1px rgba(232, 203, 140, 0.6), 0 14px 24px -12px rgba(0, 0, 0, 0.8); }
+.sh-vows__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.sh-vows__list li { position: relative; padding: 7px 0 7px 18px; color: var(--sh-gold-hi); font: 400 16.5px/1.35 var(--su-f-display); border-bottom: 1px solid rgba(201, 163, 90, 0.2); text-wrap: balance; }
+.sh-vows__list li:last-child { border-bottom: 0; }
+.sh-vows__list li::before { content: ''; position: absolute; left: 2px; top: calc(7px + 0.6em); width: 6px; height: 6px; transform: rotate(45deg); background: var(--sh-marigold); }
+.sh-vows__list .l-ne { font: 500 15.5px/1.5 var(--su-f-body); }
+
+.sh-scroll__paper { --px: clamp(16px, 4vw, 40px); padding-left: var(--px); padding-right: var(--px); }
+.sh-scroll__toran { display: block; width: calc(100% + 2 * var(--px)); margin: -22px calc(var(--px) * -1) 2px; }
+
+.sh-cream-edge { position: relative; max-width: 660px; margin: 0 auto; padding: 9px; border-radius: 14px;
+  background: url('/themes/_nepali/dhaka-sm.webp') 0 0 / 84px auto repeat; box-shadow: 0 0 0 1px rgba(232, 203, 140, 0.85), 0 24px 40px -22px rgba(0, 0, 0, 0.9); }
+.sh-cream-edge .sh-cream { max-width: none; box-shadow: inset 0 0 0 6px #F3E6CC, inset 0 0 0 7px rgba(138, 100, 32, 0.5), 0 0 0 1px rgba(46, 15, 42, 0.6); }
+
+.sh-cardsec { overflow: hidden; padding-top: clamp(130px, 18svh, 170px); padding-bottom: clamp(130px, 18svh, 170px); }
+.sh-plate__fl { position: absolute; width: clamp(110px, 30vw, 230px); pointer-events: none; }
+.sh-plate__fl--tl { left: 0; top: 0; }
+.sh-plate__fl--br { right: 0; bottom: 0; }
+
+.sh-cpanas.np-lamp { position: absolute; bottom: 12px; width: clamp(46px, 13vw, 96px); }
+.sh-cpanas--l { left: max(8px, calc(50% - 320px)); }
+.sh-cpanas--r { right: max(8px, calc(50% - 320px)); }
+.sh-closing { padding-bottom: clamp(150px, 22svh, 240px); }
+
+@media (min-width: 900px) {
+  .sh-panas { width: clamp(84px, 8vw, 120px); bottom: 20px; }
+  .sh-panas--l { left: calc(50% - min(37vw, 450px) + 26px); }
+  .sh-panas--r { right: calc(50% - min(37vw, 450px) + 26px); }
+  .sh-book.is-3d .sh-leaf--vows .sh-leaf__in { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); }
+  .sh-book.is-3d .sh-leaf--vows .sh-vows { grid-column: 2; grid-row: 1 / span 3; }
+  .sh-vows__feet { width: clamp(110px, 11vw, 150px); }
+  .sh-vows__list li { font-size: 18px; }
+}
+@media (max-width: 399px) {
+  .sh-when__ad { letter-spacing: 0.12em; font-size: 14px; }
+  .sh-vows__list li { font-size: 15px; padding-block: 5px; }
+  .sh-vows__list .l-ne { font-size: 14.5px; }
+}

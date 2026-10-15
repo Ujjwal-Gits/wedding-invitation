@@ -1,6 +1,6 @@
 # Nimtto (निम्तो) — premium Nepali wedding invitations
 
-Sixteen bilingual (English / नेपाली) wedding-invitation themes and a studio
+Twenty-one bilingual (English / नेपाली) wedding-invitation themes and a studio
 dashboard to create, customise, publish and track invitations.
 
 | # | Theme | Concept |
@@ -21,6 +21,11 @@ dashboard to create, customise, publish and track invitations.
 | 14 | **Nimantrana** `/nimantrana/` | A traditional red-gold tri-fold card on green silk; it unfolds in 3D into Ganesh, the couple and the programme. |
 | 15 | **Jhyal** `/jhyal/` | A carved Newari window on ivory lokta paper; the lattice shutters swing open and the view moves through into a calm invitation. |
 | 16 | **Mahal** `/mahal/` | Mangal's card behind a golden palace gate: Ganesh in the crest, the satin bow comes undone, the gate swings open and the camera walks onto a palace balcony at night. |
+| 17 | **Laali** `/laali/` | Blush pink and gold: an arched card under hanging lanterns; the gold arch draws itself and the lanterns drop in. |
+| 18 | **Mehendi** `/mehendi/` | Henna on ivory: a henna mandala draws itself, then the joined, hennaed hands glide in. |
+| 19 | **Hariyo** `/hariyo/` | Sage-green watercolour garden: the leaves part on a white pavilion with the couple and two peacocks. |
+| 20 | **Shree** `/shree/` | Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend. |
+| 21 | **Pardaa** `/pardaa/` | Red velvet curtains part on a dressed mandap with a living fire; each ceremony (Mehendi, Haldi, Wedding, Reception) in its own colours. |
 
 The showroom at `/` links every theme and the studio.
 

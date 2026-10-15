@@ -1,0 +1,359 @@
+/* Mehendi (मेहन्दी) · henna on ivory. Tokens first, then the gate (the mandala), the hero card, the sections. */
+html:has(body.theme-mehendi) { background: #FBF6EE; }
+body.su.theme-mehendi {
+  --su-bg: #FBF6EE;
+  --su-paper: #FFFDF8;
+  --su-ink: #3A2219;
+  --su-ink-2: #6B4636;      /* 8:1 on ivory */
+  --su-accent: #7A2E1B;     /* henna, 10:1 on ivory */
+  --su-accent-ink: #FFFDF8;
+  --su-gold: #B9774A;       /* terracotta: ornament lines only, never text */
+  --su-line: rgba(122, 46, 27, 0.16);
+  --su-f-display: 'Marcellus', Georgia, serif;
+  --su-f-script: 'Allura', cursive;
+  --su-f-body: 'Mukta', sans-serif;
+  --su-f-deva: 'Mukta', sans-serif;
+  --mh-f-sc: 'Marcellus SC', 'Marcellus', Georgia, serif;
+  --mh-f-deva: 'Tillana', 'Mukta', serif;
+  --su-radius: 4px;
+  --mh-m: min(88vw, 50svh, 560px);   /* the mandala, the same on the gate and as the hero's watermark */
+  /* shared chrome (language + music pills) */
+  --accent-2: #7A2E1B; --hair: rgba(122, 46, 27, 0.22); --ink-dim: #6B4636; --scrim: 255, 253, 248;
+}
+
+/* ───────── henna line ───────── */
+.theme-mehendi .mh-mandala, .theme-mehendi .mh-dhaka, .theme-mehendi .mh-corner, .theme-mehendi .mh-flower, .theme-mehendi .mh-lotus {
+  display: block; overflow: visible; fill: none; stroke: var(--su-accent); stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; }
+.theme-mehendi .mh-mandala .d, .theme-mehendi .mh-dhaka .d, .theme-mehendi .mh-corner .d, .theme-mehendi .mh-flower .d, .theme-mehendi .mh-lotus .d { fill: var(--su-accent); stroke: none; }
+.theme-mehendi .mh-dhaka, .theme-mehendi .mh-corner, .theme-mehendi .mh-flower, .theme-mehendi .mh-lotus, .theme-mehendi .mh-crest { --w: 1px; }
+.theme-mehendi .mh-dhaka *, .theme-mehendi .mh-corner *, .theme-mehendi .mh-flower *, .theme-mehendi .mh-lotus *, .theme-mehendi .mh-crest * { vector-effect: non-scaling-stroke; stroke-width: var(--w); }
+
+/* ───────── gate: plain ivory, the mandala waiting ───────── */
+.theme-mehendi .su-gate { color: var(--su-ink); }
+.mh-gate, .mh-gate__bg { position: absolute; inset: 0; }
+.mh-gate__bg { background: var(--su-bg); }
+.mh-gate__title { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + clamp(28px, 6.5svh, 64px)); margin: 0; text-align: center;
+  font: 500 clamp(30px, 4.2svh, 40px)/1.3 var(--mh-f-deva); color: var(--su-accent); }
+.mh-gate__rule { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + clamp(28px, 6.5svh, 64px) + clamp(46px, 6.4svh, 60px)); width: 120px; translate: -50% 0; }
+.mh-gate__rule { stroke: var(--su-gold); }
+.mh-gate__rule .d { fill: var(--su-gold); }
+.mh-gate__m { position: absolute; left: 50%; top: 50%; width: var(--mh-m); aspect-ratio: 1; translate: -50% -50%; cursor: pointer; pointer-events: auto; }
+.mh-gate__m .mh-mandala { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mh-ghost { opacity: 0.15; }
+.mh-ink path, .mh-ink circle:not(.d) { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.mh-ink .d { opacity: 0; }
+.theme-mehendi .su-gate__scene { pointer-events: none; }
+.theme-mehendi .su-gate__line { font: 400 19px/1.4 var(--su-f-display); color: var(--su-ink); }
+.theme-mehendi .su-gate__line .l-ne { font: 500 19px/1.5 var(--su-f-body); }
+.theme-mehendi .su-quiet { color: var(--su-ink-2); }
+
+/* ───────── hero: the card ───────── */
+.theme-mehendi .su-hero { place-items: center; background: var(--su-bg); }
+.mh-card { position: relative; width: 100%; height: 100svh; min-height: 560px; container-type: size; overflow: hidden; background: var(--su-bg); }
+.mh-wm { position: absolute; left: 50%; top: 50%; width: var(--mh-m); height: auto; aspect-ratio: 1; translate: -50% -50%; opacity: 0.09; pointer-events: none; }
+.mh-wm.is-turning { animation: mh-turn 480s linear infinite; }
+@keyframes mh-turn { to { transform: rotate(360deg); } }
+
+.mh-corner { position: absolute; width: min(22cqw, 12cqh, 120px); height: auto; opacity: 0.8; pointer-events: none; }
+.theme-mehendi .mh-card .mh-corner--tl, .theme-mehendi .mh-card .mh-corner--tr { display: none; }  /* on phones the hands own the top edge */
+.mh-corner--tl { top: 2.4cqw; left: 2.4cqw; }
+.mh-corner--tr { top: 2.4cqw; right: 2.4cqw; transform: scaleX(-1); }
+.mh-corner--bl { bottom: 2.4cqw; left: 2.4cqw; transform: scaleY(-1); }
+.mh-corner--br { bottom: 2.4cqw; right: 2.4cqw; transform: scale(-1); }
+
+.mh-card { --hh: min(30cqh, 70cqw); }
+.mh-hands { position: absolute; z-index: 1; top: 0; left: 50%; width: calc(var(--hh) / 1.1036); translate: -50% 0; pointer-events: none; }
+.mh-hands img { display: block; width: 100%; height: auto; }
+.mh-stack { position: absolute; z-index: 2; inset: calc(var(--hh) + 1.6cqh) 0 max(64px, 8cqh); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0 20px; text-align: center; }
+.mh-mark { display: flex; flex-direction: column; align-items: center; gap: 0.6cqh; }
+.mh-gan { display: block; height: clamp(54px, 8.6cqh, 96px); width: auto; }
+.mh-invo { margin: 0; font: 500 clamp(12px, 1.5cqh, 15px)/1.4 var(--su-f-body); color: var(--su-accent); }
+.mh-line { max-width: 30ch; margin: 2.2cqh 0 0; font: 400 clamp(14px, 1.75cqh, 17.5px)/1.45 var(--su-f-body); color: var(--su-ink-2); text-wrap: balance; }
+.mh-line .l-ne { font-size: 1.04em; line-height: 1.6; }
+.mh-names { display: flex; flex-direction: column; align-items: center; margin: 1.4cqh 0 0; font: 400 min(8.6cqh, 19cqw, 84px)/1.08 var(--su-f-script); color: var(--su-accent); }
+.mh-n { display: block; white-space: nowrap; padding: 0 0.12em; }
+.mh-n .l-ne { font: 500 0.66em/1.35 var(--mh-f-deva); }
+.mh-and { display: block; margin: -0.1em 0 0.02em; font: 400 clamp(12px, 1.5cqh, 15px)/1 var(--mh-f-sc); letter-spacing: 0.42em; padding-left: 0.42em; color: var(--su-ink-2); }
+.mh-and .l-ne { font: 500 clamp(17px, 2.1cqh, 22px)/1.2 var(--mh-f-deva); padding: 0; }
+.mh-when { display: flex; flex-direction: column; align-items: center; margin-top: 2.4cqh; }
+.mh-when__rule { width: 120px; margin-bottom: 1.4cqh; stroke: var(--su-gold); }
+.mh-when__rule .d { fill: var(--su-gold); }
+.mh-date { margin: 0; font: 400 clamp(13px, 1.65cqh, 17px)/1.4 var(--mh-f-sc); letter-spacing: 0.2em; color: var(--su-ink); }
+.mh-date .l-ne { font: 500 clamp(15px, 1.9cqh, 19px)/1.5 var(--su-f-body); }
+.mh-alt { margin: 0.3cqh 0 0; font: 500 clamp(14px, 1.7cqh, 17px)/1.5 var(--su-f-body); color: var(--su-accent); }
+.mh-place { margin: 0.6cqh 0 0; font: 400 clamp(13px, 1.55cqh, 16px)/1.4 var(--su-f-body); color: var(--su-ink-2); letter-spacing: 0.04em; }
+.theme-mehendi .su-cue { color: var(--su-ink-2); }
+
+/* desktop and tablets: the card lies on the ivory table, the mandala's watermark around it */
+@media (min-width: 720px) and (min-height: 560px) {
+  .theme-mehendi .su-hero { background: linear-gradient(#F4ECDF 72%, var(--su-bg)); }
+  .mh-card { --ch: min(84svh, 860px); height: var(--ch); width: calc(var(--ch) * 0.68); min-height: 0; background: var(--su-paper);
+    box-shadow: 0 1px 2px rgba(80, 40, 20, 0.06), 0 24px 60px -28px rgba(80, 40, 20, 0.28); }
+  .mh-card::after { content: ''; position: absolute; inset: 12px; border: 1px solid rgba(122, 46, 27, 0.22); outline: 1px solid rgba(122, 46, 27, 0.12); outline-offset: 4px; pointer-events: none; }
+  .mh-card { --hh: min(31cqh, 66cqw); }
+  .mh-corner { width: min(20cqw, 13cqh); }
+  .theme-mehendi .mh-card .mh-corner--tl, .theme-mehendi .mh-card .mh-corner--tr { display: block; }
+  .mh-corner--tl, .mh-corner--tr { top: 20px; } .mh-corner--bl, .mh-corner--br { bottom: 20px; }
+  .mh-corner--tl, .mh-corner--bl { left: 20px; } .mh-corner--tr, .mh-corner--br { right: 20px; }
+  .mh-stack { bottom: 6cqh; }
+}
+
+/* ───────── the henna trail: one vine, sections alternately left and right of it ───────── */
+body.su-locked .mh-story { visibility: hidden; }
+.mh-story { position: relative; background: var(--su-bg); overflow-x: clip; }
+.mh-sec { position: relative; padding: clamp(84px, 12vh, 140px) 0; }
+.mh-seg { position: absolute; left: 0; top: 0; z-index: 0; overflow: visible; pointer-events: none; fill: none; stroke: var(--su-accent); stroke-linecap: round; stroke-linejoin: round; }
+.mh-seg .d { fill: var(--su-accent); stroke: none; }
+.mh-vine { stroke-width: 1.7; stroke-dasharray: 1 1; }
+.mh-tendril { stroke-width: 1.2; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.mh-lf { stroke-width: 1.1; opacity: 0; transform: scale(0.1); transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease-out; }
+.mh-lf.is-on { opacity: 1; transform: none; }
+.mh-bud { fill: rgba(185, 119, 74, 0.16); stroke-width: 1.1; opacity: 0; transform: scale(0.25) rotate(-60deg); transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out; }
+.mh-bud.is-on { opacity: 1; transform: none; }
+
+.mh-sec__in { position: relative; z-index: 1; width: min(1120px, calc(100% - 48px)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: clamp(120px, 14vw, 190px); row-gap: clamp(56px, 8vh, 96px); align-items: start; }
+.mh-blk { position: relative; }
+.mh-blk[data-side='l'] { grid-column: 1; justify-self: end; width: min(460px, 100%); text-align: right; }
+.mh-blk[data-side='r'] { grid-column: 2; justify-self: start; width: min(460px, 100%); text-align: left; }
+.mh-blk[data-side='c'] { grid-column: 1 / -1; justify-self: center; width: 100%; }
+/* the right-hand column sits lower, so the trail zigzags */
+.mh-sec__in > .mh-blk[data-side='r']:not(:first-child) { margin-top: clamp(70px, 12vh, 150px); }
+
+.mh-h { margin: 0; }
+.mh-kicker { margin: 0 0 8px; font: 400 13px/1.4 var(--mh-f-sc); letter-spacing: 0.28em; color: var(--su-ink-2); }
+.mh-kicker .l-ne { font: 500 15px/1.5 var(--su-f-body); }
+.mh-h2 { margin: 0; font: 400 clamp(46px, 5.2vw, 64px)/1.06 var(--su-f-script); color: var(--su-accent); text-wrap: balance; }
+.mh-h2 .l-ne { font: 500 0.6em/1.45 var(--mh-f-deva); }
+.mh-h3 { margin: 0; font: 400 clamp(32px, 3.4vw, 40px)/1.15 var(--su-f-script); color: var(--su-accent); }
+.mh-h3 .l-ne { font: 500 22px/1.5 var(--mh-f-deva); }
+.theme-mehendi .mh-div { width: 130px; stroke: var(--su-gold); }
+.theme-mehendi .mh-div .d { fill: var(--su-gold); }
+
+/* couple: a line of words on one side, the photograph in a henna arch on the other */
+.mh-quote { align-self: center; }
+.mh-quote p { margin: 0 0 18px; font: 400 clamp(24px, 2.4vw, 30px)/1.45 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.mh-quote p .l-ne { font: 500 0.82em/1.7 var(--su-f-body); }
+.mh-quote .mh-div { margin-left: auto; }
+.mh-arch { position: relative; width: min(400px, 100%); margin: 52px 0 0; padding: 10px; border: 1px solid rgba(122, 46, 27, 0.32); border-radius: 999px 999px 6px 6px; }
+.mh-arch::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(122, 46, 27, 0.12); border-radius: inherit; pointer-events: none; }
+.mh-arch__pic { overflow: hidden; border-radius: 999px 999px 2px 2px; }
+.mh-arch__pic img { display: block; width: 100%; height: auto; }
+.theme-mehendi .mh-lotus { position: absolute; left: 50%; top: -1px; width: 104px; translate: -50% -100%; padding: 0 8px; background: var(--su-bg); box-sizing: content-box; }
+
+/* the date: a henna-drawn hand; scratch the mandala in its palm */
+.mh-scratch { width: min(300px, 100%); margin: 26px 0 74px auto; }
+.mh-scratch .su-scratch__face { width: 100%; }
+.mh-scratch .su-scratch__foil { left: 20.8%; top: 33.9%; width: 70.1%; height: 33.1%; border-radius: 50%; }
+.mh-scratch .su-scratch__btn { position: absolute; top: calc(100% + 14px); left: 50%; translate: -50% 0; white-space: nowrap; }
+.mh-palm { position: relative; aspect-ratio: 900 / 2301; }
+.mh-handimg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
+.mh-palm__date { position: absolute; left: 25%; top: 37.5%; width: 61.7%; height: 26.1%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.mh-pd__wd { font: 400 11px/1.3 var(--mh-f-sc); letter-spacing: 0.2em; padding-left: 0.2em; color: #4A2418; }
+.mh-pd__wd .l-ne { font: 500 14px/1.4 var(--su-f-body); }
+.mh-pd__day { font: 400 clamp(42px, 5vw, 52px)/1 var(--su-f-display); color: #5A1E0E; }
+.mh-pd__day .l-ne { font: 500 0.88em/1.1 var(--su-f-body); }
+.mh-pd__my { font: 400 12px/1.3 var(--mh-f-sc); letter-spacing: 0.16em; padding-left: 0.16em; color: #3A160C; }
+.mh-pd__my .l-ne { font: 500 15px/1.4 var(--su-f-body); }
+.mh-pd__alt { margin-top: 3px; font: 600 12px/1.3 var(--su-f-body); color: #5A1E0E; }
+.mh-pd__time { margin-top: 2px; font: 600 11px/1.3 var(--su-f-body); letter-spacing: 0.06em; color: #4A2418; }
+.mh-pd__time .l-ne { font-size: 13px; }
+.mh-place2 { margin: 0; font: 500 15px/1.5 var(--su-f-body); color: var(--su-ink-2); }
+/* the date card is centred under its title, with the venue centred beneath (both sides of the vine) */
+.mh-blk.mh-palmblk { text-align: center; }
+.mh-palmblk .mh-scratch { width: min(270px, 100%); margin: 24px auto 72px; }
+.mh-palmblk .mh-place2 { text-align: center; max-width: 30ch; margin: 0 auto; }
+
+/* countdown: four henna circles */
+.mh-cd__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 150px)); gap: 18px 22px; margin: 24px 0 0; padding: 0; list-style: none; }
+.mh-cd { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.mh-cd:nth-child(even) { translate: 0 34px; }
+.mh-cd__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; stroke: var(--su-accent); }
+.mh-cd__svg .d { fill: rgba(122, 46, 27, 0.55); stroke: none; }
+.mh-cd__track { stroke: rgba(122, 46, 27, 0.13); stroke-width: 3; }
+.mh-cd__ring { stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.9s var(--su-ease); }
+.mh-count.is-in .mh-cd__ring { stroke-dashoffset: var(--off, 1); }
+.mh-cd__in { stroke: rgba(122, 46, 27, 0.35); stroke-width: 0.8; stroke-dasharray: 1.2 2.6; }
+.theme-mehendi .mh-cd .su-count__n { position: relative; font: 400 clamp(34px, 3.4vw, 42px)/1 var(--su-f-display); color: var(--su-accent); }
+.theme-mehendi .mh-cd .su-count__n .l-ne { font: 500 0.9em/1.1 var(--su-f-body); }
+.mh-cd__l { position: relative; margin-top: 4px; font: 400 11px/1.2 var(--mh-f-sc); letter-spacing: 0.2em; padding-left: 0.2em; color: var(--su-ink-2); }
+.mh-cd__l .l-ne { font: 500 13px/1.3 var(--su-f-body); }
+.mh-count__done { font: 400 34px/1.3 var(--su-f-script); color: var(--su-accent); }
+.mh-count__done .l-ne { font: 500 22px/1.5 var(--mh-f-deva); }
+.mh-blk[data-side='l'] .mh-cd__grid { margin-left: auto; }
+
+/* families: a henna mandala in two halves that close together, one family on each */
+.mh-fam { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: clamp(28px, 4vw, 56px); max-width: 1000px; }
+.mh-fam__side--a { text-align: right; }
+.mh-fam__side--b { text-align: left; }
+.mh-fam__m { position: relative; width: clamp(210px, 21vw, 280px); aspect-ratio: 1; }
+.mh-fam__half { position: absolute; inset: 0; background: radial-gradient(circle closest-side, var(--su-bg) 98%, transparent 100%); }
+.mh-fam__half--a { clip-path: inset(0 50% 0 0); }
+.mh-fam__half--b { clip-path: inset(0 0 0 50%); }
+.theme-mehendi .mh-fm { width: 100%; height: 100%; }
+.theme-mehendi .mh-fm * { vector-effect: non-scaling-stroke; stroke-width: 0.9px; }
+.mh-fam__pic { width: 132px; margin: 10px 0 12px; overflow: hidden; border-radius: 999px 999px 8px 8px; display: inline-block; }
+.mh-fam__pic img { display: block; width: 100%; height: auto; }
+.mh-fam__name { margin: 4px 0 0; font: 400 clamp(25px, 2.5vw, 31px)/1.25 var(--su-f-display); color: var(--su-ink); }
+.mh-fam__name .l-ne { font: 500 0.92em/1.45 var(--mh-f-deva); }
+.mh-fam__of { margin: 10px 0 0; font-size: 14px; color: var(--su-ink-2); }
+.mh-fam__parents { margin: 0; font-weight: 500; }
+.mh-fam__home { margin: 6px 0 0; font-size: 15px; color: var(--su-ink-2); }
+
+/* programme: henna-bordered cards along the trail */
+.mh-ev { padding: 30px 30px 26px; text-align: left !important; background: var(--su-paper); border: 1px solid rgba(122, 46, 27, 0.26); outline: 1px solid rgba(122, 46, 27, 0.1); outline-offset: -8px; }
+.mh-ev .mh-corner { position: absolute; width: 50px; opacity: 0.7; pointer-events: none; }
+.mh-ev .mh-corner--tl { top: 3px; left: 3px; }
+.mh-ev .mh-corner--br { bottom: 3px; right: 3px; transform: scale(-1); }
+.mh-ev__top { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.mh-ev__date { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 62px; height: 62px; margin: 0; border: 1px solid rgba(122, 46, 27, 0.4); border-radius: 50%; outline: 1px dashed rgba(122, 46, 27, 0.25); outline-offset: 3px; }
+.mh-ev__date b { font: 400 25px/1 var(--su-f-display); color: var(--su-accent); }
+.mh-ev__date b .l-ne { font: 600 21px/1 var(--su-f-body); }
+.mh-ev__date > span { font: 400 10.5px/1.2 var(--mh-f-sc); letter-spacing: 0.16em; color: var(--su-ink-2); }
+.mh-ev__date > span .l-ne { font: 500 12px/1.2 var(--su-f-body); }
+.mh-ev__title { margin: 0; font: 400 26px/1.2 var(--su-f-display); color: var(--su-accent); }
+.mh-ev__title .l-ne { font: 500 0.92em/1.4 var(--mh-f-deva); }
+.mh-ev p { margin: 3px 0 0; }
+.mh-ev__time { font-weight: 600; }
+.mh-ev__blurb { color: var(--su-ink-2); }
+.mh-order { margin-top: 10px; }
+.mh-order summary { cursor: pointer; font-weight: 600; color: var(--su-accent); }
+.mh-order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.mh-order li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--su-line); }
+.mh-prog__foot .mh-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.mh-blk[data-side='l'].mh-prog__foot .mh-btns { justify-content: flex-end; }
+.theme-mehendi .su-more { margin-top: 20px; padding: 16px 20px; text-align: left; background: var(--su-paper); border: 1px solid var(--su-line); border-radius: 4px; }
+.theme-mehendi .su-more summary { cursor: pointer; font-weight: 600; color: var(--su-accent); }
+.theme-mehendi .su-more__grid { grid-template-columns: 1fr; }
+.theme-mehendi .su-more h3 { font-family: var(--su-f-display); }
+
+/* photographs: polaroids on an ivory cloth */
+.mh-cloth { max-width: 1060px; padding: 26px clamp(18px, 4vw, 56px) 30px; background-color: #FFFCF6;
+  background-image: repeating-linear-gradient(0deg, rgba(122, 46, 27, 0.035) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(122, 46, 27, 0.03) 0 1px, transparent 1px 5px);
+  border: 1px solid var(--su-line); box-shadow: 0 30px 60px -40px rgba(80, 40, 20, 0.35); }
+.theme-mehendi .mh-cloth__edge { width: 200px; margin: 0 auto; stroke: var(--su-gold); }
+.theme-mehendi .mh-cloth__edge .d { fill: var(--su-gold); }
+.mh-pols { columns: 3 200px; column-gap: clamp(22px, 3.2vw, 44px); margin: 30px 0 10px; }
+.mh-pol { display: block; break-inside: avoid; margin: 0 0 clamp(26px, 3.4vw, 44px); padding: 10px 10px 36px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(60, 30, 10, 0.12), 0 16px 30px -18px rgba(60, 30, 10, 0.4); transform: rotate(var(--r)); }
+.theme-mehendi .mh-pol__btn { border-radius: 0; }
+
+/* the card wording and the reply */
+.mh-word .mh-h { display: flex; justify-content: flex-end; }
+.theme-mehendi .mh-crest { display: block; width: 74px; height: auto; margin: 0 0 18px; --w: 0.9px; }
+.mh-word__line { margin: 0; font: 400 clamp(22px, 2.2vw, 27px)/1.5 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.mh-word__line .l-ne { font: 500 0.86em/1.7 var(--su-f-body); }
+.mh-word__hosts { margin: 14px 0 24px; color: var(--su-ink-2); }
+.mh-rsvp { padding: clamp(40px, 5vw, 56px) clamp(22px, 3.4vw, 40px) 36px; text-align: left !important; background: var(--su-paper); border: 1px solid rgba(122, 46, 27, 0.22); width: min(520px, 100%) !important; }
+.mh-rsvp .mh-corner { position: absolute; width: 58px; opacity: 0.75; pointer-events: none; }
+.mh-rsvp .mh-corner--tl { top: 6px; left: 6px; } .mh-rsvp .mh-corner--tr { top: 6px; right: 6px; transform: scaleX(-1); }
+.mh-rsvp .mh-corner--bl { bottom: 6px; left: 6px; transform: scaleY(-1); } .mh-rsvp .mh-corner--br { bottom: 6px; right: 6px; transform: scale(-1); }
+.mh-rsvp .mh-h { text-align: center; margin-bottom: 6px; }
+.mh-rsvp__by { margin: 0 0 22px; text-align: center; color: var(--su-ink-2); }
+.theme-mehendi .su-field input[type='text'], .theme-mehendi .su-field input[type='tel'], .theme-mehendi .su-field textarea, .theme-mehendi .su-field select { border-color: rgba(122, 46, 27, 0.22); }
+.theme-mehendi .choice span { font: 500 16px/1.3 var(--su-f-body); }
+.theme-mehendi .su-modal__title { font: 400 44px/1.15 var(--su-f-script); }
+.theme-mehendi .su-modal__title .l-ne { font: 500 30px/1.4 var(--mh-f-deva); }
+.theme-mehendi .su-modal__gan { width: 84px; }
+
+/* the end of the trail */
+.mh-close { padding-bottom: 28px; }
+.mh-close__in { text-align: center; max-width: 620px; }
+.mh-close__flower { width: 64px; margin: 0 auto 22px; }
+.theme-mehendi .mh-flower { display: block; width: 100%; height: auto; stroke: var(--su-accent); }
+.theme-mehendi .mh-flower .d { fill: var(--su-accent); }
+.mh-close__ne { margin: 0; font: 500 24px/1.6 var(--mh-f-deva); color: var(--su-ink); }
+.mh-close__en { margin: 6px 0 0; font: 400 19px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+html[data-lang='ne'] .mh-close__en { display: none; }
+.mh-close__names { margin: 22px 0 0; font: 400 clamp(46px, 6vw, 64px)/1.2 var(--su-f-script); color: var(--su-accent); }
+.mh-close__names .l-ne { font: 500 0.6em/1.4 var(--mh-f-deva); }
+.mh-close__amp { margin: 0 0.22em; }
+.mh-close__tag { margin: 10px 0 40px; color: var(--su-ink-2); letter-spacing: 0.06em; }
+
+/* phones: the vine runs down the left edge, everything stacks to its right */
+@media (max-width: 719px) {
+  .mh-sec { padding: 64px 0; }
+  .mh-sec__in { grid-template-columns: minmax(0, 1fr); width: auto; margin: 0 16px 0 52px; row-gap: 52px; }
+  .mh-blk[data-side] { grid-column: 1; justify-self: stretch; width: auto; text-align: left; }
+  .mh-sec__in > .mh-blk[data-side='r']:not(:first-child) { margin-top: 0; }
+  .mh-quote .mh-div { margin-left: 0; }
+  .mh-scratch { width: min(280px, 100%); margin: 22px auto 74px; }
+  .mh-blk.mh-palmblk { text-align: center; }
+  /* every section title sits centred on phones (the vine runs down the left edge) */
+  .mh-h:not(.mh-ev__top), .mh-word .mh-h, .mh-rsvp .mh-h { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .mh-h:not(.mh-ev__top) .mh-div, .mh-h:not(.mh-ev__top) svg { margin-left: auto; margin-right: auto; }
+  .mh-palmblk .mh-scratch { width: min(226px, 62vw); margin: 18px auto 70px; }
+  .mh-cd__grid { grid-template-columns: repeat(2, minmax(0, 140px)); margin-left: 0 !important; }
+  .mh-blk[data-side='l'] .mh-cd__grid { margin-left: 0; }
+  .mh-fam { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; gap: 22px; }
+  .mh-fam__side--a, .mh-fam__side--b { text-align: center; }
+  .mh-fam__m { width: 200px; }
+  .mh-fam__half--a { clip-path: inset(0 0 50% 0); }
+  .mh-fam__half--b { clip-path: inset(50% 0 0 0); }
+  .mh-word .mh-h { justify-content: flex-start; }
+  .mh-blk[data-side='l'].mh-prog__foot .mh-btns { justify-content: flex-start; }
+  .mh-ev { padding: 26px 20px 22px; }
+  .mh-cloth { margin: 0 -16px 0 -52px; width: auto; padding: 22px 16px 26px; border-left: 0; border-right: 0; }
+  .mh-pols { columns: 2; column-gap: 16px; }
+  .mh-pol { padding: 7px 7px 26px; margin-bottom: 20px; }
+  .mh-rsvp { margin-left: -6px; }
+  .mh-blk[data-side].mh-close__in { text-align: center; }
+}
+
+/* chrome: solid cream pills, no glass */
+.theme-mehendi .hud__btn, .theme-mehendi .pill { background: rgba(255, 253, 248, 0.94); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--su-accent); border-color: rgba(122, 46, 27, 0.22); }
+.theme-mehendi .pill__name { font: 400 14px/1 var(--su-f-display); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-ink path, .mh-ink circle:not(.d) { stroke-dashoffset: 0; }
+  .mh-ink .d { opacity: 1; }
+  .mh-ghost { opacity: 0; }
+  .mh-wm.is-turning { animation: none; }
+  body.is-open.theme-mehendi .su-cue { opacity: 1; }
+  .mh-lf, .mh-bud, .mh-cd__ring { transition: none; }
+}
+
+/* the RSVP name error: the engine renders it [hidden] and the shared form code only fills its text */
+.theme-mehendi .su-err[hidden]:not(:empty) { display: block !important; }
+/* the scroll cue bobs a few times, then rests: an endless transform loop keeps the rest of the page in extra GPU layers */
+body.is-open.theme-mehendi .su-cue i { animation-iteration-count: 5; }
+/* desktop: the script's final swash overhangs a right-aligned heading; keep it clear of the vine's bud */
+@media (min-width: 720px) { .mh-blk[data-side='l'] .mh-h2 { padding-right: 0.4em; } }
+/* narrow phones: no lone last word under the countdown heading */
+.mh-h3 { text-wrap: balance; }
+
+/* ───────── the Nepali wedding: sindoor, diyos, kalash, toran, Dhaka (shared kit: _suite/nepali.js) ───────── */
+.mh-sindoor { stroke: #B4161B; stroke-width: 2.4; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0.85; }
+.mh-seg .mh-sd { fill: #B4161B; stroke: none; }
+.mh-diyo { position: absolute; z-index: 2; width: 38px; translate: -50% -84%; pointer-events: none; opacity: 0; transform: translateY(8px); transition: opacity 0.5s ease-out, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+.mh-diyo .np-lamp { display: block; width: 100%; }
+.mh-diyo .np-flame { opacity: 0; transform: scale(0.15); transform-origin: 50% 100%; transition: opacity 0.4s ease-out 0.45s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s; }
+.mh-diyo.is-on { opacity: 1; transform: none; }
+.mh-diyo.is-on .np-flame { opacity: 1; transform: none; }
+
+.mh-fam__kalash { position: absolute; z-index: 1; left: 50%; top: 50%; width: 33%; translate: -50% -52%; }
+
+.mh-bond__words { align-self: center; }
+.mh-bond__line { margin: 6px 0 18px; font: 400 clamp(26px, 2.6vw, 32px)/1.4 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.mh-bond__line .l-ne { font: 500 0.8em/1.7 var(--su-f-body); }
+.mh-blk[data-side='l'] .mh-div { margin-left: auto; }
+.mh-bond__fig { margin: 0; width: min(440px, 100%); }
+.mh-bond__pic { display: block; width: 100%; }
+
+.theme-mehendi .mh-rsvp { --px: clamp(22px, 3.4vw, 40px); padding: 0 var(--px) 36px; }
+.mh-rsvp__toran { display: block; width: calc(100% + 2 * var(--px) + 20px); margin: -16px calc(-1 * var(--px) - 10px) 6px; }
+
+.mh-close__dhaka { height: 18px; margin: 10px 0 26px; background: url('/themes/_nepali/dhaka-sm.webp') 0 50% / 36px 36px repeat-x;
+  border-block: 1px solid rgba(185, 119, 74, 0.6); }
+
+@media (max-width: 719px) {
+  .mh-diyo { width: 28px; }
+  .mh-blk[data-side='l'] .mh-div { margin-left: 0; }
+  .mh-bond__fig { margin: 0 auto; width: min(340px, 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-diyo, .mh-diyo .np-flame { transition: none; }
+}
+/* the painting is cut square at its bottom and right edges: let them melt into the paper */
+.mh-bond__pic img { -webkit-mask-image: linear-gradient(#000 76%, transparent), linear-gradient(to left, transparent, #000 10%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(#000 76%, transparent), linear-gradient(to left, transparent, #000 10%); mask-composite: intersect; }

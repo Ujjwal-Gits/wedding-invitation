@@ -23,6 +23,11 @@ const KNOWN = {
   gurans: { name: 'Phoolbari', concept: 'A flower gate with शुभ विवाह, then calm normal scrolling' },
   jhyal: { name: 'Jhyal', concept: 'A carved Newari window; lattice shutters swing open on शुभ विवाह' },
   mahal: { name: 'Mahal', concept: 'A golden palace gate tied with a satin bow; it opens onto a palace balcony at night' },
+  laali: { name: 'Laali', concept: 'A blush pink and gold arched card under hanging lanterns' },
+  mehendi: { name: 'Mehendi', concept: 'Henna on ivory; a mandala draws itself and joined hands glide in' },
+  hariyo: { name: 'Hariyo', concept: 'A watercolour garden; the leaves part on a white pavilion and peacocks' },
+  shree: { name: 'Shree', concept: 'Plum and gold; a lotus opens on Ganesh and hanging diyas descend' },
+  pardaa: { name: 'Pardaa', concept: 'Red velvet curtains part on a dressed mandap with a living fire' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
