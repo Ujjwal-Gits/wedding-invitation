@@ -140,6 +140,7 @@ export function customerHome(ctx) {
     const due = orders.filter((o) => ['awaiting_payment', 'rejected'].includes(o.payStatus)).length;
     fill(root,
       ro ? h('p.notice.notice--row', icon('eye', 16), h('span', h('b', 'Read-only view. '), `This is what ${acc.customer.email} sees when they sign in.`)) : null,
+      !ro && acc.customer.mail && !acc.customer.emailVerified ? verifyNotice(acc.customer.email) : null,
       h('p.cu-hello', `Namaste${acc.customer.name ? `, ${acc.customer.name.split(' ')[0]}` : ''}.`, h('span.cu-hello__ne', { lang: 'ne' }, ' नमस्ते')),
       due ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, ' We start on your invitation once it is confirmed.')) : null,
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Your invitation', invs.length ? h('span.sect__count', String(invs.length)) : null)),

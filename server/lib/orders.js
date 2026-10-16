@@ -13,6 +13,7 @@ import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addO
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme, listThemes } from './catalog.js';
 import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
+import { sendVerify } from './account-mail.js';
 import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
 
@@ -196,6 +197,7 @@ export async function submit(req, res) {
       try {
         customer = await createCustomer({ email, name, phone, passwordHash });
         created = true;
+        sendVerify(req, customer).catch(() => {}); // "Confirm your email" (Brevo; nothing when mail is off)
       } catch (err) {
         if (err.code === 'account_exists') return res.status(409).json(exists);
         throw err;

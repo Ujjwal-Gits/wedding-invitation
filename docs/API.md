@@ -476,3 +476,14 @@ least one valid ceremony (an empty or all-unknown list → `400 { fields: ['even
 still counts for all). Totals in `GET /invitations/:slug/rsvps` are per ceremony (`totals.events[]`).
 Limits: 30 replies per IP per invitation per 10 minutes (guests on one mobile carrier can share an IP), 3000 per
 invitation per hour, 5000 per invitation in total (`507`).
+
+## Account emails (Brevo)
+
+Off until `BREVO_API_KEY` and `MAIL_FROM` are set (server/lib/mail.js). Links are `/studio/verify/<id>.<token>` (48 h) and
+`/studio/reset/<id>.<token>` (30 min, one use); only the token's SHA-256 is stored.
+
+- `POST /api/auth/signup { name, email, phone?, password }`: makes the account, signs in, emails the confirm link. 5 per IP per hour.
+- `POST /api/auth/verify { token }`: confirms the email.
+- `POST /api/account/verify` (customer): sends the confirm link again (3 per hour).
+- `POST /api/auth/forgot { email }`: `{ ok, mail }`, the same for unknown emails; `mail: false` = email is off (WhatsApp instead).
+- `POST /api/auth/reset { token, password }`: new password, other sessions end, this browser is signed in.

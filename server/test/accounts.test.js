@@ -202,7 +202,7 @@ test('sign-in: wrong password and unknown email get the same answer; email is no
 test('the dashboard: orders with payment status and a pay link the session opens; details filled in later; CSRF', async () => {
   const b = await browser().login('gita.thapa@example.com', 'gita-pass-1');
   const acc = (await b.req('/api/account')).body;
-  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '9800000001' });
+  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '9800000001', emailVerified: false, mail: false });
   const o = acc.orders.at(-1);
   assert.equal(o.payStatus, 'awaiting_payment');
   assert.equal(o.reason, null);

@@ -45,7 +45,7 @@ function formDialog({ title, fields, submitText, submit, wide = false }) {
 /** Everything about one account: details, sign-ins, then their dashboard (orders, payments, invitations) read-only. */
 function detailsDialog(ctx, c) {
   const facts = [
-    ['Name', c.name || '—'], ['Email', c.email], ['Phone', c.phone || '—'],
+    ['Name', c.name || '—'], ['Email', `${c.email}${c.emailVerified ? ' (confirmed)' : ' (not confirmed)'}`], ['Phone', c.phone || '—'],
     ['Joined', c.createdAt ? fmtDate(c.createdAt) : '—'],
     ['Last sign-in', c.lastLoginAt ? `${fmtDate(c.lastLoginAt)} (${fmtRelative(c.lastLoginAt)})` : 'Never'],
     ['Sign-ins', String(c.loginCount || 0)], ['Orders', String(c.orders || 0)],
@@ -169,7 +169,7 @@ export function customersSection(ctx, loadInvitations) {
             } }, icon('close', 12)))),
           h('button.btn.btn--sm', { type: 'button', onclick: async () => { const n = await linkDialog(ctx, c, invitations); if (n) { replace(n); toast('Invitation linked', 'success'); } } }, icon('link', 14), 'Link'))),
         h('td.tnum', { 'data-label': 'Orders' }, String(c.orders || 0)),
-        h('td', { 'data-label': 'Status' }, c.disabled ? h('span.pill.pill--warn', 'Off') : h('span.pill.pill--ok', 'Active')),
+        h('td', { 'data-label': 'Status' }, c.disabled ? h('span.pill.pill--warn', 'Off') : h('span.pill.pill--ok', 'Active'), c.emailVerified ? h('span.pill.pill--muted', { title: 'Email confirmed' }, 'Email ✓') : null),
         h('td', { 'data-label': 'Last sign-in', title: c.lastLoginAt ? fmtDate(c.lastLoginAt) : '' }, c.lastLoginAt ? fmtRelative(c.lastLoginAt) : h('small', `Joined ${fmtDate(c.createdAt)}`)),
         h('td.cell-act', h('div.cell-act__in',
           iconBtn('eye', 'See everything', () => detailsDialog(ctx, c), 'btn--ghost'),

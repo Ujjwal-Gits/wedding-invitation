@@ -74,6 +74,8 @@ async function doRoute() {
   const hash = current();
   const cm = /^#\/c\/([A-Za-z0-9_-]{20,128})$/.exec(hash);
   if (cm) return passwordPage(cm[1]);
+  const em = /^#\/(verify|reset)\/([A-Za-z0-9_-]{12}\.[A-Za-z0-9_-]{20,100})$/.exec(hash);
+  if (em) return em[1] === 'verify' ? verifyPage(em[2]) : resetPage(em[2]);
 
   if (!S.me) {
     try {
@@ -373,12 +375,20 @@ function loginPage() {
       btn.textContent = 'Sign in';
     }
   });
-  // No email is sent from Nimtto: a forgotten password is reset by the owner, on WhatsApp.
-  const forgotNote = h('p.notice', { hidden: true, role: 'status' }, icon('chat', 16), h('span',
+  // Forgot password: a reset link by email (Brevo). When email is not set up, the owner resets it on WhatsApp.
+  const forgotNote = h('p.notice', { hidden: true, role: 'status' });
+  const waNote = () => fill(forgotNote, icon('chat', 16), h('span',
     'Contact us on WhatsApp ', h('a', { href: waLink('Namaste! I forgot my Nimtto password. My email is: '), target: '_blank', rel: 'noopener' }, WA_DISPLAY), ' to reset it.'));
-  const forgot = h('button.link.auth__forgot', { type: 'button', 'aria-expanded': 'false', onclick: () => {
-    forgotNote.hidden = !forgotNote.hidden;
-    forgot.setAttribute('aria-expanded', String(!forgotNote.hidden));
+  const forgot = h('button.link.auth__forgot', { type: 'button', onclick: async () => {
+    forgotNote.hidden = false;
+    if (!email.value.trim()) { fill(forgotNote, icon('info', 16), h('span', 'Enter your email above, then click “Forgot password?” again.')); email.focus(); return; }
+    forgot.disabled = true;
+    try {
+      const out = await api('/auth/forgot', { method: 'POST', body: { email: email.value } });
+      if (out.mail === false) waNote();
+      else fill(forgotNote, icon('check', 16), h('span', 'If this email has an account, we have sent a link to set a new password. Check your inbox and spam folder.'));
+    } catch (ex) { fill(forgotNote, icon('alert', 16), h('span', ex.message)); }
+    forgot.disabled = false;
   } }, 'Forgot password?');
   form.insertBefore(forgot, err);
   form.append(forgotNote);
@@ -421,7 +431,7 @@ function signupPage() {
       S.me = me;
       S.meta = null;
       setCsrf(me.csrf);
-      toast('Welcome to Nimtto', 'success');
+      toast(me.verifySent ? 'Welcome! We sent you an email to confirm your address.' : 'Welcome to Nimtto', 'success');
       go('#/account');
     } catch (ex) {
       err.textContent = ex.message;
@@ -436,6 +446,49 @@ function signupPage() {
   fill(app, authLayout(brand(true), h('h1.auth__title', 'Create an account'), h('p.auth__lede', 'Order a design, pay, and edit your invitation, all in one place.'), form,
     h('p.auth__small', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.')));
   name.focus();
+}
+
+/** /studio/reset/<id>.<token> (from the email): choose a new password, then straight to My dashboard. */
+function resetPage(token) {
+  teardown();
+  document.title = 'Set a New Password · Nimtto Studio';
+  const err = h('p.form-error', { role: 'alert' });
+  const btn = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Save new password');
+  const pw = passwordField('rs-password', 'New password', 'new-password');
+  const form = h('form.auth__form', { novalidate: true }, pw.el, h('p.hint', 'At least 8 characters. Other devices are signed out.'), err, btn);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    if (pw.input.value.length < 8) { err.textContent = 'The password needs at least 8 characters.'; pw.input.focus(); return; }
+    btn.disabled = true;
+    try {
+      const me = await api('/auth/reset', { method: 'POST', body: { token, password: pw.input.value } });
+      coupleFlag(false);
+      seenFlag(true);
+      S.me = me;
+      S.meta = null;
+      setCsrf(me.csrf);
+      toast('Password changed', 'success');
+      go('#/account');
+    } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
+  });
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Set a new password'), h('p.auth__lede', 'Choose a new password for your Nimtto account.'), form,
+    h('p.auth__small', h('a', { href: '#/login', onclick: (e) => { e.preventDefault(); go('#/login'); } }, 'Back to sign in'))));
+  pw.input.focus();
+}
+
+/** /studio/verify/<id>.<token> (from the email): confirms the address, then offers the dashboard. */
+async function verifyPage(token) {
+  teardown();
+  document.title = 'Confirm Your Email · Nimtto Studio';
+  const msg = h('p.auth__lede', 'Confirming your email…');
+  const acts = h('div');
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Your email'), msg, acts));
+  try {
+    await api('/auth/verify', { method: 'POST', body: { token } });
+    fill(msg, 'Thank you. Your email is confirmed.');
+  } catch (ex) { fill(msg, ex.message); }
+  fill(acts, h('a.btn.btn--primary.btn--lg.btn--block', { href: '#/account', onclick: (e) => { e.preventDefault(); go('#/account'); } }, 'Go to my dashboard'));
 }
 
 /** The couple's private link: a calm "Enter your password" page, then the token becomes a session. */

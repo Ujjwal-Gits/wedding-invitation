@@ -11,6 +11,7 @@ import { syncOrderDetails, prefillFromCustomer } from './handover.js';
 import { PUBLIC_ORIGINS } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
 import { clientIp, originAllowed, rateLimiter } from './security.js';
+import { sendVerify, sendReset, fromLink, tokenOk, MAIL_ON } from './account-mail.js';
 import { clean, planView, REF_RE } from './orders.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -69,7 +70,7 @@ async function accountView(c) {
     });
   }
   return {
-    customer: { name: c.name || '', email: c.email, phone: c.phone || '' },
+    customer: { name: c.name || '', email: c.email, phone: c.phone || '', emailVerified: c.emailVerified === true, mail: MAIL_ON },
     orders: orders.map(customerOrderView),
     invitations,
     contact: { whatsapp: site.contact?.whatsapp || '', phone: site.contact?.phone || '' },
@@ -190,7 +191,64 @@ export async function signup(req, res) {
   }
   console.info(`[account] signed up id=${c.id} ip=${clientIp(req)}`);
   const s = await signInCustomer(req, res, c);
-  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf });
+  const mailed = await sendVerify(req, c).catch(() => false);
+  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf, verifySent: mailed });
+}
+
+const forgotIp = rateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
+const forgotEmail = rateLimiter({ windowMs: 60 * 60 * 1000, max: 3 });
+const resendLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 3 });
+const tokenLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
+
+/** POST /api/auth/forgot { email }: emails a reset link when the account exists. Same answer either way. */
+export async function forgot(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  if (!MAIL_ON) return res.json({ ok: true, mail: false });
+  const email = normEmail(req.body?.email).slice(0, 254);
+  if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ error: 'Please enter your email.', fields: ['email'] });
+  const a = forgotIp.hit(clientIp(req));
+  const b = forgotEmail.hit(email);
+  if (!a.ok || !b.ok) { res.set('Retry-After', String(Math.max(a.retryAfter || 0, b.retryAfter || 0, 1))); return res.status(429).json({ error: 'Too many requests. Please wait a while and try again.' }); }
+  sendReset(req, email).catch((err) => console.error(`[account] reset mail failed: ${err.message}`));
+  res.json({ ok: true, mail: true });
+}
+
+/** POST /api/auth/reset { token: "<id>.<token>", password }: sets the new password, ends other sessions, signs in. */
+export async function resetPassword(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  if (!tokenLimiter.hit(clientIp(req)).ok) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' });
+  const b = req.body || {};
+  if (!passwordOk(b.password)) return res.status(400).json({ error: PASSWORD_MSG, fields: ['password'] });
+  const l = fromLink(b.token);
+  if (!l || !tokenOk(l.c.reset, l.token) || l.c.disabled === true) return res.status(400).json({ error: 'This link has expired or was already used. Please ask for a new one.', code: 'bad_link' });
+  const passwordHash = await hashAccountPassword(b.password);
+  const c = await mutateCustomer(l.c.id, (x) => { x.passwordHash = passwordHash; delete x.reset; x.emailVerified = true; delete x.verify; });
+  await revokeCustomerSessions(c.id);
+  console.info(`[account] password reset by email id=${c.id}`);
+  const s = await signInCustomer(req, res, c);
+  res.json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf });
+}
+
+/** POST /api/auth/verify { token: "<id>.<token>" }: marks the email as confirmed. */
+export async function verifyEmail(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  if (!tokenLimiter.hit(clientIp(req)).ok) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' });
+  const l = fromLink(req.body?.token);
+  if (l?.c.emailVerified === true) return res.json({ ok: true, email: l.c.email });
+  if (!l || !tokenOk(l.c.verify, l.token)) return res.status(400).json({ error: 'This link has expired. Sign in and send a new one from your dashboard.', code: 'bad_link' });
+  await mutateCustomer(l.c.id, (x) => { x.emailVerified = true; delete x.verify; });
+  console.info(`[account] email confirmed id=${l.c.id}`);
+  res.json({ ok: true, email: l.c.email });
+}
+
+/** POST /api/account/verify (customer): sends the "Confirm your email" link again. */
+export async function resendVerify(req, res) {
+  if (req.customer.emailVerified === true) return res.json({ ok: true, already: true });
+  if (!MAIL_ON) return res.status(503).json({ error: 'Email is not set up yet. Please try again later.' });
+  if (!resendLimiter.hit(req.customer.id).ok) return res.status(429).json({ error: 'We sent a few already. Please check your inbox and spam folder.' });
+  const ok = await sendVerify(req, req.customer);
+  if (!ok) return res.status(502).json({ error: 'The email could not be sent. Please try again later.' });
+  res.json({ ok: true });
 }
 
 /** POST /api/admin/customers { email, name, phone?, password }: an account for a couple who did not order online. */
