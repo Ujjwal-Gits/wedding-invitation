@@ -24,10 +24,14 @@ import manifest from './slots.js';
 import { paperTiles, linerTile, deckle } from './paper.js';
 import { knotSVG, sealSVG } from './art.js';
 import { computeLayout, createEnvelope } from './envelope.js';
+import { cardHtml, cardFold, fitNames as fitNamesOf, layCard, cardClosed, cardEnter } from './parts.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const config = await loadInvitation();
+// another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'kham', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
@@ -168,40 +172,7 @@ const main = document.getElementById('main');
 main.innerHTML = `
   <section class="kh-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
     <div class="kh-scene" id="scene">
-      <div class="kh-card" id="card">
-        <div class="kh-card__shadow" aria-hidden="true"></div>
-        <div class="kh-card__shadow kh-card__shadow--t" aria-hidden="true"></div>
-        <div class="kh-card__b kh-face" data-deckle data-edges="rbl" data-seed="41">
-          <div class="kh-card__body">
-            <h1 class="kh-names" id="names">${names()}</h1>
-            <p class="kh-card__date">${bi({ en: mainAD.en, ne: mainBS.ne })}</p>
-            <p class="kh-card__bs">${bi({ en: mainBS.en, ne: mainAD.ne })}</p>
-            <span class="kh-rule" aria-hidden="true"></span>
-            <p class="kh-card__line">${bi(txt('card.line'))}</p>
-            <p class="kh-card__city">${bi(config.city)}</p>
-          </div>
-          <i class="kh-shade" aria-hidden="true"></i>
-        </div>
-        <div class="kh-card__t">
-          <div class="kh-card__face kh-card__in kh-face" data-deckle data-edges="trl" data-seed="42">
-            <div class="kh-card__body kh-card__body--top">
-              <p class="kh-card__invoke" lang="ne">${esc(txt('card.invocation').ne)}</p>
-              ${knotSVG({ cls: 'kh-card__knot', ink: 'var(--kh-sindoor)', gapColor: 'var(--kh-card)' })}
-              <p class="kh-card__title" lang="ne">${esc(txt('card.title').ne)}</p>
-              <p class="kh-card__title-en l-en">${esc(txt('card.title').en)}</p>
-              <p class="kh-card__hosts">${bi(config.hosts)}</p>
-            </div>
-            <i class="kh-shade" aria-hidden="true"></i>
-          </div>
-          <div class="kh-card__face kh-card__cover kh-face" data-deckle data-edges="rbl" data-seed="43" aria-hidden="true">
-            <div class="kh-card__body kh-card__body--cover">
-              ${knotSVG({ cls: 'kh-card__foil', ink: 'var(--kh-sindoor)', gapColor: 'var(--kh-card)' })}
-              <p class="kh-card__cover-names">${names()}</p>
-            </div>
-            <i class="kh-shade"></i>
-          </div>
-        </div>
-      </div>
+      ${cardHtml({ bi, esc, txt, config, names, mainAD, mainBS, ids: true })}
       ${heroInHero ? `<div class="kh-heroprint" id="heroprint">${print(heroRef, altFor(heroRef, 'hero.print'), '(max-width: 1200px) 34vw, 420px', { eager: true })}</div>` : ''}
       <button class="kh-seal" id="seal" type="button" aria-label="Open the invitation" disabled><span class="kh-seal__art"></span></button>
     </div>
@@ -406,6 +377,8 @@ main.innerHTML = `
     <button type="button" class="kh-lb__btn kh-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
   </div>`;
 
+// another theme's first screen takes the card's place (only with another theme's gate: the envelope is the card)
+if (mix.hero) mix.mountHero(document.getElementById('top'));
 document.querySelectorAll('[data-deckle]').forEach((el) => deckle(el));
 
 // ───────────────────────── Shell, RSVP, dialogs ─────────────────────────
@@ -476,28 +449,11 @@ modal.addEventListener('click', (e) => { if (e.target === modal || e.target.clos
 }());
 
 // ───────────────────────── Names that always fit the card ─────────────────────────
-function fitNames() {
-  const h = document.getElementById('names');
-  if (!h) return;
-  h.style.fontSize = '';
-  const max = parseFloat(getComputedStyle(h).fontSize);
-  const ps = getComputedStyle(h.parentElement);
-  const box = h.parentElement.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight);
-  let size = max;
-  const lineH = () => parseFloat(getComputedStyle(h).lineHeight) || size * 1.1;
-  // Shrink until the longest word fits and the names take at most two lines.
-  for (let k = 0; k < 24; k++) {
-    const tooWide = [...h.querySelectorAll('.kh-n')].some((n) => n.offsetWidth > box + 1) || h.scrollWidth > box + 1;
-    const tooTall = h.offsetHeight > lineH() * 2.2;
-    if (!tooWide && !tooTall) break;
-    size *= 0.94;
-    h.style.fontSize = `${size}px`;
-  }
-}
+function fitNames() { fitNamesOf(document.getElementById('names')); }
 
 // ───────────────────────── Paper, then the envelope ─────────────────────────
 const root = document.documentElement;
-const hero = document.querySelector('.kh-hero');
+const hero = document.querySelector('.kh-hero'); // null when another theme's first screen is in its place
 const scene = document.getElementById('scene');
 const sealBtn = document.getElementById('seal');
 const quietBtn = document.getElementById('quiet');
@@ -506,7 +462,7 @@ const heroPrintEl = document.getElementById('heroprint');
 document.body.classList.add('kh-locked');
 window.scrollTo(0, 0);
 let vh = window.innerHeight;
-const setHeroH = () => { hero.style.height = `${vh}px`; };
+const setHeroH = () => { if (hero) hero.style.height = `${vh}px`; };
 setHeroH();
 
 const [texPage, texEnv, texCard] = await paperTiles([
@@ -523,7 +479,18 @@ const layoutNow = () => computeLayout(window.innerWidth, vh, { printAr: heroInHe
 fitNames();
 document.fonts?.ready.then(fitNames);
 
-const env = createEnvelope({
+// Another theme's gate covers the page instead of the envelope: the folded card waits beneath and unfolds as that
+// gate gives way (docs/MIX.md).
+const card = document.getElementById('card');
+const fold = mix.gate && card ? cardFold(card) : null;
+if (mix.gate && hero) {
+  sealBtn.remove();
+  gateText.remove();
+  layCard(layoutNow(), card, heroPrintEl, fold);
+  placeAfter(layoutNow());
+  cardClosed({ card, print: heroPrintEl, fold, reduced });
+}
+const env = mix.gate ? null : createEnvelope({
   scene, card: document.getElementById('card'), print: heroPrintEl, gateText, sealButton: sealBtn,
   tex: { env: texEnv, liner: texLiner }, getLayout: layoutNow, reduced,
   onOpenStart: (phase) => {
@@ -533,13 +500,16 @@ const env = createEnvelope({
   },
   onDone: () => afterOpen(),
 });
-placeAfter(env.layout);
+if (env) placeAfter(env.layout);
 document.body.classList.add('is-ready');
-sealBtn.disabled = false;
-quietBtn.disabled = false;
+if (env) {
+  sealBtn.disabled = false;
+  quietBtn.disabled = false;
+}
 
 function placeAfter(L) {
   const after = document.getElementById('after');
+  if (!after) return;
   after.style.top = `${Math.round(L.card.y + L.card.h + 22)}px`;
 }
 
@@ -551,8 +521,17 @@ function open(withMusic) {
   player.start(withMusic);
   env.open();
 }
-sealBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+let mixGate = null;
+if (mix.gate) {
+  mixGate = mix.mountGate({
+    start(withMusic) { opened = true; player.unlock(); player.start(withMusic); window.scrollTo(0, 0); },
+    intro: (tl, at) => (fold ? cardEnter(tl, at, { card, print: heroPrintEl, fold, reduced }) : at),
+    finish: () => afterOpen(),
+  });
+} else {
+  sealBtn.addEventListener('click', () => open(true));
+  quietBtn.addEventListener('click', () => open(false));
+}
 
 let lenis = null;
 function afterOpen() {
@@ -573,12 +552,13 @@ function afterOpen() {
 // Keep the scene right when the width changes (the iOS address bar only changes the height).
 let rw = window.innerWidth;
 window.addEventListener('resize', () => {
-  if (window.innerWidth === rw && env.finished) return;
+  if (window.innerWidth === rw && (!env || env.finished)) return;
   rw = window.innerWidth;
   vh = window.innerHeight;
   setHeroH();
   fitNames();
-  if (!env.finished) { env.relayout(); placeAfter(env.layout); return; }
+  if (!hero) return;
+  if (env && !env.finished) { env.relayout(); placeAfter(env.layout); return; }
   const L = layoutNow();
   const box = (n, r) => n && r && Object.assign(n.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
   box(document.getElementById('card'), L.card);
@@ -590,9 +570,9 @@ window.addEventListener('resize', () => {
 if (DEBUG) {
   window.__kh = {
     gsap, ScrollTrigger, env,
-    open: () => open(false),
-    seek: (t) => env.seek(t),
-    finish: () => { opened = true; env.skip(); },
+    open: () => (mixGate ? mixGate.open(false) : open(false)),
+    seek: (t) => env?.seek(t),
+    finish: () => { if (mixGate) { mixGate.finish(); return; } opened = true; env.skip(); },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;

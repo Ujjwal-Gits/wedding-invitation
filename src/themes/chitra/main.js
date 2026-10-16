@@ -19,6 +19,8 @@ import credits from '../../generated/credits.json';
 import { useSlots } from '../../core/slots.js';
 import manifest from './slots.js';
 import { openModal } from '../../core/modal.js';
+import { coverArt } from './parts.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,6 +35,8 @@ async function start() {
   const { bi, esc, biNodes, dateOf, dayNum, timeLabel, timeOf, mapUrl, neNum } = i18n;
 
   const config = await loadInvitation();
+  // another theme's gate on this page (docs/MIX.md); without config.design nothing changes
+  const mix = await createMix({ host: 'chitra', manifest, config });
   // ?debug&override: proves every slot is replaceable without touching src/config.js
   if (new URLSearchParams(location.search).has('override')) {
     config.themeContent = { ...(config.themeContent || {}), chitra: {
@@ -463,13 +467,33 @@ async function start() {
     document.body.classList.remove('is-gated'); // reveal the title page under the cover
     gate.classList.add('is-opening');
   };
-  document.getElementById('enter-music').addEventListener('click', () => go(true), { once: true });
-  document.getElementById('enter-quiet').addEventListener('click', () => go(false), { once: true });
+  // Another theme's gate covers the page instead of the book's cover: the title page waits beneath and its words
+  // settle in as that gate gives way (docs/MIX.md).
+  let mixGate = null;
+  if (mix.gate) {
+    gate.remove();
+    mixGate = mix.mountGate({
+      start(withMusic) {
+        player.unlock();
+        if (withMusic) player.start(true);
+        document.body.classList.remove('is-gated');
+      },
+      intro(tl, at) {
+        const words = [...document.querySelectorAll('.page--title .title > *')];
+        if (reduced) { tl.fromTo(words, { opacity: 0 }, { opacity: 1, duration: 0.5 }, at); return; }
+        tl.fromTo(words, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power2.out', clearProps: 'transform' }, at);
+      },
+      finish() { lenis?.start(); ScrollTrigger.refresh(); },
+    });
+  } else {
+    document.getElementById('enter-music').addEventListener('click', () => go(true), { once: true });
+    document.getElementById('enter-quiet').addEventListener('click', () => go(false), { once: true });
+  }
 
   /* ───────── debug hook for screenshots ───────── */
   window.__chitra = {
     mode, live, book,
-    open: () => { gate.hidden = true; document.body.classList.remove('is-gated'); lenis?.start(); ScrollTrigger.refresh(); },
+    open: () => { if (mixGate) { mixGate.finish(); return; } gate.hidden = true; document.body.classList.remove('is-gated'); lenis?.start(); ScrollTrigger.refresh(); },
     /** Jump to page i at scene progress p (book: u position; scroll: page pin). */
     show(i, p = 0.5) {
       if (book) {
@@ -489,6 +513,9 @@ async function start() {
     },
   };
 
+  // ?debug&open skips the cover (the studio's other modules, screenshots)
+  if (debug && new URLSearchParams(location.search).has('open')) window.__chitra.open();
+
   function clamp01(v) { return Math.min(1, Math.max(0, v)); }
 }
 
@@ -499,17 +526,4 @@ function daysArt(M, PAL) {
     ${M.fishPair(170, 170, 0.9)}
     ${M.lotus(1200, 1000, 0.8)}${M.lotus(120, 1000, 0.7, PAL.verm, PAL.pink)}
     ${M.kalash(1290, 1000, 1.2)}`;
-}
-
-/** The cover medallion: rings of Mithila borders around the fish pair and a lotus. */
-function coverArt(M, PAL) {
-  let ring = '';
-  for (let i = 0; i < 36; i++) ring += `<g transform="rotate(${i * 10} 300 300)">${M.P('M291,62 L300,36 L309,62Z', i % 2 ? PAL.verm : PAL.turmeric, 1.6)}</g>`;
-  let petals = '';
-  for (let i = 0; i < 24; i++) petals += `<g transform="rotate(${i * 15} 300 300)">${M.P('M300,92 C290,80 292,66 300,58 C308,66 310,80 300,92Z', i % 2 ? PAL.pink : PAL.turmeric, 1.4)}</g>`;
-  return `${ring}<circle cx="300" cy="300" r="240" fill="#ffffff" stroke="#1c1611" stroke-width="3"/>
-    <circle cx="300" cy="300" r="226" fill="none" stroke="#1c1611" stroke-width="1.4"/>${petals}
-    <circle cx="300" cy="300" r="196" fill="${PAL.indigo}" stroke="#1c1611" stroke-width="2.4"/>
-    <circle cx="300" cy="300" r="196" fill="url(#ch-dots)" opacity=".5"/>
-    ${M.fishPair(300, 300, 1.75, PAL.verm, PAL.turmeric)}`;
 }

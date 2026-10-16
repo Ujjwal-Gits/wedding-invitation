@@ -1,0 +1,7 @@
+/* Kham's first screen on another theme's page (docs/MIX.md): what kham.css gives it through body state on its own
+   page (body.is-ready shows the scene), restated for the mix wrapper. */
+.mx-part.mx-hero--kham { overflow: clip; }
+.mx-part.mx-hero--kham .kh-scene { visibility: visible; }
+.mx-hero--kham .kh-card, .mx-hero--kham .kh-heroprint { position: absolute; }
+.mx-hero--kham .mx-cue { color: var(--kh-ink-2); font-family: var(--kh-sans); }
+.mx-hero--kham .mx-cue .l-ne { font-family: var(--kh-deva); }

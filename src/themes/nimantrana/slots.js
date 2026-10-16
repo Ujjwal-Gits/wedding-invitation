@@ -75,4 +75,14 @@ export default {
     '--nm-ivory': { label: 'Card ivory', default: '#FBF6EB' },
     '--nm-cream': { label: 'Cream', default: '#F6EEDC' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    ownGateNeedsHero: true, // the closed card is the cover; it unfolds into the first screen
+    why: {
+      gate: 'Nimantrana’s cover is the outside of its own folded card, so it only opens onto Nimantrana’s card.',
+      hero: 'Nimantrana’s first screen is its card opening out on the silk table, so it only comes with its own cover.',
+      hostHero: 'Nimantrana’s page is built around its unfolding card, so another first screen can’t take the card’s place.',
+    },
+  },
 };

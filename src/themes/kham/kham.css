@@ -3,7 +3,7 @@
    one sindoor accent (the seal, the liner, the knot, a few labels). Generous space.
    Newsreader (Latin serif) · Instrument Sans (labels) · Laila + Noto Serif Devanagari (Devanagari). */
 
-body.theme-kham {
+body.theme-kham, .mx-part.theme-kham {
   --kh-page: #F7F3EB;
   --kh-env: #F0E8DA;
   --kh-card: #FCFAF5;
@@ -51,16 +51,16 @@ body.theme-kham {
   color: var(--kh-ink);
   font: 400 18px/1.6 var(--kh-serif);
 }
-.theme-kham ::selection { background: rgba(154, 27, 31, 0.16); color: var(--kh-ink); }
-.theme-kham :focus-visible { outline: 2px solid var(--kh-sindoor); outline-offset: 3px; }
-.theme-kham .skip { background: var(--kh-ink); color: #fff; }
-.theme-kham .l-ne, .theme-kham [lang='ne'], .theme-kham [lang='sa'] { font-family: var(--kh-deva); font-style: normal; }
+.theme-kham :where(:not(.mx-part:not(.theme-kham) *))::selection { background: rgba(154, 27, 31, 0.16); color: var(--kh-ink); }
+.theme-kham :focus-visible:where(:not(.mx-part:not(.theme-kham) *)) { outline: 2px solid var(--kh-sindoor); outline-offset: 3px; }
+.theme-kham .skip:where(:not(.mx-part:not(.theme-kham) *)) { background: var(--kh-ink); color: #fff; }
+.theme-kham .l-ne:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham [lang='ne']:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham [lang='sa']:where(:not(.mx-part:not(.theme-kham) *)) { font-family: var(--kh-deva); font-style: normal; }
 body.kh-locked { overflow: hidden; height: 100svh; }
 
 /* HUD: the language switch is there from the start; the music pill appears once the envelope opens. */
-.theme-kham .hud__btn, .theme-kham .pill { background: rgba(252, 250, 245, 0.88); color: var(--kh-ink); border: 1px solid var(--kh-line-2); backdrop-filter: blur(6px); }
+.theme-kham .hud__btn:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .pill:where(:not(.mx-part:not(.theme-kham) *)) { background: rgba(252, 250, 245, 0.88); color: var(--kh-ink); border: 1px solid var(--kh-line-2); backdrop-filter: blur(6px); }
 body.kh-locked .pill { opacity: 0; pointer-events: none; }
-.theme-kham .sheet__panel { background: var(--kh-card); color: var(--kh-ink); }
+.theme-kham .sheet__panel:where(:not(.mx-part:not(.theme-kham) *)) { background: var(--kh-card); color: var(--kh-ink); }
 
 /* ───────── Type ───────── */
 .kh-h2 { margin: 0; font: 500 clamp(36px, 4.4vw, 60px)/1.1 var(--kh-serif); letter-spacing: -0.012em; color: var(--kh-ink); text-wrap: balance; }
@@ -295,15 +295,15 @@ body.is-open .kh-rv.is-in { opacity: 1; translate: 0 0; }
 .kh-reply__actions { margin: 26px 0 0; display: flex; gap: 22px; flex-wrap: wrap; }
 .kh-reply__card { padding: clamp(28px, 4vw, 52px) clamp(22px, 4vw, 52px); }
 .kh-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-.theme-kham .field > label, .theme-kham .field > legend { font: 600 12.5px/1.5 var(--kh-sans); letter-spacing: 0.16em; color: var(--kh-ink-2); }
-.theme-kham .field > label .l-ne, .theme-kham .field > legend .l-ne { font: 500 16px/1.6 var(--kh-deva); }
-.theme-kham .field input[type='text'], .theme-kham .field input[type='tel'], .theme-kham .field select, .theme-kham .field textarea { font: 400 20px/1.4 var(--kh-serif); border-bottom-color: var(--kh-line-2); }
-.theme-kham .field select { font: 400 18px/1.4 var(--kh-sans); }
-.theme-kham .choice { font: 400 18px/1.4 var(--kh-serif); }
-.theme-kham .choice .l-ne { font: 400 17px/1.6 var(--kh-deva); }
-.theme-kham .choice-grid .choice { border-color: var(--kh-line-2); border-radius: 999px; padding: 8px 16px; background: rgba(255, 255, 255, 0.5); }
-.theme-kham .rsvp__status { font: italic 400 19px/1.5 var(--kh-serif); color: var(--kh-sindoor); }
-.theme-kham .rsvp .kh-btn { justify-self: start; }
+.theme-kham .field > label:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .field > legend:where(:not(.mx-part:not(.theme-kham) *)) { font: 600 12.5px/1.5 var(--kh-sans); letter-spacing: 0.16em; color: var(--kh-ink-2); }
+.theme-kham .field > label .l-ne:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .field > legend .l-ne:where(:not(.mx-part:not(.theme-kham) *)) { font: 500 16px/1.6 var(--kh-deva); }
+.theme-kham .field input[type='text']:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .field input[type='tel']:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .field select:where(:not(.mx-part:not(.theme-kham) *)), .theme-kham .field textarea:where(:not(.mx-part:not(.theme-kham) *)) { font: 400 20px/1.4 var(--kh-serif); border-bottom-color: var(--kh-line-2); }
+.theme-kham .field select:where(:not(.mx-part:not(.theme-kham) *)) { font: 400 18px/1.4 var(--kh-sans); }
+.theme-kham .choice:where(:not(.mx-part:not(.theme-kham) *)) { font: 400 18px/1.4 var(--kh-serif); }
+.theme-kham .choice .l-ne:where(:not(.mx-part:not(.theme-kham) *)) { font: 400 17px/1.6 var(--kh-deva); }
+.theme-kham .choice-grid .choice:where(:not(.mx-part:not(.theme-kham) *)) { border-color: var(--kh-line-2); border-radius: 999px; padding: 8px 16px; background: rgba(255, 255, 255, 0.5); }
+.theme-kham .rsvp__status:where(:not(.mx-part:not(.theme-kham) *)) { font: italic 400 19px/1.5 var(--kh-serif); color: var(--kh-sindoor); }
+.theme-kham .rsvp .kh-btn:where(:not(.mx-part:not(.theme-kham) *)) { justify-self: start; }
 
 /* Blessing */
 .kh-close { text-align: center; padding: clamp(80px, 14vh, 150px) 24px calc(56px + var(--safe-b)); }

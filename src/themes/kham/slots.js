@@ -58,4 +58,14 @@ export default {
     '--kh-card': { label: 'Card', default: '#FCFAF5' },
     '--kh-page': { label: 'Page', default: '#F7F3EB' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: true, hostGate: true, hostHero: true,
+    // the envelope opens into the card itself: with another first screen, another theme's gate is needed too
+    ownGateNeedsHero: true,
+    why: {
+      gate: 'Kham’s envelope opens into its own card, so the envelope only comes with Kham’s first screen.',
+    },
+    heroUses: { texts: ['card.invocation', 'card.title', 'card.line'], images: ['hero.print'], colors: ['--kh-sindoor', '--kh-card', '--kh-page'] },
+  },
 };

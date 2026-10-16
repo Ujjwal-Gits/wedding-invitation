@@ -1,0 +1,16 @@
+/* Dhaka's gate and first screen on another theme's page (docs/MIX.md). dhaka.css is scoped to .theme-dhaka, which the
+   mix wrapper carries; these are only the bits the own page gets from its body and its own gate element. */
+
+/* the gate: the envelope's paper, the table flowers, the photo inside the pocket, a button for "tap the seal" */
+.mx-gate--dhaka .dk-gate__paper { position: absolute; inset: 0; background: var(--paper-grain), var(--paper-mottle), var(--stock); }
+.mx-gate--dhaka .dk-table { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.mx-gate--dhaka .dk-card { position: absolute; left: 50%; top: 52%; z-index: 1; translate: -50% -50%; pointer-events: none; }
+.mx-gate--dhaka .dk-card .mat { display: block; }
+.mx-gate--dhaka .env-gate__tap { padding: 10px 14px 4px; border: 0; background: none; cursor: pointer; }
+.mx-gate--dhaka .env-gate__ctl .link-quiet { color: var(--ink-2); }
+.mx-gate--dhaka:not(.is-ready) .seal, .mx-gate--dhaka:not(.is-ready) .env-gate__ctl button { cursor: progress; }
+
+/* the first screen: its flowers are promoted only while they move */
+.mx-hero--dhaka .wf { will-change: auto; }
+.mx-hero--dhaka .mx-cue { color: var(--ink-2); }
+.mx-hero--dhaka .mx-cue .l-ne { font-family: var(--f-dv-text); }

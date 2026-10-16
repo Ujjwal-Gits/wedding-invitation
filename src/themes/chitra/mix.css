@@ -1,0 +1,20 @@
+/* Chitra's gate on another theme's page (docs/MIX.md). chitra.css is scoped to .theme-chitra, which the mix wrapper
+   carries; these are the bits the own page gets from its #gate element and from base.css's buttons. */
+.mx-gate--chitra { perspective: 2200px; }
+.mx-gate--chitra .ch-choices { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+.mx-gate--chitra .ch-open {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 15px 30px;
+  background: var(--verm-bright); color: #ffffff; border: 2px solid #ffffff; box-shadow: 4px 4px 0 #0e1428;
+  font: 600 13px/1 var(--f-body); letter-spacing: 0.26em; text-transform: uppercase; cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mx-gate--chitra .ch-open .l-ne { letter-spacing: 0; font-size: 16px; }
+.mx-gate--chitra .ch-open:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #0e1428; }
+.mx-gate--chitra .ch-quiet {
+  padding: 14px 10px; border: 0; background: none; cursor: pointer; color: rgba(255, 255, 255, 0.82);
+  font: 500 12px/1 var(--f-body); letter-spacing: 0.24em; text-transform: uppercase;
+  text-decoration: underline; text-underline-offset: 5px; text-decoration-color: rgba(255, 255, 255, 0.4);
+}
+.mx-gate--chitra .ch-quiet .l-ne { letter-spacing: 0; font-size: 14px; }
+.mx-gate--chitra button[disabled] { opacity: 0.6; cursor: progress; }
+.mx-gate--chitra :focus-visible { outline: 2px solid var(--turmeric); outline-offset: 3px; }

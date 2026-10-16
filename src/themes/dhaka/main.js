@@ -19,10 +19,13 @@ import { useSlots } from '../../core/slots.js';
 import { photoUrl, view } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
-import { palpaliTile } from './weave.js';
-import { FLOWER_LIBRARY_SLUGS, flowerUrl } from './flowers.js';
+import { FLOWER_LIBRARY_SLUGS } from './flowers.js';
+import { FRAME_WIDE, FRAME_TALL, TABLE_WIDE, TABLE_TALL, tall, flower, frameFlowers as frameFlowersOf, firstGrapheme, sealSvg as sealSvgOf, paperVars, welcomeClosed, welcomeEnter } from './parts.js';
+import { createMix } from '../../core/mix.js';
 
 const config = await loadInvitation();
+// another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'dhaka', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion();
@@ -58,18 +61,10 @@ const ratioOf = (ref) => {
   if (ref && typeof ref === 'object' && ref.w && ref.h) return ref.w / ref.h;
   return 3 / 4;
 };
-const firstGrapheme = (s) => {
-  const str = String(s || '').trim();
-  if (!str) return '';
-  if (window.Intl?.Segmenter) return [...new Intl.Segmenter('ne', { granularity: 'grapheme' }).segment(str)][0].segment;
-  return str[0];
-};
 const bsOf = (e) => {
   const d = bsDateOf(e.start, e.dateBS);
   return e.dateBS ? d : { en: `${d.short.en} B.S.`, ne: `वि.सं. ${d.short.ne}` };
 };
-// Leaves are tagged so every spray stacks them behind every bloom (see .fl--leaf in dhaka.css).
-const flower = (name, cls = '', style = '') => `<img class="fl${name.startsWith('leaf') ? ' fl--leaf' : ''} ${cls}" src="${flowerUrl(name)}" alt="" aria-hidden="true" decoding="async" style="${style}" />`;
 
 // ───────────────────────── data ─────────────────────────
 const c = config.couple;
@@ -102,102 +97,21 @@ const liningRef = slotImg('envelope.lining');
 
 // ───────────────────────── shell + textures ─────────────────────────
 const { player } = mountShell({ chapters: [] });
-const band = palpaliTile({ cell: 2.4 });
-const lining = palpaliTile({ cell: mobile ? 3 : 3.5 });
-const rootStyle = document.documentElement.style;
-rootStyle.setProperty('--dhaka', `url(${band.url})`);
-rootStyle.setProperty('--lining-weave', `url(${lining.url})`);
-rootStyle.setProperty('--lining-size', `${lining.width}px ${lining.height}px`);
-const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-rootStyle.setProperty('--paper-grain', svgUrl(`<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .40  0 0 0 0 .32  0 0 0 0 .22  0 0 0 .12 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`));
-rootStyle.setProperty('--paper-mottle', svgUrl(`<svg xmlns='http://www.w3.org/2000/svg' width='700' height='700'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .45  0 0 0 0 .32  0 0 0 .14 0'/></filter><rect width='100%' height='100%' filter='url(#m)'/></svg>`));
-if (liningRef) {
-  rootStyle.setProperty('--lining-weave', `url("${encodeURI(photoUrl(liningRef, 'sm'))}")`);
-  rootStyle.setProperty('--lining-size', 'cover');
-  if (slugOf(liningRef)) used.add(slugOf(liningRef));
-}
+paperVars(document.documentElement.style, { mobile, liningUrl: liningRef ? photoUrl(liningRef, 'sm') : '' });
+if (liningRef && slugOf(liningRef)) used.add(slugOf(liningRef));
 
 // ───────────────────────── the floral frame ─────────────────────────
-// Each flower has a place in the welcome frame (x, y as fractions of the hero; w in units of the
-// hero's shorter side) and a place on the table around the envelope (x, y, w in envelope widths).
-const FRAME_WIDE = [
-  // Top left: the main bouquet.
-  ['leaf-twig', 0.14, 0.02, 0.46, 122], ['leaf-twig', 0.02, 0.3, 0.42, 205], ['leaf-single', 0.21, 0.13, 0.2, 30],
-  ['rose-red-a', 0.065, 0.1, 0.38, -8], ['rose-pink-garden', 0.18, 0.04, 0.27, 12], ['marigold-orange', 0.015, 0.31, 0.22, 0],
-  ['rose-white', 0.235, 0.2, 0.16, 20], ['rose-pink-close', 0.11, 0.3, 0.17, -12],
-  // Top right and bottom left: light accents.
-  ['leaf-twig', 0.95, 0.05, 0.34, 250], ['rose-pink', 0.96, 0.08, 0.22, -10], ['marigold-yellow', 0.88, 0.03, 0.15, 8],
-  ['leaf-twig', 0.04, 0.95, 0.34, 70], ['rose-papa', 0.04, 0.92, 0.22, 6], ['marigold-orange', 0.12, 0.98, 0.14, 0],
-  // Bottom right: the answering bouquet.
-  ['leaf-twig', 0.86, 0.98, 0.46, 302], ['leaf-twig', 0.98, 0.7, 0.42, 25], ['rose-chateau', 0.935, 0.89, 0.38, 6],
-  ['rose-red-b', 0.82, 0.95, 0.27, -10], ['marigold-yellow', 0.985, 0.69, 0.2, 4], ['rose-pink-close', 0.765, 0.84, 0.16, 12],
-  ['rose-red-stem', 0.88, 0.74, 0.22, -40],
-];
-const FRAME_TALL = [
-  ['leaf-twig', 0.3, 0.014, 0.430, 122], ['leaf-twig', 0.02, 0.091, 0.378, 205], ['leaf-single', 0.4, 0.042, 0.189, 30],
-  ['rose-red-a', 0.12, 0.032, 0.378, -8], ['rose-pink-garden', 0.36, 0.014, 0.258, 12], ['marigold-orange', 0, 0.084, 0.224, 0],
-  ['rose-white', 0.48, 0.052, 0.155, 20], ['rose-pink-close', 0.2, 0.077, 0.172, -12],
-  ['leaf-twig', 0.98, 0.028, 0.310, 250], ['rose-pink', 0.96, 0.035, 0.224, -10], ['marigold-yellow', 0.82, 0.014, 0.146, 8],
-  ['leaf-twig', 0.04, 0.979, 0.310, 70], ['rose-papa', 0.06, 0.972, 0.224, 6], ['marigold-orange', 0.22, 0.993, 0.138, 0],
-  ['leaf-twig', 0.86, 1.03, 0.430, 302], ['leaf-twig', 1.03, 0.88, 0.378, 25], ['rose-chateau', 0.95, 0.985, 0.378, 6],
-  ['rose-red-b', 0.76, 1.0, 0.258, -10], ['marigold-yellow', 1, 0.902, 0.206, 4], ['rose-pink-close', 0.62, 1.01, 0.155, 12],
-  ['rose-red-stem', 0.98, 0.93, 0.206, -40],
-];
-// Table: a full bouquet at the envelope's upper left, another at its lower right, a few loose blooms.
-const TABLE_WIDE = [
-  [-0.4, -0.66, 0.44, 140], [-0.7, -0.28, 0.4, 200], [-0.28, -0.5, 0.18, 20], [-0.5, -0.5, 0.36, -14],
-  [-0.3, -0.66, 0.26, 10], [-0.74, -0.56, 0.2, 0], [-0.16, -0.6, 0.15, 30], [-0.62, -0.3, 0.16, -8],
-  [0.62, -0.6, 0.3, 240], [0.6, -0.56, 0.18, -10], [0.42, -0.66, 0.13, 6],
-  [-0.66, 0.6, 0.3, 60], [-0.6, 0.5, 0.18, 6], [-0.44, 0.66, 0.12, 0],
-  [0.44, 0.7, 0.44, 300], [0.76, 0.36, 0.4, 20], [0.54, 0.52, 0.36, 6], [0.34, 0.62, 0.26, -10],
-  [0.76, 0.24, 0.18, 4], [0.2, 0.6, 0.15, 12], [0.66, 0.72, 0.22, -40],
-];
-const TABLE_TALL = [
-  [-0.2, -0.95, 0.5, 140], [-0.5, -0.7, 0.44, 200], [-0.02, -0.78, 0.2, 20], [-0.3, -0.78, 0.42, -14],
-  [0.0, -0.92, 0.28, 10], [-0.55, -0.95, 0.22, 0], [0.18, -0.8, 0.16, 30], [-0.4, -0.52, 0.18, -8],
-  [0.5, -0.85, 0.32, 240], [0.42, -0.78, 0.22, -10], [0.28, -0.96, 0.14, 6],
-  [-0.48, 0.86, 0.32, 60], [-0.4, 0.78, 0.22, 6], [-0.22, 0.92, 0.13, 0],
-  [0.2, 1.0, 0.5, 300], [0.52, 0.66, 0.44, 20], [0.3, 0.8, 0.42, 6], [0.04, 0.86, 0.28, -10],
-  [0.5, 0.56, 0.2, 4], [-0.06, 0.76, 0.16, 12], [0.44, 1.02, 0.26, -40],
-];
-const tall = () => window.innerHeight > window.innerWidth * 1.15;
+// The flower layouts (frame and table, wide and tall) live in parts.js.
 const FRAME = tall() ? FRAME_TALL : FRAME_WIDE;
-const frameFlowers = FRAME.map(([name, x, y, w, rot], i) =>
-  flower(name, 'wf', `left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;width:calc(var(--fu) * ${w});z-index:${name.startsWith('leaf') ? 1 : 2 + (i % 3)};--rot:${rot}deg`)).join('');
+const frameFlowers = frameFlowersOf(FRAME);
 
 // ───────────────────────── markup ─────────────────────────
 const wDate = config.weddingDate;
 const amp = '<span class="amp" aria-hidden="true">&amp;</span>';
 const wedding = events.find((e) => e.id === 'wedding') || events[0];
 
-// Wax seal: an irregular hand-poured disc with the couple's Devanagari initials pressed in.
-const sealPath = (() => {
-  const n = 22;
-  const pts = Array.from({ length: n }, (_, i) => {
-    const a = (i / n) * Math.PI * 2;
-    const r = 52 + Math.sin(i * 2.7) * 2.6 + Math.cos(i * 1.3) * 2.2 + (i % 5 === 0 ? 3 : 0);
-    return [60 + Math.cos(a) * r, 60 + Math.sin(a) * r];
-  });
-  let d = `M ${((pts[0][0] + pts[n - 1][0]) / 2).toFixed(1)} ${((pts[0][1] + pts[n - 1][1]) / 2).toFixed(1)}`;
-  pts.forEach((p, i) => {
-    const q = pts[(i + 1) % n];
-    d += ` Q ${p[0].toFixed(1)} ${p[1].toFixed(1)} ${((p[0] + q[0]) / 2).toFixed(1)} ${((p[1] + q[1]) / 2).toFixed(1)}`;
-  });
-  return `${d} Z`;
-})();
 const sealInitials = `${firstGrapheme(B.name.ne || B.name.en)}·${firstGrapheme(G.name.ne || G.name.en)}`;
-const sealSvg = (id) => `
-  <svg class="seal__svg" viewBox="0 0 120 120" aria-hidden="true">
-    <defs>
-      <radialGradient id="wax${id}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#C73A43"/><stop offset=".55" stop-color="#9B1D27"/><stop offset="1" stop-color="#6B1119"/></radialGradient>
-      <filter id="waxShadow${id}" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#40120f" flood-opacity=".42"/></filter>
-    </defs>
-    <path d="${sealPath}" fill="url(#wax${id})" filter="url(#waxShadow${id})"/>
-    <circle cx="60" cy="60" r="38" fill="none" stroke="#6F1219" stroke-width="3.2" opacity=".55"/>
-    <circle cx="60" cy="61.2" r="38" fill="none" stroke="#E07A7F" stroke-width="1" opacity=".45"/>
-    <text x="60" y="71.6" text-anchor="middle" font-family="Eczar, serif" font-weight="700" font-size="29" fill="#E58489" opacity=".5">${esc(sealInitials)}</text>
-    <text x="60" y="70.4" text-anchor="middle" font-family="Eczar, serif" font-weight="700" font-size="29" fill="#6E1119">${esc(sealInitials)}</text>
-  </svg>`;
+const sealSvg = (id) => sealSvgOf(id, sealInitials, esc);
 
 const gate = document.createElement('div');
 gate.className = 'env-gate';
@@ -223,7 +137,8 @@ gate.innerHTML = `
     <p class="env-gate__tap">${bi(txt('gate.open'))}</p>
     <button type="button" class="link-quiet" id="open-quiet">${bi(txt('gate.quiet'))}</button>
   </div>`;
-document.body.insertBefore(gate, document.getElementById('main'));
+// another theme's gate covers the page instead of the envelope: Dhaka's own gate never enters the page
+if (!mix.gate) document.body.insertBefore(gate, document.getElementById('main'));
 
 const swatches = (e) => (e.dress?.colors || []).map((col) => `<i style="background:${esc(col)}"></i>`).join('');
 const ritualTime = (t) => (typeof t === 'string' ? { en: t, ne: neNum(t) } : t);
@@ -442,6 +357,9 @@ ${guestCols.length ? `<section class="sec guest guest--${guestCols.length}" aria
   <button type="button" class="lb__nav lb__nav--next" data-lb="1"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
 </dialog>`;
 
+// another theme's first screen takes the welcome's place (Dhaka's own envelope then opens as its gate module)
+if (mix.hero) mix.mountHero(document.getElementById('welcome'));
+
 // ───────────────────────── behaviours ─────────────────────────
 initRsvp(events);
 startCountdown(document.getElementById('countdown'));
@@ -510,8 +428,8 @@ function initReveals() {
 }
 
 // ───────────────────────── the opening (signature motion) ─────────────────────────
-const welcome = document.getElementById('welcome');
-const wflowers = [...welcome.querySelectorAll('.wf')];
+const welcome = document.getElementById('welcome'); // null when another theme's first screen is in its place
+const wflowers = welcome ? [...welcome.querySelectorAll('.wf')] : [];
 const env = document.getElementById('env');
 const photoFig = document.getElementById('welcome-photo');
 let lenis = null;
@@ -620,8 +538,33 @@ function open(withMusic) {
     .to(welcome.querySelectorAll('.w-in'), { opacity: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power2.out' }, card ? 2.55 : 2.1);
 }
 
-document.getElementById('seal').addEventListener('click', () => open(true));
-document.getElementById('open-quiet').addEventListener('click', () => open(false));
+// Another theme's gate (or Dhaka's own envelope as its module, before another theme's first screen): it covers the
+// page; the welcome waits beneath in its closed state and comes in as the gate gives way (docs/MIX.md).
+let mixGate = null;
+if (mix.gate) {
+  document.body.classList.add('dk-mx');
+  if (welcome) welcomeClosed(welcome, FRAME, reduced);
+  mixGate = mix.mountGate({
+    start(withMusic) {
+      opened = true;
+      if (withMusic) player.unlock();
+      player.start(withMusic);
+      window.scrollTo(0, 0);
+      document.body.classList.remove('is-gated');
+    },
+    intro: (tl, at) => (welcome ? welcomeEnter(tl, at, welcome, FRAME, reduced) : at),
+    finish() {
+      document.body.classList.remove('is-gated', 'is-opening');
+      if (welcome) gsap.set(wflowers, { opacity: 1 });
+      homeFlowers();
+      initReveals();
+      if (!reduced) lenis = createSmooth();
+    },
+  });
+} else {
+  document.getElementById('seal').addEventListener('click', () => open(true));
+  document.getElementById('open-quiet').addEventListener('click', () => open(false));
+}
 
 // Lay out once fonts and the welcome photo are ready, so the card lands exactly on it.
 await document.fonts.ready;
@@ -629,11 +572,13 @@ const wImg = photoFig?.querySelector('img');
 if (wImg && !wImg.complete) await new Promise((r) => { wImg.addEventListener('load', r, { once: true }); wImg.addEventListener('error', r, { once: true }); setTimeout(r, 4000); });
 // Flowers must have their real heights before they are laid on the table.
 await Promise.all(wflowers.map((el) => (el.complete ? null : new Promise((r) => { el.addEventListener('load', r, { once: true }); el.addEventListener('error', r, { once: true }); setTimeout(r, 4000); }))));
-homeFlowers();
-prepareGate();
+if (!mix.gate) {
+  homeFlowers();
+  prepareGate();
+}
 let lastW = window.innerWidth;
 window.addEventListener('resize', () => {
-  if (opened || window.innerWidth === lastW) return;
+  if (mix.gate || opened || window.innerWidth === lastW) return;
   lastW = window.innerWidth;
   card?.el.remove();
   layTable();
@@ -643,8 +588,10 @@ window.addEventListener('resize', () => {
 // ───────────────────────── debug ─────────────────────────
 if (DEBUG) {
   window.__dk = {
-    enter: () => open(false),
-    instant: () => { opened = true; player.start(false); gsap.set(welcome.querySelectorAll('.w-in'), { opacity: 1, y: 0 }); if (photoFig) gsap.set(photoFig, { opacity: 1 }); finishOpen(); },
+    enter: () => (mixGate ? mixGate.open(false) : open(false)),
+    instant: () => { if (mixGate) { mixGate.finish(); return; } opened = true; player.start(false); gsap.set(welcome.querySelectorAll('.w-in'), { opacity: 1, y: 0 }); if (photoFig) gsap.set(photoFig, { opacity: 1 }); finishOpen(); },
     scrollTo: (y) => { lenis?.resize(); window.scrollTo(0, y); lenis?.scrollTo(y, { immediate: true, force: true }); },
   };
+  // ?debug&open skips the opening (the studio's other modules, screenshots)
+  if (params.has('open')) window.__dk.instant();
 }

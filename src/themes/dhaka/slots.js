@@ -44,4 +44,13 @@ export default {
     '--stock': { label: 'Background', default: '#EFE6D6' },
     '--sindoor': { label: 'Sindoor red', default: '#9C1C26' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    // the envelope's photo flies into the welcome frame and its table flowers become the frame: with another first
+    // screen, the envelope runs as its gate module (gate.js) instead
+    ownGateNeedsHero: true,
+    gateUses: { texts: ['env.kicker', 'gate.line', 'gate.open', 'gate.quiet'], images: ['welcome.photo', 'envelope.lining'], colors: ['--env', '--stock', '--sindoor'] },
+    heroUses: { texts: ['welcome.kicker', 'welcome.line'], images: ['welcome.photo'], colors: ['--stock', '--sindoor'] },
+  },
 };

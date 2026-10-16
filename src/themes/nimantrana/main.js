@@ -23,6 +23,7 @@ import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
 import credits from '../../generated/credits.json';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 import {
   goldDefs, archPanelSVG, crestSVG, canopySVG, lotusSVG, dhakaTile, swastikaSVG, havanSVG,
   bellSVG, kalashSVG, diyoSVG, cornerSVG,
@@ -33,6 +34,8 @@ CustomEase.create('nm-fold', 'M0,0 C0.32,0 0.18,0.86 0.52,0.97 0.7,1.02 0.84,1 1
 CustomEase.create('nm-cam', 'M0,0 C0.4,0 0.22,1 1,1');
 
 const config = await loadInvitation();
+// another theme's gate on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'nimantrana', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
@@ -778,8 +781,8 @@ let opened = false;
 let tl = null;
 const bells = [...document.querySelectorAll('.nm-hang')];
 
-function buildTimeline() {
-  const t = gsap.timeline({ paused: true, onUpdate: render, onComplete: finishOpen });
+function buildTimeline(done = finishOpen) {
+  const t = gsap.timeline({ paused: true, onUpdate: render, onComplete: done || undefined });
   if (L.mode === 'row') {
     t.to(st, { a1: 0, duration: 1.25, ease: 'nm-fold' }, 0);
     t.to(st, { a3: 0, duration: 1.2, ease: 'nm-fold' }, 0.5);
@@ -811,8 +814,33 @@ function open(withMusic) {
   tl = buildTimeline();
   tl.play();
 }
-openBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+// Another theme's gate covers the page instead of the card's own buttons: the closed card waits beneath and unfolds
+// (the bells swing) as that gate gives way (docs/MIX.md).
+let mixGate = null;
+if (mix.gate) {
+  gate.remove();
+  mixGate = mix.mountGate({
+    start(withMusic) {
+      opened = true;
+      player.unlock();
+      player.start(withMusic);
+      if (withMusic) { try { ringBell(player.ctx, { gain: 0.2 }); } catch { /* audio optional */ } }
+      document.body.classList.add('is-opening');
+    },
+    intro(t, at) {
+      if (reduced) return at;
+      spread.classList.add('is-moving');
+      tl = buildTimeline(null);
+      tl.paused(false);
+      t.add(tl, at);
+      return at + 1.2;
+    },
+    finish() { tl?.kill(); finishOpen(); },
+  });
+} else {
+  openBtn.addEventListener('click', () => open(true));
+  quietBtn.addEventListener('click', () => open(false));
+}
 
 let lenis = null;
 let journeyReady = false;
@@ -973,12 +1001,12 @@ window.addEventListener('resize', () => {
 if (DEBUG) {
   window.__nm = {
     gsap, ScrollTrigger, st, L: () => L,
-    open: () => open(false),
+    open: () => (mixGate ? mixGate.open(false) : open(false)),
     seek: (t) => {
       if (!tl) { opened = true; document.body.classList.add('is-opening'); spread.classList.add('is-moving'); tl = buildTimeline(); }
       tl.pause(); tl.seek(t); render();
     },
-    finish: () => { opened = true; tl?.kill(); finishOpen(); },
+    finish: () => { if (mixGate) { mixGate.finish(); return; } opened = true; tl?.kill(); finishOpen(); },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       if (!el) return;

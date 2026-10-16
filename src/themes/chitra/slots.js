@@ -36,4 +36,15 @@ export default {
     '--turmeric': { label: 'Turmeric gold', default: '#e5a52a' },
     '--verm': { label: 'Vermilion', default: '#b8321a' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: false, hostGate: true, hostHero: false,
+    ownGateNeedsHero: false, // the cover swings open onto whatever first screen is beneath
+    why: {
+      hero: 'Chitra’s first screen is the first page of its painted storybook, so it only comes with the rest of the book.',
+      hostHero: 'Chitra’s pages turn like a book from its own title page, so another first screen can’t take that page’s place.',
+    },
+    gateUses: { texts: ['cover.kicker', 'cover.open', 'cover.quiet'], images: [], colors: ['--indigo', '--turmeric'] },
+    heroUses: { texts: [], images: [], colors: [] },
+  },
 };
