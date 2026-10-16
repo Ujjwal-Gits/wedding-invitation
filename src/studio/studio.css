@@ -407,10 +407,11 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 
 /* ── Brand ────────────────────────────────────────────────────────────── */
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); min-width: 0; }
-.brand__logo { display: block; flex: none; width: auto; height: 28px; }
-.brand__mark { display: none; flex: none; width: 30px; height: auto; }
+.brand { gap: 8px; }
+.brand__logo { display: block; flex: none; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; color: var(--ink); }
+.brand__mark { display: block; flex: none; width: 24px; height: auto; }
 .brand__sub { font-size: 12px; font-weight: 500; color: var(--ink-3); padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; }
-.brand--lg .brand__logo { height: 34px; }
+.brand--lg .brand__logo { font-size: 22px; } .brand--lg .brand__mark { width: 30px; }
 
 /* ── Shell ────────────────────────────────────────────────────────────── */
 .app { min-height: 100dvh; }

@@ -61,8 +61,8 @@ const onShellAction = (a) => { if (a === 'signout') signOut(); else if (a === 'c
 
 const brand = (lg = false) => h('a.brand', { href: '#/', class: lg ? 'brand--lg' : '' },
   // the real logo (public/site/brand/); the mark alone where the nav is collapsed to icons
-  h('img.brand__logo', { src: '/site/brand/nimtto-logo.svg', alt: 'Nimtto', width: 162, height: 38 }),
   h('img.brand__mark', { src: '/site/brand/nimtto-mark.svg', alt: '', 'aria-hidden': 'true', width: 31, height: 28 }),
+  h('span.brand__logo', 'Nimtto'),
   h('span.brand__sub', 'Studio'));
 
 // ── Routing ────────────────────────────────────────────────────────────────
