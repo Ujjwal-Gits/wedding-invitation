@@ -90,3 +90,7 @@ html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"
     display: block; margin: 40px; font: 400 16px/1.6 Georgia, serif; color: #2A1A1D;
   }
 }
+
+/* no scrollbar inside the preview (the phone frame shows the page; scrolling still works) */
+html[data-showcase], html[data-showcase] body { scrollbar-width: none; }
+html[data-showcase]::-webkit-scrollbar, html[data-showcase] body::-webkit-scrollbar, html[data-showcase] *::-webkit-scrollbar { display: none; width: 0; height: 0; }
