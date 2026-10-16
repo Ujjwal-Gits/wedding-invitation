@@ -156,7 +156,7 @@ export async function adminList(req, res) {
   // invitations waiting for an email; `account` once an account with that email exists (the owner confirms the link)
   const pending = (await listPending()).map(({ email, slug, at }) => {
     const c = customerByEmail(email);
-    return { email, slug, at, account: c ? { id: c.id, name: c.name || '', email: c.email, createdAt: c.createdAt } : null };
+    return { email, slug, at, account: c ? { id: c.id, name: c.name || '', email: c.email, createdAt: c.createdAt, emailVerified: c.emailVerified === true } : null };
   });
   res.json({ customers: list.map((c) => adminCustomer(c, counts.get(c.id) || 0)), pending });
 }
@@ -232,8 +232,9 @@ export async function checkResetCode(req, res) {
   const code = String(b.code ?? '').replace(/\s+/g, '');
   if (!CODE_RE.test(code)) return res.status(400).json({ error: 'Enter the 6-digit code from the email.', fields: ['code'] });
   const found = customerByEmail(normEmail(b.email));
-  const r = found && found.disabled !== true ? await useCode(found, 'reset', code) : 'expired';
-  if (r !== 'ok') return res.status(400).json({ error: r === 'wrong' ? 'That code is not right. Check the email and try again.' : 'This code has expired. Please ask for a new one.', fields: ['code'], code: `code_${r}` });
+  const r = found && found.disabled !== true ? await useCode(found, 'reset', code) : 'wrong';
+  // the same answer for a wrong code, an expired one and an email without an account (no account probing)
+  if (r !== 'ok') return res.status(400).json({ error: 'That code is not right or has expired. Check the email, or ask for a new code.', fields: ['code'], code: 'code_bad' });
   const ticket = randomBytes(32).toString('base64url');
   await mutateCustomer(found.id, (x) => { x.resetTicket = { hash: sha256(ticket).toString('hex'), exp: Date.now() + TICKET_TTL }; });
   res.json({ ok: true, ticket, expiresIn: TICKET_TTL / 1000 });
@@ -325,6 +326,7 @@ export async function adminPatch(req, res) {
   if (b.password !== undefined && !passwordOk(b.password)) errors.push({ path: 'password', message: `must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters` });
   if (b.disabled !== undefined && typeof b.disabled !== 'boolean') errors.push({ path: 'disabled', message: 'must be true or false' });
   if (errors.length) throw httpError(400, 'Please check the account details.', { errors });
+  if (b.password !== undefined && req.admin?.role !== 'super') throw httpError(403, 'Only a super admin can reset a customer’s password.');
   const passwordHash = b.password !== undefined ? await hashAccountPassword(b.password) : null;
   const c = await mutateCustomer(id, (x) => {
     if (b.name !== undefined) x.name = nameOf(b.name, 80);
@@ -389,8 +391,8 @@ export async function adminConfirmPending(req, res) {
   const email = normEmail(req.body?.email);
   const slug = typeof req.body?.slug === 'string' ? req.body.slug : '';
   if (!email || !SLUG_RE.test(slug)) throw httpError(400, 'Please send the email and the invitation.');
-  const c = await confirmPending(email, slug);
-  console.info(`[admin] pending invitation ${slug} linked to customer ${c.id}`);
+  const c = await confirmPending(email, slug, { unconfirmed: req.body?.unconfirmed === true });
+  console.info(`[admin] pending invitation ${slug} linked to customer ${c.id}${c.emailVerified === true ? '' : ' (email not confirmed; planner chose to link)'}`);
   const filled = await prefillFromCustomer(c.id, slug).catch(() => []);
   res.json({ customer: adminCustomer(c, (await orderCounts()).get(c.id) || 0), filled });
 }

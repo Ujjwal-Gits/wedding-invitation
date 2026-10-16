@@ -148,5 +148,5 @@ test('forgot password: wrong codes at the check step count, and five end the cod
   }
   const late = await browser().req('/auth/reset/check', { method: 'POST', body: { email: 'bina@example.com', code } });
   assert.equal(late.status, 400);
-  assert.equal(late.data.code, 'code_expired');
+  assert.equal(late.data.code, 'code_bad', 'one answer for wrong, expired and unknown');
 });

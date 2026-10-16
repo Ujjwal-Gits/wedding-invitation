@@ -23,6 +23,9 @@ const orders = await import('../lib/orders.js');
 const inv = await import('../lib/invitations.js');
 const customers = await import('../lib/customers.js');
 const handover = await import('../lib/handover.js');
+const accounts = await import('../lib/accounts.js');
+/** What the 6-digit email code does (lib/account-mail.js), for tests without mail. */
+const confirmEmail = (email) => accounts.mutateCustomer(accounts.customerByEmail(email).id, (x) => { x.emailVerified = true; });
 const { sharePage } = await import('../lib/share.js');
 const { scrubDemoOnce } = await import('../lib/migrate-demo.js');
 const { config: demo } = await import('../../src/config.js');
@@ -65,7 +68,7 @@ before(async () => {
   app.use('/api', api);
   app.get('/i/:slug', wrap(sharePage));
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.expose || (err.status || 500) < 500 ? err.message : String(err.stack), ...(err.current ? { current: err.current } : {}) }));
+  app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.expose || (err.status || 500) < 500 ? err.message : String(err.stack), ...(err.current ? { current: err.current } : {}), ...(typeof err.code === 'string' && /^[a-z_]{3,30}$/.test(err.code) ? { code: err.code } : {}) }));
   server = app.listen(0);
   base = `http://localhost:${server.address().port}`;
   admin = await browser().login('owner@test.local', 'test-password-1');
@@ -224,6 +227,12 @@ test('an invitation made for a customer email appears in their dashboard; anothe
   assert.equal((await a.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', name: 'Asha', email: 'asha@example.com', password: 'asha-pass-1' } })).status, 201);
   const other = browser();
   assert.equal((await other.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Bina', email: 'bina@example.com', password: 'bina-pass-1' } })).status, 201);
+  // an account that has not confirmed its email only gets a pending link (anyone can sign up with any email)
+  const early = await admin.req('/api/invitations', { method: 'POST', body: { slug: 'asha-early', bride: 'Asha', groom: 'Hari', customerEmail: 'asha@example.com' } });
+  assert.deepEqual(early.body.customer, { email: 'asha@example.com', linked: false, pending: true });
+  assert.ok(!(await a.req('/api/account')).body.invitations.some((i) => i.slug === 'asha-early'));
+  await admin.req('/api/admin/pending/dismiss', { method: 'POST', body: { email: 'asha@example.com', slug: 'asha-early' } });
+  await confirmEmail('asha@example.com');
 
   const r = await admin.req('/api/invitations', { method: 'POST', body: { slug: 'asha-hari', bride: 'Asha', groom: 'Hari', customerEmail: ' Asha@Example.com ' } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
@@ -265,7 +274,12 @@ test('an email with no account gets a pending link: never claimed on signup, lin
   assert.equal(pending[0].account.email, 'maya@example.com');
   assert.equal(pending[0].account.name, 'Maya');
   assert.equal((await m.req('/api/admin/pending/link', { method: 'POST', body: { email: 'maya@example.com', slug: 'maya-dev' } })).status, 401 + 2, 'customers cannot confirm');
-  const ok = await admin.req('/api/admin/pending/link', { method: 'POST', body: { email: 'maya@example.com', slug: 'maya-dev' } });
+  assert.equal(pending[0].account.emailVerified, false);
+  // not confirmed: Link now asks first, and links only when the owner says so
+  const ask = await admin.req('/api/admin/pending/link', { method: 'POST', body: { email: 'maya@example.com', slug: 'maya-dev' } });
+  assert.equal(ask.status, 409);
+  assert.equal(ask.body.code, 'unconfirmed');
+  const ok = await admin.req('/api/admin/pending/link', { method: 'POST', body: { email: 'maya@example.com', slug: 'maya-dev', unconfirmed: true } });
   assert.equal(ok.status, 200, JSON.stringify(ok.body));
   assert.deepEqual((await m.req('/api/account')).body.invitations.map((i) => i.slug), ['maya-dev']);
   assert.equal((await m.req('/api/invitations/maya-dev')).status, 200);

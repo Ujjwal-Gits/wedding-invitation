@@ -227,7 +227,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       const p = o.payment;
       if (!p || p.provider !== 'paypal') { outcome = 'no payment'; return false; }
       if ((p.events || []).includes(event.id)) { outcome = 'duplicate'; return false; }
-      if (p.captureId && captureId && p.captureId !== captureId && !refund) { outcome = 'other capture'; return false; }
+      if (p.captureId && captureId && p.captureId !== captureId) { outcome = 'other capture'; return false; }
       remember(p, event.id);
       p.updatedAt = stamp();
       if (type === 'PAYMENT.CAPTURE.COMPLETED') {
@@ -259,9 +259,14 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
         }
         const cents = toCents(r.amount?.value);
         const reversed = type === 'PAYMENT.CAPTURE.REVERSED';
+        if (!Number.isFinite(cents) || r.amount?.currency_code !== p.currency) {
+          p.problem = `PayPal reported a refund of ${r.amount?.value} ${r.amount?.currency_code}; this payment is in ${p.currency}. Check it in PayPal.`;
+          outcome = 'refund currency mismatch';
+          return;
+        }
         const when = typeof r.create_time === 'string' && !Number.isNaN(Date.parse(r.create_time)) ? new Date(r.create_time).toISOString() : stamp();
         recordRefund(o, {
-          refundId, cents: Number.isFinite(cents) && r.amount?.currency_code === p.currency ? cents : toCents(p.amount),
+          refundId, cents,
           status: str(r.status, /^[A-Z_]{3,30}$/) || 'COMPLETED', at: when,
           reason: reversed ? 'Reversed by PayPal (a dispute or chargeback)' : 'Refunded in PayPal', by: 'paypal',
         });
@@ -293,7 +298,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       const left = toCents(p.amount) - toCents(p.refunded || '0');
       if (!Number.isFinite(cents) || cents < 1) throw httpError(400, 'Enter the amount to refund.');
       if (cents > left) throw httpError(400, `At most ${p.currency} ${fromCents(Math.max(0, left))} can still be refunded.`);
-      const requestId = `nimtto-refund-${id}-${(p.refunds || []).length + 1}-${cents}`;
+      const requestId = `nimtto-refund-${id}-${(order.refunds || []).filter((x) => x.of === 'paypal').length + 1}-${cents}`;
       const out = await client.refundCapture(p.captureId, { amount: fromCents(cents), currency: p.currency, requestId, note: reason });
       const refundId = typeof out?.id === 'string' && REFUND_ID_RE.test(out.id) ? out.id : null;
       if (!refundId) throw new PayPalError('PayPal returned no refund id.', { status: 502 });

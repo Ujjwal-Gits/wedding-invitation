@@ -121,10 +121,10 @@ api.get('/admin/customers', requirePerm('customers'), wrap(customers.adminList))
 api.post('/admin/customers', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminCreate));
 api.get('/admin/customers/:id/account', requirePerm('customers'), wrap(customers.adminAccount)); // view their dashboard, read-only
 api.patch('/admin/customers/:id', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminPatch));
-api.put('/admin/customers/:id/invitations/:slug', requirePerm('customers'), json('8kb'), wrap(customers.adminLink));
+api.put('/admin/customers/:id/invitations/:slug', requirePerm('customers', 'invitations'), json('8kb'), wrap(customers.adminLink));
 api.delete('/admin/customers/:id/invitations/:slug', requirePerm('customers'), wrap(customers.adminUnlink));
-api.post('/admin/pending/link', requirePerm('customers'), json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
-api.post('/admin/pending/dismiss', requirePerm('customers'), json('1kb'), wrap(customers.adminDismissPending));
+api.post('/admin/pending/link', requirePerm('customers', 'invitations'), json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
+api.post('/admin/pending/dismiss', requirePerm('customers', 'invitations'), json('1kb'), wrap(customers.adminDismissPending));
 api.get('/admin/orders/:id/proof/:n', requirePerm('orders'), wrap(manualPay.adminProof));
 api.patch('/orders/:id', requirePerm('orders'), json('8kb'), wrap(orders.update));
 api.post('/orders/:id/invitation', requirePerm('orders', 'invitations'), json('1kb'), wrap(handover.createForOrder));
@@ -260,6 +260,7 @@ app.use((err, req, res, next) => {
   if (err.errors) body.errors = err.errors;
   if (err.problems) body.problems = err.problems;
   if (err.current) body.current = err.current;
+  if (status < 500 && typeof err.code === 'string' && /^[a-z_]{3,30}$/.test(err.code)) body.code = err.code; // e.g. 'unconfirmed'
   if (err.type === 'entity.too.large') body.error = 'That request is too large.';
   if (err.type === 'entity.parse.failed') body.error = 'Bad request.';
   res.status(status).json(body);

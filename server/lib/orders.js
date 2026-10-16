@@ -8,7 +8,7 @@
 import { randomBytes, randomInt, createHash, timingSafeEqual } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
-import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS } from './env.js';
+import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS, ADMIN_EMAIL } from './env.js';
 // Stored by lib/store.js. addOrder/deleteOrder take the 'orders' lock themselves; saveOrder is called under it.
 import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
@@ -236,7 +236,7 @@ export async function submit(req, res) {
       return res.status(429).json({ ok: false, error: 'Too many attempts. Please wait a few minutes and try again.' });
     }
     const exists = { ok: false, code: 'account_exists', error: 'This email already has an account. Sign in, or enter that account\u2019s password.', fields: ['password'] };
-    if (staffByEmail(email)) return res.status(409).json(exists); // a team email cannot also be a customer account
+    if (staffByEmail(email) || email === ADMIN_EMAIL) return res.status(409).json(exists); // a team email cannot also be a customer account
     if (customerByEmail(email)) {
       const r = await checkCustomer(ip, email, rawPassword);
       if (!r.ok) return res.status(409).json(exists);
@@ -350,6 +350,9 @@ export async function update(req, res) {
     const o = await getOrderById(id);
     if (!o) throw httpError(404, 'Request not found.');
     if (p !== undefined && o.pay?.status === 'comped') throw httpError(409, 'This order has free access. Undo free access first.');
+    if (p !== undefined && o.payment?.provider === 'paypal' && ['paid', 'partially_refunded', 'refunded'].includes(o.payment.status)) {
+      throw httpError(409, 'This order was paid with PayPal. Its payment is managed by PayPal: use Refund for money back.');
+    }
     if (b.status !== undefined) o.status = b.status;
     if (b.notes !== undefined) o.notes = clean(b.notes, 2000, true);
     if (b.amount !== undefined) o.amount = { npr: b.amount.npr ?? null, usd: b.amount.usd ?? null };

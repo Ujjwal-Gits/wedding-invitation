@@ -47,7 +47,11 @@ async function afterCreate(doc, { customerEmail = '', order: orderId = '' } = {}
     });
   }
   const email = normEmail(customerEmail || order?.email || '');
-  let customer = (order?.customerId && !customerEmail ? getCustomer(order.customerId) : null) || (email ? customerByEmail(email) : null);
+  // The account that placed the order, or an account whose email is confirmed. Anyone can sign up with any email, so
+  // an unconfirmed account by email alone only gets a pending link the planner confirms (Link now).
+  const byOrder = order?.customerId && !customerEmail ? getCustomer(order.customerId) : null;
+  const byEmail = !byOrder && email ? customerByEmail(email) : null;
+  let customer = byOrder || (byEmail?.emailVerified === true ? byEmail : null);
   if (!customer && !email) return null;
   const perms = await defaultPerms(order || (customer ? await latestOrderOf(customer.id) : null));
   if (customer) {

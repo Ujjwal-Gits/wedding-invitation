@@ -114,11 +114,13 @@ export function dropPending(match) {
  * The owner confirms a pending link: the invitation is linked to the account with that email (with the perms kept on
  * the pending link) and the pending link goes. 404 when there is no such pending link, or no account for the email yet.
  */
-export async function confirmPending(email, slug) {
+export async function confirmPending(email, slug, { unconfirmed = false } = {}) {
   const p = (await readPending()).find((x) => x.email === email && x.slug === slug);
   if (!p) throw httpError(404, 'That invitation is not waiting for this email any more.');
   const c = customerByEmail(email);
   if (!c) throw httpError(404, 'No account with that email yet.');
+  // anyone can sign up with any email: an account that has not confirmed it is linked only when the planner says so
+  if (c.emailVerified !== true && !unconfirmed) throw Object.assign(httpError(409, 'This account has not confirmed its email yet. Link it only if you are sure it is your customer.'), { code: 'unconfirmed' });
   if (!(await peekInvitation(slug))) { await dropPending((x) => x.slug === slug); throw httpError(404, 'That invitation was deleted.'); }
   const saved = await linkInvitation(c.id, slug, { themes: p.themes, canChangeTheme: p.canChangeTheme, canChangeColors: p.canChangeColors });
   await dropPending((x) => x.email === email && x.slug === slug);

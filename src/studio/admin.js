@@ -223,7 +223,17 @@ const addCustomerBtn = () => h('button.btn', { type: 'button', onclick: () => ad
 export function pendingActs(p, after) {
   const linkBtn = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: async () => {
     linkBtn.disabled = true;
-    try { await api('/admin/pending/link', { method: 'POST', body: { email: p.email, slug: p.slug } }); toast(`Linked: it is now in ${p.email}’s dashboard`, 'success'); after?.(); } catch (err) { linkBtn.disabled = false; toast(err.message, 'error'); }
+    const link = (unconfirmed) => api('/admin/pending/link', { method: 'POST', body: { email: p.email, slug: p.slug, unconfirmed } });
+    try {
+      await link(false).catch(async (err) => {
+        if (err.body?.code !== 'unconfirmed') throw err;
+        // anyone can sign up with any email: link an unconfirmed account only when the planner knows it is the customer
+        const yes = await confirmDialog({ title: 'Email not confirmed', message: `${p.email} has not confirmed this email address yet. Anyone can sign up with any email, so link only if you are sure this is your customer (for example, they told you on WhatsApp).`, confirm: 'Link anyway' });
+        if (!yes) throw Object.assign(new Error(''), { quiet: true });
+        return link(true);
+      });
+      toast(`Linked: it is now in ${p.email}’s dashboard`, 'success'); after?.();
+    } catch (err) { linkBtn.disabled = false; if (!err.quiet) toast(err.message, 'error'); }
   } }, icon('link', 14), 'Link now');
   const dismissBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
     try { await api('/admin/pending/dismiss', { method: 'POST', body: { email: p.email, slug: p.slug } }); toast('Dismissed', 'success'); after?.(); } catch (err) { toast(err.message, 'error'); }
