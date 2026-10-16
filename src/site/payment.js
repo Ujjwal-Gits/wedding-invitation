@@ -22,8 +22,10 @@ export function stepsLine(at) {
     i < at ? el('span', { class: 'vh', text: ' (done)' }) : null)));
 }
 
-// statuses (docs/API.md): awaiting_payment -> proof_submitted -> confirmed | rejected (may upload again) ; refunded
-const isDone = (s) => s === 'confirmed' || s === 'paid';
+// statuses (docs/API.md): awaiting_payment -> proof_submitted -> confirmed | rejected (may upload again) ; refunded ;
+// comped (free access the planner gave: nothing to pay, never a pay form)
+const isFree = (s) => s === 'comped';
+const isDone = (s) => s === 'confirmed' || s === 'paid' || isFree(s);
 const isSent = (s) => s === 'proof_submitted';
 const isClosed = (s) => s === 'refunded';
 const amountOf = (m, info) => (m.amount != null ? m.amount : m.currency === 'USD' ? info.amount.usd : info.amount.npr);
@@ -262,22 +264,24 @@ function row(k, v, extra = null) {
 /* ---------------- step 4: sent, or confirmed ---------------- */
 export function statusView(info, ref, token, wa) {
   const done = isDone(info.status);
+  const free = isFree(info.status);
   const closed = isClosed(info.status);
   const stuck = info.status === 'rejected';
   const m = info.methods.find((x) => x.id === info.proof?.method);
   const rows = [
     ['Order number', ref],
     info.plan?.name ? ['Plan', info.plan.name] : null,
-    info.amount.npr != null ? ['Amount', money(info.amount.npr)] : null,
-    m ? ['Paid with', m.label] : null,
+    free ? ['Amount', 'Free, nothing to pay'] : info.amount.npr != null ? ['Amount', money(info.amount.npr)] : null,
+    m && !free ? ['Paid with', m.label] : null,
   ].filter(Boolean);
   return el('div', { class: 'paydone' },
     stepsLine(done ? 4 : 3),
     closed || stuck ? null : el('p', { class: 'paydone__ne', lang: 'ne', text: 'धन्यवाद' }),
-    el('h3', { class: 'pay__title', text: done ? 'Payment confirmed. We are making your invitation.'
+    el('h3', { class: 'pay__title', text: free ? 'Nothing to pay. We are making your invitation.' : done ? 'Payment confirmed. We are making your invitation.'
       : closed ? 'This order was refunded.' : stuck ? 'We could not confirm your payment.' : 'Payment sent. We will confirm soon.' }),
-    el('p', { class: 'paydone__text', text: done
-      ? 'Thank you. We will message you on WhatsApp to collect your photos and wedding details.'
+    el('p', { class: 'paydone__text', text: free
+      ? 'This plan is on us. We will message you on WhatsApp to collect your photos and wedding details.'
+      : done ? 'Thank you. We will message you on WhatsApp to collect your photos and wedding details.'
       : closed ? 'Your money was sent back. If you have a question, please message us on WhatsApp.'
         : stuck ? (info.reason || 'Please message us on WhatsApp and we will sort it out with you.')
           : 'We check every payment by hand. When it is confirmed, we will message you on WhatsApp and start your invitation.' }),

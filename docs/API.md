@@ -231,9 +231,10 @@ When PayPal Checkout is on, the PayPal SDK's CSP sources are added on `/pay/` pa
 
 ### Payment statuses
 
-`awaiting_payment` → `proof_submitted` → `confirmed` | `rejected` (with `reason`) ; `refunded`. A rejected order can upload
-again (up to 3 proofs in total). PayPal Checkout (when configured) sets `confirmed` itself. This is separate from the
-admin's workflow `status` (`new`/`contacted`/`done`/`archived`).
+`awaiting_payment` → `proof_submitted` → `confirmed` | `rejected` (with `reason`) ; `refunded` ; `comped` (free access
+given by the planner: nothing to pay, `canUpload: false`, proofs and PayPal Checkout refused with `409`). A rejected
+order can upload again (up to 3 proofs in total). PayPal Checkout (when configured) sets `confirmed` itself. This is
+separate from the admin's workflow `status` (`new`/`contacted`/`done`/`archived`).
 
 ## Public
 
@@ -314,8 +315,36 @@ amount: { npr, usd }, message, invitation?, status, notes?, payStatus, pay: { st
 methodLabel, currency, amountPaid, note?, w, h, url, thumb }], history: [{ at, status, by: 'customer'|'admin'|'paypal', note? }],
 via?: 'proof'|'manual'|'paypal', manual?: { method, note }, confirmedAt?, refundedAt? }, payment? (PayPal Checkout) }`.
 The pay token's hash is never sent. `payStatus` is `pay.status` (or PayPal's paid/refunded for older orders).
-`PATCH … payment.status`: `confirmed` (with `manual: true` and `method` for "marked paid by hand"), `rejected` (with
-`reason`), `refunded`, or back to `awaiting_payment`/`proof_submitted` (undo).
+`PATCH … payment.status`: `confirmed` (with `manual: true` and `method` for "marked paid by hand", and optionally
+`currency: 'NPR'|'USD'` and `amount` received; else the plan price), `rejected` (with `reason`), `refunded` (records a
+refund of everything left of the manual payment; `409` for a PayPal-only payment: refund it through Finance), or back
+to `awaiting_payment`/`proof_submitted` (undo; `409` while refunds are recorded). Any payment change on a `comped`
+order is `409` (undo free access first).
+Also on every order: `refunds` (the stored lines, see "Finance"), `refundable: [{ of: 'manual'|'paypal', currency,
+label, paid, refunded, left, test }]`, `refundState: 'partial'|'full'|null`, `pay.received?`, `pay.comp?`, `pay.compUndone?`.
+
+### Finance (`server/lib/finance-admin.js`; every route under `/api/admin/finance`, planner only)
+
+Earnings come from one function, `earnings()` in `server/lib/finance.js`: confirmed manual payments, completed live
+PayPal captures, minus refunds in the month they happen (Nepal time); NPR and USD never mixed; free access never
+counted (docs/PAYMENTS.md §7).
+
+| Route | Body / query | Response |
+|---|---|---|
+| `GET /admin/finance/summary` | – | `{ keys: { thisMonth, lastMonth, year }, periods: { thisMonth, lastMonth, thisYear, allTime }, months: [12 × { month, NPR, USD }], byMethod: [{ method, currency, received, refunded, net, payments, refunds }], pending: { awaiting, toCheck } (each { count, noPrice, NPR, USD }), comps: { count, value: { NPR, USD }, items }, test: { payments }, paypal: { enabled, env } }`; each period/month is `{ NPR, USD }` of `{ received, refunded, net, payments, refunds }` |
+| `GET /admin/finance/transactions` | `?type=payment\|refund\|comp&currency=NPR\|USD&month=YYYY-MM&q=<ref, name, email, PayPal id>&page=1&per=50` (per 10–200) | `{ items: Entry[], total, page, per, months: ['2026-10', …] }` newest first · `400` bad filter |
+| `GET /admin/finance/transactions.csv` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` (required) `&type&currency` | `text/csv` (UTF-8 BOM; formulas neutralised; refunds negative in "Signed amount") · `400` bad range |
+| `POST /admin/finance/orders/:id/comp` | `{ plan, reason ≤ 300 }` | `{ order }` · `400` (unknown plan, no reason, plan does not include the order's design) · `409` already comped / already paid / PayPal holding a payment |
+| `POST /admin/finance/orders/:id/uncomp` | `{ note? ≤ 300 }` | `{ order }` back to `awaiting_payment` · `409` not comped |
+| `POST /admin/finance/customers/:id/comp` | `{ plan, reason, theme? }` | `201 { order }` (a new order in that account, `source: 'admin'`, no pay token) · `404` no account |
+| `POST /admin/finance/orders/:id/refunds` | `{ of?: 'manual'\|'paypal' (needed when both exist), amount > 0 (2 decimals), reason ≤ 300, date?: YYYY-MM-DD (recorded refunds; not in the future, not before the payment), through: 'record'\|'paypal' }` | `201 { order, refund? }` (`refund: { id, status, repeat }` for PayPal) · `400` more than is left / bad input · `409` no payment, or a PayPal payment recorded by hand while PayPal is on · `502` PayPal refused (nothing recorded) |
+| `POST /admin/finance/orders/:id/refunds/:rid/void` | `{ reason? }` | `{ order }` (a refund recorded by mistake stops counting; a full refund's order goes back to `confirmed`) · `409` a PayPal refund, or already removed |
+
+`Entry = { id, type: 'payment'|'refund'|'comp', source: 'manual'|'paypal'|'comp', at, day, month, amount, currency,
+method, counted, test?, voided?, via?, reason?, note?, status?, paypalId?, value? (comp: { npr, usd }), orderId, ref,
+name, email, plan }`. Refund lines (`order.refunds[]`): `{ id, of, via: 'record'|'paypal', amount, currency, date?, at,
+reason, status?, paypalRefundId?, by, recordedAt, voidedAt?, voidReason? }`. A PayPal refund made from here stores
+PayPal's refund id in `payment.refunds`, so the `PAYMENT.CAPTURE.REFUNDED` webhook that follows is a duplicate.
 Client-link defaults: `themes: 'all'`, `canChangeTheme: false`, `canChangeColors: true`.
 `url` = `<PUBLIC_ORIGIN>/studio/#/c/<token>`.
 `clientLink` (in `Summary`, `Doc` for admins, and the link routes) = `{ createdAt, hasPassword, url, themes, canChangeTheme, canChangeColors }` or `null`.

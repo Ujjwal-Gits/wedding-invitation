@@ -4,6 +4,7 @@
 // stored), so the customer can come back to /pay/<ref>?t=<token> to pay by QR and upload a screenshot
 // (lib/payments/manual.js). Amounts always come from the server's plan prices.
 // Admin: list, update the workflow status/notes, the payment status (confirm / reject / mark paid / refunded), delete.
+// Money (earnings, refunds, free access) is read by lib/finance.js and changed by lib/finance-admin.js.
 import { randomBytes, randomInt, createHash, timingSafeEqual } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
@@ -16,6 +17,7 @@ import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
 import { sendVerify } from './account-mail.js';
 import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
+import { refundable, refundState, payStatusOf, dayKey, minor, major, CURRENCIES } from './finance.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
 export const PROOF_DIR = resolve(DATA_DIR, 'proofs'); // payment screenshots: private, never served statically
@@ -26,9 +28,12 @@ export const ID_RE = /^[A-Za-z0-9_-]{12}$/;
 export const REF_RE = /^NM-\d{5,6}$/;
 export const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 const STATUSES = ['new', 'contacted', 'done', 'archived'];
+// The statuses PATCH /api/orders/:id can set. 'comped' (free access) is set and undone only through
+// /api/admin/finance (lib/finance-admin.js), with a plan and a reason.
 export const PAY_STATUSES = ['awaiting_payment', 'proof_submitted', 'confirmed', 'rejected', 'refunded'];
 const MAX_ORDERS = 5000;
 const MAX_HISTORY = 50;
+const MAX_REFUNDS = 50;
 
 // Stored requests: 5 / hour / IP (dev: agents test from one IP) and 200 / hour overall. Attempts (including
 // ones that fail validation, so a typo does not use up a real person's quota): 60 / hour / IP.
@@ -106,6 +111,49 @@ export function whatsappFor(order, site) {
 const historyAdd = (pay, status, by, note) => {
   pay.history = [...(pay.history || []), { at: new Date().toISOString(), status, by, ...(note ? { note } : {}) }].slice(-MAX_HISTORY);
 };
+
+/** A 'YYYY-MM-DD' (Nepal) day as an ISO time: now for today, else midday that day in Kathmandu. */
+const dayToIso = (day) => (!day || day === dayKey(new Date().toISOString()) ? new Date().toISOString() : new Date(`${day}T12:00:00+05:45`).toISOString());
+
+/**
+ * Records a refund the planner made outside Nimtto (money sent back in the bank or wallet app, or cash) as a line
+ * in order.refunds, and moves the payment to 'refunded' once nothing is left. of: 'manual' (a QR or by-hand
+ * payment) or 'paypal' (only when PayPal is off on this server: otherwise refunds go through PayPal). The caller
+ * has checked amount ≤ what is left (lib/finance.js refundable) and holds the orders lock.
+ */
+export function recordRefund(o, { of = 'manual', amount, currency, date = '', reason, by = 'admin' }) {
+  const now = new Date().toISOString();
+  const day = date || dayKey(now);
+  o.refunds = [...(Array.isArray(o.refunds) ? o.refunds : []), {
+    id: randomBytes(6).toString('base64url'), of, via: 'record', amount, currency, date: day, at: dayToIso(day), reason, by, recordedAt: now,
+  }].slice(-MAX_REFUNDS);
+  const pay = o.pay; // an older PayPal-only order may have none: never make one here (it would read as a manual payment)
+  const full = refundable(o).find((x) => x.of === of)?.left === 0;
+  if (of === 'paypal' && o.payment) {
+    const p = o.payment;
+    p.refunded = (major((minor(p.refunded || '0') || 0) + minor(amount))).toFixed(2);
+    p.status = full ? 'refunded' : 'partially_refunded';
+    p.refundedAt = now;
+  }
+  if (!pay) return;
+  if (full && pay.status === 'confirmed') { pay.status = 'refunded'; pay.refundedAt = now; }
+  historyAdd(pay, full ? 'refunded' : 'partly_refunded', by, `${currency} ${amount} refunded: ${reason}`);
+}
+
+/** What the planner received for a confirmed manual payment (lib/finance.js counts it): { amount, currency, label, at }. */
+function receivedFor(o, p) {
+  const pay = o.pay;
+  const at = new Date().toISOString();
+  if (p.manual === true) {
+    const currency = CURRENCIES.includes(p.currency) ? p.currency : o.amount?.npr == null && o.amount?.usd != null ? 'USD' : 'NPR';
+    const amount = typeof p.amount === 'number' ? p.amount : (currency === 'USD' ? o.amount?.usd : o.amount?.npr) ?? 0;
+    return { amount, currency, label: pay.manual?.method || 'Cash', at };
+  }
+  const last = (pay.proofs || []).at(-1);
+  const currency = last?.currency === 'USD' || (o.amount?.npr == null && o.amount?.usd != null) ? 'USD' : 'NPR';
+  const amount = typeof p.amount === 'number' ? p.amount : (currency === 'USD' ? o.amount?.usd : o.amount?.npr) ?? 0;
+  return { amount, currency, label: last?.methodLabel || last?.method || 'QR payment', at };
+}
 
 // ── Public: a new order ───────────────────────────────────────────────────
 
@@ -253,8 +301,11 @@ export function adminView(o) {
       proofs: (rest.pay.proofs || []).map(({ file, thumb, ...p }) => ({ ...p, url: `/api/admin/orders/${o.id}/proof/${p.n}`, thumb: `/api/admin/orders/${o.id}/proof/${p.n}?size=sm` })),
     };
   }
-  // PayPal Checkout (lib/payments) paid it: show it as confirmed
-  rest.payStatus = rest.pay?.status || (o.payment?.status === 'paid' ? 'confirmed' : o.payment?.status === 'refunded' ? 'refunded' : null);
+  // PayPal Checkout (lib/payments) paid it: show it as confirmed. 'comped': free access (never counted as money).
+  rest.payStatus = payStatusOf(o);
+  // per payment: paid, refunded and what can still be refunded; 'partial' / 'full' once money went back
+  rest.refundable = refundable(o);
+  rest.refundState = refundState(o);
   return rest;
 }
 
@@ -289,10 +340,14 @@ export async function update(req, res) {
       if (p[k] != null && (typeof p[k] !== 'string' || p[k].length > max)) throw httpError(400, `payment.${k} must be text of at most ${max} characters.`);
     }
     if (p.status === 'rejected' && !clean(p.reason, 300)) throw httpError(400, 'Say why the payment was rejected: the customer sees this.');
+    // what was received (optional; else the order's price): { currency: 'NPR'|'USD', amount }
+    if (p.currency != null && !CURRENCIES.includes(p.currency)) throw httpError(400, 'payment.currency must be NPR or USD.');
+    if (p.amount != null && (!isMoney(p.amount, 10_000_000) || p.amount <= 0)) throw httpError(400, 'payment.amount must be a positive amount with at most 2 decimals.');
   }
   const order = await withLock('orders', async () => {
     const o = await getOrderById(id);
     if (!o) throw httpError(404, 'Request not found.');
+    if (p !== undefined && o.pay?.status === 'comped') throw httpError(409, 'This order has free access. Undo free access first.');
     if (b.status !== undefined) o.status = b.status;
     if (b.notes !== undefined) o.notes = clean(b.notes, 2000, true);
     if (b.amount !== undefined) o.amount = { npr: b.amount.npr ?? null, usd: b.amount.usd ?? null };
@@ -301,6 +356,16 @@ export async function update(req, res) {
       const paidBefore = pay.status === 'confirmed' || o.payment?.status === 'paid';
       if (p.status === 'refunded' && !paidBefore) throw httpError(409, 'Only a confirmed payment can be marked refunded.');
       const note = clean(p.note, 500, true);
+      const wasPaid = pay.status === 'confirmed' || pay.status === 'refunded';
+      if (wasPaid && !['confirmed', 'refunded'].includes(p.status) && (o.refunds || []).some((r) => r.of === 'manual' && !r.voidedAt)) {
+        throw httpError(409, 'This payment has refunds recorded. Remove the refunds first.');
+      }
+      if (p.status === 'refunded') {
+        // "Mark refunded": a refund of everything still left of the manual payment, recorded now
+        const left = refundable(o).find((x) => x.of === 'manual');
+        if (!left) throw httpError(409, 'This order was paid with PayPal: use Refund to send the money back through PayPal.');
+        if (left.left > 0) recordRefund(o, { of: 'manual', amount: left.left, currency: left.currency, reason: note || 'Marked refunded' });
+      }
       pay.status = p.status;
       if (p.status === 'rejected') pay.reason = clean(p.reason, 300, true);
       else if (p.status !== 'refunded') pay.reason = null;
@@ -308,9 +373,10 @@ export async function update(req, res) {
         pay.confirmedAt = new Date().toISOString();
         pay.via = p.manual === true ? 'manual' : pay.proofs?.length ? 'proof' : 'manual';
         if (p.manual === true) pay.manual = { method: clean(p.method, 40) || 'cash', note };
-      }
+        pay.received = receivedFor(o, p);
+      } else if (p.status !== 'refunded') delete pay.received;
       if (p.status === 'refunded') pay.refundedAt = new Date().toISOString();
-      historyAdd(pay, p.status, 'admin', p.status === 'rejected' ? pay.reason : note || (p.manual === true ? `marked paid by hand (${pay.manual.method})` : ''));
+      if (p.status !== 'refunded') historyAdd(pay, p.status, 'admin', p.status === 'rejected' ? pay.reason : note || (p.manual === true ? `marked paid by hand (${pay.manual.method})` : ''));
     }
     await saveOrder(o);
     return o;
@@ -342,6 +408,9 @@ export async function getOrder(id) {
   return getOrderById(id);
 }
 
+/** Every stored order (any order; lib/finance-admin.js sorts what it shows). */
+export const allOrders = () => storedOrders();
+
 /** The first order for which pred(order) is true, or null. */
 export async function findOrder(pred) {
   const all = await storedOrders();
@@ -360,6 +429,19 @@ export async function mutateOrder(id, fn) {
     if ((await fn(o)) !== false) await saveOrder(o);
     return structuredClone(o);
   });
+}
+
+/**
+ * Stores an order the planner made (free access for a customer, lib/finance-admin.js) with a new reference.
+ * It has no pay token: the customer opens it from their account. Returns the stored order.
+ */
+export async function addAdminOrder(fields) {
+  const order = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), status: 'new', message: '', ...fields };
+  await withLock('order-ref', async () => {
+    order.ref = await newRef();
+    await addOrder(order, MAX_ORDERS);
+  });
+  return order;
 }
 
 export { historyAdd };

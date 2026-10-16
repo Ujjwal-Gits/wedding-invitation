@@ -228,6 +228,48 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
 To switch PayPal off, remove `PAYPAL_CLIENT_ID` (or any of the four) and redeploy. Online payment disappears from the
 site, and requests keep working.
 
+## 7. Earnings, free access and refunds (Studio › Finance)
+
+All of it is computed from the orders by one function, `earnings()` in `server/lib/finance.js` (tests:
+`server/test/finance.test.js`). Nothing keeps a second copy of an amount, so the page always matches the orders.
+
+**What counts as earned.** Only money actually received:
+
+- a QR payment the planner confirmed (the screenshot's currency, at the plan price fixed when ordering);
+- "Mark paid manually" (cash, a transfer seen elsewhere), at the currency and amount entered in that dialog;
+- a completed PayPal capture. PayPal **sandbox** payments are test money: listed, never counted.
+
+Minus refunds, **in the month the refund happened** (a September payment refunded in October lowers October). Rupees
+and dollars are always kept apart: no conversion, ever. Months are Nepal time (Asia/Kathmandu). Orders waiting for
+payment or with a screenshot to check are shown as "Not received yet", never as earnings.
+
+On the order: a confirmed manual payment stores what was received in `pay.received = { amount, currency, label, at }`.
+Older orders without it are read from their price and last screenshot, so nothing needed migrating.
+
+**Free access (comp).** From an order (Orders › the order › Give free access…) or a customer (Customers › the gift
+button, which makes a new order in their account). Choose the plan and say why (friend, promotion, replacement…). The
+order gets `pay.status = 'comped'` and `pay.comp = { at, plan, planName, reason, value: { npr, usd } }`. The customer
+sees "Free, nothing to pay"; the pay page never asks for money and PayPal Checkout refuses it. The plan unlocks the
+same designs as a paid plan, and a linked invitation's design list grows to match (never shrinks). Free access is
+listed with what it would have cost and is **never** counted. Undo free access puts the order back to "Awaiting
+payment"; the old grant stays in `pay.compUndone` and in the history. A paid order cannot be comped (refund it instead).
+
+**Refunds.** Orders › a paid order › Refund…: full or partial, at most what was paid minus what was already refunded,
+in the currency of that payment, with a reason (and the date for a recorded refund). Each refund is a line in
+`order.refunds = [{ id, of: 'manual'|'paypal', via: 'record'|'paypal', amount, currency, date?, at, reason, status?,
+paypalRefundId?, voidedAt? }]`.
+
+- **QR / cash payments:** the refund is only *recorded*. You send the money back yourself in the bank or wallet app
+  (or in cash). A refund recorded by mistake can be removed (it stops counting at once).
+- **PayPal payments:** "Refund through PayPal" calls PayPal's refund API (`POST /v2/payments/captures/{id}/refund`)
+  with a `PayPal-Request-Id`, so a retry after a timeout returns the first refund instead of making a second one. The
+  refund id is stored on the payment; when PayPal then sends `PAYMENT.CAPTURE.REFUNDED`, the webhook sees the same id
+  and does not record it again. A refund made in PayPal's own dashboard arrives only by webhook and is recorded once.
+  PayPal refunds cannot be removed here.
+
+A full refund sets the payment to `refunded`; a partial one keeps it paid with the label "Paid · partly refunded".
+While refunds are recorded, a payment cannot be reopened ("Undo"): remove the refunds first.
+
 ## Sources
 
 - PayPal merchant fees (US, updated 1 Oct 2026): https://www.paypal.com/us/business/paypal-business-fees

@@ -116,9 +116,9 @@ export async function payInfo(req, res) {
     plan: planView(o), amount: o.amount || { npr: null, usd: null }, name: o.name,
     ...(o.weddingDate ? { weddingDate: o.weddingDate } : {}), createdAt: o.at,
     proofs, maxProofs: MAX_PROOFS,
-    canUpload: !['confirmed', 'refunded'].includes(status) && proofs.length < MAX_PROOFS,
+    canUpload: !['confirmed', 'refunded', 'comped'].includes(status) && proofs.length < MAX_PROOFS, // comped: free access, nothing to pay
     remark, paymentMethods,
-    paypalCheckout: { enabled: Boolean(payments.config.enabled && o.kind === 'order' && o.amount?.usd) },
+    paypalCheckout: { enabled: Boolean(payments.config.enabled && o.kind === 'order' && o.amount?.usd && status !== 'comped') },
     whatsapp: whatsappFor(o, site),
   });
 }
@@ -189,6 +189,7 @@ export async function submitProof(req, res) {
   if (limited(proofOrderLimit, o.id, res)) return;
   const status = statusOf(o);
   if (status === 'confirmed' || status === 'refunded') return res.status(409).json({ error: 'This order is already paid. Thank you!' });
+  if (status === 'comped') return res.status(409).json({ error: 'There is nothing to pay for this order.' });
   if ((o.pay?.proofs || []).length >= MAX_PROOFS) return res.status(409).json({ error: 'We already have 3 screenshots for this order. Please message us on WhatsApp.' });
 
   let parsed;
@@ -221,6 +222,7 @@ export async function submitProof(req, res) {
     saved = await mutateOrder(o.id, (x) => {
       const pay = x.pay || (x.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [] });
       if (pay.status === 'confirmed' || pay.status === 'refunded') throw httpError(409, 'This order is already paid. Thank you!');
+      if (pay.status === 'comped') throw httpError(409, 'There is nothing to pay for this order.');
       if (pay.proofs.length >= MAX_PROOFS) throw httpError(409, 'We already have 3 screenshots for this order. Please message us on WhatsApp.');
       const n = pay.proofs.reduce((a, p) => Math.max(a, p.n), 0) + 1;
       pay.proofs.push({ n, at: new Date().toISOString(), method: method.id, methodLabel: method.label, currency: method.currency, amountPaid, ...(note ? { note } : {}), file: fileName, thumb: thumbName, w: img.w, h: img.h });
