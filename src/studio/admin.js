@@ -6,6 +6,7 @@ import { photoUrl } from '../photos.js';
 import { deleteDialog, actionMenu, whenText } from './manage.js';
 import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
 import { customersSection } from './admin-customers.js';
+import { musicLibrary } from './admin-music.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
@@ -1080,6 +1081,7 @@ export const ADMIN_MODULES = [
   { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
   { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
   { id: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
+  { id: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
   { id: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },
   { id: 'settings', title: 'Settings & help', short: 'Settings', icon: 'settings', group: 'business', render: settings, sub: 'Your account and where things live.' },
 ];

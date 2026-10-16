@@ -60,9 +60,17 @@ export async function upload(slug, file, kind = 'image', onProgress = () => {}, 
 }
 
 function send(slug, file, kind, onProgress) {
+  const fd = new FormData();
+  fd.append('kind', kind);
+  fd.append('file', file);
+  return postFormProgress(`/invitations/${encodeURIComponent(slug)}/uploads`, fd, onProgress);
+}
+
+/** A multipart POST with upload progress (fetch cannot report it), the CSRF token, and a JSON answer. */
+export function postFormProgress(path, form, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/invitations/${encodeURIComponent(slug)}/uploads`);
+    xhr.open('POST', `/api${path}`);
     xhr.setRequestHeader('X-CSRF-Token', csrf);
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.responseType = 'json';
@@ -74,9 +82,6 @@ function send(slug, file, kind, onProgress) {
       else reject(new ApiError(xhr.status, body));
     };
     xhr.onerror = () => reject(new ApiError(0, { error: 'The upload failed. Check your connection and try again.' }));
-    const fd = new FormData();
-    fd.append('kind', kind);
-    fd.append('file', file);
-    xhr.send(fd);
+    xhr.send(form);
   });
 }

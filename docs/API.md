@@ -211,6 +211,7 @@ admin's workflow `status` (`new`/`contacted`/`done`/`archived`).
 |---|---|---|
 | `GET /site` | – | `Site` (defaults when nothing saved yet) |
 | `GET /themes` | – | `[{ slug, name, concept, thumb }]`, ready themes only, minus `hiddenThemes` (no page URLs: see "Theme pages") |
+| `GET /music` | – | `{ moods: [{ id, en, ne }], tracks: [{ id, title, titleNe, artist, mood, duration, src, credit, builtin }] }`: the music library's songs that are on, in the planner's order (`Cache-Control: no-cache`). See "Music library" |
 | `POST /orders` | see "Order → pay → proof" above | `201 { ok, ref, payToken, amount, plan, payUrl, whatsapp }` · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
 | `GET /orders/:ref/pay?t=` · `GET /orders/:ref/qr/:method.png?t=` · `POST /orders/:ref/proof?t=` | see above | see above |
 | `GET /pay/config` | – | `{ paypal: { enabled: false } }` or `{ paypal: { enabled: true, env: 'sandbox'\|'live', clientId, currency: 'USD' } }` |
@@ -264,6 +265,11 @@ the same id. `GET /site` returns only the public projection (see the contract ab
 | `GET /admin/orders/:id/proof/:n` | `?size=sm` for the thumbnail | `image/jpeg`, `Cache-Control: private, no-store` · `401` not signed in · `404` |
 | `GET /admin/site` | – | the full `Site`; each payment method also has `qrInfo: { format: 'emv'\|'esewa'\|'khalti'\|'paypalme'\|'paypal'\|…, label, decoded, canAuto, autoDefault, dynamic }` |
 | `POST /admin/pay/qr` | multipart `file` (PNG/JPEG/WebP ≤ 8 MB) | `201 { qr, decoded, cropped, qrInfo }` (cropped to the code, payload stored for per-order codes) · `413` · `415` |
+| `GET /admin/music` | – | `{ moods, tracks }`: every song, each also with `enabled` (and `addedAt` for uploads) |
+| `POST /admin/music` | multipart: `file` (MP3 ≤ 15 MB), `title` (1–80; default: the file name), `titleNe?`, `artist?` (≤ 80), `mood` (a mood id; default `instrumental`), `credit?` (≤ 300) | `201 { track }` (appended last, on) · `400` bad field or longer than 20 min · `413` · `415` not an MP3 · `429` over 60 uploads / hour |
+| `PATCH /admin/music/:id` | any of `{ title, titleNe, artist, mood, credit, enabled }` | `{ track }` · `400` · `404` |
+| `PATCH /admin/music` | `{ order: [id, …] }` (unknown ids ignored; songs left out keep their order after these) | `{ tracks }` |
+| `DELETE /admin/music/:id` | – | `{ ok: true, inUse }` · `400` a built-in song (turn it off instead) · `404` |
 | `GET /invitations` | – | `{ invitations: Summary[] }` |
 | `POST /invitations` | `{ slug, bride, groom, theme?, sample?, religion?, colors? }` (`religion`: see below; `colors`: `{ '--token': '#hex' }` for the chosen theme, unknown tokens dropped; a theme that does not suit the religion is replaced by the first ready one that does; the ceremonies and wording follow the religion) | `201 Doc` |
 | `POST /invitations/:slug/seen` | – | `{ ok: true }` |
@@ -292,6 +298,26 @@ lost, links show as `url: null` and keep working. `tokenHash` stays the sign-in 
 ever stored as argon2id hashes and never returned. The link alone grants nothing without the password.
 `hasPassword: false` = a link made before passwords existed: it still opens with the token alone and full rights,
 until the admin sets a password with `PATCH /access`.
+
+### Music library
+
+One site-wide list of songs couples choose from (studio: Owner → Music library; the couple's Music module groups the
+songs that are on by mood). Built-in songs ship in `public/audio/` and are listed, with author, licence and source,
+in `src/core/music-library.js`; the planner can rename them, change their mood or credit, turn them off and reorder
+them, never delete their files. Uploads are stored as `uploads/_site/music/<24-char random id>.mp3` and served at that
+path (immutable cache). Moods: `shehnai` (Shehnai & traditional), `instrumental` (Flute, sitar & santoor), `romantic`,
+`piano` (Soft piano & strings), `festive`.
+
+An upload is accepted only when its bytes are MPEG audio (an ID3 tag or frame sync, then frames that follow one
+another); the duration is read on the server by walking the frames (CBR and VBR). The file name and the browser's
+type are ignored. Text fields are stored as plain text (control characters removed) and rendered as text everywhere,
+including the public credits page, which lists the built-in songs plus the uploads that are on and have a credit.
+The library is stored as the `music` document (SQLite `kv` table; `data/music.json` on the JSON store).
+
+An invitation keeps the songs it plays in `music.tracks` (up to 8): `{ title, mood, src, credit }`, where `src` is a
+built-in `/audio/…mp3`, a library upload `/uploads/_site/music/<id>.mp3`, or the couple's own `/uploads/<slug>/<id>.mp3`.
+Turning a song off or deleting it does not take it out of invitations that already play it (a deleted upload's file
+is kept while any invitation uses it; `inUse` says how many).
 
 ## Admin or the couple (own invitation)
 

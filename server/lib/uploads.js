@@ -120,8 +120,59 @@ async function saveImage(slug, buffer) {
   return photo;
 }
 
+// MPEG audio frame headers (layer III mostly; I and II for completeness): kbps by [version 1 | 2/2.5][layer].
+const KBPS = {
+  1: { 1: [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448], 2: [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384], 3: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320] },
+  2: { 1: [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256], 2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160], 3: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160] },
+};
+const RATES = { 3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000] };
+
+/** The frame starting at i: { len, samples, rate } or null. */
+function frameAt(b, i) {
+  if (i + 4 > b.length || b[i] !== 0xff || (b[i + 1] & 0xe0) !== 0xe0) return null;
+  const ver = (b[i + 1] >> 3) & 3; // 3: MPEG-1, 2: MPEG-2, 0: MPEG-2.5
+  const layer = 4 - ((b[i + 1] >> 1) & 3); // 1, 2, 3 (4 = reserved)
+  const bi = b[i + 2] >> 4;
+  const ri = (b[i + 2] >> 2) & 3;
+  if (ver === 1 || layer === 4 || bi === 0 || bi === 15 || ri === 3) return null;
+  const kbps = KBPS[ver === 3 ? 1 : 2][layer][bi];
+  const rate = RATES[ver][ri];
+  const pad = (b[i + 2] >> 1) & 1;
+  const samples = layer === 1 ? 384 : layer === 3 && ver !== 3 ? 576 : 1152;
+  const len = layer === 1 ? Math.floor((12 * kbps * 1000) / rate + pad) * 4 : Math.floor((samples / 8) * kbps * 1000 / rate) + pad;
+  return len >= 24 ? { len, samples, rate } : null;
+}
+
+/**
+ * Seconds of audio in an MP3, read by walking its frames (exact for CBR and VBR alike), or 0 when the
+ * bytes are not MPEG audio. A short run of garbage between frames is skipped; a stray sync inside data is not
+ * trusted unless the next frame follows it.
+ */
+export function mp3Duration(b) {
+  let i = 0;
+  if (b.length > 10 && b.toString('latin1', 0, 3) === 'ID3') {
+    i = 10 + (((b[6] & 0x7f) << 21) | ((b[7] & 0x7f) << 14) | ((b[8] & 0x7f) << 7) | (b[9] & 0x7f)) + ((b[5] & 0x10) ? 10 : 0);
+  }
+  let frames = 0;
+  let seconds = 0;
+  let skipped = 0;
+  while (i + 4 <= b.length) {
+    const f = frameAt(b, i);
+    if (f && (i + f.len >= b.length - 4 || frameAt(b, i + f.len) || b.toString('latin1', i + f.len, i + f.len + 3) === 'TAG')) {
+      frames += 1;
+      seconds += f.samples / f.rate;
+      i += f.len;
+      continue;
+    }
+    if (b.toString('latin1', i, i + 3) === 'TAG') break; // ID3v1 at the end
+    i += 1;
+    if (++skipped > 64 * 1024) break; // not audio
+  }
+  return frames >= 8 ? Math.round(seconds * 10) / 10 : 0;
+}
+
 /** MP3: an ID3v2 tag or an MPEG audio frame sync at the start, and a second frame sync later. */
-function looksLikeMp3(b) {
+export function looksLikeMp3(b) {
   if (b.length < 1024) return false;
   let off = 0;
   if (b.toString('latin1', 0, 3) === 'ID3') {

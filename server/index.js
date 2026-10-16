@@ -17,6 +17,7 @@ import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
 import * as site from './lib/site.js';
+import * as music from './lib/music.js'; // the site-wide music library (docs/API.md "Music library")
 import { sharePage } from './lib/share.js';
 import { themePageGate } from './lib/gate.js';
 import { showcaseGate } from './lib/showcase.js';
@@ -60,6 +61,7 @@ api.get('/auth/me', wrap(me));
 api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.get('/site', wrap(site.getSite));
 api.get('/themes', wrap(site.publicThemes));
+api.get('/music', wrap(music.publicList));
 api.post('/orders', heavy, json('8kb'), wrap(orders.submit)); // may hash or check an account password
 
 // The customer's own account (signed in with email + password)
@@ -80,6 +82,12 @@ api.get('/admin/stats', requireAdmin, heavy, wrap((req, res) => inv.stats(req, r
 api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
 api.get('/admin/site', requireAdmin, wrap(site.getAdminSite));
 api.post('/admin/pay/qr', requireAdmin, heavy, wrap(manualPay.uploadQr));
+api.param('musicId', (req, res, next, id) => (/^[A-Za-z0-9_-]{2,40}$/.test(id) ? next() : res.status(404).json({ error: 'No such song.' })));
+api.get('/admin/music', requireAdmin, wrap(music.adminList));
+api.post('/admin/music', requireAdmin, heavy, wrap(music.upload));
+api.patch('/admin/music', requireAdmin, json('8kb'), wrap(music.reorder));
+api.patch('/admin/music/:musicId', requireAdmin, json('4kb'), wrap(music.patch));
+api.delete('/admin/music/:musicId', requireAdmin, wrap(music.remove));
 api.get('/orders', requireAdmin, wrap(orders.list));
 api.get('/admin/customers', requireAdmin, wrap(customers.adminList));
 api.post('/admin/customers', requireAdmin, heavy, json('2kb'), wrap(customers.adminCreate));
@@ -148,6 +156,14 @@ app.get(/^\/uploads\/([a-z0-9-]{3,64})\/([A-Za-z0-9_-]{16,40}(?:-(?:lg|sm|depth)
 app.get(/^\/uploads\/_site\/pay\/([A-Za-z0-9_-]{24}\.png)$/, (req, res, next) => {
   res.set('Cache-Control', 'public, max-age=31536000, immutable');
   res.sendFile(resolve(UPLOAD_DIR, '_site', 'pay', req.params[0]), { dotfiles: 'deny' }, (err) => {
+    if (err && !res.headersSent) res.status(err.statusCode === 404 || err.code === 'ENOENT' ? 404 : 500).end();
+    else if (err) next(err);
+  });
+});
+// The music library's uploaded songs (lib/music.js): random names, MP3 only.
+app.get(/^\/uploads\/_site\/music\/([A-Za-z0-9_-]{24}\.mp3)$/, (req, res, next) => {
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(resolve(UPLOAD_DIR, '_site', 'music', req.params[0]), { dotfiles: 'deny' }, (err) => {
     if (err && !res.headersSent) res.status(err.statusCode === 404 || err.code === 'ENOENT' ? 404 : 500).end();
     else if (err) next(err);
   });

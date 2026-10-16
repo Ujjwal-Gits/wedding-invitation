@@ -3,6 +3,7 @@
 //   Drafts may be incomplete, so empty strings are allowed here.
 // publishProblems(): what is still missing before an invitation can go live.
 import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
+import { LIBRARY_SRC_RE } from '../../src/core/music-library.js';
 import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
 import { cleanDesign } from '../../src/core/mix-rules.js';
 import { isReligion } from '../../src/core/faith.js';
@@ -114,8 +115,8 @@ function photoRef(c, v, path) {
 }
 
 function audioSrc(c, v, path) {
-  if (typeof v === 'string' && (BUNDLED_SRCS.has(v) || new RegExp(`^/uploads/${c.slug}/${FILE_ID}\\.mp3$`).test(v))) return v;
-  return c.fail(path, 'must be a bundled track or an uploaded MP3') ?? '';
+  if (typeof v === 'string' && (BUNDLED_SRCS.has(v) || LIBRARY_SRC_RE.test(v) || new RegExp(`^/uploads/${c.slug}/${FILE_ID}\\.mp3$`).test(v))) return v;
+  return c.fail(path, 'must be a song from the music library or an uploaded MP3') ?? '';
 }
 
 const SLOT_ID_RE = /^[a-z0-9][a-zA-Z0-9._-]{0,63}$/;

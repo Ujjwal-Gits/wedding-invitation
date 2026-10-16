@@ -904,6 +904,43 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .song__text b { font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .song__text small { color: var(--ink-3); font-size: 12.5px; }
 .song-wrap { display: grid; gap: var(--s2); }
+.songgroup { display: grid; gap: var(--s2); }
+.songgroup + .songgroup { margin-top: var(--s4); }
+.songgroup .subhead { margin-bottom: 0; }
+
+/* Owner: Music library */
+.mlib { display: grid; gap: var(--s5); }
+.mlib__songs { display: grid; gap: var(--s3); }
+.mlib__form { display: grid; gap: var(--s4); }
+.mlib__file { display: flex; align-items: center; gap: var(--s2); font-size: 14px; min-width: 0; }
+.mlib__file svg { color: var(--accent); flex: none; }
+.mlib__file b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mlib__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3) var(--s4); }
+.mlib__wide { grid-column: 1 / -1; }
+.mlib__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.mrow { display: flex; align-items: center; gap: var(--s3); padding: 10px 4px; border-bottom: 1px solid var(--line); background: var(--surface); transition: background-color var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease); }
+.mrow.is-off .mrow__text, .mrow.is-off .playbtn { opacity: 0.55; }
+.mrow.is-drag { opacity: 0.4; }
+.mrow__grip { flex: none; width: 28px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink-4); cursor: grab; }
+.mrow__grip:hover { color: var(--ink); background: var(--surface-3); }
+.mrow__grip:active { cursor: grabbing; }
+.mrow__text { display: grid; min-width: 0; flex: 1; gap: 1px; }
+.mrow__text b { font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow__ne { font-weight: 400; color: var(--ink-3); }
+.mrow__text small { color: var(--ink-3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow__credit { color: var(--ink-4) !important; }
+.mrow__credit.is-missing { color: var(--warn) !important; }
+.mrow__on { min-width: 56px; }
+.mrow__acts { display: flex; align-items: center; justify-content: flex-end; gap: 2px; min-width: 82px; }
+.mrow__step { display: none; }
+@media (pointer: coarse) { .mrow__step { display: inline-flex; } .mrow__grip { display: none; } }
+@media (max-width: 760px) {
+  .mlib__fields { grid-template-columns: minmax(0, 1fr); }
+  .mrow { flex-wrap: wrap; }
+  .mrow__text { flex-basis: calc(100% - 100px); }
+  .mrow > .pill { margin-left: 52px; }
+  .mrow__acts { margin-left: auto; }
+}
 .song__edit { padding: 0 var(--s2) var(--s2); }
 .playbtn { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-2); background: var(--surface); color: var(--accent); cursor: pointer; transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
 .playbtn:hover { background: var(--accent-soft); }

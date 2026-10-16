@@ -1,7 +1,7 @@
 // Music: our bundled songs (listen first), your own MP3, or a YouTube link that plays inside the
 // invitation's music player. A YouTube link, when set, plays instead of the songs.
 import { h, icon, iconBtn, clear, toast, card, fill } from './dom.js';
-import { upload } from './api.js';
+import { upload, api } from './api.js';
 import { biField } from './fields.js';
 
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
@@ -35,9 +35,24 @@ function seconds(v) {
   if (hms && s) return Number(hms[1] || 0) * 3600 + Number(hms[2] || 0) * 60 + Number(hms[3] || 0);
   return null;
 }
+const MAX_SONGS = 8;
+// The site's music library (GET /api/music), loaded once per page; the planner manages it in Music library.
+let library = null;
+let libraryLoad = null;
+function loadLibrary() {
+  libraryLoad ||= api('/music').then((out) => { library = out; return out; }).finally(() => { libraryLoad = null; });
+  return libraryLoad;
+}
+/** A library song as an invitation track (what the invitation stores and audio.js plays). */
+function asInvitationTrack(t) {
+  const mood = library?.moods.find((x) => x.id === t.mood);
+  return { title: { en: t.title, ne: t.titleNe || '' }, mood: { en: mood?.en || '', ne: mood?.ne || '' }, src: t.src, credit: t.credit || '' };
+}
 const mmss = (n) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 
-let player = null; // one shared <audio> for listening
+let player = null; // one shared <audio> for listening (the couple's Music module and the planner's Music library)
+/** Stops the listening player (a module's cleanup). */
+export const stopListening = () => { player?.pause(); document.querySelectorAll('.playbtn.is-playing').forEach((b) => { b.classList.remove('is-playing'); b.replaceChildren(icon('play', 16)); }); };
 function listen(src, btn) {
   if (!player) player = new Audio();
   const playing = player.dataset.src === src && !player.paused;
@@ -51,13 +66,15 @@ function listen(src, btn) {
   btn.setAttribute('aria-label', `Pause ${btn.dataset.label.replace(/^Play /, '')}`);
   player.onended = () => { btn.classList.remove('is-playing'); btn.replaceChildren(icon('play', 16)); };
 }
-const playBtn = (src, name) => h('button.playbtn', { type: 'button', 'aria-label': `Play ${name}`, 'data-label': `Play ${name}`, title: 'Listen', onclick: (e) => listen(src, e.currentTarget) }, icon('play', 16));
+export const playBtn = (src, name) => h('button.playbtn', { type: 'button', 'aria-label': `Play ${name}`, 'data-label': `Play ${name}`, title: 'Listen', onclick: (e) => listen(src, e.currentTarget) }, icon('play', 16));
 
 export function musicModule(ctx) {
   const m = ctx.m;
   const root = h('div.stack');
   let tab = m.get(['music', 'youtube', 'id']) ? 'youtube' : 'songs';
   ctx.cleanup(() => { player?.pause(); });
+  // Fresh library on every visit (the planner may have changed it); the cached one shows meanwhile.
+  if (library) loadLibrary().then(() => { if (tab === 'songs' && root.isConnected) draw(); }, () => {});
 
   const tracks = () => { if (!m.get(['music', 'tracks'])) m.data.music = { ...(m.data.music || {}), tracks: [] }; return m.get(['music', 'tracks']); };
 
@@ -74,31 +91,47 @@ export function musicModule(ctx) {
   }
 
   function songs() {
+    if (!library) {
+      loadLibrary().then(draw, (err) => toast(err.message, 'error'));
+      return [h('p.muted', 'Loading the music library…')];
+    }
     const list = tracks();
     const has = (src) => list.some((t) => t.src === src);
+    const own = (t) => t.src.startsWith(`/uploads/${ctx.slug}/`);
+    const libBySrc = new Map(library.tracks.map((t) => [t.src, t]));
     const toggleTrack = (t, on) => {
-      if (on && !has(t.src)) list.push(structuredClone(t));
+      if (on && !has(t.src)) {
+        if (list.length >= MAX_SONGS) { toast(`Up to ${MAX_SONGS} songs. Remove one first.`, 'error'); draw(); return; }
+        list.push(asInvitationTrack(t));
+      }
       if (!on) { const i = list.findIndex((x) => x.src === t.src); if (i >= 0) list.splice(i, 1); }
       m.touch(['music', 'tracks']);
       draw();
     };
     const first = (src) => { const i = list.findIndex((t) => t.src === src); if (i > 0) { const [t] = list.splice(i, 1); list.unshift(t); m.touch(['music', 'tracks']); draw(); } };
-    const row = (t, custom, idx) => {
-      const on = has(t.src);
-      const cur = list.find((x) => x.src === t.src) || t;
-      const isFirst = list[0]?.src === t.src;
+    const removeAt = (idx) => { list.splice(idx, 1); m.touch(['music', 'tracks']); draw(); };
+    // A library song (lib), or a song already in the invitation (chosen, with its index) that is not in the library.
+    const row = ({ lib, chosen, idx, sub }) => {
+      const src = lib?.src || chosen.src;
+      const on = has(src);
+      const name = lib ? lib.title : label(chosen.title, 'Your song');
+      const isFirst = list[0]?.src === src;
       return h('li.song', { class: on ? 'is-on' : '' },
-        playBtn(t.src, label(cur.title, 'this song')),
-        h('div.song__text', h('b', label(cur.title, 'Untitled song')), h('small', custom ? 'Your upload' : label(cur.mood))),
-        isFirst ? h('span.pill.pill--accent', 'Plays first') : on ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => first(t.src) }, 'Play first') : null,
-        custom
-          ? iconBtn('trash', 'Remove this song', () => { list.splice(idx, 1); m.touch(['music', 'tracks']); draw(); })
-          : h('label.check', h('input', { type: 'checkbox', checked: on, onchange: (e) => toggleTrack(t, e.target.checked), 'aria-label': `Include ${label(t.title)}` }), h('span', on ? 'Included' : 'Include')));
+        playBtn(src, name),
+        h('div.song__text', h('b', name), h('small', sub)),
+        isFirst ? h('span.pill.pill--accent', 'Plays first') : on ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => first(src) }, 'Play first') : null,
+        lib
+          ? h('label.check', h('input', { type: 'checkbox', checked: on, onchange: (e) => toggleTrack(lib, e.target.checked), 'aria-label': `Include ${name}` }), h('span', on ? 'Included' : 'Include'))
+          : iconBtn('trash', `Remove ${name}`, () => removeAt(idx)));
     };
-    const customs = list.map((t, i) => ({ t, i })).filter(({ t }) => t.src.startsWith('/uploads/'));
+    const customs = list.map((t, i) => ({ t, i })).filter(({ t }) => own(t));
+    const others = list.map((t, i) => ({ t, i })).filter(({ t }) => !own(t) && !libBySrc.has(t.src));
+    const groups = library.moods.map((mood) => ({ mood, items: library.tracks.filter((t) => t.mood === mood.id) })).filter((g) => g.items.length);
     return [
-      h('ul.songs', ctx.meta.tracks.map((t) => row(t, false))),
-      customs.length ? h('div', h('h3.subhead', 'Your songs'), h('ul.songs', customs.map(({ t, i }) => h('li.song-wrap', row(t, true, i), h('div.song__edit', biField(m, ['music', 'tracks', i, 'title'], { label: 'Song title', max: 80 })))))) : null,
+      h('p.hint', icon('info', 14), `Listen, then include one or more songs (up to ${MAX_SONGS}). Guests hear the first one and can switch.`),
+      ...groups.map((g) => h('div.songgroup', h('h3.subhead', g.mood.en), h('ul.songs', g.items.map((t) => row({ lib: t, sub: [t.artist, mmss(Math.round(t.duration || 0))].filter(Boolean).join(' · ') }))))),
+      others.length ? h('div.songgroup', h('h3.subhead', 'Also in your invitation'), h('p.hint', 'No longer in the music library. It still plays; remove it to stop.'), h('ul.songs', others.map(({ t, i }) => row({ chosen: t, idx: i, sub: label(t.mood) || 'Song' })))) : null,
+      customs.length ? h('div.songgroup', h('h3.subhead', 'Your songs'), h('ul.songs', customs.map(({ t, i }) => h('li.song-wrap', row({ chosen: t, idx: i, sub: 'Your upload' }), h('div.song__edit', biField(m, ['music', 'tracks', i, 'title'], { label: 'Song title', max: 80 })))))) : null,
     ];
   }
 

@@ -1,7 +1,7 @@
 // Every third-party asset Nimtto ships, grouped for the credits pages (the studio's Credits view
 // and the public /credits/ page). Invitations never show these; the data files stay the source.
 import photos from '../generated/credits.json';
-import { config } from '../config.js';
+import { BUILTIN_MUSIC } from './music-library.js';
 import { FLOWER_CREDITS as dhaka } from '../themes/dhaka/flowers.js';
 import gurans from '../themes/gurans/flora-credits.js';
 import mala from '../themes/mala/flora-credits.js';
@@ -64,18 +64,12 @@ function floraItems() {
   return [...bySource.values()].sort((a, b) => a.title.localeCompare(b.title));
 }
 
-/** Track credits are one line each: “Title” by Author, Licence, host/path. */
-function musicItem(t) {
-  const line = String(t.credit || '').trim();
-  const m = /^[“"](.+?)[”"](?: by ([^,]+))?,\s*(.+)$/.exec(line);
-  if (!m) return item({ title: t.title?.en || line, license: line });
-  const parts = m[3].split(/,\s*/);
-  const last = parts[parts.length - 1];
-  const src = /^[a-z0-9.-]+\.[a-z]{2,}\/\S+$/i.test(last) || /^https:\/\//.test(last) ? parts.pop() : '';
-  return item({ title: m[1], author: m[2] || '', license: parts.join(', '), sourceUrl: src });
-}
+/** The music library's built-in songs (src/core/music-library.js); the planner's uploads are added by the page. */
+const musicItems = BUILTIN_MUSIC.filter((t) => t.credit)
+  .map((t) => ({ ...item({ title: t.title, author: t.artist, license: t.license, licenseUrl: t.licenseUrl, sourceUrl: t.sourceUrl }), note: t.credit }));
 
-const musicItems = (config.music?.tracks || []).filter((t) => t.credit).map(musicItem);
+/** A library song the planner uploaded (GET /api/music): its credit line is free text, shown as it is. */
+export const uploadedMusicItem = (t) => ({ ...item({ title: t.title, author: t.artist, license: '' }), note: String(t.credit || '').trim() });
 
 export const CREDIT_GROUPS = [
   { id: 'photos', title: 'Photos', items: photoItems },

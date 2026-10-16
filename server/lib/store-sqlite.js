@@ -121,6 +121,8 @@ function migrateFromJson() {
     }
     const site = readJsonSync(siteFile, null);
     if (site && typeof site === 'object') { q.putKv.run('site', 1, JSON.stringify(site)); counts.site = 1; }
+    const music = readJsonSync(resolve(DATA_DIR, 'music.json'), null); // the music library (lib/music.js)
+    if (music && typeof music === 'object') q.putKv.run('music', 1, JSON.stringify(music));
     const sess = readJsonSync(SESSIONS_FILE, null);
     for (const [k, s] of Object.entries(sess?.sessions || {})) {
       if (!/^[a-f0-9]{64}$/.test(k) || !s || typeof s !== 'object') continue;
@@ -371,6 +373,7 @@ export function dumpAll() {
     rsvps: Object.fromEntries([...replyStats().keys()].map((slug) => [slug, listReplies(slug)])),
     orders: listOrders(),
     site: getKv('site')?.value ?? null,
+    music: getKv('music')?.value ?? null,
     customers: customers.all(),
     sessions: Object.fromEntries(q.sAll.all().map(({ k, cid, slug, ...s }) => [k, s.role === 'client' ? { ...s, slug } : s.role === 'customer' ? { ...s, cid } : s])),
   };

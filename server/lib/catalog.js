@@ -3,6 +3,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ROOT_DIR } from './env.js';
 import { config as demo } from '../../src/config.js';
+import { BUILTIN_MUSIC } from '../../src/core/music-library.js';
 
 // Themes are discovered on disk: every src/themes/<slug>/slots.js (plus the original eight).
 // A theme is "ready" once its page exists (<slug>/index.html in dev, dist/<slug>/index.html built).
@@ -79,9 +80,10 @@ export function listThemes() {
 }
 export const isTheme = (slug) => typeof slug === 'string' && listThemes().some((t) => t.slug === slug);
 
-/** The bundled tracks (from the demo config). Their src paths are the only non-upload audio allowed. */
+/** The bundled tracks (from the demo config): a new invitation's default song. */
 export const BUNDLED_TRACKS = demo.music.tracks.map((t) => structuredClone(t));
-export const BUNDLED_SRCS = new Set(BUNDLED_TRACKS.map((t) => t.src));
+/** Every song shipped in public/audio (the music library's built-ins): the only non-upload audio allowed. */
+export const BUNDLED_SRCS = new Set([...BUNDLED_TRACKS.map((t) => t.src), ...BUILTIN_MUSIC.map((t) => t.src)]);
 
 export const demoConfig = () => structuredClone(demo);
 
