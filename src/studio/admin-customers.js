@@ -4,6 +4,7 @@
 import { h, icon, toast, openDialog, confirmDialog, fmtDate, fmtRelative, toggle, fill, debounce, iconBtn } from './dom.js';
 import { api } from './api.js';
 import { themePicker, permsText } from './admin-access.js';
+import { customerHome } from './customer.js';
 import { pendingActs } from './admin.js'; // Link now / Dismiss (a function: the import cycle is safe)
 
 const genPassword = () => {
@@ -149,6 +150,7 @@ export function customersSection(ctx, loadInvitations) {
         h('td', { 'data-label': 'Status' }, c.disabled ? h('span.pill.pill--warn', 'Off') : h('span.pill.pill--ok', 'Active')),
         h('td', { 'data-label': 'Last sign-in', title: c.lastLoginAt ? fmtDate(c.lastLoginAt) : '' }, c.lastLoginAt ? fmtRelative(c.lastLoginAt) : h('small', `Joined ${fmtDate(c.createdAt)}`)),
         h('td.cell-act', h('div.cell-act__in',
+          iconBtn('eye', 'View their dashboard', () => openDialog({ title: `${c.name || c.email} · their dashboard`, wide: true, body: customerHome({ meta: ctx.meta, viewAs: c }) }), 'btn--ghost'),
           iconBtn('key', 'Reset password', async () => shownPassword(await resetDialog(c), 'Password reset'), 'btn--ghost'),
           h('button.btn.btn--sm', { type: 'button', class: c.disabled ? '' : 'btn--danger-ghost', onclick: async () => {
             const off = !c.disabled;

@@ -97,6 +97,7 @@ api.delete('/admin/music/:musicId', requireAdmin, wrap(music.remove));
 api.get('/orders', requireAdmin, wrap(orders.list));
 api.get('/admin/customers', requireAdmin, wrap(customers.adminList));
 api.post('/admin/customers', requireAdmin, heavy, json('2kb'), wrap(customers.adminCreate));
+api.get('/admin/customers/:id/account', requireAdmin, wrap(customers.adminAccount)); // view their dashboard, read-only
 api.patch('/admin/customers/:id', requireAdmin, heavy, json('2kb'), wrap(customers.adminPatch));
 api.put('/admin/customers/:id/invitations/:slug', requireAdmin, json('8kb'), wrap(customers.adminLink));
 api.delete('/admin/customers/:id/invitations/:slug', requireAdmin, wrap(customers.adminUnlink));

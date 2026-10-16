@@ -54,7 +54,7 @@ function detailsDialog(o, onSaved) {
   enhance(form);
 }
 
-function orderCard(o, meta, redraw) {
+function orderCard(o, meta, redraw, ro = false) {
   const [tone, text] = PAY[o.payStatus] || ['muted', o.payStatus];
   const design = o.theme ? meta?.themes?.find((t) => t.slug === o.theme) : null;
   const canPay = ['awaiting_payment', 'rejected'].includes(o.payStatus) && o.payUrl;
@@ -70,14 +70,14 @@ function orderCard(o, meta, redraw) {
     o.payStatus === 'rejected' && o.reason ? h('p.notice.notice--warn', icon('alert', 16), h('span', h('b', 'Why: '), o.reason, '. Please pay again or message us.')) : null,
     o.payStatus === 'proof_submitted' ? h('p.cu-order__note', 'We have your payment screenshot and will confirm it soon.') : null,
     h('dl.cu-facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
-    h('div.cu-order__acts',
+    ro ? null : h('div.cu-order__acts',
       canPay ? h('a.btn.btn--primary', { href: o.payUrl }, icon('right', 16), o.payStatus === 'rejected' ? 'Pay again' : 'Pay now') : null,
       o.payStatus === 'proof_submitted' && o.payUrl ? h('a.btn', { href: o.payUrl }, 'See payment') : null,
       h('button.btn.btn--quiet', { type: 'button', onclick: () => detailsDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('edit', 15), o.weddingDate || o.venue ? 'Edit details' : 'Add wedding details')));
 }
 
 /** "Your invitation: Ujjwal & Binisha · Shahi", with Edit, Preview, Share link and the payment status. */
-function invitationCard(i, meta) {
+function invitationCard(i, meta, ro = false) {
   const design = meta?.themes?.find((t) => t.slug === i.theme);
   const live = i.status === 'published';
   const [tone, payText] = i.payStatus ? (PAY[i.payStatus] || ['muted', i.payStatus]) : [null, null];
@@ -91,10 +91,10 @@ function invitationCard(i, meta) {
         h('span.pill', { class: live ? 'pill--ok' : 'pill--muted' }, live ? 'Live' : 'Draft'),
         payText ? h('span.pill', { class: `pill--${tone}`, title: i.orderRef ? `Order ${i.orderRef}` : '' }, payText) : null),
       h('div.cu-inv__acts',
-        h('a.btn.btn--primary.btn--sm', { href: `#/i/${i.slug}/home` }, icon('edit', 15), 'Edit'),
+        h('a.btn.btn--primary.btn--sm', { href: `#/i/${i.slug}/home`, onclick: ro ? () => document.querySelector('dialog[open]')?.close() : null }, icon('edit', 15), 'Edit'),
         h('a.btn.btn--sm', { href: i.previewUrl || `/${i.theme}/?id=${i.slug}`, target: '_blank', rel: 'noopener' }, icon('eye', 15), 'Preview'),
         h('button.btn.btn--sm', { type: 'button', disabled: !share, title: share ? share : 'The share link works once your invitation is published.', onclick: () => navigator.clipboard?.writeText(share).then(() => toast('Share link copied', 'success'), () => toast(share)) }, icon('share', 15), share ? 'Copy share link' : 'Share link after publishing'),
-        ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl ? h('a.btn.btn--sm.btn--quiet', { href: i.payUrl }, icon('right', 15), 'Pay now') : null)));
+        !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl ? h('a.btn.btn--sm.btn--quiet', { href: i.payUrl }, icon('right', 15), 'Pay now') : null)));
 }
 
 function passwordCard() {
@@ -123,22 +123,27 @@ function passwordCard() {
   return h('section.card', h('header.card__head', h('h2.card__title', 'Password')), form);
 }
 
-/** The dashboard module: render(ctx) with ctx.meta and ctx.account (from GET /api/account), re-fetched on open. */
+/**
+ * The dashboard module: render(ctx) with ctx.meta and ctx.account (from GET /api/account), re-fetched on open.
+ * ctx.viewAs (a customer, planner only): that customer's dashboard, read-only, from GET /api/admin/customers/:id/account.
+ */
 export function customerHome(ctx) {
+  const ro = Boolean(ctx.viewAs);
   const root = h('div.cu', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '50%' } }))));
   const draw = (acc) => {
-    ctx.onAccount?.(acc);
+    if (!ro) ctx.onAccount?.(acc);
     const orders = acc.orders || [];
     const invs = acc.invitations || [];
     const ordersEl = h('ul.cu-orders');
-    const redraw = () => fill(ordersEl, orders.map((o) => orderCard(o, ctx.meta, redraw)));
+    const redraw = () => fill(ordersEl, orders.map((o) => orderCard(o, ctx.meta, redraw, ro)));
     redraw();
     const due = orders.filter((o) => ['awaiting_payment', 'rejected'].includes(o.payStatus)).length;
     fill(root,
+      ro ? h('p.notice.notice--row', icon('eye', 16), h('span', h('b', 'Read-only view. '), `This is what ${acc.customer.email} sees when they sign in.`)) : null,
       h('p.cu-hello', `Namaste${acc.customer.name ? `, ${acc.customer.name.split(' ')[0]}` : ''}.`, h('span.cu-hello__ne', { lang: 'ne' }, ' नमस्ते')),
       due ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, ' We start on your invitation once it is confirmed.')) : null,
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Your invitation', invs.length ? h('span.sect__count', String(invs.length)) : null)),
-        invs.length ? h('ul.cu-invs', invs.map((i) => invitationCard(i, ctx.meta)))
+        invs.length ? h('ul.cu-invs', invs.map((i) => invitationCard(i, ctx.meta, ro)))
           : h('div.qempty', h('span.qempty__icon', icon('heart', 18)), h('div',
             h('p.qempty__title', 'We are preparing your invitation'),
             h('p.qempty__text', 'Once it is ready it appears here, and you can change the names, dates, photos and music yourself.')))),
@@ -151,10 +156,10 @@ export function customerHome(ctx) {
             h('dl.cu-facts', [['Name', acc.customer.name || '—'], ['Email', acc.customer.email], ['Phone', acc.customer.phone || '—']].map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
             h('p.hint', 'To change these, message us on WhatsApp.'),
             h('a.sharebtn.sharebtn--wa', { href: waLink(), target: '_blank', rel: 'noopener' }, icon('chat', 17), h('span', `WhatsApp ${WA_DISPLAY}`))),
-          passwordCard(),
-          clearCacheCard())));
+          ro ? null : passwordCard(),
+          ro ? null : clearCacheCard())));
   };
-  api('/account').then(draw).catch((err) => fill(root, h('p.notice.notice--error', icon('alert', 16), h('span', err.message))));
+  api(ro ? `/admin/customers/${ctx.viewAs.id}/account` : '/account').then(draw).catch((err) => fill(root, h('p.notice.notice--error', icon('alert', 16), h('span', err.message))));
   return root;
 }
 

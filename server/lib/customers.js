@@ -4,7 +4,7 @@ import { EMAIL_RE, readSite } from './site.js';
 import { isTheme } from './catalog.js';
 import { peekInvitation, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
 import {
-  customerByEmail, createCustomer, mutateCustomer, listCustomers, adminCustomer, linkOf, normEmail, listPending, confirmPending, dropPending,
+  customerByEmail, getCustomer, createCustomer, mutateCustomer, listCustomers, adminCustomer, linkOf, normEmail, listPending, confirmPending, dropPending,
   CUSTOMER_ID_RE, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX,
 } from './accounts.js';
 import { syncOrderDetails, prefillFromCustomer } from './handover.js';
@@ -40,7 +40,18 @@ const ordersOf = async (cid) => (await listOrders()).filter((o) => o.customerId 
 
 /** GET /api/account (customer): their details, orders and invitations. */
 export async function account(req, res) {
-  const c = req.customer;
+  res.json(await accountView(req.customer));
+}
+
+/** GET /api/admin/customers/:id/account (planner): exactly what that customer's dashboard shows, read-only. */
+export async function adminAccount(req, res) {
+  const c = getCustomer(idParam(req));
+  if (!c) throw httpError(404, 'No account with that id.');
+  console.info(`[admin] viewed customer dashboard id=${c.id}`);
+  res.json(await accountView(c));
+}
+
+async function accountView(c) {
   const [orders, site] = await Promise.all([ordersOf(c.id), readSite()]);
   const invitations = [];
   for (const l of c.invitations || []) {
@@ -57,12 +68,12 @@ export async function account(req, res) {
       previewUrl: `/${d.theme}/?id=${doc.slug}`, shareUrl: live ? `${PUBLIC_ORIGINS[0] || ''}/i/${doc.slug}` : null,
     });
   }
-  res.json({
+  return {
     customer: { name: c.name || '', email: c.email, phone: c.phone || '' },
     orders: orders.map(customerOrderView),
     invitations,
     contact: { whatsapp: site.contact?.whatsapp || '', phone: site.contact?.phone || '' },
-  });
+  };
 }
 
 /** PATCH /api/account/orders/:ref (customer): the details they could leave out when ordering. */
