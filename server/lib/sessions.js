@@ -6,7 +6,8 @@ import { SLUG_RE, sessionStore } from './store.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 /** Sliding expiry since the last activity, per role. No absolute cap: a session lasts until sign-out. */
-export const TTL = { admin: 30 * DAY, client: 180 * DAY };
+export const TTL = { admin: 30 * DAY, client: 180 * DAY, customer: 180 * DAY };
+const CID_RE = /^[A-Za-z0-9_-]{12}$/;
 /** `seen` (and the cookie) are refreshed at most this often per session, so browsing does not write every request. */
 export const SEEN_EVERY = 10 * 60 * 1000;
 const MAX_SESSIONS = 5000;
@@ -19,11 +20,15 @@ function validEntry(k, s) {
   if (!HEX64.test(k) || !s || typeof s !== 'object') return false;
   if (!TTL[s.role] || typeof s.csrf !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(s.csrf)) return false;
   if (!isTime(s.created) || !isTime(s.seen) || typeof s.fp !== 'string' || !HEX64.test(s.fp)) return false;
-  return s.role === 'admin' || SLUG_RE.test(s.slug);
+  if (s.role === 'client') return SLUG_RE.test(s.slug);
+  if (s.role === 'customer') return CID_RE.test(s.cid);
+  return true;
 }
 const clean = (s) => (s.role === 'client'
   ? { role: 'client', slug: s.slug, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }
-  : { role: 'admin', fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen });
+  : s.role === 'customer'
+    ? { role: 'customer', cid: s.cid, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }
+    : { role: 'admin', fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen });
 
 export const expired = (s, now = Date.now()) => now - s.seen >= TTL[s.role];
 

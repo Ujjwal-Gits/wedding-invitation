@@ -10,7 +10,8 @@ import { securityHeaders, rateLimiter, cloudflareOnly } from './lib/security.js'
 import { trafficGuard, shedWhenOverloaded, resetLag } from './lib/guard.js';
 import { staticFiles } from './lib/static.js';
 import { startBackups, stopBackups } from './lib/backup.js';
-import { loadSession, requireAdmin, requireSession, requireEditor, clientSession, login, logout, me } from './lib/auth.js';
+import { loadSession, requireAdmin, requireSession, requireEditor, requireCustomer, clientSession, login, logout, me } from './lib/auth.js';
+import * as customers from './lib/customers.js'; // customer accounts (docs/API.md "Customer accounts")
 import * as inv from './lib/invitations.js';
 import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
@@ -59,7 +60,12 @@ api.get('/auth/me', wrap(me));
 api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.get('/site', wrap(site.getSite));
 api.get('/themes', wrap(site.publicThemes));
-api.post('/orders', json('8kb'), wrap(orders.submit));
+api.post('/orders', heavy, json('8kb'), wrap(orders.submit)); // may hash or check an account password
+
+// The customer's own account (signed in with email + password)
+api.get('/account', requireCustomer, wrap(customers.account));
+api.patch('/account/orders/:ref', requireCustomer, json('4kb'), wrap(customers.patchOrder));
+api.post('/account/password', heavy, requireCustomer, json('2kb'), wrap(customers.changePassword));
 // The customer's own order, by its reference and pay token (lib/payments/manual.js)
 api.param('ref', (req, res, next, ref) => (orders.REF_RE.test(ref) ? next() : res.status(404).json({ error: 'We could not find this order. Check the link you were sent.' })));
 api.get('/orders/:ref/pay', wrap(manualPay.payInfo));
@@ -75,6 +81,11 @@ api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
 api.get('/admin/site', requireAdmin, wrap(site.getAdminSite));
 api.post('/admin/pay/qr', requireAdmin, heavy, wrap(manualPay.uploadQr));
 api.get('/orders', requireAdmin, wrap(orders.list));
+api.get('/admin/customers', requireAdmin, wrap(customers.adminList));
+api.post('/admin/customers', requireAdmin, heavy, json('2kb'), wrap(customers.adminCreate));
+api.patch('/admin/customers/:id', requireAdmin, heavy, json('2kb'), wrap(customers.adminPatch));
+api.put('/admin/customers/:id/invitations/:slug', requireAdmin, json('8kb'), wrap(customers.adminLink));
+api.delete('/admin/customers/:id/invitations/:slug', requireAdmin, wrap(customers.adminUnlink));
 api.get('/admin/orders/:id/proof/:n', requireAdmin, wrap(manualPay.adminProof));
 api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
 api.delete('/orders/:id', requireAdmin, wrap(orders.remove));

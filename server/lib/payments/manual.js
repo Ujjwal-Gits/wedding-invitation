@@ -17,7 +17,7 @@ import { rateLimiter, originAllowed, clientIp } from '../security.js';
 import { readSite, publicMethods, setMethodDescriber, QR_URL_RE } from '../site.js';
 import { readMultipart, receiving, withSlot, looksLikeHeic } from '../uploads.js';
 import {
-  orderByRefAndToken, getOrder, mutateOrder, planView, whatsappFor, historyAdd, clean, PROOF_DIR, ID_RE,
+  orderByRefAndToken, orderForCustomer, getOrder, mutateOrder, planView, whatsappFor, historyAdd, clean, PROOF_DIR, ID_RE,
 } from '../orders.js';
 import { payments } from './routes.js';
 import { decodeQr, cleanQrImage, buildPayload, detectFormat, fillRemark, qrPng, REMARK_MAX, PRINTABLE_RE } from './qr.js';
@@ -49,7 +49,8 @@ async function customerOrder(req, res) {
   res.set('Cache-Control', 'private, no-store');
   res.set('Referrer-Policy', 'no-referrer');
   const t = typeof req.query.t === 'string' ? req.query.t : '';
-  const o = await orderByRefAndToken(req.params.ref, t);
+  // The pay token, or (no token) the signed-in customer account that placed the order.
+  const o = t || req.session?.role !== 'customer' ? await orderByRefAndToken(req.params.ref, t) : await orderForCustomer(req.params.ref, req.customer?.id);
   if (!o) { res.status(404).json({ error: NOT_FOUND }); return null; }
   return o;
 }
@@ -99,14 +100,14 @@ export async function payInfo(req, res) {
   if (!o) return;
   const site = await readSite();
   const remark = remarkOf(o, site);
-  const t = encodeURIComponent(req.query.t);
+  const tq = `?t=${typeof req.query.t === 'string' ? encodeURIComponent(req.query.t) : ''}`; // empty t: the customer's session
   const paymentMethods = await Promise.all(publicMethods(site).map(async (pm) => {
     const m = site.paymentMethods.find((x) => x.id === pm.id);
     const amount = amountIn(o, m.currency);
     const base = await payloadFor(m.qr);
     const built = buildPayload(base, m, { amount, remark });
     const hasCode = Boolean(m.qr || built.payload);
-    return { ...pm, amount, remark, remarkMax: REMARK_MAX, dynamic: built.dynamic, qr: hasCode ? `/api/orders/${o.ref}/qr/${m.id}.png?t=${t}` : null, staticQr: m.qr || null };
+    return { ...pm, amount, remark, remarkMax: REMARK_MAX, dynamic: built.dynamic, qr: hasCode ? `/api/orders/${o.ref}/qr/${m.id}.png${tq}` : null, staticQr: m.qr || null };
   }));
   const status = statusOf(o);
   const proofs = (o.pay?.proofs || []).map((p) => ({ n: p.n, at: p.at, method: p.method, amountPaid: p.amountPaid }));

@@ -36,6 +36,20 @@ const KNOWN = {
   rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
 };
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
+
+// Design tiers: the cheapest plan that includes the design (the planner can override them in the site settings).
+export const TIERS = ['saral', 'shubha', 'shahi'];
+const DEFAULT_TIERS = {
+  // Canva-painted designs
+  mahal: 'shahi', rajdwar: 'shahi', laali: 'shahi', mehendi: 'shahi', hariyo: 'shahi', shree: 'shahi',
+  pardaa: 'shahi', agni: 'shahi', janti: 'shahi', swayambar: 'shahi', sindoor: 'shahi', rangoli: 'shahi',
+  // 3D, film and the richer cards
+  bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
+  // the simple, calm cards
+  kham: 'saral', mala: 'saral', gurans: 'saral', sayapatri: 'saral', jhyal: 'saral', chitra: 'saral', dhaka: 'saral',
+};
+/** A theme's tier before any override (an unknown theme: shubha). */
+export const defaultTier = (slug) => DEFAULT_TIERS[slug] || 'shubha';
 const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ');
 let themeCache = { at: 0, list: [] };
 

@@ -44,6 +44,8 @@ export const closeStore = () => backend.close();
 export const storePing = () => backend.ping();
 export const backupStore = (file) => backend.backupTo(file);
 export const sessionStore = backend.sessions;
+/** Customer accounts (lib/accounts.js): get(id), byEmail(email), all(), put(c), del(id); reads are synchronous. */
+export const customerStore = backend.customers;
 
 /**
  * Client access, normalised. Older files stored `clientAccess: { tokenHash, createdAt }` (a link with no

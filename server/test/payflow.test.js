@@ -73,7 +73,7 @@ const post = (path, body, origin = base) => fetch(base + path, { method: 'POST',
 const asAdmin = (path, { method = 'GET', body } = {}) => fetch(base + path, {
   method, headers: { Cookie: admin.cookie, 'X-CSRF-Token': admin.csrf, Origin: base, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined,
 });
-const ORDER = { kind: 'order', plan: 'shubha', name: 'Sita Sharma', phone: '9800000000', bride: 'Sita', groom: 'Ram', weddingDate: '2026-12-01', website: '' };
+const ORDER = { kind: 'order', plan: 'shubha', name: 'Sita Sharma', phone: '9800000000', bride: 'Sita', groom: 'Ram', weddingDate: '2026-12-01', email: 'sita@example.com', password: 'sita-pass-123', website: '' };
 async function newOrder(extra = {}) {
   const r = await post('/api/orders', { ...ORDER, ...extra });
   assert.equal(r.status, 201);

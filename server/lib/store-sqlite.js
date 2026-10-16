@@ -56,6 +56,11 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_seen ON sessions(seen);
 CREATE INDEX IF NOT EXISTS sessions_slug ON sessions(slug) WHERE slug IS NOT NULL;
+CREATE TABLE IF NOT EXISTS customers (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  data TEXT NOT NULL
+);
 `;
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -111,12 +116,15 @@ function migrateFromJson() {
     if (Array.isArray(orders)) {
       for (const o of orders) if (o && typeof o.id === 'string') counts.orders += q.insOrder.run(o.id, o.status || null, JSON.stringify(o)).changes;
     }
+    for (const c of readJsonSync(resolve(DATA_DIR, 'customers.json'), { customers: [] })?.customers || []) {
+      if (c && typeof c.id === 'string' && typeof c.email === 'string') q.custPut.run(c.id, c.email, JSON.stringify(c));
+    }
     const site = readJsonSync(siteFile, null);
     if (site && typeof site === 'object') { q.putKv.run('site', 1, JSON.stringify(site)); counts.site = 1; }
     const sess = readJsonSync(SESSIONS_FILE, null);
     for (const [k, s] of Object.entries(sess?.sessions || {})) {
       if (!/^[a-f0-9]{64}$/.test(k) || !s || typeof s !== 'object') continue;
-      counts.sessions += q.insSession.run(k, s.role, s.slug ?? null, s.fp, s.csrf, s.created, s.seen).changes;
+      counts.sessions += q.insSession.run(k, s.role, s.slug ?? null, s.fp, s.csrf, s.created, s.seen, s.cid ?? null).changes;
     }
     db.prepare("INSERT INTO meta (k, v) VALUES ('json_import', ?)").run(JSON.stringify({ at: new Date().toISOString(), backup, ...counts }));
   });
@@ -178,7 +186,12 @@ function prepare() {
   q.insReply = db.prepare('INSERT OR IGNORE INTO rsvps (slug, id, at, attending, guests, data) VALUES (?, ?, ?, ?, ?, ?)');
   q.insOrder = db.prepare('INSERT OR IGNORE INTO orders (id, status, data) VALUES (?, ?, ?)');
   q.putKv = db.prepare('INSERT INTO kv (k, rev, v) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET rev = kv.rev + 1, v = excluded.v');
-  q.insSession = db.prepare('INSERT OR REPLACE INTO sessions (k, role, slug, fp, csrf, created, seen) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  q.insSession = db.prepare('INSERT OR REPLACE INTO sessions (k, role, slug, fp, csrf, created, seen, cid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  q.custPut = db.prepare('INSERT INTO customers (id, email, data) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email, data = excluded.data');
+  q.custGet = db.prepare('SELECT data FROM customers WHERE id = ?').pluck();
+  q.custByEmail = db.prepare('SELECT data FROM customers WHERE email = ?').pluck();
+  q.custAll = db.prepare('SELECT data FROM customers ORDER BY rowid').pluck();
+  q.custDel = db.prepare('DELETE FROM customers WHERE id = ?');
 
   q.invRev = db.prepare('SELECT rev FROM invitations WHERE slug = ?').pluck();
   q.invGet = db.prepare('SELECT rev, doc FROM invitations WHERE slug = ?');
@@ -203,8 +216,8 @@ function prepare() {
 
   q.kvGet = db.prepare('SELECT rev, v FROM kv WHERE k = ?');
 
-  q.sGet = db.prepare('SELECT role, slug, fp, csrf, created, seen FROM sessions WHERE k = ?');
-  q.sAll = db.prepare('SELECT k, role, slug, fp, csrf, created, seen FROM sessions');
+  q.sGet = db.prepare('SELECT role, slug, fp, csrf, created, seen, cid FROM sessions WHERE k = ?');
+  q.sAll = db.prepare('SELECT k, role, slug, fp, csrf, created, seen, cid FROM sessions');
   q.sSeen = db.prepare('UPDATE sessions SET seen = ? WHERE k = ?');
   q.sDel = db.prepare('DELETE FROM sessions WHERE k = ?');
   q.sCount = db.prepare('SELECT count(*) FROM sessions').pluck();
@@ -227,6 +240,8 @@ export function open() {
     if (ok !== 'ok') throw new Error(`data/nimtto.db failed its integrity check (${ok}). Restore the latest file from data/backups/ (docs/OPERATIONS.md).`);
   }
   db.exec(SCHEMA);
+  // Customer sessions (role 'customer') keep the account id; databases from before accounts get the column.
+  if (!db.prepare('PRAGMA table_info(sessions)').all().some((c) => c.name === 'cid')) db.exec('ALTER TABLE sessions ADD COLUMN cid TEXT');
   prepare();
   const m = migrateFromJson();
   if (m && (m.invitations || m.rsvps || m.orders || m.sessions || m.site)) {
@@ -324,12 +339,21 @@ export function putKv(k, value) { w(() => q.putKv.run(k, 1, JSON.stringify(value
 export const sessions = {
   get: (k) => q.sGet.get(k) || null,
   all: () => q.sAll.all(),
-  put: (k, s) => w(() => q.insSession.run(k, s.role, s.role === 'client' ? s.slug : null, s.fp, s.csrf, s.created, s.seen)),
+  put: (k, s) => w(() => q.insSession.run(k, s.role, s.role === 'client' ? s.slug : null, s.fp, s.csrf, s.created, s.seen, s.role === 'customer' ? s.cid : null)),
   seen: (k, t) => w(() => q.sSeen.run(t, k)),
   del: (k) => w(() => q.sDel.run(k).changes),
   delMany: (keys) => w(() => db.transaction(() => { for (const k of keys) q.sDel.run(k); })()),
   count: () => q.sCount.get(),
   dropOldest: (n) => w(() => q.sCap.run(n).changes),
+};
+
+// ── Customer accounts (lib/accounts.js). Every read returns a fresh object.
+export const customers = {
+  get: (id) => { const s = q.custGet.get(id); return s ? JSON.parse(s) : null; },
+  byEmail: (email) => { const s = q.custByEmail.get(email); return s ? JSON.parse(s) : null; },
+  all: () => q.custAll.all().map((s) => JSON.parse(s)),
+  put: (c) => w(() => q.custPut.run(c.id, c.email, JSON.stringify(c))),
+  del: (id) => w(() => q.custDel.run(id).changes > 0),
 };
 
 // ── Health and backups
@@ -347,6 +371,7 @@ export function dumpAll() {
     rsvps: Object.fromEntries([...replyStats().keys()].map((slug) => [slug, listReplies(slug)])),
     orders: listOrders(),
     site: getKv('site')?.value ?? null,
-    sessions: Object.fromEntries(q.sAll.all().map(({ k, ...s }) => [k, s.role === 'client' ? s : { role: s.role, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }])),
+    customers: customers.all(),
+    sessions: Object.fromEntries(q.sAll.all().map(({ k, cid, slug, ...s }) => [k, s.role === 'client' ? { ...s, slug } : s.role === 'customer' ? { ...s, cid } : s])),
   };
 }

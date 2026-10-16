@@ -11,8 +11,10 @@ import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS } from './env.js';
 // Stored by lib/store.js. addOrder/deleteOrder take the 'orders' lock themselves; saveOrder is called under it.
 import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
-import { isTheme } from './catalog.js';
-import { readSite, EMAIL_RE, e164 } from './site.js';
+import { isTheme, listThemes } from './catalog.js';
+import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
+import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
+import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
 export const PROOF_DIR = resolve(DATA_DIR, 'proofs'); // payment screenshots: private, never served statically
@@ -51,6 +53,12 @@ export function tokenMatches(order, t) {
   const want = order && typeof order.payTokenHash === 'string' && order.payTokenHash.length === 64 ? Buffer.from(order.payTokenHash, 'hex') : DUMMY;
   const same = timingSafeEqual(tokenHash(ok ? t : ''), want);
   return Boolean(ok && order && order.payTokenHash && same);
+}
+
+/** The customer's own order by its public ref (an account session instead of the pay token), or null. */
+export async function orderForCustomer(ref, customerId) {
+  const o = typeof ref === 'string' && REF_RE.test(ref) && customerId ? await getOrderByRef(ref) : null;
+  return o && o.customerId === customerId ? o : null;
 }
 
 /** The order for a public ref and its pay token, or null (unknown ref and wrong token look the same). */
@@ -135,14 +143,21 @@ export async function submit(req, res) {
   if (name && name.length < 2) fields.push('name');
   const phone = capped('phone', 20, { required: true });
   if (phone && !PHONE_RE.test(phone)) fields.push('phone');
-  const email = capped('email', 254);
-  if (email && !EMAIL_RE.test(email)) fields.push('email');
+  // The customer's account (docs/API.md "Account on order"): needed for an order unless this browser is signed in.
+  const signedIn = req.session?.role === 'customer' && req.customer ? req.customer : null;
+  const rawPassword = typeof b.password === 'string' ? b.password : '';
+  const wantsAccount = !signedIn && (kind === 'order' || rawPassword !== '');
+  const email = signedIn && !b.email ? signedIn.email : normEmail(capped('email', 254));
+  if ((email && !EMAIL_RE.test(email)) || (wantsAccount && !email)) fields.push('email');
+  if (b.password != null && typeof b.password !== 'string') fields.push('password');
+  else if (wantsAccount && (rawPassword.length < ACCOUNT_PASSWORD_MIN || rawPassword.length > ACCOUNT_PASSWORD_MAX)) fields.push('password');
   const bride = capped('bride', 80);
   const groom = capped('groom', 80);
   const weddingDate = capped('weddingDate', 10);
   const dm = DATE_RE.exec(weddingDate);
   const realDate = dm && new Date(Date.UTC(+dm[1], dm[2] - 1, +dm[3])).toISOString().slice(0, 10) === weddingDate; // no 30 February
   if (weddingDate && (!realDate || Number(dm[1]) < 2000 || Number(dm[1]) > 2100)) fields.push('weddingDate');
+  const venue = capped('venue', 200);
   const theme = capped('theme', 31);
   if (theme && !isTheme(theme)) fields.push('theme');
   let planId = capped('plan', 32);
@@ -150,12 +165,50 @@ export async function submit(req, res) {
   const plan = planId ? site.plans.find((p) => p.id === planId) : null;
   if ((planId && !plan) || (kind === 'order' && !plan)) fields.push('plan');
   const message = capped('message', 2000, { required: kind === 'custom', multiline: true });
-  if (fields.length) return res.status(400).json({ ok: false, error: 'Please check the form.', fields: [...new Set(fields)] });
+  if (fields.length) {
+    const f = [...new Set(fields)];
+    const error = f.length === 1 && f[0] === 'password' ? `Please choose a password of at least ${ACCOUNT_PASSWORD_MIN} characters.` : 'Please check the form.';
+    return res.status(400).json({ ok: false, error, fields: f });
+  }
+  // Design tiers: the plan must include the design (amounts always come from the server's plan prices).
+  if (theme && plan) {
+    const tp = tierProblem(site, plan, theme, listThemes().find((x) => x.slug === theme)?.name || theme);
+    if (tp) return res.status(400).json({ ok: false, error: tp.error, fields: ['plan'], code: 'tier', needs: tp.needs });
+  }
+
+  // The account: a new one, or an existing one with its right password (counted against the sign-in limits).
+  let customer = signedIn;
+  let created = false;
+  if (wantsAccount) {
+    const wait = loginThrottle(ip, `c:${email}`);
+    if (wait) {
+      res.set('Retry-After', String(wait));
+      return res.status(429).json({ ok: false, error: 'Too many attempts. Please wait a few minutes and try again.' });
+    }
+    const exists = { ok: false, code: 'account_exists', error: 'This email already has an account. Sign in, or enter that account\u2019s password.', fields: ['password'] };
+    if (customerByEmail(email)) {
+      const r = await checkCustomer(ip, email, rawPassword);
+      if (!r.ok) return res.status(409).json(exists);
+      if (r.customer.disabled === true) return res.status(403).json({ ok: false, error: 'This account is turned off. Please contact us on WhatsApp.' });
+      customer = r.customer;
+    } else {
+      const passwordHash = await hashAccountPassword(rawPassword);
+      try {
+        customer = await createCustomer({ email, name, phone, passwordHash });
+        created = true;
+      } catch (err) {
+        if (err.code === 'account_exists') return res.status(409).json(exists);
+        throw err;
+      }
+    }
+  }
 
   const payToken = randomBytes(32).toString('base64url'); // 256 bits; only the hash is stored
   const now = new Date().toISOString();
   const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new' };
   if (email) order.email = email;
+  if (customer) order.customerId = customer.id;
+  if (venue) order.venue = venue;
   if (bride) order.bride = bride;
   if (groom) order.groom = groom;
   if (weddingDate) order.weddingDate = weddingDate;
@@ -177,10 +230,13 @@ export async function submit(req, res) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
-  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'}`);
+  // A new account, or the right password for an existing one: this browser is now signed in as that customer.
+  if (customer && !signedIn) await signInCustomer(req, res, customer);
+  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'}${customer ? ` customer=${customer.id}${created ? ' (new)' : ''}` : ''}`);
   res.status(201).json({
     ok: true, ref: order.ref, payToken, amount: order.amount, plan: planView(order),
     payUrl: payUrl(order.ref, payToken), whatsapp: whatsappFor(order, site),
+    ...(customer ? { account: { email: customer.email, name: customer.name || '', created } } : {}),
   });
 }
 

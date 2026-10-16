@@ -11,7 +11,7 @@ const genPassword = () => {
 };
 
 /** Theme chooser: All, or a multi-select of thumbnails. */
-function themePicker(meta, value, onChange, current) {
+export function themePicker(meta, value, onChange, current) {
   let mode = value === 'all' || !Array.isArray(value) ? 'all' : 'some';
   let chosen = new Set(Array.isArray(value) ? value : []);
   const ready = meta.themes.filter((t) => t.ready !== false);

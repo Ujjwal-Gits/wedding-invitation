@@ -1,6 +1,8 @@
 // Nimtto Studio. Two dashboards on one design system:
 //   the owner (super admin): Overview, Invitations, Clients & access, Orders, Replies, Themes, Website, Settings;
 //   the couple (client link + password): Home, Opening, Couple & family, Dates, Photos, Music, Replies, Send, Themes.
+//   A customer account (email + password, made when ordering): My dashboard (orders, payments, invitations), then the
+//   couple's modules for each invitation the owner linked to the account, with that link's permissions.
 // The owner can open any invitation and use every couple module without limits.
 import { h, icon, clear, toast, openDialog, fmtDate, fill } from './dom.js';
 import { api, setCsrf, whenSignedOut } from './api.js';
@@ -10,6 +12,7 @@ import { createPreview } from './preview.js';
 import { handlePick } from './pick.js';
 import { INV_MODULES } from './modules.js';
 import { ADMIN_MODULES } from './admin.js';
+import { CUSTOMER_MODULES, waLink, WA_DISPLAY } from './customer.js';
 import { enhance } from '../ui/enhance.js'; // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
 
 const app = document.getElementById('app');
@@ -77,6 +80,11 @@ async function doRoute() {
   }
 
   const im = /^#\/i\/([a-z0-9-]{3,64})(?:\/([a-z-]+))?$/.exec(hash);
+  if (S.me.role === 'customer') {
+    if (im) return openInvitation(im[1], im[2] || 'home');
+    if (hash !== '#/account') return go('#/account');
+    return openCustomer();
+  }
   if (S.me.role === 'client') {
     if (!im || im[1] !== S.me.slug) return go(`#/i/${S.me.slug}/home`);
     return openInvitation(im[1], im[2] || 'home');
@@ -160,6 +168,37 @@ function openAdmin(mod, params) {
   mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, params, refreshMeta });
 }
 
+// ── Customer dashboard (account) ─────────────────────────────────────────
+
+/** The account's invitations with their permissions, from the last GET /api/account. */
+let accountInvs = [];
+
+function customerFoot() {
+  return h('div.userbox',
+    h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.name || S.me.email || 'Y').slice(0, 1).toUpperCase()),
+    h('span.userbox__text', h('b', S.me.name || 'Your account'), h('small', S.me.email || '')),
+    h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
+}
+
+function openCustomer() {
+  const mod = CUSTOMER_MODULES[0];
+  if (S.ws?.kind !== 'customer') {
+    teardown();
+    const shell = createShell({
+      kind: 'customer',
+      brand: brand(),
+      groups: [{ items: CUSTOMER_MODULES.map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) }],
+      foot: customerFoot(),
+      tabs: ['account'], // phones: Dashboard + More (sign out)
+      onAction: (a) => { if (a === 'signout') signOut(); },
+    });
+    S.ws = { kind: 'customer', shell };
+    fill(app, shell.root);
+    shell.attachPreview(null);
+  }
+  mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, refreshMeta, onAccount: (acc) => { accountInvs = acc.invitations || []; } });
+}
+
 async function refreshMeta() { try { S.meta = await api('/meta'); } catch { /* keep the old one */ } return S.meta; }
 
 // ── Invitation workspace (couple, or the owner inside one invitation) ───
@@ -173,16 +212,24 @@ async function openInvitation(slug, modId) {
     let doc;
     try { doc = await api(`/invitations/${slug}`); } catch (err) {
       if (S.me?.role === 'admin') { toast(err.message, 'error'); return go('#/invitations'); }
+      if (S.me?.role === 'customer') { toast(err.status === 403 ? 'That invitation is not linked to your account.' : err.message, 'error'); return go('#/account'); }
       return fatal(err);
+    }
+    // An account: the permissions of this invitation's link to it (as fresh as the server's).
+    if (S.me.role === 'customer') {
+      try { accountInvs = (await api('/account')).invitations || []; } catch { /* keep the last list */ }
+      S.me = { ...S.me, perms: accountInvs.find((x) => x.slug === slug)?.perms || { themes: [], canChangeTheme: false, canChangeColors: false } };
     }
     if (S.me.role === 'client' && !S.me.perms) {
       try { const me = await api('/auth/me'); S.me = { ...S.me, ...me }; } catch { /* keep */ }
     }
     const session = createSession(doc, { meta: S.meta, me: S.me });
     const isAdmin = S.me.role === 'admin';
+    const isCustomer = S.me.role === 'customer';
     const mods = INV_MODULES.filter((m) => !m.adminOnly || isAdmin);
     const ctxBox = h('div.ctxbox',
       isAdmin ? h('a.ctxbox__back', { href: '#/invitations' }, icon('back', 15), 'All invitations') : null,
+      isCustomer ? h('a.ctxbox__back', { href: '#/account' }, icon('back', 15), 'My dashboard') : null,
       h('p.ctxbox__names', session.names()),
       h('p.ctxbox__meta', h('span.ctxbox__date', fmtDate(session.m.data.weddingDate, { day: 'numeric', month: 'short', year: 'numeric' })), h('span.ctxbox__status')));
     const drawCtx = () => {
@@ -203,7 +250,7 @@ async function openInvitation(slug, modId) {
         { label: isAdmin ? 'Invitation' : null, items: mods.filter((m) => m.group === 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
         { label: 'More', items: mods.filter((m) => m.group !== 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
       ],
-      foot: isAdmin ? adminFoot() : h('div.userbox',
+      foot: isAdmin ? adminFoot() : isCustomer ? customerFoot() : h('div.userbox',
         h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
         h('span.userbox__text', h('b', 'Your invitation'), h('small', 'Saves as you type')),
         h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18))),
@@ -287,8 +334,9 @@ function loginPage() {
       coupleFlag(false);
       seenFlag(true);
       S.me = me;
+      S.meta = null;
       setCsrf(me.csrf);
-      go('#/overview');
+      go(me.role === 'customer' ? '#/account' : '#/overview');
     } catch (ex) {
       err.textContent = ex.message;
       pw.input.value = '';
@@ -298,7 +346,17 @@ function loginPage() {
       btn.textContent = 'Sign in';
     }
   });
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Welcome back'), h('p.auth__lede', 'Sign in to manage invitations, clients and orders.'), form));
+  // No email is sent from Nimtto: a forgotten password is reset by the owner, on WhatsApp.
+  const forgotNote = h('p.notice', { hidden: true, role: 'status' }, icon('chat', 16), h('span',
+    'Contact us on WhatsApp ', h('a', { href: waLink('Namaste! I forgot my Nimtto password. My email is: '), target: '_blank', rel: 'noopener' }, WA_DISPLAY), ' to reset it.'));
+  const forgot = h('button.link.auth__forgot', { type: 'button', 'aria-expanded': 'false', onclick: () => {
+    forgotNote.hidden = !forgotNote.hidden;
+    forgot.setAttribute('aria-expanded', String(!forgotNote.hidden));
+  } }, 'Forgot password?');
+  form.insertBefore(forgot, err);
+  form.append(forgotNote);
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Sign in'), h('p.auth__lede', 'See your orders and edit your wedding invitation.'), form,
+    h('p.auth__small', 'No account yet? It is made when you order a design on ', h('a', { href: '/' }, 'nimtto.com'), '.')));
   email.focus();
 }
 
@@ -372,7 +430,7 @@ function linkProblem(message = 'This link is no longer active. Please ask your p
   document.title = 'Nimtto';
   fill(app, authLayout(brand(true),
     h('h1.auth__title', heading), h('p.auth__lede', message),
-    h('button.link', { type: 'button', onclick: () => { coupleFlag(false); history.replaceState(null, '', '#/login'); loginPage(); } }, 'I am the owner: sign in')));
+    h('button.link', { type: 'button', onclick: () => { coupleFlag(false); history.replaceState(null, '', '#/login'); loginPage(); } }, 'Sign in with your email instead')));
 }
 
 export { coupleName };

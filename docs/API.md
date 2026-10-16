@@ -39,6 +39,66 @@ The client token is the part after `#/c/` in the link (43 chars base64url).
 - The CSRF token is per session and persisted with it, so it stays valid across restarts.
 - Failed-password limits are unchanged.
 
+## Customer accounts (email + password)
+
+Customers get an account when they order on the website. Couples on older secret links (`#/c/<token>`) keep working.
+
+| Route | Body | Response |
+|---|---|---|
+| `POST /auth/login` | `{ email, password }` | The one sign-in of the studio (`/studio/`). The admin's email: `{ role: 'admin', email, csrf }`. Any other: `{ role: 'customer', name, email, csrf }`. `401 { error: 'That email and password do not match.' }` for an unknown email, a wrong password **and** a turned-off account (same message, same timing) · `429` (10 failures / 15 min per IP, 20 per email) |
+| `GET /auth/me` | – | customer: `{ role: 'customer', name, email, csrf }` · admin / client as before · `401` signed out. **`GET /auth/me?soft=1`** answers `200 { role: null }` instead of `401` (for the website nav: no console error). Cheap (one session + one indexed lookup, no argon2), `Cache-Control: no-store`. The cookie is `SameSite=Lax`, `Path=/`, so any same-origin page can call it (`fetch` sends it by default; `credentials: 'same-origin'`). |
+| `POST /auth/logout` | – (CSRF) | `{ ok: true }` |
+| `GET /account` | – (customer) | `{ customer: { name, email, phone }, orders: CustomerOrder[], invitations: CustomerInvitation[], contact: { whatsapp, phone } }` |
+| `PATCH /account/orders/:ref` | `{ weddingDate?: 'YYYY-MM-DD' or '', venue? ≤ 200, bride? ≤ 80, groom? ≤ 80, message? ≤ 2000 }` (CSRF) | `{ order: CustomerOrder }` · `404` not theirs |
+| `POST /account/password` | `{ current, password (8-128) }` (CSRF) | `{ ok: true }` (their other sessions end) · `401` wrong current password |
+
+```
+CustomerOrder = { ref, at, kind, plan: { id, name, from } | null, amount: { npr, usd }, theme?, weddingDate?, venue?, bride?, groom?, message,
+                  payStatus: 'awaiting_payment'|'proof_submitted'|'confirmed'|'rejected'|'refunded', reason: string|null,
+                  payUrl: '/pay/<ref>' (no token: the customer's session opens it), invitation?: slug }
+CustomerInvitation = { slug, bride, groom, theme, status: 'draft'|'published', weddingDate, perms }   // perms as for client links
+```
+
+- Accounts: `{ id, email, name, phone, passwordHash (argon2id), createdAt, lastLoginAt?, disabled, invitations: [{ slug, themes,
+  canChangeTheme, canChangeColors, linkedAt }] }` (SQLite table `customers`; `data/customers.json` with `STORE=json`). Emails are
+  trimmed, NFC and lower-cased. Hashes never leave the server.
+- Session cookie as below (role `customer`, 180 days sliding). It ends at once on sign-out, a password change or reset, and when the
+  admin turns the account off (sessions deleted, and a fingerprint of the password hash refuses any leftover).
+- With a linked invitation the customer edits it exactly like a client link: `GET/PUT /invitations/:slug`, uploads, publish, replies,
+  `/meta`, and the theme pages (gate) open for them. The limits on `PUT` are that link's `themes`, `canChangeTheme`, `canChangeColors`.
+- Pay pages: `GET /orders/:ref/pay`, `/orders/:ref/qr/:method.png` and `POST /orders/:ref/proof` accept either `?t=<payToken>` or the
+  signed-in customer who owns the order (no `t`, or `t` empty). Then the per-order `qr` URLs end in `?t=` (empty), so `&remark=` can still be appended.
+- The order's `201` sets the session cookie but carries no CSRF token: call `GET /auth/me` for it before any other state-changing call.
+- Forgot password: no email is sent. The studio shows "Contact us on WhatsApp +977 980-6393298 to reset"; the admin resets it.
+
+Admin (CSRF):
+
+| Route | Body | Response |
+|---|---|---|
+| `GET /admin/customers` | – | `{ customers: AdminCustomer[] }` newest first |
+| `POST /admin/customers` | `{ email, name, phone?, password (8-128) }` | `201 { customer }` · `409` email taken |
+| `PATCH /admin/customers/:id` | `{ name?, phone?, password? (8-128), disabled?: boolean }` | `{ customer }` (a new password or `disabled: true` ends their sessions) |
+| `PUT /admin/customers/:id/invitations/:slug` | `{ themes?: 'all' or string[], canChangeTheme?, canChangeColors? }` | `{ customer }` (links it, or updates the perms of the existing link; defaults `'all'`, `false`, `true`) |
+| `DELETE /admin/customers/:id/invitations/:slug` | – | `{ customer }` |
+
+`AdminCustomer = { id, email, name, phone, createdAt, lastLoginAt, disabled, orders: number, invitations: [{ slug, themes, canChangeTheme, canChangeColors, linkedAt }] }`.
+`Summary` (admin invitation list) gains `customers: [{ id, email, name }]`. `Order` gains `customerId?`.
+Deleting an invitation unlinks it from every account.
+
+## Design tiers
+
+Every theme has `tier: 'saral' | 'shubha' | 'shahi'`: the **minimum plan that includes it** (Saral ⊂ Shubha ⊂ Shahi; Custom includes all).
+Defaults: **shahi** mahal, rajdwar, laali, mehendi, hariyo, shree, pardaa, agni, janti, swayambar, sindoor, rangoli; **shubha** bagaicha,
+durbar, mandap, ghar, dhoka, himal, mangal, nimantrana; **saral** kham, mala, gurans, sayapatri, jhyal, chitra, dhaka; any other theme: shubha.
+The admin overrides them with `Site.themeTiers: { [slug]: tier }` (`PUT /site`; unknown slugs and tiers dropped/refused).
+
+- `GET /themes` and `GET /meta` themes gain `tier` (after overrides).
+- `GET /site` plans gain `includes: 'saral'|'shubha'|'shahi'` (the highest tier the plan covers: `saral`→saral, `shubha`→shubha,
+  `shahi` and `custom`→shahi; other plan ids by price against those three; no price → shahi).
+  A design fits a plan when `rank(plan.includes) >= rank(theme.tier)` with saral 1, shubha 2, shahi 3.
+- `POST /orders` with a `theme` checks it: a plan below the design's tier → `400 { ok: false, error: 'The <Name> design needs the
+  <Tier> plan or above.', fields: ['plan'], code: 'tier', needs: '<tier>' }`. Amounts always come from the server's plan prices.
+
 ## Caching, limits and busy answers (every route)
 
 - `GET /site`, `GET /themes` and the guests' `GET /invitations/:slug/public` send an `ETag` with `Cache-Control: no-cache`
@@ -76,11 +136,22 @@ per-order `qr` from `GET /orders/:ref/pay`, which has the amount and remark fill
 
 ### `POST /orders`
 
-Body: `{ kind: 'order'|'custom', plan, name, phone, email?, bride?, groom?, weddingDate?: 'YYYY-MM-DD', theme?, message?, website: '' }`
+Body (minimal order): `{ kind: 'order'|'custom', plan, name, phone, email, password, theme?, website: '' }`, plus optional
+`weddingDate?: 'YYYY-MM-DD', venue? ≤ 200, bride?, groom?, message?` (the customer can fill those in later from their dashboard).
 (`plan` is required for `kind: 'order'`; a `custom` request without a plan gets `plan: 'custom'`. `bride`/`groom` ≤ 80.)
 
+**Account on order.** For `kind: 'order'` from a browser not signed in as a customer, `email` and `password` (8-128) are required:
+the order creates the account (`name`, `phone` from the form) and signs the browser in (customer session cookie on the `201`).
+Already signed in as a customer: the order goes to that account; `email`/`password` are not needed. When the email already has an
+account: the right password signs in and adds the order to it; a wrong one → `409 { ok: false, code: 'account_exists',
+error: 'This email already has an account. Sign in, or enter that account's password.', fields: ['password'] }` (counted against
+the sign-in limits; nothing else is revealed). A turned-off account with the right password → `403`. For `kind: 'custom'` the
+account fields are optional (sent → the same rules). The `201` also has `account: { email, name, created: boolean }` when an
+account was used.
+
 `201 { ok: true, ref: 'NM-24817', payToken: '<43-char base64url secret>', amount: { npr: 4999, usd: 99 }, plan: { id, name, from },
-       payUrl: '/pay/NM-24817?t=<payToken>', whatsapp: { text, link: 'https://wa.me/977…?text=…' | null } }`
+       payUrl: '/pay/NM-24817?t=<payToken>', whatsapp: { text, link: 'https://wa.me/977…?text=…' | null }, account?: { email, name, created } }`
+(+ `Set-Cookie`: the customer session)
 · `400 { ok: false, error, fields }` · `403` cross-site · `429`. Store `ref` + `payToken` (e.g. in the URL / localStorage)
 so the customer can come back; the token is shown once and only its hash is stored. A honeypot hit gets the same shape
 with a ref/token that leads nowhere. `amount.npr`/`amount.usd` can be `null` when the plan has no price.
@@ -151,7 +222,7 @@ admin's workflow `status` (`new`/`contacted`/`done`/`archived`).
 
 Payments: see `docs/PAYMENTS.md`. `GET /pay/status` (admin) → `{ paypal: { enabled, env, clientId (masked), secretSet, webhookIdSet, webhookUrl, dashboard, problems } }`; never a secret. `Site.plans[].priceUsd`: `null` or 1–10000 with at most two decimals (`usdPrice`, the old name, is still accepted on PUT).
 
-`POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254, `bride`/`groom` ≤ 80, `weddingDate`
+`POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254 (required with an account), `password` 8–128, `venue` ≤ 200, `bride`/`groom` ≤ 80, `weddingDate`
 `YYYY-MM-DD`, `theme` an existing theme slug, `plan` an existing `Site.plans[].id` (required for `kind: 'order'`),
 `message` ≤ 2000 (required when `kind: 'custom'`). Any `amount`/`price` in the body is ignored.
 `website` is the honeypot: keep it as a hidden empty input; any value → the same `201` shape and nothing is stored.

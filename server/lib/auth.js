@@ -10,6 +10,7 @@ import { peekInvitation, findInvitationByTokenHash } from './store.js';
 // argon2 runs through a capped queue (lib/guard.js): a burst of sign-in attempts gets 503s, never every core.
 import { verifyPassword as argonVerify, hashPassword as argonHash, mimicVerify } from './guard.js';
 import { TTL, keyOf, expired, getSession, putSession, deleteSession, deleteSessionsWhere, touchSession } from './sessions.js';
+import { getCustomer, customerByEmail, normEmail, linkOf, mutateCustomer } from './accounts.js';
 
 export const COOKIE = IS_PROD ? '__Host-studio' : 'studio_sid';
 const sha = (s) => createHash('sha256').update(s).digest('hex');
@@ -26,6 +27,13 @@ const ADMIN_FP = sha(`admin\n${ADMIN_EMAIL}\n${ADMIN_PASSWORD_HASH}`);
 const linkFp = (access) => sha(`client\n${access?.tokenHash || ''}\n${access?.passwordHash || ''}`);
 const linkActive = (doc, s) => Boolean(doc?.access?.tokenHash) && safeEqual(linkFp(doc.access), s.fp);
 const maxAge = (role) => Math.floor(TTL[role] / 1000);
+/** A customer's session is bound to their id and password hash: a new password ends every older session. */
+const customerFp = (c) => sha(`customer\n${c.id}\n${c.passwordHash || ''}`);
+/** The account behind a customer session, or null (gone, turned off, or the password changed since). */
+const liveCustomer = (s) => {
+  const c = getCustomer(s.cid);
+  return c && c.disabled !== true && safeEqual(customerFp(c), s.fp) ? c : null;
+};
 
 function parseCookies(header = '') {
   const out = {};
@@ -48,12 +56,15 @@ function setCookie(res, value, maxAgeSec) {
 export function loadSession(req, res, next) {
   const id = parseCookies(req.headers.cookie)[COOKIE];
   req.session = null;
+  req.customer = null;
   if (id && /^[A-Za-z0-9_-]{43}$/.test(id)) {
     const k = keyOf(id);
     const s = getSession(k);
     const now = Date.now();
-    if (s && !expired(s, now) && (s.role !== 'admin' || safeEqual(s.fp, ADMIN_FP))) {
+    const customer = s?.role === 'customer' ? liveCustomer(s) : null;
+    if (s && !expired(s, now) && (s.role !== 'admin' || safeEqual(s.fp, ADMIN_FP)) && (s.role !== 'customer' || customer)) {
       req.session = s;
+      req.customer = customer;
       req.sessionKey = k;
       // Sliding expiry: every SEEN_EVERY, save `seen` and re-send the cookie so the browser keeps it as long.
       if (touchSession(s, now)) setCookie(res, id, maxAge(s.role));
@@ -80,8 +91,26 @@ function csrfProblem(req) {
 }
 
 export const isAdmin = (req) => req.session?.role === 'admin';
-/** The planner, or the couple of this one invitation (client link). */
-export const canEdit = (req, slug) => isAdmin(req) || (req.session?.role === 'client' && req.session.slug === slug);
+/** The planner, the couple of this one invitation (client link), or a customer account the planner linked it to. */
+export const canEdit = (req, slug) => isAdmin(req)
+  || (req.session?.role === 'client' && req.session.slug === slug)
+  || (req.session?.role === 'customer' && Boolean(linkOf(req.customer, slug)));
+
+/** What a couple may change on this invitation (client link or account link); null for the planner. */
+export function permsFor(req, doc) {
+  if (isAdmin(req)) return null;
+  if (req.session?.role === 'customer') return permsOf(linkOf(req.customer, doc.slug));
+  return permsOf(doc.access);
+}
+
+/** Middleware: a signed-in customer (account). */
+export function requireCustomer(req, res, next) {
+  if (!req.session) return res.status(401).json({ error: 'Please sign in.' });
+  if (req.session.role !== 'customer' || !req.customer) return res.status(403).json({ error: 'Please sign in with your email and password.' });
+  const bad = csrfProblem(req);
+  if (bad) return res.status(403).json({ error: bad });
+  next();
+}
 
 /** Middleware: the planner only. */
 export function requireAdmin(req, res, next) {
@@ -131,6 +160,9 @@ export const newClientToken = () => randomBytes(32).toString('base64url');
 /** Ends every couple session of one invitation (link turned off or replaced, password changed, deleted). */
 export const revokeClientSessions = (slug) => deleteSessionsWhere((s) => s.role === 'client' && s.slug === slug);
 
+/** Ends every session of one customer account (password changed or reset, account turned off). */
+export const revokeCustomerSessions = (cid) => deleteSessionsWhere((s) => s.role === 'customer' && s.cid === cid);
+
 /** Starts a fresh session (the browser's old one, if any, is dropped first) and sets its cookie. */
 async function startSession(req, res, data) {
   if (req.sessionKey) await deleteSession(req.sessionKey);
@@ -150,6 +182,8 @@ const ARGON = { algorithm: 2, memoryCost: 19456, timeCost: 2, parallelism: 1 }; 
 
 /** argon2id hash of a couple's link password (NFC, so the same Devanagari typed twice matches). */
 export const hashLinkPassword = (pw) => argonHash(String(pw).normalize('NFC'), ARGON);
+/** argon2id hash of a customer account's password (same parameters and normalisation). */
+export const hashAccountPassword = hashLinkPassword;
 
 /** What the couple may change: { themes: 'all' | string[], canChangeTheme, canChangeColors }. */
 export const permsOf = (access) => ({
@@ -213,8 +247,37 @@ export function clientSession() {
 // Login throttling: per IP and per account. Failed attempts only.
 const ipLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 const accountLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
-// A real hash to verify against when the email is wrong, so timing does not reveal valid emails.
-const dummyHash = await argonHashRaw(randomBytes(16).toString('hex'));
+// A real hash (same parameters as account hashes) to verify against when the email is wrong, so timing does not reveal emails.
+const dummyHash = await argonHashRaw(randomBytes(16).toString('hex'), ARGON);
+
+/** Seconds to wait when this IP or this account has failed too often, else 0. */
+export function loginThrottle(ip, account) {
+  const a = ipLimiter.peek(ip);
+  const b = accountLimiter.peek(account);
+  return a.ok && b.ok ? 0 : Math.max(a.retryAfter, b.retryAfter, 1);
+}
+const failedLogin = (ip, account) => { ipLimiter.hit(ip); accountLimiter.hit(account); };
+
+/**
+ * Checks a customer's email (normalised) and password. Unknown emails are checked against a dummy hash, so the time
+ * taken is the same. Failures count against the sign-in limits. -> { ok: true, customer } | { ok: false, exists }
+ */
+export async function checkCustomer(ip, email, password) {
+  const c = customerByEmail(email);
+  const pw = String(password).normalize('NFC');
+  const ok = c && c.passwordHash ? await argonVerify(c.passwordHash, pw).catch(busyOr(false)) : (await argonVerify(dummyHash, pw).catch(busyOr(false)), false);
+  if (!ok) { failedLogin(ip, `c:${email}`); return { ok: false, exists: Boolean(c) }; }
+  ipLimiter.reset(ip);
+  return { ok: true, customer: c };
+}
+
+/** Signs this browser in as the customer (a new session id, cookie set). Returns the session. */
+export async function signInCustomer(req, res, c) {
+  const s = await startSession(req, res, { role: 'customer', cid: c.id, fp: customerFp(c) });
+  mutateCustomer(c.id, (x) => { x.lastLoginAt = new Date().toISOString(); }).catch(() => {});
+  console.info(`[auth] customer sign-in id=${c.id} ip=${clientIp(req)}`);
+  return s;
+}
 
 async function checkPassword(password) {
   const h = ADMIN_PASSWORD_HASH;
@@ -227,24 +290,32 @@ async function checkPassword(password) {
 
 export async function login(req, res) {
   const ip = clientIp(req);
-  const ipState = ipLimiter.peek(ip);
-  const accState = accountLimiter.peek('admin');
-  if (!ipState.ok || !accState.ok) {
-    res.set('Retry-After', String(Math.max(ipState.retryAfter, accState.retryAfter)));
+  const email = normEmail(req.body?.email).slice(0, 254);
+  const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 1024) : '';
+  const emailOk = safeEqual(email, ADMIN_EMAIL);
+  const wait = loginThrottle(ip, emailOk ? 'admin' : `c:${email}`);
+  if (wait) {
+    res.set('Retry-After', String(wait));
     console.warn(`[auth] login throttled ip=${ip}`);
     return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
   }
   if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
 
-  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase().slice(0, 254) : '';
-  const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 1024) : '';
+  // Any email but the planner's is a customer account. An unknown email, a wrong password and a turned-off account
+  // all get the same answer (no account enumeration).
+  if (!emailOk) {
+    const r = await checkCustomer(ip, email, password);
+    if (!r.ok || r.customer.disabled === true) {
+      console.warn(`[auth] failed login ip=${ip}`);
+      return res.status(401).json({ error: 'That email and password do not match.' });
+    }
+    const s = await signInCustomer(req, res, r.customer);
+    return res.json({ role: 'customer', name: r.customer.name || '', email: r.customer.email, csrf: s.csrf });
+  }
 
-  const emailOk = safeEqual(email, ADMIN_EMAIL);
-  const passOk = emailOk ? await checkPassword(password) : (await argonVerify(dummyHash, password).catch(busyOr(false)), false);
-
-  if (!emailOk || !passOk) {
-    ipLimiter.hit(ip);
-    accountLimiter.hit('admin');
+  const passOk = await checkPassword(password);
+  if (!passOk) {
+    failedLogin(ip, 'admin');
     console.warn(`[auth] failed login ip=${ip}`);
     return res.status(401).json({ error: 'That email and password do not match.' });
   }
@@ -271,6 +342,7 @@ export async function hasStudioSession(req) {
   const s = req.session;
   if (!s) return false;
   if (s.role === 'admin') return true;
+  if (s.role === 'customer') return Boolean(req.customer?.invitations?.length); // once the planner has linked an invitation
   if (s.role !== 'client') return false;
   const doc = await peekInvitation(s.slug);
   if (linkActive(doc, s)) return true;
@@ -279,8 +351,11 @@ export async function hasStudioSession(req) {
 }
 
 export async function me(req, res) {
-  if (!req.session) return res.status(401).json({ error: 'Not signed in.' });
+  res.set('Cache-Control', 'no-store');
+  // ?soft=1 (the website's nav): signed out is a normal answer, not an error.
+  if (!req.session) return req.query.soft != null ? res.json({ role: null }) : res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
+  if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, csrf: s.csrf });
   if (s.role !== 'client') return res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
   const doc = await peekInvitation(s.slug);
   if (!linkActive(doc, s)) {

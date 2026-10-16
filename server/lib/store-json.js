@@ -49,7 +49,7 @@ export async function readJson(file, fallback = null) {
 const invPath = (slug) => resolve(INV_DIR, `${slug}.json`);
 const rsvpPath = (slug) => resolve(RSVP_DIR, `${slug}.json`);
 
-export function open() { loadSessions(); }
+export function open() { loadSessions(); loadCustomers(); }
 export function close() {}
 
 // ── Invitations: rev = the file's mtime and size (changes on every write, also by another program).
@@ -195,6 +195,46 @@ export const sessions = {
   count: () => map.size,
   dropOldest: (n) => { const old = [...map].sort((a, b) => a[1].seen - b[1].seen).slice(0, n); for (const [k] of old) map.delete(k); if (old.length) persist(); return old.length; },
   flush: () => (writing || Promise.resolve()),
+};
+
+// ── Customer accounts: an in-memory map written through to data/customers.json (same pattern as the sessions).
+const CUSTOMERS_FILE = resolve(DATA_DIR, 'customers.json');
+const cmap = new Map();
+let cloaded = false;
+function loadCustomers() {
+  if (cloaded) return;
+  cloaded = true;
+  try {
+    const raw = JSON.parse(readFileSync(CUSTOMERS_FILE, 'utf8'));
+    for (const c of raw?.customers || []) if (c && typeof c.id === 'string' && typeof c.email === 'string') cmap.set(c.id, c);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw Object.assign(new Error(`cannot read ${CUSTOMERS_FILE}: ${err.message}`), { cause: err });
+  }
+}
+let cwriting = null;
+let cdirty = false;
+function persistCustomers() {
+  cdirty = true;
+  if (!cwriting) {
+    cwriting = (async () => {
+      try {
+        while (cdirty) {
+          cdirty = false;
+          await writeJsonAtomic(CUSTOMERS_FILE, { v: 1, customers: [...cmap.values()] });
+        }
+      } finally {
+        cwriting = null;
+      }
+    })();
+  }
+  return cwriting;
+}
+export const customers = {
+  get: (id) => (cmap.has(id) ? structuredClone(cmap.get(id)) : null),
+  byEmail: (email) => { for (const c of cmap.values()) if (c.email === email) return structuredClone(c); return null; },
+  all: () => [...cmap.values()].map((c) => structuredClone(c)),
+  put: (c) => { cmap.set(c.id, structuredClone(c)); return persistCustomers(); },
+  del: (id) => { const had = cmap.delete(id); if (had) persistCustomers(); return had; },
 };
 
 export const ping = () => true;

@@ -288,3 +288,10 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
   twin, `nonHindu: '<library slug>'`, used when the symbols are not Hindu (Himal's two temple photos → Phewa Lake,
   a lit garden). The sample's betel-nut and temple-courtyard photos leave non-Hindu starters. Emblems are drawn as SVG
   but shown as a cached PNG blob (SwiftShader painted a black band over Hariyo's gate for a stroked SVG <img>).
+
+**server + studio (2026-10-16): customer accounts, minimal order, design tiers.** Contract: API.md "Customer accounts", "Account on order", "Design tiers".
+- Ordering on the website makes an account (email + password ≥ 8, argon2id) and signs the browser in (role `customer`, 180-day sliding session). `/studio/` has one "Sign in" for the owner and customers, with "Forgot password?" → "Contact us on WhatsApp +977 980-6393298 to reset". Same 401 for unknown email, wrong password and a turned-off account.
+- `POST /api/orders` needs only name, phone, email, password, plan (+ optional design); date, venue and message are optional and can be added from the dashboard. A plan below the design's tier → 400 `code: 'tier'`.
+- Customer dashboard (`#/account`): orders with payment status and "Pay now" (`/pay/<ref>` opens with the session, no token), wedding details, password change, and each invitation the owner linked → the couple's editor with that link's perms. Secret client links keep working.
+- Owner: Clients & access › Customer accounts (link invitations with perms, reset password, turn off, new account); Themes › "Plan from" per design (`Site.themeTiers`). Files: `server/lib/accounts.js`, `server/lib/customers.js`, `src/studio/customer.js`, `src/studio/admin-customers.js`.
+- Website agent: `GET /api/auth/me?soft=1` → `{ role: null }` or `{ role: 'customer', name, email }` for the nav ("My dashboard" → `/studio/`); `/api/site` plans carry `includes`, `/api/themes` carry `tier`.

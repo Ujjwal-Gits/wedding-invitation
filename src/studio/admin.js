@@ -5,6 +5,7 @@ import { api, postForm } from './api.js';
 import { photoUrl } from '../photos.js';
 import { deleteDialog, actionMenu, whenText } from './manage.js';
 import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
+import { customersSection } from './admin-customers.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
@@ -534,8 +535,10 @@ function access(ctx) {
       h('li', h('b', 'Create a link'), h('span', 'with a password you choose, per invitation.')),
       h('li', h('b', 'Send them apart'), h('span', 'the link in one message, the password in another (or by phone).')),
       h('li', h('b', 'Set what they may do'), h('span', 'which designs they see, and whether they can switch design or change colours.')),
-      h('li', h('b', 'Lost or leaked?'), h('span', 'make a new link; the old one stops at once.'))));
-  return [notice, h('div.withaside', h('div.withaside__main', h('div.toolbar2', tabs.el, h('div.toolbar2__end', search)), body), how)];
+      h('li', h('b', 'Lost or leaked?'), h('span', 'make a new link; the old one stops at once.')),
+      h('li', h('b', 'Or use their account'), h('span', 'customers who ordered online sign in with email and password; link the invitation to their account below.'))));
+  return [notice, h('div.withaside', h('div.withaside__main', h('div.toolbar2', tabs.el, h('div.toolbar2__end', search)), body), how),
+    customersSection(ctx, listInvitations)];
 }
 
 // ── Orders & requests ─────────────────────────────────────────────────────
@@ -794,7 +797,11 @@ const DEFAULT_SITE = () => ({
   hero: { title: '', subtitle: '' },
   hiddenThemes: [],
   featuredThemes: [],
+  themeTiers: {},
 });
+// Design tiers (docs/API.md "Design tiers"): the cheapest plan that includes a design.
+const TIER_OPTS = [['saral', 'Saral'], ['shubha', 'Shubha'], ['shahi', 'Shahi']];
+const TIER_LABEL = Object.fromEntries(TIER_OPTS);
 // The full settings (admin): every payment method, with what its QR supports (qrInfo).
 async function loadSite() {
   try { return { ...DEFAULT_SITE(), ...(await api('/admin/site')) }; } catch (err) { if (err.status === 404) return { ...DEFAULT_SITE(), missing: true }; throw err; }
@@ -809,32 +816,39 @@ const setting = (title, help, ...children) => h('section.setrow',
 function themesAdmin(ctx) {
   const root = h('div', rowsSkel(4));
   const status = h('span.savechip', { 'data-state': 'saved', role: 'status', 'aria-live': 'polite' }, h('span.savechip__dot', { 'aria-hidden': 'true' }), h('span.savechip__t', 'Saved'));
-  ctx.shell.setPage({ title: 'Themes', sub: 'Choose which designs the website shows, and which are featured.', actions: [status] });
+  ctx.shell.setPage({ title: 'Themes', sub: 'Choose which designs the website shows, which are featured, and the cheapest plan that includes each.', actions: [status] });
   let f = 'all';
   loadSite().then((site) => {
     const setState = (s, t) => { status.dataset.state = s; status.lastChild.textContent = t; };
     const save = debounce(async () => {
       setState('saving', 'Saving…');
-      try { const out = await putSite(site); Object.assign(site, out); setState('saved', 'Saved'); } catch (err) { setState('error', err.status === 404 ? 'Not available yet' : 'Not saved'); toast(err.message, 'error'); }
+      try { const out = await putSite(site); Object.assign(site, out); setState('saved', 'Saved'); ctx.refreshMeta?.(); } catch (err) { setState('error', err.status === 404 ? 'Not available yet' : 'Not saved'); toast(err.message, 'error'); }
     }, 500);
     const list = ctx.meta.themes;
-    const tabs = ftabs([['all', 'All'], ['shown', 'On the website'], ['hidden', 'Hidden'], ['featured', 'Featured']], f, (v) => { f = v; draw(); }, 'Show');
+    const tabs = ftabs([['all', 'All'], ['shown', 'On the website'], ['hidden', 'Hidden'], ['featured', 'Featured'], ...TIER_OPTS], f, (v) => { f = v; draw(); }, 'Show');
+    site.themeTiers = site.themeTiers || {};
+    const tierOf = (t) => site.themeTiers[t.slug] || t.tier || 'shubha';
     const grid = h('ul.tgrid.tgrid--admin');
     const note = h('p.toolbar2__note');
     const draw = () => {
       const hidden = new Set(site.hiddenThemes || []);
       const feat = new Set(site.featuredThemes || []);
       note.textContent = `${list.length - hidden.size} of ${list.length} on the website${feat.size ? ` · ${feat.size} featured` : ''}`;
-      tabs.draw(f, { all: list.length, shown: list.length - hidden.size, hidden: hidden.size, featured: feat.size });
-      const rows = list.filter((t) => f === 'all' || (f === 'shown' && !hidden.has(t.slug)) || (f === 'hidden' && hidden.has(t.slug)) || (f === 'featured' && feat.has(t.slug)));
+      const tiers = { saral: 0, shubha: 0, shahi: 0 };
+      list.forEach((t) => { tiers[tierOf(t)] += 1; });
+      tabs.draw(f, { all: list.length, shown: list.length - hidden.size, hidden: hidden.size, featured: feat.size, ...tiers });
+      const rows = list.filter((t) => f === 'all' || (f === 'shown' && !hidden.has(t.slug)) || (f === 'hidden' && hidden.has(t.slug)) || (f === 'featured' && feat.has(t.slug)) || f === tierOf(t));
       fill(grid, rows.length ? rows.map((t) => h('li.tadmin', { class: hidden.has(t.slug) ? 'is-hidden' : '' },
         h('a.tcard', { href: `/${t.slug}/`, target: '_blank', rel: 'noopener', 'aria-label': `${t.name}: open the demo in a new tab` },
           h('span.tcard__img', t.thumb ? h('img', { src: t.thumb, alt: '', loading: 'lazy' }) : h('span.thumb-ph', t.name),
             feat.has(t.slug) ? h('span.tcard__on', icon('star', 12), 'Featured') : null,
             h('span.tcard__view', icon('external', 13), 'Demo'),
             t.ready === false ? h('span.tcard__soon', 'Not ready') : null),
-          h('span.tcard__name', t.name), t.concept ? h('span.tcard__concept', t.concept) : null),
+          h('span.tcard__name', t.name, h('span.tier', { class: `tier--${tierOf(t)}` }, TIER_LABEL[tierOf(t)])), t.concept ? h('span.tcard__concept', t.concept) : null),
         h('div.tadmin__toggles',
+          h('label.tadmin__tier', h('span', 'Plan from'),
+            h('select.input.input--sm', { 'aria-label': `Cheapest plan that includes ${t.name}`, onchange: (e) => { site.themeTiers = { ...site.themeTiers, [t.slug]: e.target.value }; t.tier = e.target.value; draw(); save(); } },
+              TIER_OPTS.map(([v, l]) => h('option', { value: v, selected: tierOf(t) === v }, l)))),
           toggle({ label: 'On the website', checked: !hidden.has(t.slug), onChange: (v) => {
             site.hiddenThemes = v ? site.hiddenThemes.filter((x) => x !== t.slug) : [...new Set([...site.hiddenThemes, t.slug])];
             if (!v) site.featuredThemes = site.featuredThemes.filter((x) => x !== t.slug); // a hidden design cannot be featured

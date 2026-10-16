@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 import { DATA_DIR } from './env.js';
 import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or data/site.json with STORE=json)
 import { entity, sendEntity } from './http-cache.js';
-import { isTheme, listThemes } from './catalog.js';
+import { isTheme, listThemes, TIERS, defaultTier } from './catalog.js';
 import { loadManifest } from './slots.js';
 
 export const SITE_FILE = resolve(DATA_DIR, 'site.json');
@@ -54,7 +54,35 @@ const DEFAULTS = {
   hero: { title: '', subtitle: '' },
   hiddenThemes: [],
   featuredThemes: [],
+  themeTiers: {},
 };
+
+// ── Design tiers (docs/API.md "Design tiers"): a design's tier is the cheapest plan that includes it.
+export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
+const TIER_NAME = { saral: 'Saral', shubha: 'Shubha', shahi: 'Shahi' };
+/** The tier of a theme after the planner's overrides. */
+export const tierOf = (slug, site) => (TIER_RANK[site?.themeTiers?.[slug]] ? site.themeTiers[slug] : defaultTier(slug));
+/**
+ * The highest tier a plan covers: saral, shubha, shahi by id; custom (and a plan with no price) everything; any other
+ * plan by its price against the three tier plans.
+ */
+export function planIncludes(plan, plans = []) {
+  if (!plan) return 'saral';
+  if (TIER_RANK[plan.id]) return plan.id;
+  if (plan.id === 'custom' || !Number.isInteger(plan.price)) return 'shahi';
+  let best = 'saral';
+  for (const t of TIERS) {
+    const p = plans.find((x) => x.id === t);
+    if (p && Number.isInteger(p.price) && p.price <= plan.price) best = t;
+  }
+  return best;
+}
+/** null when the plan includes the theme, else { needs, error } for the customer. */
+export function tierProblem(site, plan, slug, themeName = slug) {
+  const need = tierOf(slug, site);
+  if (TIER_RANK[planIncludes(plan, site.plans)] >= TIER_RANK[need]) return null;
+  return { needs: need, error: `The ${themeName} design needs the ${TIER_NAME[need]} plan or above.` };
+}
 
 /** A WhatsApp number in E.164 form ('+9779806393298'), or '' when it is not one. Nepali mobiles get +977. */
 export function e164(v) {
@@ -169,7 +197,20 @@ function sanitizeSite(input) {
     if (!Array.isArray(v) || v.length > 100 || !v.every((x) => typeof x === 'string' && SLUG_LIKE.test(x))) { fail(path, 'must be a list of theme slugs'); return []; }
     return [...new Set(v)].filter(isTheme); // themes that no longer exist are dropped quietly
   };
-  const out = { v: SITE_V, plans, paymentMethods, payRemark, contact, hero, hiddenThemes: themeList(d.hiddenThemes, 'hiddenThemes'), featuredThemes: themeList(d.featuredThemes, 'featuredThemes') };
+  // Tier overrides: { slug: 'saral'|'shubha'|'shahi' }; themes that no longer exist are dropped quietly.
+  const themeTiers = {};
+  if (d.themeTiers != null) {
+    const tt = d.themeTiers;
+    if (!tt || typeof tt !== 'object' || Array.isArray(tt) || Object.keys(tt).length > 100) fail('themeTiers', 'must be an object of theme slug: tier');
+    else {
+      for (const [slug, tier] of Object.entries(tt)) {
+        if (!SLUG_LIKE.test(slug)) { fail(`themeTiers.${slug.slice(0, 40)}`, 'is not a theme slug'); continue; }
+        if (!TIER_RANK[tier]) { fail(`themeTiers.${slug}`, "must be 'saral', 'shubha' or 'shahi'"); continue; }
+        if (isTheme(slug)) themeTiers[slug] = tier;
+      }
+    }
+  }
+  const out = { v: SITE_V, plans, paymentMethods, payRemark, contact, hero, hiddenThemes: themeList(d.hiddenThemes, 'hiddenThemes'), featuredThemes: themeList(d.featuredThemes, 'featuredThemes'), themeTiers };
   if (errors.length) throw httpError(400, 'Please check the website settings.', { errors: errors.slice(0, 50) });
   return out;
 }
@@ -197,6 +238,7 @@ function merged(s) {
   for (const p of out.plans) delete p.usdPrice;
   if (!Array.isArray(s.paymentMethods)) out.paymentMethods = d.paymentMethods;
   if (typeof s.payRemark !== 'string' || !s.payRemark) out.payRemark = d.payRemark;
+  if (!s.themeTiers || typeof s.themeTiers !== 'object' || Array.isArray(s.themeTiers)) out.themeTiers = {};
   const c = s.contact && typeof s.contact === 'object' ? s.contact : {};
   // Nothing saved yet: the owner's official contact. Anything the admin saved is kept as it is.
   out.contact = !c.phone && !c.whatsapp && !c.email ? { ...DEFAULT_CONTACT, address: c.address || '' } : { ...d.contact, ...c };
@@ -206,7 +248,7 @@ function merged(s) {
 /** The public part of the settings: enabled payment methods only, and only what a visitor needs. */
 export function publicSite(s) {
   return {
-    plans: s.plans.map((p) => ({ id: p.id, name: p.name, price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: p.note || '', features: p.features || [], highlight: p.highlight === true })),
+    plans: s.plans.map((p) => ({ id: p.id, name: p.name, price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: p.note || '', features: p.features || [], highlight: p.highlight === true, includes: planIncludes(p, s.plans) })),
     paymentMethods: publicMethods(s),
     contact: s.contact,
     hero: s.hero,
@@ -273,13 +315,14 @@ export async function publicThemes(req, res) {
     res.set('Cache-Control', 'no-cache');
     return sendEntity(req, res, themesEntity.e);
   }
-  const { hiddenThemes } = merged(d?.value);
+  const s = merged(d?.value);
+  const { hiddenThemes } = s;
   const hidden = new Set(hiddenThemes);
   const out = [];
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'] });
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s) });
   }
   themesEntity = { rev, at: Date.now(), e: entity(JSON.stringify(out), 'application/json; charset=utf-8') };
   res.set('Cache-Control', 'no-cache');

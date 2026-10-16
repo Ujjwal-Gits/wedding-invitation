@@ -9,7 +9,9 @@ import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
-import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
+import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
+import { customersBySlug, unlinkEverywhere } from './accounts.js';
+import { readSite, tierOf } from './site.js';
 import { originAllowed } from './security.js';
 import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
@@ -53,7 +55,7 @@ const linkOut = (a, slug) => {
 
 const nameText = (v, max = 60) => (typeof v === 'string' ? v.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 
-function summary(doc, rsvpCount = 0) {
+function summary(doc, rsvpCount = 0, customers = []) {
   const d = doc.draft;
   const hero = d.couple.portraits.find((p) => p.photo)?.photo ?? d.couple.bride.photo ?? null;
   return {
@@ -73,6 +75,7 @@ function summary(doc, rsvpCount = 0) {
     lastEdit: doc.lastEdit || null,
     unseen: unseenByAdmin(doc),
     clientLink: linkOut(doc.access, doc.slug),
+    customers, // accounts the planner linked it to: [{ id, email, name }]
   };
 }
 
@@ -214,7 +217,8 @@ const peek = async (slug) => {
 
 export async function list(req, res) {
   const [docs, replies] = await Promise.all([listInvitations(), replyStats()]);
-  const items = docs.map((d) => summary(d, replies.get(d.slug)?.count || 0)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const bySlug = customersBySlug();
+  const items = docs.map((d) => summary(d, replies.get(d.slug)?.count || 0, bySlug.get(d.slug) || [])).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
   res.json({ invitations: items });
 }
 
@@ -256,7 +260,7 @@ export async function update(req, res) {
     const cur = await load(slug);
     if (b.version !== cur.version) throw httpError(409, 'This invitation was changed in another tab. Reload to get the latest version.', { current: cur.version });
     const draft = sanitizeInvitation(b.data, slug, slots);
-    if (req.session.role === 'client') clientLimits(cur, draft, slots.manifests);
+    if (!isAdmin(req)) clientLimits(cur, draft, slots.manifests, permsFor(req, cur));
     attachDepth(slug, draft);
     if (same(cur.draft, draft)) return cur; // nothing changed: no new version, nothing to log
     const sections = changedAreas(cur.draft, draft);
@@ -271,8 +275,7 @@ export async function update(req, res) {
 }
 
 /** What a couple may not change without the planner's permission (PLATFORM.md: access). */
-function clientLimits(cur, draft, manifests = {}) {
-  const p = permsOf(cur.access);
+function clientLimits(cur, draft, manifests = {}, p = permsOf(cur.access)) {
   // Colours compared by value, not key order, and only tokens the manifests still declare (the sanitiser drops
   // the others from the new draft, so a stale token in the saved one must not block every save).
   const colorKey = (tc) => JSON.stringify(Object.entries(tc || {}).flatMap(([theme, toks]) => Object.entries(toks || {})
@@ -364,6 +367,7 @@ export async function remove(req, res) {
     await withLock(`rsvp:${slug}`, () => trashInvitation(slug));
   });
   await revokeClientSessions(slug);
+  await unlinkEverywhere(slug);
   console.info(`[admin] delete (to trash) slug=${slug}`);
   res.json({ ok: true });
 }
@@ -473,7 +477,8 @@ async function metaCatalog() {
 }
 
 export async function meta(req, res) {
-  const { themes, library } = await metaCatalog();
+  const [{ themes: list, library }, site] = await Promise.all([metaCatalog(), readSite()]);
+  const themes = list.map((t) => ({ ...t, tier: tierOf(t.slug, site) }));
   res.json({ themes, tracks: BUNDLED_TRACKS, library, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
 

@@ -380,7 +380,8 @@ test('site.json: priceUsd per plan is validated on the server (usdPrice, the old
 
 test('orders: the public POST returns the reference, and the store helpers find and update it', async () => {
   const orders = await import('../lib/orders.js');
-  const req = { body: { kind: 'order', plan: 'premium', name: 'Sita Rai', phone: '9800000000', message: '', website: '' }, get: (h) => (h === 'origin' ? 'http://localhost:5195' : h === 'host' ? 'localhost:8787' : undefined), app: { get: () => false }, ip: '127.0.0.1', socket: {}, headers: {} };
+  const req = { body: { kind: 'order', plan: 'premium', name: 'Sita Rai', phone: '9800000000', message: '', website: '' }, get: (h) => (h === 'origin' ? 'http://localhost:5195' : h === 'host' ? 'localhost:8787' : undefined), app: { get: () => false }, ip: '127.0.0.1', socket: {}, headers: {},
+    session: { role: 'customer' }, customer: { id: 'Cust0mer-id1', email: 'sita@example.com', name: 'Sita Rai' } }; // signed in: no account fields needed
   const res = { code: 0, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, set() { return this; } };
   await orders.submit(req, res);
   assert.equal(res.code, 201);
