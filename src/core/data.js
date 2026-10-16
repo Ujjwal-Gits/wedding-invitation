@@ -13,6 +13,7 @@
 // live-preview.js, loaded only then). Every message is same-origin only and validated here.
 // The model's `design` ({ gate?, hero? }, docs/MIX.md) travels with it: mix.js reads it from the config.
 import { config } from '../config.js';
+import { LIBRARY_SRC_RE } from './music-library.js';
 import { religionOf, symbolsFor, VERSIONS, SHLOKA, swapWords, isHinduInvocation, startFaithDom } from './faith.js';
 import './showcase.js'; // showcase mode (docs/API.md): runs first and drops ?id / ?preview, so only the demo shows
 
@@ -238,6 +239,30 @@ function applyThemeColors() {
   }
 }
 
+/**
+ * The planner's Music library (GET /api/music: on, in their order) decides the music. The website's preview plays
+ * the library, first song first; a real invitation keeps the couple's songs but drops library songs the planner
+ * turned off or deleted (their own uploads stay), and falls back to the library when none are left.
+ */
+async function applyLibraryMusic(real) {
+  let lib;
+  try {
+    const res = await fetch('/api/music', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return;
+    const out = await res.json();
+    const moods = new Map((out.moods || []).map((m) => [m.id, m]));
+    lib = (out.tracks || []).filter((t) => t?.src).map((t) => ({ title: { en: t.title || '', ne: t.titleNe || '' }, mood: { en: moods.get(t.mood)?.en || '', ne: moods.get(t.mood)?.ne || '' }, src: t.src, credit: t.credit || '' }));
+  } catch { return; } // offline: keep what the page has
+  if (!lib.length) return;
+  bundledTracks.splice(0, bundledTracks.length, ...structuredClone(lib));
+  if (!isPlain(config.music)) config.music = { volume: demo.music.volume, tracks: [] };
+  if (!real) { config.music.tracks = structuredClone(lib); return; }
+  const on = new Set(lib.map((t) => t.src));
+  const isLibrary = (src) => typeof src === 'string' && (src.startsWith('/audio/') || LIBRARY_SRC_RE.test(src));
+  const kept = (Array.isArray(config.music.tracks) ? config.music.tracks : []).filter((t) => !isLibrary(t?.src) || on.has(t.src));
+  config.music.tracks = kept.length ? kept : structuredClone(lib);
+}
+
 export async function loadInvitation() {
   const id = params.get('id');
   const validId = Boolean(id && SLUG.test(id));
@@ -265,6 +290,7 @@ export async function loadInvitation() {
     }
     if (problem) return notAvailable(problem);
   }
+  await applyLibraryMusic(Boolean(fromStudio || params.has('id')));
   applyFaith();
   applyThemeColors();
   if (fromStudio || params.has('id')) realPage();

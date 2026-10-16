@@ -155,7 +155,7 @@ test('upload: a real MP3 is stored with its duration; a non-MP3 (even named .mp3
   assert.equal(named.body.track.title, 'Wedding Flute');
   const pub = await browser().req('/api/music');
   assert.ok(pub.body.tracks.some((x) => x.id === t.id));
-  assert.equal(pub.body.tracks.at(-1).id, named.body.track.id, 'new uploads go last');
+  assert.equal(pub.body.tracks[0].id, named.body.track.id, 'a new upload plays first');
 });
 
 test('edit, turn off, reorder: the public list leaves out disabled songs', async () => {

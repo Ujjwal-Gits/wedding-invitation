@@ -124,7 +124,7 @@ export async function upload(req, res) {
     await fs.mkdir(MUSIC_DIR, { recursive: true });
     await fs.writeFile(resolve(MUSIC_DIR, `${id}.mp3`), file.buffer, { mode: 0o644 });
     doc.items[id] = { ...edits, duration, addedAt: new Date().toISOString() };
-    doc.order = [...tracksOf(doc).map((t) => t.id).filter((x) => x !== id), id];
+    doc.order = [id, ...tracksOf(doc).map((t) => t.id).filter((x) => x !== id)]; // a new upload plays first; drag to reorder
     await putDoc('music', doc);
     return tracksOf(doc).find((t) => t.id === id);
   });
