@@ -312,7 +312,7 @@ const VIS = {
   faiths: '<div class="fx fx--faiths" aria-hidden="true"><span lang="ne">शुभ विवाह</span><span>Nikah</span><span>Holy Matrimony</span></div>',
 };
 function features(set = 'all') {
-  const ids = set === 'home' ? ['dates', 'events', 'rsvp', 'opening', 'music', 'share'] : FEATURES.map((x) => x.id);
+  const ids = set === 'home' ? ['dates', 'events', 'rsvp', 'opening', 'music', 'share', 'lang'] : FEATURES.map((x) => x.id);
   return ids.map((id) => FEATURES.find((x) => x.id === id)).map((x) => `<li class="feat feat--${x.id}">${VIS[x.id] || ''}<div class="feat__txt"><h3 class="feat__t">${esc(x.t)}</h3><p class="feat__d">${esc(x.d)}</p></div></li>`).join('');
 }
 

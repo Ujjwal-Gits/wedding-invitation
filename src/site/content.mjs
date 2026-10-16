@@ -7,7 +7,7 @@ export const SITE_URL = 'https://nimtto.com';
 /** Occasions: `designs: true` has ready-made designs today; the rest are made for you (Custom plan). */
 export const OCCASIONS = [
   { id: 'wedding', en: 'Wedding', ne: 'शुभ विवाह', alt: 'बिहे', designs: true, line: '27 ready designs, with every ceremony from mehendi to reception.', key: 'wedding invitation card' },
-  { id: 'engagement', en: 'Engagement', ne: 'सगाई', alt: 'टीका', line: 'The tika, the rings and the family lunch, in one link.', key: 'engagement invitation card' },
+  { id: 'engagement', en: 'Engagement', ne: 'माग्नी', alt: 'टीका', line: 'The tika, the rings and the family lunch, in one link.', key: 'engagement invitation card' },
   { id: 'bratabandha', en: 'Bratabandha', ne: 'ब्रतबन्ध', line: 'The sacred thread day, with the full programme and the feast.', key: 'bratabandha invitation card' },
   { id: 'gunyu-cholo', en: 'Gunyu Cholo', ne: 'गुन्यू चोलो', line: 'A daughter’s first gunyu cholo, shared with the whole family.', key: 'gunyu cholo invitation' },
   { id: 'pasni', en: 'Pasni', ne: 'पास्नी', alt: 'अन्नप्राशन', line: 'Baby’s first rice, with photos and the time of the feast.', key: 'pasni invitation card' },
