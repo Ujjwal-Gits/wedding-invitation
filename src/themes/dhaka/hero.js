@@ -5,6 +5,7 @@
 import './dhaka.css';
 import './mix.css';
 import manifest from './slots.js';
+import { FLOWER_CREDITS } from './flowers.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import credits from '../../generated/credits.json';
 import { view } from '../../photos.js';
 import { dateOf, bsDateOf } from '../../core/i18n.js';
@@ -18,6 +19,7 @@ const has = (o) => Boolean(o && (String(o.en || '').trim() || String(o.ne || '')
 export default {
   id: 'dhaka',
   manifest,
+  credits: FLOWER_CREDITS,
   fonts: ['Libre+Caslon+Display', 'Libre+Caslon+Text:ital,wght@0,400;0,700;1,400', 'Martel:wght@400;600;700'],
   mount(sec, ctx) {
     const { c, config, esc, bi, txt, S } = ctx;

@@ -7,6 +7,7 @@ import './mahal.css';
 import './hero.css';
 import './mix.css';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { DEFS } from './art.js';
 import { createRibbon } from './ribbon.js';
 import {
@@ -16,6 +17,7 @@ import {
 export default {
   id: 'mahal',
   manifest,
+  credits,
   fonts: ['Cormorant+Garamond:ital,wght@0,500;1,500', 'Yatra+One', 'Mukta:wght@400;500;600'],
   // the line and two buttons on a dark glass card at the foot of the gate, as on Mahal's own page
   ui: ({ bi, txt }) => `<div class="mh-ui" data-mx-ui>

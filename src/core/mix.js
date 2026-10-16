@@ -95,6 +95,43 @@ function partCtx(config, slug, manifest) {
   };
 }
 
+/**
+ * Third-party art a borrowed part shows (CC BY / CC BY-SA cut-outs and the like): each module's `credits`, the same
+ * list its theme's flora-credits file gives the /credits/ page. One row per source, noting the theme and the part.
+ */
+function creditsOf(parts) {
+  const rows = new Map();
+  for (const [mod, part] of parts) {
+    for (const k of Array.isArray(mod?.credits) ? mod.credits : []) {
+      const sourceUrl = String(k?.source_url || k?.url || '');
+      if (!/^https:\/\//.test(sourceUrl)) continue; // notes such as "marigolds are cut from a library photo"
+      const key = sourceUrl.replace(/[?#].*$/, '');
+      const row = rows.get(key) || { title: String(k.title || ''), author: String(k.creator || ''), license: String(k.license || ''),
+        licenseUrl: /^https:\/\//.test(k.license_url || '') ? k.license_url : '', sourceUrl, from: [] };
+      if (!row.from.some((f) => f.theme === mod.id && f.part === part)) row.from.push({ theme: mod.id, part });
+      rows.set(key, row);
+    }
+  }
+  return [...rows.values()];
+}
+
+/** How long a host's `ready` may keep a foreign gate's buttons disabled. */
+const HOST_WAIT = 12000;
+
+/**
+ * The host preloads its own gate art in its index.html (Gurans' arch, for example). Under a foreign gate nothing
+ * uses it, and the browser warns about an unused preload: claim each matching one from the cache (no new request).
+ */
+function claimPreloads() {
+  document.querySelectorAll('link[rel="preload"][as="image"]').forEach((l) => {
+    if (l.media && !matchMedia(l.media).matches) return;
+    const im = new Image();
+    im.decoding = 'async';
+    if (l.imageSrcset) { im.sizes = l.imageSizes || ''; im.srcset = l.imageSrcset; } // the same candidate the preload chose
+    if (l.href) im.src = l.href;
+  });
+}
+
 function wrapper(tag, kind, mod, id) {
   const el = document.createElement(tag);
   el.className = `mx-part mx-${kind} mx-${kind}--${mod.id} ${mod.suite ? 'su ' : ''}theme-${mod.id}`;
@@ -109,7 +146,7 @@ function wrapper(tag, kind, mod, id) {
  */
 export async function createMix({ host, manifest, config, noOverride = false }) {
   const { gate, hero } = designOf(config, host, manifest, { override: !noOverride });
-  const mix = { gate, hero, gateMod: null, heroMod: null, heroInst: null, gateRun: null };
+  const mix = { gate, hero, gateMod: null, heroMod: null, heroInst: null, gateRun: null, credits: [] };
   if (!gate && !hero) return mix;
   if (params.has('debug')) window.__mx = mix; // screenshots: __mx.gateRun.at(t), .finish()
   const [g, h] = await Promise.all([
@@ -122,10 +159,15 @@ export async function createMix({ host, manifest, config, noOverride = false }) 
     return createMix({ host, manifest, config: { ...config, design: { hero: h?.id } }, noOverride: true });
   }
   mix.gateMod = g; mix.heroMod = h;
+  // The borrowed parts' third-party art: a host that lists credits on its page adds these to its own list. (No
+  // invitation lists asset credits today: they are on /credits/, which lists every theme's art, wherever it travels.)
+  mix.credits = creditsOf([[g, 'gate'], [h, 'hero']]);
   await loadFonts([...(g?.fonts || []), ...(h?.fonts || [])]);
   document.documentElement.classList.add('mx');
   if (g) document.documentElement.dataset.mxGate = g.id;
   if (h) document.documentElement.dataset.mxHero = h.id;
+  // an opening scene: its first screen shows beneath its see-through gate (mix.css), even on a host that hides its page
+  if (g?.pair === true) document.documentElement.dataset.mxPair = g.id;
 
   // ───────── the hero: replaces the host's first screen; the host's page continues after it ─────────
   mix.mountHero = (old) => {
@@ -174,10 +216,13 @@ export async function createMix({ host, manifest, config, noOverride = false }) 
    *   start(withMusic)  inside the guest's tap: unlock and start the host's music (and ring its bell)
    *   intro(tl, at)     the host's own hero entrance (not called when a foreign hero is mounted)
    *   finish()          the host's after-open: unlock scrolling, smooth scroll, reveals
+   *   ready?            a Promise: the gate's buttons stay disabled until it settles too (a 3D host's scene loading);
+   *                     capped at HOST_WAIT ms, after which an early tap holds on the gate's last frame as before
    * }
    */
   mix.mountGate = (hostHooks) => {
     if (!g) return null;
+    claimPreloads();
     const ctx = partCtx(config, g.id, g.manifest);
     const el = wrapper('div', 'gate', g, 'gate');
     // Opening scene (docs/MIX.md §6.1): a thin gate (its line, buttons and a wash) over its own first screen, which
@@ -228,8 +273,10 @@ export async function createMix({ host, manifest, config, noOverride = false }) 
       } else {
         tl.to(el.querySelectorAll('.mx-ui, [data-mx-ui]'), { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power2.out' }, 0);
         const at = inst.open?.(tl) ?? 0.4;
-        // the neutral reveal: whatever is left of the gate fades onto the page beneath
-        tl.to(el, { autoAlpha: 0, duration: 0.7, ease: 'power1.inOut' }, at);
+        // the neutral reveal: whatever is left of the gate fades onto the page beneath. An opening scene's wash clears
+        // in its own time over its first screen (Janti's dusk lifts over 1.6 s), so there the fade ends with it.
+        const fadeAt = g.pair === true ? Math.max(at, tl.duration() - 0.7) : at;
+        tl.to(el, { autoAlpha: 0, duration: 0.7, ease: 'power1.inOut' }, fadeAt);
         reveal = at + 0.15;
       }
       if (mix.heroInst) mix.heroEnter(tl, reveal);
@@ -237,7 +284,8 @@ export async function createMix({ host, manifest, config, noOverride = false }) 
       safety = setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
       return tl;
     };
-    Promise.resolve(inst.ready).catch(() => {}).finally(() => {
+    const hostReady = hostHooks.ready ? Promise.race([Promise.resolve(hostHooks.ready).catch(() => {}), new Promise((r) => setTimeout(r, HOST_WAIT))]) : null;
+    Promise.all([Promise.resolve(inst.ready).catch(() => {}), hostReady]).finally(() => {
       openBtns.forEach((b) => { b.disabled = false; });
       if (quietBtn) quietBtn.disabled = false;
       el.classList.add('is-ready');

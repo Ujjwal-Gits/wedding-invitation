@@ -6,11 +6,13 @@ import './jhyal.css';
 import './mix.css';
 import { gsap } from 'gsap';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { ensureDefs, gateHtml, gateRefs, layoutGate, petalFall, windowOpen } from './parts.js';
 
 export default {
   id: 'jhyal',
   manifest,
+  credits,
   fonts: ['Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400', 'Noto+Serif+Devanagari:wght@300;400;500;600', 'Tiro+Devanagari+Hindi', 'Mukta:wght@400;500;600'],
   ui: () => '', // the line above the window and the buttons below it are its own (gateHtml marks them for mix)
   mount(scene, ctx) {

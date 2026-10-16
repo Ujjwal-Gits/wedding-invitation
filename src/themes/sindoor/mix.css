@@ -13,10 +13,3 @@
 .mx-gate--sindoor .mx-ui__open { margin-top: 6px; background: var(--sd-ink); border-color: var(--sd-ink); color: var(--sd-paper); letter-spacing: 0.2em; font-size: 12.5px; }
 .mx-gate--sindoor .mx-ui__quiet { color: var(--sd-ink-2); }
 @media (min-width: 860px) { .mx-gate--sindoor .mx-ui { width: min(560px, calc(100% - 32px)); } }
-/* without Sindoor's cover beneath (not offered): plain paper, Ganesh in red line at the top */
-.sd-gate--alone { background: var(--sd-paper); }
-.sd-gate--alone .sd-gan { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 16px); translate: -50% 0; display: block; width: 44px; height: auto; }
-/* the opening scene: the see-through gate needs the cover showing beneath, even on a host that hides its page while
-   the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
-html[data-mx-gate='sindoor'] .mx-hero--sindoor { visibility: visible; }
-html[data-mx-gate='sindoor'] .mx-hero--sindoor:not(.is-open) .mx-cue { opacity: 0; }

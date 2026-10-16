@@ -5,17 +5,5 @@
 .mx-gate--agni .mx-ui__line { font: 400 italic 19px/1.4 var(--su-f-display); color: var(--ag-ivory-2); }
 .mx-gate--agni .mx-ui__line .l-ne { font: 400 18px/1.5 var(--su-f-deva); }
 .mx-gate--agni .mx-ui__quiet { color: var(--ag-ivory-2); }
-/* without Agni's first screen beneath (not offered): the unlit night, Ganesh faint, the names barely catching the dark */
-.ag-g--night { background: radial-gradient(130% 55% at 50% 102%, #23131A 0%, var(--ag-night) 70%); }
-.ag-g__still { position: absolute; left: 16px; right: 16px; top: max(14svh, 70px); display: flex; flex-direction: column; align-items: center; text-align: center; }
-.ag-g__gan { display: block; width: clamp(62px, 17vw, 104px); height: auto; opacity: 0.3; }
-.ag-g__title { margin: 8px 0 0; font: 700 clamp(24px, 6.6vw, 34px)/1.35 var(--su-f-deva); color: var(--ag-brass); opacity: 0.5; }
-.ag-g__names { margin: 10px 0 0; display: flex; flex-direction: column; align-items: center; font: 400 clamp(30px, 9vw, 56px)/1.12 var(--su-f-script);
-  letter-spacing: 0.035em; color: #F7E4C0; opacity: 0.5; }
-.ag-g__names .su-amp { font: 400 italic 0.52em/1.2 var(--su-f-display); letter-spacing: 0; color: var(--ag-ember); }
-.ag-g__names .l-ne { font: 700 0.86em/1.35 var(--su-f-deva); }
 .mx-hero--agni .mx-cue { bottom: 6px; color: var(--ag-ivory-2); }
 .mx-hero--agni.ag-unlit .mx-cue { opacity: 0; } /* the cue comes in after the fire (mix fades it in) */
-/* Agni's opening scene: its see-through gate needs its first screen showing beneath, even on a host that hides its
-   page while the gate is up (bespoke hosts: body.is-gated #main) */
-html[data-mx-gate='agni'] .mx-hero--agni { visibility: visible; }

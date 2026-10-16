@@ -5,11 +5,13 @@ import './gurans.css';
 import './mix.css';
 import { gsap } from 'gsap';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { heroHtml, watchAspects, keyOf } from './parts.js';
 
 export default {
   id: 'gurans',
   manifest,
+  credits,
   fonts: ['Libre+Caslon+Display', 'Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500', 'Manrope:wght@500;600;700', 'Noto+Serif+Devanagari:wght@400;500;600'],
   mount(sec, ctx) {
     const heroRef = ctx.S.img('hero.photo');

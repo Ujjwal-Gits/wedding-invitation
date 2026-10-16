@@ -11,11 +11,3 @@
 .mx-gate--rangoli .mx-ui__line .l-ne { font: 500 19px/1.5 var(--su-f-deva); }
 .mx-gate--rangoli .mx-ui__quiet { color: color-mix(in srgb, var(--rg-lime) 86%, transparent); }
 .mx-gate--rangoli .mx-ui__open { border-color: color-mix(in srgb, var(--su-gold) 70%, transparent); box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.7); }
-/* without Rangoli's first screen beneath (not offered): the calm gate, Ganesh over शुभ विवाह in the eave's shade */
-.rg-gate.rg-gate--alone { background: var(--rg-shade); }
-.rg-gate--alone .rg-gate__gan { display: block; }
-.rg-gate.rg-gate--alone .rg-gate__title { top: calc(env(safe-area-inset-top, 0px) + max(17.5svh, 128px) + 24px); left: 0; right: 0; width: auto; }
-/* the opening scene: the see-through gate needs the first screen showing beneath, even on a host that hides its page
-   while the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
-html[data-mx-gate='rangoli'] .mx-hero--rangoli { visibility: visible; }
-html[data-mx-gate='rangoli'] .mx-hero--rangoli:not(.is-open) .mx-cue { opacity: 0; }

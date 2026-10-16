@@ -2,8 +2,8 @@
 // invocation over it and the names under it; the lotus is the hero's own halo, lifted into the gate, so the gate
 // travels as a pair with hero.js: Shree's opening scene (design.gate = design.hero = 'shree') on any theme's page.
 // On tap the words lift away and the hero's entrance opens the lotus and carries it home behind Ganesh.
-// With reduced motion, or without Shree's first screen beneath it (not offered by the studio), it is the still gate:
-// the plum and a closed lotus of its own, which fades as the gate clears.
+// With reduced motion it is the still gate: the plum and a closed lotus of its own, which fades with the gate (mix
+// cross-fades the wrapper and does not call open()). mix-rules only offers it with Shree's first screen beneath.
 import '../_suite/suite.css';
 import './shree.css';
 import './mix.css';
@@ -18,8 +18,8 @@ export default {
   manifest,
   fonts: ['Forum', 'Monsieur+La+Doulaise', 'Mukta:wght@400;500;600', 'Sahitya:wght@400;700', 'Martel:wght@400;600'],
   mount(scene, ctx, root) {
-    const hero = ctx.hero || document.querySelector('.mx-hero--shree'); // its own first screen, beneath
-    const live = Boolean(hero) && !ctx.reduced;
+    const { hero } = ctx; // its own first screen, beneath
+    const live = !ctx.reduced;
     scene.innerHTML = gateHtml(ctx);
     root.classList.add(live ? 'sh-live' : 'sh-still');
     const spot = scene.querySelector('.sh-gate__spot');
@@ -31,9 +31,7 @@ export default {
       taps: [scene], // the lotus itself is a tap target too (the buttons stay the accessible way in)
       open(tl) {
         tl.to(scene.querySelectorAll('.sh-gate__txt'), { autoAlpha: 0, y: -8, duration: 0.5, ease: 'power2.out' }, 0);
-        if (live) return 0; // the lotus breathes and opens 0.15 s later
-        tl.to(scene.querySelector('.sh-gate__still'), { autoAlpha: 0, scale: 1.08, duration: 0.9, ease: 'power2.inOut' }, 0.05);
-        return 0.5;
+        return 0; // the lotus breathes and opens 0.15 s later
       },
       destroy() { removeEventListener('resize', place); },
     };

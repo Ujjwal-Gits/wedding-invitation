@@ -1,11 +1,12 @@
 # Mix: theme, gate and first screen as separate choices
 
-Contract for "mix". Read it before converting a theme. The pilot is in place:
+Contract for "mix". Read it before changing a gate, a first screen or a host. All 27 themes are done (section 6):
 
-- runtime: `src/core/mix.js` and `mix.css`;
-- suite host: `src/themes/_suite/suite.js`;
-- bespoke host: `src/themes/mala/main.js`;
-- modules: `src/themes/laali/{gate,hero,parts}.js`, `src/themes/janti/{hero,parts}.js`, and the Mahal and Mangal gates.
+- runtime: `src/core/mix.js` and `mix.css`; the rules: `src/core/mix-rules.js` (shared with the studio and the server);
+- suite host: `src/themes/_suite/suite.js` (all suite themes at once);
+- bespoke hosts: each theme's `main.js` (Mala's was the pilot);
+- modules: `src/themes/<slug>/gate.js` and `hero.js`, built from the same `parts.js` as the theme's own page, plus a
+  `mix.css` for what only the borrowed part needs.
 
 ## 1. What the couple chooses
 
@@ -62,6 +63,9 @@ mix.afterOpen()                       // the foreign hero's scroll-linked/ambien
 - **Loading.** Modules are found with `import.meta.glob('../themes/*/gate.js')` and `hero.js`. They load lazily, and only the chosen ones load (each is its own chunk with its CSS). Fonts are added as one Google Fonts `<link>` per new family set. `createMix` waits for the CSS and fonts (capped at about 2.5 s), so the page renders once.
 - **Override for trying combinations.** `?gate=<slug>&hero=<slug>` works on the Vite dev server, and in the studio preview (`preview=1` inside a same-origin frame). It never works on a guest's page.
 - **Debug.** With `?debug`, `window.__mx` is set, and `__mx.gateRun.at(t)` / `.finish()` drive the mixed opening. The suite's `__su.at/finish` and Mala's `?debug&open` forward to it, so `?debug&open` (the studio's "skip the opening") works on mixed pages.
+- **`?open` is a debug switch.** Every theme skips its opening on `?open` only together with `?debug` (the studio's
+  preview always sends `&debug&open&skip&station`). A guest's link with `?open` still shows the gate.
+- **Credits.** `mix.credits` lists the third-party art the borrowed parts show (section 3.4).
 
 ### 3.1 Gate module: `src/themes/<slug>/gate.js`
 
@@ -69,7 +73,9 @@ mix.afterOpen()                       // the foreign hero's scroll-linked/ambien
 export default {
   id: '<slug>', manifest, suite?: true,      // suite:true → wrapper also gets class `su` (suite.css structure + tokens)
   fonts: ['Alex+Brush', 'Mukta:wght@400;500;600'],   // Google Fonts css2 `family=` values
+  credits?: [ … ],     // the third-party art it shows (section 3.4): its theme's flora-credits list
   ui?(ctx) → html,     // optional own line + buttons: one [data-mx-open], one [data-mx-quiet], box marked [data-mx-ui]
+                       // ui: () => '' = the scene itself carries the words and buttons (see below)
   mount(scene, ctx, root) → {
     ready?: Promise,   // images decoded, layout done → mix enables the buttons and adds .is-ready
     taps?: Element[],  // more tap targets that open with music (Laali's card, Mahal's bow)
@@ -79,6 +85,16 @@ export default {
 };
 ```
 
+**`ui`.** Without `ui`, mix adds its standard `.mx-ui` (line and two buttons) and marks the scene `aria-hidden`. With
+`ui`, the scene stays readable. `ui: () => ''` means "my words and buttons are inside my scene": Gurans' welcome
+board, Jhyal's window, Mala's card, Sayapatri's card, Mangal's doorway and Dhoka's right-hand column render
+`[data-mx-open]` / `[data-mx-quiet]` / `[data-mx-ui]` from the shared `gateHtml` (which gives the own page its ids
+instead).
+
+**Host's dusk (`--mx-dusk`).** A see-through gate (Mahal's bars) shows the host page round its doorway. A host whose
+first screen would look wrong there may set `--mx-dusk: <colour>` on its `<body>` (Mangal: `#160204`); Mahal's gate
+then adds `.is-dusk` and paints the surroundings in that colour, the host's first screen glowing beyond.
+
 **Overlay.** The wrapper is `<div id="gate" class="mx-part mx-gate mx-gate--<slug> [su] theme-<slug>" role="dialog" aria-modal>`. It is `position: fixed; inset: 0; z-index: 30`, with `background: none`, so the module's scene paints the gate. It is appended to `<body>` over the host page. The host's own gate is not rendered (suite), or is removed (bespoke). This frees the ids `#gate` / `#open` / `#quiet`, which mix gives to the module's buttons. `live-preview.js` keeps working unchanged: it presses `#quiet`, sees `#gate` and the host's lock class.
 
 **Hand-off.** All of it happens on one gsap timeline:
@@ -86,13 +102,33 @@ export default {
 1. **Tap.** `host.start(withMusic)` runs synchronously inside the tap. It unlocks and starts the host's player and rings its bell. The module never touches audio.
 2. **UI fades.** `.mx-ui` / `[data-mx-ui]` fade out at 0.
 3. **Own exit.** `revealAt = module.open(tl)` adds the gate's own exit.
-4. **Neutral reveal.** The wrapper goes `autoAlpha → 0` over 0.7 s, starting at `revealAt`.
+4. **Neutral reveal.** The wrapper goes `autoAlpha → 0` over 0.7 s, starting at `revealAt` (an opening scene: see below).
 5. **Hero entrance.** At `revealAt + 0.15`, either the foreign hero's `enter(tl, t)` or `host.intro(tl, t)` (the host's own hero entrance).
 6. **Done.** On complete, the wrapper is removed, `destroy()` runs, then `host.finish()` (unlock scroll, Lenis, reveals), then `mix.afterOpen()`.
 
 A safety timeout finishes the timeline if it is starved.
 
+**Opening scenes (pair gates).** The wrapper also gets `mx-gate--pair`, and `<html data-mx-pair="<slug>">`. `mix.css`
+keeps `.mx-hero` visible under it (hosts hide `#main` while gated: `body.is-gated #main`) and holds the hero's
+`.mx-cue` at 0 until the hero is open. The neutral fade starts at `max(revealAt, end of the module's own exit − 0.7 s)`,
+so a wash that clears in its own time is not cut short (Janti's dusk lifts over 1.6 s: the fade runs 1.05–1.75 s,
+not 0.35–1.05 s). The hero's entrance still starts at `revealAt + 0.15` (Agni 0.9, Janti 0.5, the others 0.15).
+Pair gates have no "without its hero" fallback: mix-rules only offers them with their own first screen, every host
+mounts the hero before the gate, and `ctx.hero` is always set.
+
+**Host ready.** `mountGate({ …, ready })`: a host may pass a Promise (the 3D scene loading: Bagaicha, Durbar, Mandap).
+The gate's buttons stay disabled until both the module's `ready` and the host's have settled. The host's wait is capped
+at 12 s; after that an early tap still works and the host holds the timeline on the gate's last frame until its scene is
+ready, as before.
+
+**Preloads.** A host's `index.html` may preload its own gate art (Gurans' arch). Under a foreign gate, `mountGate`
+claims those preloads from the cache (an `Image` with the same URL or `imagesrcset`, no new request), so the browser
+does not warn. A preload must name the same candidates as its `<img>` (`imagesrcset` + `imagesizes`): Gurans' used to
+preload the `-sm` arch while the `<img>` chose the full one, downloading both on its own page.
+
 **Reduced motion** (or `?still`). `open()` is not called. The wrapper cross-fades out in 0.5 s and the hero does a plain fade.
+This includes a suite host's own gate opening onto a foreign first screen: `suite.js` calls `heroIntro(tl, 0.3)`,
+which runs `mix.heroEnter` (a foreign hero) or the host's own word fades (its own hero).
 
 **Studio preview.**
 
@@ -106,7 +142,8 @@ A safety timeout finishes the timeline if it is starved.
 export default {
   id, manifest, suite?, fonts,
   mount(section, ctx) → {
-    enter?(tl, at) → wordsInAt,  // the entrance; must set its own closed state at mount (not visible behind the gate)
+    enter?(tl, at) → wordsInAt,  // the entrance; must set its own closed state at mount (not visible behind the gate:
+                                 // Mahal's gate is see-through, so e.g. Laali hides its words and Ganesh in mount())
     after?(),                    // scroll-linked pieces (ScrollTrigger on `section`), ambient loops gated by IntersectionObserver
     destroy?(), cue?: false,     // cue:false → no standard scroll cue
   },
@@ -146,6 +183,22 @@ export default {
 - Its own opening calls it at the original time, so its own page stays byte-identical in behaviour.
 - Guard every lookup of its gate and hero elements.
 
+### 3.4 Credits of borrowed art
+
+Several parts show cut-out photographs under CC BY / CC BY-SA (Dhaka's roses, the Mangal / Mahal / Gurans / Mala /
+Jhyal / Sayapatri flowers and leaves). Each theme lists them in its credits file (`flora-credits.js|json`, Dhaka's
+`FLOWER_CREDITS` in `flowers.js`), which the public `/credits/` page reads through `src/core/asset-credits.js`.
+
+- **The part declares them.** A gate or hero module that shows such art sets `credits` to that same list (one source).
+  Today: the gates and heroes of dhaka, gurans, jhyal, mala, mahal, mangal and sayapatri.
+- **Mix adds them to the host's.** `createMix` merges the chosen modules' lists into `mix.credits`: one row per
+  source, `{ title, author, license, licenseUrl, sourceUrl, from: [{ theme, part }] }`. A host that lists credits on
+  its page appends these rows to its own list.
+- **Where guests see them.** By the owner's rule no invitation lists asset credits on the page; every theme's art is
+  credited on `/credits/` (linked from the showroom), whatever page it travels to. So a borrowed part is credited
+  exactly where its own theme's page is credited. If invitations ever show credits (a footer line, the made-with
+  link), they must include `mix.credits`.
+
 ## 4. CSS isolation rules
 
 The prefixes (`mg-`, `rj-`, `la-`, `jt-`, `su-` …) are not enough on their own. Five rules:
@@ -163,30 +216,45 @@ The prefixes (`mg-`, `rj-`, `la-`, `jt-`, `su-` …) are not enough on their own
 4. **Hosts leak into shared classes.**
    - Suite hosts style shared classes through `.theme-<host> .su-btn`, `.su-gate__*`, `.su-cue`, `.su-hero`, `.su-lb`, and Janti's `.theme-janti .l-ne`. Those rules match a foreign part's descendants too.
    - Modules therefore never use the suite's gate or hero chrome (`su-gate*`, `su-btn`, `su-cue`, `su-hero`). They use mix's `mx-ui`, `mx-cue` and `mx-hero`, or their own classes.
-   - `su-in`, `su-names`, `su-n`, `su-amp`, `su-ganesh` and `l-en`/`l-ne` are allowed: hosts style them only inside their own prefixed containers. Janti's `.theme-janti .l-ne` is the exception to fix in batch B2.
+   - `su-in`, `su-names`, `su-n`, `su-amp`, `su-ganesh` and `l-en`/`l-ne` are allowed: hosts style them only inside their own prefixed containers. Janti's `.theme-janti .l-ne` was the exception (scoped in B2).
    - A module's mix-only CSS lives in `src/themes/<slug>/mix.css`. Its overrides of `.mx-part.su` defaults use two classes (`.mx-part.mx-hero--janti`).
 5. **No ids inside modules.**
    - All 27 themes use `#gate`; 19 use `#top`, 15 `#open`, 16 `#quiet`, 14 `#cue`, plus `#stage`, `#card`, `#names`, `#light`, `#leafL` …
    - Modules use classes and element refs (`root.querySelector`). The only ids are `#gate`/`#open`/`#quiet` on the gate wrapper and `#top`/`#cue` on the hero wrapper, which the host has given up.
    - A theme's own page may keep its ids.
 
-**Prefix clashes to keep in mind:**
+**Prefixes (all clashes resolved):**
 
-- `mh-`: Mahal and Mehendi.
-- `d-`: Dhoka and Durbar.
-- `mg-`: Mangal, Mahal and Rajdwar, with 191 shared classes.
+| Prefix | Theme | Note |
+|---|---|---|
+| `mh-` | Mahal's gate and balcony (its gate and hero modules) | |
+| `mhb-` | Mahal's body (the sections after the balcony) | was `mg-`, shared with Mangal |
+| `md-` | Mehendi | was `mh-`, clashed with Mahal |
+| `mg-` | Mangal (and Rajdwar, which is Mangal's page and never mixes) | |
+| `d-` | Durbar | |
+| `dh-` | Dhoka | was `d-`, clashed with Durbar |
+| `dk-` | Dhaka's own classes; its older unprefixed ones are scoped (below) | |
+| `sp-` | Sayapatri | `.fl` is Dhaka's: Sayapatri's modules use `.sp-fl` |
 
-A Mehendi hero under a Mahal gate (or a Durbar part on a Dhoka page) needs scoping under `.theme-<slug>` first. Until then the studio must not offer those pairs.
+**Scoping lesson.** Prefixes are not enough: a host's descendant rules (`.theme-dhaka .label`, `.theme-x .l-ne`,
+unprefixed `.paper`, `.btn-line`) also match inside a foreign part on that page, and a part's own rules must not
+reach the host. The fix that keeps every own page identical:
 
-**Global rules that must be scoped before the theme can host or give parts:**
+- Put the theme on the subject: `.label` → `.theme-dhaka .label`.
+- Append `:where(:not(.mx-part:not(.theme-<slug>) *))` to the subject of every selector of a host stylesheet that
+  could match inside a foreign part. `:where()` adds no specificity and the source order is unchanged, so the own
+  page computes exactly the same styles, and nothing inside another theme's `.mx-part` matches. Done with a postcss
+  pass for chitra, dhaka, dhoka, durbar, ghar, gurans, hariyo, himal, janti, kham, mala, sayapatri and shree.
+- Body-state rules (`body.is-gated #main > :not(.welcome)`) get the same suffix, so a foreign hero under a host's gate
+  is not hidden by the host's own "hide the page" rule.
+- Global rules that are scoped this way: himal `.is-in`, mala `.sr-only`, dhoka `.is-intro`/`.is-static`, mandap
+  `#finale-root`/`.is-static`, sayapatri `#main > section`, dhaka `body.is-gated .hud`/`.reveal.is-in`, and the
+  unprefixed CSS of chitra, dhaka and ghar.
 
-- himal: `.is-in { …!important }`;
-- mala: `.sr-only`;
-- dhoka: `.is-intro`, `.is-static`;
-- mandap: `#finale-root`, `.is-static`;
-- sayapatri: `#main > section`;
-- dhaka: `body.is-gated .hud`, `.reveal.is-in`;
-- the unprefixed CSS of chitra (about 137 rules), dhaka (about 279) and ghar (about 243).
+**`nepali.css` order.** The suite's Nepali kit (`_suite/nepali.css`) sizes shared ornaments; a theme's own CSS
+overrides some of them at the same specificity. On the own page `nepali.css` loads first (through `nepali.js`), so a
+hero module must import `'../_suite/nepali.css'` **before** its theme's CSS (`pardaa/hero.js`: the lamp sizes), or the
+kit wins the tie and the part looks different from the own page.
 
 **Fonts.** Each module lists its Google families. A part that is missing its font falls back to the theme's stack, not to the host's.
 
@@ -211,113 +279,90 @@ Results are on the dev server; screenshots are in the session scratchpad under `
 | mangal + laali gate | see the "Mangal" note below |
 | Own pages (mala, swayambar, laali, janti, mangal) | No design: pixel diffs of 0–0.7 %, all from animated garlands, flames and petals at capture time. |
 
-## 6. Compatibility matrix (all 27 themes)
+## 6. Compatibility matrix (all 27 themes, as built)
+
+The source of truth is each theme's `parts` block in `slots.js`, normalised by `mix-rules.js` (`/api/meta` shows it).
 
 **Key:**
 
-- **Gate** / **Hero**: can give it, with effort S / M / L.
-- **pair**: the gate is the hero in its closed state, so it can only travel together with its own hero (see 6.1).
-- **Host G** / **Host H**: can take a foreign gate / first screen.
-- **with gate**: takes a foreign first screen only if a gate is chosen too, because its own opening is see-through.
+- **Gate** / **Hero**: gives it (✅), only as an opening scene with its own first screen (**pair**, see 6.1), or not.
+- **Host G** / **Host H**: takes another theme's gate / first screen.
+- **own gate**: with a foreign first screen, its own opening runs as its gate module (`ownGateNeedsHero` + a gate).
+- **with gate**: takes a foreign first screen only if a foreign gate is chosen too (its own opening is see-through).
 
-| Theme | Gate | Hero | Host G | Host H | Visual risk / notes |
+| Theme | Gate | Hero | Host G | Host H | Notes |
 |---|---|---|---|---|---|
-| laali | ✅ done | ✅ done | ✅ | ✅ (own gate module) | Light blush. Pairs well with ivory and red bodies. |
-| janti | pair (M) | ✅ done | ✅ | with gate | Dark painted street. The hard edge into a light body is fine at the end of a hero. |
-| mahal | pilot (L) | L (palace scene, fireworks, `sceneMap`) | adapter (M) | no (hero = inside of its own gate) | Night gate. Its exit should end on light, not on a balcony. |
-| mangal | pilot (L) | L (doorway layout engine) | ✅ pilot adapter | later, via its gate module | The red doorway lives inside `#top`. |
-| rajdwar | M (shares Mahal's gate code) | M–L | adapter (M) | via gate module | Copy of Mahal's gate on Mangal's card. Convert after Mahal. |
-| swayambar | M (medallion FLIP is guarded) | S–M | ✅ | via gate module | Wine silk onto ivory. Hero garlands are hidden by `body.is-open` CSS. |
-| hariyo | S | S | adapter (S): `ready`/`ambient` assume the hero | ✅ after guards | Light green. |
-| mehendi | S–M (mandala builder) | S–M | adapter (S) | ✅ after guards | `mh-` clashes with Mahal: scope it first. |
-| pardaa | S | M (`--pd-room` on `<html>`) | adapter (S) | ✅ after guards | Dark velvet curtains: a strong gate for light bodies. |
-| agni | pair (no gate of its own) | M (`body:not(.is-open)` dimming) | adapter (S) | with gate | Night fire. |
-| rangoli | pair (CSS-3D tilt of `#top`) | M | adapter | with gate | Dark courtyard. |
-| sindoor | pair (the lid is the hero cover) | M | adapter (`thread()` reads `#top`) | with gate | White editorial. Its gate is just a hit area. |
-| shree | pair (halo moved into the gate) | M | adapter (`ready` assumes the hero) | with gate | Plum and gold. |
-| mala | M (canvas garland strands) | S | ✅ pilot | ✅ pilot | Lokta white. Global `.sr-only` to scope. |
-| gurans | S | S | ✅ (native scroll, no Lenis) | ✅ | Photographic flower arch. Easiest donor and host. |
-| sayapatri | S | S | ✅ (`?open` not debug-gated) | ✅ | Ivory marigold doorway. `#main > section` to scope. |
-| jhyal | M (`layoutGate`, art.js) | S–M | adapter | ✅ | Carved window. Gate markup lives inside `#main`. |
-| dhaka | M (drop the photo-clone FLIP) | M | adapter | no (gate flowers are the hero's) | About 279 unscoped rules to scope first. |
-| dhoka | static S / 3D L | S (static) | adapter (`?debug&skip`) | ✅ | WebGL door. `d-` clashes with Durbar. |
-| chitra | S–M (book cover) | no (page 1 of a pinned book) | adapter | no | About 137 unscoped rules. |
-| kham | no (pair L: the envelope becomes the card) | no | adapter (`env.skip`) | no | Paper envelope. |
-| nimantrana | no (pair L: the tri-fold is the hero) | no | ✅ (`finish`) | no | Green silk table. |
-| himal | card only | L (WebGL dawn) | adapter | no | Dawn photo world. |
-| bagaicha | no (3D camera intro) | no | adapter (`?station`) | no | A 2D gate ending on a 3D garden needs a hand-off to its camera intro. Mark it "looks odd" until it is tried. |
-| durbar | no (3D) | no | adapter (`?station`) | no | Same as bagaicha. |
-| mandap | no (3D crane) | no | adapter (`?debug&skip`) | no | Same as bagaicha. |
-| ghar | no (film) | no | adapter (no skip path yet) | no | Black letterbox cinema: a foreign gate would end on a film. |
+| laali | ✅ | ✅ | ✅ | ✅ own gate | Light blush. The module drops the Ganesh FLIP (it floats up and fades); the own page keeps it. Its hero hides its words and Ganesh at mount (see-through gates). |
+| janti | pair | ✅ | ✅ | with gate | Dark painted street at dusk. The opening scene lifts the dusk; the procession walks in. |
+| mahal | ✅ | ✅ | ✅ | ✅ own gate | `mh-` gate and balcony (the balcony is a Canva painting), `mhb-` body. The gate is see-through: the host shows through its bars (`--mx-dusk`). |
+| mangal | ✅ | ✅ | ✅ | ✅ own gate | Red doorway gate and red card first screen. Sets `--mx-dusk` for see-through gates. |
+| rajdwar | no | no | no | no | Mangal's page with Mahal's gate: couples choose Mangal + Mahal's gate instead. |
+| swayambar | ✅ | ✅ | ✅ | ✅ own gate | Wine silk onto ivory. The module drops the medallion FLIP. `T.heroIntro` brings its garlands down after a foreign gate. |
+| hariyo | ✅ | ✅ | ✅ | ✅ | Light green. Its own suite gate opens onto any first screen. |
+| mehendi | ✅ | ✅ | ✅ | ✅ | `md-` (was `mh-`). |
+| pardaa | ✅ | ✅ | ✅ | ✅ | Dark velvet curtains: a strong gate for light bodies. `--pd-room` lives on the hero wrapper. |
+| agni | pair | ✅ | ✅ | with gate | Night fire: the ember drops from the button and lights the logs. |
+| rangoli | pair | ✅ | ✅ | with gate | Dark courtyard: the camera tilts down onto the rangoli. |
+| sindoor | pair | ✅ | ✅ | with gate | White editorial: the lid lifts off the cover. |
+| shree | pair | ✅ | ✅ | with gate | Plum and gold: the gate's lotus is the hero's halo, lifted. Reduced motion: a still lotus. |
+| mala | ✅ | ✅ | ✅ | ✅ | Lokta white, canvas garland strands. Skips its gate WebGL when another gate is used. |
+| gurans | ✅ | ✅ | ✅ | ✅ | Photographic flower arch (Phoolbari). Native scroll. Preloads its arch (claimed under a foreign gate). |
+| sayapatri | ✅ | ✅ | ✅ | ✅ | Ivory marigold doorway. `.sp-fl` in modules (`.fl` is Dhaka's). `?open` only with `?debug`. |
+| jhyal | ✅ | ✅ | ✅ | ✅ | Carved window. The gate's words sit above the window and its buttons below. |
+| dhaka | ✅ | ✅ | ✅ | ✅ own gate | Envelope among real flowers (CC BY-SA roses: credits travel). The module drops the photo FLIP. Fully scoped. |
+| dhoka | ✅ | ✅ | ✅ | ✅ own gate | The module is a light CSS door (no WebGL); the own page keeps the 3D door. `dh-` (was `d-`). |
+| chitra | ✅ | no | ✅ | no | Book cover gate. Its first screen is page 1 of the pinned book. Fully scoped. |
+| kham | no | ✅ | ✅ | with gate | Its envelope opens into its own card, so the envelope stays own-only; the unfolding card travels as a first screen. |
+| nimantrana | no | no | ✅ | no | Green silk table: the tri-fold cover and the card are one piece. |
+| himal | no | no | ✅ | no | A foreign gate fades onto the moving dawn. |
+| bagaicha | no | no | ✅ | no | A foreign gate fades into the camera's walk into the garden (`ready`: buttons wait for the 3D). |
+| durbar | no | no | ✅ | no | A foreign gate fades into the glide through the lion gate (`ready`). |
+| mandap | no | no | ✅ | no | A foreign gate fades into the crane down to the mandap (`ready`). |
+| ghar | no | no | ✅ | no | A foreign gate fades onto the film. |
 
-**Totals at the end of all batches:**
+**Totals:**
 
-- **Gates:** 15 themes can give one on its own. 5 more can give it only as a pair with their hero (agni, janti, rangoli, sindoor, shree). 7 cannot (the 3D journeys, himal, kham, nimantrana).
-- **Heroes:** 19 themes can give one.
-- **Hosts:** 27 can take a foreign gate, though the 3D journeys (bagaicha, durbar, mandap, ghar, himal) need a check that it looks intentional. 15 can take a foreign first screen (5 of them only with a gate chosen).
+- **Gates:** 14 themes give one on its own; 5 give it only as an opening scene (agni, janti, rangoli, sindoor,
+  shree); 8 do not (rajdwar, kham, nimantrana, himal, bagaicha, durbar, mandap, ghar).
+- **First screens:** 19 themes give one.
+- **Hosts:** 26 take a foreign gate (all but rajdwar). 19 take a foreign first screen; 6 of them only with a foreign
+  gate too (agni, janti, rangoli, sindoor, shree, kham); 6 run their own gate as a module before it (laali, mahal,
+  mangal, swayambar, dhaka, dhoka).
 
 ### 6.1 Gates that cannot be separated from their own hero
 
-**See-through gates:** agni, janti, rangoli, sindoor, shree. Their gate is their hero in a closed state.
+**See-through gates (opening scenes):** agni, janti, rangoli, sindoor, shree. Their gate is their first screen in a
+closed state (a wash, an unlit night, a lid).
 
-- Proposal: offer them as a **pair** (`design.gate = design.hero = <slug>` on another body).
-- The hero module exports `closed(section)` / `enter(tl, at)`. A thin gate module (`pair: true`) mounts only the UI and the wash (Janti's dusk, Agni's unlit night) as a transparent overlay above the foreign hero section that mix has already mounted. Its `open(tl)` lifts the wash and returns at once, and the hero's entrance does the rest.
-- The studio shows such a gate only together with its own first screen ("Agni's opening scene").
+- They travel as a **pair**: `design.gate = design.hero = <slug>` on another body. `mix-rules.js` normalises their
+  gate to `'pair'` and drops it without its own first screen; the studio shows it as "Opening scene".
+- The gate module (`pair: true`) mounts only its words, buttons and wash over the hero section that mix has already
+  mounted (`ctx.hero`). Its `open(tl)` lifts the wash; the hero's `enter()` does the rest. Timing: section 3.1.
 
-**Gates that live inside the hero:** mangal, mahal, rajdwar, kham, nimantrana.
+**Gates that live inside the hero:**
 
-- Mangal, Mahal and Rajdwar get standalone gate modules. These end in a neutral reveal: the doorway fills the screen, warm light, a fade.
-- Kham and Nimantrana fold into their own card, so they stay own-only. A pair is possible later (L).
+- Mangal and Mahal got standalone gate modules ending in a neutral reveal; their own pages keep the original.
+- Rajdwar is Mangal's page with Mahal's gate, so it does not mix: the same result is Mangal + Mahal's gate.
+- Kham: the envelope opens into its own card, so the envelope stays on Kham's page; the card is given as a first
+  screen (`kham/hero.js`).
+- Nimantrana: the tri-fold cover and the card are one piece: own-only (a pair is possible later).
 
-**FLIP gates:** laali, swayambar, dhaka, dhoka.
+**FLIP gates:** laali, swayambar, dhaka. The module drops the FLIP (the Ganesh, medallion or photo floats up and
+fades); the own page keeps it. Dhoka's module is a static CSS door; its own page keeps the WebGL door.
 
-- The module drops the FLIP: the Ganesh, medallion or photo floats up and fades instead.
-- On the theme's own page, the FLIP stays.
+## 7. Done
 
-## 7. Work split: remaining batches (no shared files; each batch owns whole theme folders)
+All batches (B0 shared files, B1 clean suite gates, B2 opening scenes, B3 bespoke DOM, B4 Mahal / Mangal and the
+2.5D themes, B5 3D and film) are merged, followed by the integration pass (pair visibility in `mix.css`, pair timing,
+credits, host `ready`, preload claiming, the suite's reduced-motion hand-off, the debug-only `?open`).
 
-**B0 (lead, first):** the shared files.
+When adding a theme:
 
-- `mix.js` pair mode, plus the `mix.js` hooks for `data.js`, live colours, `pick`, the studio and the server (section 8).
-- Nobody else edits `src/core/mix.*` or `_suite/suite.js`.
-
-**B1 (suite, clean gates):** hariyo, mehendi, pardaa, swayambar.
-
-- Gate and hero modules.
-- `T.heroIntro`.
-- Null guards in `ready`, `ambient` and `scroll`.
-- Scope `.mh-` under `.theme-mehendi`.
-
-**B2 (suite, see-through pairs):** agni, rangoli, sindoor, shree, janti.
-
-- Hero modules.
-- Pair gates (once B0 has landed pair mode).
-- Wrapper equivalents for body-state CSS.
-- Janti `.l-ne` scoping.
-
-**B3 (bespoke DOM, the easy ones):** gurans, sayapatri, jhyal, mala.
-
-- Gate and hero modules.
-- Host adapters (Mala's is done).
-- Global-rule scoping (`.sr-only`, `#main > section`).
-
-**B4 (bespoke 2.5D):** mahal (hero), rajdwar, dhaka, chitra, kham, nimantrana.
-
-- Rajdwar gate from Mahal's gate parts.
-- Host adapters.
-- Scope dhaka and chitra CSS.
-
-**B5 (3D and film):** bagaicha, durbar, mandap, ghar, himal, dhoka.
-
-- Host adapters only (skip paths, hand-off to the camera intro).
-- Dhoka's static gate and hero.
-- Scope the global `.is-static`/`.is-in`/`#finale-root` rules.
-
-**Every batch:**
-
-- Before/after screenshots of the theme's own page (phone 390×844 DPR3, desktop 1440×900, and the opened state).
-- One mixed combination on a suite host and one on Mala.
-- Fill in `parts`, `gateUses` and `heroUses`.
+- Fill in `parts`, `gateUses` and `heroUses`, with a couple-friendly `why` for every "no".
+- Build `gate.js` / `hero.js` from the theme's own `parts.js`; keep the own page's behaviour identical.
+- Scope its CSS (section 4) and give `credits` if it shows third-party art.
+- Shoot `public/themes/<slug>/gate.jpg` and `hero.jpg` (480×720, phone shots of the own page closed and open).
+- Check the own page (phone 390×844 DPR 3, desktop 1440×900, opened), one mix on a suite host and one on a bespoke host.
 
 ## 8. Changes needed outside this phase
 

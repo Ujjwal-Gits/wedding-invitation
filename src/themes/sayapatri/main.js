@@ -435,7 +435,8 @@ async function main() {
   };
   document.getElementById('enter-music')?.addEventListener('click', () => open(true));
   document.getElementById('enter-quiet')?.addEventListener('click', () => open(false));
-  if (params.has('open')) { if (mixGate) mixGate.finish(); else open(false); }
+  // ?debug&open skips the opening (the studio's other modules, screenshots); never on a guest's plain link
+  if (DEBUG && params.has('open')) { if (mixGate) mixGate.finish(); else open(false); }
 
   document.fonts?.ready.then(() => { fitRows(); if (opened) ScrollTrigger.refresh(); });
   window.addEventListener('load', () => { fitRows(); if (opened) ScrollTrigger.refresh(); });

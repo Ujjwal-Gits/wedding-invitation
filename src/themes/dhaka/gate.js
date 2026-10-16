@@ -7,6 +7,7 @@ import './dhaka.css';
 import './mix.css';
 import { gsap } from 'gsap';
 import manifest from './slots.js';
+import { FLOWER_CREDITS } from './flowers.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import credits from '../../generated/credits.json';
 import { view } from '../../photos.js';
 import { FRAME_WIDE, TABLE_WIDE, TABLE_TALL, tall, flower, firstGrapheme, sealSvg, paperVars } from './parts.js';
@@ -19,6 +20,7 @@ const focal = (ref) => { const [x, y] = (ref && typeof ref === 'object' && ref.f
 export default {
   id: 'dhaka',
   manifest,
+  credits: FLOWER_CREDITS,
   fonts: FONTS,
   ui: (ctx) => `<div class="env-gate__ctl" data-mx-ui>
       <button type="button" class="env-gate__tap" data-mx-open disabled>${ctx.bi(ctx.txt('gate.open'))}</button>

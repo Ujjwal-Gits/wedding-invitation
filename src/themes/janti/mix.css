@@ -12,7 +12,3 @@
 .mx-part.mx-gate--janti { --mx-btn-radius: 3px; }
 .mx-gate--janti .mx-ui__open { background: linear-gradient(180deg, #F3D995, #CF9E45); border-color: #F3D995; color: #3A1A0C; }
 .mx-gate--janti .mx-ui__quiet { color: var(--jt-gold-hi); }
-/* the opening scene: the see-through gate needs the first screen showing beneath, even on a host that hides its page
-   while the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
-html[data-mx-gate='janti'] .mx-hero--janti { visibility: visible; }
-html[data-mx-gate='janti'] .mx-hero--janti:not(.is-open) .mx-cue { opacity: 0; }

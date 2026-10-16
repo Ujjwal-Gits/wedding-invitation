@@ -4,11 +4,13 @@
 import './gurans.css';
 import './mix.css';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { gateHtml, boardPlacer } from './parts.js';
 
 export default {
   id: 'gurans',
   manifest,
+  credits,
   fonts: ['Libre+Caslon+Display', 'Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500', 'Manrope:wght@500;600;700', 'Tiro+Devanagari+Hindi', 'Noto+Serif+Devanagari:wght@400;500;600'],
   ui: () => '', // the welcome board carries the words and buttons (gateHtml marks them for mix)
   mount(scene, ctx) {

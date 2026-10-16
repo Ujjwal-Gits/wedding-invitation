@@ -23,7 +23,3 @@
   .mx-hero--shree .sh-diya img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
 }
 @media (prefers-reduced-motion: reduce) { .mx-hero--shree .sh-halo__spin, .mx-hero--shree .sh-diya__swing { animation: none; } }
-/* the opening scene: the see-through gate needs the first screen showing beneath, even on a host that hides its page
-   while the gate is up (bespoke hosts: body.is-gated #main); its scroll cue waits for the opening */
-html[data-mx-gate='shree'] .mx-hero--shree { visibility: visible; }
-html[data-mx-gate='shree'] .mx-hero--shree:not(.is-open) .mx-cue { opacity: 0; }

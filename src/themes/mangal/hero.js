@@ -7,6 +7,7 @@ import './mix.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { paperVars, namesHTML, computeLayout } from './doorway.js';
 import { cardHTML, cardRefs, fitCard, cardIn, cardStill } from './card.js';
 
@@ -15,6 +16,7 @@ gsap.registerPlugin(ScrollTrigger);
 export default {
   id: 'mangal',
   manifest,
+  credits,
   fonts: ['Cormorant+Garamond:ital,wght@0,500;0,600;1,500', 'Yatra+One', 'Mukta:wght@400;500;600'],
   mount(sec, ctx) {
     const { txt, bi, c, reduced } = ctx;

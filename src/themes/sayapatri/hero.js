@@ -6,6 +6,7 @@ import './mix.css';
 import { gsap } from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import manifest from './slots.js';
+import credits from './flora-credits.json'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { guestEvents } from '../../core/finale.js';
 import { heroHtml, weddingDayOf } from './parts.js';
 
@@ -17,6 +18,7 @@ const keyOf = (ref) => (typeof ref === 'string' ? ref : ref?.lg);
 export default {
   id: 'sayapatri',
   manifest,
+  credits,
   fonts: ['Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500', 'DM+Sans:opsz,wght@9..40,400..600', 'Noto+Serif+Devanagari:wght@400..600', 'Mukta:wght@400;500;600'],
   mount(sec, ctx) {
     const heroRef = ctx.S.img('hero.photo');

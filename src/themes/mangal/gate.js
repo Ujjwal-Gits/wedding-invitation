@@ -6,6 +6,7 @@
 import './mangal.css';
 import './mix.css';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import { DEFS } from './art.js';
 import {
   paperVars, medalHTML, namesHTML, gateHTML, doorwayHTML, doorRefs, computeLayout, layoutDoorway, fallBox, maskFall, dropPetals,
@@ -15,6 +16,7 @@ import {
 export default {
   id: 'mangal',
   manifest,
+  credits,
   fonts: ['Cormorant+Garamond:ital,wght@0,500;0,600;1,500', 'Yatra+One', 'Mukta:wght@400;500;600'],
   // the plaque, the latch and "open without music" live on the doors (in the scene); no standard line and buttons
   ui: () => '',

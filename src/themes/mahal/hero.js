@@ -8,6 +8,7 @@ import './mix.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import manifest from './slots.js';
+import credits from './flora-credits.js'; // the art it shows (CC BY / BY-SA): mix lists it with the host's credits
 import * as P from './palace.js';
 import { createFireworks } from './fireworks.js';
 import { easeWalk, px } from './gate-parts.js';
@@ -18,6 +19,7 @@ gsap.registerPlugin(ScrollTrigger);
 export default {
   id: 'mahal',
   manifest,
+  credits,
   fonts: ['Great+Vibes', 'Amita:wght@400;700', 'Cinzel:wght@500', 'Yatra+One', 'Mukta:wght@400;500;600'],
   mount(sec, ctx) {
     const { txt, reduced } = ctx;

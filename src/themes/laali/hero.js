@@ -29,6 +29,9 @@ export default {
     window.addEventListener('resize', onResize);
     const gan = sec.querySelector('.la-gan--hero');
     const ins = [...sec.querySelectorAll('.su-in')];
+    // closed until the entrance: a see-through gate (Mahal's bars) must not show the words, or Ganesh, early
+    gsap.set(ins, { opacity: 0 });
+    if (gan && !ctx.reduced) gsap.set(gan, { opacity: 0 });
     return {
       enter(tl, at) {
         if (ctx.reduced) {

@@ -478,7 +478,9 @@ export async function mountSuite(T) {
     document.body.classList.add('is-opening');
     tl = gsap.timeline({ onComplete: afterOpen });
     if (reduced) {
-      tl.to(gate, { autoAlpha: 0, duration: 0.5 }, 0).fromTo(hero.querySelectorAll('.su-in'), { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.3).fromTo('#cue', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.5);
+      // a plain fade; heroIntro gives the same fades (words at 0.3, cue at 0.5), or a foreign first screen's entrance
+      tl.to(gate, { autoAlpha: 0, duration: 0.5 }, 0);
+      heroIntro(tl, 0.3);
     } else {
       tl.to('#gui', { autoAlpha: 0, y: 10, duration: 0.4, ease: 'power2.out' }, 0);
       const t = T.open(ctx, tl, gate) ?? tl.duration();

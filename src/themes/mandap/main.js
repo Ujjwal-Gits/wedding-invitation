@@ -668,6 +668,7 @@ let sceneReady = () => {};
 let sceneIsReady = false;
 const sceneLoaded = new Promise((r) => { sceneReady = () => { sceneIsReady = true; r(); }; });
 const mixGate = mix.gate ? mix.mountGate({
+  ready: sceneLoaded, // the gate's buttons wait for the 3D (mix caps the wait; an early tap still holds the gate)
   start: (withMusic) => startEnter(withMusic),
   intro(tl, at) {
     tl.call(() => {

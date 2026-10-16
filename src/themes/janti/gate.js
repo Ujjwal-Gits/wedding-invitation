@@ -2,7 +2,7 @@
 // painted street, warm light left in the window), so it travels as a pair with hero.js: Janti's opening scene
 // (design.gate = design.hero = 'janti') on any theme's page. On tap the dusk lifts to golden hour; the hero's
 // entrance (the band strikes up, the procession walks in, the doli curtain rolls up) does the rest.
-// Without Janti's first screen beneath it (not offered by the studio), the dusk simply lifts off whatever is there.
+// mix-rules only offers it with Janti's first screen, which mix mounts beneath it before the gate.
 import '../_suite/suite.css';
 import './janti.css';
 import './mix.css';
