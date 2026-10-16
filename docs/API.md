@@ -153,7 +153,7 @@ The website never sends or decides a price: every amount comes from the server's
 
 ```
 {
-  plans: [{ id: 'saral'|'shubha'|'shahi'|'custom'|…, name, price: number|null (NPR), priceUsd: number|null,
+  plans: [{ id: 'saral'|'shubha'|'shahi'|'custom'|…, name, nameNe (Nepali name, may be ''), price: number|null (NPR), priceUsd: number|null,
             from: boolean (true = show "from", e.g. Custom), features: string[], highlight: boolean, note: string }],
   paymentMethods: [{ id, label, kind: 'khalti'|'esewa'|'bank'|'paypal'|'other', currency: 'NPR'|'USD',
                      accountName, accountHint?, qr: '<static QR image URL>', note? }],   // enabled only, in admin order
@@ -170,7 +170,9 @@ Body (minimal order): `{ kind: 'order'|'custom', plan, name, phone, email, passw
 `weddingDate?: 'YYYY-MM-DD', venue? ≤ 200, bride?, groom?, message?` (the customer can fill those in later from their dashboard).
 (`plan` is required for `kind: 'order'`; a `custom` request without a plan gets `plan: 'custom'`. `bride`/`groom` ≤ 80.)
 
-**Account on order.** For `kind: 'order'` from a browser not signed in as a customer, `email` and `password` (8-128) are required:
+**Account on order.** The website (src/site/order.js) signs the visitor up or in first (`POST /auth/signup` or
+`/auth/login` in its account step) and then orders as that customer, sending no email or password; signed in as the
+planner, its form only points to the studio. The older body below still works. For `kind: 'order'` from a browser not signed in as a customer, `email` and `password` (8-128) are required:
 the order creates the account (`name`, `phone` from the form) and signs the browser in (customer session cookie on the `201`).
 Already signed in as a customer: the order goes to that account; `email`/`password` are not needed. When the email already has an
 account: the right password signs in and adds the order to it; a wrong one → `409 { ok: false, code: 'account_exists',
@@ -264,7 +266,7 @@ only here, so a typo does not use up the 5). The honeypot answers `201 { ok: tru
 ```
 Site (stored; GET /admin/site and PUT /site) = {
   v: 2,
-  plans: [{ id: /^[a-z0-9-]{1,32}$/, name ≤ 60, price: integer 0..10,000,000 | null ("Ask for price"),
+  plans: [{ id: /^[a-z0-9-]{1,32}$/, name ≤ 60, nameNe ≤ 40 (optional; missing = सरल/शुभ/शाही/आफ्नै by id), price: integer 0..10,000,000 | null ("Ask for price"),
             priceUsd: 1..10000 (2 decimals) | null, from: boolean, currency: 'NPR', note ≤ 160,
             features: string[≤ 20] (each ≤ 120), highlight: boolean }]  (≤ 8, unique ids),
   paymentMethods: [{ id: /^[a-z0-9-]{1,32}$/, label ≤ 40, kind: 'khalti'|'esewa'|'bank'|'paypal'|'other',
@@ -440,6 +442,11 @@ against a production instance (`npm run build`, then `node server/index.js --pro
   focus loss, PrintScreen, Ctrl/Cmd+P or S, and print disabled by CSS. Photos use their `-sm` size. These are
   deterrents only: screenshots and screen recording cannot be prevented on the web.
 - Dev: Vite serves `/<theme>/?showcase=1` with the same page behaviour (no server rewrite, no `/preview/` short link).
+
+## /go (not under /api)
+
+`GET /go` (the real QR on the website's How it works page, `https://nimtto.com/go`) → `302`, `Cache-Control: no-store`:
+any signed-in session (customer, planner or couple) → `/studio/`; anyone else → `/designs/`.
 
 ## Share page (not under /api)
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <!--@head:how-it-works-->
   <!--@crumbs:How it works|/how-it-works/-->
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"HowTo","name":"How To Make An Online Wedding Invitation In Nepal","description":"How to make an online wedding invitation in Nepal: choose a design, pay by Khalti, eSewa or PayPal, we build it with you on WhatsApp. Share one link.","estimatedCost":{"@type":"MonetaryAmount","currency":"NPR","value":"2999"},"supply":[{"@type":"HowToSupply","name":"Names, dates and venues of each event"},{"@type":"HowToSupply","name":"A few photos and your song (optional)"}],"step":[{"@type":"HowToStep","position":1,"name":"Choose a design","text":"Pick one of the ready-made designs at nimtto.com/designs, or ask for a custom design. Open the preview to see it move.","url":"https://nimtto.com/designs/"},{"@type":"HowToStep","position":2,"name":"Order and pay","text":"Fill the short order form with your name, WhatsApp number, email and a password. Pay by Khalti, eSewa, bank QR or PayPal and upload the payment screenshot.","url":"https://nimtto.com/pricing/"},{"@type":"HowToStep","position":3,"name":"We make it with you","text":"We message you on WhatsApp for the names, dates, venues, photos and song, and show you every change."},{"@type":"HowToStep","position":4,"name":"Share one link","text":"Send the link on WhatsApp, Viber or Messenger. Guests open it in their browser, see every event and reply."}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"HowTo","name":"How To Make An Online Wedding Invitation In Nepal","description":"How to make an online wedding invitation in Nepal: choose a design, pay by Khalti, eSewa or PayPal, we build it with you on WhatsApp. Share one link.","estimatedCost":{"@type":"MonetaryAmount","currency":"NPR","value":"2999"},"supply":[{"@type":"HowToSupply","name":"Names, dates and venues of each event"},{"@type":"HowToSupply","name":"A few photos and your song (optional)"}],"step":[{"@type":"HowToStep","position":1,"name":"Choose a design","text":"Pick one of the ready-made designs at nimtto.com/designs, or ask for a custom design. Open the preview to see it move.","url":"https://nimtto.com/designs/"},{"@type":"HowToStep","position":2,"name":"Order and pay","text":"Make your account with your name, email and a password, then fill the short order form with your plan, design and WhatsApp number. Pay by Khalti, eSewa, bank QR or PayPal and upload the payment screenshot.","url":"https://nimtto.com/pricing/"},{"@type":"HowToStep","position":3,"name":"We make it with you","text":"We message you on WhatsApp for the names, dates, venues, photos and song, and show you every change."},{"@type":"HowToStep","position":4,"name":"Share one link","text":"Send the link on WhatsApp, Viber or Messenger. Guests open it in their browser, see every event and reply."}]}</script>
   <script type="module" src="/src/site/site.js"></script>
 </head>
 <body data-page="how">
@@ -21,9 +21,10 @@
       <div class="walk__phone" aria-hidden="true">
         <span class="phone">
           <span class="wscreen is-on"><img src="/site/stills/gurans-800.webp" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
-          <span class="wscreen"><span class="ws"><span class="ws__h">Order</span><span class="ws__row"><b>Saral</b><span>Rs 2,999</span></span><span class="ws__row ws__row--on"><b>Shubha</b><span>Rs 4,999</span></span><span class="ws__row"><b>Shahi</b><span>Rs 6,999</span></span><span class="ws__row"><span>Your name</span></span><span class="ws__row"><span>WhatsApp number</span></span><span class="ws__btn">Continue to payment</span></span></span>
-          <span class="wscreen"><span class="ws"><span class="ws__h">Pay by QR</span><span class="ws__qr"><i></i></span><span class="ws__amt">Rs 4,999</span><span class="ws__row"><span>Remark</span><b>Nimtto NM-24817</b></span><span class="ws__btn">Send screenshot</span></span></span>
-          <span class="wscreen"><span class="ws ws__chat"><span class="ws__msg ws__msg--in">Here is our wedding invitation 🙏</span><span class="ws__msg"><img src="/site/og.jpg" width="1200" height="630" alt="" loading="lazy" decoding="async" /><b>Binisha &amp; Ujjwal · Shubha Bibaha</b><span>nimtto.com</span></span><span class="ws__msg ws__msg--in">We’re coming! 💐</span></span></span>
+          <span class="wscreen"><span class="ws"><span class="ws__h">Order</span><span class="ws__row"><b data-plan-name="saral">Saral</b><span data-plan-price="saral">Rs 2,999</span></span><span class="ws__row ws__row--on"><b data-plan-name="shubha">Shubha</b><span data-plan-price="shubha">Rs 4,999</span></span><span class="ws__row"><b data-plan-name="shahi">Shahi</b><span data-plan-price="shahi">Rs 6,999</span></span><span class="ws__row"><span>Your name</span></span><span class="ws__row"><span>WhatsApp number</span></span><span class="ws__btn">Continue to payment</span></span></span>
+          <!-- a real QR: nimtto.com/go opens your dashboard when signed in, else the designs (server/index.js) -->
+          <span class="wscreen"><span class="ws"><span class="ws__h">Pay by QR</span><span class="ws__qr"><!--@qr:https://nimtto.com/go--></span><span class="ws__amt" data-plan-price="shubha">Rs 4,999</span><span class="ws__row"><span>Remark</span><b>Nimtto NM-24817</b></span><span class="ws__btn">Send screenshot</span></span></span>
+          <span class="wscreen"><span class="ws ws__chat"><span class="ws__msg ws__msg--in">Here is our wedding invitation 🙏</span><span class="ws__msg ws__msg--card"><img src="/site/stills/hariyo-480.webp" width="390" height="844" alt="" loading="lazy" decoding="async" /><b>Binisha &amp; Ujjwal · Shubha Bibaha</b><span>nimtto.com</span></span><span class="ws__msg ws__msg--in">We’re coming! 💐</span></span></span>
         </span>
       </div>
       <ol class="walk__steps">
@@ -31,14 +32,14 @@
           <span class="wstep__n">01</span>
           <h2 class="wstep__t">Choose a design</h2>
           <p class="wstep__d">Browse the designs and open the preview to see how each one opens. Not sure yet? You can decide after you order.</p>
-          <ul><li>Doors, seals, flower gates, curtains and 3D scenes</li><li>Each design shows its plan: Saral, Shubha or Shahi</li><li>Want something new? Ask for a custom design</li></ul>
+          <ul><li>Doors, seals, flower gates, curtains and 3D scenes</li><li>Each design shows its plan: <span data-tier-name="saral">Saral</span>, <span data-tier-name="shubha">Shubha</span> or <span data-tier-name="shahi">Shahi</span></li><li>Want something new? Ask for a custom design</li></ul>
           <div class="wstep__fig"><span class="phone"><img src="/site/stills/gurans-480.webp" width="390" height="844" alt="The Phoolbari design on a phone" loading="lazy" decoding="async" /></span></div>
           <p><a class="link" href="/designs/">See the designs <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></p>
         </li>
         <li class="wstep" data-step="1">
           <span class="wstep__n">02</span>
           <h2 class="wstep__t">Order in two minutes</h2>
-          <p class="wstep__d">Choose your plan and design, then write your name, WhatsApp number, email and a password. That makes your account, so you can come back any time.</p>
+          <p class="wstep__d">Make your account with your name, email and a password, or sign in. Then choose your plan and design and add your WhatsApp number. Your account brings you back any time.</p>
           <ul><li>No long forms: we ask the rest on WhatsApp</li><li>The price is shown before you continue</li></ul>
         </li>
         <li class="wstep" data-step="2">

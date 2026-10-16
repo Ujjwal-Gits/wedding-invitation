@@ -1070,6 +1070,7 @@ function website(ctx) {
             iconBtn('down', `Move plan ${i + 1} down`, () => { if (i < site.plans.length - 1) { [site.plans[i + 1], site.plans[i]] = [site.plans[i], site.plans[i + 1]]; touch(); draw(); } }, i === site.plans.length - 1 ? 'is-disabled' : ''),
             iconBtn('trash', `Remove plan ${i + 1}`, async () => { if (await confirmDialog({ title: `Remove ${p.name || 'this plan'}?`, message: 'It disappears from the website after you save.', confirm: 'Remove', danger: true })) { site.plans.splice(i, 1); touch(); draw(); } }))),
         fieldIn(`pl-name-${i}`, 'Name', p.name, (v) => { p.name = v; }, { max: 60 }),
+        fieldIn(`pl-ne-${i}`, 'Name in Nepali', p.nameNe, (v) => { p.nameNe = v; }, { max: 40, placeholder: 'e.g. सरल', hint: 'Shown small beside the name on the website. Optional.' }),
         h('div.field', h('label.label', { for: `pl-price-${i}` }, 'Price (NPR)'), h('div.inputrow.inputrow--prefix', h('span.prefix', 'Rs'), price), h('p.hint', 'Empty shows “Ask for price”.')),
         h('div.field', h('label.label', { for: `pl-usd-${i}` }, 'Price (USD)'), h('div.inputrow.inputrow--prefix', h('span.prefix', '$'), usd), h('p.hint', 'For customers abroad (PayPal). Empty: no USD price.')),
         fieldIn(`pl-note-${i}`, 'Short note', p.note, (v) => { p.note = v; }, { max: 160, placeholder: 'e.g. Most couples choose this' }),

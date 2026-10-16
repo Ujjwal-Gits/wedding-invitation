@@ -2,10 +2,10 @@
 // design pages). body[data-page] says which page; its own code and the scroll scenes load on demand.
 import './site.css';
 import './pages.css';
-import { $, $$, reduced, SLUG_RE, initHeader, initAuth, initReveal, initPreview, applyContact, setYear } from './common.js';
+import { $, $$, el, reduced, SLUG_RE, initHeader, initAuth, initReveal, initPreview, applyContact, setYear } from './common.js';
 import { loadSite, loadThemes, normaliseThemes } from './api.js';
 import { BY_SLUG, FALLBACK_SITE } from './themes.js';
-import { renderPlans, applyTierPrices } from './plans.js';
+import { renderPlans, applyPlanNames } from './plans.js';
 
 const page = document.body.dataset.page || '';
 const state = { site: null, themes: normaliseThemes(null, FALLBACK_SITE), me: undefined, wa: '' };
@@ -55,8 +55,20 @@ function orderFromUrl() {
 /** how it works: the sticky phone shows the screen of the step in the middle of the view */
 function initWalk() {
   const walk = $('[data-walk]');
-  if (!walk || !('IntersectionObserver' in window)) return;
+  if (!walk) return;
   const screens = $$('.wscreen', walk);
+  // narrow screens have no sticky phone: each step without a picture gets a small phone with its own screen
+  // (a copy of the page's static markup; hidden on wide screens by CSS)
+  for (const step of $$('[data-step]', walk)) {
+    const s = screens[Number(step.dataset.step)];
+    if (!s || $('.wstep__fig', step)) continue;
+    const ph = el('span', { class: 'phone' });
+    const copy = s.cloneNode(true);
+    copy.classList.add('is-on');
+    ph.append(copy);
+    $('ul', step)?.after(el('div', { class: 'wstep__fig wstep__fig--screen', 'aria-hidden': 'true' }, ph));
+  }
+  if (!('IntersectionObserver' in window)) return;
   const io = new IntersectionObserver((es) => {
     for (const e of es) {
       if (!e.isIntersecting) continue;
@@ -96,12 +108,14 @@ async function boot() {
   if (!reduced.matches && $('[data-scene]')) import('./motion.js').then((m) => m.initScenes()).catch(() => {});
 
   const pageMod = page === 'designs' ? import('./designs-page.js') : page === 'design' ? import('./design-page.js') : null;
-  initAuth().then((me) => { state.me = me; if (order) order.setOrderData(state); });
+  // signed in from the order's account step (src/site/order.js): that answer wins over a late initAuth
+  document.addEventListener('nimtto:me', (e) => { state.me = e.detail; });
+  initAuth().then((me) => { if (state.me === undefined) state.me = me; if (order) order.setOrderData(state); });
   const site = await loadSite();
   state.site = site;
   state.wa = applyContact(site.contact).wa;
   for (const box of $$('[data-plans]')) renderPlans(box, site);
-  applyTierPrices(site);
+  applyPlanNames(site); // the planner's plan names and prices everywhere the page names a plan
   const themes = await loadThemes(site);
   state.themes = themes;
   updateCounts();

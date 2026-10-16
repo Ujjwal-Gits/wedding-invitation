@@ -48,7 +48,7 @@ function relatedHtml(x) {
   const p = planForTier(FALLBACK_SITE.plans, x.tier);
   return `<li class="rcard"><a class="rcard__pic" href="/designs/${x.slug}/" style="--tint:${CATEGORIES[x.cat].tint}" tabindex="-1" aria-hidden="true">${phone(x.slug, { sizes: SIZES.rail })}</a>`
     + `<p class="rcard__name"><a href="/designs/${x.slug}/">${esc(x.name)}</a> <span lang="ne">${esc(x.ne)}</span></p>`
-    + `<p class="rcard__meta"><span class="tier tier--${x.tier}">${TIER_LABEL[x.tier]}</span><span data-tier-price="${x.tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></li>`;
+    + `<p class="rcard__meta"><span class="tier tier--${x.tier}" data-tier-tag="${x.tier}">${TIER_LABEL[x.tier]}</span><span data-tier-price="${x.tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></li>`;
 }
 
 if (existsSync(OUT)) for (const d of readdirSync(OUT, { withFileTypes: true })) if (d.isDirectory()) rmSync(resolve(OUT, d.name), { recursive: true });

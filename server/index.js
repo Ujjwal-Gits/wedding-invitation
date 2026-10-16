@@ -155,6 +155,13 @@ app.get('/healthz', (req, res) => {
 });
 app.use('/api', api);
 
+// /go: the QR on the website's How it works page. Signed in (customer, planner or couple): their dashboard; anyone
+// else: the designs. Never cached, since the answer depends on the session cookie.
+app.get('/go', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, req.session?.role ? '/studio/' : '/designs/');
+});
+
 // Short guest link: /i/<slug>?to=Name&e=wedding,reception -> a link-preview page that forwards to the theme page.
 app.get('/i/:slug', wrap(sharePage));
 

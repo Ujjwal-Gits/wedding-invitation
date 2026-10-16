@@ -99,8 +99,12 @@ export async function initAuth() {
     if (r.ok) me = await r.json();
   } catch { /* offline: keep "Sign in" */ }
   const role = me && typeof me.role === 'string' ? me.role : null;
-  if (role) for (const a of $$('a[data-auth]')) { a.textContent = 'My dashboard'; a.href = '/studio/'; }
+  if (role) markSignedIn();
   return role ? me : null;
+}
+/** The header's "Sign in" links become "My dashboard" (also after signing in from the order's account step). */
+export function markSignedIn() {
+  for (const a of $$('a[data-auth]')) { a.textContent = 'My dashboard'; a.href = '/studio/'; }
 }
 
 /** Section heads fade up once as they enter (opacity and transform only; never body text). */

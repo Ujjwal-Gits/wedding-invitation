@@ -25,15 +25,20 @@ const PAYPALME_RE = /^[A-Za-z0-9]{1,40}$/;
 const SITE_V = 2;
 
 const DEFAULT_PLANS = [
-  { id: 'saral', name: 'Saral', price: 2999, priceUsd: 49, from: false, currency: 'NPR', note: '',
+  { id: 'saral', name: 'Saral', nameNe: 'सरल', price: 2999, priceUsd: 49, from: false, currency: 'NPR', note: '',
     features: ['A ready-made design', 'Your names, date and venue', 'Guest replies (RSVP)', 'A link to share on WhatsApp'], highlight: false },
-  { id: 'shubha', name: 'Shubha', price: 4999, priceUsd: 99, from: false, currency: 'NPR', note: 'Most couples choose this',
+  { id: 'shubha', name: 'Shubha', nameNe: 'शुभ', price: 4999, priceUsd: 99, from: false, currency: 'NPR', note: 'Most couples choose this',
     features: ['Everything in Saral', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
-  { id: 'shahi', name: 'Shahi', price: 6999, priceUsd: 149, from: false, currency: 'NPR', note: '',
+  { id: 'shahi', name: 'Shahi', nameNe: 'शाही', price: 6999, priceUsd: 149, from: false, currency: 'NPR', note: '',
     features: ['Everything in Shubha', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
-  { id: 'custom', name: 'Custom', price: 11111, priceUsd: 199, from: true, currency: 'NPR', note: 'A design made only for you',
+  { id: 'custom', name: 'Custom', nameNe: 'आफ्नै', price: 11111, priceUsd: 199, from: true, currency: 'NPR', note: 'A design made only for you',
     features: ['A design made for your wedding', 'Your colours, art and wording', 'Everything in Shahi'], highlight: false },
 ];
+
+// A plan's name in Nepali (`nameNe`, the website's small Nepali word beside each plan) arrived after the plans did:
+// a stored plan without one gets the usual word for its id, so older documents read as before.
+const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शाही', custom: 'आफ्नै' };
+const nameNeOf = (p) => (typeof p?.nameNe === 'string' ? p.nameNe : PLAN_NE[p?.id] || '');
 
 const DEFAULT_METHODS = [
   { id: 'khalti', label: 'Khalti', kind: 'khalti', currency: 'NPR', accountName: 'Roshan Shrestha', accountHint: '', qr: '/site/pay/khalti.png', note: '', enabled: true, order: 0, autoAmount: false, paypalMe: '' },
@@ -60,6 +65,8 @@ const DEFAULTS = {
 // ── Design tiers (docs/API.md "Design tiers"): a design's tier is the cheapest plan that includes it.
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
 const TIER_NAME = { saral: 'Saral', shubha: 'Shubha', shahi: 'Shahi' };
+/** A tier's name as the website shows it: the name the planner gave the plan with that id (they can rename it). */
+export const tierName = (tier, plans = []) => plans.find((p) => p.id === tier)?.name || TIER_NAME[tier] || tier;
 /** The tier of a theme after the planner's overrides. */
 export const tierOf = (slug, site) => (TIER_RANK[site?.themeTiers?.[slug]] ? site.themeTiers[slug] : defaultTier(slug));
 /**
@@ -81,7 +88,7 @@ export function planIncludes(plan, plans = []) {
 export function tierProblem(site, plan, slug, themeName = slug) {
   const need = tierOf(slug, site);
   if (TIER_RANK[planIncludes(plan, site.plans)] >= TIER_RANK[need]) return null;
-  return { needs: need, error: `The ${themeName} design needs the ${TIER_NAME[need]} plan or above.` };
+  return { needs: need, error: `The ${themeName} design needs the ${tierName(need, site.plans)} plan or above.` };
 }
 
 /** A WhatsApp number in E.164 form ('+9779806393298'), or '' when it is not one. Nepali mobiles get +977. */
@@ -118,6 +125,7 @@ function sanitizeSite(input) {
     const id = typeof p.id === 'string' && PLAN_ID_RE.test(p.id) ? p.id : (fail(`${path}.id`, 'must be 1-32 lowercase letters, digits or hyphens'), '');
     const name = text(p.name, `${path}.name`, 60);
     if (!name) fail(`${path}.name`, 'is required');
+    const nameNe = p.nameNe === undefined ? nameNeOf({ id: p.id }) : text(p.nameNe, `${path}.nameNe`, 40); // optional
     let price = null;
     if (p.price != null && p.price !== '') {
       if (typeof p.price === 'number' && Number.isInteger(p.price) && p.price >= 0 && p.price <= 10_000_000) price = p.price;
@@ -135,7 +143,7 @@ function sanitizeSite(input) {
     const feats = p.features == null ? [] : p.features;
     if (!Array.isArray(feats) || feats.length > 20) fail(`${path}.features`, 'must be a list of at most 20 lines');
     const features = (Array.isArray(feats) ? feats.slice(0, 20) : []).map((f, j) => text(f, `${path}.features[${j}]`, 120)).filter(Boolean);
-    return { id, name, price, priceUsd, from: p.from === true, currency: 'NPR', note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true };
+    return { id, name, nameNe, price, priceUsd, from: p.from === true, currency: 'NPR', note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true };
   });
   const ids = plans.map((p) => p.id);
   if (new Set(ids).size !== ids.length) fail('plans', 'two plans have the same id');
@@ -234,7 +242,7 @@ function merged(s) {
   if (!s || typeof s !== 'object') return d;
   const out = { ...d, ...s };
   if (s.v !== SITE_V) { out.plans = migratePlans(s.plans); out.v = SITE_V; }
-  else out.plans = (Array.isArray(s.plans) ? s.plans : []).map((p) => ({ ...p, priceUsd: p.priceUsd ?? p.usdPrice ?? null, from: p.from === true }));
+  else out.plans = (Array.isArray(s.plans) ? s.plans : []).map((p) => ({ ...p, nameNe: nameNeOf(p), priceUsd: p.priceUsd ?? p.usdPrice ?? null, from: p.from === true }));
   for (const p of out.plans) delete p.usdPrice;
   if (!Array.isArray(s.paymentMethods)) out.paymentMethods = d.paymentMethods;
   if (typeof s.payRemark !== 'string' || !s.payRemark) out.payRemark = d.payRemark;
@@ -247,14 +255,30 @@ function merged(s) {
 
 /** The public part of the settings: enabled payment methods only, and only what a visitor needs. */
 export function publicSite(s) {
+  const named = renamer(s.plans);
   return {
-    plans: s.plans.map((p) => ({ id: p.id, name: p.name, price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: p.note || '', features: p.features || [], highlight: p.highlight === true, includes: planIncludes(p, s.plans) })),
+    plans: s.plans.map((p) => ({ id: p.id, name: p.name, nameNe: nameNeOf(p), price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: named(p.note || ''), features: (p.features || []).map(named), highlight: p.highlight === true, includes: planIncludes(p, s.plans) })),
     paymentMethods: publicMethods(s),
     contact: s.contact,
     hero: s.hero,
     hiddenThemes: s.hiddenThemes,
     featuredThemes: s.featuredThemes,
   };
+}
+/**
+ * Feature lines and notes written with the first plan names ("Everything in Saral") follow a renamed plan
+ * ("Everything in Standard") on the website, so the planner never has to hunt for the old names.
+ */
+function renamer(plans) {
+  const map = new Map();
+  for (const [id, old] of Object.entries(TIER_NAME)) {
+    const now = plans.find((p) => p.id === id)?.name;
+    if (now && now !== old) map.set(old, now);
+  }
+  if (!map.size) return (t) => t;
+  // only "in Saral" / "than Shubha" ...: "Shubha" alone is also a wedding word (Shubha Bibaha)
+  const re = new RegExp(`\\b(in|than|of|from|to) (${[...map.keys()].join('|')})\\b`, 'g');
+  return (t) => String(t).replace(re, (m, pre, w) => `${pre} ${map.get(w)}`);
 }
 /** Enabled methods in order, without admin-only fields; accountHint/note only when filled in. */
 export function publicMethods(s) {

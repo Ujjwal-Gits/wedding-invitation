@@ -8,6 +8,7 @@ import { THEMES, BY_SLUG, CATEGORIES, FALLBACK_SITE, PLAN_DESC, PLAN_NE, TIER_LA
 import { phoneStill } from './stills.js';
 import { OCCASIONS, STEPS, FEATURES, faqItems, SITE_URL } from './content.mjs';
 import { pageMeta } from './seo.mjs';
+import { qrSvg } from '../studio/qr.js';
 
 const here = import.meta.dirname;
 const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
@@ -220,20 +221,7 @@ function dialogs() {
               <input id="om-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX" required />
               <p class="field__err" id="om-phone-err" hidden>Please write a phone number we can reach on WhatsApp.</p>
             </div>
-            <div class="field om-acct">
-              <label for="om-email">Email <span class="req" aria-hidden="true">*</span></label>
-              <input id="om-email" name="email" type="email" autocomplete="email" maxlength="254" required />
-              <p class="field__err" id="om-email-err" hidden>Please write a full email address.</p>
-            </div>
-            <div class="field om-acct">
-              <label for="om-password">Password <span class="req" aria-hidden="true">*</span></label>
-              <div class="pw"><input id="om-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="om-password-hint" />
-                <button type="button" class="pw__btn" id="om-pw-toggle" aria-pressed="false" aria-controls="om-password">Show</button></div>
-              <p class="field__hint" id="om-password-hint">8 or more characters. You sign in with it later.</p>
-              <p class="field__err" id="om-password-err" hidden>Please choose a password of 8 or more characters.</p>
-            </div>
           </div>
-          <p class="om-exists" id="om-exists" role="alert" hidden>This email already has an account. Enter that account’s password above, or <a href="/studio/">sign in</a>.</p>
         </fieldset>
         <div class="hp" aria-hidden="true"><label for="om-website">Website</label><input id="om-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
       </div>
@@ -242,6 +230,48 @@ function dialogs() {
         <div class="om__total"><span id="om-total-l">Total</span><b id="om-total">Rs 4,999</b></div>
         <button class="btn btn--accent btn--lg om__submit" id="om-submit" type="submit">Continue to payment</button>
         <p class="om__fine">Next, you pay by Khalti, eSewa, bank QR or PayPal on the payment page.</p>
+      </footer>
+    </form>
+  </dialog>
+  <dialog class="om om--auth" id="oa" aria-labelledby="oa-title">
+    <form class="om__form" id="oa-form" novalidate>
+      <header class="om__head">
+        <div><p class="eyebrow">Before you order</p><h2 class="om__title" id="oa-title">Make your account</h2></div>
+        <button type="button" class="round om__close" id="oa-close" aria-label="Close">${I.close}</button>
+      </header>
+      <div class="om__body">
+        <p class="oa-lede" id="oa-lede">Your account keeps your order and payment in one place. Later you edit your invitation and read guest replies there.</p>
+        <p class="om-signed" id="oa-note" role="status" hidden></p>
+        <div class="oa-grid">
+          <div class="field oa-up">
+            <label for="oa-name">Your name <span class="req" aria-hidden="true">*</span></label>
+            <input id="oa-name" name="name" type="text" autocomplete="name" maxlength="80" required />
+            <p class="field__err" id="oa-name-err" hidden>Please write your name.</p>
+          </div>
+          <div class="field">
+            <label for="oa-email">Email <span class="req" aria-hidden="true">*</span></label>
+            <input id="oa-email" name="email" type="email" autocomplete="email" maxlength="254" required />
+            <p class="field__err" id="oa-email-err" hidden>Please write a full email address.</p>
+          </div>
+          <div class="field oa-up">
+            <label for="oa-phone">WhatsApp number <span class="om__hint">optional</span></label>
+            <input id="oa-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX" />
+            <p class="field__err" id="oa-phone-err" hidden>Please write a phone number, or leave it empty.</p>
+          </div>
+          <div class="field">
+            <label for="oa-password">Password <span class="req" aria-hidden="true">*</span></label>
+            <div class="pw"><input id="oa-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="oa-password-hint" />
+              <button type="button" class="pw__btn" id="oa-pw-toggle" aria-pressed="false" aria-controls="oa-password" aria-label="Show password">Show</button></div>
+            <p class="field__hint oa-up" id="oa-password-hint">8 or more characters. You sign in with it later.</p>
+            <p class="field__err" id="oa-password-err" hidden>Please choose a password of 8 or more characters.</p>
+            <p class="oa-forgot oa-in" hidden><a class="link" href="/studio/forgot">Forgot password?</a></p>
+          </div>
+        </div>
+      </div>
+      <footer class="om__foot oa__foot">
+        <p class="om__err" id="oa-err" role="alert" hidden></p>
+        <button class="btn btn--accent btn--lg oa__submit" id="oa-submit" type="submit">Make account and continue</button>
+        <p class="oa-switch"><span id="oa-switch-t">Already have an account?</span> <button type="button" class="oa-switch__btn" id="oa-switch">Sign in</button></p>
       </footer>
     </form>
   </dialog>`;
@@ -271,6 +301,9 @@ function lotus() {
 
 /* ---------------- designs ---------------- */
 const tierPlan = (tier) => planForTier(PLANS, tier);
+/** a tier's (plan's) name, kept live: src/site/plans.js fills [data-tier-name] / [data-plan-name] with the planner's names */
+export const tn = (tier) => `<span data-tier-name="${tier}">${esc(TIER_LABEL[tier])}</span>`;
+export const pn = (id) => `<span data-plan-name="${id}">${esc(PLANS.find((p) => p.id === id)?.name || id)}</span>`;
 function tierTag(tier) {
   const p = tierPlan(tier);
   return `<span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><span class="dcard__price" data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span>`;
@@ -318,7 +351,7 @@ function occasions(variant = 'full') {
     const art = o.designs ? `<span class="occ__phones" aria-hidden="true">${phone('laali', { sizes: '140px' })}${phone('gurans', { sizes: '140px' })}${phone('mahal', { sizes: '140px' })}</span>` : '';
     // the wedding card is the big one on desktop: give it the ceremonies and a few facts (hidden on phones)
     const more = o.designs ? `<ul class="occ__chips">${[['Mehendi', 'मेहेन्दी'], ['Haldi', 'हल्दी'], ['Janti', 'जन्ती'], ['Wedding', 'विवाह'], ['Reception', 'स्वागत']].map(([en, ne]) => `<li>${en} <span lang="ne">${ne}</span></li>`).join('')}</ul>
-      <ul class="occ__facts"><li><b>${THEMES.length}</b><span>designs</span></li><li><b>Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
+      <ul class="occ__facts"><li><b>${THEMES.length}</b><span>designs</span></li><li><b data-plan-price="saral">Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
     return `<li class="occ occ--${o.id}${o.designs ? ' occ--lead' : ''}" id="${variant === 'full' ? o.id : `occ-${o.id}`}">
       <p class="occ__ne" lang="ne">${esc(o.ne)}${o.alt ? `<span> · ${esc(o.alt)}</span>` : ''}</p>
       <h3 class="occ__en">${esc(o.en)}</h3>
@@ -354,7 +387,7 @@ function features(set = 'all') {
 function plans() {
   return PLANS.map((p) => `<li class="plan${p.highlight ? ' plan--hi' : ''}" data-plan-id="${p.id}">
     ${p.highlight ? '<p class="plan__flag">Most chosen</p>' : ''}
-    <div class="plan__top"><h3 class="plan__name">${esc(p.name)}</h3><span class="plan__ne" lang="ne">${esc(PLAN_NE[p.id] || '')}</span></div>
+    <div class="plan__top"><h3 class="plan__name">${esc(p.name)}</h3><span class="plan__ne" lang="ne">${esc(p.nameNe || PLAN_NE[p.id] || '')}</span></div>
     <p class="plan__price">${p.from ? '<span class="plan__from">from</span>' : ''}<span class="plan__num">${rs(p.price)}</span></p>
     <p class="plan__usd">or USD ${p.priceUsd} from abroad</p>
     <p class="plan__desc">${esc(p.note || PLAN_DESC[p.id] || '')}</p>
@@ -381,11 +414,11 @@ function offersLd() {
 
 /** the designs in each tier, as small phones (pricing page) */
 function tiers() {
-  const blurb = { saral: 'In every plan.', shubha: 'In Shubha and Shahi.', shahi: 'In Shahi.' };
+  const blurb = { saral: 'In every plan.', shubha: `In ${tn('shubha')} and ${tn('shahi')}.`, shahi: `In ${tn('shahi')}.` };
   return ['saral', 'shubha', 'shahi'].map((tier) => {
     const list = THEMES.filter((t) => t.tier === tier);
     const p = tierPlan(tier);
-    return `<li class="tierrow"><div class="tierrow__h"><span class="tier tier--${tier}">${TIER_LABEL[tier]}</span><h3>${list.length} designs</h3><p>${blurb[tier]} <span data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></div>
+    return `<li class="tierrow"><div class="tierrow__h"><span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><h3>${list.length} designs</h3><p>${blurb[tier]} <span data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></div>
       <div class="tierrow__list">${list.map((t) => `<a href="/designs/${t.slug}/">${phone(t.slug, { sizes: '82px' })}<span>${esc(t.name)}</span></a>`).join('')}</div></li>`;
   }).join('');
 }
@@ -393,8 +426,14 @@ function tiers() {
 /* ---------------- FAQ ---------------- */
 function faq(set = 'home') {
   const items = faqItems(set);
-  const html = items.map((x, i) => `<details class="qa"${i === 0 ? ' open' : ''}><summary class="qa__q"><span>${esc(x.q)}</span><i aria-hidden="true"></i></summary><div class="qa__a"><p>${esc(x.a)}</p></div></details>`).join('');
+  const html = items.map((x, i) => `<details class="qa"${i === 0 ? ' open' : ''}><summary class="qa__q"><span>${x.qHtml}</span><i aria-hidden="true"></i></summary><div class="qa__a"><p>${x.aHtml}</p></div></details>`).join('');
   return `<div class="faq__list">${html}</div>${jsonLd({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) })}`;
+}
+
+/** A real, scannable QR code as inline SVG (src/studio/qr.js): `qr:https://nimtto.com/go`. Only our own URLs. */
+function qr(url = '') {
+  if (!/^https:\/\/nimtto\.com\/[a-z0-9/-]*$/.test(url)) throw new Error(`qr partial: unexpected URL ${url}`);
+  return qrSvg(url, { dark: '#2A1A1D', quiet: 2 }).replace('<svg ', `<svg class="qr" role="img" aria-label="QR code for ${esc(url.replace(/^https:\/\//, ''))}" `);
 }
 
 /** BreadcrumbList JSON-LD for a sub page: `crumbs:Designs|/designs/` */
@@ -406,7 +445,7 @@ function crumbs(arg = '') {
   ] });
 }
 
-export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs };
+export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {

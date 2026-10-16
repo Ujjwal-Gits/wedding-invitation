@@ -34,16 +34,16 @@
         </div>
         <div class="chips" role="group" aria-label="Show designs by plan">
           <button class="chip" type="button" data-f="tier" data-v="all" aria-pressed="true">Any plan</button>
-          <button class="chip" type="button" data-f="tier" data-v="saral" aria-pressed="false">In Saral</button>
-          <button class="chip" type="button" data-f="tier" data-v="shubha" aria-pressed="false">In Shubha</button>
-          <button class="chip" type="button" data-f="tier" data-v="shahi" aria-pressed="false">In Shahi</button>
+          <button class="chip" type="button" data-f="tier" data-v="saral" aria-pressed="false">In <span data-tier-name="saral">Saral</span></button>
+          <button class="chip" type="button" data-f="tier" data-v="shubha" aria-pressed="false">In <span data-tier-name="shubha">Shubha</span></button>
+          <button class="chip" type="button" data-f="tier" data-v="shahi" aria-pressed="false">In <span data-tier-name="shahi">Shahi</span></button>
         </div>
         <p class="filters__count" id="dcount" aria-live="polite"></p>
       </div>
       <ul class="dgrid" id="dgrid">
         <!--@designs-->
         <li class="dcard dcard--custom">
-          <a class="dcard__pic" href="/pricing/?plan=custom#plans" data-order data-plan="custom"><p><span class="ne" lang="ne">आफ्नै</span><br />A design made only for you</p></a>
+          <a class="dcard__pic" href="/pricing/?plan=custom#plans" data-order data-plan="custom"><p><span class="ne" lang="ne" data-plan-name-ne="custom">आफ्नै</span><br />A design made only for you</p></a>
           <div class="dcard__body">
             <h3 class="dcard__name">Custom design</h3>
             <p class="dcard__desc">Your colours, your art, your words. For a wedding or any occasion.</p>

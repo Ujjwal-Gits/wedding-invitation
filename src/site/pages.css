@@ -261,15 +261,18 @@
 .wscreen img { width: 100%; height: 100%; object-fit: cover; }
 .ws { padding: 28% 9% 9%; display: grid; gap: 10px; align-content: start; font-size: 13px; height: 100%; background: var(--blush-50); }
 .ws__h { font: 400 26px/1.1 var(--f-display); margin-bottom: 6px; }
-.ws__row { display: flex; justify-content: space-between; padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line-2); }
+.ws__row { display: flex; justify-content: space-between; gap: 8px; padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line-2); }
 .ws__row--on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .ws__btn { margin-top: 6px; padding: 12px; border-radius: 999px; background: var(--accent); color: #fff; text-align: center; font-weight: 500; }
-.ws__qr { width: 62%; aspect-ratio: 1; justify-self: center; border-radius: 12px; background: #fff; padding: 10px; border: 1px solid var(--line-2); }
-.ws__qr i { display: block; width: 100%; height: 100%; background: conic-gradient(from 90deg at 18% 18%, #22141A 25%, transparent 0) 0 0 / 34% 34%, repeating-linear-gradient(90deg, #22141A 0 6%, transparent 6% 11%), #fff; -webkit-mask: repeating-linear-gradient(0deg, #000 0 6%, transparent 6% 9%); mask: repeating-linear-gradient(0deg, #000 0 6%, transparent 6% 9%); opacity: 0.86; }
+.ws__qr { width: 66%; aspect-ratio: 1; justify-self: center; border-radius: 12px; background: #fff; padding: 6px; border: 1px solid var(--line-2); }
+.ws__qr .qr { display: block; width: 100%; height: 100%; }
 .ws__amt { text-align: center; font: 600 24px/1 var(--f-sans); letter-spacing: -0.02em; }
 .ws__chat { background: #ECE5DD; padding-top: 24%; }
 .ws__msg { justify-self: end; max-width: 86%; padding: 6px 6px 10px; border-radius: 14px 14px 4px 14px; background: #DCF8C6; display: grid; gap: 4px; font-size: 12px; }
-.ws__msg img { border-radius: 10px; aspect-ratio: 1200 / 630; object-fit: cover; height: auto; }
+/* the shared link's preview: the top of a real invitation, in the bubble (not the full-screen `.phone img`) */
+.wscreen .ws__msg img { position: static; inset: auto; width: 100%; height: auto; border-radius: 10px; aspect-ratio: 1200 / 630; object-fit: cover; }
+.ws__msg--card { width: 78%; }
+.wscreen .ws__msg--card img { aspect-ratio: 4 / 5; object-position: 50% 6%; }
 .ws__msg--in { justify-self: start; background: #fff; border-radius: 14px 14px 14px 4px; padding: 8px 10px; }
 @media (min-width: 1000px) {
   .walk { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start; }
@@ -280,6 +283,10 @@
   .wstep .wstep__fig { display: none; }
 }
 .wstep__fig { width: min(220px, 60%); margin-top: 8px; }
+.wstep__fig--screen { width: min(250px, 68%); }
+.wstep__fig--screen .ws { font-size: 12px; gap: 8px; }
+.wstep__fig--screen .ws__h { font-size: 22px; }
+.wstep__fig--screen .ws__row { padding: 9px 12px; }
 .wstep__fig .phone { position: relative; }
 
 /* ---------------- features page: the phone with call-outs ---------------- */
@@ -289,17 +296,21 @@
 .orbit__item { padding: 20px 24px; border-radius: 22px; background: #fff; box-shadow: var(--shadow); }
 .orbit__item b { display: block; font: 400 24px/1.15 var(--f-display); }
 .orbit__item span { font-size: 15px; color: var(--ink-2); }
+/* wide screens: the section is exactly one screen under the header (it is pinned there, src/site/motion.js), the
+   phone is sized by the screen's height so it always fits, and the six call-outs sit in two columns of three rows
+   centred on the phone, so none can fall below the fold */
 @media (min-width: 1100px) {
-  .orbit { height: calc(100svh - var(--nav-h)); min-height: 700px; align-items: center; justify-content: center; display: flex; }
-  .orbit__phone { width: clamp(260px, 22vw, 330px); position: relative; z-index: 1; }
-  .orbit__list { position: absolute; inset: 0; display: block; }
-  .orbit__item { position: absolute; width: 300px; }
-  .orbit__item:nth-child(1) { left: 6%; top: 14%; }
-  .orbit__item:nth-child(2) { left: 2%; top: 44%; }
-  .orbit__item:nth-child(3) { left: 8%; top: 72%; }
-  .orbit__item:nth-child(4) { right: 6%; top: 14%; }
-  .orbit__item:nth-child(5) { right: 2%; top: 44%; }
-  .orbit__item:nth-child(6) { right: 8%; top: 72%; }
+  .sec.sec--orbit { padding-block: 0; } /* .sec (site.css) can load after this file */
+  .orbit { height: calc(100svh - var(--nav-h)); min-height: 560px; align-items: center; justify-content: center; display: flex; }
+  .orbit__phone { width: min(clamp(240px, 22vw, 330px), calc((100svh - var(--nav-h) - 72px) / 2)); position: relative; z-index: 1; }
+  .orbit__list { position: absolute; inset: 0 var(--gut); max-width: 1120px; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 340px) 1fr minmax(0, 340px); align-content: center; row-gap: clamp(20px, 5svh, 56px); }
+  .orbit__item { width: 300px; }
+  .orbit__item:nth-child(1) { grid-area: 1 / 1; justify-self: end; }
+  .orbit__item:nth-child(2) { grid-area: 2 / 1; justify-self: start; }
+  .orbit__item:nth-child(3) { grid-area: 3 / 1; justify-self: end; }
+  .orbit__item:nth-child(4) { grid-area: 1 / 3; justify-self: start; }
+  .orbit__item:nth-child(5) { grid-area: 2 / 3; justify-self: end; }
+  .orbit__item:nth-child(6) { grid-area: 3 / 3; justify-self: start; }
 }
 
 /* ---------------- pricing page ---------------- */

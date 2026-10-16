@@ -279,6 +279,34 @@ test('tiers: defaults, the plan must include the design, admin overrides, expose
   if (ready.has('kham')) assert.equal((await b.req('/api/themes')).body.find((t) => t.slug === 'kham').tier, 'shahi');
 });
 
+test('plan names: the planner renames plans and their Nepali names; older documents fall back by id', async () => {
+  const b = browser();
+  let s = (await b.req('/api/site')).body;
+  assert.deepEqual(Object.fromEntries(s.plans.map((p) => [p.id, p.nameNe])), { saral: 'सरल', shubha: 'शुभ', shahi: 'शाही', custom: 'आफ्नै' });
+  const cur = (await admin.req('/api/admin/site')).body;
+  const plans = structuredClone(cur.plans);
+  const by = (id) => plans.find((p) => p.id === id);
+  delete by('saral').nameNe; // a client that never sends it: the usual word for the id
+  Object.assign(by('shubha'), { name: 'Pro', nameNe: ' प्रो ' });
+  by('shahi').nameNe = ''; // cleared on purpose: stays empty
+  const tooLong = await admin.req('/api/site', { method: 'PUT', body: { ...cur, plans: plans.map((p) => (p.id === 'custom' ? { ...p, nameNe: 'क'.repeat(41) } : p)) } });
+  assert.equal(tooLong.status, 400);
+  assert.ok(tooLong.body.errors.some((e) => e.path === 'plans[3].nameNe'));
+  const put = await admin.req('/api/site', { method: 'PUT', body: { ...cur, plans } });
+  assert.equal(put.status, 200, JSON.stringify(put.body));
+  assert.deepEqual(put.body.plans.map((p) => p.nameNe), ['सरल', 'प्रो', '', 'आफ्नै']);
+  s = (await b.req('/api/site')).body;
+  assert.equal(s.plans.find((p) => p.id === 'shubha').name, 'Pro');
+  assert.equal(s.plans.find((p) => p.id === 'shahi').nameNe, '');
+  // feature lines written with the first names follow the rename on the website ("Shubha Bibaha" is left alone)
+  assert.ok(s.plans.find((p) => p.id === 'shahi').features.includes('Everything in Pro'));
+  // the tier error names the plan as the planner calls it
+  const r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', theme: 'dhoka', email: 'names1@example.com', password: 'names-pass-1' } });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error, /needs the Pro plan/);
+  assert.equal((await admin.req('/api/site', { method: 'PUT', body: cur })).status, 200);
+});
+
 test('the admin links an invitation: the customer edits it within the link perms; unlink, delete', async () => {
   const created = await admin.req('/api/invitations', { method: 'POST', body: { slug: 'gita-ramesh', bride: 'Gita', groom: 'Ramesh', theme: 'dhoka' } });
   assert.equal(created.status, 201, JSON.stringify(created.body));

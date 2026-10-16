@@ -2,7 +2,7 @@
 // The static fallback (themes.js) covers an API that is down. In development only, while the server does not
 // speak the payment contract yet (no `paymentMethods` in /api/site), orders and payments run against a small
 // mock kept in this browser's localStorage, so the whole flow can be built and tested. Production never mocks.
-import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, tierOf } from './themes.js';
+import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, PLAN_NE, tierOf } from './themes.js';
 import { SLUG_RE, str, localPath } from './common.js';
 
 export const REF_RE = /^[A-Za-z0-9_-]{3,40}$/;
@@ -28,6 +28,7 @@ function normPlan(p) {
   return {
     id,
     name: str(p.name, 60) || id,
+    nameNe: typeof p.nameNe === 'string' ? str(p.nameNe, 40) : (PLAN_NE[id] || ''), // '' when the planner cleared it
     price: num(p.price, 0, 10_000_000),
     priceUsd: num(p.priceUsd ?? p.usdPrice, 0, 10_000),
     from: Boolean(p.from),
@@ -123,10 +124,11 @@ async function send(url, init) {
   }
 }
 
-/** POST /api/orders → { ok, ref, payToken, amount: { npr, usd }, plan } */
-export async function createOrder(body, site) {
+/** POST /api/orders → { ok, ref, payToken, amount: { npr, usd }, plan }. `csrf`: the signed-in session's token. */
+export async function createOrder(body, site, csrf = '') {
   if (site.mock) return mock.create(body, site);
-  return send('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const headers = { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) };
+  return send('/api/orders', { method: 'POST', headers, body: JSON.stringify(body) });
 }
 
 /** GET /api/orders/:ref/pay?t= → the order's payment page data, cleaned (see normPay) */

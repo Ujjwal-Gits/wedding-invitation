@@ -48,8 +48,9 @@ export const PAGES = {
   pricing: {
     path: '/pricing/', img: 'pricing', type: 'WebPage', ogType: 'website',
     title: 'Online Invitation Card Price Nepal: From Rs 2,999 | Nimtto',
-    desc: 'Online invitation card prices in Nepal: Saral Rs 2,999, Shubha Rs 4,999, Shahi Rs 6,999, custom from Rs 11,111. Pay once by Khalti, eSewa or PayPal.',
-    alt: 'Nimtto prices: Saral Rs 2,999, Shubha Rs 4,999 and Shahi Rs 6,999, paid once, beside an invitation on a phone',
+    // no plan names here: the planner renames plans in the studio, and meta tags are only built, never refreshed
+    desc: 'Online invitation card prices in Nepal: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, custom from Rs 11,111. Pay once by Khalti, eSewa or PayPal.',
+    alt: 'Nimtto prices: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, paid once, beside an invitation on a phone',
   },
   contact: {
     path: '/contact/', img: 'contact', type: 'ContactPage', ogType: 'website',

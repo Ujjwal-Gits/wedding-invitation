@@ -159,7 +159,7 @@ function orbit(mm) {
   mm.add('(min-width: 1100px)', () => {
     const items = $$('.orbit__item', sec);
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' }, scrollTrigger: { trigger: sec, start: () => `top ${navH()}px`, end: () => `+=${window.innerHeight * 1.2}`, pin: true, scrub: 0.6, anticipatePin: 1 } });
-    tl.fromTo('.orbit__phone', { scale: 1.25, y: 40 }, { scale: 1, y: 0, duration: 0.3 }, 0);
+    tl.fromTo('.orbit__phone', { scale: 1.08, y: 24 }, { scale: 1, y: 0, duration: 0.3 }, 0); // small: the phone fills the height
     items.forEach((it, i) => tl.fromTo(it, { autoAlpha: 0, x: i < 3 ? 60 : -60, y: 20 }, { autoAlpha: 1, x: 0, y: 0, duration: 0.18 }, 0.22 + i * 0.1));
     tl.to({}, { duration: 0.1 });
   });

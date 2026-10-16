@@ -1,6 +1,9 @@
 // The website's words that more than one page (and the build) uses: occasions, steps, features and the FAQ.
 // Plain module: the Vite partials plugin (src/site/partials.mjs) renders it into static HTML and JSON-LD at build,
 // so every answer is in the page source for search and answer engines. Plain English, short sentences.
+// Plan names and prices in the FAQ are tokens ({plan:saral}, {price:saral}, {usd:saral}): the build writes the first
+// names, and in the page's HTML they sit in data-plan-* spans that src/site/plans.js fills with the planner's names.
+import { FALLBACK_SITE } from './themes.js';
 
 export const SITE_URL = 'https://nimtto.com';
 
@@ -20,7 +23,7 @@ export const OCCASIONS = [
 
 export const STEPS = [
   { t: 'Choose a design', d: 'Pick one of our designs, or ask for one made only for you. Open the preview and see it move first.' },
-  { t: 'Order and pay', d: 'Fill a short form with your name, WhatsApp and email. Pay by Khalti, eSewa, bank QR or PayPal.' },
+  { t: 'Order and pay', d: 'Make your account, then fill a short form with your plan, design and WhatsApp. Pay by Khalti, eSewa, bank QR or PayPal.' },
   { t: 'We make it with you', d: 'We message you on WhatsApp for names, dates, photos and your song. You see every change.' },
   { t: 'Share one link', d: 'Send the link on WhatsApp, Viber or Messenger. Guests open it, see every event and reply.' },
 ];
@@ -41,7 +44,7 @@ export const FEATURES = [
 const Q = {
   what: ['What is Nimtto?', 'Nimtto is an online invitation maker from Nepal. We make invitation websites for weddings, bratabandha, pasni, gunyu cholo and other family occasions. Your guests open one link on their phone and see every event, the date in Nepali and English, a map, your photos and a reply form.'],
   how: ['How do I make an online wedding invitation in Nepal?', 'Choose a design on Nimtto, fill the short order form and pay by QR. We then message you on WhatsApp for your names, dates, photos and song, and send you the finished link to share.'],
-  cost: ['How much does a digital wedding card cost in Nepal?', 'A Nimtto invitation website costs Rs 2,999 (Saral), Rs 4,999 (Shubha) or Rs 6,999 (Shahi). A custom design made only for you starts at Rs 11,111. From abroad you can pay in US dollars by PayPal, from USD 49.'],
+  cost: ['How much does a digital wedding card cost in Nepal?', 'A Nimtto invitation website costs {price:saral} ({plan:saral}), {price:shubha} ({plan:shubha}) or {price:shahi} ({plan:shahi}). A custom design made only for you starts at {price:custom}. From abroad you can pay in US dollars by PayPal, from {usd:saral}.'],
   pay: ['How do I pay?', 'You pay by Khalti, eSewa or any bank app by scanning a QR code, or by PayPal from abroad. After you order, the payment page shows the QR with your order number. You then upload a screenshot of the payment and we confirm it.'],
   time: ['How long does it take?', 'We start as soon as your payment is confirmed and we have your details. A ready-made design is quicker than a custom one. Tell us your date when you order and we plan around it.'],
   nepali: ['Can the invitation be in Nepali?', 'Yes. Every invitation works in English and Nepali, and guests switch with one tap. Dates show in Bikram Sambat and AD side by side.'],
@@ -50,7 +53,7 @@ const Q = {
   change: ['Can I change details after the invitation is shared?', 'Yes. The link stays the same and changes show at once. You can update times, venues and photos from your dashboard, or message us and we change it for you.'],
   app: ['Do guests need to install an app?', 'No. The invitation is a website. It opens in any phone browser from WhatsApp, Viber, Messenger or SMS, also on slow mobile data.'],
   abroad: ['Can family abroad see it and pay from abroad?', 'Yes. The invitation opens anywhere in the world, and you can pay in US dollars by PayPal.'],
-  difference: ['What is the difference between Saral, Shubha and Shahi?', 'The plans differ in which designs and extras they include. Saral has 7 designs and all the basics. Shubha adds 8 more designs, photos, every ceremony with maps and music. Shahi includes every design, personal guest links and priority help.'],
+  difference: ['What is the difference between {plan:saral}, {plan:shubha} and {plan:shahi}?', 'The plans differ in which designs and extras they include. {plan:saral} has 7 designs and all the basics. {plan:shubha} adds 8 more designs, photos, every ceremony with maps and music. {plan:shahi} includes every design, personal guest links and priority help.'],
   custom: ['What is a custom design?', 'A custom design is a new invitation made only for you, with your colours, art and wording. It suits any occasion, not only weddings. It starts at Rs 11,111 and we talk it through with you before we begin.'],
   account: ['Why do I make an account when I order?', 'Your account lets you come back to your order, pay later, and later edit your invitation and read guest replies. You sign in with your email and the password you choose.'],
   where: ['Where is Nimtto based?', 'Nimtto is made in Nepal and serves Nepali families in Nepal and around the world. We talk to you on WhatsApp in English or Nepali.'],
@@ -66,4 +69,25 @@ export const FAQ = {
   contact: ['where', 'time', 'pay', 'abroad'],
   design: ['difference', 'how', 'change', 'app'],
 };
-export const faqItems = (set) => (FAQ[set] || []).map((k) => ({ q: Q[k][0], a: Q[k][1] }));
+
+const npr = new Intl.NumberFormat('en-IN');
+const PLAN = Object.fromEntries(FALLBACK_SITE.plans.map((p) => [p.id, p]));
+const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const TOKEN = /\{(plan|price|usd):([a-z0-9-]+)\}/g;
+const ATTR = { plan: 'data-plan-name', price: 'data-plan-price', usd: 'data-plan-usd' };
+/** Fills the plan tokens: plain text, or escaped HTML with the data-plan-* spans the page updates live. */
+export function fillPlans(s, html = false) {
+  let out = '';
+  let at = 0;
+  for (const m of s.matchAll(TOKEN)) {
+    const p = PLAN[m[2]];
+    const v = !p ? '' : m[1] === 'plan' ? p.name : m[1] === 'price' ? `Rs ${npr.format(p.price)}` : `USD ${p.priceUsd}`;
+    const lit = s.slice(at, m.index);
+    out += html ? `${escHtml(lit)}<span ${ATTR[m[1]]}="${m[2]}">${escHtml(v)}</span>` : lit + v;
+    at = m.index + m[0].length;
+  }
+  const rest = s.slice(at);
+  return out + (html ? escHtml(rest) : rest);
+}
+/** A page's questions: q and a as plain text (JSON-LD), qHtml and aHtml as escaped HTML with live plan names. */
+export const faqItems = (set) => (FAQ[set] || []).map((k) => ({ q: fillPlans(Q[k][0]), a: fillPlans(Q[k][1]), qHtml: fillPlans(Q[k][0], true), aHtml: fillPlans(Q[k][1], true) }));

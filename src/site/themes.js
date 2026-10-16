@@ -56,10 +56,10 @@ export const RELIGION_LABEL = { hindu: 'Hindu', muslim: 'Muslim', christian: 'Ch
 // Shown only when GET /api/site is unavailable (the admin edits the real plans, methods and contact in the studio).
 export const FALLBACK_SITE = {
   plans: [
-    { id: 'saral', name: 'Saral', price: 2999, priceUsd: 49, includes: 'saral', features: ['A ready-made design', 'Your names, date and venue', 'Guest replies (RSVP)', 'A link to share on WhatsApp'], highlight: false },
-    { id: 'shubha', name: 'Shubha', price: 4999, priceUsd: 99, includes: 'shubha', note: 'Most couples choose this', features: ['Everything in Saral', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
-    { id: 'shahi', name: 'Shahi', price: 6999, priceUsd: 149, includes: 'shahi', features: ['Everything in Shubha', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
-    { id: 'custom', name: 'Custom', price: 11111, priceUsd: 199, from: true, includes: 'shahi', note: 'A design made only for you', features: ['A design made for your occasion', 'Your colours, art and wording', 'Everything in Shahi'], highlight: false },
+    { id: 'saral', name: 'Saral', nameNe: 'सरल', price: 2999, priceUsd: 49, includes: 'saral', features: ['A ready-made design', 'Your names, date and venue', 'Guest replies (RSVP)', 'A link to share on WhatsApp'], highlight: false },
+    { id: 'shubha', name: 'Shubha', nameNe: 'शुभ', price: 4999, priceUsd: 99, includes: 'shubha', note: 'Most couples choose this', features: ['Everything in Saral', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
+    { id: 'shahi', name: 'Shahi', nameNe: 'शाही', price: 6999, priceUsd: 149, includes: 'shahi', features: ['Everything in Shubha', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
+    { id: 'custom', name: 'Custom', nameNe: 'आफ्नै', price: 11111, priceUsd: 199, from: true, includes: 'shahi', note: 'A design made only for you', features: ['A design made for your occasion', 'Your colours, art and wording', 'Everything in Shahi'], highlight: false },
   ],
   paymentMethods: [
     { id: 'khalti', label: 'Khalti', kind: 'wallet', currency: 'NPR', accountName: '', qr: '/site/pay/khalti.png' },
@@ -73,7 +73,7 @@ export const FALLBACK_SITE = {
   featuredThemes: [],
 };
 
-// Nepali names for the usual plans (the API carries the English name only)
+// Nepali names for the usual plans: the fallback when a plan has no `nameNe` (the planner edits both names)
 export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शाही', custom: 'आफ्नै' };
 
 // Design tiers (docs/API.md "Design tiers"): the lowest plan that includes a design. /api/themes `tier` wins.
@@ -85,6 +85,8 @@ const TIERS = {
 };
 export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');
 for (const t of THEMES) t.tier = tierOf(t.slug);
+/** a tier's name: the name of the plan with that id (the planner can rename it), else the plan the tier starts at */
+export const tierName = (plans, tier) => (plans || []).find((p) => p.id === tier)?.name || planForTier(plans || [], tier)?.name || TIER_LABEL[tier] || '';
 /** the plan a tier starts at, from a plan list (the cheapest plan whose `includes` covers it) */
 export function planForTier(plans, tier) {
   const need = TIER_RANK[tier] || 2;

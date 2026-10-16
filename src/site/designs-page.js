@@ -1,7 +1,8 @@
 // /designs/: the grid is static HTML (src/site/partials.mjs); this filters it by look and by plan, and brings the
 // tiers and the hidden designs up to date from /api/themes.
 import { $, $$ } from './common.js';
-import { TIER_LABEL, TIER_RANK } from './themes.js';
+import { TIER_RANK } from './themes.js';
+import { applyPlanNames } from './plans.js';
 
 export function init(state) {
   const grid = $('#dgrid');
@@ -14,7 +15,7 @@ export function init(state) {
       li.dataset.tier = t.tier;
       const tag = $('[data-tier-tag]', li);
       tag.className = `tier tier--${t.tier}`;
-      tag.textContent = TIER_LABEL[t.tier];
+      tag.dataset.tierTag = t.tier;
       $('[data-tier-price]', li).dataset.tierPrice = t.tier;
     }
   }
@@ -40,10 +41,6 @@ export function init(state) {
     f[b.dataset.f] = b.dataset.v;
     apply();
   });
-  // re-run the tier prices now that tiers may have changed
-  for (const n of $$('[data-tier-price]', grid)) {
-    const p = state.site.plans.filter((x) => !x.from && x.id !== 'custom' && (TIER_RANK[x.includes] || 3) >= TIER_RANK[n.dataset.tierPrice]).sort((a, b) => a.price - b.price)[0];
-    if (p) n.textContent = `from Rs ${new Intl.NumberFormat('en-IN').format(p.price)}`;
-  }
+  applyPlanNames(state.site); // re-run the tier names and prices now that tiers may have changed
   apply();
 }

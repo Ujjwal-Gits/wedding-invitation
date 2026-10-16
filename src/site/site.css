@@ -269,8 +269,6 @@ dialog { color: var(--ink); }
 .om-grid { display: grid; gap: 14px; }
 @media (min-width: 560px) { .om-grid { grid-template-columns: 1fr 1fr; } }
 .om-signed { padding: 12px 14px; border-radius: 16px; background: var(--blush-50); font-size: 15px; }
-.om-exists { padding: 12px 14px; border-radius: 16px; background: #FFF3E6; color: #7A3B00; font-size: 15px; }
-.om-exists a { color: var(--accent); font-weight: 600; }
 .om__foot { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 16px; padding: 16px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
 .om__err { grid-column: 1 / -1; padding: 10px 14px; border-radius: 12px; background: #FDECEC; color: var(--err); font-size: 15px; }
 .om__err a { color: inherit; font-weight: 600; }
@@ -283,6 +281,22 @@ dialog { color: var(--ink); }
   .om { inset: 0; width: min(760px, calc(100% - 48px)); height: fit-content; max-height: calc(100dvh - 48px); margin: auto; }
   .om__form { height: auto; max-height: calc(100dvh - 48px); border-radius: 32px; }
   .om__head, .om__body, .om__foot { padding-inline: 32px; }
+}
+/* the account step before the order (src/site/signin.js): the same sheet, only as tall as its few fields */
+.om--auth { height: auto; max-height: 94dvh; }
+.om--auth .om__form { height: auto; max-height: 94dvh; }
+.oa-lede { padding-top: 16px; color: var(--ink-2); font-size: 15px; }
+.om--auth .om-signed { margin-top: 16px; }
+.oa-grid { display: grid; gap: 14px; padding-top: 18px; }
+.oa-forgot { font-size: 14px; }
+.oa__foot { grid-template-columns: 1fr; }
+.oa__submit { width: 100%; justify-self: stretch; }
+.oa-switch { text-align: center; font-size: 15px; color: var(--ink-2); }
+.oa-switch__btn { padding: 4px 2px; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.om-signed--admin { background: #FFF3E6; color: #7A3B00; }
+.om-signed a { color: var(--accent); font-weight: 600; }
+@media (min-width: 760px) {
+  .om--auth { width: min(480px, calc(100% - 48px)); }
 }
 .om[open] .om__form { animation: om-in 0.38s var(--ease); }
 @keyframes om-in { from { transform: translateY(24px); opacity: 0; } }
