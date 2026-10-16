@@ -121,6 +121,7 @@ export async function replyStats() {
 // ── Orders
 export const listOrders = () => readJson(ORDERS_FILE, []);
 export async function getOrder(id) { return (await listOrders()).find((o) => o.id === id) || null; }
+export async function getOrderByRef(ref) { return (await listOrders()).find((o) => o.ref === ref) || null; }
 export async function addOrder(order, max) {
   const all = await listOrders();
   if (all.length >= max) throw httpError(507, 'We cannot take more requests right now. Please call us.');

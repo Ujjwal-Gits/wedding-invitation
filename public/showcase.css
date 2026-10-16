@@ -1,16 +1,17 @@
 /* Showcase mode (src/core/showcase.js): the public, watermarked preview of a design.
    Only linked on showcase pages; every rule is scoped to html[data-showcase="1"] anyway.
-   The badge, toast and blank card use the website's language: rose-white paper, wine ink, one sindoor red,
-   Kalnia + Switzer (DESIGN.md "Website"). Never black. */
+   The badge, toast and blank card use the website's language: white, blush, plum ink, one wine accent,
+   the Nimtto logo, Fraunces + Jost + Tiro Devanagari Hindi (DESIGN.md "Website"). */
 
-@font-face { font-family: 'Kalnia'; src: url('/site/fonts/kalnia-latin.woff2') format('woff2'); font-weight: 100 400; font-display: swap; }
-@font-face { font-family: 'Switzer'; src: url('/site/fonts/switzer-var.woff2') format('woff2-variations'), url('/site/fonts/switzer-var.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
-@font-face { font-family: 'Martel'; src: url('/site/fonts/martel-300-deva.woff2') format('woff2'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Fraunces'; src: url('/site/fonts/fraunces-latin.woff2') format('woff2'); font-weight: 300 600; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url('/site/fonts/jost-latin.woff2') format('woff2'); font-weight: 300 600; font-display: swap; }
+@font-face { font-family: 'Tiro Devanagari Hindi'; src: url('/site/fonts/tiro-deva.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 html[data-showcase="1"] {
-  --sc-paper: #FCF8F7; --sc-white: #FFFFFF; --sc-line: #EBDCD9; --sc-ink: #3D1E28; --sc-ink-2: #664C55; --sc-ink-3: #7E636C;
-  --sc-red: #A3182F; --sc-red-deep: #86132A; --sc-on-red: #FFF8F6; --sc-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --sc-ui: 'Switzer', 'Segoe UI', Arial, sans-serif; --sc-display: 'Kalnia', 'Iowan Old Style', Georgia, serif;
+  --sc-paper: #FBF5F3; --sc-white: #FFFFFF; --sc-line: #EFE4E2; --sc-ink: #2A1A1D; --sc-ink-2: #5B474B; --sc-ink-3: #7A6468;
+  --sc-red: #9A1829; --sc-red-deep: #7D1321; --sc-on-red: #FFFFFF; --sc-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --sc-ui: 'Jost', 'Segoe UI', Arial, sans-serif; --sc-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --sc-ne: 'Tiro Devanagari Hindi', 'Nirmala UI', serif;
 }
 
 /* no selecting, no long-press callouts, no dragging pictures (the form fields still take typing) */
@@ -31,8 +32,8 @@ html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"
   font: 500 13.5px/1.2 var(--sc-ui); letter-spacing: 0.01em; white-space: nowrap;
   -webkit-font-smoothing: antialiased;
 }
-.nimtto-sc-badge__mark { font: 300 17px/1 var(--sc-display); letter-spacing: -0.01em; color: var(--sc-ink); }
-.nimtto-sc-badge__tag { padding: 3px 8px; border-radius: 999px; background: #F6E0E0; color: var(--sc-red); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.nimtto-sc-badge__mark { display: block; width: auto; height: 19px; pointer-events: none; }
+.nimtto-sc-badge__tag { padding: 4px 8px; border-radius: 999px; background: #F6E9E7; color: var(--sc-red); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
 .nimtto-sc-badge__order {
   display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 999px;
   background: var(--sc-red); color: var(--sc-on-red) !important; text-decoration: none; transition: background-color 200ms var(--sc-ease);
@@ -58,7 +59,7 @@ html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"
   transition: opacity 220ms var(--sc-ease), transform 260ms var(--sc-ease);
 }
 .nimtto-sc-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
-.nimtto-sc-toast__ne { color: var(--sc-ink-2); font: 400 13px/1.5 'Mukta', 'Nirmala UI', sans-serif; }
+.nimtto-sc-toast__ne { color: var(--sc-ink-2); font: 400 14px/1.5 var(--sc-ne); font-feature-settings: 'locl' 0; }
 
 /* the blank card shown when the window loses focus, on PrintScreen, print or save */
 .nimtto-sc-veil {
@@ -70,8 +71,8 @@ html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"
   background: var(--sc-white); text-align: center; box-shadow: 0 34px 60px -36px rgba(61, 30, 40, 0.32);
 }
 .nimtto-sc-veil__card p { margin: 0; }
-.nimtto-sc-veil__ne { font: 300 34px/1.3 'Martel', 'Nirmala UI', serif; color: var(--sc-red); }
-.nimtto-sc-veil__mark { font: 200 40px/1.05 var(--sc-display); letter-spacing: -0.012em; }
+.nimtto-sc-veil__ne { font: 400 32px/1.3 var(--sc-ne); color: var(--sc-red); font-feature-settings: 'locl' 0; }
+.nimtto-sc-veil__mark { display: block; width: 162px; height: auto; margin-bottom: 8px; pointer-events: none; }
 .nimtto-sc-veil__t { margin-top: 10px !important; font: 500 15px/1.4 var(--sc-ui); }
 .nimtto-sc-veil__s { font: 400 13.5px/1.4 var(--sc-ui); color: var(--sc-ink-3); }
 
@@ -86,6 +87,6 @@ html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"
   html[data-showcase="1"] [data-nimtto-wm] { display: none !important; }
   html[data-showcase="1"]::before {
     content: "This is a Nimtto preview, and printing is turned off. Order this design at nimtto.com to get your own invitation.";
-    display: block; margin: 40px; font: 400 16px/1.6 Georgia, serif; color: #3D1E28;
+    display: block; margin: 40px; font: 400 16px/1.6 Georgia, serif; color: #2A1A1D;
   }
 }

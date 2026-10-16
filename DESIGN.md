@@ -116,59 +116,57 @@ Banned: "Unlock", "Seamlessly", "Elevate your", "Supercharge", "in seconds",
 
 ---
 
-## Website (home page) design
+## Website (home page, design pages, pay page) design
 
-Applies to the public site at `/` only (`index.html`, `src/site/**`, `public/site/**`). The invitation themes keep
-their own ornate type; the website must not borrow it.
+Applies to the public site only: `/` (`index.html`), `/designs/<slug>/` (generated), `/pay/<ref>`, `src/site/**`,
+`public/site/**`, plus the showcase chrome (`src/core/showcase.js`, `public/showcase.css`). The invitation themes keep
+their own type; the website must not borrow it.
 
-Feeling: a calm bridal stationer. Light, airy and romantic: rose-white paper, a blush second tint, deep wine ink and one
-sindoor red. Never black, never yellow parchment. The colour and the flowers come from the real designs, shown big;
-the chrome stays quiet. Text never sits on flowers.
+**Source of truth: the owner's Claude Design canvas "Nimtto Redesign" (`Main.dc.html` = home, `Design.dc.html` = a
+design page).** The build reproduces it exactly: same layout, sections and order, fonts, colours, components, cards,
+buttons and (no) motion. Allowed differences only: spacing put on the scale, the plain-English copy, phone and tablet
+layouts, and the working parts the canvas only drew (navigation, the order and pay flow, the design pages). Compare
+with the canvas side by side at 1440 before changing anything.
 
-Fonts (self-hosted in `public/site/fonts/`, licences beside them; the first three are preloaded):
-- Display: Kalnia (OFL), light 200 for headings, 300 for small titles and names. Upright only, letter-spacing
-  about -0.012em at display sizes. Never bold, never italic.
-- UI and body: Switzer variable (Indian Type Foundry, ITF Free Font License), 400 for text, 500 for labels and buttons.
-- Nepali display (निम्तो, नमस्ते, dates, step numbers १-४, Nepali design names): Martel 300 (OFL).
-- Nepali text: Mukta 400 (OFL). Every `[lang=ne]` turns `locl` off so ८ never draws like ५.
-- Banned here: Cormorant, Playfair, Bodoni, Inter, Roboto, Open Sans, system-ui as display, and any script face.
+Fonts (self-hosted in `public/site/fonts/`, OFL licences beside them; Fraunces, Jost and Meow Script are preloaded):
+- Display: Fraunces (variable opsz/wght 300-600, SOFT 100 and WONK 0 baked in), 400 headings, 500 small titles.
+- Text and UI: Jost 300-600 (300 for paragraphs, 400 UI, 500 labels; buttons 13px uppercase, 0.14em tracking).
+- Nepali: Tiro Devanagari Hindi 400. Devanagari digits come from a 4 KB Mukta subset (`mukta-digits.woff2`,
+  "Nimtto Digits" first in `--f-ne`) because Tiro draws ९ almost like ६ and a date must never be misread.
+  Every `[lang=ne]` turns `locl` off.
+- Meow Script (letters-only subset): one accent word per heading, as the canvas ("doorway", "opening", "replies",
+  "needs", "rupees", "invitation"), and the sample names in drawings. Never for UI or body.
 
-Tokens (`src/site/site.css`):
-- Surfaces: paper `#FCF8F7` (page), blush `#F7ECEA` (alternate sections, footer), blush-2 `#F1E1DE` (door leaves,
-  image wells), white `#FFFFFF` (form panel, specimens, lightbox).
-- Lines: `#EBDCD9` hairlines, `#DDC8C4` on blush and the arch frame, `#A88E8B` field borders (3:1 on white).
-- Ink: `#3D1E28` (14:1 on paper), ink-2 `#664C55` (7.3:1), ink-3 `#7E636C` (5.1:1 on paper, 4.7:1 on blush).
-- Accent: sindoor `#A3182F` (hover `#86132A`, soft `#F6E0E0` for focus halos and selection); text on it `#FFF8F6`.
-- Error `#B42318`. No gradients, no gold hairlines, no beige.
-- The shared dropdown and date picker (`src/ui`) take their colours from `--ui-*` variables set on `body`.
+Tokens (`src/site/site.css`): wine `#9A1829` (hover `#7D1321`), plum ink `#2A1A1D`, `#5B474B`, `#7A6468` (only on
+white, soft or blush), blush `#F6E9E7`, promo `#F7E9E8`, hairline `#EFE4E2`, soft `#FBF5F3`, white, gold
+`#C9871F`/`#E0A030` for dots only. Field borders are `#9C8689` (the canvas `#DCCBC8` is under the 3:1 needed for
+inputs). Spacing scale only: 4 8 12 16 24 32 48 64 96 128. Sections 64 / 96 (768+) / 128 (1280+). Container 1272
+(the canvas 1320 with 24px padding), gutters 20 / 32 / 48.
 
-Structure (no two sections built alike, alternating paper and blush):
-1. Header: wordmark Nimtto + निम्तो, quiet text links, an outlined Order pill; a full-width menu sheet on phones.
-2. Hero: headline and copy on the left, an arched doorway on the right holding a real design (phone still). On phones:
-   headline, arch, then copy and buttons. Under the arch: the design name and two round buttons that crossfade
-   between six designs; tapping the arch opens the lightbox.
-3. The word: a centred dictionary entry on blush (निम्तो, nimtto, noun).
-4. Designs: heading beside a lede, then a catalogue grid of stills with name and Nepali name below (3 columns on
-   desktop, a wide card then two pairs on phones). 12 shown (11 on phones), then "Show all". Lightest designs lead
-   unless the admin sets featured designs.
-5. How it works on blush: two overlapping phone stills beside four steps numbered १-४.
-6. Features: two white type specimens (a Bikram Sambat date, bilingual names), then a three-column list.
-7. Pricing: a ruled price list; the highlighted plan sits on a blush row.
-8. Order on blush: heading and next steps beside a white form panel; fresh marigold, roses and jasmine dress the top-left
-   corner on desktop (never behind text).
-9. Contact: नमस्ते and the heading beside the contact list (or a "Send a request" prompt when none is set).
-10. Footer on blush: wordmark, credits, Credits link, Studio sign in.
+Home (canvas order): promo bar with arrows; header (logo, five links, Sign in, Order pill; a Menu sheet under 1024px);
+hero (copy, then the flat lay: paper card, envelope with the Nimtto seal, phone drawing of Phoolbari); the word
+निम्तो; designs (chips, the stage with a phone and prev/next, thumbnails that pick the stage, a dashed custom card;
+"View details" opens `/designs/<slug>/`); how it works (four cards, the last wine); features bento; pricing (pill,
+Ready-made / Custom switch, plan cards from `/api/site` with the wine "Most chosen" band, trust row); order (four
+steps beside the form card; the payment step replaces the form); closing (नमस्ते, contact, two buttons); footer.
+Real design stills replace the canvas's placeholder drawings inside phone frames.
 
-Motion: one signature moment. Two blush door leaves meet in the hero arch with निम्तो written across the seam and an
-inner arch line, ring handles and carved panels; after about a second they swing open (rotateY with perspective,
-1.7 s, custom ease) and the design beneath settles from 1.06 to 1. It is pure CSS keyframes (runs without JS); JS only
-holds it until the picture has decoded (at most 2.5 s) and removes the leaves afterwards. Everything else is quiet:
-colour and opacity fades of 180-380 ms, a 2.5% image lift on hover, the lightbox rising 12px over 300 ms.
-Reduced motion: no doors at all, the design is simply there. No scroll-driven motion and no parallax.
+Design page (canvas `Design.dc.html`, generated by `node src/site/make-thumbs.mjs && node
+src/site/make-design-pages.mjs`): promo strip, two-row header with the category nav, breadcrumb, view tabs
+(Opening = the real still; Invitation, Ceremonies, RSVP drawn), colour theme and language controls on the drawn views,
+square Order / Preview buttons, notes box, Details / What's included / Why Nimtto tabs, every ceremony, "You may also
+love" (three phone cards), slim footer. Never a link to the clean theme page.
 
-Business rules shown on the page: designs open a still lightbox with "Order this design" and "Preview"; Preview (also
-under every card) opens the watermarked, demo-only showcase (`/<theme>/?showcase=1`): on desktop in a white phone-frame
-modal beside the name, "Order this design" and "Open full screen"; on phones full screen. Never a plain live link; prices come from `/api/site` (`price: null` shows "Ask for price"); designs from `/api/themes` with the
-static fallback in `src/site/themes.js`.
+Order and payment: order first, then pay. The payment step (`src/site/payment.js`, lazy-loaded) shows the amount,
+method cards, the per-order QR (`GET /api/orders/:ref/pay`; "The amount fills in by itself" when `dynamic`, else
+"Scan, then enter amount ... and remark ..." with copy buttons), an editable remark, "Save QR image", the screenshot
+upload with a preview, then the status. `/pay/<ref>?t=<token>` reopens it.
 
-Copy: plain and specific. No "Elevate / Seamless / Unlock", no em-dash asides, no eyebrow-and-dot labels.
+Showcase watermark: the owner's logo (traced to `/site/brand/nimtto-logo-white.svg`) tiled at -16 degrees with a
+small PREVIEW label, white at about 60% with a thin plum outline; it re-inserts itself if removed or hidden.
+
+Motion: as the canvas, only quiet hover and state changes (160-300 ms colour, border and opacity; thumbnails lift
+3px). No entrance animation, no scroll motion, no parallax. Reduced motion: nothing moves.
+
+Copy: plain, warm English for a family member with basic English. Short sentences, common words, one idea per line,
+digits for numbers ("27 designs"), prices as "Rs. 4,999" with "or USD 99 from abroad".

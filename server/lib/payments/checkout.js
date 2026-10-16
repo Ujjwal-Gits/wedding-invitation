@@ -1,5 +1,5 @@
 // Paying for a website request with PayPal. The request (lib/orders.js) exists first; its id is the reference.
-// The price always comes from site.json (plans[].usdPrice), never from the browser. Every state change is recorded
+// The price always comes from the server (the order's amount.usd, else site plans[].priceUsd), never from the browser. Every state change is recorded
 // on the order as `payment` and is idempotent: a repeated capture, a replayed webhook or the capture and its webhook
 // arriving together record the payment once.
 //
@@ -32,12 +32,32 @@ const fromCents = (c) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '
 export function createCheckout({ client, config, getOrder, findOrder, mutateOrder, readSite, now = () => new Date() }) {
   const stamp = () => now().toISOString();
   const lock = (ref, fn) => withLock(`pay:${ref}`, fn);
+  /**
+   * The manual flow's payment status (order.pay, lib/payments/manual.js) follows PayPal: a PayPal payment confirms
+   * the order by itself, and a full refund marks it refunded.
+   */
+  const syncPay = (o) => {
+    const st = o.payment?.status;
+    const pay = o.pay;
+    if (!pay) return;
+    const next = st === 'paid' ? 'confirmed' : st === 'refunded' ? 'refunded' : null;
+    if (!next || pay.status === next || (next === 'confirmed' && pay.status === 'refunded')) return;
+    pay.status = next;
+    if (next === 'confirmed') { pay.confirmedAt = stamp(); pay.via = 'paypal'; pay.reason = null; } else pay.refundedAt = stamp();
+    pay.history = [...(pay.history || []), { at: stamp(), status: next, by: 'paypal' }].slice(-50);
+  };
+  const mutate = (id, fn) => mutateOrder(id, async (o) => {
+    const r = await fn(o);
+    if (r !== false) syncPay(o);
+    return r;
+  });
 
   /** The plan and its online price for a request, or an error the visitor can read. */
   async function priceFor(order) {
     if (order.kind !== 'order' || !order.plan) throw httpError(400, 'This request has no plan to pay for. We will call you about the price.');
     const plan = (await readSite()).plans.find((p) => p.id === order.plan);
-    const cents = plan ? toCents(plan.usdPrice) : NaN;
+    const usd = order.amount?.usd ?? plan?.priceUsd ?? plan?.usdPrice; // the amount fixed when ordering wins
+    const cents = plan ? toCents(usd) : NaN;
     if (!plan || !Number.isFinite(cents) || cents < 100) throw httpError(400, 'This plan cannot be paid online. We will call you about the price.');
     return { plan, amount: fromCents(cents) };
   }
@@ -50,13 +70,14 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       const p = order.payment;
       if (p && (SETTLED.has(p.status) || p.status === 'pending')) throw httpError(409, 'This request is already paid.', { code: 'already_paid' });
       if (p?.status === 'mismatch') throw httpError(409, 'We are checking a payment for this request. We will call you.');
+      if (order.pay?.status === 'confirmed' || order.pay?.status === 'refunded') throw httpError(409, 'This request is already paid.', { code: 'already_paid' });
       const { plan, amount } = await priceFor(order);
       const created = await client.createOrder({
         ref, amount, currency: CURRENCY, description: `Nimtto invitation website, ${plan.name} plan`,
         requestId: `nimtto-${ref}-${randomBytes(6).toString('hex')}`,
       });
       if (!created || !PAYPAL_ORDER_ID_RE.test(String(created.id))) throw new PayPalError('PayPal returned no order id.', { status: 502 });
-      await mutateOrder(ref, (o) => {
+      await mutate(ref, (o) => {
         o.payment = {
           provider: 'paypal', env: config.env, status: 'created', plan: plan.id, amount, currency: CURRENCY,
           paypalOrderId: created.id, createdAt: stamp(), updatedAt: stamp(), events: o.payment?.events || [],
@@ -109,7 +130,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
         else throw err;
       }
       const next = judgeCapture(p, result, ref);
-      const saved = await mutateOrder(ref, (o) => {
+      const saved = await mutate(ref, (o) => {
         if (o.payment?.paypalOrderId !== paypalOrderId) return false; // a newer checkout replaced it meanwhile
         if (SETTLED.has(o.payment.status)) return false; // the webhook got there first
         Object.assign(o.payment, clean(next), { updatedAt: stamp() });
@@ -180,7 +201,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     if (!found) { console.warn(`[pay] webhook ${type} event=${event.id}: no matching request`); return ok(type, 'no matching request'); }
 
     let outcome = 'applied';
-    await lock(found.id, () => mutateOrder(found.id, (o) => {
+    await lock(found.id, () => mutate(found.id, (o) => {
       const p = o.payment;
       if (!p || p.provider !== 'paypal') { outcome = 'no payment'; return false; }
       if ((p.events || []).includes(event.id)) { outcome = 'duplicate'; return false; }

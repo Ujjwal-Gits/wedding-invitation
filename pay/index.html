@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pay for your order · Nimtto</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="same-origin" />
+  <meta name="theme-color" content="#FFFFFF" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preload" href="/site/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/site/fonts/jost-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <script type="module" src="/src/site/pay-page.js"></script>
+</head>
+<body class="paypage">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="bar" id="bar">
+    <div class="wrap bar__in">
+      <a class="logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="162" height="38" alt="Nimtto home" /></a>
+      <a class="bar__help" data-contact="wa" href="https://wa.me/9779806393298" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/></svg><span>Help on WhatsApp</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="main" class="sec sec--soft paypage__main">
+    <div class="wrap paypage__in">
+      <header class="head paypage__head">
+        <p class="kick">Your order</p>
+        <h1 class="h2" id="pay-h">Pay and send your screenshot</h1>
+        <p class="lede">Scan the QR to pay. Then send us a screenshot of the payment. We confirm it and start your invitation.</p>
+      </header>
+      <div class="paypage__panel" id="pay-box" aria-live="polite">
+        <p class="pay__loading">Loading your order…</p>
+      </div>
+      <noscript><p class="form__status">This page needs JavaScript. You can also pay by messaging us on WhatsApp: +977 980-6393298.</p></noscript>
+    </div>
+  </main>
+
+  <footer class="foot foot--min">
+    <div class="wrap foot__base">
+      <p><a href="/">nimtto.com</a> · <a href="/#contact">Contact</a> · <a href="/credits/">Credits</a></p>
+      <p>© <span data-year>2026</span> Nimtto</p>
+    </div>
+  </footer>
+</body>
+</html>

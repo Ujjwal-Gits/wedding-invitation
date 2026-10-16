@@ -27,9 +27,27 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
     pages[d.name] = resolve(root, d.name, 'index.html');
   }
 }
+// One generated page per design: designs/<slug>/index.html (node src/site/make-design-pages.mjs).
+if (existsSync(resolve(root, 'designs'))) {
+  for (const d of readdirSync(resolve(root, 'designs'), { withFileTypes: true })) {
+    if (d.isDirectory() && /^[a-z][a-z0-9-]{1,30}$/.test(d.name) && existsSync(resolve(root, 'designs', d.name, 'index.html'))) {
+      pages[`designs-${d.name}`] = resolve(root, 'designs', d.name, 'index.html');
+    }
+  }
+}
+
+/** /pay/<ref> serves pay/index.html (the page reads the order number from the path). Production: server/. */
+const payRoute = () => {
+  const rewrite = (req, res, next) => {
+    const m = /^\/pay\/([A-Za-z0-9_-]{3,40})\/?(\?.*)?$/.exec(req.url || '');
+    if (m) req.url = `/pay/index.html${m[2] || ''}`;
+    next();
+  };
+  return { name: 'pay-route', configureServer: (s) => { s.middlewares.use(rewrite); }, configurePreviewServer: (s) => { s.middlewares.use(rewrite); } };
+};
 
 export default defineConfig({
-  plugins: [shareMeta()],
+  plugins: [shareMeta(), payRoute()],
   server: {
     // A fixed port of its own, so it never silently lands on another project's dev server.
     port: 5190,

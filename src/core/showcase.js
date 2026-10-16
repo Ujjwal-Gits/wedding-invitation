@@ -6,6 +6,8 @@
 // Honest limits: the web cannot stop screenshots or screen recording. The tiled watermark, copy blocking and the
 // blank card on focus loss, PrintScreen and print are deterrents only.
 
+import TILE_SVG from './showcase-tile.svg?raw';
+
 const root = document.documentElement;
 const params = new URLSearchParams(location.search);
 export const SHOWCASE = root.dataset.showcase === '1' || params.has('showcase');
@@ -35,21 +37,13 @@ function start() {
   };
   ensureSheet();
 
-  // 3) the watermark: a tiled diagonal pattern above everything (the gate included), never catching a tap
-  const line = (x, y, size, text, family) => `<text x="${x}" y="${y}" font-size="${size}" font-family="${family}" `
-    + `text-anchor="middle" transform="rotate(-28 ${x} ${y})" fill="rgba(255,255,255,0.62)" stroke="rgba(61,30,40,0.5)" `
-    + `stroke-width="0.9" paint-order="stroke" font-weight="600" letter-spacing="1.2">${text}</text>`;
-  const SERIF = 'Georgia, Times New Roman, serif';
-  const DEVA = 'Nirmala UI, Mukta, Noto Sans Devanagari, sans-serif';
-  // one label per tile, whole inside it; two offset layers of the tile make a brick pattern
-  const tile = '<svg xmlns="http://www.w3.org/2000/svg" width="270" height="210" viewBox="0 0 270 210">'
-    + line(135, 98, 17, 'nimtto.com · PREVIEW', SERIF) + line(147, 124, 16, 'निम्तो', DEVA)
-    + '</svg>';
-  const TILE_URL = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(tile)}")`;
+  // 3) the watermark: the Nimtto logo (the owner's artwork, traced) tiled diagonally above everything, the gate
+  //    included, never catching a tap. White with a thin plum outline, so it reads on light and dark designs alike.
+  const TILE_URL = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(TILE_SVG)}")`;
   const WM_STYLE = {
     position: 'fixed', inset: '0', 'z-index': '2147483646', 'pointer-events': 'none', display: 'block',
     visibility: 'visible', opacity: '1', 'background-image': `${TILE_URL}, ${TILE_URL}`, 'background-repeat': 'repeat',
-    'background-size': '270px 210px', 'background-position': '0 0, 135px 105px', filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.35))', transform: 'none',
+    'background-size': '420px 260px', 'background-position': '0 0, 210px 130px', filter: 'drop-shadow(0 1px 2px rgba(42,26,29,0.25))', transform: 'none',
     'clip-path': 'none', margin: '0', padding: '0', border: '0', width: 'auto', height: 'auto',
   };
   const makeWm = () => {
@@ -73,7 +67,7 @@ function start() {
   badge.className = 'nimtto-sc-badge';
   badge.setAttribute('role', 'complementary');
   badge.setAttribute('aria-label', 'Nimtto preview');
-  const mark = Object.assign(document.createElement('span'), { className: 'nimtto-sc-badge__mark', textContent: 'Nimtto' });
+  const mark = Object.assign(document.createElement('img'), { className: 'nimtto-sc-badge__mark', src: '/site/brand/nimtto-logo.svg', alt: 'Nimtto', width: 81, height: 19, draggable: false });
   const tag = Object.assign(document.createElement('span'), { className: 'nimtto-sc-badge__tag', textContent: 'Preview' });
   const order = Object.assign(document.createElement('a'), { className: 'nimtto-sc-badge__order', href: orderUrl, target: '_top', textContent: 'Order this design' });
   // in the website's phone frame the page around it has the order button: the badge is only the mark there
@@ -106,8 +100,8 @@ function start() {
   const veil = document.createElement('div');
   veil.className = 'nimtto-sc-veil';
   veil.setAttribute('aria-hidden', 'true');
-  veil.innerHTML = '<div class="nimtto-sc-veil__card"><p class="nimtto-sc-veil__ne" lang="ne">निम्तो</p>'
-    + '<p class="nimtto-sc-veil__mark">Nimtto</p><p class="nimtto-sc-veil__t">Preview paused</p>'
+  veil.innerHTML = '<div class="nimtto-sc-veil__card"><img class="nimtto-sc-veil__mark" src="/site/brand/nimtto-logo.svg" alt="Nimtto" width="162" height="38" draggable="false">'
+    + '<p class="nimtto-sc-veil__ne" lang="ne">निम्तो</p><p class="nimtto-sc-veil__t">Preview paused</p>'
     + '<p class="nimtto-sc-veil__s">Tap to continue · nimtto.com</p></div>';
   let veilTimer = 0;
   const showVeil = (ms = 0) => {
@@ -197,6 +191,7 @@ function start() {
   window.addEventListener('afterprint', () => setTimeout(hideVeil, 400));
   const capture = (e) => {
     const k = (e.key || '').toLowerCase();
+    if (inFrame && e.key === 'Escape') { try { window.parent.postMessage({ nimtto: 'close-preview' }, location.origin); } catch { /* not ours */ } }
     if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
       showVeil(1600);
       navigator.clipboard?.writeText?.('nimtto.com · preview').catch(() => {});

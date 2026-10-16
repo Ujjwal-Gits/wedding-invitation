@@ -84,7 +84,7 @@ function memoryOrders(list) {
     },
   };
 }
-const SITE = { plans: [{ id: 'premium', name: 'Premium', price: 9000, usdPrice: 49 }, { id: 'classic', name: 'Classic', price: 5000, usdPrice: null }] };
+const SITE = { plans: [{ id: 'premium', name: 'Premium', price: 9000, priceUsd: 49 }, { id: 'classic', name: 'Classic', price: 5000, priceUsd: null }] };
 
 function setup({ order = {}, site = SITE } = {}) {
   const pp = fakePayPal();
@@ -359,31 +359,37 @@ test('routes: Origin check, honeypot, validation, disabled state, page headers',
   }
 });
 
-test('site.json: usdPrice per plan is validated on the server', async () => {
+test('site.json: priceUsd per plan is validated on the server (usdPrice, the old name, still accepted)', async () => {
   const { putSite, readSite } = await import('../lib/site.js');
   const res = () => ({ body: null, json(b) { this.body = b; return this; } });
-  const plan = (usdPrice) => ({ plans: [{ id: 'premium', name: 'Premium', price: 9000, usdPrice }] });
+  const plan = (priceUsd) => ({ plans: [{ id: 'premium', name: 'Premium', price: 9000, priceUsd }] });
   const ok = res();
   await putSite({ body: plan('49.5') }, ok);
-  assert.equal(ok.body.plans[0].usdPrice, 49.5);
-  assert.equal((await readSite()).plans[0].usdPrice, 49.5);
+  assert.equal(ok.body.plans[0].priceUsd, 49.5);
+  assert.equal((await readSite()).plans[0].priceUsd, 49.5);
+  const legacy = res();
+  await putSite({ body: { plans: [{ id: 'premium', name: 'Premium', price: 9000, usdPrice: 39 }] } }, legacy);
+  assert.equal(legacy.body.plans[0].priceUsd, 39);
   const empty = res();
   await putSite({ body: plan('') }, empty);
-  assert.equal(empty.body.plans[0].usdPrice, null);
+  assert.equal(empty.body.plans[0].priceUsd, null);
   for (const bad of [0.5, -3, 10001, 49.999, 'abc', '1e3', true]) {
-    await assert.rejects(putSite({ body: plan(bad) }, res()), (err) => err.status === 400 && err.errors.some((e) => e.path === 'plans[0].usdPrice'), String(bad));
+    await assert.rejects(putSite({ body: plan(bad) }, res()), (err) => err.status === 400 && err.errors.some((e) => e.path === 'plans[0].priceUsd'), String(bad));
   }
 });
 
 test('orders: the public POST returns the reference, and the store helpers find and update it', async () => {
   const orders = await import('../lib/orders.js');
-  const req = { body: { kind: 'order', name: 'Sita Rai', phone: '9800000000', message: '', website: '' }, get: (h) => (h === 'origin' ? 'http://localhost:5195' : h === 'host' ? 'localhost:8787' : undefined), app: { get: () => false }, ip: '127.0.0.1', socket: {}, headers: {} };
+  const req = { body: { kind: 'order', plan: 'premium', name: 'Sita Rai', phone: '9800000000', message: '', website: '' }, get: (h) => (h === 'origin' ? 'http://localhost:5195' : h === 'host' ? 'localhost:8787' : undefined), app: { get: () => false }, ip: '127.0.0.1', socket: {}, headers: {} };
   const res = { code: 0, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, set() { return this; } };
   await orders.submit(req, res);
   assert.equal(res.code, 201);
-  assert.match(res.body.ref, /^[A-Za-z0-9_-]{12}$/);
-  const saved = await orders.mutateOrder(res.body.ref, (o) => { o.payment = { provider: 'paypal', status: 'paid', captureId: 'CAPTEST123' }; });
+  assert.match(res.body.ref, /^NM-\d{5,6}$/);
+  const found = await orders.orderByRefAndToken(res.body.ref, res.body.payToken);
+  assert.match(found.id, /^[A-Za-z0-9_-]{12}$/);
+  assert.equal(await orders.orderByRefAndToken(res.body.ref, 'A'.repeat(43)), null);
+  const saved = await orders.mutateOrder(found.id, (o) => { o.payment = { provider: 'paypal', status: 'paid', captureId: 'CAPTEST123' }; });
   assert.equal(saved.payment.status, 'paid');
-  assert.equal((await orders.findOrder((o) => o.payment?.captureId === 'CAPTEST123')).id, res.body.ref);
+  assert.equal((await orders.findOrder((o) => o.payment?.captureId === 'CAPTEST123')).id, found.id);
   assert.equal(await orders.getOrder('not-an-id'), null);
 });

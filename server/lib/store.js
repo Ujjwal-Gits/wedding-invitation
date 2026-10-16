@@ -173,6 +173,8 @@ export const replyStats = async () => backend.replyStats();
 
 export const listOrders = async () => backend.listOrders();
 export const getOrderById = async (id) => backend.getOrder(id);
+/** The order with this public reference (NM-12345), or null. */
+export const getOrderByRef = async (ref) => backend.getOrderByRef(ref);
 export const addOrder = (order, max) => withLock('orders', async () => backend.addOrder(order, max));
 /** Replaces the stored order with the same id; false when there is none. Call under withLock('orders'). */
 export const saveOrder = async (order) => backend.saveOrder(order);

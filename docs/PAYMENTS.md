@@ -1,6 +1,62 @@
-# Payments: PayPal (built, off by default) and the options for Nepal
+# Payments: QR + screenshot (the main way), PayPal Checkout (built, off by default), options for Nepal
 
 Status, October 2026. Payment rules change often, so check the linked pages before you sign anything.
+
+## 0. How customers pay today: order first, then pay by QR
+
+This is the primary flow. Nothing in it needs a merchant account or an API key.
+
+1. **Order.** The customer picks a plan and sends the order form (`POST /api/orders`). The server prices it from
+   **Website → Pricing plans** (never from the browser) and answers with a reference (`NM-24817`), the amount in NPR
+   and USD, and a private **pay token**. Their link back is `https://nimtto.com/pay/NM-24817?t=<token>`; only the
+   token's SHA-256 is stored, so the link can't be rebuilt from the database.
+2. **Pay.** The pay page (`GET /api/orders/:ref/pay?t=`) shows the enabled **payment methods** as QR codes:
+   Khalti, eSewa and Nabil Bank in NPR (account holder Roshan Shrestha), PayPal in USD for payments from abroad
+   (Bijaya Gurung). Each code is made for this order (`GET /api/orders/:ref/qr/<method>.png?t=`):
+   - **Bank QR (NepalPay / Fonepay, EMVCo format):** the server rewrites the code as a *dynamic* QR with the amount
+     (tag 54) and the remark `Nimtto NM-24817` (tag 62-05), and recomputes the CRC. The banking app opens with the
+     amount filled in. This is a published standard, so it is on by default.
+   - **Khalti and eSewa personal QR codes** are a small JSON (`{"eSewa_id": …, "name": …}`). Neither wallet publishes
+     an amount field for personal codes, so by default the page shows the plain code and says
+     "Enter amount Rs 4,999 and remark NM-24817". Turn on **Try auto-amount** for that method (Website → Payment
+     methods) only after the phone test below shows the amount filled in.
+   - **PayPal:** the shipped code is a PayPal `p2pqrc` link, which carries no amount. Fill in **PayPal.me name** for
+     the method and each order's code becomes `paypal.me/<name>/99USD` (amount filled in).
+   The customer can edit the remark (printable ASCII, at most 25 characters; `?remark=` on the QR URL).
+3. **Proof.** The customer uploads a screenshot (`POST /api/orders/:ref/proof?t=`): JPEG, PNG, WebP or iPhone HEIC,
+   at most 8 MB, at most 3 per order, with the method and the amount they say they paid. The server checks the bytes
+   (not the file name), re-encodes it as JPEG with **all metadata removed** (EXIF, GPS, camera) and keeps it in
+   `data/proofs/<order>/` on the data volume. It is never public: only `GET /api/admin/orders/:id/proof/:n` (owner
+   signed in, `Cache-Control: private, no-store`) serves it.
+4. **Check.** The order shows up under **Overview → Needs you** and **Orders → Payment to check**, with the
+   screenshot. Compare it with your Khalti / eSewa / bank app, then **Confirm payment** or **Reject…** with a
+   reason (the customer sees it and can send another screenshot). **Mark paid manually…** records cash or a transfer
+   you saw elsewhere. **Mark refunded…** only records a refund; send the money back in the app.
+
+Payment statuses: `awaiting_payment` → `proof_submitted` → `confirmed` | `rejected`, and `refunded`. They are separate
+from the order's workflow stage (New, Contacted, Done, Archived). PayPal Checkout (section 5), when it is on,
+confirms the order by itself.
+
+**Replacing a QR code.** Website → Payment methods → click the code → upload a screenshot from the app. The server
+finds the code in the picture, crops it with a white margin, checks the crop still reads the same, and stores the
+payload so per-order codes keep working. Uploaded codes win over the defaults in `public/site/pay/`.
+
+### The 2-minute phone test (do this once per app, and again after replacing a code)
+
+Nobody can scan with a real Khalti, eSewa or bank app on the server, so the automatic tests only prove the codes are
+built to the spec (TLV lengths, CRC, a PNG that decodes back to the same text). Check the real apps yourself:
+
+1. Make a test order on the website (Saral is cheapest) and open its pay page on a computer screen.
+2. **Nabil Bank QR:** scan it with your bank app (and one other bank or wallet app that reads Fonepay/NepalPay QR).
+   Check: the payee is Roshan Shrestha, the **amount is already Rs 2,999**, and the remark shows `Nimtto NM-…`.
+   Cancel, or pay Rs 1 by editing the amount if the app allows. If the amount is not filled in or the app rejects
+   the code, turn off **Fill in the amount** for that method (Website → Payment methods) and tell the developer.
+3. **eSewa and Khalti:** scan the code in each app. It should open "send money" to Roshan Shrestha. To try the
+   amount, turn on **Try auto-amount** for that method, save, reload the pay page and scan again: if the amount and
+   remark appear, keep it on; if not (or the app errors), turn it off again. Off is always safe.
+4. **PayPal:** scan with a phone camera; it should open PayPal to pay Bijaya Gurung. With a PayPal.me name set, the
+   amount in USD should be filled in.
+5. Upload any screenshot on the pay page, then confirm or reject it in Orders, and check the pay page shows the result.
 
 ## 1. Short answer
 
@@ -35,7 +91,7 @@ Never: use a fake foreign address, use a VPN to sign up, or use someone else's i
 - Buyer in another country: **+1.50%**.
 - Currency conversion, if you hold or withdraw in another currency: **3–4%** above the base rate.
 - Example: a USD 49 sale from a buyer abroad pays about 4.99% + 0.49, so roughly **USD 2.94**, and you keep about USD 46.06.
-- The currency list has no NPR, so prices are in USD. The Website module has an "Online price (USD)" for each plan.
+- The currency list has no NPR, so prices are in USD. Each plan in Website → Pricing plans has a **Price (USD)**.
 
 ## 4. Local alternatives
 
@@ -56,17 +112,20 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
   `PAYPAL_CLIENT_SECRET` and `PAYPAL_WEBHOOK_ID`. They go in the server environment only. `server/.env.example`
   lists them with empty values. With any value missing, `/api/pay/config` says off: the website shows nothing new,
   and the pay routes answer 503 (the webhook answers 404).
-- **Website:** the "Pay now · USD 49" choice appears only when PayPal is on, the visitor picked **Order a design**, and
-  the plan has a USD price. "Send request, pay later" stays the default.
-  1. **Continue to payment** first saves the request as usual (`POST /api/orders`). The response now includes `ref`.
+- **Website / pay page:** PayPal Checkout is an extra choice next to the QR codes, shown only when PayPal is on
+  (`paypalCheckout.enabled` in `GET /api/orders/:ref/pay`) and the order has a USD amount. It confirms the order by itself.
+  1. The order is saved first (`POST /api/orders`), which returns `ref` (`NM-24817`) and the pay token `t`.
      If the visitor leaves now, the request is still there.
   2. The PayPal JS SDK loads only at this point, then shows "Pay with PayPal" and "Debit or Credit Card".
-  3. `createOrder` calls `POST /api/pay/paypal/order { ref }`. The server reads the plan's `usdPrice` from
-     `site.json` (the browser never sends a price) and creates the PayPal order (intent CAPTURE, `custom_id = ref`).
-  4. `onApprove` calls `POST /api/pay/paypal/capture { ref, orderID }`. The server captures and checks that the
+  3. `createOrder` calls `POST /api/pay/paypal/order { ref, t }`. The server takes the order's USD amount (fixed from
+     the plan's `priceUsd` when it was ordered; the browser never sends a price) and creates the PayPal order
+     (intent CAPTURE, `custom_id` = the order's internal id). Orders made before references existed send their
+     12-character id as `ref` and no `t`.
+  4. `onApprove` calls `POST /api/pay/paypal/capture { ref, t, orderID }`. The server captures and checks that the
      currency is USD, the amount matches what it asked for, the reference matches, and the status is COMPLETED. Then
      it records `payment` on the order (status `paid`, PayPal order and capture IDs, amount, payer email, time).
-     A capture is never repeated for the same request, and a repeated call returns the saved result.
+     A capture is never repeated for the same request, and a repeated call returns the saved result. A `paid`
+     capture sets the order's payment status to `confirmed`; a full refund sets it to `refunded`.
   5. The visitor sees a receipt with the reference, the amount and the PayPal transaction ID. If they cancel or
      something fails, they see a calm message, and "Pay later instead" stays available.
 - **Webhook:** `POST /api/pay/paypal/webhook`.
@@ -86,9 +145,9 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
     `script-src`, `connect-src`, `frame-src`, `img-src` and `style-src`. COOP becomes `same-origin-allow-popups`,
     which PayPal requires for its popup. The studio and the themes keep the strict policy.
 - **Studio:**
-  - Orders shows a badge on each order: Paid, Unpaid, Refunded, Part refunded, Pending at PayPal, Check payment or
-    Declined. It also shows the PayPal details and links to the PayPal dashboard.
-  - Website has an "Online price (USD)" field for each plan.
+  - Orders shows the payment status of each order (section 0) and, for PayPal Checkout payments, the PayPal details
+    with links to the PayPal dashboard.
+  - Website has a **Price (USD)** field for each plan.
   - Settings has a Payments card: on or off, sandbox or live, which keys are set (never their values), and the
     webhook URL.
 - **Code:** `server/lib/payments/paypal.js` (REST client, token cache), `checkout.js` (rules and idempotency),
@@ -138,16 +197,14 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
 2. Click **Redeploy**. Pushing to GitHub alone does not deploy.
 3. Check it: Studio → **Settings & help → Payments** should say "PayPal on · Sandbox (test money)", with Client ID,
    Secret and Webhook ID all **Set**.
-4. Studio → **Website**: give at least one plan an **Online price (USD)**, then **Save changes**.
+4. Studio → **Website**: check the plans have a **Price (USD)** (the four default plans do), then **Save changes**.
 
 ### 5. Test a sandbox payment
 
-1. Open https://nimtto.com/#order. Choose **Order a design**, fill in a name and phone, and pick the plan with a USD
-   price.
-2. Choose **Pay now** → **Continue to payment** → **Pay with PayPal**. Log in with the sandbox **Personal** account,
-   then pay.
-3. You should see "Thank you. Your payment is received." with a reference and a PayPal transaction ID.
-4. Studio → **Orders**: the request shows **Paid · USD 49.00**, with the payer and the PayPal IDs.
+1. Open https://nimtto.com, order the Saral plan with a name and phone, and open the pay page you are sent to.
+2. Choose **Pay with PayPal** (shown only while PayPal is on). Log in with the sandbox **Personal** account, then pay.
+3. You should see that the payment is received, with the reference and a PayPal transaction ID.
+4. Studio → **Orders → Paid**: the order shows **Paid**, with the payer and the PayPal IDs.
 5. Refund test: https://www.sandbox.paypal.com → log in with the sandbox **Business** account → find the payment
    → **Refund**. Within a minute or so, the order shows **Refunded**, through the webhook.
 6. A script can check it too. From `server/`, with the same sandbox values set in your local environment, run

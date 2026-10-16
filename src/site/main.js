@@ -1,404 +1,265 @@
-// Nimtto public website. Everything that comes from the API is rendered with textContent / attributes only.
+// Nimtto home page (the owner's canvas, Main.dc.html): the design stage and thumbnails, pricing from /api/site,
+// the order form and the payment step that follows it. Everything from the API is written as text, never HTML.
 import './site.css';
-import { THEMES, BY_SLUG, NE_NAMES, FALLBACK_SITE, countWord } from './themes.js';
+import './home.css';
 import { enhance } from '../ui/enhance.js'; // Nimtto dropdowns and date picker on the order form
-import SMALL_THUMBS from './thumbs.json'; // slugs with /site/thumbs/<slug>-480|800.webp (node src/site/make-thumbs.mjs)
+import { $, $$, el, reduced, SLUG_RE, str, npr, money, initHeader, initPreview, applyContact, showcaseUrl, setYear, waLink } from './common.js';
+import { loadSite, loadThemes, normaliseThemes, createOrder, REF_RE } from './api.js';
+import { THEMES, BY_SLUG, CATEGORIES, PLAN_NE, PLAN_DESC, FALLBACK_SITE } from './themes.js';
+import SMALL_THUMBS from './thumbs.json';
+import STILLS from './stills.json'; // { slug: ['gate', 'hero'] } phone-shaped stills (node src/site/make-thumbs.mjs)
+import PAGES from './design-pages.json'; // slugs with a generated /designs/<slug>/ page (node src/site/make-design-pages.mjs)
 
-const $ = (s, r = document) => r.querySelector(s);
-const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
-enhance(document.getElementById('order') || document);
-const FIRST_PHONE = 11; // cards shown before "Show all": 11 on phones (ends on a wide card), 12 from 600px (four rows of three)
-const FIRST_WIDE = 12;
-const from600 = matchMedia('(min-width: 600px)');
-
-/** create an element with text and attributes (never HTML) */
-function el(tag, props = {}, ...kids) {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v == null || v === false) continue;
-    if (k === 'class') n.className = v;
-    else if (k === 'text') n.textContent = v;
-    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
-    else n.setAttribute(k, v === true ? '' : String(v));
-  }
-  for (const c of kids) if (c != null) n.append(c);
-  return n;
-}
-const str = (v, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-// only same-origin paths ('/x', never '//x' or 'javascript:')
-const localPath = (v, fallback) => (typeof v === 'string' && /^\/(?!\/)[A-Za-z0-9._~\-/]*$/.test(v) ? v : fallback);
-const pad = (n) => String(n).padStart(2, '0');
-
-async function getJson(url, ms = 6000) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
-  try {
-    const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: ctl.signal, credentials: 'same-origin' });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; } finally { clearTimeout(t); }
-}
-
-/* ---------------- header ---------------- */
-function initBar() {
-  const bar = $('.bar');
-  const btn = $('#menu-btn');
-  const nav = $('#nav');
-  const close = () => { bar.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); };
-  btn.addEventListener('click', () => {
-    const open = !bar.classList.contains('is-open');
-    bar.classList.toggle('is-open', open);
-    btn.setAttribute('aria-expanded', String(open));
-  });
-  nav.addEventListener('click', (e) => { if (e.target.closest('a')) close(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bar.classList.contains('is-open')) { close(); btn.focus(); } });
-  let ticking = false;
-  const upd = () => { ticking = false; bar.classList.toggle('is-scrolled', window.scrollY > 8); };
-  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
-  upd();
-}
-
-/* ---------------- hero: the doors (the one signature motion) ----------------
-   Two blush leaves meet over a real design with निम्तो across the seam and swing open once (CSS keyframes, so it
-   runs without JS). JS only holds them shut until the picture has decoded, then hides the leaves to free the layers.
-   Under the arch, two quiet buttons crossfade between a few designs. Reduced motion: no leaves at all. */
-const HERO = [
-  ['gurans', 'a gate of fresh roses and marigold strings under शुभ विवाह', '50% 46%'],
-  ['dhaka', 'an ivory envelope with a Dhaka band and a wax seal among red roses', '50% 46%'],
-  ['sayapatri', 'a doorway hung with fresh marigold strings and mango leaves', '50% 16%'],
-  ['mangal', 'a red carved doorway hung with marigold garlands and brass bells', '50% 22%'],
-  ['swayambar', 'two marigold garlands around Ganesh', '50% 34%'],
-  ['mahal', 'a golden palace gate tied with an ivory satin bow', '50% 40%'],
-];
-const hero = { list: [], imgs: [], i: 0 };
-
-function initDoor() {
-  const door = $('#door');
-  const first = $('#screens img');
-  first.style.setProperty('--pos', HERO[0][2]);
-  let held = true;
-  const release = () => { if (held) { held = false; door.classList.remove('is-waiting'); } };
-  if (!reduced.matches && !(first.complete && first.naturalWidth)) {
-    door.classList.add('is-waiting');
-    const fonts = document.fonts?.ready || Promise.resolve();
-    Promise.all([first.decode?.().catch(() => {}), fonts]).then(release);
-    setTimeout(release, 2500); // never keep the doors shut on a slow connection
-  }
-  door.querySelector('.door__leaf--r').addEventListener('animationend', () => door.classList.add('is-open'), { once: true });
-  $('#door-prev').addEventListener('click', () => showHero(hero.i - 1));
-  $('#door-next').addEventListener('click', () => showHero(hero.i + 1));
-  $('#door-arch').addEventListener('click', (e) => {
-    const t = hero.list[hero.i];
-    const i = t ? view.themes.findIndex((x) => x.slug === t.slug) : -1;
-    if (i >= 0) openLightbox(i, e.currentTarget);
-  });
-  buildHero();
-}
-
-function buildHero(hidden = new Set()) {
-  hero.list = HERO.filter(([s]) => !hidden.has(s) && BY_SLUG[s]).map(([slug, alt, pos]) => ({ ...BY_SLUG[slug], slug, alt, pos }));
-  const box = $('#screens');
-  const first = box.querySelector('img');
-  // keep the first picture (it carries the doors' settle); drop any others and rebuild them on demand
-  [...box.querySelectorAll('img')].forEach((img) => { if (img !== first) img.remove(); });
-  hero.imgs = hero.list.map((t, i) => (i === 0 && first?.dataset.slug === t.slug ? first : null));
-  if (!hero.imgs[0] && first) first.remove();
-  $('#cap-total').textContent = String(hero.list.length);
-  $('.door__nav').hidden = hero.list.length < 2;
-  hero.i = -1;
-  showHero(0, true);
-}
-
-function heroImg(i) {
-  if (hero.imgs[i]) return hero.imgs[i];
-  const t = hero.list[i];
-  const img = el('img', {
-    class: 'scr', src: `/site/phones/${t.slug}.webp`, width: 780, height: 1688,
-    alt: `The ${t.name} design on a phone: ${t.alt}`, decoding: 'async', 'data-slug': t.slug,
-  });
-  img.style.setProperty('--pos', t.pos);
-  $('#screens').append(img);
-  hero.imgs[i] = img;
-  return img;
-}
-
-function showHero(i, instant = false) {
-  const n = hero.list.length;
-  if (!n) return;
-  i = (i + n) % n;
-  if (i === hero.i) return;
-  hero.i = i;
-  const t = hero.list[i];
-  const img = heroImg(i);
-  const swap = () => {
-    if (hero.i !== i) return;
-    hero.imgs.forEach((m) => m?.classList.toggle('is-on', m === img));
-  };
-  if (instant || (img.complete && img.naturalWidth)) swap(); else img.addEventListener('load', swap, { once: true });
-  $('#cap-i').textContent = String(i + 1);
-  $('#cap-name').textContent = t.name;
-  $('#cap-ne').textContent = t.ne;
-  $('#door-arch').setAttribute('aria-label', `See the ${t.name} design larger`);
-  // warm the next picture once the page has settled
-  if (n > 1) (window.requestIdleCallback || setTimeout)(() => heroImg((i + 1) % n));
-}
-
-/* ---------------- site settings ---------------- */
-function applyHero(site) {
-  const t = str(site.hero?.title, 160);
-  const s = str(site.hero?.subtitle, 300);
-  if (t) $('[data-site="hero-title"]').textContent = t;
-  if (s) $('[data-site="hero-subtitle"]').textContent = s;
-}
-
-const fmt = new Intl.NumberFormat('en-IN');
-const usdFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const planInfo = new Map(); // id -> { name, usd } (usd: the online price in US dollars, or null)
-function renderPlans(site) {
-  const list = $('#plans');
-  const plans = Array.isArray(site.plans) && site.plans.length ? site.plans : FALLBACK_SITE.plans;
-  list.replaceChildren();
-  const planSel = $('#f-plan');
-  planSel.replaceChildren(el('option', { value: '', text: 'Not sure yet' }));
-  plans.slice(0, 8).forEach((p, i) => {
-    const id = str(p.id, 32);
-    const name = str(p.name, 60) || 'Plan';
-    const priced = Number.isFinite(p.price) && p.price >= 0;
-    const feats = Array.isArray(p.features) ? p.features.map((f) => str(f, 120)).filter(Boolean).slice(0, 20) : [];
-    const note = str(p.note, 200);
-    const usd = Number.isFinite(p.usdPrice) && p.usdPrice >= 1 && p.usdPrice <= 10000 ? p.usdPrice : null;
-    if (id) planInfo.set(id, { name, usd });
-    const online = usd && pay.on ? el('span', { class: 'plan__usd', text: `or USD ${usdFmt.format(usd)} online` }) : null;
-    const li = el('li', { class: `plan${p.highlight ? ' plan--hi' : ''}` },
-      el('p', { class: 'plan__n', 'aria-hidden': 'true', text: pad(i + 1) }),
-      el('div', { class: 'plan__main' },
-        el('h3', { class: 'plan__name' }, document.createTextNode(name), p.highlight ? el('span', { class: 'plan__flag', text: 'Most chosen' }) : null),
-        note ? el('p', { class: 'plan__note', text: note }) : null,
-        feats.length ? el('ul', { class: 'plan__feats' }, ...feats.map((f) => el('li', { text: f }))) : null),
-      priced
-        ? el('p', { class: 'plan__price' }, el('span', { class: 'plan__cur', text: 'NPR' }), document.createTextNode(fmt.format(p.price)), online)
-        : el('p', { class: 'plan__price plan__price--ask' }, document.createTextNode('Ask for price'), online),
-      el('a', { class: `btn ${p.highlight ? 'btn--accent' : 'btn--line'} plan__cta`, href: '#order', 'data-plan': id, text: `Choose ${name}` }),
-    );
-    list.append(li);
-    if (id) planSel.append(el('option', { value: id, text: priced ? `${name} · NPR ${fmt.format(p.price)}` : name }));
-  });
-  list.onclick = (e) => {
-    const a = e.target.closest('[data-plan]');
-    if (!a) return;
-    setKind('order');
-    planSel.value = a.dataset.plan;
-    syncPay();
-  };
-}
-
-function waLink(v) {
-  const s = str(v, 200);
-  if (!s) return '';
-  if (/^https:\/\/(wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com)\//i.test(s)) return s;
-  const digits = s.replace(/[^\d]/g, '');
-  return digits.length >= 8 ? `https://wa.me/${digits}` : '';
-}
-function renderContact(site) {
-  const c = site.contact || {};
-  const list = $('#contact-list');
-  list.replaceChildren();
-  const add = (label, valueNode) => list.append(el('div', { class: 'contact__item' }, el('dt', { text: label }), el('dd', {}, valueNode)));
-  const phone = str(c.phone, 30);
-  if (phone) add('Phone', el('a', { href: `tel:${phone.replace(/[^\d+]/g, '')}`, text: phone }));
-  const wa = waLink(c.whatsapp);
-  if (wa) add('WhatsApp', el('a', { href: wa, target: '_blank', rel: 'noopener', text: /^\+?[\d\s()-]+$/.test(str(c.whatsapp)) ? str(c.whatsapp) : 'Message us' }));
-  const email = str(c.email, 254);
-  if (email && /^[^\s@<>()",;:]+@[^\s@<>]+\.[A-Za-z]{2,}$/.test(email)) add('Email', el('a', { href: `mailto:${email}`, text: email }));
-  const addr = str(c.address, 300);
-  if (addr) add('Address', document.createTextNode(addr));
-  $('#contact-empty').hidden = list.childElementCount > 0;
-  window.__nimttoWa = wa; // used by the form's error message
-}
-
-/* ---------------- designs ---------------- */
-function normaliseThemes(api, site) {
-  const hidden = new Set(Array.isArray(site.hiddenThemes) ? site.hiddenThemes : []);
-  let list = Array.isArray(api) && api.length
-    ? api.filter((t) => t && SLUG_RE.test(t.slug) && !hidden.has(t.slug)).map((t) => {
-      const local = BY_SLUG[t.slug] || {};
-      return {
-        slug: t.slug,
-        name: str(t.name, 60) || local.name || t.slug,
-        ne: local.ne || NE_NAMES[t.slug] || '',
-        concept: local.concept || str(t.concept, 240) || '',
-        alt: local.alt || `${str(t.name, 60) || t.slug} design`,
-        thumb: localPath(t.thumb, local.thumb || `/themes/${t.slug}/thumb.jpg`),
-      };
-    })
-    : THEMES.filter((t) => !hidden.has(t.slug));
-  const featured = (Array.isArray(site.featuredThemes) ? site.featuredThemes : []).filter((s) => list.some((t) => t.slug === s));
-  if (featured.length) {
-    const rank = (s) => { const i = featured.indexOf(s); return i < 0 ? Infinity : i; };
-    list = list.map((t, i) => ({ t, i })).sort((a, b) => (rank(a.t.slug) - rank(b.t.slug)) || (a.i - b.i)).map(({ t }) => ({ ...t, featured: featured.includes(t.slug) }));
-  } else {
-    // no featured list set: open with the lightest, freshest designs, then the richer ones
-    const lead = ['swayambar', 'gurans', 'sindoor', 'mala', 'dhaka', 'mahal', 'laali', 'rangoli', 'sayapatri', 'pardaa', 'hariyo', 'mangal', 'jhyal', 'nimantrana', 'agni', 'janti'];
-    list = [...lead.map((s) => list.find((t) => t.slug === s)).filter(Boolean), ...list.filter((t) => !lead.includes(t.slug))];
-  }
-  return list;
-}
+// the payment step loads on demand (warmed when the visitor starts the form)
+const loadPayment = () => import('./payment.js');
 
 const small = new Set(SMALL_THUMBS);
-const srcsetFor = (t) => (small.has(t.slug) && t.thumb === `/themes/${t.slug}/thumb.jpg`
-  ? `/site/thumbs/${t.slug}-480.webp 480w, /site/thumbs/${t.slug}-800.webp 800w, ${t.thumb} 1200w` : null);
+const pages = new Set(PAGES);
+const designUrl = (slug) => (pages.has(slug) ? `/designs/${slug}/` : showcaseUrl(slug));
+/** the picture inside a phone frame: the opening still, else the invitation still, else the big-screen thumb */
+const phoneSrc = (t) => {
+  const s = STILLS[t.slug] || [];
+  if (s.includes('gate')) return `/site/stills/${t.slug}-gate.webp`;
+  if (s.includes('hero')) return `/site/stills/${t.slug}-hero.webp`;
+  return small.has(t.slug) ? `/site/thumbs/${t.slug}-480.webp` : t.thumb;
+};
+const cat = (t) => CATEGORIES[t.cat] || CATEGORIES.cards;
 
-const view = { themes: [] }; // the designs in gallery order (the lightbox walks this list)
+const view = { site: null, wa: '', themes: normaliseThemes(null, FALLBACK_SITE), cat: 'all', list: [], i: 0, mode: 'ready' };
+enhance($('#order') || document);
 
-function renderGallery(themes) {
-  const ol = $('#gallery');
-  const more = $('#gallery-more');
-  ol.replaceChildren();
-  ol.classList.remove('is-open');
-  view.themes = themes;
-  const word = countWord(themes.length);
-  document.querySelectorAll('.js-count').forEach((n) => { n.textContent = n.dataset.cap ? word[0].toUpperCase() + word.slice(1) : word; });
-  document.querySelectorAll('.js-num').forEach((n) => { n.textContent = String(themes.length); });
-  themes.forEach((t, i) => {
-    const wideCard = i % 5 === 0; // phones only: one wide card, then two pairs
-    const img = el('img', {
-      src: t.thumb, srcset: srcsetFor(t),
-      sizes: `(min-width: 1040px) 30vw, (min-width: 600px) 46vw, ${wideCard ? 'calc(100vw - 40px)' : 'calc(50vw - 27px)'}`,
-      alt: '', width: 1200, height: 900, loading: 'lazy', decoding: 'async',
-    });
-    img.addEventListener('error', () => img.replaceWith(el('span', { class: 'card__ph', 'aria-hidden': 'true', text: t.ne || t.name })), { once: true });
-    const fold = themes.length > FIRST_WIDE;
-    const li = el('li', { class: `card${wideCard ? ' card--wide' : ''}${fold && i >= FIRST_PHONE ? ' is-more' : ''}${fold && i >= FIRST_WIDE ? ' is-more-d' : ''}`, 'data-i': i },
-      el('button', { type: 'button', class: 'card__btn', 'aria-haspopup': 'dialog' },
-        el('span', { class: 'card__shot' }, img),
-        el('span', { class: 'card__cap' },
-          el('span', { class: 'card__name', text: t.name }),
-          t.ne ? el('span', { class: 'card__ne', lang: 'ne', text: t.ne }) : null,
-          t.featured ? el('span', { class: 'card__tag', text: 'Featured' }) : null),
-        el('span', { class: 'vh', text: `: ${t.concept} View larger.` })),
-      el('a', { class: 'card__pv', href: showcaseUrl(t.slug), 'data-preview': t.slug, 'aria-label': `Preview the ${t.name} design live` },
-        el('span', { text: 'Preview' }), playIcon()),
-    );
-    ol.append(li);
-  });
-  more.hidden = themes.length <= FIRST_WIDE;
-  more.textContent = `Show all ${themes.length} designs`;
-  more.onclick = () => {
-    ol.classList.add('is-open');
-    more.hidden = true;
-    ol.children[from600.matches ? FIRST_WIDE : FIRST_PHONE]?.querySelector('button')?.focus({ preventScroll: true });
+/* ---------------- promo bar ---------------- */
+const PROMOS = [
+  ['Order online, then pay by Khalti, eSewa, bank QR or PayPal.', 'See prices', '#pricing'],
+  ['Every invitation works in English and Nepali, with both calendars.', 'See the designs', '#designs'],
+  ['Want a design that is only yours? We make custom designs too.', 'Tell us your idea', '#order', 'custom'],
+];
+function initPromo() {
+  let i = 0;
+  const show = (n) => {
+    i = (n + PROMOS.length) % PROMOS.length;
+    const [text, link, href, kind] = PROMOS[i];
+    $('#promo-msg').replaceChildren(document.createTextNode(`${text} `), el('a', { href, 'data-kind': kind || null, text: link }));
   };
-  ol.onclick = (e) => {
-    const b = e.target.closest('.card__btn');
-    if (b) openLightbox(Number(b.closest('.card').dataset.i), b);
-  };
-
-  const sel = $('#f-theme');
-  const keep = sel.value;
-  sel.replaceChildren(el('option', { value: '', text: 'Not sure yet' }), ...themes.map((t) => el('option', { value: t.slug, text: t.ne ? `${t.name} · ${t.ne}` : t.name })));
-  if (keep && themes.some((t) => t.slug === keep)) sel.value = keep;
+  $('#promo-prev').addEventListener('click', () => show(i - 1));
+  $('#promo-next').addEventListener('click', () => show(i + 1));
 }
 
-/* ---------------- showcase: the live design, demo couple only, watermarked (src/core/showcase.js) ---------------- */
-const showcaseUrl = (slug) => `/${encodeURIComponent(slug)}/?showcase=1`;
-function playIcon() {
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
+/* ---------------- designs: chips, the stage, the thumbnails ---------------- */
+const inCat = (t, c) => c === 'all' || (c === 'faiths' ? ['muslim', 'christian'].every((r) => t.religions?.includes(r)) : t.cat === c);
+const setCount = (n) => { for (const c of $$('.js-count')) c.textContent = String(n); };
+
+function renderDesigns() {
+  view.list = view.themes.filter((t) => inCat(t, view.cat));
+  for (const b of $$('#chips .chip')) {
+    b.setAttribute('aria-pressed', String(b.dataset.cat === view.cat));
+    b.hidden = !view.themes.some((t) => inCat(t, b.dataset.cat));
+  }
+  const ul = $('#thumbs');
+  ul.replaceChildren(...view.list.map((t, i) => el('li', {},
+    el('button', { type: 'button', class: 'thumb', 'aria-pressed': 'false', 'aria-label': `Show ${t.name}`, 'data-i': i, style: `--tint:${cat(t).tint}` },
+      el('span', { class: 'thumb__pic' }, el('span', { class: 'thumb__phone' },
+        el('img', { src: phoneSrc(t), alt: '', width: 480, height: 720, loading: 'lazy', decoding: 'async' }))),
+      el('span', { class: 'thumb__cap' }, el('span', { class: 'thumb__name', text: t.name }), el('span', { class: 'thumb__mood', text: cat(t).short }))))),
+  el('li', {}, el('a', { class: 'thumb thumb--more', href: '#order', 'data-kind': 'custom' },
+    el('span', { class: 'thumb__pic' }, el('span', { class: 'thumb__plus', 'aria-hidden': 'true', text: '+' }), el('span', { class: 'thumb__mood', text: 'your own idea' })),
+    el('span', { class: 'thumb__cap' }, el('span', { class: 'thumb__name', text: 'Ask for a custom design' })))));
+  showStage(0, true);
+}
+
+function initDesigns() {
+  $('#chips').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip');
+    if (!b || b.dataset.cat === view.cat) return;
+    view.cat = b.dataset.cat;
+    renderDesigns();
+  });
+  $('#thumbs').addEventListener('click', (e) => {
+    const b = e.target.closest('button.thumb');
+    if (!b) return;
+    showStage(Number(b.dataset.i));
+    // on a phone the stage sits above the strip: bring it into view
+    const r = $('#stage').getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight * 0.5) $('#stage').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+  });
+  $('#stage-prev').addEventListener('click', () => showStage(view.i - 1));
+  $('#stage-next').addEventListener('click', () => showStage(view.i + 1));
+  $('#stage').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') showStage(view.i - 1);
+    if (e.key === 'ArrowRight') showStage(view.i + 1);
+  });
+  $('#stage-order').addEventListener('click', () => chooseTheme($('#stage-order').dataset.design));
+}
+
+function showStage(i, instant = false) {
+  const list = view.list;
+  if (!list.length) { $('#stage').hidden = true; return; }
+  $('#stage').hidden = false;
+  i = (i + list.length) % list.length;
+  view.i = i;
+  const t = list[i];
+  const img = $('#stage-img');
+  const stage = $('#stage');
+  const src = phoneSrc(t);
+  const apply = () => {
+    img.src = src;
+    img.alt = `The ${t.name} design on a phone: ${t.alt}`;
+    stage.classList.remove('is-swapping');
+  };
+  if (instant || reduced.matches) apply();
+  else {
+    stage.classList.add('is-swapping');
+    const pre = new Image();
+    pre.onload = pre.onerror = apply;
+    pre.src = src;
+  }
+  $('#stage-pic').style.setProperty('--tint', cat(t).tint);
+  $('#stage-cat').textContent = cat(t).one;
+  $('#stage-name').textContent = t.name;
+  $('#stage-ne').textContent = t.ne || '';
+  $('#stage-ne').hidden = !t.ne;
+  $('#stage-text').textContent = t.concept;
+  $('#stage-order').dataset.design = t.slug;
+  $('#stage-order').setAttribute('aria-label', `Order the ${t.name} design`);
+  $('#stage-more').href = designUrl(t.slug);
+  $('#stage-more').setAttribute('aria-label', `View details of the ${t.name} design`);
+  const pv = $('#stage-preview');
+  pv.href = showcaseUrl(t.slug);
+  pv.dataset.preview = t.slug;
+  $('#stage-i').textContent = String(i + 1);
+  $('#stage-total').textContent = String(list.length);
+  $('.stage__nav').hidden = list.length < 2;
+  for (const b of $$('#thumbs button.thumb')) b.setAttribute('aria-pressed', String(Number(b.dataset.i) === i));
+}
+
+/* ---------------- pricing (the canvas cards; plans from /api/site) ---------------- */
+const planById = new Map();
+const SVGNS = 'http://www.w3.org/2000/svg';
+function circleCheck(filled) {
+  const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS(ns, 'path');
-  path.setAttribute('d', 'M9 6.5v11l9-5.5z');
-  svg.append(path);
+  const c = document.createElementNS(SVGNS, 'circle');
+  c.setAttribute('cx', '12'); c.setAttribute('cy', '12'); c.setAttribute('r', filled ? '10' : '9.5');
+  c.setAttribute('fill', filled ? '#9A1829' : 'none');
+  if (!filled) { c.setAttribute('stroke', '#9A1829'); c.setAttribute('stroke-width', '1.6'); }
+  const p = document.createElementNS(SVGNS, 'path');
+  p.setAttribute('d', 'M8 12.5l2.7 2.7L16.5 9');
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', filled ? '#FFFFFF' : '#9A1829');
+  p.setAttribute('stroke-width', filled ? '1.8' : '1.6');
+  p.setAttribute('stroke-linecap', 'round');
+  p.setAttribute('stroke-linejoin', 'round');
+  svg.append(c, p);
   return svg;
 }
-const pv = $('#pv');
-const pvFrame = $('#pv-frame');
-const preview = { slug: '', opener: null, order: false };
-// phone-sized screens and touch-first devices open the showcase full screen (it has its own close)
-const framed = matchMedia('(min-width: 860px) and (min-height: 560px) and (hover: hover) and (pointer: fine)');
-function openPreview(slug, from) {
-  const t = view.themes.find((x) => x.slug === slug) || BY_SLUG[slug];
-  if (!t || !SLUG_RE.test(slug)) return;
-  if (!framed.matches) { location.assign(showcaseUrl(slug)); return; }
-  preview.slug = slug;
-  preview.opener = from;
-  preview.order = false;
-  $('#pv-name').textContent = t.name;
-  $('#pv-ne').textContent = t.ne || '';
-  $('#pv-ne').hidden = !t.ne;
-  $('#pv-full').href = showcaseUrl(slug);
-  $('#pv-order').setAttribute('aria-label', `Order the ${t.name} design`);
-  pvFrame.title = `The ${t.name} design, live preview with the demo couple`;
-  pvFrame.src = showcaseUrl(slug);
-  pv.showModal();
-  document.documentElement.style.overflow = 'hidden';
+function planCard(p) {
+  const hi = p.highlight;
+  const ne = PLAN_NE[p.id] || PLAN_NE[p.name.toLowerCase()] || '';
+  const card = el('div', { class: 'plan' },
+    el('div', { class: 'plan__top' }, el('h3', { class: 'plan__name', text: p.name }), ne ? el('span', { class: 'plan__ne', lang: 'ne', text: ne }) : null),
+    el('div', { class: 'plan__cost' },
+      p.price != null
+        ? el('p', { class: 'plan__price' }, p.from ? el('span', { class: 'plan__from', text: 'From' }) : null,
+          el('span', { class: 'plan__cur', text: 'Rs.' }), el('span', { class: 'plan__num', text: npr.format(p.price) }), el('span', { class: 'vh', text: ' Nepali rupees' }))
+        : el('p', { class: 'plan__ask', text: 'Ask for price' }),
+      el('span', { class: 'plan__per', text: ['per wedding', p.priceUsd != null ? `or USD ${p.priceUsd} from abroad` : ''].filter(Boolean).join(' · ') })),
+    el('p', { class: 'plan__desc', text: p.note || PLAN_DESC[p.id] || '' }),
+    el('a', { class: `btn ${hi ? 'btn--accent' : 'btn--soft'} btn--md`, href: '#order', 'data-plan': p.id, text: `Choose ${p.name}` }),
+    p.features.length ? el('ul', { class: 'plan__feats' }, p.features.map((f) => el('li', {}, circleCheck(hi), el('span', { text: f })))) : null);
+  if (!hi) return el('li', {}, card);
+  return el('li', { class: 'plan-hi' },
+    el('div', { class: 'plan-hi__band' },
+      el('span', { class: 'mdots', 'aria-hidden': 'true' }, Array.from({ length: 11 }, () => el('i'))),
+      el('span', { class: 'plan-hi__label', text: 'Most chosen' })),
+    card);
 }
-pv.addEventListener('close', () => {
-  pvFrame.src = 'about:blank'; // stops the design's music
-  if (!lb.open) document.documentElement.style.overflow = '';
-  if (preview.order) {
-    if (lb.open) { lightbox.order = true; lb.close(); return; }
-    $('#order').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
-    $('#f-name').focus({ preventScroll: true });
-  } else {
-    preview.opener?.focus?.({ preventScroll: true });
+function renderPlans() {
+  const site = view.site;
+  const ready = site.plans.filter((p) => !p.from && p.id !== 'custom');
+  const custom = site.plans.filter((p) => p.from || p.id === 'custom');
+  const modes = $('#price-mode');
+  modes.hidden = !custom.length || !ready.length;
+  const list = view.mode === 'custom' && custom.length ? custom : ready.length ? ready : custom;
+  const ol = $('#plans');
+  ol.removeAttribute('aria-busy');
+  ol.classList.toggle('plans--one', list.length === 1);
+  ol.replaceChildren(...list.map(planCard));
+  for (const b of $$('button', modes)) {
+    const on = b.dataset.mode === view.mode;
+    b.setAttribute('aria-checked', String(on));
+    b.tabIndex = on ? 0 : -1;
   }
-});
-pv.addEventListener('click', (e) => { if (e.target === pv) pv.close(); });
-$('#pv-close').addEventListener('click', () => pv.close());
-$('#pv-order').addEventListener('click', (e) => {
-  e.preventDefault();
-  chooseTheme(preview.slug);
-  preview.order = true;
-  pv.close();
-});
-document.addEventListener('click', (e) => {
-  const a = e.target instanceof Element ? e.target.closest('a[data-preview]') : null;
-  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-  const slug = a.dataset.preview;
-  if (!SLUG_RE.test(slug)) return;
-  if (framed.matches) { e.preventDefault(); openPreview(slug, a); }
-});
+}
+function initPricing() {
+  const modes = $('#price-mode');
+  const pick = (mode, focus) => {
+    view.mode = mode;
+    renderPlans();
+    if (focus) modes.querySelector(`[data-mode="${mode}"]`).focus();
+  };
+  modes.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) pick(b.dataset.mode); });
+  modes.addEventListener('keydown', (e) => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    pick(view.mode === 'ready' ? 'custom' : 'ready', true);
+  });
+  $('#plans').addEventListener('click', (e) => { const a = e.target.closest('[data-plan]'); if (a) choosePlan(a.dataset.plan); });
+}
+function fillPlanOptions() {
+  const site = view.site;
+  for (const p of site.plans) planById.set(p.id, p);
+  const sel = $('#f-plan');
+  const keep = sel.value;
+  sel.replaceChildren(el('option', { value: '', text: 'Choose a plan' }),
+    ...site.plans.map((p) => el('option', { value: p.id, text: p.price != null ? `${p.name} · ${p.from ? 'from ' : ''}${money(p.price)}` : p.name })));
+  if (keep && planById.has(keep)) sel.value = keep;
+  syncTotal();
+}
 
-/* ---------------- lightbox: a larger still of one design ---------------- */
-const lb = $('#lb');
-const lbImg = $('#lb-img');
-const lightbox = { i: -1, opener: null, order: false };
-function showInLightbox(i) {
-  const list = view.themes;
-  if (!list.length) return;
-  i = (i + list.length) % list.length;
-  lightbox.i = i;
-  const t = list[i];
-  $('#lb-i').textContent = String(i + 1);
-  $('#lb-total').textContent = String(list.length);
-  $('#lb-name').textContent = t.name;
-  $('#lb-ne').textContent = t.ne || '';
-  $('#lb-ne').hidden = !t.ne;
-  $('#lb-text').textContent = t.concept;
-  $('#lb-order').setAttribute('aria-label', `Order the ${t.name} design`);
-  const lbPv = $('#lb-preview');
-  lbPv.href = showcaseUrl(t.slug);
-  lbPv.dataset.preview = t.slug;
-  lbPv.setAttribute('aria-label', `Preview the ${t.name} design live`);
-  lbImg.alt = `The ${t.name} design: ${t.alt}`;
-  const ss = srcsetFor(t);
-  if (ss) { lbImg.srcset = ss; lbImg.sizes = '(min-width: 860px) 62vw, 100vw'; } else { lbImg.removeAttribute('srcset'); lbImg.removeAttribute('sizes'); }
-  lbImg.src = t.thumb;
+/* ---------------- order form ---------------- */
+const form = $('#order-form');
+const F = form.elements;
+const isCustomPlan = (id) => id === 'custom' || Boolean(planById.get(id)?.from);
+
+function setKind(k) {
+  form.querySelector(`input[name="kind"][value="${k}"]`).checked = true;
+  syncKind();
 }
-function openLightbox(i, from) {
-  if (!view.themes[i]) return;
-  lightbox.opener = from;
-  lightbox.order = false;
-  showInLightbox(i);
-  lb.showModal();
-  document.documentElement.style.overflow = 'hidden';
+function syncKind() {
+  const custom = F.kind.value === 'custom';
+  for (const f of $$('[data-for="order"]', form)) f.hidden = custom;
+  $('#l-message').replaceChildren(document.createTextNode(custom ? 'Describe the design you have in mind ' : 'Anything we should know?'),
+    custom ? el('span', { class: 'req', 'aria-hidden': 'true', text: '*' }) : '');
+  F.message.required = custom;
+  if (custom && planById.has('custom')) F.plan.value = 'custom';
+  else if (!custom && isCustomPlan(F.plan.value)) F.plan.value = '';
+  syncTotal();
 }
-/** Preselects a design in the order form (the gallery fills the options; the hero may ask before it has). */
+function chosenPlan() {
+  if (F.kind.value === 'custom') return planById.get('custom') || [...planById.values()].find((p) => p.from) || null;
+  return planById.get(F.plan.value) || null;
+}
+function syncTotal() {
+  const p = chosenPlan();
+  const box = $('#order-total');
+  const payable = p && p.price != null;
+  box.hidden = !payable;
+  if (payable) box.replaceChildren(el('span', { text: `${p.name} plan${p.from ? ', starting price' : ''}` }), el('b', { text: money(p.price) }));
+  const btn = $('#order-submit');
+  if (!btn.disabled) btn.textContent = payable ? 'Continue to payment' : 'Send request';
+}
+function choosePlan(id) {
+  if (!planById.has(id)) return;
+  setKind(isCustomPlan(id) ? 'custom' : 'order');
+  F.plan.value = id;
+  F.plan.dispatchEvent(new Event('change', { bubbles: true }));
+  syncTotal();
+}
+/** Preselects a design in the order form. */
 function chooseTheme(slug) {
+  if (!SLUG_RE.test(slug || '')) return;
   const sel = $('#f-theme');
-  if (!SLUG_RE.test(slug)) return;
   if (![...sel.options].some((o) => o.value === slug)) {
     const t = BY_SLUG[slug];
     if (!t) return;
@@ -406,102 +267,59 @@ function chooseTheme(slug) {
   }
   setKind('order');
   sel.value = slug;
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
 }
-lb.addEventListener('close', () => {
-  document.documentElement.style.overflow = '';
-  if (lightbox.order) {
-    $('#order').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
-    $('#f-name').focus({ preventScroll: true });
-  } else {
-    lightbox.opener?.focus?.({ preventScroll: true });
-  }
-});
-lb.addEventListener('click', (e) => { if (e.target === lb) lb.close(); });
-lb.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft') { e.preventDefault(); showInLightbox(lightbox.i - 1); }
-  if (e.key === 'ArrowRight') { e.preventDefault(); showInLightbox(lightbox.i + 1); }
-});
-$('#lb-close').addEventListener('click', () => lb.close());
-$('#lb-prev').addEventListener('click', () => showInLightbox(lightbox.i - 1));
-$('#lb-next').addEventListener('click', () => showInLightbox(lightbox.i + 1));
-$('#lb-order').addEventListener('click', (e) => {
-  e.preventDefault();
-  const t = view.themes[lightbox.i];
-  if (t) chooseTheme(t.slug);
-  lightbox.order = true;
-  lb.close();
-});
-
-/** /?design=<slug>#order (the showcase's "Order this design"): preselect it in the form. */
-function preselectFromUrl() {
-  const q = new URLSearchParams(location.search);
-  const slug = q.get('design');
-  if (!slug) return;
-  if (SLUG_RE.test(slug) && view.themes.some((t) => t.slug === slug)) {
-    chooseTheme(slug);
-    if (location.hash === '#order') $('#order').scrollIntoView({ block: 'start' });
-  }
-  q.delete('design');
-  history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+function fillThemeOptions() {
+  const sel = $('#f-theme');
+  const keep = sel.value;
+  sel.replaceChildren(el('option', { value: '', text: 'Not chosen yet' }),
+    ...view.themes.map((t) => el('option', { value: t.slug, text: t.ne ? `${t.name} · ${t.ne}` : t.name })));
+  if (keep && view.themes.some((t) => t.slug === keep)) sel.value = keep;
 }
 
-/* ---------------- order form ---------------- */
-const form = $('#order-form');
-const F = form.elements;
-function setKind(k) {
-  form.querySelector(`input[name="kind"][value="${k}"]`).checked = true;
-  syncKind();
-}
-function syncKind() {
-  const custom = F.kind.value === 'custom';
-  $('#kind-hint').textContent = custom
-    ? 'Describe the design you imagine: colours, a place, a tradition. We will call you to shape it together.'
-    : 'Pick a design and a plan, or leave them for the call.';
-  form.querySelectorAll('[data-for="order"]').forEach((f) => { f.hidden = custom; });
-  const lab = $('#l-message');
-  lab.replaceChildren(document.createTextNode(custom ? 'Your idea ' : 'Anything we should know? '),
-    custom ? el('span', { class: 'req', 'aria-hidden': 'true', text: '*' }) : el('span', { class: 'opt', text: 'optional' }));
-  $('#f-message').required = custom;
-  syncPay();
-}
+form.addEventListener('focusin', () => { loadPayment().catch(() => {}); }, { once: true });
 form.addEventListener('change', (e) => {
   if (e.target.name === 'kind') syncKind();
-  if (e.target.name === 'plan') syncPay();
-  if (e.target.name === 'payWhen') { syncPay(); if (e.target.value === 'now') loadPayPal().catch(() => {}); } // warm the SDK
+  if (e.target.name === 'plan') {
+    if (isCustomPlan(F.plan.value) && F.kind.value !== 'custom') setKind('custom');
+    syncTotal();
+    if (F.plan.value) fieldError('plan', false);
+  }
 });
-document.querySelectorAll('[data-kind]').forEach((a) => a.addEventListener('click', () => setKind(a.dataset.kind)));
+document.addEventListener('click', (e) => {
+  const a = e.target instanceof Element ? e.target.closest('[data-kind]') : null;
+  if (a) setKind(a.dataset.kind);
+});
 
 function fieldError(id, show) {
   const input = $(`#f-${id}`);
   const err = $(`#e-${id}`);
-  input.setAttribute('aria-invalid', String(!!show));
+  input.setAttribute('aria-invalid', String(Boolean(show)));
   if (show) input.setAttribute('aria-describedby', `e-${id}`); else input.removeAttribute('aria-describedby');
   err.hidden = !show;
   return !show;
 }
 function validate() {
-  const name = F.name.value.trim();
+  const custom = F.kind.value === 'custom';
   const phone = F.phone.value.trim();
   const email = F.email.value.trim();
-  const custom = F.kind.value === 'custom';
   const ok = [
-    fieldError('name', name.length < 2),
+    fieldError('name', F.name.value.trim().length < 2),
     fieldError('phone', !/^[0-9+()\-\s]{6,20}$/.test(phone) || phone.replace(/\D/g, '').length < 7),
-    fieldError('email', email && !/^[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/.test(email)),
+    fieldError('email', Boolean(email) && !/^[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/.test(email)),
+    fieldError('plan', !custom && !F.plan.value),
     fieldError('message', custom && F.message.value.trim().length < 3),
   ];
   return ok.every(Boolean);
 }
-['name', 'phone', 'email', 'message'].forEach((id) => $(`#f-${id}`).addEventListener('input', () => {
-  if ($(`#f-${id}`).getAttribute('aria-invalid') === 'true') validate();
-}));
+for (const id of ['name', 'phone', 'email', 'message']) {
+  $(`#f-${id}`).addEventListener('input', () => { if ($(`#f-${id}`).getAttribute('aria-invalid') === 'true') validate(); });
+}
 
 function showError(msg) {
   const box = $('#order-error');
   box.replaceChildren(document.createTextNode(msg));
-  if (window.__nimttoWa) {
-    box.append(document.createTextNode(' You can also '), el('a', { href: window.__nimttoWa, target: '_blank', rel: 'noopener', text: 'write to us on WhatsApp' }), document.createTextNode('.'));
-  }
+  if (view.wa) box.append(document.createTextNode(' You can also '), el('a', { href: waLink(view.wa, 'Hi Nimtto, I want to order a wedding invitation.'), target: '_blank', rel: 'noopener', text: 'order on WhatsApp' }), document.createTextNode('.'));
   box.hidden = false;
 }
 
@@ -510,211 +328,135 @@ form.addEventListener('submit', async (e) => {
   $('#order-error').hidden = true;
   if (!validate()) { form.querySelector('[aria-invalid="true"]')?.focus(); return; }
   const custom = F.kind.value === 'custom';
-  const body = {
-    kind: custom ? 'custom' : 'order',
-    name: F.name.value.trim(),
-    phone: F.phone.value.trim(),
-    message: F.message.value.trim(),
-    website: F.website.value,
-  };
+  const plan = chosenPlan();
+  const body = { kind: custom ? 'custom' : 'order', name: F.name.value.trim(), phone: F.phone.value.trim(), message: F.message.value.trim(), website: F.website.value };
   if (F.email.value.trim()) body.email = F.email.value.trim();
   if (F.weddingDate.value) body.weddingDate = F.weddingDate.value;
   if (!custom && F.theme.value) body.theme = F.theme.value;
-  if (!custom && F.plan.value) body.plan = F.plan.value;
-  const payNow = payable() && F.payWhen.value === 'now';
+  if (plan) body.plan = plan.id;
   const btn = $('#order-submit');
   btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const r = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify(body),
-    });
-    let data = null;
-    try { data = await r.json(); } catch { /* not JSON */ }
-    if (r.ok && data?.ok !== false) {
-      const ref = typeof data?.ref === 'string' && /^[A-Za-z0-9_-]{12}$/.test(data.ref) ? data.ref : '';
-      if (payNow && ref) showPay(ref, body.plan); else showDone({ ref });
+  btn.textContent = 'Saving your order…';
+  const r = await createOrder(body, view.site);
+  btn.disabled = false;
+  syncTotal();
+  if (r.ok) {
+    const ref = typeof r.data.ref === 'string' && REF_RE.test(r.data.ref) ? r.data.ref : '';
+    const token = typeof r.data.payToken === 'string' && /^[A-Za-z0-9_-]{8,200}$/.test(r.data.payToken) ? r.data.payToken : '';
+    const amount = r.data.amount?.npr ?? r.data.amount;
+    if (ref && token && (amount == null || Number(amount) > 0)) {
+      form.hidden = true;
+      const box = $('#order-pay');
+      box.hidden = false;
+      history.replaceState(history.state, '', `${location.pathname}#order`);
+      try {
+        const { mountPayment } = await loadPayment();
+        await mountPayment(box, { ref, token, wa: view.wa });
+      } catch {
+        location.assign(`/pay/${encodeURIComponent(ref)}?t=${encodeURIComponent(token)}`); // the order is saved: pay there
+      }
       return;
     }
-    const bad = r.status === 400 && Array.isArray(data?.fields) ? data.fields.filter((f) => ['name', 'phone', 'email', 'message'].includes(f)) : [];
-    if (r.status === 429) showError('Too many requests from this connection. Please wait a few minutes and try again.');
-    else if (bad.length) {
-      bad.forEach((f) => fieldError(f, true));
-      form.querySelector('[aria-invalid="true"]')?.focus();
-      showError('Please check the highlighted fields.');
-    } else if (r.status === 400) showError('Please check the form and try again.');
-    else showError('We could not send your request just now. Please try again in a moment.');
-  } catch {
-    showError('We could not reach the server. Check your connection and try again.');
-  } finally {
-    btn.disabled = false;
-    syncPay();
+    showDone(ref, plan);
+    return;
   }
-});
-$('#order-again').addEventListener('click', () => {
-  form.reset();
-  syncKind();
-  $('#order-done').hidden = true;
-  $('#order-pay').hidden = true;
-  form.hidden = false;
-  F.name.focus();
+  const bad = r.status === 400 && Array.isArray(r.data.fields) ? r.data.fields.filter((f) => ['name', 'phone', 'email', 'message', 'plan'].includes(f)) : [];
+  if (r.status === 429) showError('Too many orders from this connection. Please wait a few minutes and try again.');
+  else if (bad.length) {
+    bad.forEach((f) => fieldError(f, true));
+    form.querySelector('[aria-invalid="true"]')?.focus();
+    showError('Please check the fields in red.');
+  } else if (r.status === 400) showError('Please check the form and try again.');
+  else if (r.status === 0) showError('We could not reach the server. Check your connection and try again.');
+  else showError('We could not save your order just now. Please try again in a moment.');
 });
 
-/** The thank-you panel: after a request (pay later) or a payment (with its receipt). */
-function showDone({ ref = '', paid = null } = {}) {
+function showDone(ref, plan) {
   form.hidden = true;
-  $('#order-pay').hidden = true;
-  const rows = [];
-  let title = 'Thank you. We have your request.';
-  let text = 'We will call or message you within a day. If it is urgent, write to us on WhatsApp.';
-  if (paid) {
-    const pending = paid.status === 'pending';
-    title = pending ? 'Thank you. PayPal is confirming your payment.' : 'Thank you. Your payment is received.';
-    text = pending
-      ? 'PayPal sometimes takes a little while to confirm. We will let you know, and call you within a day.'
-      : 'We will call or message you within a day to start on your invitation. Keep this reference for your records.';
-    rows.push(['Reference', ref], [pending ? 'Amount' : 'Paid', `${paid.currency} ${paid.amount}`]);
-    if (paid.captureId) rows.push(['PayPal transaction', paid.captureId]);
-  } else if (ref) rows.push(['Reference', ref]);
-  $('#done-title').textContent = title;
-  $('#done-text').textContent = text;
-  const dl = $('#done-receipt');
+  $('#done-title').textContent = 'Thank you. We have your request.';
+  $('#done-text').textContent = 'We will call or message you within a day to agree the price and how to pay.';
+  const rows = [ref ? ['Order number', ref] : null, plan ? ['Plan', plan.name] : null].filter(Boolean);
+  const dl = $('#done-facts');
   dl.replaceChildren(...rows.map(([k, v]) => el('div', {}, el('dt', { text: k }), el('dd', { text: v }))));
   dl.hidden = !rows.length;
   const done = $('#order-done');
   done.hidden = false;
   done.focus();
 }
+$('#order-again').addEventListener('click', () => {
+  form.reset();
+  syncKind();
+  $('#order-done').hidden = true;
+  form.hidden = false;
+  F.name.focus();
+});
 
-/* ---------------- pay now: PayPal Checkout (only when the server has it switched on) ----------------
-   The request is saved first (POST /api/orders), so nothing is lost if the visitor closes PayPal. The server makes
-   the PayPal order from the plan's price in site.json and captures it itself; the page only passes ids along.
-   The PayPal SDK loads only here, on demand. */
-const pay = { on: false, env: '', clientId: '', sdk: null, ref: '', error: '' };
-const payable = () => pay.on && F.kind.value === 'order' && Boolean(planInfo.get(F.plan.value)?.usd);
-function syncPay() {
-  const ok = payable();
-  $('#paywhen').hidden = !ok;
-  if (ok) $('#paywhen-amt').textContent = `· USD ${usdFmt.format(planInfo.get(F.plan.value).usd)}`;
-  const btn = $('#order-submit');
-  if (!btn.disabled) btn.textContent = ok && F.payWhen.value === 'now' ? 'Continue to payment' : 'Send request';
+/** /?design=<slug>#order (design pages and the showcase's "Order this design"), /?plan=<id>#order */
+function preselectFromUrl() {
+  const q = new URLSearchParams(location.search);
+  const slug = q.get('design');
+  const plan = q.get('plan');
+  const c = q.get('cat');
+  if (c && (c === 'faiths' || CATEGORIES[c]) && c !== view.cat) { view.cat = c; renderDesigns(); }
+  if (slug && SLUG_RE.test(slug)) chooseTheme(slug);
+  if (plan && /^[a-z0-9-]{1,32}$/.test(plan)) choosePlan(plan);
+  if (!slug && !plan && !c) return;
+  q.delete('design');
+  q.delete('plan');
+  q.delete('cat');
+  history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+  const target = location.hash === '#order' || location.hash === '#designs' ? $(location.hash) : null;
+  if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
 }
 
-function loadPayPal() {
-  if (window.paypal?.Buttons) return Promise.resolve(window.paypal);
-  if (pay.sdk) return pay.sdk;
-  const q = new URLSearchParams({ 'client-id': pay.clientId, currency: 'USD', intent: 'capture', components: 'buttons', 'disable-funding': 'venmo,paylater', commit: 'true' });
-  pay.sdk = new Promise((resolve, reject) => {
-    const s = el('script', { src: `https://www.paypal.com/sdk/js?${q}`, 'data-page-type': 'checkout' });
-    s.async = true;
-    const t = setTimeout(() => reject(new Error('timeout')), 20000);
-    s.onload = () => { clearTimeout(t); if (window.paypal?.Buttons) resolve(window.paypal); else reject(new Error('no sdk')); };
-    s.onerror = () => { clearTimeout(t); reject(new Error('blocked')); };
-    document.head.append(s);
-  }).catch((err) => { pay.sdk = null; throw err; });
-  return pay.sdk;
-}
-
-async function payApi(path, body) {
-  const r = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ ...body, website: F.website.value }),
-  });
-  let data = null;
-  try { data = await r.json(); } catch { /* not JSON */ }
-  return { ok: r.ok && data?.ok !== false, status: r.status, data: data || {} };
-}
-
-function payMessage(text, withWa = false) {
-  const box = $('#pay-msg');
-  box.replaceChildren(document.createTextNode(text));
-  if (withWa && window.__nimttoWa) box.append(document.createTextNode(' You can also '), el('a', { href: window.__nimttoWa, target: '_blank', rel: 'noopener', text: 'write to us on WhatsApp' }), document.createTextNode('.'));
-  box.hidden = !text;
-}
-
-function showPay(ref, planId) {
-  const plan = planInfo.get(planId);
-  pay.ref = ref;
-  form.hidden = true;
-  $('#pay-ref').textContent = ref;
-  $('#pay-plan').textContent = plan.name;
-  $('#pay-amt').textContent = plan.usd.toFixed(2);
-  $('#pay-test').hidden = pay.env !== 'sandbox';
-  payMessage('');
-  const panel = $('#order-pay');
-  panel.hidden = false;
-  panel.focus();
-  const btns = $('#pay-btns');
-  btns.setAttribute('aria-busy', 'true');
-  btns.replaceChildren(el('p', { class: 'pay__loading', text: 'Loading PayPal…' }));
-  loadPayPal().then((paypal) => {
-    btns.replaceChildren();
-    return paypal.Buttons({
-      style: { layout: 'vertical', color: 'white', shape: 'pill', label: 'pay', height: 48 },
-      createOrder: async () => {
-        pay.error = '';
-        payMessage('');
-        const r = await payApi('/api/pay/paypal/order', { ref: pay.ref });
-        if (!r.ok || !r.data.id) {
-          pay.error = r.status === 429 ? 'Too many tries from this connection. Please wait a few minutes.' : r.data.error || 'We could not start the payment.';
-          throw new Error(pay.error);
-        }
-        return r.data.id;
-      },
-      onApprove: async (data, actions) => {
-        payMessage('Confirming your payment…');
-        const r = await payApi('/api/pay/paypal/capture', { ref: pay.ref, orderID: data.orderID });
-        if (r.ok) { showDone({ ref: pay.ref, paid: r.data }); return undefined; }
-        if (r.status === 402 && r.data.code === 'retry') { payMessage(r.data.error); return actions.restart(); }
-        payMessage(r.data.error || 'We could not confirm the payment. Your request is saved and we will call you.', true);
-        return undefined;
-      },
-      onCancel: () => payMessage('Payment cancelled. Your request is saved: try again, or pay later and we will call you.'),
-      onError: () => payMessage(pay.error || 'PayPal could not take the payment just now. Your request is saved: try again, or pay later.', true),
-    }).render(btns);
-  }).then(() => btns.removeAttribute('aria-busy')).catch(() => {
-    btns.removeAttribute('aria-busy');
-    btns.replaceChildren();
-    payMessage('PayPal did not load (a blocker or a slow connection). Your request is saved: choose “Pay later instead” and we will call you.', true);
-  });
-}
-$('#pay-later').addEventListener('click', () => showDone({ ref: pay.ref }));
-
-function applyPayments(cfg) {
-  const p = cfg?.paypal;
-  if (!p?.enabled || typeof p.clientId !== 'string' || !/^[A-Za-z0-9_-]{2,128}$/.test(p.clientId)) return;
-  pay.on = true;
-  pay.env = p.env === 'live' ? 'live' : 'sandbox';
-  pay.clientId = p.clientId;
-  $('#pricing-lede').textContent = 'Pay online in US dollars with PayPal, or send a request and we will call you to talk it through.';
-  $('#order-lede').textContent = 'We call or message you within a day. Nothing is charged unless you choose to pay now.';
+function applyHero(site) {
+  const t = str(site.hero?.title, 160);
+  const s = str(site.hero?.subtitle, 300);
+  if (t) $('[data-site="hero-title"]').textContent = t;
+  if (s) $('[data-site="hero-subtitle"]').textContent = s;
 }
 
 /* ---------------- boot ---------------- */
 async function boot() {
-  $('#year').textContent = String(new Date().getFullYear());
-  initBar();
-  view.themes = normaliseThemes(null, FALLBACK_SITE); // until the API answers, the hero can still open the lightbox
-  initDoor();
+  setYear();
+  initHeader();
+  initPromo();
+  initDesigns();
+  initPricing();
+  initPreview({
+    find: (slug) => view.themes.find((t) => t.slug === slug) || BY_SLUG[slug],
+    onOrder: (slug) => {
+      chooseTheme(slug);
+      $('#order').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+      F.name.focus({ preventScroll: true });
+    },
+  });
+  // the logo on the home page: back to the top without a reload
+  for (const a of $$('a[data-home]')) {
+    a.addEventListener('click', (e) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      history.pushState(null, '', '/');
+      window.scrollTo({ top: 0, behavior: reduced.matches ? 'auto' : 'smooth' });
+    });
+  }
+  renderDesigns();
+  fillThemeOptions();
   syncKind();
 
-  // these sections sit below the fold: render once, from the API or (on 404 / timeout) from the static fallback,
-  // so nodes are never swapped under a visitor's finger
-  const [site, themes, payCfg] = await Promise.all([getJson('/api/site', 4000), getJson('/api/themes', 4000), getJson('/api/pay/config', 4000)]);
-  const s = site && typeof site === 'object' && !Array.isArray(site) ? { ...FALLBACK_SITE, ...site } : FALLBACK_SITE;
-  applyHero(s);
-  applyPayments(payCfg);
-  renderPlans(s);
-  syncPay();
-  renderContact(s);
-  renderGallery(normaliseThemes(Array.isArray(themes) ? themes : null, s));
+  const site = await loadSite();
+  view.site = site;
+  view.wa = applyContact(site.contact).wa;
+  applyHero(site);
+  fillPlanOptions();
+  renderPlans();
   preselectFromUrl();
-  const hidden = new Set(Array.isArray(s.hiddenThemes) ? s.hiddenThemes : []);
-  if (HERO.some(([slug]) => hidden.has(slug))) buildHero(hidden);
+  const themes = await loadThemes(site);
+  const same = themes.length === view.themes.length && themes.every((t, i) => t.slug === view.themes[i].slug);
+  view.themes = themes;
+  setCount(themes.length);
+  if (!same) { const keep = view.cat; renderDesigns(); view.cat = keep; }
+  fillThemeOptions();
 }
+setCount(THEMES.length);
 boot();

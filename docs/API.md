@@ -55,38 +55,131 @@ The client token is the part after `#/c/` in the link (43 chars base64url).
   Express's `req.ip` (`TRUST_PROXY`). `CLOUDFLARE_ONLY=1`: requests that bypassed Cloudflare get `403`.
 - `GET /healthz` (not under /api): `200 ok` while the database answers and the server is not shutting down, else `503`.
 
+## Order → pay → proof (public; the primary payment flow): the website's contract
+
+The website never sends or decides a price: every amount comes from the server's `Site.plans`.
+
+### `GET /site` (public projection)
+
+```
+{
+  plans: [{ id: 'saral'|'shubha'|'shahi'|'custom'|…, name, price: number|null (NPR), priceUsd: number|null,
+            from: boolean (true = show "from", e.g. Custom), features: string[], highlight: boolean, note: string }],
+  paymentMethods: [{ id, label, kind: 'khalti'|'esewa'|'bank'|'paypal'|'other', currency: 'NPR'|'USD',
+                     accountName, accountHint?, qr: '<static QR image URL>', note? }],   // enabled only, in admin order
+  contact: { phone, whatsapp, email, address }, hero: { title, subtitle }, hiddenThemes, featuredThemes
+}
+```
+Admin-only fields (remark template, stored QR payloads, disabled methods) are never in this answer.
+`paymentMethods[i].qr` is the plain static code (good for a "how to pay" section). For a real order use the
+per-order `qr` from `GET /orders/:ref/pay`, which has the amount and remark filled in where the wallet supports it.
+
+### `POST /orders`
+
+Body: `{ kind: 'order'|'custom', plan, name, phone, email?, bride?, groom?, weddingDate?: 'YYYY-MM-DD', theme?, message?, website: '' }`
+(`plan` is required for `kind: 'order'`; a `custom` request without a plan gets `plan: 'custom'`. `bride`/`groom` ≤ 80.)
+
+`201 { ok: true, ref: 'NM-24817', payToken: '<43-char base64url secret>', amount: { npr: 4999, usd: 99 }, plan: { id, name, from },
+       payUrl: '/pay/NM-24817?t=<payToken>', whatsapp: { text, link: 'https://wa.me/977…?text=…' | null } }`
+· `400 { ok: false, error, fields }` · `403` cross-site · `429`. Store `ref` + `payToken` (e.g. in the URL / localStorage)
+so the customer can come back; the token is shown once and only its hash is stored. A honeypot hit gets the same shape
+with a ref/token that leads nowhere. `amount.npr`/`amount.usd` can be `null` when the plan has no price.
+
+### `GET /orders/:ref/pay?t=<payToken>`
+
+`ref` = `^NM-\d{5,6}$`. Wrong/missing token or unknown ref: `404 { error }` (same answer for both).
+
+```
+{ ref, status: 'awaiting_payment'|'proof_submitted'|'confirmed'|'rejected'|'refunded',
+  reason: string|null,          // the rejection reason, shown to the customer
+  plan: { id, name, from }, amount: { npr, usd }, name, weddingDate?, createdAt,
+  proofs: [{ n, at, method, amountPaid }],   // no image URLs: proofs are private
+  maxProofs: 3, canUpload: boolean,
+  remark: 'Nimtto NM-24817',    // the default remark (admin template, filled in)
+  paymentMethods: [{ id, label, kind, currency, accountName, accountHint?, note?,
+                     amount: 4999 (in this method's currency) | null,
+                     remark, remarkMax: 25,
+                     dynamic: boolean,          // true: amount + remark are inside the QR; false: the customer types them
+                     qr: '/api/orders/NM-24817/qr/<methodId>.png?t=<payToken>',  // per-order PNG (dynamic or the static code)
+                     staticQr: '<static image URL>' }],
+  paypalCheckout: { enabled: boolean },  // PayPal Checkout buttons (POST /pay/paypal/order with { ref, t, website })
+  whatsapp: { text, link|null } }
+```
+
+### `GET /orders/:ref/qr/:methodId.png?t=<payToken>&remark=<text>`
+
+A PNG QR for this order and method. `remark` (optional) overrides the default remark: printable ASCII only,
+at most `remarkMax` characters; anything else → `400`. `Cache-Control: private, no-store`. Methods that are not
+`dynamic` return the static code unchanged (show "Enter amount Rs 4,999 and remark NM-24817" next to it).
+To let the customer edit the remark, change `remark` in the URL and reload the image.
+
+### `POST /orders/:ref/proof?t=<payToken>` (multipart/form-data)
+
+Fields: `file` (jpg/png/webp/heic, ≤ 8 MB; checked by content, re-encoded, metadata stripped), `method` (a payment
+method id), `amountPaid` (text as typed, ≤ 32), `note?` (≤ 300). Same-site Origin required.
+`201 { ok: true, status: 'proof_submitted', proofs: n }` · `400` · `404` token/ref · `409` already confirmed/refunded,
+or 3 proofs already · `413` too big · `415` not an image · `429` (10 / hour / IP, 20 / hour / order).
+
+### The pay page `/pay/<ref>?t=<token>`
+
+The website's Vite page `pay/index.html` (built to `dist/pay/index.html`). In production the server answers
+`/pay/NM-12345` (and with a trailing slash) with that file, `Cache-Control: private, no-store` and
+`Referrer-Policy: no-referrer` (the token is in the URL); `/pay/?ref=NM-12345&t=…` is served by the static files
+as usual. The page reads `ref` from the path (or `?ref=`) and `t` from the query, then calls the routes above.
+When PayPal Checkout is on, the PayPal SDK's CSP sources are added on `/pay/` pages too.
+
+### Payment statuses
+
+`awaiting_payment` → `proof_submitted` → `confirmed` | `rejected` (with `reason`) ; `refunded`. A rejected order can upload
+again (up to 3 proofs in total). PayPal Checkout (when configured) sets `confirmed` itself. This is separate from the
+admin's workflow `status` (`new`/`contacted`/`done`/`archived`).
+
 ## Public
 
 | Route | Body | Response |
 |---|---|---|
 | `GET /site` | – | `Site` (defaults when nothing saved yet) |
 | `GET /themes` | – | `[{ slug, name, concept, thumb }]`, ready themes only, minus `hiddenThemes` (no page URLs: see "Theme pages") |
-| `POST /orders` | `{ kind: 'order'\|'custom', name, phone, email?, weddingDate?, theme?, plan?, message?, website }` | `201 { ok: true, ref }` (`ref` = the request id; not on a honeypot hit) · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
+| `POST /orders` | see "Order → pay → proof" above | `201 { ok, ref, payToken, amount, plan, payUrl, whatsapp }` · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
+| `GET /orders/:ref/pay?t=` · `GET /orders/:ref/qr/:method.png?t=` · `POST /orders/:ref/proof?t=` | see above | see above |
 | `GET /pay/config` | – | `{ paypal: { enabled: false } }` or `{ paypal: { enabled: true, env: 'sandbox'\|'live', clientId, currency: 'USD' } }` |
-| `POST /pay/paypal/order` | `{ ref, website }` | `201 { ok, id, amount, currency }` (price from `Site.plans[].usdPrice`) · `400` · `403` · `404` · `409` already paid · `429` · `502` PayPal · `503` off |
-| `POST /pay/paypal/capture` | `{ ref, orderID, website }` | `{ ok, ref, status: 'paid'\|'pending', amount, currency, captureId, repeat }` · `402 { code: 'retry' }` declined · `409` amount/currency mismatch · `400`/`403`/`429`/`502`/`503` |
+| `POST /pay/paypal/order` | `{ ref, t, website }` (`ref` NM-…, `t` the pay token; orders from before references: their 12-char id, no `t`) | `201 { ok, id, amount, currency }` (the order's `amount.usd`, else the plan's `priceUsd`) · `400` · `403` · `404` · `409` already paid · `429` · `502` PayPal · `503` off |
+| `POST /pay/paypal/capture` | `{ ref, t, orderID, website }` | `{ ok, ref, status: 'paid'\|'pending', amount, currency, captureId, repeat }` · `402 { code: 'retry' }` declined · `409` amount/currency mismatch · `400`/`403`/`429`/`502`/`503` |
 | `POST /pay/paypal/webhook` | PayPal event (raw JSON, signature headers) | `200` · `400` bad signature · `404` off · `500` retry later |
 | `GET /invitations/:slug/public` | – | published data (a signed-in editor of that invitation gets the draft); includes `design`, and `themeContent` only for the theme and its borrowed gate / first screen |
 | `POST /invitations/:slug/rsvp` | `{ name, phone?, attending: 'yes'\|'no', guests, events?, meal?, message?, website }` | `{ ok: true }` |
 
-Payments: see `docs/PAYMENTS.md`. `GET /pay/status` (admin) → `{ paypal: { enabled, env, clientId (masked), secretSet, webhookIdSet, webhookUrl, dashboard, problems } }`; never a secret. `Site.plans[].usdPrice`: `null` or 1–10000 with at most two decimals.
+Payments: see `docs/PAYMENTS.md`. `GET /pay/status` (admin) → `{ paypal: { enabled, env, clientId (masked), secretSet, webhookIdSet, webhookUrl, dashboard, problems } }`; never a secret. `Site.plans[].priceUsd`: `null` or 1–10000 with at most two decimals (`usdPrice`, the old name, is still accepted on PUT).
 
-`POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254, `weddingDate` `YYYY-MM-DD`,
-`theme` an existing theme slug, `plan` an existing `Site.plans[].id`, `message` ≤ 2000 (required when `kind: 'custom'`).
-`website` is the honeypot: keep it as a hidden empty input; any value → `{ ok: true }` and nothing is stored.
+`POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254, `bride`/`groom` ≤ 80, `weddingDate`
+`YYYY-MM-DD`, `theme` an existing theme slug, `plan` an existing `Site.plans[].id` (required for `kind: 'order'`),
+`message` ≤ 2000 (required when `kind: 'custom'`). Any `amount`/`price` in the body is ignored.
+`website` is the honeypot: keep it as a hidden empty input; any value → the same `201` shape and nothing is stored.
 A `custom` request sent with a client session gets `invitation: <slug>` attached automatically. Limits: 5 stored
 requests / hour / IP (100 in dev) and 200 / hour overall; 60 attempts / hour / IP (requests that fail validation count
 only here, so a typo does not use up the 5). The honeypot answers `201 { ok: true }` like a real request.
 
 ```
-Site = {
+Site (stored; GET /admin/site and PUT /site) = {
+  v: 2,
   plans: [{ id: /^[a-z0-9-]{1,32}$/, name ≤ 60, price: integer 0..10,000,000 | null ("Ask for price"),
-            currency: 'NPR', note ≤ 160, features: string[≤ 20] (each ≤ 120), highlight: boolean }]  (≤ 8, unique ids),
-  contact: { phone, whatsapp (phone format or ''), email, address ≤ 300 },
+            priceUsd: 1..10000 (2 decimals) | null, from: boolean, currency: 'NPR', note ≤ 160,
+            features: string[≤ 20] (each ≤ 120), highlight: boolean }]  (≤ 8, unique ids),
+  paymentMethods: [{ id: /^[a-z0-9-]{1,32}$/, label ≤ 40, kind: 'khalti'|'esewa'|'bank'|'paypal'|'other',
+            currency: 'NPR'|'USD', accountName ≤ 80, accountHint ≤ 60 (optional number, shown only when set),
+            qr: '/site/pay/<name>.png' | '/uploads/_site/pay/<id>.png' | '', note ≤ 160, enabled: boolean,
+            order: integer (normalised to the list order), autoAmount: boolean, paypalMe: '' | PayPal.me name }]  (≤ 12),
+  payRemark: printable ASCII ≤ 40 containing {ref} ({plan}, {name} optional; filled in and cut to 25),
+  contact: { phone, whatsapp (stored as E.164, e.g. '+9779806393298'), email, address ≤ 300 },
   hero: { title ≤ 120, subtitle ≤ 300 },
   hiddenThemes: string[], featuredThemes: string[]   (unknown slugs are dropped)
 }
 ```
+Defaults (nothing saved yet): the plans Saral 2999/49, Shubha 4999/99 (highlight), Shahi 6999/149, Custom 11111/199
+(`from: true`); the methods Khalti, eSewa, Nabil Bank (NPR, Roshan Shrestha) and PayPal (USD, Bijaya Gurung) with the
+QR images in `public/site/pay/`; contact `+977 980-6393298`, WhatsApp `+9779806393298`, `nimttoz@gmail.com`.
+A stored document from before v2 is migrated on read: the four plans, keeping the feature lines of a plan with
+the same id. `GET /site` returns only the public projection (see the contract above).
 
 ## Admin only
 
@@ -95,8 +188,11 @@ Site = {
 | `GET /admin/stats` | – | `{ invitations, published, drafts, rsvps, attending, newOrders }` (`attending` = guests who said yes, `rsvps` = replies) |
 | `PUT /site` | full `Site` | the stored `Site` · `400 { error, errors }` |
 | `GET /orders` | – | `{ orders: Order[] }` newest first |
-| `PATCH /orders/:id` | `{ status?: 'new'\|'contacted'\|'done'\|'archived', notes?: string ≤ 2000 }` | `{ order }` |
-| `DELETE /orders/:id` | – | `{ ok: true }` |
+| `PATCH /orders/:id` | `{ status?: 'new'\|'contacted'\|'done'\|'archived', notes?: string ≤ 2000, amount?: { npr, usd }, payment?: { status, reason?, note?, manual?: true, method? } }` | `{ order }` · `400` (a rejection needs `reason` ≤ 300, shown to the customer) · `409` (`refunded` only after `confirmed`) |
+| `DELETE /orders/:id` | – | `{ ok: true }` (its payment screenshots are deleted too) |
+| `GET /admin/orders/:id/proof/:n` | `?size=sm` for the thumbnail | `image/jpeg`, `Cache-Control: private, no-store` · `401` not signed in · `404` |
+| `GET /admin/site` | – | the full `Site`; each payment method also has `qrInfo: { format: 'emv'\|'esewa'\|'khalti'\|'paypalme'\|'paypal'\|…, label, decoded, canAuto, autoDefault, dynamic }` |
+| `POST /admin/pay/qr` | multipart `file` (PNG/JPEG/WebP ≤ 8 MB) | `201 { qr, decoded, cropped, qrInfo }` (cropped to the code, payload stored for per-order codes) · `413` · `415` |
 | `GET /invitations` | – | `{ invitations: Summary[] }` |
 | `POST /invitations` | `{ slug, bride, groom, theme?, sample?, religion?, colors? }` (`religion`: see below; `colors`: `{ '--token': '#hex' }` for the chosen theme, unknown tokens dropped; a theme that does not suit the religion is replaced by the first ready one that does; the ceremonies and wording follow the religion) | `201 Doc` |
 | `POST /invitations/:slug/seen` | – | `{ ok: true }` |
@@ -106,7 +202,13 @@ Site = {
 | `PATCH /invitations/:slug/access` | `{ themes?, canChangeTheme?, canChangeColors?, password? }` | `{ clientLink }` · `404` no link · a new password keeps the same URL and ends the couple's sessions (they enter the new password once) |
 | `DELETE /invitations/:slug/client-link` | – | `{ ok: true }` (revokes; sessions end) |
 
-`Order = { id, at, kind, name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status, notes? }`.
+`Order = { id, ref, at, kind, name, phone, email?, bride?, groom?, weddingDate?, theme?, plan?, planName?, planFrom?,
+amount: { npr, usd }, message, invitation?, status, notes?, payStatus, pay: { status, reason, proofs: [{ n, at, method,
+methodLabel, currency, amountPaid, note?, w, h, url, thumb }], history: [{ at, status, by: 'customer'|'admin'|'paypal', note? }],
+via?: 'proof'|'manual'|'paypal', manual?: { method, note }, confirmedAt?, refundedAt? }, payment? (PayPal Checkout) }`.
+The pay token's hash is never sent. `payStatus` is `pay.status` (or PayPal's paid/refunded for older orders).
+`PATCH … payment.status`: `confirmed` (with `manual: true` and `method` for "marked paid by hand"), `rejected` (with
+`reason`), `refunded`, or back to `awaiting_payment`/`proof_submitted` (undo).
 Client-link defaults: `themes: 'all'`, `canChangeTheme: false`, `canChangeColors: true`.
 `url` = `<PUBLIC_ORIGIN>/studio/#/c/<token>`.
 `clientLink` (in `Summary`, `Doc` for admins, and the link routes) = `{ createdAt, hasPassword, url, themes, canChangeTheme, canChangeColors }` or `null`.

@@ -10,7 +10,7 @@ guest phone ──► Cloudflare (cache, WAF, rate limits, bot checks)
              Coolify Traefik ──► one container: node server/index.js
                                    ├─ dist/ (precompressed .br/.gz, cache headers)
                                    ├─ /api (Express)
-                                   └─ volumes: /app/server/data   (nimtto.db, backups/, link.key)
+                                   └─ volumes: /app/server/data   (nimtto.db, backups/, link.key, proofs/ = payment screenshots)
                                                /app/server/uploads (photos, music)
 ```
 
@@ -22,13 +22,13 @@ guest phone ──► Cloudflare (cache, WAF, rate limits, bot checks)
 | Cache | Parsed invitations and the guests' JSON are kept in memory, checked against the stored revision on every read (never stale). `/api/site`, `/api/themes`, `/api/invitations/:slug/public` send an ETag and answer `304` when unchanged. | `lib/store.js`, `lib/http-cache.js` |
 | Static files | Built once with brotli/gzip; sent as they are. Hashed `/assets/*` cached for a year; art cached a week (a month at Cloudflare). | `lib/static.js`, `scripts/compress-dist.js` |
 | Back-pressure | At most 512 requests in flight (then `503` + `Retry-After`). While the event loop is over 400 ms behind for 2 s, sign-in, uploads and admin lists answer `503` so guest pages keep working. | `lib/guard.js` |
-| Per-IP limits | 3000 requests/min per IP overall, 1200/min to `/api` (generous: guests on one mobile carrier share IPs). Strict ones per route: admin sign-in 10 failures/15 min per IP, couple link 20 failures/15 min per IP and 10 wrong passwords/15 min per invitation, RSVP 30/10 min per IP per invitation and 3000/hour per invitation, orders 5/hour per IP, uploads 300/hour per invitation. | `lib/guard.js`, the route modules |
+| Per-IP limits | 3000 requests/min per IP overall, 1200/min to `/api` (generous: guests on one mobile carrier share IPs). Strict ones per route: admin sign-in 10 failures/15 min per IP, couple link 20 failures/15 min per IP and 10 wrong passwords/15 min per invitation, RSVP 30/10 min per IP per invitation and 3000/hour per invitation, orders 5/hour per IP, uploads 300/hour per invitation, payment screenshots 10/hour per IP and 20/hour per order (3 per order in all), pay pages and QR images 300/10 min per IP. | `lib/guard.js`, the route modules |
 | Expensive work | argon2: 2 at a time, 32 waiting, then `503`. Couple links that match nothing cost no CPU (an indexed lookup, then a timed wait). Photos: 2 processed at once, 16 waiting; 6 uploads received at once, 12 waiting; then `503`. | `lib/guard.js`, `lib/uploads.js` |
 | Slow clients | Headers within 20 s, a whole request within 120 s, idle keep-alive 95 s (longer than Traefik keeps idle connections, so no 502 races). | `server/index.js` |
 | Real client IP | `CF-Connecting-IP`, trusted only when the request came through a Cloudflare address. `CLOUDFLARE_ONLY=1` refuses anything else. | `lib/security.js` |
 | Restarts | `SIGTERM` finishes requests in flight (10 s max) and closes the database cleanly. An unexpected exception logs and exits; Docker restarts the container. | `server/index.js` |
 | Health | `GET /healthz` is `200` while the database answers and the server is not shutting down. Deliberately not tied to load (an unhealthy container is dropped from Traefik's routing, which would turn a spike into an outage). | `server/index.js` |
-| Backups | A consistent copy of the database every 24 h into `data/backups/`, 14 kept. | `lib/backup.js` |
+| Backups | A consistent copy of the database every 24 h into `data/backups/`, 14 kept. Payment screenshots (`data/proofs/`) and uploaded payment QR codes (`uploads/_site/pay/`) are files on the volumes, not in these copies: back the volumes up too. | `lib/backup.js` |
 
 Measured on the development laptop (single Node process; numbers in the final report of the performance pass):
 a guest's invitation JSON went from about 280 to about 3,400 requests/s, RSVPs from 160 to 2,000/s, studio

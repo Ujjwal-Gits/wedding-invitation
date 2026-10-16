@@ -1,14 +1,16 @@
 // Payments API, mounted at /api/pay (server/index.js), plus the page headers the PayPal buttons need on /.
 //   GET  /api/pay/config           public: { paypal: { enabled, env, clientId?, currency } } (the client ID is public)
 //   GET  /api/pay/status           admin: configured or not, sandbox or live; never a secret
-//   POST /api/pay/paypal/order     public { ref, website }: Origin check, honeypot, rate limits
-//   POST /api/pay/paypal/capture   public { ref, orderID, website }: same
+//   POST /api/pay/paypal/order     public { ref, t, website }: Origin check, honeypot, rate limits
+//   POST /api/pay/paypal/capture   public { ref, t, orderID, website }: same
+// `ref` is the order's public reference (NM-24817) with its pay token `t`; requests made before references existed
+// pass their 12-character id (itself unguessable) and no token.
 //   POST /api/pay/paypal/webhook   PayPal: raw JSON, verified with PayPal's verify-webhook-signature API
 import express from 'express';
 import { IS_PROD, PUBLIC_ORIGINS } from '../env.js';
 import { rateLimiter, originAllowed, clientIp } from '../security.js';
 import { requireAdmin } from '../auth.js';
-import { getOrder, findOrder, mutateOrder, ID_RE } from '../orders.js';
+import { getOrder, findOrder, mutateOrder, orderByRefAndToken, ID_RE, REF_RE } from '../orders.js';
 import { readSite } from '../site.js';
 import { readConfig, createClient, PayPalError, PAYPAL_ORDER_ID_RE } from './paypal.js';
 import { createCheckout, CURRENCY } from './checkout.js';
@@ -53,15 +55,20 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
     return true;
   };
   /** Shared checks for the two public POSTs. Returns the body, or null after answering. */
-  const guard = (lim, req, res) => {
+  const guard = async (lim, req, res) => {
     if (!originAllowed(req)) { res.status(403).json({ ok: false, error: 'Cross-site request refused.' }); return null; }
     if (limited(lim, req, res)) return null;
     if (!checkout) { res.status(503).json({ ok: false, error: 'Online payment is not available right now. We will call you instead.' }); return null; }
     const b = req.body;
     if (!b || typeof b !== 'object' || Array.isArray(b)) { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; }
     if (b.website != null && b.website !== '') { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; } // honeypot
+    if (typeof b.ref === 'string' && REF_RE.test(b.ref)) {
+      const o = await (deps.orderByRefAndToken || orderByRefAndToken)(b.ref, b.t);
+      if (!o) { res.status(404).json({ ok: false, error: 'We could not find your order.' }); return null; }
+      return { ...b, id: o.id };
+    }
     if (typeof b.ref !== 'string' || !ID_RE.test(b.ref)) { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; }
-    return b;
+    return { ...b, id: b.ref };
   };
   /** PayPal failures: the visitor sees a calm message; the log gets PayPal's debug id (never credentials). */
   const fail = (res, err, what) => {
@@ -93,16 +100,16 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
   });
 
   router.post('/paypal/order', json, wrap(async (req, res) => {
-    const b = guard(startLimit, req, res);
+    const b = await guard(startLimit, req, res);
     if (!b) return;
-    try { res.status(201).json({ ok: true, ...(await checkout.start(b.ref)) }); } catch (err) { fail(res, err, 'create order'); }
+    try { res.status(201).json({ ok: true, ...(await checkout.start(b.id)) }); } catch (err) { fail(res, err, 'create order'); }
   }));
 
   router.post('/paypal/capture', json, wrap(async (req, res) => {
-    const b = guard(captureLimit, req, res);
+    const b = await guard(captureLimit, req, res);
     if (!b) return;
     if (typeof b.orderID !== 'string' || !PAYPAL_ORDER_ID_RE.test(b.orderID)) return res.status(400).json({ ok: false, error: 'Bad request.' });
-    try { res.json(await checkout.capture(b.ref, b.orderID)); } catch (err) { fail(res, err, 'capture'); }
+    try { res.json({ ...(await checkout.capture(b.id, b.orderID)), ref: b.ref }); } catch (err) { fail(res, err, 'capture'); }
   }));
 
   router.post('/paypal/webhook', express.text({ type: 'application/json', limit: '64kb' }), wrap(async (req, res) => {
@@ -122,7 +129,7 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
 
   /** App middleware (after securityHeaders): on the website's page only, let the PayPal SDK load and open its popup. */
   const pageHeaders = (req, res, next) => {
-    if (config.enabled && (req.method === 'GET' || req.method === 'HEAD') && (req.path === '/' || req.path === '/index.html')) {
+    if (config.enabled && (req.method === 'GET' || req.method === 'HEAD') && (req.path === '/' || req.path === '/index.html' || /^\/pay(?:\/|$)/.test(req.path))) {
       const csp = res.getHeader('Content-Security-Policy');
       if (typeof csp === 'string') res.setHeader('Content-Security-Policy', withPayPalCsp(csp));
       // PayPal's checkout window talks back to the page that opened it (PayPal recommends this value)

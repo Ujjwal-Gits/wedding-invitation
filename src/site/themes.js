@@ -1,57 +1,77 @@
-// Static theme list: the fallback when GET /api/themes is unavailable, and the source of the Nepali names and
-// alt text (the API returns { slug, name, concept, thumb } only; designs are never linked live from the website).
+// Static design list: the fallback when GET /api/themes is unavailable, and the source of the Nepali names,
+// plain-English descriptions, categories and alt text (the API returns { slug, name, concept, thumb, religions }).
+// Designs are never linked live from the website: only stills, the design pages and the watermarked showcase.
+// Categories: flowers | doors | cards | film. Religions: what the theme's slots.js declares (absent = hindu only).
+const ALL = ['hindu', 'muslim', 'christian', 'other'];
 export const THEMES = [
-  ['kham', 'Kham', 'खाम', 'A handmade-paper envelope sealed with the endless knot; the card unfolds into a clear programme.', 'a handmade-paper envelope with a sindoor wax seal'],
-  ['dhoka', 'Dhoka', 'ढोका', 'White editorial print. The Golden Door of Patan opens in 3D.', 'the Golden Door of Patan beside the couple’s names'],
-  ['mala', 'Mala', 'माला', 'A dressed Nepali mandap: silk drapes, marigold strings and brass kalash of fresh flowers.', 'red silk drapes with marigold rosettes and brass kalash'],
-  ['durbar', 'Durbar', 'दरबार', 'A 3D morning walk through Bhaktapur Durbar Square, under flower arches, past the Nyatapola.', 'the Nyatapola temple of Bhaktapur in 3D'],
-  ['gurans', 'Phoolbari', 'फूलबारी', 'A flower gate opens on शुभ विवाह; then a calm, paper-soft invitation.', 'a flower gate with शुभ विवाह on an ivory crest'],
-  ['dhaka', 'Dhaka', 'ढाका', 'Break the seal, slip off the Dhaka band, and the couple rise from the envelope into flowers.', 'an ivory envelope with a Dhaka band and wax seal'],
-  ['sayapatri', 'Sayapatri', 'सयपत्री', 'A doorway hung with real marigold strings; they lift to open a calm ivory invitation.', 'a doorway hung with marigold strings and mango leaves'],
-  ['himal', 'Himal', 'हिमाल', 'Quiet luxury. Sunrise over the Himalaya and a photo essay of the couple.', 'Machhapuchhre at dawn with the couple’s names'],
-  ['chitra', 'Chitra', 'चित्र', 'A Mithila picture book: janti, swayambar, seven rounds, sindoor, the dance.', 'an illustrated couple walking around the sacred fire'],
-  ['mandap', 'Mandap', 'मण्डप', 'A 3D mandap on a bright morning; the couple exchange garlands and walk seven rounds.', 'a 3D mandap with the bride by the sacred fire'],
-  ['bagaicha', 'Bagaicha', 'बगैंचा', 'A 3D garden wedding: through the rose arch, seven rounds of the fire, on to the reception.', 'a 3D garden with a domed pavilion and reflecting pool'],
-  ['ghar', 'Ghar', 'घर', 'A lamplit film walking through a Newar house, room by room.', 'a Newar courtyard at dusk in film framing'],
-  ['mangal', 'Mangal', 'मंगल', 'A wide red temple doorway with garlands and bells; the doors swing open on शुभ विवाह.', 'a red carved doorway hung with marigold garlands and brass bells'],
-  ['nimantrana', 'Nimantrana', 'निमन्त्रणा', 'A traditional tri-fold card that unfolds in 3D: Ganesh, the couple, the programme.', 'a red and gold tri-fold wedding card with Ganesh, the couple and the programme'],
-  ['jhyal', 'Jhyal', 'झ्याल', 'A carved Newari window on handmade paper; the lattice shutters swing open on शुभ विवाह.', 'a carved Newari wooden window with a marigold toran and two brass diyos'],
-  ['mahal', 'Mahal', 'महल', 'A golden palace gate tied with a satin bow; it swings open onto a palace balcony at night.', 'a golden palace gate under roses, tied with an ivory satin bow'],
-  ['laali', 'Laali', 'लाली', 'Blush pink and gold: an arched card under hanging lanterns that drop in as the arch draws itself.', 'a blush pink arched card with gold lanterns and peonies'],
-  ['mehendi', 'Mehendi', 'मेहन्दी', 'Henna on ivory: a henna mandala draws itself, then the joined, hennaed hands glide in.', 'an ivory card with joined henna hands and a henna Ganesh'],
-  ['hariyo', 'Hariyo', 'हरियो', 'Sage-green watercolour garden: the leaves part on a white pavilion with the couple and two peacocks.', 'sage watercolour greenery around a white garden pavilion'],
-  ['shree', 'Shree', 'श्री', 'Deep plum and antique gold: a gold lotus opens on Ganesh while two hanging diyas descend.', 'a gold line-art Ganesh on deep plum with hanging diyas'],
-  ['pardaa', 'Pardaa', 'पर्दा', 'Red velvet curtains part on a dressed mandap with a living fire; each ceremony in its own colours.', 'red and gold velvet curtains tied back around a marigold-dressed mandap'],
-  ['rajdwar', 'Rajdwar', 'राजद्वार', 'A painted gold palace gate tied with a satin bow; untie it and walk through onto the red-and-gold Mangal card.', 'a painted gold palace gate with Ganesh on its crest, tied with an ivory satin bow'],
-  ['agni', 'Agni', 'अग्नि', 'The sacred fire at night: the fire catches on a tap, then the couple walk the seven rounds and the vows appear.', 'a brass havan kunda with a living fire under Ganesh'],
-  ['janti', 'Janti', 'जन्ती', 'The janti strikes up: walk with the Naumati Baja and the doli down an old Newari street to the bride’s door.', 'the Naumati Baja and a red doli in a golden Newari street'],
-  ['swayambar', 'Swayambar', 'स्वयम्बर', 'Two fresh garlands swing apart on the jaimala; the bride’s and groom’s sides come together as you scroll.', 'the bride and groom exchanging marigold garlands'],
-  ['sindoor', 'Sindoor', 'सिन्दूर', 'Minimal red, white and black: the sindoor box opens in a bloom of red and a parting line threads the story.', 'a red-and-gold sindoor box on white with a red line-drawn Ganesh'],
-  ['rangoli', 'Rangoli', 'रंगोली', 'A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos'],
-].map(([slug, name, ne, concept, alt]) => ({ slug, name, ne, concept, alt, thumb: `/themes/${slug}/thumb.jpg` }));
+  ['kham', 'Kham', 'खाम', 'cards', 'A paper envelope with a red wax seal. It opens into a clear card with all your events.', 'a handmade-paper envelope with a red wax seal', ['hindu', 'other']],
+  ['dhoka', 'Dhoka', 'ढोका', 'doors', 'A clean white card. The golden door of Patan opens in 3D to show your names.', 'the golden door of Patan beside the couple’s names', ['hindu']],
+  ['mala', 'Mala', 'माला', 'flowers', 'A wedding mandap with red silk, marigold strings and brass kalash full of flowers.', 'red silk drapes with marigold flowers and brass kalash', ['hindu']],
+  ['durbar', 'Durbar', 'दरबार', 'film', 'A 3D morning walk through Bhaktapur Durbar Square, under flower arches.', 'the Nyatapola temple of Bhaktapur in 3D', ['hindu']],
+  ['gurans', 'Phoolbari', 'फूलबारी', 'flowers', 'A gate of fresh roses and marigold strings opens to show शुभ विवाह. Then a calm, soft invitation.', 'a flower gate with शुभ विवाह on an ivory crest', ['hindu', 'other']],
+  ['dhaka', 'Dhaka', 'ढाका', 'cards', 'Break the seal and slide off the Dhaka band. Your names rise out of the envelope among flowers.', 'an ivory envelope with a Dhaka band and a wax seal', ALL],
+  ['sayapatri', 'Sayapatri', 'सयपत्री', 'flowers', 'A doorway hung with marigold strings. The strings lift to open a calm ivory invitation.', 'a doorway hung with marigold strings and mango leaves', ['hindu', 'other']],
+  ['himal', 'Himal', 'हिमाल', 'film', 'Sunrise over the Himalaya, then a quiet photo story of the two of you.', 'Machhapuchhre at sunrise with the couple’s names', ALL],
+  ['chitra', 'Chitra', 'चित्र', 'cards', 'A picture book in Mithila art: the janti, the garlands, the seven rounds and the dance.', 'a painted couple walking around the sacred fire', ['hindu']],
+  ['mandap', 'Mandap', 'मण्डप', 'film', 'A 3D mandap on a bright morning. The couple exchange garlands and walk the seven rounds.', 'a 3D mandap with the bride by the sacred fire', ['hindu']],
+  ['bagaicha', 'Bagaicha', 'बगैंचा', 'film', 'A 3D garden wedding: through a rose arch, around the sacred fire, on to the reception.', 'a 3D garden with a pavilion and a long pool', ['hindu']],
+  ['ghar', 'Ghar', 'घर', 'film', 'A warm evening walk through a Newar house, room by room, like a film.', 'a Newar courtyard at dusk', ['hindu']],
+  ['mangal', 'Mangal', 'मंगल', 'doors', 'A red temple door with garlands and bells. The doors swing open on शुभ विवाह.', 'a red carved door hung with marigold garlands and brass bells', ['hindu']],
+  ['nimantrana', 'Nimantrana', 'निमन्त्रणा', 'cards', 'A traditional red and gold card that unfolds in 3D: Ganesh, the couple, then the programme.', 'a red and gold folded wedding card with Ganesh and the programme', ['hindu']],
+  ['jhyal', 'Jhyal', 'झ्याल', 'doors', 'A carved Newari window. The wooden shutters open on शुभ विवाह.', 'a carved Newari window with a marigold toran and two brass diyos', ALL],
+  ['mahal', 'Mahal', 'महल', 'doors', 'A golden palace gate tied with a satin bow. It opens onto a palace balcony at night.', 'a golden palace gate under roses, tied with an ivory satin bow', ALL],
+  ['laali', 'Laali', 'लाली', 'flowers', 'Blush pink and gold. Lanterns drop in as an arched card draws itself.', 'a blush pink arched card with gold lanterns and peonies', ALL],
+  ['mehendi', 'Mehendi', 'मेहन्दी', 'cards', 'Henna on ivory. A henna pattern draws itself, then two hennaed hands come together.', 'an ivory card with joined henna hands', ALL],
+  ['hariyo', 'Hariyo', 'हरियो', 'flowers', 'A soft green garden in watercolour. The leaves part to show a white pavilion and two peacocks.', 'green watercolour leaves around a white garden pavilion', ALL],
+  ['shree', 'Shree', 'श्री', 'cards', 'Deep plum and gold. A gold lotus opens on Ganesh as two diyas come down.', 'a gold Ganesh drawing on deep plum with hanging diyas', ['hindu']],
+  ['pardaa', 'Pardaa', 'पर्दा', 'doors', 'Red velvet curtains open on a mandap with a living fire. Each event has its own colours.', 'red and gold velvet curtains around a marigold mandap', ['hindu']],
+  ['rajdwar', 'Rajdwar', 'राजद्वार', 'doors', 'A painted gold palace gate with a satin bow. Untie it and walk through to a red and gold card.', 'a painted gold palace gate with Ganesh on top, tied with an ivory bow', ['hindu']],
+  ['agni', 'Agni', 'अग्नि', 'film', 'The sacred fire at night. Tap to light it, then the couple walk the seven rounds.', 'a brass havan kunda with a living fire under Ganesh', ['hindu']],
+  ['janti', 'Janti', 'जन्ती', 'film', 'Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door.', 'the Naumati Baja band and a red doli in a golden Newari street', ['hindu']],
+  ['swayambar', 'Swayambar', 'स्वयम्बर', 'flowers', 'Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.', 'the bride and groom exchanging marigold garlands', ['hindu', 'other']],
+  ['sindoor', 'Sindoor', 'सिन्दूर', 'cards', 'Red, white and black. The sindoor box opens and a red line carries your story.', 'a red and gold sindoor box on white with a red Ganesh drawing', ['hindu']],
+  ['rangoli', 'Rangoli', 'रंगोली', 'flowers', 'A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos', ['hindu']],
+].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));
-// Nepali names for designs that the API lists but the static fallback does not carry yet
-export const NE_NAMES = { rajdwar: 'राजद्वार' };
 
-const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty'];
-/** 22 -> 'twenty-two' (falls back to digits beyond 59) */
-export function countWord(n) {
-  if (n < 20) return WORDS[n];
-  if (n < 60) return TENS[Math.floor(n / 10)] + (n % 10 ? `-${WORDS[n % 10]}` : '');
-  return String(n);
-}
+// label: chips and related cards; one: the kicker on a design; short: under a thumbnail; tint: the canvas panels
+export const CATEGORIES = {
+  flowers: { label: 'Flowers', one: 'Flower design', short: 'Flowers', tint: '#F6E9E7' },
+  doors: { label: 'Doors and gates', one: 'Door or gate', short: 'Door', tint: '#EFE3DA' },
+  cards: { label: 'Cards and envelopes', one: 'Card design', short: 'Card', tint: '#F3E2E2' },
+  film: { label: '3D and film', one: '3D or film design', short: '3D and film', tint: '#ECE8DF' },
+};
 
-// Shown only when GET /api/site is unavailable; the admin edits the real plans in the studio.
+// The plans' short descriptions (the canvas cards carry one); the admin's `note` wins when it is set.
+export const PLAN_DESC = {
+  saral: 'For couples who want one beautiful link with all the basics.',
+  shubha: 'Everything a full Nepali wedding needs, with every ceremony in one link.',
+  shahi: 'For families who want the whole invitation made around them.',
+  custom: 'A new design, made only for your wedding.',
+};
+
+export const RELIGION_LABEL = { hindu: 'Hindu', muslim: 'Muslim', christian: 'Christian', other: 'Other' };
+
+// Shown only when GET /api/site is unavailable (the admin edits the real plans, methods and contact in the studio).
 export const FALLBACK_SITE = {
   plans: [
-    { id: 'classic', name: 'Classic', price: null, currency: 'NPR', note: '', features: [], highlight: false },
-    { id: 'premium', name: 'Premium', price: null, currency: 'NPR', note: '', features: [], highlight: true },
-    { id: 'custom', name: 'Custom', price: null, currency: 'NPR', note: '', features: [], highlight: false },
+    { id: 'saral', name: 'Saral', price: 2999, priceUsd: 49, features: ['Any ready-made design', 'English and Nepali', 'Nepali and English dates', 'Your song', 'RSVP from guests', 'One link for WhatsApp'], highlight: false },
+    { id: 'shubha', name: 'Shubha', price: 4999, priceUsd: 99, features: ['Everything in Saral', 'All your events, from mehendi to reception', 'Photo gallery', 'Countdown to the day', 'Your own page to read replies'], highlight: true },
+    { id: 'shahi', name: 'Shahi', price: 6999, priceUsd: 149, features: ['Everything in Shubha', 'Mix the opening of two designs', 'Colours to match your wedding', 'We make changes for you until the day'], highlight: false },
+    { id: 'custom', name: 'Custom', price: 11111, priceUsd: 199, from: true, features: ['A new design made only for you', 'Your ideas, colours and places', 'Everything in Shahi', 'We talk it through with you first'], highlight: false },
   ],
-  contact: { phone: '', whatsapp: '', email: '', address: '' },
+  paymentMethods: [
+    { id: 'khalti', label: 'Khalti', kind: 'wallet', currency: 'NPR', accountName: '', qr: '/site/pay/khalti.png' },
+    { id: 'esewa', label: 'eSewa', kind: 'wallet', currency: 'NPR', accountName: '', qr: '/site/pay/esewa.png' },
+    { id: 'nabil', label: 'Nabil Bank', kind: 'bank', currency: 'NPR', accountName: '', qr: '/site/pay/nabil.png' },
+    { id: 'paypal', label: 'PayPal', kind: 'paypal', currency: 'USD', accountName: '', qr: '/site/pay/paypal.png', note: 'For payments from abroad' },
+  ],
+  contact: { phone: '+977 980-6393298', whatsapp: '+977 980-6393298', email: 'nimttoz@gmail.com', address: '' },
   hero: { title: '', subtitle: '' },
   hiddenThemes: [],
   featuredThemes: [],
 };
+
+// Nepali names for the usual plans (the API carries the English name only)
+export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शाही', custom: 'आफ्नै' };

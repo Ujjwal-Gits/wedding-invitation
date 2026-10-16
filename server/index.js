@@ -21,6 +21,7 @@ import { themePageGate } from './lib/gate.js';
 import { showcaseGate } from './lib/showcase.js';
 import { stopDepth } from './lib/depth.js';
 import { payments } from './lib/payments/routes.js'; // PayPal (off until PAYPAL_* are set); see docs/PAYMENTS.md
+import * as manualPay from './lib/payments/manual.js'; // order -> pay by QR -> screenshot -> admin confirms (docs/PAYMENTS.md)
 
 assertConfigured();
 openStore();
@@ -59,6 +60,11 @@ api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.get('/site', wrap(site.getSite));
 api.get('/themes', wrap(site.publicThemes));
 api.post('/orders', json('8kb'), wrap(orders.submit));
+// The customer's own order, by its reference and pay token (lib/payments/manual.js)
+api.param('ref', (req, res, next, ref) => (orders.REF_RE.test(ref) ? next() : res.status(404).json({ error: 'We could not find this order. Check the link you were sent.' })));
+api.get('/orders/:ref/pay', wrap(manualPay.payInfo));
+api.get('/orders/:ref/qr/:file', wrap(manualPay.payQr));
+api.post('/orders/:ref/proof', heavy, wrap(manualPay.submitProof));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
 // Admin
@@ -66,7 +72,10 @@ const editor = requireEditor(peekInvitation); // read-only check of the couple's
 api.get('/meta', requireSession, wrap(inv.meta));
 api.get('/admin/stats', requireAdmin, heavy, wrap((req, res) => inv.stats(req, res, orders.newCount)));
 api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
+api.get('/admin/site', requireAdmin, wrap(site.getAdminSite));
+api.post('/admin/pay/qr', requireAdmin, heavy, wrap(manualPay.uploadQr));
 api.get('/orders', requireAdmin, wrap(orders.list));
+api.get('/admin/orders/:id/proof/:n', requireAdmin, wrap(manualPay.adminProof));
 api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
 api.delete('/orders/:id', requireAdmin, wrap(orders.remove));
 
@@ -124,11 +133,28 @@ app.get(/^\/uploads\/([a-z0-9-]{3,64})\/([A-Za-z0-9_-]{16,40}(?:-(?:lg|sm|depth)
     else if (err) next(err);
   });
 });
+// Payment QR images the admin uploaded (lib/payments/manual.js): random names, PNG only.
+app.get(/^\/uploads\/_site\/pay\/([A-Za-z0-9_-]{24}\.png)$/, (req, res, next) => {
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(resolve(UPLOAD_DIR, '_site', 'pay', req.params[0]), { dotfiles: 'deny' }, (err) => {
+    if (err && !res.headersSent) res.status(err.statusCode === 404 || err.code === 'ENOENT' ? 404 : 500).end();
+    else if (err) next(err);
+  });
+});
 app.use('/uploads', (req, res) => res.status(404).end());
 
 if (IS_PROD) {
   if (!existsSync(DIST_DIR)) console.warn('[studio] dist/ not found: run `npm run build` in the project root.');
   // Theme pages (/<theme>/) only for a published invitation's guests or a studio session; see lib/gate.js.
+  // The customer's pay page: /pay/<ref>?t=<token> is the website's pay/index.html (it reads the ref from the path).
+  // Never cached, and no Referer leaves it (the token is in the URL).
+  const payPage = resolve(DIST_DIR, 'pay', 'index.html');
+  app.get(/^\/pay\/NM-\d{5,6}\/?$/, (req, res, next) => {
+    if (!existsSync(payPage)) return next();
+    res.set('Cache-Control', 'private, no-store');
+    res.set('Referrer-Policy', 'no-referrer');
+    res.sendFile(payPage, (err) => { if (err && !res.headersSent) next(); });
+  });
   app.use(showcaseGate(DIST_DIR)); // public watermarked showcase /<theme>/?showcase=1 (lib/showcase.js)
   app.use(themePageGate(DIST_DIR));
   // dist/ with build-time brotli/gzip and the caching policy (lib/static.js; Cloudflare rules in docs/OPERATIONS.md)

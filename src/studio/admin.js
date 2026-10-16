@@ -1,7 +1,7 @@
 // The owner's dashboard modules. One content system for all of them: a page header with a hairline,
 // then hairline-divided lists and real tables. Borders only on things that are objects (theme cards, plans).
 import { h, icon, iconBtn, toast, openDialog, confirmDialog, fmtDate, fmtRelative, copyText, emptyState, toggle, debounce, fill } from './dom.js';
-import { api } from './api.js';
+import { api, postForm } from './api.js';
 import { photoUrl } from '../photos.js';
 import { deleteDialog, actionMenu, whenText } from './manage.js';
 import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
@@ -224,7 +224,7 @@ async function publishNow(ctx, i, btn, after) {
 }
 
 function overview(ctx) {
-  const strip = h('dl.kpis', kpiSkel(5));
+  const strip = h('dl.kpis', kpiSkel(6));
   ctx.shell.setStrip(strip);
   const needsCount = h('span.sect__count', { hidden: true });
   const needs = h('div', rowsSkel(3));
@@ -251,7 +251,9 @@ function overview(ctx) {
     if (!alive) return;
     const planName = (id) => site.plans?.find((p) => p.id === id)?.name || id;
     const fresh = (orders || []).filter((o) => o.status === 'new');
-    ctx.shell.setBadge('orders', fresh.length ? String(fresh.length) : '');
+    const toCheck = (orders || []).filter((o) => o.status !== 'archived' && (o.payStatus || o.pay?.status) === 'proof_submitted');
+    const attention = new Set([...fresh, ...toCheck]).size;
+    ctx.shell.setBadge('orders', attention ? String(attention) : '');
 
     // Key figures
     const s = stats || {
@@ -266,7 +268,8 @@ function overview(ctx) {
       kpi('Drafts', s.drafts),
       kpi('Guests coming', s.attending),
       kpi('Replies', s.rsvps),
-      kpi('New orders', s.newOrders, s.newOrders ? 'is-accent' : ''));
+      kpi('New orders', s.newOrders, s.newOrders ? 'is-accent' : ''),
+      kpi('Payments to check', orders ? toCheck.length : null, toCheck.length ? 'is-accent' : ''));
 
     // Needs you
     const tasks = [];
@@ -275,7 +278,16 @@ function overview(ctx) {
       tasks.push({ ic: 'lock', tone: 'warn', title: [h('b', nameOf(i)), ': the couple’s link has no password'], meta: 'Anyone with the link can open and edit it. Set a password, then send it separately.',
         acts: [h('button.btn.btn--sm', { type: 'button', onclick: () => accessDialog(ctx, i, load) }, 'Set password')] });
     }
-    for (const o of fresh.slice(0, 5)) {
+    // Payments to check first: money is waiting to be confirmed
+    for (const o of toCheck.slice(0, 5)) {
+      const p = o.pay.proofs.at(-1);
+      tasks.push({ ic: 'check', tone: 'accent', thumb: p?.thumb,
+        title: ['Payment to check: ', h('b', o.name)],
+        meta: [o.ref, o.planName, p ? `${p.methodLabel || p.method} · says ${p.amountPaid}` : null, o.amount?.npr != null ? `expected Rs ${Number(o.amount.npr).toLocaleString('en-IN')}` : null, p ? fmtRelative(p.at) : null].filter(Boolean).join(' · '),
+        acts: [h('a.btn.btn--sm.btn--primary', { href: '#/orders?pay=check' }, 'Check payment')] });
+    }
+    if (toCheck.length > 5) tasks.push({ ic: 'inbox', title: [`${toCheck.length - 5} more payments to check`], meta: 'Waiting in Orders & requests.', acts: [h('a.btn.btn--sm', { href: '#/orders?pay=check' }, 'Open')] });
+    for (const o of fresh.filter((x) => !toCheck.includes(x)).slice(0, 5)) {
       const markBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
         markBtn.disabled = true;
         try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'PATCH', body: { status: 'contacted' } }); toast(`${o.name} moved to Contacted`, 'success'); load(); } catch (err) { markBtn.disabled = false; toast(err.message, 'error'); }
@@ -316,10 +328,11 @@ function overview(ctx) {
     ctx.shell.setSub(`${dateLine} · ${tasks.length ? `${plural(tasks.length, 'thing needs', 'things need')} you` : 'nothing needs you right now'}`);
     fill(needs, tasks.length
       ? h('ul.rows', tasks.map((t) => h('li.task',
-        h('span.task__icon', { class: t.tone ? `is-${t.tone}` : '' }, icon(t.ic, 16)),
+        t.thumb ? h('a.task__thumb', { href: '#/orders?pay=check', 'aria-hidden': 'true', tabindex: '-1' }, h('img', { src: t.thumb, alt: '', loading: 'lazy', decoding: 'async' }))
+          : h('span.task__icon', { class: t.tone ? `is-${t.tone}` : '' }, icon(t.ic, 16)),
         h('div.task__main', h('p.task__title', t.title, t.dot ? h('span.dot', { title: 'New since you last looked', 'aria-label': 'new' }) : null), t.meta ? h('p.task__meta', t.meta) : null),
         h('div.task__acts', t.acts))))
-      : quietEmpty('check', 'All clear', list.length ? 'No orders to call back, no unpublished changes and no new replies. New work shows up here.' : 'Create the first invitation; it starts with sample details.', list.length ? null : newBtn(ctx)));
+      : quietEmpty('check', 'All clear', list.length ? 'No payments to check, no orders to call back, no unpublished changes and no new replies. New work shows up here.' : 'Create the first invitation; it starts with sample details.', list.length ? null : newBtn(ctx)));
 
     // Upcoming weddings
     const up = list.map((i) => ({ i, n: daysUntil(i.weddingDate) })).filter((x) => x.n != null && x.n >= 0).sort((a, b) => a.n - b.n);
@@ -356,6 +369,7 @@ function overview(ctx) {
       for (const x of (r.replies || []).slice(0, 30)) ev.push({ at: x.at, ic: 'chat', text: [h('b', x.name), x.attending === 'yes' ? ` is coming${x.guests > 1 ? `, ${x.guests} guests` : ''}` : ' can’t come', h('span.act__ctx', ` · ${nameOf(i)}`)], href: `#/replies?i=${encodeURIComponent(slug)}` });
     }
     for (const o of (orders || []).slice(0, 20)) ev.push({ at: o.at, ic: 'inbox', text: [o.kind === 'custom' ? 'Custom design request from ' : 'New order from ', h('b', o.name)], href: '#/orders' });
+    for (const o of (orders || []).slice(0, 40)) for (const p of o.pay?.proofs || []) ev.push({ at: p.at, ic: 'check', text: ['Payment screenshot from ', h('b', o.name), ` (${p.methodLabel || p.method})`], href: '#/orders?pay=check' });
     ev.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     const dayKey = (iso) => new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ });
     const today = todayKey();
@@ -526,40 +540,134 @@ function access(ctx) {
 
 // ── Orders & requests ─────────────────────────────────────────────────────
 
-// Online payments (server/lib/payments): order.payment = { status, amount, currency, env, paypalOrderId, captureId, … }
-const PAY_BADGE = {
-  paid: ['ok', 'Paid'], refunded: ['warn', 'Refunded'], partially_refunded: ['warn', 'Part refunded'],
-  pending: ['warn', 'Pending at PayPal'], mismatch: ['accent', 'Check payment'], denied: ['muted', 'Declined'], created: ['muted', 'Unpaid'],
+// Payment (server/lib/payments/manual.js): order.pay = { status, reason, proofs: [{ n, at, method, methodLabel,
+// currency, amountPaid, note, url, thumb }], history, via, manual }, order.payStatus (PayPal included).
+// PayPal Checkout, when it is on, also keeps order.payment = { provider: 'paypal', status, amount, … }.
+const PAY_STATE = {
+  awaiting_payment: ['muted', 'Awaiting payment'], proof_submitted: ['accent', 'Payment to check'],
+  confirmed: ['ok', 'Paid'], rejected: ['warn', 'Payment rejected'], refunded: ['warn', 'Refunded'],
 };
-const payMoney = (p) => (p?.amount ? `${p.currency || 'USD'} ${p.amount}` : '');
+const PAY_FILTERS = [['all', 'All'], ['check', 'Payment to check'], ['awaiting', 'Awaiting payment'], ['paid', 'Paid']];
+const payState = (o) => o.payStatus || o.pay?.status || null;
+const payMatches = (o, f) => f === 'all' || (f === 'check' && payState(o) === 'proof_submitted')
+  || (f === 'awaiting' && ['awaiting_payment', 'rejected'].includes(payState(o))) || (f === 'paid' && payState(o) === 'confirmed');
+const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
+const usd = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
+const priceLine = (a, from) => [a?.npr != null ? `${from ? 'from ' : ''}${npr(a.npr)}` : null, a?.usd != null ? usd(a.usd) : null].filter(Boolean).join(' · ');
+const ppMoney = (p) => (p?.amount ? `${p.currency || 'USD'} ${p.amount}` : '');
 const ppBase = (p) => (p?.env === 'live' ? 'https://www.paypal.com' : 'https://www.sandbox.paypal.com');
+
 function payBadge(o) {
-  const p = o.payment;
-  if (!p) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'No online payment. Collected by hand, if any.' }, 'Unpaid') : null;
-  const [tone, text] = PAY_BADGE[p.status] || ['muted', 'Unpaid'];
-  const money = p.status === 'partially_refunded' ? `${p.refunded} of ${payMoney(p)}` : payMoney(p);
-  return h('span.pill', { class: `pill--${tone}`, title: p.status === 'created' ? 'Opened PayPal but has not paid' : undefined }, money && p.status !== 'created' ? `${text} · ${money}` : text);
+  const s = payState(o);
+  if (!s) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'Made before payments were tracked' }, 'Unpaid') : null;
+  const [tone, text] = PAY_STATE[s] || ['muted', s];
+  return h('span.pill', { class: `pill--${tone}` }, text);
 }
-function paymentFacts(p) {
+function paypalFacts(p) {
   if (!p || p.provider !== 'paypal') return [];
   const ext = (href, text) => h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: 'Opens PayPal in a new tab' }, text);
   return [
-    ['Payment', `${payMoney(p)} by PayPal${p.env === 'sandbox' ? ' (sandbox, test money)' : ''}`],
+    ['PayPal', `${ppMoney(p)} · ${p.status}${p.env === 'sandbox' ? ' (sandbox, test money)' : ''}`],
     p.paidAt ? ['Paid', h('time', { datetime: p.paidAt, title: whenText(p.paidAt) }, fmtRelative(p.paidAt))] : null,
     p.refunded ? ['Refunded', `${p.currency} ${p.refunded}`] : null,
     p.payerEmail ? ['Payer', h('a', { href: `mailto:${p.payerEmail}` }, p.payerEmail)] : null,
     p.captureId ? ['PayPal transaction', ext(`${ppBase(p)}/activity/payment/${encodeURIComponent(p.captureId)}`, p.captureId)] : null,
-    p.paypalOrderId ? ['PayPal order', h('span.tnum', p.paypalOrderId)] : null,
     p.problem ? ['Note', p.problem] : null,
-    ['', ext(`${ppBase(p)}/activities`, 'Open the PayPal dashboard')],
   ].filter(Boolean);
+}
+
+/** A payment screenshot, large, in a dialog (fetched from the admin-only route; never public). */
+function proofDialog(o, p) {
+  const img = h('img.proofview__img', { src: p.url, alt: `Payment screenshot ${p.n} from ${o.name}` });
+  openDialog({
+    title: `${o.name} · screenshot ${p.n}`, wide: true, cls: 'proofview',
+    body: [h('div.proofview__pic', img),
+      h('dl.kv', h('div', h('dt', 'Paid with'), h('dd', p.methodLabel || p.method)), h('div', h('dt', 'They say they paid'), h('dd', p.amountPaid || '—')),
+        h('div', h('dt', 'Expected'), h('dd', priceLine(o.amount, o.planFrom) || '—')), h('div', h('dt', 'Sent'), h('dd', h('time', { datetime: p.at, title: whenText(p.at) }, fmtRelative(p.at)))),
+        p.note ? h('div', h('dt', 'Their note'), h('dd', p.note)) : null)],
+    actions: [h('a.btn', { href: p.url, target: '_blank', rel: 'noopener' }, icon('external', 15), 'Open full size')],
+  });
+}
+
+/** Reject with a reason (the customer sees it on their pay page). Resolves to the reason or null. */
+function rejectDialog(o) {
+  return new Promise((resolve) => {
+    let out = null;
+    const presets = ['The amount does not match.', 'We could not find this payment in our account.', 'The screenshot is not clear. Please send another.'];
+    const ta = h('textarea.input', { id: 'rej-reason', rows: 3, maxlength: 300, placeholder: 'e.g. The amount was Rs 499, not Rs 4,999.' });
+    const err = h('p.form-error', { role: 'alert' });
+    const d = openDialog({
+      title: `Reject ${o.name}’s payment?`,
+      body: [h('p.dialog__text', 'They see this reason on their order page and can send a new screenshot.'),
+        h('div.field', h('label.label', { for: 'rej-reason' }, 'Reason'), ta,
+          h('div.chips', presets.map((t) => h('button.chip', { type: 'button', onclick: () => { ta.value = t; ta.focus(); } }, t)))), err],
+      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'),
+        h('button.btn.btn--danger', { type: 'button', onclick: () => { if (!ta.value.trim()) { err.textContent = 'Write a short reason.'; ta.focus(); return; } out = ta.value.trim(); d.close(); } }, 'Reject payment')],
+      onClose: () => resolve(out),
+    });
+    ta.focus();
+  });
+}
+
+/** Mark paid by hand (cash, or a transfer seen elsewhere). Resolves to { method, note } or null. */
+function manualDialog(o, methods) {
+  return new Promise((resolve) => {
+    let out = null;
+    const sel = h('select.input', { id: 'man-method' }, ['Cash', ...methods.map((m) => m.label), 'Other'].map((t) => h('option', { value: t }, t)));
+    const note = h('input.input', { id: 'man-note', maxlength: 500, placeholder: 'e.g. Paid at the office on Friday' });
+    const d = openDialog({
+      title: `Mark ${o.name}’s order as paid`,
+      body: [h('p.dialog__text', `For money you received another way. Expected: ${priceLine(o.amount, o.planFrom) || 'no price set'}.`),
+        h('div.field', h('label.label', { for: 'man-method' }, 'How they paid'), sel),
+        h('div.field', h('label.label', { for: 'man-note' }, 'Note (only you see it)'), note)],
+      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => { out = { method: sel.value, note: note.value.trim() }; d.close(); } }, icon('check', 15), 'Mark paid')],
+      onClose: () => resolve(out),
+    });
+  });
+}
+
+/** The payment panel of one order: proofs, what they say they paid, and the decisions. */
+function payPanel(o, { patch, redraw, methods }) {
+  const s = payState(o);
+  if (!s && o.kind !== 'order') return null;
+  const proofs = o.pay?.proofs || [];
+  const setPay = async (payment, msg) => { if (await patch(o, { payment })) { toast(msg, 'success'); redraw(); } };
+  const confirmBtn = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => setPay({ status: 'confirmed' }, `${o.name}: payment confirmed`) }, icon('check', 15), 'Confirm payment');
+  const rejectBtn = h('button.btn.btn--sm', { type: 'button', onclick: async () => { const reason = await rejectDialog(o); if (reason) setPay({ status: 'rejected', reason }, `${o.name}: payment rejected`); } }, 'Reject…');
+  const manualBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const m = await manualDialog(o, methods); if (m) setPay({ status: 'confirmed', manual: true, method: m.method, note: m.note }, `${o.name}: marked paid`); } }, 'Mark paid manually…');
+  const refundBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
+    if (await confirmDialog({ title: 'Mark this payment refunded?', message: 'Only records it here. Send the money back in the app you were paid with.', confirm: 'Mark refunded' })) setPay({ status: 'refunded' }, `${o.name}: marked refunded`);
+  } }, 'Mark refunded…');
+  const reopenBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => setPay({ status: proofs.length ? 'proof_submitted' : 'awaiting_payment', note: 'reopened' }, 'Payment reopened') }, 'Undo');
+  const acts = s === 'confirmed' ? [refundBtn, reopenBtn]
+    : s === 'refunded' ? [reopenBtn]
+      : s === 'proof_submitted' ? [confirmBtn, rejectBtn, manualBtn]
+        : [manualBtn, proofs.length ? rejectBtn : null];
+  const last = proofs.at(-1);
+  const via = o.pay?.via === 'manual' ? `By hand${o.pay.manual?.method ? ` · ${o.pay.manual.method}` : ''}` : o.pay?.via === 'paypal' ? 'PayPal checkout' : last ? last.methodLabel || last.method : null;
+  return h('section.paybox', { class: s ? `is-${s}` : '', 'aria-label': `Payment for ${o.name}` },
+    h('header.paybox__head', payBadge(o), h('span.paybox__amt.tnum', priceLine(o.amount, o.planFrom) || 'No price set'), o.ref ? h('span.paybox__ref.tnum', o.ref) : null),
+    proofs.length ? h('ul.proofs', proofs.map((p) => h('li', h('button.proof', { type: 'button', onclick: () => proofDialog(o, p), 'aria-label': `Open screenshot ${p.n}` },
+      h('img', { src: p.thumb, alt: '', loading: 'lazy', decoding: 'async' }),
+      h('span.proof__cap', h('b', p.methodLabel || p.method), h('span.tnum', p.amountPaid || '—')))))) : null,
+    h('dl.kv.paybox__kv',
+      via ? h('div', h('dt', s === 'confirmed' ? 'Paid with' : 'Method used'), h('dd', via)) : null,
+      last ? h('div', h('dt', 'They say they paid'), h('dd.tnum', last.amountPaid)) : null,
+      last?.note ? h('div', h('dt', 'Their note'), h('dd', last.note)) : null,
+      s === 'rejected' && o.pay?.reason ? h('div', h('dt', 'Told them'), h('dd', o.pay.reason)) : null,
+      !proofs.length && s === 'awaiting_payment' ? h('div', h('dt', 'Screenshot'), h('dd', 'Not sent yet')) : null),
+    h('div.paybox__acts', acts.filter(Boolean)));
 }
 
 function orders(ctx) {
   let list = [];
   let tab = 'new';
-  let planNames = {};
+  let pf = ctx.params.get('pay') || 'all';
+  if (!PAY_FILTERS.some(([v]) => v === pf)) pf = 'all';
+  let methods = [];
   const stages = h('div.stages', { role: 'group', 'aria-label': 'Stage' });
+  const payTabs = ftabs(PAY_FILTERS.map(([v, t]) => [v, t]), pf, (v) => { pf = v; history.replaceState(null, '', v === 'all' ? '#/orders' : `#/orders?pay=${v}`); draw(); }, 'Payment');
   const body = h('div', rowsSkel(4));
   const patch = async (o, b) => {
     try {
@@ -575,24 +683,28 @@ function orders(ctx) {
     notes.addEventListener('input', saveNotes);
     notes.addEventListener('blur', () => saveNotes());
     const idx = STAGES.findIndex(([s]) => s === o.status);
+    const couple = [o.bride, o.groom].filter(Boolean).join(' & ');
     const facts = [
+      o.ref ? ['Order', h('span.tnum', o.ref)] : null,
+      o.plan ? ['Plan', `${o.planName || o.plan}${o.amount?.npr != null ? ` · ${priceLine(o.amount, o.planFrom)}` : ''}`] : null,
+      couple ? ['Couple', couple] : null,
       o.weddingDate ? ['Wedding', fmtDate(o.weddingDate)] : null,
-      o.plan ? ['Plan', planNames[o.plan] || o.plan] : null,
       o.theme ? ['Design', themeOf(ctx, o.theme)?.name || o.theme] : null,
       o.email ? ['Email', h('a', { href: `mailto:${o.email}` }, o.email)] : null,
       o.invitation ? ['Invitation', h('a', { href: `#/i/${o.invitation}/home` }, `/${o.invitation}`)] : null,
-      ...paymentFacts(o.payment),
+      ...paypalFacts(o.payment),
     ].filter(Boolean);
-    return h('li.ord',
+    return h('li.ord', { id: `ord-${o.id}` },
       h('div.ord__who',
-        h('p.ord__name', h('b', o.name), h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order'), payBadge(o)),
+        h('p.ord__name', h('b', o.name), h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order')),
         h('p.ord__when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))),
         h('div.ord__contact',
           h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), h('span.tnum', o.phone)),
           h('a.btn.btn--sm.btn--wa', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp')),
-        o.message ? h('blockquote.ord__msg', o.message) : h('p.ord__nomsg', 'No message.')),
+        o.message ? h('blockquote.ord__msg', o.message) : h('p.ord__nomsg', 'No message.'),
+        facts.length ? h('dl.kv.ord__facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))) : null),
       h('div.ord__side',
-        facts.length ? h('dl.kv', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))) : null,
+        payPanel(o, { patch, redraw: draw, methods }),
         h('div.ord__notes', notes, saved),
         h('div.ord__foot',
           h('div.stepper', { role: 'group', 'aria-label': `Stage for ${o.name}` }, STAGES.map(([s, t], k) => h('button.stepper__b', {
@@ -600,23 +712,31 @@ function orders(ctx) {
             onclick: async () => { if (s === o.status) return; if (await patch(o, { status: s })) { toast(`${o.name} moved to ${t}`, 'success'); draw(); } },
           }, t))),
           iconBtn('trash', `Delete the order from ${o.name}`, async () => {
-            if (!(await confirmDialog({ title: 'Delete this order?', message: `The request from ${o.name} is removed for good.`, confirm: 'Delete', danger: true }))) return;
+            if (!(await confirmDialog({ title: 'Delete this order?', message: `The request from ${o.name} and any payment screenshots are removed for good.`, confirm: 'Delete', danger: true }))) return;
             try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'DELETE' }); list = list.filter((x) => x !== o); toast('Order deleted', 'success'); draw(); } catch (err) { toast(err.message, 'error'); }
           }, 'btn--ghost ord__del'))));
   };
   function draw() {
     const counts = Object.fromEntries(STAGES.map(([s]) => [s, list.filter((o) => o.status === s).length]));
-    ctx.shell.setBadge('orders', counts.new ? String(counts.new) : '');
-    fill(stages, STAGES.map(([s, t], k) => [h('button.stage', { type: 'button', 'aria-pressed': String(tab === s), onclick: () => { tab = s; draw(); } },
+    const payCounts = Object.fromEntries(PAY_FILTERS.map(([v]) => [v, list.filter((o) => o.status !== 'archived' && payMatches(o, v)).length]));
+    const toCheck = payCounts.check;
+    ctx.shell.setBadge('orders', counts.new + toCheck ? String(new Set(list.filter((o) => o.status === 'new' || payState(o) === 'proof_submitted')).size) : '');
+    payTabs.draw(pf, payCounts);
+    const checkTab = [...payTabs.el.children].find((b) => b.textContent.startsWith('Payment to check'));
+    checkTab?.classList.toggle('has-accent', toCheck > 0);
+    const byPay = pf !== 'all';
+    fill(stages, STAGES.map(([s, t], k) => [h('button.stage', { type: 'button', 'aria-pressed': String(!byPay && tab === s), onclick: () => { tab = s; pf = 'all'; history.replaceState(null, '', '#/orders'); draw(); } },
       h('span.stage__n', { class: s === 'new' && counts.new ? 'is-accent' : '' }, String(counts[s])), h('span.stage__t', t)),
     k < STAGES.length - 1 ? h('span.stage__arrow', { 'aria-hidden': 'true' }, icon('chevron', 14)) : null]));
-    const rows = list.filter((o) => o.status === tab);
+    const rows = byPay ? list.filter((o) => o.status !== 'archived' && payMatches(o, pf)) : list.filter((o) => o.status === tab);
+    const emptyPay = { check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here to confirm.'], awaiting: ['Nobody is waiting to pay', 'Orders that have not sent a payment screenshot yet show up here.'], paid: ['No paid orders yet', 'Payments you confirm show up here.'] };
     fill(body, rows.length ? h('ul.ords', rows.map(orderRow))
-      : quietEmpty('inbox', tab === 'new' ? 'No new orders' : `Nothing in ${STAGES.find(([s]) => s === tab)[1].toLowerCase()}`, tab === 'new' ? 'Orders and custom design requests from the website arrive here. Call them back, then move them along.' : 'Orders you move to this stage show up here.'));
+      : byPay ? quietEmpty('inbox', ...emptyPay[pf])
+        : quietEmpty('inbox', tab === 'new' ? 'No new orders' : `Nothing in ${STAGES.find(([s]) => s === tab)[1].toLowerCase()}`, tab === 'new' ? 'Orders and custom design requests from the website arrive here. Call them back, then move them along.' : 'Orders you move to this stage show up here.'));
   }
-  loadSite().then((site) => { planNames = Object.fromEntries((site.plans || []).map((p) => [p.id, p.name])); if (list.length) draw(); }).catch(() => {});
+  loadSite().then((site) => { methods = site.paymentMethods || []; if (list.length) draw(); }).catch(() => {});
   api('/orders').then((r) => { list = ordersOf(r); draw(); }).catch((err) => fill(body, quietEmpty('inbox', err.status === 404 ? 'Orders are not available yet' : 'Could not load orders', err.status === 404 ? 'They will appear here once the server supports them.' : err.message)));
-  return [stages, body];
+  return [h('div.toolbar2', payTabs.el), stages, body];
 }
 
 // ── Replies (all invitations or one) ──────────────────────────────────────
@@ -667,18 +787,17 @@ function replies(ctx) {
 // ── Site settings (themes visibility, pricing, contact) ───────────────────
 
 const DEFAULT_SITE = () => ({
-  plans: [
-    { id: 'classic', name: 'Classic', price: null, currency: 'NPR', note: '', features: [], highlight: false },
-    { id: 'premium', name: 'Premium', price: null, currency: 'NPR', note: '', features: [], highlight: true },
-    { id: 'custom', name: 'Custom', price: null, currency: 'NPR', note: '', features: [], highlight: false },
-  ],
+  plans: [],
+  paymentMethods: [],
+  payRemark: 'Nimtto {ref}',
   contact: { phone: '', whatsapp: '', email: '', address: '' },
   hero: { title: '', subtitle: '' },
   hiddenThemes: [],
   featuredThemes: [],
 });
+// The full settings (admin): every payment method, with what its QR supports (qrInfo).
 async function loadSite() {
-  try { return { ...DEFAULT_SITE(), ...(await api('/site')) }; } catch (err) { if (err.status === 404) return { ...DEFAULT_SITE(), missing: true }; throw err; }
+  try { return { ...DEFAULT_SITE(), ...(await api('/admin/site')) }; } catch (err) { if (err.status === 404) return { ...DEFAULT_SITE(), missing: true }; throw err; }
 }
 const putSite = (site) => { const { missing, ...body } = site; return api('/site', { method: 'PUT', body }); };
 
@@ -754,17 +873,26 @@ function website(ctx) {
     const beforeUnload = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', beforeUnload);
     ctx.cleanup(() => { window.removeEventListener('beforeunload', beforeUnload); if (dirty) toast('Your website changes were not saved.', 'error'); });
-    ctx.shell.setPage({ title: 'Website', sub: 'Pricing, contact details and the headline on the public website.', actions: [h('a.btn', { href: '/', target: '_blank', rel: 'noopener' }, icon('external', 15), 'View site'), saveBtn] });
+    ctx.shell.setPage({ title: 'Website', sub: 'Pricing, payment methods, contact details and the headline on the public website.', actions: [h('a.btn', { href: '/', target: '_blank', rel: 'noopener' }, icon('external', 15), 'View site'), saveBtn] });
     const validate = () => {
       const ids = new Set();
       for (const p of site.plans) {
         if (!p.name.trim()) return 'Every plan needs a name.';
         if (p.price != null && (!Number.isInteger(p.price) || p.price < 0)) return `The price of ${p.name} must be a whole number.`;
-        if (p.usdPrice != null && !(Number.isFinite(p.usdPrice) && p.usdPrice >= 1 && p.usdPrice <= 10000)) return `The online price of ${p.name} must be between 1 and 10000 US dollars, or empty.`;
+        if (p.priceUsd != null && !(Number.isFinite(p.priceUsd) && p.priceUsd >= 1 && p.priceUsd <= 10000)) return `The USD price of ${p.name} must be between 1 and 10000, or empty.`;
         p.id = p.id || slugify(p.name) || `plan-${ids.size + 1}`;
         while (ids.has(p.id)) p.id = `${p.id}-2`;
         ids.add(p.id);
       }
+      const mids = new Set();
+      for (const m of site.paymentMethods) {
+        if (!m.label.trim()) return 'Every payment method needs a name.';
+        m.id = m.id || slugify(m.label).slice(0, 32) || `method-${mids.size + 1}`;
+        while (mids.has(m.id)) m.id = `${m.id.slice(0, 30)}-2`;
+        mids.add(m.id);
+      }
+      if (!/\{ref\}/.test(site.payRemark || '')) return 'The payment remark must contain {ref}.';
+      if (!/^[\x20-\x7E]*$/.test(site.payRemark || '')) return 'The payment remark can only use plain letters, digits and punctuation.';
       return null;
     };
     const fieldIn = (id, labelText, value, set, opts = {}) => {
@@ -773,10 +901,10 @@ function website(ctx) {
     };
     const planCard = (p, i) => {
       const price = h('input.input', { id: `pl-price-${i}`, inputmode: 'numeric', value: p.price ?? '', placeholder: 'Ask for price', oninput: (e) => { const v = e.target.value.replace(/[^\d]/g, ''); e.target.value = v; p.price = v === '' ? null : Number(v); touch(); } });
-      const usd = h('input.input', { id: `pl-usd-${i}`, inputmode: 'decimal', value: p.usdPrice ?? '', placeholder: 'Not online', oninput: (e) => {
+      const usd = h('input.input', { id: `pl-usd-${i}`, inputmode: 'decimal', value: p.priceUsd ?? '', placeholder: 'No USD price', oninput: (e) => {
         const v = e.target.value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1').replace(/^(\d{0,5})\d*(\.\d{0,2})?.*$/, '$1$2');
         e.target.value = v;
-        p.usdPrice = v === '' || v === '.' ? null : Number(v);
+        p.priceUsd = v === '' || v === '.' ? null : Number(v);
         touch();
       } });
       return h('article.plan', { class: p.highlight ? 'is-highlight' : '' },
@@ -787,18 +915,91 @@ function website(ctx) {
             iconBtn('trash', `Remove plan ${i + 1}`, async () => { if (await confirmDialog({ title: `Remove ${p.name || 'this plan'}?`, message: 'It disappears from the website after you save.', confirm: 'Remove', danger: true })) { site.plans.splice(i, 1); touch(); draw(); } }))),
         fieldIn(`pl-name-${i}`, 'Name', p.name, (v) => { p.name = v; }, { max: 60 }),
         h('div.field', h('label.label', { for: `pl-price-${i}` }, 'Price (NPR)'), h('div.inputrow.inputrow--prefix', h('span.prefix', 'Rs'), price), h('p.hint', 'Empty shows “Ask for price”.')),
-        h('div.field', h('label.label', { for: `pl-usd-${i}` }, 'Online price (USD)'), h('div.inputrow.inputrow--prefix', h('span.prefix', '$'), usd), h('p.hint', 'What PayPal charges (it takes no rupees). Empty: this plan is not payable online.')),
+        h('div.field', h('label.label', { for: `pl-usd-${i}` }, 'Price (USD)'), h('div.inputrow.inputrow--prefix', h('span.prefix', '$'), usd), h('p.hint', 'For customers abroad (PayPal). Empty: no USD price.')),
         fieldIn(`pl-note-${i}`, 'Short note', p.note, (v) => { p.note = v; }, { max: 160, placeholder: 'e.g. Most couples choose this' }),
         fieldIn(`pl-feat-${i}`, 'Included (one per line)', (p.features || []).join('\n'), (v) => { p.features = v.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 20); }, { multiline: true, rows: 4 }),
+        toggle({ label: 'Show as “from”', hint: 'For a price that can grow, like Custom.', checked: p.from === true, onChange: (v) => { p.from = v; touch(); } }),
         toggle({ label: 'Recommended', hint: 'Highlighted on the website.', checked: p.highlight, onChange: (v) => { site.plans.forEach((x) => { x.highlight = false; }); p.highlight = v; touch(); draw(); } }));
     };
+    // ── Payment methods: QR codes shown on the website and on each customer's pay page ──
+    const KINDS = [['khalti', 'Khalti'], ['esewa', 'eSewa'], ['bank', 'Bank (Fonepay / NepalPay)'], ['paypal', 'PayPal'], ['other', 'Other']];
+    const infoOf = (m) => {
+      if (m.kind === 'paypal' && m.paypalMe) return { format: 'paypalme', label: 'PayPal.me link', decoded: true, canAuto: true, autoDefault: true };
+      return m.qrInfo || { format: m.qr ? 'unknown' : 'none', label: m.qr ? 'Saved' : 'No QR yet', decoded: false, canAuto: false, autoDefault: false };
+    };
+    const autoLine = (m) => {
+      const info = infoOf(m);
+      const on = m.autoAmount === true && info.canAuto;
+      const status = on ? st('ok', 'Amount fills in automatically', 'The QR on each order has the amount and the remark inside')
+        : st('muted', 'Customer types the amount', 'The pay page shows the amount and the remark to type');
+      if (!info.canAuto) {
+        return h('div.pm__auto', status, h('p.hint', info.decoded ? `${info.label}: this kind of code cannot carry an amount.` : m.qr ? 'Could not read this code, so it is shown as uploaded.' : 'Upload the QR code first.'));
+      }
+      const label = info.autoDefault ? 'Fill in the amount' : 'Try auto-amount';
+      const hint = info.autoDefault ? `${info.label}: a standard format that carries the amount and remark.` : `${info.label}: not a published format. Turn on only after a test scan with the app shows the amount filled in (docs/PAYMENTS.md).`;
+      return h('div.pm__auto', status, toggle({ label, hint, checked: m.autoAmount === true, onChange: (v) => { m.autoAmount = v; touch(); draw(); } }));
+    };
+    const qrPicker = (m, i) => {
+      const input = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', hidden: true, onchange: async (e) => {
+        const f = e.target.files?.[0];
+        e.target.value = '';
+        if (!f) return;
+        if (f.size > 8 * 1024 * 1024) { toast('That image is larger than 8 MB.', 'error'); return; }
+        btn.disabled = true;
+        btn.classList.add('is-busy');
+        try {
+          const fd = new FormData();
+          fd.append('file', f);
+          const out = await postForm('/admin/pay/qr', fd);
+          m.qr = out.qr;
+          m.qrInfo = out.qrInfo;
+          m.autoAmount = out.qrInfo.canAuto && out.qrInfo.autoDefault;
+          touch(); draw();
+          toast(out.decoded ? (out.cropped ? 'QR code read and cropped. Save to use it.' : 'QR code read. Save to use it.') : 'Saved the image, but no QR code could be read in it.', out.decoded ? 'success' : 'error');
+        } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.classList.remove('is-busy'); }
+      } });
+      const btn = h('button.pm__qr', { type: 'button', onclick: () => input.click(), 'aria-label': `${m.qr ? 'Replace' : 'Upload'} the QR code for ${m.label || `method ${i + 1}`}` },
+        m.qr ? h('img', { src: m.qr, alt: '', loading: 'lazy', decoding: 'async' }) : h('span.pm__qr-empty', icon('upload', 18)),
+        h('span.pm__qr-act', m.qr ? 'Replace QR' : 'Upload QR'));
+      return [btn, input];
+    };
+    const methodRow = (m, i) => {
+      const n = site.paymentMethods.length;
+      const move = (d) => { const j = i + d; if (j < 0 || j >= n) return; [site.paymentMethods[i], site.paymentMethods[j]] = [site.paymentMethods[j], site.paymentMethods[i]]; site.paymentMethods.forEach((x, k) => { x.order = k; }); touch(); draw(); };
+      const sel = (id, label, value, opts, set) => h('div.field', h('label.label', { for: id }, label),
+        h('select.input', { id, onchange: (e) => { set(e.target.value); touch(); draw(); } }, opts.map(([v, t]) => h('option', { value: v, selected: v === value }, t))));
+      return h('li.pm', { class: m.enabled === false ? 'is-off' : '' },
+        h('div.pm__qrcol', qrPicker(m, i)),
+        h('div.pm__main',
+          h('div.pm__grid',
+            fieldIn(`pm-label-${i}`, 'Name', m.label, (v) => { m.label = v; }, { max: 40, placeholder: 'e.g. Khalti' }),
+            sel(`pm-kind-${i}`, 'Type', m.kind, KINDS, (v) => { m.kind = v; if (v === 'paypal') m.currency = 'USD'; }),
+            sel(`pm-cur-${i}`, 'Currency', m.currency, [['NPR', 'NPR (rupees)'], ['USD', 'USD (dollars)']], (v) => { m.currency = v; })),
+          h('div.pair',
+            fieldIn(`pm-acc-${i}`, 'Account name', m.accountName, (v) => { m.accountName = v; }, { max: 80, placeholder: 'Shown under the QR' }),
+            fieldIn(`pm-hint-${i}`, 'Number (optional)', m.accountHint, (v) => { m.accountHint = v; }, { max: 60, placeholder: 'Wallet id, phone or account no.', hint: 'Shown only if you fill it in.' })),
+          fieldIn(`pm-note-${i}`, 'Note (optional)', m.note, (v) => { m.note = v; }, { max: 160, placeholder: 'e.g. For payments from abroad' }),
+          m.kind === 'paypal' ? fieldIn(`pm-ppme-${i}`, 'PayPal.me name (optional)', m.paypalMe, (v) => { m.paypalMe = v.trim(); }, { max: 40, placeholder: 'yourname', hint: 'With it, each order’s PayPal code opens paypal.me/yourname/99USD with the amount filled in.' }) : null,
+          autoLine(m)),
+        h('div.pm__tools',
+          toggle({ label: 'On', checked: m.enabled !== false, onChange: (v) => { m.enabled = v; touch(); draw(); } }),
+          h('span.pm__move',
+            iconBtn('up', `Move ${m.label || 'this method'} up`, () => move(-1), i === 0 ? 'is-disabled' : ''),
+            iconBtn('down', `Move ${m.label || 'this method'} down`, () => move(1), i === n - 1 ? 'is-disabled' : ''),
+            iconBtn('trash', `Remove ${m.label || 'this method'}`, async () => { if (await confirmDialog({ title: `Remove ${m.label || 'this payment method'}?`, message: 'Customers stop seeing it after you save. Orders already paid keep their record.', confirm: 'Remove', danger: true })) { site.paymentMethods.splice(i, 1); site.paymentMethods.forEach((x, k) => { x.order = k; }); touch(); draw(); } }))));
+    };
+
     const draw = () => {
       fill(root,
         site.missing ? h('div.banner', icon('info', 16), h('span', 'The website settings are not available on the server yet. You can prepare them; saving will work once it is.')) : null,
         setting('Pricing plans', 'Shown on the public website in this order. Leave a price empty to show “Ask for price”.',
           h('div.plans', site.plans.map(planCard)),
-          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, currency: 'NPR', note: '', features: [], highlight: false }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null),
-        setting('Contact details', 'In the website footer and contact section. Orders also link here.',
+          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, priceUsd: null, from: false, currency: 'NPR', note: '', features: [], highlight: false }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null),
+        setting('Payment methods', 'QR codes customers scan after ordering, in this order. Each order’s code has the amount and remark inside where the app allows it; otherwise the pay page tells them what to type.',
+          h('ul.pms', site.paymentMethods.map(methodRow)),
+          site.paymentMethods.length < 12 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.paymentMethods.push({ id: '', label: '', kind: 'other', currency: 'NPR', accountName: '', accountHint: '', qr: '', note: '', enabled: true, order: site.paymentMethods.length, autoAmount: false, paypalMe: '' }); touch(); draw(); root.querySelectorAll('.pm').item(site.paymentMethods.length - 1)?.querySelector('input[id^="pm-label-"]')?.focus(); } }, icon('plus', 16), 'Add a payment method') : null,
+          fieldIn('pay-remark', 'Payment remark', site.payRemark, (v) => { site.payRemark = v; }, { max: 40, cls: 'field--narrow', hint: 'Put in each QR as the remark where the app allows, or shown for the customer to type, so you can match the payment to the order. Use {ref} (required), {plan}, {name}. Plain letters only; at most 25 characters once filled in.' })),
+        setting('Contact details', 'In the website footer and contact section. Customers message this WhatsApp number after ordering.',
           h('div.pair',
             fieldIn('ct-phone', 'Phone', site.contact.phone, (v) => { site.contact.phone = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' }),
             fieldIn('ct-wa', 'WhatsApp', site.contact.whatsapp, (v) => { site.contact.whatsapp = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' })),
@@ -837,9 +1038,10 @@ function paymentsCard() {
         h('div', h('dt', 'Webhook URL'), h('dd', h('span.tnum', p.webhookUrl), ' ', h('button.link', { type: 'button', onclick: () => copyText(p.webhookUrl, 'Webhook URL copied') }, 'Copy'))),
         h('div', h('dt', 'Dashboard'), h('dd', h('a', { href: p.dashboard, target: '_blank', rel: 'noopener noreferrer', title: 'Opens PayPal in a new tab' }, live ? 'PayPal activity' : 'Sandbox activity')))),
       p.problems?.length && !p.enabled ? h('div.banner.banner--warn', icon('info', 16), h('span', p.problems.join('. '), '.')) : null,
-      h('p.hint', icon('info', 14), 'The PayPal keys are set in the server environment (Coolify), never here. Plans need an online price (USD) under Website to be payable. Steps: docs/PAYMENTS.md.'));
+      h('p.hint', icon('info', 14), 'The PayPal keys are set in the server environment (Coolify), never here. When it is on, customers abroad can also pay by card with PayPal Checkout, and the order is confirmed by itself. Steps: docs/PAYMENTS.md.'));
   }).catch((err) => fill(body, quietEmpty('alert', err.status === 404 ? 'Payments are not available on this server yet' : 'Could not load the payment status', err.status === 404 ? '' : err.message)));
-  return setting('Payments', 'Online payment on the website with PayPal, in US dollars. Off until the server has its keys.', body);
+  return setting('Payments', 'Customers pay by scanning a QR code (Website → Payment methods) and upload a screenshot that you confirm in Orders. Optional extra: PayPal Checkout in US dollars, off until the server has its keys.',
+    h('p', h('a.btn.btn--sm', { href: '#/website' }, 'Payment methods and prices'), ' ', h('a.btn.btn--sm.btn--quiet', { href: '#/orders?pay=check' }, 'Payments to check')), body);
 }
 
 function settings(ctx) {
@@ -862,8 +1064,8 @@ export const ADMIN_MODULES = [
   { id: 'invitations', title: 'Invitations', icon: 'cards', group: 'main', render: invitations, sub: 'Every invitation: its status, replies and the couple’s access.', actions: (ctx) => [newBtn(ctx)] },
   { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Private links and passwords that let couples edit their invitation.' },
   { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
-  { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Call back, then move each one along.' },
+  { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
   { id: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
-  { id: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, contact details and the headline on the public website.' },
+  { id: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },
   { id: 'settings', title: 'Settings & help', short: 'Settings', icon: 'settings', group: 'business', render: settings, sub: 'Your account and where things live.' },
 ];

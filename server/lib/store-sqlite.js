@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT,
   data TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS orders_ref ON orders (json_extract(data, '$.ref'));
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, rev INTEGER NOT NULL, v TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions (
   k TEXT PRIMARY KEY,
@@ -194,6 +195,7 @@ function prepare() {
 
   q.orders = db.prepare('SELECT data FROM orders ORDER BY seq').pluck();
   q.orderGet = db.prepare('SELECT data FROM orders WHERE id = ?').pluck();
+  q.orderByRef = db.prepare("SELECT data FROM orders WHERE json_extract(data, '$.ref') = ?").pluck();
   q.orderCount = db.prepare('SELECT count(*) FROM orders').pluck();
   q.orderNew = db.prepare("SELECT count(*) FROM orders WHERE status = 'new'").pluck();
   q.orderUpdate = db.prepare('UPDATE orders SET status = ?, data = ? WHERE id = ?');
@@ -303,6 +305,7 @@ export function replyStats() {
 // ── Orders
 export function listOrders() { return q.orders.all().map((s) => JSON.parse(s)); }
 export function getOrder(id) { const s = q.orderGet.get(id); return s ? JSON.parse(s) : null; }
+export function getOrderByRef(ref) { const s = q.orderByRef.get(ref); return s ? JSON.parse(s) : null; }
 export function addOrder(order, max) {
   w(() => db.transaction(() => {
     if (q.orderCount.get() >= max) throw httpError(507, 'We cannot take more requests right now. Please call us.');

@@ -18,12 +18,12 @@ sharp.cache(false);
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 
-/** Reads the single multipart file field "file" into memory (≤ 15 MB) plus small text fields. */
-function readMultipart(req) {
+/** Reads the single multipart file field "file" into memory (≤ maxBytes, default 15 MB) plus small text fields. */
+export function readMultipart(req, { maxBytes = MAX_BYTES, fields: maxFields = 4, fieldSize = 200 } = {}) {
   return new Promise((resolveP, reject) => {
     let bb;
     try {
-      bb = Busboy({ headers: req.headers, limits: { fileSize: MAX_BYTES, files: 1, fields: 4, fieldSize: 200, parts: 6 } });
+      bb = Busboy({ headers: req.headers, limits: { fileSize: maxBytes, files: 1, fields: maxFields, fieldSize, parts: maxFields + 2 } });
     } catch {
       return reject(httpError(400, 'Expected a multipart upload.'));
     }
@@ -41,7 +41,7 @@ function readMultipart(req) {
     });
     bb.on('error', () => reject(httpError(400, 'The upload was interrupted.')));
     bb.on('close', () => {
-      if (tooBig) return reject(httpError(413, 'That file is larger than 15 MB.'));
+      if (tooBig) return reject(httpError(413, `That file is larger than ${Math.round(maxBytes / 2 ** 20)} MB.`));
       if (!file || !file.size) return reject(httpError(400, 'No file was received.'));
       resolveP({ fields, file });
     });
@@ -52,21 +52,21 @@ function readMultipart(req) {
 const newId = () => randomBytes(18).toString('base64url'); // 24 chars, unguessable
 
 /** A HEIF container holding HEVC (iPhone HEIC). The prebuilt sharp decodes AVIF but not HEVC (patents). */
-function looksLikeHeic(b) {
+export function looksLikeHeic(b) {
   if (b.length < 16 || b.toString('latin1', 4, 8) !== 'ftyp') return false;
   const brands = b.toString('latin1', 8, Math.min(b.length, Math.max(16, b.readUInt32BE(0))));
   return /hei[cxms]|hev[cxms]/.test(brands) && !/avi[fs]/.test(brands);
 }
-const HEIC_MSG = 'iPhone HEIC photos cannot be read here yet. Please upload a JPEG instead: on the iPhone choose Settings > Camera > Formats > Most Compatible, or export the photo as JPEG first.';
+export const HEIC_MSG = 'iPhone HEIC photos cannot be read here yet. Please upload a JPEG instead: on the iPhone choose Settings > Camera > Formats > Most Compatible, or export the photo as JPEG first.';
 
 // WebP effort 2 encodes about twice as fast as 4 for files ~3% larger at the same quality.
 const WEBP_EFFORT = 2;
 // At most two photos are processed at once (each already uses every core); up to 16 more wait their turn, and
 // beyond that the upload gets a 503 (try again) instead of a queue that only grows.
 const images = limiter({ max: Number(process.env.IMAGE_CONCURRENCY) || 2, queue: 16, name: 'images' });
-const withSlot = (fn) => images.run(fn);
+export const withSlot = (fn) => images.run(fn);
 // Bodies being received at once (each is held in memory, up to 15 MB): bounds memory under a burst of uploads.
-const receiving = limiter({ max: 6, queue: 12, name: 'upload bodies' });
+export const receiving = limiter({ max: 6, queue: 12, name: 'upload bodies' });
 
 async function saveImage(slug, buffer) {
   let meta;

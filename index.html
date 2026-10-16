@@ -4,24 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Nimtto · Nepali wedding invitation websites</title>
-  <meta name="description" content="Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and one link to share on WhatsApp. Choose from twenty-seven designs; we set yours up with your photos." />
+  <meta name="description" content="Wedding invitation websites for Nepali families. Choose from 27 designs with your song, Nepali dates and RSVP. Order online, pay by Khalti, eSewa, bank QR or PayPal, and share one link on WhatsApp." />
   <link rel="canonical" href="https://nimtto.com/" />
-  <meta name="theme-color" content="#FCF8F7" />
+  <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Nimtto" />
   <meta property="og:title" content="Nimtto · Nepali wedding invitation websites" />
-  <meta property="og:description" content="Twenty-seven invitation websites with music, Bikram Sambat dates and RSVP. One link for WhatsApp." />
+  <meta property="og:description" content="27 invitation designs with your song, Nepali dates and RSVP. One link for WhatsApp." />
   <meta property="og:url" content="https://nimtto.com/" />
   <meta property="og:image" content="https://nimtto.com/site/og.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Nimtto: a Nepali wedding invitation behind a flower gate" />
+  <meta property="og:image:alt" content="The Nimtto logo beside a wedding invitation on a phone" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="preload" href="/site/fonts/kalnia-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/site/fonts/switzer-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/site/fonts/martel-300-deva.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" as="image" href="/site/phones/gurans.webp" fetchpriority="high" />
+  <link rel="preload" href="/site/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/site/fonts/jost-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/site/fonts/meow-script-letters.woff2" as="font" type="font/woff2" crossorigin />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -32,19 +33,22 @@
         "name": "Nimtto",
         "alternateName": "निम्तो",
         "url": "https://nimtto.com/",
-        "logo": "https://nimtto.com/favicon.svg",
+        "logo": "https://nimtto.com/site/brand/nimtto-logo.svg",
         "image": "https://nimtto.com/site/og.jpg",
-        "description": "Nepali wedding invitation websites with music, Bikram Sambat dates, RSVP and WhatsApp sharing.",
+        "email": "nimttoz@gmail.com",
+        "telephone": "+977-980-6393298",
+        "description": "Wedding invitation websites for Nepali families, with music, Nepali dates, RSVP and WhatsApp sharing.",
         "areaServed": { "@type": "Country", "name": "Nepal" },
         "address": { "@type": "PostalAddress", "addressCountry": "NP" },
-        "knowsLanguage": ["en", "ne"]
+        "knowsLanguage": ["en", "ne"],
+        "contactPoint": { "@type": "ContactPoint", "contactType": "customer support", "email": "nimttoz@gmail.com", "telephone": "+977-980-6393298", "availableLanguage": ["English", "Nepali"] }
       },
       {
         "@type": "Product",
         "name": "Nimtto wedding invitation website",
         "brand": { "@type": "Brand", "name": "Nimtto" },
         "image": "https://nimtto.com/site/og.jpg",
-        "description": "A Nepali wedding invitation website in one of twenty-seven designs, set up with the couple's photos, families and events, with music, RSVP and Bikram Sambat dates.",
+        "description": "A wedding invitation website in one of 27 designs, made with the couple's names, photos and events, with music, RSVP and Nepali dates.",
         "category": "Wedding invitations"
       }
     ]
@@ -55,311 +59,435 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
-  <header class="bar" id="top">
-    <div class="bar__in">
-      <a class="mark" href="#top" aria-label="Nimtto, home">Nimtto<span class="mark__ne" lang="ne" aria-hidden="true">निम्तो</span></a>
-      <nav class="bar__nav" id="nav" aria-label="Sections">
-        <a href="#designs">Designs</a>
-        <a href="#how">How it works</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#contact">Contact</a>
-        <a class="bar__studio" href="/studio/">Sign in</a>
+  <div class="promo" id="promo">
+    <div class="wrap promo__in">
+      <button class="promo__btn" type="button" id="promo-prev" aria-label="Previous message"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <p class="promo__msg" id="promo-msg" aria-live="polite">Order online, then pay by Khalti, eSewa, bank QR or PayPal. <a href="#pricing">See prices</a></p>
+      <button class="promo__btn" type="button" id="promo-next" aria-label="Next message"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+  </div>
+
+  <header class="bar" id="bar">
+    <div class="wrap bar__in">
+      <a class="logo" href="/" data-home><img src="/site/brand/nimtto-logo.svg" width="162" height="38" alt="Nimtto home" /></a>
+      <nav class="bar__nav" aria-label="Main">
+        <a href="#designs" data-nav>Designs</a>
+        <a href="#how" data-nav>How it works</a>
+        <a href="#features" data-nav>Features</a>
+        <a href="#pricing" data-nav>Pricing</a>
+        <a href="#contact" data-nav>Contact</a>
       </nav>
-      <a class="btn btn--line btn--sm bar__order" href="#order">Order</a>
-      <button class="bar__menu" type="button" id="menu-btn" aria-expanded="false" aria-controls="nav"><span class="bar__menu-t">Menu</span></button>
+      <div class="bar__end">
+        <a class="bar__signin" href="/studio/">Sign in</a>
+        <a class="btn btn--accent btn--sm bar__order" href="#order">Order</a>
+        <button class="bar__menu" type="button" id="menu-btn" aria-expanded="false" aria-controls="menu"><span class="bar__burger" aria-hidden="true"></span><span class="bar__menu-t">Menu</span></button>
+      </div>
+    </div>
+    <div class="menu" id="menu">
+      <nav class="menu__nav" aria-label="Menu">
+        <a href="#designs" data-nav>Designs <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#how" data-nav>How it works <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#features" data-nav>Features <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#pricing" data-nav>Pricing <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#contact" data-nav>Contact <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </nav>
+      <div class="menu__acts">
+        <a class="btn btn--accent btn--lg" href="#order">Order your invitation</a>
+        <a class="btn btn--lg" href="/studio/">Sign in</a>
+      </div>
+      <p class="menu__fine">Questions? <a href="https://wa.me/9779806393298" data-contact="wa" target="_blank" rel="noopener">Message us on WhatsApp</a></p>
     </div>
   </header>
 
   <main id="main">
-    <!-- HERO. Signature motion: the doors of an arch open on a real design, once, as the page arrives. -->
-    <section class="hero" aria-labelledby="hero-title">
+    <!-- 1 · Hero -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero__copy">
-        <p class="hero__kick">Nepali wedding invitation websites</p>
-        <h1 class="hero__title" id="hero-title" data-site="hero-title">Invitations that open like a doorway.</h1>
-        <div class="hero__more">
-          <p class="hero__sub" data-site="hero-subtitle"><span class="js-count" data-cap="1">Twenty-seven</span> designs with your song, Bikram Sambat dates and RSVP. Send us your photos, we set everything up, and you share one link on WhatsApp.</p>
-          <p class="hero__act">
-            <a class="btn btn--accent" href="#designs">See the designs</a>
-            <a class="link" href="#order" data-kind="custom">Ask for a custom design</a>
-          </p>
+        <p class="kick hero__kick">Nepali wedding invitation websites</p>
+        <h1 class="hero__title" id="hero-title" data-site="hero-title">Invitations that open like a <span class="script">doorway</span></h1>
+        <p class="lede hero__lede" data-site="hero-subtitle">Choose one of 27 designs. Send us your names and photos. We make your invitation, with your song, Nepali dates and RSVP. You share one link on WhatsApp.</p>
+        <div class="btns hero__btns">
+          <a class="btn btn--accent btn--lg" href="#designs">See the designs</a>
+          <a class="btn btn--lg" href="#order" data-kind="custom">Ask for a custom design</a>
+        </div>
+        <ul class="hero__facts">
+          <li>WhatsApp · Viber · Messenger</li>
+          <li>English &amp; <span lang="ne">नेपाली</span></li>
+          <li>Order first, then pay</li>
+        </ul>
+      </div>
+      <div class="hero__art" aria-hidden="true">
+        <div class="art">
+          <span class="art__sun"></span>
+          <div class="art__card">
+            <div class="art__card-in">
+              <p class="art__small">Together with their families</p>
+              <p class="art__ne" lang="ne">शुभ विवाह</p>
+              <p class="art__name">Aarati</p>
+              <p class="art__amp">&amp;</p>
+              <p class="art__name">Sameer</p>
+              <p class="art__date">12 · 02 · 2027</p>
+              <p class="art__bs" lang="ne">माघ २९, २०८३</p>
+            </div>
+          </div>
+          <div class="art__env">
+            <span class="art__env-back"></span>
+            <span class="art__env-front"></span>
+            <span class="art__env-flap"></span>
+            <span class="art__seal"><img src="/site/brand/nimtto-seal.svg" alt="" width="34" height="31" /></span>
+          </div>
+          <div class="art__phone">
+            <div class="art__screen">
+              <span class="mdots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="march"><span class="march__in"><span class="march__ne" lang="ne">शुभ विवाह</span><span class="march__tap">Tap to open</span></span></span>
+              <span class="art__pnames">Aarati &amp; Sameer</span>
+              <span class="art__pdate" lang="ne">माघ २९, २०८३</span>
+              <span class="art__pfoot">Phoolbari <span lang="ne">फूलबारी</span></span>
+            </div>
+          </div>
+          <span class="art__petal art__petal--1"></span>
+          <span class="art__petal art__petal--2"></span>
+          <span class="art__petal art__petal--3"></span>
+          <span class="art__petal art__petal--4"></span>
         </div>
       </div>
+    </section>
 
-      <figure class="door" id="door">
-        <div class="door__frame">
-          <button class="door__arch" type="button" id="door-arch" aria-label="See the Phoolbari design larger">
-            <span class="door__screens" id="screens">
-              <img class="scr is-on" src="/site/phones/gurans.webp" width="780" height="1688" alt="The Phoolbari design on a phone: a gate of fresh roses and marigold strings under शुभ विवाह" fetchpriority="high" decoding="async" data-slug="gurans" />
-            </span>
-            <span class="door__leaf door__leaf--l" aria-hidden="true"><span class="door__line"></span><span class="door__word" lang="ne">निम्तो</span></span>
-            <span class="door__leaf door__leaf--r" aria-hidden="true"><span class="door__line"></span><span class="door__word" lang="ne">निम्तो</span></span>
-          </button>
+    <!-- 2 · Definition -->
+    <section class="sec word" aria-labelledby="word-title">
+      <div class="word__in">
+        <div class="word__term">
+          <p class="word__ne" lang="ne" aria-hidden="true">निम्तो</p>
+          <h2 class="word__head" id="word-title"><span class="vh">निम्तो, </span><span class="word__en">nimtto</span><span>/nim·to/</span><span class="word__pos">noun</span></h2>
         </div>
-        <figcaption class="door__cap" id="cap" aria-live="polite">
-          <span class="door__name"><span id="cap-name">Phoolbari</span> <span class="door__ne" id="cap-ne" lang="ne">फूलबारी</span></span>
-          <span class="door__nav">
-            <button type="button" class="round" id="door-prev" aria-label="Previous design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-            <span class="door__n"><span id="cap-i">1</span> of <span id="cap-total">6</span></span>
-            <button type="button" class="round" id="door-next" aria-label="Next design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-          </span>
-        </figcaption>
-      </figure>
-    </section>
-
-    <!-- THE WORD -->
-    <section class="word" aria-labelledby="word-title">
-      <p class="word__ne" lang="ne" aria-hidden="true">निम्तो</p>
-      <div class="word__body">
-        <h2 class="word__head" id="word-title"><span lang="ne" class="vh">निम्तो, </span>nimtto <span class="word__pos">noun</span></h2>
-        <p class="word__def">An invitation. In Nepal it is still carried from house to house by hand. Ours arrives on WhatsApp, opens with your song, and gives every ceremony in both calendars.</p>
+        <div class="word__defs">
+          <p><span class="word__n">1.</span> An invitation. In Nepal, families still carry it by hand from house to house.</p>
+          <p><span class="word__n">2.</span> The same invitation, sent on WhatsApp, with music and both calendars.</p>
+          <p class="word__small">The same respect, without walking door to door.</p>
+        </div>
       </div>
     </section>
 
-    <!-- DESIGNS -->
-    <section class="designs" id="designs" aria-labelledby="designs-title">
-      <header class="designs__head">
-        <h2 class="h2" id="designs-title"><span class="js-count" data-cap="1">Twenty-seven</span> designs, each with its own opening.</h2>
-        <p class="designs__lede">Every design carries the couple, the ceremonies, your music and RSVP. Only the opening and the mood change. Preview any of them live, then we make it yours with your names.</p>
-      </header>
-      <ol class="cards" id="gallery"></ol>
-      <p class="designs__more"><button class="btn btn--line" type="button" id="gallery-more" hidden>Show all designs</button></p>
+    <!-- 3 · Designs -->
+    <section class="sec sec--soft designs" id="designs" aria-labelledby="designs-title">
+      <div class="wrap designs__in">
+        <header class="head">
+          <p class="kick">The collection</p>
+          <h2 class="h2" id="designs-title"><span class="js-count">27</span> designs, each with its own <span class="script">opening</span></h2>
+          <p class="lede">Every design has your names, your events, your song and RSVP. Only the opening and the look are different. Tap a design to see it here.</p>
+        </header>
+
+        <div class="chips" role="group" aria-label="Show designs by type" id="chips">
+          <button type="button" class="chip" aria-pressed="true" data-cat="all">All <span class="js-count">27</span></button>
+          <button type="button" class="chip" aria-pressed="false" data-cat="flowers">Flowers</button>
+          <button type="button" class="chip" aria-pressed="false" data-cat="doors">Doors and gates</button>
+          <button type="button" class="chip" aria-pressed="false" data-cat="cards">Cards and envelopes</button>
+          <button type="button" class="chip" aria-pressed="false" data-cat="film">3D and film</button>
+          <button type="button" class="chip" aria-pressed="false" data-cat="faiths">For every faith</button>
+        </div>
+
+        <article class="stage" id="stage" aria-roledescription="carousel" aria-label="Designs">
+          <div class="stage__pic" id="stage-pic" style="--tint:#F6E9E7">
+            <div class="phone">
+              <img class="phone__img" id="stage-img" src="/site/stills/gurans-gate.webp" width="480" height="720" alt="The opening of the Phoolbari design: a flower gate with शुभ विवाह on an ivory crest" decoding="async" />
+            </div>
+            <div class="stage__nav">
+              <button type="button" class="round" id="stage-prev" aria-label="Previous design"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+              <button type="button" class="round round--dark" id="stage-next" aria-label="Next design"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+            </div>
+            <p class="stage__count"><span id="stage-i">1</span> of <span id="stage-total">27</span></p>
+          </div>
+          <div class="stage__info" aria-live="polite">
+            <p class="kick stage__kick" id="stage-cat">Flower design</p>
+            <h3 class="stage__name"><span id="stage-name">Phoolbari</span> <span class="stage__ne" id="stage-ne" lang="ne">फूलबारी</span></h3>
+            <p class="stage__text" id="stage-text">A gate of fresh roses and marigold strings opens to show शुभ विवाह. Then a calm, soft invitation.</p>
+            <ul class="ticks">
+              <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Your names, events, song and RSVP included</li>
+              <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>English and Nepali, one tap to switch</li>
+            </ul>
+            <div class="btns">
+              <a class="btn btn--accent btn--md" id="stage-order" href="#order" data-design="gurans">Order this design</a>
+              <a class="btn btn--md" id="stage-more" href="/designs/gurans/">View details</a>
+            </div>
+            <p class="stage__fine">Want to see it move? <a id="stage-preview" href="/gurans/?showcase=1" data-preview="gurans">Watch the preview.</a></p>
+          </div>
+        </article>
+
+        <ul class="thumbs" id="thumbs" aria-label="All designs"></ul>
+      </div>
     </section>
 
-    <!-- HOW IT WORKS -->
-    <section class="how" id="how" aria-labelledby="how-title">
-      <div class="how__pics" aria-hidden="true">
-        <img class="how__pic how__pic--a" src="/site/phones/dhaka.webp" width="780" height="1688" alt="" loading="lazy" decoding="async" />
-        <img class="how__pic how__pic--b" src="/site/phones/mala.webp" width="780" height="1688" alt="" loading="lazy" decoding="async" />
-      </div>
-      <div class="how__body">
-        <h2 class="h2" id="how-title">From a design you love to replies on your phone.</h2>
+    <!-- 4 · How it works -->
+    <section class="sec how" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <header class="head head--center">
+          <p class="kick">How it works</p>
+          <h2 class="h2" id="how-title">From a design you love to <span class="script">replies</span> on your phone</h2>
+        </header>
         <ol class="steps">
           <li class="step">
-            <span class="step__n" lang="ne" aria-hidden="true">१</span>
-            <div>
-              <h3 class="step__t">Choose a design</h3>
-              <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a gate of flowers. Preview any of them live before you decide.</p>
-            </div>
+            <div class="step__top"><span class="step__n" lang="ne" aria-hidden="true">१</span><svg class="step__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+            <h3 class="step__t"><span class="vh">Step 1: </span>Choose a design</h3>
+            <p>27 designs, from a carved Patan door to a gate of flowers.</p>
           </li>
           <li class="step">
-            <span class="step__n" lang="ne" aria-hidden="true">२</span>
-            <div>
-              <h3 class="step__t">We set it up</h3>
-              <p>Send your photos, names, families and events. We put everything in place, in English and Nepali.</p>
-            </div>
+            <div class="step__top"><span class="step__n" lang="ne" aria-hidden="true">२</span><svg class="step__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg></div>
+            <h3 class="step__t"><span class="vh">Step 2: </span>We set it up</h3>
+            <p>Order and pay. Then send us your photos, names, families and events, in English and Nepali.</p>
           </li>
           <li class="step">
-            <span class="step__n" lang="ne" aria-hidden="true">३</span>
-            <div>
-              <h3 class="step__t">Share one link</h3>
-              <p>One link for WhatsApp, Viber and Messenger, with a preview card that shows your names.</p>
-            </div>
+            <div class="step__top"><span class="step__n" lang="ne" aria-hidden="true">३</span><svg class="step__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div>
+            <h3 class="step__t"><span class="vh">Step 3: </span>Share one link</h3>
+            <p>One link for WhatsApp, Viber and Messenger. The chat shows your names.</p>
           </li>
-          <li class="step">
-            <span class="step__n" lang="ne" aria-hidden="true">४</span>
-            <div>
-              <h3 class="step__t">Guests reply</h3>
-              <p>Guests RSVP in a tap. Every reply waits for you in your private dashboard.</p>
-            </div>
+          <li class="step step--wine">
+            <div class="step__top"><span class="step__n" lang="ne" aria-hidden="true">४</span><svg class="step__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <h3 class="step__t"><span class="vh">Step 4: </span>Guests reply</h3>
+            <p>Guests reply in one tap. You see every reply in your own dashboard.</p>
           </li>
         </ol>
       </div>
     </section>
 
-    <!-- FEATURES -->
-    <section class="features" id="features" aria-labelledby="features-title">
-      <h2 class="h2 features__title" id="features-title">Everything a Nepali wedding asks for, and nothing it doesn’t.</h2>
-      <div class="specimens">
-        <figure class="spec">
-          <p class="spec__big" lang="ne">माघ २९, २०८३</p>
-          <p class="spec__small">Friday, 12 February 2027</p>
-          <figcaption><strong>Bikram Sambat dates.</strong> Every date in both calendars, side by side.</figcaption>
-        </figure>
-        <figure class="spec">
-          <p class="spec__big spec__big--en">Aarati &amp; Sameer</p>
-          <p class="spec__small" lang="ne">आरती र समीर</p>
-          <figcaption><strong>English and Nepali.</strong> One tap switches the whole invitation.</figcaption>
-        </figure>
+    <!-- 5 · Features -->
+    <section class="sec sec--soft features" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <header class="head">
+          <p class="kick">Features</p>
+          <h2 class="h2" id="features-title">Everything a Nepali wedding <span class="script">needs</span>, in one link</h2>
+        </header>
+        <div class="bento">
+          <figure class="tile tile--sample">
+            <div class="sample">
+              <div class="sample__in">
+                <p class="sample__om" lang="ne">।। श्री गणेशाय नमः ।।</p>
+                <p class="sample__names">Aarati &amp; Sameer</p>
+                <p class="sample__ne" lang="ne">आरती र समीर</p>
+                <div class="sample__dates">
+                  <p><span class="sample__lab">Bikram Sambat</span><span class="sample__d" lang="ne">माघ २९, २०८३</span></p>
+                  <p><span class="sample__lab">English date</span><span class="sample__d sample__d--en">Friday, 12 February 2027</span></p>
+                </div>
+              </div>
+            </div>
+            <figcaption class="vh">A sample invitation with Nepali and English names and dates</figcaption>
+          </figure>
+          <div class="tile">
+            <div class="tile__show tile__show--dates" aria-hidden="true"><span><span class="tile__lab" lang="ne">माघ</span><b lang="ne">२९</b></span><span><span class="tile__lab">FEB</span><b class="tile__en">12</b></span></div>
+            <h3 class="tile__t">Bikram Sambat dates</h3>
+            <p>Nepali and English dates, side by side.</p>
+          </div>
+          <div class="tile">
+            <div class="tile__show tile__show--lang" aria-hidden="true"><span class="is-on">English</span><span lang="ne">नेपाली</span></div>
+            <h3 class="tile__t">English and Nepali</h3>
+            <p>One tap changes the whole invitation.</p>
+          </div>
+          <div class="tile">
+            <div class="tile__show tile__show--song" aria-hidden="true"><span class="tile__play"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg></span><span class="tile__bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            <h3 class="tile__t">Your song</h3>
+            <p>It plays when the invitation opens. Guests can turn it off.</p>
+          </div>
+          <div class="tile">
+            <div class="tile__show tile__show--wa" aria-hidden="true"><span class="tile__wa-pic">A&amp;S</span><span class="tile__wa-t"><b>Aarati &amp; Sameer</b><span>nimtto.com</span></span></div>
+            <h3 class="tile__t">Made for WhatsApp</h3>
+            <p>The chat shows your names and photo.</p>
+          </div>
+          <div class="tile tile--wide tile--rsvp">
+            <div class="tile__copy">
+              <h3 class="tile__t">RSVP</h3>
+              <p>Who is coming, to which event, and how many people. All in one list.</p>
+            </div>
+            <div class="rsvp" role="table" aria-label="Example replies">
+              <div class="rsvp__row rsvp__row--head" role="row"><span role="columnheader">Guest</span><span role="columnheader">Event</span><span role="columnheader">People</span></div>
+              <div class="rsvp__row" role="row"><span role="cell">Ram Thapa</span><span role="cell">Janti</span><span role="cell">4</span></div>
+              <div class="rsvp__row" role="row"><span role="cell">Sita Gurung</span><span role="cell">Wedding</span><span role="cell">2</span></div>
+            </div>
+          </div>
+          <div class="tile">
+            <div class="tile__show tile__show--count" aria-hidden="true"><b>84 days</b><span>scratch</span></div>
+            <h3 class="tile__t">A countdown and a hidden date</h3>
+            <p>Days left to the wedding, and a date guests scratch to see.</p>
+          </div>
+          <div class="tile tile--ink">
+            <div class="tile__show tile__show--dash" aria-hidden="true"><i></i><i></i><i></i></div>
+            <h3 class="tile__t">Your own dashboard</h3>
+            <p>Change details, add photos and read replies.</p>
+          </div>
+          <div class="tile tile--full tile--events">
+            <div class="tile__copy">
+              <h3 class="tile__t">Every ceremony</h3>
+              <p>Each one with its own time and place.</p>
+            </div>
+            <ul class="events">
+              <li><i style="--c:#4E7A3A"></i>Mehendi <span lang="ne">मेहेन्दी</span></li>
+              <li><i style="--c:#E0A030"></i>Haldi <span lang="ne">हल्दी</span></li>
+              <li><i style="--c:#C8323F"></i>Janti <span lang="ne">जन्ती</span></li>
+              <li><i style="--c:#9A1829"></i>Wedding <span lang="ne">विवाह</span></li>
+              <li><i style="--c:#2A1A1D"></i>Reception <span lang="ne">स्वागत</span></li>
+            </ul>
+          </div>
+        </div>
       </div>
-      <dl class="feats">
-        <div><dt>Your song</dt><dd>The music you choose starts when the invitation opens. Guests can mute it at any time.</dd></div>
-        <div><dt>RSVP</dt><dd>Who is coming, to which ceremony, and how many. All in one list.</dd></div>
-        <div><dt>Made for WhatsApp</dt><dd>A link with your names and photo in the preview, ready for every family group.</dd></div>
-        <div><dt>A countdown and a hidden date</dt><dd>Days to the wedding, and a date guests scratch to reveal, like a sealed card.</dd></div>
-        <div><dt>A private dashboard</dt><dd>Your own link to update details, add photos and read every reply.</dd></div>
-        <div><dt>Every ceremony</dt><dd>Mehendi, haldi, janti, the wedding and the reception, each with its own time and place.</dd></div>
-      </dl>
     </section>
 
-    <!-- PRICING -->
-    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
-      <header class="pricing__head">
-        <h2 class="h2" id="pricing-title">Set up by hand, priced in rupees.</h2>
-        <p class="pricing__lede" id="pricing-lede">No payment online. Send a request and we will call you to talk it through.</p>
-      </header>
-      <ol class="plans" id="plans"></ol>
-    </section>
-
-    <!-- ORDER -->
-    <section class="order" id="order" aria-labelledby="order-title">
-      <img class="order__flowers" src="/themes/_nepali/flowers-sm.webp" alt="" width="600" height="600" loading="lazy" decoding="async" />
-      <div class="order__aside">
-        <h2 class="h2" id="order-title">Tell us about your wedding.</h2>
-        <p class="order__lede" id="order-lede">We call or message you within a day. Nothing is charged here.</p>
-        <ol class="next">
-          <li>We call you to confirm the design, plan and dates.</li>
-          <li>You send photos and details on WhatsApp or by email.</li>
-          <li>You see a private preview before anything is shared.</li>
+    <!-- 6 · Pricing -->
+    <section class="sec sec--soft pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="wrap pricing__in">
+        <header class="head head--center">
+          <p class="pill"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.5"/></svg>Pricing</p>
+          <h2 class="h2" id="pricing-title">One price for each wedding, in <span class="script">rupees</span></h2>
+          <p class="lede">Choose a plan and order. Then pay by Khalti, eSewa or bank QR. From abroad, you can pay in US dollars with PayPal.</p>
+        </header>
+        <div class="seg seg--pricing" role="radiogroup" aria-label="Design type" id="price-mode">
+          <button type="button" role="radio" aria-checked="true" data-mode="ready">Ready-made design</button>
+          <button type="button" role="radio" aria-checked="false" data-mode="custom" tabindex="-1">Custom design <span class="seg__tag">made for you</span></button>
+        </div>
+        <ol class="plans" id="plans" aria-busy="true">
+          <li class="plan plan--wait"></li><li class="plan plan--wait"></li><li class="plan plan--wait"></li>
         </ol>
+        <ul class="trust">
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Order first, then pay by QR</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>We reply within a day</li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview any design before you order</li>
+        </ul>
       </div>
+    </section>
 
-      <div class="order__panel">
-        <form class="form" id="order-form" novalidate>
-          <fieldset class="kind">
-            <legend class="vh">What would you like?</legend>
-            <label class="kind__opt"><input type="radio" name="kind" value="order" checked /><span>Order a design</span></label>
-            <label class="kind__opt"><input type="radio" name="kind" value="custom" /><span>Request a custom design</span></label>
-          </fieldset>
-          <p class="kind__hint" id="kind-hint">Pick a design and a plan, or leave them for the call.</p>
-
-          <div class="grid2">
-            <div class="field">
-              <label for="f-name">Your name <span class="req" aria-hidden="true">*</span></label>
-              <input id="f-name" name="name" type="text" autocomplete="name" maxlength="80" required />
-              <p class="field__err" id="e-name" hidden>Please write your name.</p>
-            </div>
-            <div class="field">
-              <label for="f-phone">Phone <span class="req" aria-hidden="true">*</span></label>
-              <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="98XXXXXXXX" required />
-              <p class="field__err" id="e-phone" hidden>Please give a phone number we can call.</p>
-            </div>
-            <div class="field">
-              <label for="f-email">Email <span class="opt">optional</span></label>
-              <input id="f-email" name="email" type="email" autocomplete="email" maxlength="254" />
-              <p class="field__err" id="e-email" hidden>That email does not look right.</p>
-            </div>
-            <div class="field">
-              <label for="f-date">Wedding date <span class="opt">optional</span></label>
-              <input id="f-date" name="weddingDate" type="date" />
-            </div>
-            <div class="field" data-for="order">
-              <label for="f-theme">Design</label>
-              <select id="f-theme" name="theme"><option value="">Not sure yet</option></select>
-            </div>
-            <div class="field" data-for="order">
-              <label for="f-plan">Plan</label>
-              <select id="f-plan" name="plan"><option value="">Not sure yet</option></select>
-            </div>
-          </div>
-          <div class="field">
-            <label for="f-message" id="l-message">Anything we should know? <span class="opt">optional</span></label>
-            <textarea id="f-message" name="message" rows="4" maxlength="2000"></textarea>
-            <p class="field__err" id="e-message" hidden>Please describe the design you have in mind.</p>
-          </div>
-          <fieldset class="paywhen" id="paywhen" hidden>
-            <legend class="paywhen__legend">Payment</legend>
-            <label class="paywhen__opt">
-              <input type="radio" name="payWhen" value="later" checked />
-              <span class="paywhen__box"><span class="paywhen__t">Send request, pay later</span><span class="paywhen__d">We call you first and agree how to pay.</span></span>
-            </label>
-            <label class="paywhen__opt">
-              <input type="radio" name="payWhen" value="now" />
-              <span class="paywhen__box"><span class="paywhen__t">Pay now <span class="paywhen__amt" id="paywhen-amt"></span></span><span class="paywhen__d">PayPal or a card, in US dollars. Handy from abroad.</span></span>
-            </label>
-          </fieldset>
-          <div class="hp" aria-hidden="true">
-            <label for="f-website">Website</label>
-            <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
-          </div>
-          <div class="form__foot">
-            <button class="btn btn--accent btn--wide" type="submit" id="order-submit">Send request</button>
-            <p class="form__fine">We use your details only to contact you about your invitation.</p>
-          </div>
-          <p class="form__status" id="order-error" role="alert" hidden></p>
-        </form>
-
-        <div class="pay" id="order-pay" hidden tabindex="-1">
-          <p class="pay__saved">Your request is saved<span id="pay-ref-wrap"> · reference <b class="pay__ref" id="pay-ref"></b></span></p>
-          <h3 class="pay__title">Pay for the <span id="pay-plan"></span> plan</h3>
-          <p class="pay__amt"><span class="plan__cur">USD</span><span id="pay-amt"></span></p>
-          <p class="pay__note">PayPal opens in a small window. Pay with a PayPal account or a card; your card details never reach us.</p>
-          <p class="pay__test" id="pay-test" hidden>Test mode (PayPal sandbox): no real money moves.</p>
-          <div class="pay__btns" id="pay-btns" aria-busy="true"><p class="pay__loading">Loading PayPal…</p></div>
-          <p class="pay__msg" id="pay-msg" role="status" hidden></p>
-          <p class="pay__alt"><button class="link pay__later" type="button" id="pay-later">Pay later instead</button></p>
+    <!-- 7 · Order -->
+    <section class="sec order" id="order" aria-labelledby="order-title">
+      <div class="wrap order__in">
+        <div class="order__aside">
+          <p class="kick">Order</p>
+          <h2 class="h2" id="order-title">Order your <span class="script">invitation</span></h2>
+          <p class="lede">It takes two minutes. You order first, then you pay by QR.</p>
+          <ol class="osteps">
+            <li><span class="osteps__n">1</span><span><b>Order.</b> Fill in this short form.</span></li>
+            <li><span class="osteps__n">2</span><span><b>Pay by QR.</b> Use Khalti, eSewa, your bank app, or PayPal.</span></li>
+            <li><span class="osteps__n">3</span><span><b>Send screenshot.</b> Upload a picture of your payment.</span></li>
+            <li><span class="osteps__n">4</span><span><b>We confirm and start.</b> We message you on WhatsApp and start your invitation.</span></li>
+          </ol>
         </div>
 
-        <div class="done" id="order-done" hidden tabindex="-1">
-          <p class="done__ne" lang="ne">धन्यवाद</p>
-          <h3 class="done__title" id="done-title">Thank you. We have your request.</h3>
-          <p id="done-text">We will call or message you within a day. If it is urgent, write to us on WhatsApp.</p>
-          <dl class="done__receipt" id="done-receipt" hidden></dl>
-          <button class="btn btn--line" type="button" id="order-again">Send another request</button>
+        <div class="order__panel" id="order-panel">
+          <form class="form" id="order-form" novalidate>
+            <fieldset class="seg seg--form">
+              <legend class="vh">What would you like?</legend>
+              <label class="seg__opt"><input type="radio" name="kind" value="order" checked /><span>Order a design</span></label>
+              <label class="seg__opt"><input type="radio" name="kind" value="custom" /><span>Request a custom design</span></label>
+            </fieldset>
+
+            <div class="fgrid">
+              <div class="field">
+                <label for="f-name">Your name <span class="req" aria-hidden="true">*</span></label>
+                <input id="f-name" name="name" type="text" autocomplete="name" maxlength="80" required />
+                <p class="field__err" id="e-name" hidden>Please write your name.</p>
+              </div>
+              <div class="field">
+                <label for="f-phone">Phone or WhatsApp <span class="req" aria-hidden="true">*</span></label>
+                <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="98XXXXXXXX" required />
+                <p class="field__err" id="e-phone" hidden>Please write a phone number we can call.</p>
+              </div>
+              <div class="field">
+                <label for="f-email">Email</label>
+                <input id="f-email" name="email" type="email" autocomplete="email" maxlength="254" />
+                <p class="field__err" id="e-email" hidden>This email does not look right.</p>
+              </div>
+              <div class="field">
+                <label for="f-date">Wedding date</label>
+                <input id="f-date" name="weddingDate" type="date" />
+              </div>
+              <div class="field" data-for="order">
+                <label for="f-theme">Design</label>
+                <select id="f-theme" name="theme"><option value="">Not chosen yet</option></select>
+              </div>
+              <div class="field" data-for="order">
+                <label for="f-plan">Plan <span class="req" aria-hidden="true">*</span></label>
+                <select id="f-plan" name="plan"><option value="">Choose a plan</option></select>
+                <p class="field__err" id="e-plan" hidden>Please choose a plan.</p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-message" id="l-message">Anything we should know?</label>
+              <textarea id="f-message" name="message" rows="3" maxlength="2000"></textarea>
+              <p class="field__err" id="e-message" hidden>Please tell us about the design you want.</p>
+            </div>
+            <div class="hp" aria-hidden="true">
+              <label for="f-website">Website</label>
+              <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+            <p class="form__total" id="order-total" hidden></p>
+            <button class="btn btn--accent btn--xl btn--wide" type="submit" id="order-submit">Continue to payment</button>
+            <p class="form__fine">We use your details only for your invitation.</p>
+            <p class="form__status" id="order-error" role="alert" hidden></p>
+            <noscript><p class="form__status">This form needs JavaScript. You can also order on WhatsApp: +977 980-6393298.</p></noscript>
+          </form>
+
+          <div id="order-pay" hidden></div>
+
+          <div class="paydone" id="order-done" hidden tabindex="-1">
+            <p class="paydone__ne" lang="ne">धन्यवाद</p>
+            <h3 class="pay__title" id="done-title">Thank you. We have your request.</h3>
+            <p class="paydone__text" id="done-text">We will call or message you within a day.</p>
+            <dl class="paydone__facts" id="done-facts" hidden></dl>
+            <div class="pay__acts"><button class="btn" type="button" id="order-again">Send another order</button></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- CONTACT -->
-    <section class="contact" id="contact" aria-labelledby="contact-title">
-      <div class="contact__head">
-        <p class="contact__ne" lang="ne" aria-hidden="true">नमस्ते</p>
-        <h2 class="h2" id="contact-title">Talk to us before you decide.</h2>
-      </div>
-      <dl class="contact__list" id="contact-list"></dl>
-      <div class="contact__empty" id="contact-empty" hidden>
-        <p>Send us a request and we will call you back, usually within a day.</p>
-        <a class="btn btn--line" href="#order">Send a request</a>
+    <!-- 8 · Closing -->
+    <section class="sec sec--blush closing" id="contact" aria-labelledby="contact-title">
+      <span class="closing__ring" aria-hidden="true"></span>
+      <div class="wrap closing__in">
+        <p class="closing__ne" lang="ne" aria-hidden="true">नमस्ते</p>
+        <h2 class="closing__title" id="contact-title">Talk to us before you decide</h2>
+        <ul class="closing__list">
+          <li data-contact-row="wa"><span class="closing__k">WhatsApp</span> <a data-contact="wa" href="https://wa.me/9779806393298" target="_blank" rel="noopener"><span data-contact="wa-text">+977 980-6393298</span></a></li>
+          <li data-contact-row="phone"><span class="closing__k">Phone</span> <a data-contact="phone" href="tel:+9779806393298"><span data-contact="phone-text">+977 980-6393298</span></a></li>
+          <li data-contact-row="email"><span class="closing__k">Email</span> <a data-contact="email" href="mailto:nimttoz@gmail.com"><span data-contact="email-text">nimttoz@gmail.com</span></a></li>
+        </ul>
+        <div class="btns closing__btns">
+          <a class="btn btn--accent btn--lg" data-contact="wa" href="https://wa.me/9779806393298" target="_blank" rel="noopener">Message us on WhatsApp</a>
+          <a class="btn btn--lg" href="#designs">Browse designs</a>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <div class="foot__in">
-      <a class="mark mark--foot" href="#top" aria-label="Nimtto, back to top">Nimtto<span class="mark__ne" lang="ne" aria-hidden="true">निम्तो</span></a>
-      <p class="foot__credits">Photographs, flowers and music in the designs are by Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA. <a href="/credits/">Credits</a></p>
-      <p class="foot__meta"><span>© <span id="year">2026</span> Nimtto</span><a href="/studio/">Studio sign in</a></p>
+    <div class="wrap">
+      <div class="foot__top">
+        <div class="foot__brand">
+          <a class="foot__logo" href="/" data-home aria-label="Nimtto home"><img src="/site/brand/nimtto-logo.svg" width="183" height="43" alt="" loading="lazy" /><span lang="ne">निम्तो</span></a>
+          <p>Nepali wedding invitation websites. We set them up for you, and you share one link.</p>
+        </div>
+        <div class="foot__cols">
+          <nav class="foot__col" aria-labelledby="fc-1"><h2 id="fc-1">Explore</h2><a href="#designs">Designs</a><a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a></nav>
+          <nav class="foot__col" aria-labelledby="fc-2"><h2 id="fc-2">Couples</h2><a href="#order">Order a design</a><a href="#order" data-kind="custom">Custom design</a><a href="/studio/">Studio sign in</a></nav>
+          <nav class="foot__col" aria-labelledby="fc-3"><h2 id="fc-3">About</h2><a href="#contact">Contact</a><a href="/credits/">Credits</a></nav>
+        </div>
+      </div>
+      <div class="foot__base">
+        <p>Photos, flowers and music come from Wikimedia Commons, Openverse, Freesound and Jamendo contributors under CC0, CC BY and CC BY-SA. <a href="/credits/">Credits</a></p>
+        <p>© <span data-year>2026</span> Nimtto</p>
+      </div>
     </div>
   </footer>
 
-  <dialog class="lb" id="lb" aria-labelledby="lb-name">
-    <div class="lb__in">
-      <figure class="lb__shot"><img id="lb-img" alt="" width="1200" height="900" decoding="async" /></figure>
-      <div class="lb__body">
-        <p class="lb__n"><span id="lb-i">1</span> of <span id="lb-total">27</span></p>
-        <h2 class="lb__name" id="lb-name"></h2>
-        <p class="lb__ne" id="lb-ne" lang="ne"></p>
-        <p class="lb__text" id="lb-text"></p>
-        <p class="lb__acts">
-          <a class="btn btn--accent" id="lb-order" href="#order">Order this design</a>
-          <a class="btn btn--line" id="lb-preview" href="/" data-preview>Preview</a>
-        </p>
-        <p class="lb__fine">The preview carries the demo couple and a Nimtto watermark. Yours shows your names and photos, with no watermark.</p>
-        <div class="lb__nav">
-          <button type="button" class="round" id="lb-prev" aria-label="Previous design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-          <button type="button" class="round" id="lb-next" aria-label="Next design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-        </div>
-      </div>
-      <button type="button" class="round lb__close" id="lb-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    </div>
-  </dialog>
-
-  <!-- the live showcase of one design in a phone frame (desktop; phones open it full screen) -->
+  <!-- the watermarked preview of a design in a phone frame (desktop; phones open it full screen) -->
   <dialog class="pv" id="pv" aria-labelledby="pv-name">
     <div class="pv__in">
-      <div class="pv__phone">
-        <iframe class="pv__frame" id="pv-frame" title="Design preview" src="about:blank" loading="lazy" referrerpolicy="same-origin" allow="autoplay"></iframe>
-      </div>
+      <div class="pv__phone"><iframe class="pv__frame" id="pv-frame" title="Design preview" src="about:blank" referrerpolicy="same-origin" allow="autoplay"></iframe></div>
       <div class="pv__body">
-        <p class="pv__kick">Live preview</p>
+        <p class="kick">Preview</p>
         <h2 class="pv__name" id="pv-name"></h2>
         <p class="pv__ne" id="pv-ne" lang="ne"></p>
-        <p class="pv__text">Tap the opening as a guest would. The names, dates and photos are our demo couple’s.</p>
-        <p class="pv__acts">
+        <p class="pv__text">Tap the opening, as a guest would. The names, dates and photos are only samples.</p>
+        <div class="pv__acts">
           <a class="btn btn--accent" id="pv-order" href="#order">Order this design</a>
-          <a class="link pv__full" id="pv-full" href="/">Open full screen</a>
-        </p>
+          <a class="link" id="pv-full" href="/">Open full screen</a>
+        </div>
       </div>
-      <button type="button" class="round pv__close" id="pv-close" aria-label="Close the preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button type="button" class="round pv__close" id="pv-close" aria-label="Close the preview"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
   </dialog>
 </body>

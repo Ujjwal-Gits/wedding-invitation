@@ -1,23 +1,31 @@
-// Orders and custom-design requests: data/orders.json (a list, newest last).
-// Public POST: Origin check, honeypot, per-IP and global rate limits, strict validation and length caps.
-// Admin: list, update status/notes, delete.
-import { randomBytes } from 'node:crypto';
+// Orders and custom-design requests (SQLite table, or data/orders.json with STORE=json).
+// Public POST: Origin check, honeypot, per-IP and global rate limits, strict validation and length caps. Every order
+// gets a short public reference (NM-24817) and a pay token (256 random bits, shown once; only its SHA-256 is
+// stored), so the customer can come back to /pay/<ref>?t=<token> to pay by QR and upload a screenshot
+// (lib/payments/manual.js). Amounts always come from the server's plan prices.
+// Admin: list, update the workflow status/notes, the payment status (confirm / reject / mark paid / refunded), delete.
+import { randomBytes, randomInt, createHash, timingSafeEqual } from 'node:crypto';
+import { promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
-import { DATA_DIR, IS_PROD } from './env.js';
-// Stored by lib/store.js (SQLite table, or data/orders.json with STORE=json). addOrder/deleteOrder take the 'orders'
-// lock themselves; saveOrder is called under it.
-import { withLock, listOrders as storedOrders, getOrderById, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
+import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS } from './env.js';
+// Stored by lib/store.js. addOrder/deleteOrder take the 'orders' lock themselves; saveOrder is called under it.
+import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme } from './catalog.js';
-import { readSite, EMAIL_RE } from './site.js';
+import { readSite, EMAIL_RE, e164 } from './site.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
+export const PROOF_DIR = resolve(DATA_DIR, 'proofs'); // payment screenshots: private, never served statically
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
 const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 export const ID_RE = /^[A-Za-z0-9_-]{12}$/;
+export const REF_RE = /^NM-\d{5,6}$/;
+export const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 const STATUSES = ['new', 'contacted', 'done', 'archived'];
+export const PAY_STATUSES = ['awaiting_payment', 'proof_submitted', 'confirmed', 'rejected', 'refunded'];
 const MAX_ORDERS = 5000;
+const MAX_HISTORY = 50;
 
 // Stored requests: 5 / hour / IP (dev: agents test from one IP) and 200 / hour overall. Attempts (including
 // ones that fail validation, so a typo does not use up a real person's quota): 60 / hour / IP.
@@ -26,12 +34,71 @@ const global = rateLimiter({ windowMs: 60 * 60 * 1000, max: 200 });
 const attempts = rateLimiter({ windowMs: 60 * 60 * 1000, max: IS_PROD ? 60 : 1000 });
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 
-const clean = (v, max, multiline = false) => {
+export const clean = (v, max, multiline = false) => {
   if (typeof v !== 'string') return '';
   let s = v.normalize('NFC').replace(CTRL, '');
   if (!multiline) s = s.replace(/[\r\n]+/g, ' ');
-  return s.trim();
+  return s.trim().slice(0, max);
 };
+
+// ── Pay token ─────────────────────────────────────────────────────────────
+
+const tokenHash = (t) => createHash('sha256').update(String(t)).digest();
+const DUMMY = tokenHash('nimtto-no-order');
+/** Constant-time check of a pay token against the order's stored hash. */
+export function tokenMatches(order, t) {
+  const ok = typeof t === 'string' && TOKEN_RE.test(t);
+  const want = order && typeof order.payTokenHash === 'string' && order.payTokenHash.length === 64 ? Buffer.from(order.payTokenHash, 'hex') : DUMMY;
+  const same = timingSafeEqual(tokenHash(ok ? t : ''), want);
+  return Boolean(ok && order && order.payTokenHash && same);
+}
+
+/** The order for a public ref and its pay token, or null (unknown ref and wrong token look the same). */
+export async function orderByRefAndToken(ref, t) {
+  const o = typeof ref === 'string' && REF_RE.test(ref) ? await getOrderByRef(ref) : null;
+  return tokenMatches(o, t) ? o : null;
+}
+
+/** A new unique NM-xxxxx reference (6 digits once 5 get crowded). Call under withLock('order-ref'). */
+async function newRef() {
+  for (let i = 0; i < 40; i++) {
+    const ref = i < 30 ? `NM-${randomInt(10000, 100000)}` : `NM-${randomInt(100000, 1000000)}`;
+    if (!(await getOrderByRef(ref))) return ref;
+  }
+  throw httpError(503, 'Please try again in a moment.');
+}
+
+// ── Money and messages ────────────────────────────────────────────────────
+
+/** { npr, usd } for a plan from the server's prices (null where the plan has no price). */
+export const amountOf = (plan) => ({ npr: Number.isInteger(plan?.price) ? plan.price : null, usd: Number.isFinite(plan?.priceUsd) ? plan.priceUsd : null });
+const rs = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
+export const planView = (order) => (order.plan ? { id: order.plan, name: order.planName || order.plan, from: order.planFrom === true } : null);
+
+/** The customer's link back to their order (absolute when PUBLIC_ORIGIN is set). */
+export const payUrl = (ref, token) => `${PUBLIC_ORIGINS[0] || ''}/pay/${ref}?t=${token}`;
+
+/** A short WhatsApp message to the owner (never the pay token), and a wa.me link to the site's WhatsApp number. */
+export function whatsappFor(order, site) {
+  const a = order.amount || {};
+  const money = a.npr != null ? `${order.planFrom ? 'from ' : ''}${rs(a.npr)}` : '';
+  const text = [
+    'Namaste! I placed an order on Nimtto.',
+    `Order: ${order.ref}`,
+    order.planName ? `Plan: ${order.planName}${money ? ` (${money})` : ''}` : null,
+    `Name: ${order.name}`,
+    order.weddingDate ? `Wedding: ${order.weddingDate}` : null,
+    'I will send the payment screenshot here.',
+  ].filter(Boolean).join('\n');
+  const num = e164(site?.contact?.whatsapp || site?.contact?.phone).replace(/^\+/, '');
+  return { text, link: num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : null };
+}
+
+const historyAdd = (pay, status, by, note) => {
+  pay.history = [...(pay.history || []), { at: new Date().toISOString(), status, by, ...(note ? { note } : {}) }].slice(-MAX_HISTORY);
+};
+
+// ── Public: a new order ───────────────────────────────────────────────────
 
 /** POST /api/orders (public) */
 export async function submit(req, res) {
@@ -46,13 +113,20 @@ export async function submit(req, res) {
   }
   const b = req.body;
   if (!b || typeof b !== 'object' || Array.isArray(b)) return res.status(400).json({ ok: false, error: 'Bad request.' });
-  // Honeypot: people never see or fill "website". Pretend success (same status as a real one), store nothing.
-  if (b.website != null && b.website !== '') { perIp.hit(ip); return res.status(201).json({ ok: true }); }
+  const site = await readSite();
+  // Honeypot: people never see or fill "website". Pretend success with the same shape, store nothing.
+  if (b.website != null && b.website !== '') {
+    perIp.hit(ip);
+    const plan = site.plans.find((p) => p.id === b.plan) || null;
+    const ref = `NM-${randomInt(10000, 100000)}`;
+    const payToken = randomBytes(32).toString('base64url');
+    return res.status(201).json({ ok: true, ref, payToken, amount: amountOf(plan), plan: plan ? { id: plan.id, name: plan.name, from: plan.from === true } : null, payUrl: payUrl(ref, payToken), whatsapp: { text: '', link: null } });
+  }
 
   const fields = [];
   const capped = (key, max, { required = false, multiline = false } = {}) => {
     if (b[key] != null && typeof b[key] !== 'string') { fields.push(key); return ''; }
-    const s = clean(b[key], max, multiline);
+    const s = clean(b[key], max + 1, multiline);
     if (s.length > max || (required && !s)) fields.push(key);
     return s.slice(0, max);
   };
@@ -63,67 +137,136 @@ export async function submit(req, res) {
   if (phone && !PHONE_RE.test(phone)) fields.push('phone');
   const email = capped('email', 254);
   if (email && !EMAIL_RE.test(email)) fields.push('email');
+  const bride = capped('bride', 80);
+  const groom = capped('groom', 80);
   const weddingDate = capped('weddingDate', 10);
   const dm = DATE_RE.exec(weddingDate);
   const realDate = dm && new Date(Date.UTC(+dm[1], dm[2] - 1, +dm[3])).toISOString().slice(0, 10) === weddingDate; // no 30 February
   if (weddingDate && (!realDate || Number(dm[1]) < 2000 || Number(dm[1]) > 2100)) fields.push('weddingDate');
   const theme = capped('theme', 31);
   if (theme && !isTheme(theme)) fields.push('theme');
-  const plan = capped('plan', 32);
-  if (plan && !(await readSite()).plans.some((p) => p.id === plan)) fields.push('plan');
+  let planId = capped('plan', 32);
+  if (!planId && kind === 'custom' && site.plans.some((p) => p.id === 'custom')) planId = 'custom';
+  const plan = planId ? site.plans.find((p) => p.id === planId) : null;
+  if ((planId && !plan) || (kind === 'order' && !plan)) fields.push('plan');
   const message = capped('message', 2000, { required: kind === 'custom', multiline: true });
   if (fields.length) return res.status(400).json({ ok: false, error: 'Please check the form.', fields: [...new Set(fields)] });
 
-  const order = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), kind, name, phone, message, status: 'new' };
+  const payToken = randomBytes(32).toString('base64url'); // 256 bits; only the hash is stored
+  const now = new Date().toISOString();
+  const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new' };
   if (email) order.email = email;
+  if (bride) order.bride = bride;
+  if (groom) order.groom = groom;
   if (weddingDate) order.weddingDate = weddingDate;
   if (theme) order.theme = theme;
-  if (plan) order.plan = plan;
+  if (plan) Object.assign(order, { plan: plan.id, planName: plan.name, planFrom: plan.from === true });
+  order.amount = amountOf(plan); // the server's price at the time of ordering
+  order.payTokenHash = tokenHash(payToken).toString('hex');
+  order.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [{ at: now, status: 'awaiting_payment', by: 'customer' }] };
   // A couple asking for a custom design from their studio: link the request to their invitation.
   if (kind === 'custom' && req.session?.role === 'client') order.invitation = req.session.slug;
   perIp.hit(ip);
   global.hit('all');
   try {
-    await addOrder(order, MAX_ORDERS); // 507 when full
+    await withLock('order-ref', async () => {
+      order.ref = await newRef();
+      await addOrder(order, MAX_ORDERS); // 507 when full
+    });
   } catch (err) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
-  console.info(`[orders] new kind=${kind} id=${order.id}`);
-  // ref: the request's id, so the website can offer to pay for it online (lib/payments) and show it as a reference
-  res.status(201).json({ ok: true, ref: order.id });
+  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'}`);
+  res.status(201).json({
+    ok: true, ref: order.ref, payToken, amount: order.amount, plan: planView(order),
+    payUrl: payUrl(order.ref, payToken), whatsapp: whatsappFor(order, site),
+  });
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────
+
+/** An order as the dashboard sees it: no token hash, proof files as admin-only URLs. */
+export function adminView(o) {
+  const { payTokenHash, ...rest } = o;
+  if (rest.pay) {
+    rest.pay = {
+      ...rest.pay,
+      proofs: (rest.pay.proofs || []).map(({ file, thumb, ...p }) => ({ ...p, url: `/api/admin/orders/${o.id}/proof/${p.n}`, thumb: `/api/admin/orders/${o.id}/proof/${p.n}?size=sm` })),
+    };
+  }
+  // PayPal Checkout (lib/payments) paid it: show it as confirmed
+  rest.payStatus = rest.pay?.status || (o.payment?.status === 'paid' ? 'confirmed' : o.payment?.status === 'refunded' ? 'refunded' : null);
+  return rest;
 }
 
 /** GET /api/orders (admin): newest first. */
 export async function list(req, res) {
   const all = await storedOrders();
   all.sort((x, y) => String(y.at).localeCompare(String(x.at)));
-  res.json({ orders: all });
+  res.json({ orders: all.map(adminView) });
 }
 
-/** PATCH /api/orders/:id { status?, notes? } (admin) */
+const isMoney = (v, max) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max && Math.abs(Math.round(v * 100) - v * 100) < 1e-6);
+
+/**
+ * PATCH /api/orders/:id (admin)
+ * { status?, notes?, amount?: { npr, usd }, payment?: { status, reason?, note?, manual?: true, method? } }
+ * payment.status 'rejected' needs a reason (the customer sees it); 'refunded' only after a confirmed payment;
+ * manual: true records "marked paid by hand" (cash, or a transfer seen elsewhere) with the method.
+ */
 export async function update(req, res) {
   const { id } = req.params;
   if (!ID_RE.test(id)) throw httpError(400, 'Bad id.');
   const b = req.body && typeof req.body === 'object' ? req.body : {};
   if (b.status !== undefined && !STATUSES.includes(b.status)) throw httpError(400, `status must be one of ${STATUSES.join(', ')}.`);
   if (b.notes !== undefined && (typeof b.notes !== 'string' || b.notes.length > 2000)) throw httpError(400, 'notes must be text of at most 2000 characters.');
+  if (b.amount !== undefined && (!b.amount || typeof b.amount !== 'object' || !isMoney(b.amount.npr ?? null, 10_000_000) || !isMoney(b.amount.usd ?? null, 10_000))) {
+    throw httpError(400, 'amount must be { npr, usd } (numbers, or null).');
+  }
+  const p = b.payment;
+  if (p !== undefined) {
+    if (!p || typeof p !== 'object' || !PAY_STATUSES.includes(p.status)) throw httpError(400, `payment.status must be one of ${PAY_STATUSES.join(', ')}.`);
+    for (const [k, max] of [['reason', 300], ['note', 500], ['method', 40]]) {
+      if (p[k] != null && (typeof p[k] !== 'string' || p[k].length > max)) throw httpError(400, `payment.${k} must be text of at most ${max} characters.`);
+    }
+    if (p.status === 'rejected' && !clean(p.reason, 300)) throw httpError(400, 'Say why the payment was rejected: the customer sees this.');
+  }
   const order = await withLock('orders', async () => {
     const o = await getOrderById(id);
     if (!o) throw httpError(404, 'Request not found.');
     if (b.status !== undefined) o.status = b.status;
     if (b.notes !== undefined) o.notes = clean(b.notes, 2000, true);
+    if (b.amount !== undefined) o.amount = { npr: b.amount.npr ?? null, usd: b.amount.usd ?? null };
+    if (p !== undefined) {
+      const pay = o.pay || (o.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [] });
+      const paidBefore = pay.status === 'confirmed' || o.payment?.status === 'paid';
+      if (p.status === 'refunded' && !paidBefore) throw httpError(409, 'Only a confirmed payment can be marked refunded.');
+      const note = clean(p.note, 500, true);
+      pay.status = p.status;
+      if (p.status === 'rejected') pay.reason = clean(p.reason, 300, true);
+      else if (p.status !== 'refunded') pay.reason = null;
+      if (p.status === 'confirmed') {
+        pay.confirmedAt = new Date().toISOString();
+        pay.via = p.manual === true ? 'manual' : pay.proofs?.length ? 'proof' : 'manual';
+        if (p.manual === true) pay.manual = { method: clean(p.method, 40) || 'cash', note };
+      }
+      if (p.status === 'refunded') pay.refundedAt = new Date().toISOString();
+      historyAdd(pay, p.status, 'admin', p.status === 'rejected' ? pay.reason : note || (p.manual === true ? `marked paid by hand (${pay.manual.method})` : ''));
+    }
     await saveOrder(o);
     return o;
   });
-  res.json({ order });
+  if (p !== undefined) console.info(`[admin] order ${order.ref || order.id} payment=${p.status}${p.manual === true ? ' (manual)' : ''}`);
+  res.json({ order: adminView(order) });
 }
 
-/** DELETE /api/orders/:id (admin) */
+/** DELETE /api/orders/:id (admin): the order and its payment screenshots. */
 export async function remove(req, res) {
   const { id } = req.params;
   if (!ID_RE.test(id)) throw httpError(400, 'Bad id.');
   if (!(await deleteOrder(id))) throw httpError(404, 'Request not found.');
+  await fs.rm(resolve(PROOF_DIR, id), { recursive: true, force: true });
   console.info(`[admin] delete order id=${id}`);
   res.json({ ok: true });
 }
@@ -160,3 +303,5 @@ export async function mutateOrder(id, fn) {
     return structuredClone(o);
   });
 }
+
+export { historyAdd };

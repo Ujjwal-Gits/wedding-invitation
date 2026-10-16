@@ -32,6 +32,20 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   return data;
 }
 
+/** A multipart POST (FormData) to an admin route, with the CSRF token; JSON answer. */
+export async function postForm(path, form) {
+  let res;
+  try {
+    res = await fetch(`/api${path}`, { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-Token': csrf }, body: form, credentials: 'same-origin' });
+  } catch {
+    throw new ApiError(0, { error: 'The upload failed. Check your connection and try again.' });
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) onUnauthorized();
+  if (!res.ok) throw new ApiError(res.status, data);
+  return data;
+}
+
 /**
  * Multipart upload with progress (fetch cannot report upload progress). Photos are made smaller in
  * the browser first; onStage('preparing' | 'uploading') reports the step.
