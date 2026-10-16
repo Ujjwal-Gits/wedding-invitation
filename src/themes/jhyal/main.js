@@ -21,20 +21,25 @@ import { downloadIcs, share } from '../../core/calendar.js';
 import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
 import { photoUrl } from '../../photos.js';
-import credits from '../../generated/credits.json';
 import manifest from './slots.js';
 import {
-  DEFS, windowGeom, windowSVG, shutterSVG, shutterRows, diyoSVG, dhakaTile, pillarCapital, pillarBase, pillarShaftTile,
-  beamDivider, dividerSVG, lotusNode, petalSVG,
+  DEFS, windowGeom, windowSVG, shutterSVG, diyoSVG, dhakaTile, pillarCapital, pillarBase, pillarShaftTile,
+  beamDivider, dividerSVG, lotusNode,
 } from './art.js';
+import {
+  DECOR, on, isUrl, keyOf, imgTag, names as namesOf, boxOf, DIYO, fixPhotoWindows, gateHtml, gateRefs, layoutGate as layoutWindow,
+  petalFall, windowOpen, heroHtml, heroGroups as groupsOf,
+} from './parts.js';
+import { createMix } from '../../core/mix.js';
 
 const config = await loadInvitation();
+// another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'jhyal', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
 const c = config.couple;
 const events = guestEvents();
-const DECOR = '/themes/jhyal/decor/';
 const root = document.documentElement;
 
 // ───────────────────────── Slots ─────────────────────────
@@ -47,19 +52,8 @@ if (DEBUG) {
 }
 const S = useSlots(manifest);
 const txt = S.txt;
-/** "-", "none" or "off" in a text slot turns that element off. */
-const isOff = (v) => !v || /^\s*(-|–|none|off|no|hide)\s*$/i.test(v);
-const on = (o) => !isOff(o.en) || !isOff(o.ne);
 
 // ───────────────────────── Photo helpers ─────────────────────────
-const dims = Object.fromEntries(credits.map((k) => [String(k.file || k.slot).replace(/\.(jpe?g|png|webp)$/i, ''), [k.width, k.height]]));
-const isUrl = (s) => typeof s === 'string' && (s.startsWith('/') || s.startsWith('https://'));
-const keyOf = (ref) => (typeof ref === 'string' ? ref : ref && typeof ref === 'object' ? ref.lg || ref.sm || '' : '');
-const aspectOf = (ref) => {
-  if (typeof ref === 'string' && dims[ref]?.[0]) return dims[ref][0] / dims[ref][1];
-  if (ref && typeof ref === 'object' && ref.w && ref.h) return ref.w / ref.h;
-  return 0;
-};
 const PEOPLE = /^(couple|wedding|mehendi-hands|bride|groom|portrait)/;
 const isCouple = (ref) => !!ref && (typeof ref === 'object' || isUrl(ref) || PEOPLE.test(ref));
 const safeColor = (s) => (/^#[0-9a-f]{3,8}$/i.test(String(s)) ? s : null);
@@ -68,12 +62,6 @@ const tel = (p) => String(p).replace(/[^\d+]/g, '');
 const portraitAlt = Object.fromEntries((c.portraits || []).filter((p) => p?.photo).map((p) => [keyOf(p.photo), p.alt || '']));
 const altFor = (ref, id) => portraitAlt[keyOf(ref)] || (ref && typeof ref === 'object' && ref.alt) || S.alt(id) || `${c.bride.name.en} and ${c.groom.name.en}`;
 
-const imgTag = (ref, alt, sizes, { eager = false, cls = '' } = {}) => {
-  const sm = photoUrl(ref, 'sm');
-  const lg = photoUrl(ref, 'lg');
-  const ar = aspectOf(ref);
-  return `<img class="${cls}" src="${esc(sm)}" ${sm !== lg ? `srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w"` : ''} sizes="${sizes}" alt="${esc(alt || '')}" ${ar ? `width="${Math.round(ar * 1000)}" height="1000"` : ''} ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" />`;
-};
 
 // ───────────────────────── Which photo goes where ─────────────────────────
 const used = new Set();
@@ -156,11 +144,9 @@ const T = {
   married: { en: 'Married, with your blessings', ne: 'हजुरहरूको आशीर्वादसहित, विवाहित' },
 };
 
-const names = (cls = 'jh-n') => `<span class="${cls}">${bi(c.bride.name)}</span> <span class="${cls}"><span class="jh-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
+const names = (cls = 'jh-n') => namesOf(c, cls);
 const symbol = txt('hero.symbol');
-const invocation = txt('hero.invocation');
 const title = txt('hero.title');
-const blessing = txt('hero.blessing');
 
 const DHAKA = dhakaTile(2);
 root.style.setProperty('--jh-dhaka', DHAKA.url);
@@ -171,28 +157,6 @@ root.style.setProperty('--jh-shaft', pillarShaftTile());
 const head = (kicker, h, id, cls = '') => `<header class="jh-head ${cls} jh-rise">${kicker ? `<p class="jh-kicker">${bi(kicker)}</p>` : ''}<h2 class="jh-h2" id="${id}">${bi(h)}</h2><span class="jh-head__div">${dividerSVG(160)}</span></header>`;
 
 // ───────────────────────── The carved windows ─────────────────────────
-const pct = (v, t) => `${((v / t) * 100).toFixed(3)}%`;
-/** Absolute box (left/top/width/height, in % of the window) of a region in viewBox units. */
-const boxOf = (G, x, y, w, h) => `left:${pct(x, G.TW)};top:${pct(y, G.H)};width:${pct(w, G.TW)};height:${pct(h, G.H)}`;
-
-// The gate window: an opening of 544 × 594 behind two lattice shutters.
-const GG = windowGeom({ ow: 544, oh: 594 });
-const SW = GG.ow / 2;
-const ROWS = shutterRows(GG.oh);
-const toranBox = boxOf(GG, GG.WING * 0.28, GG.yL + 1, GG.TW - GG.WING * 0.56, (GG.TW - GG.WING * 0.56) * (235 / 1708));
-const DIYO = 84; // diyo width in window units
-const gateDiyo = (k) => `<div class="jh-gdiyo jh-gdiyo--${k}" style="${boxOf(GG, k === 'l' ? GG.WING * 0.5 - DIYO / 2 : GG.TW - GG.WING * 0.5 - DIYO / 2, GG.yS - DIYO * 1.1 + 2, DIYO, DIYO * 1.1)}"><i class="jh-halo"></i>${diyoSVG()}</div>`;
-
-/** A carved window built around a photograph at its own shape: the photograph is never cropped. */
-function photoWindow(ref, alt, sizes, { eager = false, cls = '' } = {}) {
-  const ar = aspectOf(ref) || 0.75;
-  const ow = 544; const oh = Math.round(ow / Math.min(1.9, Math.max(0.5, ar)));
-  const G = windowGeom({ ow, oh, torana: true, apron: false });
-  return `<figure class="jh-pwin ${cls}" style="--war:${(G.TW / G.H).toFixed(4)}" data-ar="${ar.toFixed(4)}">
-    <span class="jh-pwin__ph" style="${boxOf(G, G.ox, G.oy, G.ow, G.oh)}">${imgTag(ref, alt, sizes, { eager })}</span>
-    <span class="jh-pwin__art">${windowSVG(G)}</span>
-  </figure>`;
-}
 
 // The closing window: open, with dawn light inside.
 const GC = windowGeom({ ow: 460, oh: 380 });
@@ -220,40 +184,9 @@ const countCell = (u, label) => `<li class="jh-count__cell"><b class="jh-count__
 const main = document.getElementById('main');
 document.body.insertAdjacentHTML('afterbegin', DEFS);
 main.innerHTML = `
-  <div class="jh-gate" id="gate" role="region" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}: an invitation`)}">
-    <p class="jh-gate__line" id="gline">${bi(txt('gate.line'))}</p>
-    <div class="jh-stage" id="stage">
-      <div class="jh-room" id="room" style="${boxOf(GG, GG.ox, GG.oy, GG.ow, GG.oh)}">
-        <i class="jh-room__light" id="light"></i>
-        <p class="jh-room__names" id="rnames" style="top:${pct(ROWS.lt, GG.oh)};height:${pct(ROWS.lb - ROWS.lt, GG.oh)}">
-          <span class="jh-rn">${bi(c.bride.name)}</span><span class="jh-rn jh-rn--amp" aria-hidden="true">&amp;</span><span class="jh-rn">${bi(c.groom.name)}</span>
-        </p>
-      </div>
-      <div class="jh-win" id="win" aria-hidden="true">${windowSVG(GG)}</div>
-      <div class="jh-shutters" id="shutters" style="${boxOf(GG, GG.ox, GG.oy, GG.ow, GG.oh)}" aria-hidden="true">
-        <div class="jh-sh jh-sh--l" id="shL">${shutterSVG('l', SW, GG.oh)}<i class="jh-sh__shade"></i></div>
-        <div class="jh-sh jh-sh--r" id="shR">${shutterSVG('r', SW, GG.oh)}<i class="jh-sh__shade"></i></div>
-      </div>
-      <img class="jh-toran" id="toran" style="${toranBox}" src="${DECOR}toran-sm.webp" srcset="${DECOR}toran-sm.webp 800w, ${DECOR}toran.webp 1708w" sizes="(max-width: 700px) 100vw, 760px" alt="" aria-hidden="true" decoding="async" fetchpriority="high" />
-      <div class="jh-gdiyos" aria-hidden="true">${gateDiyo('l')}${gateDiyo('r')}</div>
-    </div>
-    <div class="jh-gate__ctl" id="gctl">
-      <button class="jh-open" id="open" type="button" disabled><span class="jh-open__orn" aria-hidden="true">${lotusNode(18)}</span><span>${bi(txt('gate.open'))}</span></button>
-      <button class="jh-quiet" id="quiet" type="button" disabled>${bi(txt('gate.quiet'))}</button>
-    </div>
-  </div>
+  ${gateHtml({ c, txt })}
 
-  <section class="jh-hero" id="top" aria-labelledby="hero-title">
-    <div class="jh-hero__text" id="htext">
-      ${on(invocation) ? `<p class="jh-invoke jh-in" lang="ne">${esc(invocation.ne || invocation.en)}</p>` : ''}
-      <h1 class="jh-title jh-in" id="hero-title"><span class="jh-title__ne" lang="ne">${esc(title.ne)}</span><span class="sr-only l-en"> (${esc(title.en)})</span></h1>
-      <span class="jh-hero__div jh-in">${dividerSVG(150)}</span>
-      <p class="jh-names jh-in">${names()}</p>
-      ${on(blessing) ? `<p class="jh-bless jh-in">${bi(blessing)}</p>` : ''}
-    </div>
-    ${lead ? `<div class="jh-hero__photo jh-in">${photoWindow(lead.photo, lead.alt, '(max-width: 760px) 86vw, 520px', { eager: true, cls: 'jh-pwin--hero' })}</div>` : ''}
-    <a class="jh-cue jh-in" id="cue" href="#date"><span>${bi(T.scroll)}</span><i aria-hidden="true"></i></a>
-  </section>
+  ${heroHtml({ c, txt, lead })}
 
   <section class="jh-sec jh-when" id="date" aria-labelledby="date-title">
     ${head(txt('date.kicker'), txt('date.title'), 'date-title')}
@@ -476,20 +409,10 @@ main.innerHTML = `
   </div>`;
 
 // Photo windows whose shape was unknown (no stored size): rebuild around the real shape once loaded.
-document.querySelectorAll('.jh-pwin').forEach((fig) => {
-  const im = fig.querySelector('img');
-  const fix = () => {
-    const ar = im.naturalWidth / im.naturalHeight;
-    if (!ar || Math.abs(ar - Number(fig.dataset.ar)) < 0.01) return;
-    const ow = 544; const oh = Math.round(ow / Math.min(1.9, Math.max(0.5, ar)));
-    const G = windowGeom({ ow, oh, torana: true, apron: false });
-    fig.dataset.ar = ar.toFixed(4);
-    fig.style.setProperty('--war', (G.TW / G.H).toFixed(4));
-    fig.querySelector('.jh-pwin__ph').style.cssText = boxOf(G, G.ox, G.oy, G.ow, G.oh);
-    fig.querySelector('.jh-pwin__art').innerHTML = windowSVG(G);
-  };
-  if (im.complete) fix(); else im.addEventListener('load', fix, { once: true });
-});
+fixPhotoWindows();
+// another theme's first screen replaces the opening one; another theme's gate replaces the window (docs/MIX.md)
+if (mix.hero) mix.mountHero(document.getElementById('top'));
+if (mix.gate) document.getElementById('gate').remove();
 
 // ───────────────────────── Shell, RSVP, dialogs ─────────────────────────
 const { player } = mountShell({ chapters: [] });
@@ -559,146 +482,32 @@ modal.addEventListener('click', (e) => { if (e.target === modal || e.target.clos
 }());
 
 // ───────────────────────── The window: sized from the width AND the height of the screen ─────────────────────────
-const gate = document.getElementById('gate');
-const stage = document.getElementById('stage');
-const shutters = document.getElementById('shutters');
-const shL = document.getElementById('shL');
-const shR = document.getElementById('shR');
-const gline = document.getElementById('gline');
-const gctl = document.getElementById('gctl');
-const rnames = document.getElementById('rnames');
-const light = document.getElementById('light');
+// (another theme's gate replaced the window: none of this runs, see mixGate below)
+const gate = mix.gate ? null : document.getElementById('gate');
+const R = gate ? gateRefs(gate) : null;
 const openBtn = document.getElementById('open');
 const quietBtn = document.getElementById('quiet');
 const hero = document.getElementById('top');
 let L = null;
+const layoutGate = () => { if (R) L = layoutWindow(R); };
 
-function layoutGate() {
-  const W = root.clientWidth;
-  const H = window.innerHeight;
-  const phone = W < 700;
-  const cs = getComputedStyle(gate);
-  const padT = parseFloat(cs.paddingTop) || 0;
-  const padB = parseFloat(cs.paddingBottom) || 0;
-  const gap = parseFloat(cs.rowGap) || 0;
-  const availH = H - padT - padB - gline.offsetHeight - gctl.offsetHeight - gap * 2;
-  const availW = W - (phone ? 14 : 64);
-  const s = Math.max(0.12, Math.min(availW / GG.TW, availH / GG.H, 1.02));
-  const w = Math.round(GG.TW * s);
-  const h = Math.round(GG.H * s);
-  Object.assign(stage.style, { width: `${w}px`, height: `${h}px` });
-  stage.style.setProperty('--s', s.toFixed(4));
-  shutters.style.perspective = `${Math.round(w * 2.4)}px`;
-  // the names behind the lattice: as large as the lattice allows
-  rnames.style.setProperty('--rn', '1');
-  const lw = GG.ow * s * 0.84;
-  let k = 1;
-  for (let n = 0; n < 12; n++) {
-    const wide = [...rnames.querySelectorAll('.jh-rn')].some((el) => el.scrollWidth > lw);
-    const tall = rnames.scrollHeight > rnames.clientHeight + 1;
-    if (!wide && !tall) break;
-    k *= 0.92;
-    rnames.style.setProperty('--rn', k.toFixed(3));
-  }
-  L = { W, H, s, w, h, phone };
-}
-
-// ───────────────────────── A light morning drift of petals over the closed window ─────────────────────────
-const fallEl = (() => {
-  if (reduced) return null;
-  const box = document.createElement('div');
-  box.className = 'jh-fall';
-  box.setAttribute('aria-hidden', 'true');
-  const phone = root.clientWidth < 700;
-  const n = phone ? 4 : 7;
-  const r = (a, b) => a + Math.random() * (b - a);
-  for (let i = 0; i < n; i++) {
-    const kind = i % 3 === 2 ? 'rose' : 'marigold';
-    const size = Math.round((phone ? 13 : 17) * r(0.8, 1.2));
-    const fall = r(phone ? 15 : 17, phone ? 21 : 26);
-    const sway = r(3.4, 5.4);
-    const p = document.createElement('i');
-    p.className = 'jh-fall__p';
-    p.style.cssText = `left:${(((i + r(0.15, 0.85)) / n) * 100).toFixed(1)}%;--dur:${fall.toFixed(1)}s;--del:${(-r(0, fall)).toFixed(1)}s;--dx:${Math.round(r(-50, 50))}px;--sdur:${sway.toFixed(1)}s;--sdel:${(-r(0, sway)).toFixed(1)}s;--sw:${Math.round(r(10, 24))}px;--r0:${Math.round(r(-40, 40))}deg`;
-    p.innerHTML = `<span>${petalSVG(kind, size)}</span>`;
-    box.append(p);
-  }
-  gate.append(box);
-  document.addEventListener('visibilitychange', () => box.classList.toggle('is-off', document.hidden));
-  return box;
-})();
+// A light morning drift of petals over the closed window
+const fallEl = reduced || !gate ? null : petalFall(gate);
+if (R) R.fall = fallEl;
 
 document.body.classList.add('jh-locked');
 window.scrollTo(0, 0);
 layoutGate();
 document.fonts?.ready.then(layoutGate);
-openBtn.disabled = false;
-quietBtn.disabled = false;
+if (openBtn && !mix.gate) { openBtn.disabled = false; quietBtn.disabled = false; }
 document.body.classList.add('is-ready');
 
 let opened = false;
 let finished = false;
 
-/** A cubic-bezier easing (x1, y1, x2, y2), solved by bisection. */
-const bezier = (x1, y1, x2, y2) => {
-  const bz = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  return (x) => {
-    let lo = 0; let hi = 1; let t = x;
-    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (bz(t, x1, x2) < x) lo = t; else hi = t; }
-    return bz(t, y1, y2);
-  };
-};
-// The shutters: a small give, then a smooth swing that settles softly (no bounce).
-const easeSwing = bezier(0.55, 0.05, 0.18, 1);
-// Moving through: an unhurried start, a long glide.
-const easeThrough = bezier(0.5, 0, 0.2, 1);
-
-/** Petals carried in on the morning light: from the opening toward the guest, drifting down. */
-function petalsIn() {
-  if (reduced) return;
-  const box = document.createElement('div');
-  box.className = 'jh-petals';
-  box.setAttribute('aria-hidden', 'true');
-  const r = stage.getBoundingClientRect();
-  const ox = r.left + (GG.ox / GG.TW) * r.width; const oy = r.top + (GG.oy / GG.H) * r.height;
-  const ow = (GG.ow / GG.TW) * r.width; const oh = (GG.oh / GG.H) * r.height;
-  const n = L.phone ? 7 : 11;
-  for (let i = 0; i < n; i++) {
-    const p = document.createElement('i');
-    const size = Math.round((L.phone ? 20 : 26) * (0.8 + Math.random() * 0.45));
-    p.innerHTML = petalSVG(i % 4 === 3 ? 'rose' : 'marigold', size);
-    p.style.left = `${Math.round(ox + ow * (0.18 + Math.random() * 0.64))}px`;
-    p.style.top = `${Math.round(oy + oh * (0.15 + Math.random() * 0.4))}px`;
-    box.append(p);
-    gsap.fromTo(p, { scale: 0.45, x: 0, y: 0, rotation: Math.random() * 180, opacity: 0 }, {
-      keyframes: { opacity: [0, 1, 1, 0] },
-      scale: 1.5 + Math.random() * 0.7,
-      x: (Math.random() - 0.5) * L.W * 0.5, y: L.H * (0.28 + Math.random() * 0.3), rotation: `+=${140 + Math.random() * 200}`,
-      duration: 2.6 + Math.random() * 1, delay: 0.1 + Math.random() * 0.7, ease: 'sine.inOut',
-    });
-  }
-  document.body.append(box);
-  setTimeout(() => box.remove(), 5200);
-}
-
-/** The scale (about the opening's centre) at which the opening covers the whole screen. */
-function throughScale() {
-  const r = stage.getBoundingClientRect();
-  const x0 = r.left + (GG.ox / GG.TW) * r.width; const y0 = r.top + (GG.oy / GG.H) * r.height;
-  const x1 = x0 + (GG.ow / GG.TW) * r.width; const y1 = y0 + (GG.oh / GG.H) * r.height;
-  const cx = (x0 + x1) / 2; const cy = (y0 + y1) / 2;
-  const sx = Math.max(cx / (cx - x0), (L.W - cx) / (x1 - cx));
-  const sy = Math.max(cy / (cy - y0), (L.H - cy) / (y1 - cy));
-  return { s: Math.max(sx, sy) * 1.06, ox: cx - r.left, oy: cy - r.top };
-}
-
-const heroGroups = () => {
-  const g = (sel) => [...hero.querySelectorAll(sel)];
-  return [g('.jh-invoke'), g('.jh-title'), g('.jh-hero__div, .jh-names'), g('.jh-bless'), g('.jh-hero__photo'), g('.jh-cue')].filter((a) => a.length);
-};
-
-function open(withMusic) {
-  if (opened) return;
+/** Inside the guest's tap: the bell and the music. */
+function startOpen(withMusic) {
+  if (opened) return false;
   opened = true;
   try {
     player.unlock();
@@ -706,69 +515,77 @@ function open(withMusic) {
     player.start(withMusic);
   } catch { /* audio is optional */ }
   document.body.classList.add('is-opening');
+  return true;
+}
+/** The first screen comes in from `at`, group by group (another theme's first screen brings its own entrance). */
+function heroIntro(tl, at, { step = L?.phone ? 0.12 : 0.15 } = {}) {
+  if (mix.heroInst) { mix.heroEnter(tl, at); return; }
+  const groups = groupsOf(hero);
+  groups.forEach((g, i) => tl.fromTo(g, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, at + i * step));
+  tl.add(() => gsap.set(groups.flat(), { clearProps: 'opacity,transform' }));
+}
+// another theme's gate: its exit shows the page beneath (the first screen is not locked away), then the first screen
+const mixGate = mix.gate ? mix.mountGate({
+  start: (withMusic) => { startOpen(withMusic); window.scrollTo(0, 0); },
+  intro: (tl, at) => heroIntro(tl, at, { step: document.documentElement.clientWidth < 700 ? 0.12 : 0.15 }),
+  finish: () => afterOpen(),
+}) : null;
+
+function open(withMusic) {
+  if (mixGate) { mixGate.open(withMusic); return; }
+  if (!startOpen(withMusic)) return;
   const tl = reduced ? crossfadeIn() : throughWindow();
   setTimeout(() => { if (!finished) tl.progress(1); }, (tl.duration() + 2.5) * 1000);
 }
 
 function throughWindow() {
-  const SWING = 1.2;
-  const THROUGH_AT = SWING + 0.05;
-  const THROUGH = L.phone ? 1.35 : 1.45;
-  const end = THROUGH_AT + THROUGH;
-  const T0 = throughScale();
-  stage.style.transformOrigin = `${T0.ox.toFixed(1)}px ${T0.oy.toFixed(1)}px`;
-  const groups = heroGroups();
-  gsap.set(groups.flat(), { opacity: 0, y: 14 });
+  const groups = groupsOf(hero); // (none when another theme's first screen is mounted)
+  const flat = groups.flat();
+  if (flat.length) gsap.set(flat, { opacity: 0, y: 14 });
   // the page is usable the moment the view is through; the last lines finish settling after that
-  const tl = gsap.timeline({ onComplete: () => { afterOpen(); gsap.set(groups.flat(), { clearProps: 'opacity,transform' }); } });
-  tl.to([gline, gctl], { autoAlpha: 0, y: 6, duration: 0.32, ease: 'power2.out' }, 0)
-    .to(fallEl, { autoAlpha: 0, duration: 0.4 }, 0)
-    // the latch gives, then the two shutters swing outward toward the guest
-    .to(shL, { rotationY: -5, duration: 0.22, ease: 'power2.out' }, 0.08)
-    .to(shR, { rotationY: 5, duration: 0.22, ease: 'power2.out' }, 0.08)
-    .to(shL, { rotationY: -104, duration: SWING - 0.2, ease: easeSwing }, 0.3)
-    .to(shR, { rotationY: 104, duration: SWING - 0.2, ease: easeSwing }, 0.3)
-    .to('.jh-sh__shade', { opacity: 0.55, duration: SWING - 0.2, ease: 'power1.in' }, 0.3)
-    // morning light fills the opening; the names come clear, then give way to the page
-    .to(light, { opacity: 1, duration: 0.9, ease: 'power1.out' }, 0.35)
-    .to(rnames, { opacity: 0, duration: 0.5, ease: 'power1.inOut' }, THROUGH_AT - 0.2)
-    .add(petalsIn, 0.5)
-    // and the view moves gently through the window
-    .fromTo(stage, { scale: 1 }, { scale: T0.s, duration: THROUGH, ease: easeThrough }, THROUGH_AT)
-    .to(stage, { opacity: 0, duration: 0.5, ease: 'power1.in' }, end - 0.55)
-    .to(gate, { '--veil': 0, duration: 0.6, ease: 'power1.inOut' }, end - 0.75);
+  const tl = gsap.timeline({ onComplete: () => { afterOpen(); if (flat.length) gsap.set(flat, { clearProps: 'opacity,transform' }); } });
+  tl.to([R.gline, R.gctl], { autoAlpha: 0, y: 6, duration: 0.32, ease: 'power2.out' }, 0);
+  const { end } = windowOpen(gsap, tl, R, L);
   const t = end - 0.6;
   groups.forEach((g, i) => tl.to(g, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, t + i * (L.phone ? 0.12 : 0.15)));
+  if (mix.heroInst) mix.heroEnter(tl, t);
   tl.add(afterOpen, end + 0.02);
   return tl;
 }
 
 /** Reduced motion: no swing or camera move; the window gives way to the page in a crossfade. */
 function crossfadeIn() {
-  gsap.set(heroGroups().flat(), { clearProps: 'opacity,transform' });
+  const flat = groupsOf(hero).flat();
+  if (flat.length) gsap.set(flat, { clearProps: 'opacity,transform' });
   const tl = gsap.timeline({ onComplete: afterOpen });
   tl.to(gate, { autoAlpha: 0, duration: 0.5, ease: 'power1.inOut' }, 0);
+  if (mix.heroInst) mix.heroEnter(tl, 0);
   return tl;
 }
 
-openBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+openBtn?.addEventListener('click', () => open(true));
+quietBtn?.addEventListener('click', () => open(false));
 
 let lenis = null;
 function afterOpen() {
   if (finished) return;
   finished = true;
-  gate.hidden = true;
+  if (gate) gate.hidden = true;
+  fallEl?.stop?.();
   fallEl?.remove();
   document.body.classList.remove('jh-locked', 'is-opening');
   document.body.classList.add('is-open');
   lenis = createSmooth();
   revealOnScroll();
-  document.getElementById('cue').addEventListener('click', (e) => {
-    e.preventDefault();
-    const y = document.getElementById('date').getBoundingClientRect().top + window.scrollY;
-    if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
-  });
+  // (a borrowed first screen's own cue scrolls on by itself)
+  if (!mix.heroInst) {
+    document.getElementById('cue').addEventListener('click', (e) => {
+      e.preventDefault();
+      const y = document.getElementById('date').getBoundingClientRect().top + window.scrollY;
+      if (lenis) lenis.scrollTo(y); else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
+    });
+  }
+  mix.afterOpen?.();
 }
 
 // ───────────────────────── The lagan patra unfolds ─────────────────────────
@@ -837,7 +654,7 @@ let rw = root.clientWidth;
 let rh = window.innerHeight;
 let rt;
 window.addEventListener('resize', () => {
-  if (finished) return;
+  if (finished || !gate) return;
   const w = root.clientWidth; const h = window.innerHeight;
   if (w === rw && Math.abs(h - rh) < 80) return;
   rw = w; rh = h;
@@ -852,8 +669,14 @@ if (DEBUG) {
     layout: () => L,
     lenis: () => lenis,
     open: () => open(false),
-    seek: (deg) => { gsap.set(shL, { rotationY: -deg }); gsap.set(shR, { rotationY: deg }); gsap.set(light, { opacity: Math.min(1, deg / 60) }); },
-    finish: () => { opened = true; gsap.set(gate, { autoAlpha: 0 }); afterOpen(); },
+    seek: (deg) => { if (!R) return; gsap.set(R.shL, { rotationY: -deg }); gsap.set(R.shR, { rotationY: deg }); gsap.set(R.light, { opacity: Math.min(1, deg / 60) }); },
+    finish: () => {
+      if (mixGate) { mixGate.finish(); return; }
+      opened = true;
+      gsap.set(gate, { autoAlpha: 0 });
+      if (mix.heroInst) { const tl = gsap.timeline(); mix.heroEnter(tl, 0); tl.progress(1); } // a borrowed first screen, settled
+      afterOpen();
+    },
     to: (sel, offset = 0) => {
       const el = document.querySelector(sel);
       const y = el.getBoundingClientRect().top + window.scrollY + offset;

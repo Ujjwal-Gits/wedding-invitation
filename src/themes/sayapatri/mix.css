@@ -1,0 +1,9 @@
+/* Sayapatri's gate and welcome on another theme's page (docs/MIX.md): the doorway is a fixed layer on its own page;
+   in the mix wrapper (itself the fixed layer) it simply fills it. */
+.mx-gate--sayapatri .sp-gate--mx { position: absolute; inset: 0; z-index: auto; }
+.mx-gate--sayapatri .sp-toran, .mx-gate--sayapatri .sp-strands, .mx-gate--sayapatri .sp-strand { will-change: auto; } /* gsap promotes them only while they move */
+.mx-hero--sayapatri .sp-hero { min-height: 100svh; }
+.mx-hero--sayapatri .mx-cue { color: var(--ink-2); font-family: var(--f-body); }
+@media (max-width: 760px) {
+  .mx-hero--sayapatri .sp-hero { min-height: 0; padding-bottom: 88px; }
+}

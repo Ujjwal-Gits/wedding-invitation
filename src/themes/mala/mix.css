@@ -1,0 +1,7 @@
+/* Mala's gate and hero on another theme's page (docs/MIX.md): what mala.css gives its own fixed gate, restated
+   for the mix wrappers (the wrapper is the fixed layer; Mala's paper is painted inside it). */
+.mx-gate--mala .ml-gate--mx { position: absolute; inset: 0; z-index: auto; }
+.mx-gate--mala .ml-arch { will-change: auto; } /* gsap promotes it only while it moves */
+.mx-part.mx-hero--mala { min-height: 100svh; }
+.mx-hero--mala .ml-hero { min-height: 100svh; }
+.mx-hero--mala .mx-cue { color: var(--ink-dim); }

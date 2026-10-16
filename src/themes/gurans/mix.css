@@ -1,0 +1,13 @@
+/* Phoolbari's gate and welcome on another theme's page (docs/MIX.md). Its own gate is a fixed layer that opens with
+   CSS transitions; in the mix wrapper the gsap timeline drives the same moves, so the transitions are switched off. */
+.mx-gate--gurans .pb-gate--mx { position: absolute; inset: 0; z-index: auto; }
+.mx-gate--gurans .pb-gate__curtain, .mx-gate--gurans .pb-gate__bg, .mx-gate--gurans .pb-gate__scene,
+.mx-gate--gurans .pb-gate__board { transition: none; }
+.mx-gate--gurans .pb-gate__curtain { will-change: auto; } /* gsap promotes them only while they move */
+
+.mx-hero--gurans .pb-hero { min-height: 100svh; }
+.mx-hero--gurans .mx-cue { bottom: 8px; color: var(--ink-dim); font-family: var(--f-label); }
+.mx-hero--gurans .mx-cue .l-ne { font-family: var(--f-deva); }
+@media (max-width: 760px) {
+  .mx-hero--gurans .pb-hero { min-height: 0; padding-bottom: 96px; }
+}

@@ -52,14 +52,16 @@
   }
 html:has(body.theme-sayapatri) { background: var(--ivory); }
 .theme-sayapatri :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
-.theme-sayapatri [lang='ne'], .theme-sayapatri .l-ne { font-family: var(--f-deva); }
+/* :where(…) keeps these off another theme's gate or first screen on this page (docs/MIX.md §4), at no specificity */
+.theme-sayapatri [lang='ne']:where(:not(.mx-part:not(.theme-sayapatri) *)), .theme-sayapatri .l-ne:where(:not(.mx-part:not(.theme-sayapatri) *)) { font-family: var(--f-deva); }
 .theme-sayapatri.is-gated #main, .theme-sayapatri.is-gated #finale-root { visibility: visible; }
 .theme-sayapatri.is-gated { overflow: hidden; height: 100svh; }
 .theme-sayapatri.is-gated .hud { opacity: 1; pointer-events: auto; z-index: 70; }
 .theme-sayapatri.is-gated .chapters, .theme-sayapatri.is-opening .chapters { display: none; }
 .theme-sayapatri.is-opening { overflow: hidden; }
 
-.fl { display: block; pointer-events: none; user-select: none; max-width: none; }
+/* `.fl` is also Dhaka's class: kept to this page (same specificity as before); modules use `.sp-fl` */
+:where(.theme-sayapatri) .fl:where(:not(.mx-part:not(.theme-sayapatri) *)), .sp-fl { display: block; pointer-events: none; user-select: none; max-width: none; }
 
 /* ───────── Shared type ───────── */
 .sp-kicker { margin: 0 0 14px; font: 600 12.5px/1.5 var(--f-body); letter-spacing: var(--eyebrow-track); text-transform: uppercase; color: var(--leaf); }
@@ -241,7 +243,7 @@ html:has(body.theme-sayapatri) { background: var(--ivory); }
 .sp-card__sign { margin: 22px 0 0; font: 400 17px/1.6 var(--f-body); }
 .sp-card__sign b { font-weight: 600; }
 
-#main > section, #finale-root > section, #finale-root > footer { position: relative; z-index: 2; }
+:where(body.theme-sayapatri) #main > section, :where(body.theme-sayapatri) #finale-root > section, :where(body.theme-sayapatri) #finale-root > footer { position: relative; z-index: 2; }
 
 /* ───────── HUD on a light page ───────── */
 .theme-sayapatri .hud__btn, .theme-sayapatri .pill { background: rgba(255, 255, 255, 0.94); color: var(--ink); border-color: var(--line); box-shadow: 0 6px 18px -12px rgba(50, 30, 10, 0.45); }

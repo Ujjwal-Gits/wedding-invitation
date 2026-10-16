@@ -15,21 +15,23 @@ import { reducedMotion } from '../../core/smooth.js';
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
 import { downloadIcs, share } from '../../core/calendar.js';
-import { photos, photoUrl } from '../../photos.js';
-import credits from '../../generated/credits.json';
+import { photoUrl } from '../../photos.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
-import GATE from './gate.json';
+import { FLORA, has, bsOf, isUrl, keyOf, aspectOf, frame, watchAspects, flower, names as namesOf, gateHtml, boardPlacer, heroHtml } from './parts.js';
+import { createMix } from '../../core/mix.js';
+import { gsap } from 'gsap';
 
 const { bi, esc, dateOf, mapUrl, neNum } = i18n;
 const config = await loadInvitation();
+// another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'gurans', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion();
 const c = config.couple;
 const events = guestEvents();
-const FLORA = '/themes/gurans/flora/';
 
 // ───────────────────────── Slots ─────────────────────────
 // ?debug&img.<slot>=<slug>&txt.<slot>=<text> previews a studio override without touching config.js.
@@ -43,53 +45,18 @@ if (DEBUG) {
 }
 const S = useSlots(manifest);
 const txt = S.txt;
-const has = (v) => !!(v && (typeof v === 'string' ? v.trim() : (v.en || v.ne || '').trim()));
 
-// B.S. dates from the shared converter (contract §12); an event's own dateBS wins.
-const bsOf = (iso, override) => { try { return i18n.bsDateOf(iso, has(override) ? override : undefined); } catch { return has(override) ? override : null; } };
 // "11:00 AM onwards" for open-ended events (contract §12 / coordinator note).
 const whenOf = (e) => (i18n.timeLabel ? i18n.timeLabel(e) : i18n.timeRange(e.start, e.end));
 
 // ───────────────────────── Photos ─────────────────────────
-const dims = Object.fromEntries(credits.map((k) => [String(k.file || k.slot).replace(/\.(jpe?g|png|webp)$/i, ''), [k.width, k.height]]));
-const isUrl = (s) => typeof s === 'string' && (s.startsWith('/') || s.startsWith('https://'));
 const isLibrary = (ref) => typeof ref === 'string' && !isUrl(ref);
-const keyOf = (ref) => (typeof ref === 'string' ? ref : ref && typeof ref === 'object' ? ref.lg || ref.sm || '' : '');
-const aspectOf = (ref) => {
-  if (typeof ref === 'string' && dims[ref]?.[0]) return dims[ref][0] / dims[ref][1];
-  if (ref && typeof ref === 'object' && ref.w && ref.h) return ref.w / ref.h;
-  return 0;
-};
-const focalOf = (ref) => (typeof ref === 'string' && photos[ref]?.focal) || (ref && typeof ref === 'object' && ref.focal) || [0.5, 0.5];
 const PEOPLE = /^(couple|wedding|mehendi-hands|bride|groom|portrait)/;
 const isCouple = (ref) => !!ref && (typeof ref === 'object' || isUrl(ref) || PEOPLE.test(ref));
 const safeHref = (u) => (/^https:\/\//i.test(String(u || '')) ? String(u) : '');
 const safeColor = (s) => (/^#[0-9a-f]{3,8}$/i.test(String(s)) ? s : null);
 const tel = (p) => String(p).replace(/[^\d+]/g, '');
 
-const img = (ref, alt, sizes, { eager = false } = {}) => {
-  const sm = photoUrl(ref, 'sm');
-  const lg = photoUrl(ref, 'lg');
-  const [fx, fy] = focalOf(ref);
-  return `<img src="${esc(sm)}" ${sm !== lg ? `srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w"` : ''} sizes="${sizes}" alt="${esc(alt || '')}"
-    style="object-position:${(fx * 100).toFixed(1)}% ${(fy * 100).toFixed(1)}%" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" />`;
-};
-/** Floral photo corners: four different arrangements (none mirrors another), each made for its own corner. */
-const CORNERS = { tl: 'corner-a', br: 'corner-b', tr: 'corner-c', bl: 'corner-d' };
-const cornerImg = (k) => `<img class="pb-fr__fl pb-fr__fl--${k}" src="${FLORA}${CORNERS[k]}-sm.webp" srcset="${FLORA}${CORNERS[k]}-sm.webp 1x, ${FLORA}${CORNERS[k]}.webp 2x" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
-/**
- * A framed photograph that keeps the photo's own proportions (nothing cropped).
- * style: mat | floral | print | line | blush; fl: extra flower corners ('tl' | 'tr' | 'br' | 'bl').
- */
-const frame = (ref, alt, sizes, { style = 'mat', cap = '', cls = '', eager = false, fl = [] } = {}) => {
-  if (!ref) return '';
-  const ar = aspectOf(ref);
-  const orient = ar ? (ar >= 1.05 ? 'land' : ar <= 0.95 ? 'port' : 'sq') : 'auto';
-  const corners = style === 'floral' ? ['tl', 'br'] : fl;
-  return `<figure class="pb-fr pb-fr--${style} ${corners.length ? 'pb-fr--fl' : ''} ${cls}" data-orient="${orient}" style="--ar:${ar ? ar.toFixed(4) : 0.75}">
-    <span class="pb-fr__mat"><span class="pb-fr__img">${img(ref, alt, sizes, { eager })}</span>${corners.map(cornerImg).join('')}</span>
-    ${cap ? `<figcaption>${cap}</figcaption>` : ''}</figure>`;
-};
 
 const portraitAlt = Object.fromEntries((c.portraits || []).filter((p) => p?.photo).map((p) => [keyOf(p.photo), p.alt || '']));
 const altFor = (ref, id) => portraitAlt[keyOf(ref)] || ref?.alt || S.alt(id) || `${c.bride.name.en} and ${c.groom.name.en}`;
@@ -142,53 +109,11 @@ const dateParts = (iso) => {
   return { wd: { en: p.weekday, ne: wdNe }, day: { en: p.day, ne: dNe }, my: { en: `${p.month} ${p.year}`, ne: `${mNe} ${yNe}` } };
 };
 
-const names = (cls = '') => `<span class="pb-names ${cls}">
-  <span class="pb-names__one">${bi(c.bride.name)}</span>
-  <span class="pb-names__amp" aria-hidden="true">${bi(T.and)}</span><span class="sr-only">and</span>
-  <span class="pb-names__two">${bi(c.groom.name)}</span></span>`;
-const weddingBS = bsOf(config.weddingDate, config.weddingDateBS);
-// The welcome board is small: the B.S. date without the weekday (the AD line above already carries it).
-const boardBS = (bs) => (bs.short && !has(config.weddingDateBS) ? { en: `${bs.short.en} B.S.`, ne: `वि.सं. ${bs.short.ne}` } : bs);
+const names = (cls = '') => namesOf(c, cls);
 
 // ───────────────────────── The gate ─────────────────────────
 const gate = document.getElementById('gate');
-const crest = txt('gate.crest');
-const pct = (o) => `left:${o.x}%;top:${o.y}%;width:${o.w}%;height:${o.h}%`;
-// Only the visible stage's images load (lazy + display:none), each at the width the stage is drawn.
-const gateStage = (v) => {
-  const g = GATE[v];
-  const p = g.plaque;
-  const o = g.opening;
-  const ar = g.W / g.H;
-  const stageW = `min(100vw, calc((100vh - 12px) * ${ar.toFixed(4)}))`;
-  const set = (name, wPct) => {
-    const lg = Math.round((g.W * wPct) / 100 * g.sc);
-    return `src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp ${Math.round(lg * 0.6)}w, ${FLORA}${name}.webp ${lg}w" sizes="calc(${stageW} * ${(wPct / 100).toFixed(4)})"`;
-  };
-  return `
-  <div class="pb-gate__stage pb-gate__stage--${v}" style="--gar:${ar};--floor:${o.floor};--open:${(o.x1 - o.x0).toFixed(3)};--pw:${p.w}">
-    <img class="pb-gate__curtain pb-gate__curtain--l" ${set(`curtain-l-${v}`, g.curtain_l.w)} alt="" loading="lazy" style="${pct(g.curtain_l)}" />
-    <img class="pb-gate__curtain pb-gate__curtain--r" ${set(`curtain-r-${v}`, g.curtain_r.w)} alt="" loading="lazy" style="${pct(g.curtain_r)}" />
-    <img class="pb-gate__arch" ${set(`gate-${v}`, 100)} alt="" loading="lazy" fetchpriority="high" />
-    <div class="pb-gate__crest" style="left:${p.x}%;top:${p.y}%">
-      <span class="pb-crest" lang="ne">${esc(crest.ne || crest.en)}</span>
-    </div>
-  </div>`;
-};
-gate.innerHTML = `
-  <div class="pb-gate__bg" aria-hidden="true"></div>
-  <div class="pb-gate__scene" aria-hidden="true">${gateStage('wide')}${gateStage('tall')}</div>
-  <div class="pb-gate__board" role="group" aria-labelledby="gate-names">
-    <p class="pb-board__welcome">${bi(txt('gate.welcome'))}</p>
-    <h1 class="pb-board__names" id="gate-names">${names()}</h1>
-    <p class="pb-board__line">${bi(txt('gate.line'))}</p>
-    <p class="pb-board__date">${bi(dateOf(config.weddingDate))}</p>
-    ${weddingBS ? `<p class="pb-board__bs">${bi(boardBS(weddingBS))}</p>` : ''}
-    <div class="pb-board__actions">
-      <button class="pb-btn" type="button" id="enter" disabled>${bi(txt('gate.open'))}</button>
-      <button class="pb-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
-    </div>
-  </div>`;
+gate.innerHTML = gateHtml({ c, config, txt });
 
 // ───────────────────────── Main markup ─────────────────────────
 const programme = events.map((e, i) => {
@@ -238,25 +163,10 @@ const families = `
     <div><dt class="pb-kicker">${bi(txt('couple.groomLabel'))}</dt><dd><b>${bi(c.groom.fullName)}</b>${has(c.groom.parents) ? `<small>${bi(txt('couple.son'))} ${bi(c.groom.parents)}</small>` : ''}${has(c.groom.home) ? `<small>${bi(c.groom.home)}</small>` : ''}</dd></div>
   </dl>`;
 
-const flower = (name, cls, { eager = false } = {}) => `<img class="pb-orn ${cls}" src="${FLORA}${name}-sm.webp" srcset="${FLORA}${name}-sm.webp 1x, ${FLORA}${name}.webp 2x" alt="" aria-hidden="true" ${eager ? '' : 'loading="lazy"'} decoding="async" />`;
 
 const main = document.getElementById('main');
 main.innerHTML = `
-  <section class="pb-hero pb-sec" id="top" aria-labelledby="hero-names">
-    ${flower('swag', 'pb-orn--swag', { eager: true })}
-    <div class="pb-hero__text">
-      <p class="pb-kicker pb-rise">${bi(txt('hero.kicker'))}</p>
-      <h2 class="pb-hero__names pb-rise" id="hero-names">${names()}</h2>
-      <p class="pb-hero__line pb-rise">${bi(txt('hero.line'))}</p>
-      <div class="pb-hero__date pb-rise">
-        <p class="pb-hero__ad">${bi(dateOf(config.weddingDate))}</p>
-        ${weddingBS ? `<p class="pb-hero__bs">${bi(weddingBS)}</p>` : ''}
-        <p class="pb-hero__city">${bi(config.city)}</p>
-      </div>
-      <a class="pb-link pb-rise" href="#programme">${bi({ en: 'See the programme', ne: 'कार्यक्रम हेर्नुहोस्' })}<span aria-hidden="true"> ↓</span></a>
-    </div>
-    <div class="pb-hero__photo pb-rise">${frame(heroRef, heroRef ? altFor(heroRef, 'hero.photo') : '', '(max-width: 760px) 86vw, 40vw', { style: 'floral', eager: true })}</div>
-  </section>
+  ${heroHtml({ c, config, txt, heroRef, heroAlt: heroRef ? altFor(heroRef, 'hero.photo') : '' })}
 
   <section class="pb-couple pb-sec pb-sec--blush" id="couple" aria-labelledby="couple-title">
     <div class="pb-couple__photos">
@@ -391,6 +301,10 @@ main.innerHTML = `
     <button type="button" class="pb-lb__btn pb-lb__next" data-lb="next"><span aria-hidden="true">→</span><span class="sr-only">Next</span></button>
   </div>`;
 
+// another theme's first screen replaces the welcome; another theme's gate replaces the flower arch (docs/MIX.md)
+if (mix.hero) mix.mountHero(document.getElementById('top'));
+if (mix.gate) gate.remove();
+
 // ───────────────────────── Album: balanced columns, varied frames ─────────────────────────
 const grid = document.getElementById('album-grid');
 const STYLES = ['mat', 'floral', 'print', 'line', 'blush', 'mat', 'print', 'floral'];
@@ -414,19 +328,6 @@ const layoutAlbum = () => {
   observe(grid);
 };
 
-/** Unknown aspect (uploads without w/h): measure once loaded. */
-function watchAspects(root = document) {
-  root.querySelectorAll('.pb-fr[data-orient="auto"] .pb-fr__img img').forEach((im) => {
-    const set = () => {
-      const ar = im.naturalWidth / im.naturalHeight;
-      if (!ar) return;
-      const p = im.closest('.pb-fr');
-      p.style.setProperty('--ar', ar.toFixed(4));
-      p.dataset.orient = ar >= 1.05 ? 'land' : ar <= 0.95 ? 'port' : 'sq';
-    };
-    if (im.complete && im.naturalWidth) set(); else im.addEventListener('load', set, { once: true });
-  });
-}
 
 // Quiet reveals (opacity + transform only), never on body text.
 const io = 'IntersectionObserver' in window && !reduced
@@ -515,7 +416,7 @@ watchAspects();
 // In-page links glide (unless reduced motion); the page itself keeps native scrolling.
 main.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="#"]');
-  const t = a && document.querySelector(a.getAttribute('href'));
+  const t = a && !a.classList.contains('mx-cue') && document.querySelector(a.getAttribute('href'));
   if (!t) return;
   e.preventDefault();
   t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -526,53 +427,64 @@ window.addEventListener('resize', () => { if (window.innerWidth !== rw) { rw = w
 // ───────────────────────── Opening the gate ─────────────────────────
 const enterBtn = document.getElementById('enter');
 const quietBtn = document.getElementById('enter-quiet');
-const visibleStage = () => [...gate.querySelectorAll('.pb-gate__stage')].find((s) => s.offsetParent !== null) || gate;
 // The welcome board stands inside the arch opening; on short landscape screens it stands beside the arch.
-const board = gate.querySelector('.pb-gate__board');
-const placeBoard = () => {
-  if (!board.isConnected) return;
-  const side = window.innerWidth > window.innerHeight * 1.25 && window.innerHeight < 600;
-  gate.classList.toggle('is-side', side);
-  const home = side ? gate : visibleStage();
-  if (board.parentNode !== home) home.append(board);
-};
-placeBoard();
-window.addEventListener('resize', placeBoard);
-
-const gateImgs = () => [...visibleStage().querySelectorAll('img')];
-const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
-Promise.race([Promise.all(gateImgs().map((im) => im.decode?.().catch(() => {}))), timeout(8000)]).finally(() => {
-  enterBtn.disabled = false;
-  quietBtn.disabled = false;
-  gate.classList.add('is-ready');
-});
+const { place: placeBoard, visibleStage } = boardPlacer(gate);
+if (!mix.gate) {
+  placeBoard();
+  window.addEventListener('resize', placeBoard);
+  const gateImgs = () => [...visibleStage().querySelectorAll('img')];
+  const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
+  Promise.race([Promise.all(gateImgs().map((im) => im.decode?.().catch(() => {}))), timeout(8000)]).finally(() => {
+    enterBtn.disabled = false;
+    quietBtn.disabled = false;
+    gate.classList.add('is-ready');
+  });
+}
 
 let opened = false;
-function open(withMusic, { instant = false } = {}) {
-  if (opened) return;
+/** Into the page: music from the guest's tap, back to the top. */
+function startOpen(withMusic) {
+  if (opened) return false;
   opened = true;
   player.unlock();
   player.start(withMusic);
   window.scrollTo(0, 0);
-  const done = () => {
-    gate.remove();
-    document.body.classList.remove('is-gated');
-    document.getElementById('top')?.focus?.({ preventScroll: true });
-    observe();
-  };
+  return true;
+}
+/** The gate is gone: the page is unlocked and its quiet reveals begin (and another theme's first screen wakes). */
+function finishOpen() {
+  gate.remove();
+  document.body.classList.remove('is-gated');
+  document.getElementById('top')?.focus?.({ preventScroll: true });
+  observe();
+  mix.afterOpen?.();
+}
+// another theme's gate covers the page instead of the flower arch (its exit shows the page beneath)
+const mixGate = mix.gate ? mix.mountGate({
+  start: (withMusic) => { startOpen(withMusic); document.body.classList.remove('is-gated'); },
+  intro: (tl, at) => { tl.call(observe, null, at); }, // the welcome rises in, as after the arch
+  finish: finishOpen,
+}) : null;
+function open(withMusic, { instant = false } = {}) {
+  if (mixGate) { if (instant) mixGate.finish(); else mixGate.open(withMusic); return; }
+  if (!startOpen(withMusic)) return;
+  // another theme's first screen brings its own entrance, timed to the arch's
+  const heroTl = mix.heroInst ? gsap.timeline() : null;
+  if (heroTl) mix.heroEnter(heroTl, reduced || instant ? 0 : 0.9);
+  if (instant) heroTl?.progress(1);
   if (reduced || instant) {
     gate.classList.add('is-gone');
-    setTimeout(done, instant ? 0 : 260);
+    setTimeout(finishOpen, instant ? 0 : 260);
     return;
   }
   // The signature motion: the board lifts away, the ladis part, and we step through.
   gate.classList.add('is-opening');
   setTimeout(() => document.body.classList.remove('is-gated'), 900);
   setTimeout(() => { observe(); }, 1100);
-  setTimeout(done, 2300);
+  setTimeout(finishOpen, 2300);
 }
-enterBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+enterBtn?.addEventListener('click', () => open(true));
+quietBtn?.addEventListener('click', () => open(false));
 
 // ───────────────────────── Debug hook (screenshots) ─────────────────────────
 if (DEBUG) {

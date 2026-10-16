@@ -41,11 +41,13 @@
 }
 .theme-mala ::selection { background: rgba(229, 133, 15, 0.28); }
 .theme-mala :focus-visible { outline: 2px solid var(--sindoor); outline-offset: 3px; }
-.theme-mala [lang='ne'], .theme-mala .l-ne { font-family: var(--f-deva); }
-.theme-mala html, html:has(.theme-mala) { background: var(--paper); }
+/* :where(…) keeps these off another theme's gate or first screen on this page (docs/MIX.md §4), at no specificity */
+.theme-mala [lang='ne']:where(:not(.mx-part:not(.theme-mala) *)), .theme-mala .l-ne:where(:not(.mx-part:not(.theme-mala) *)) { font-family: var(--f-deva); }
+html:has(> body.theme-mala) { background: var(--paper); }
 
 .ml-gl { z-index: 3; }
-.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* kept to Mala's page and its parts, at the specificity it always had */
+:where(.theme-mala) .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ───────── Type ───────── */
 .ml-kicker, .ml-label {

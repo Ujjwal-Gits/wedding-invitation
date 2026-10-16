@@ -1,6 +1,7 @@
 /* Jhyal (झ्याल) · the carved Newari window.
-   Ivory lokta paper, warm sal-wood browns, sindoor red as the one accent (used small), a little antique gold. */
-body.theme-jhyal {
+   Ivory lokta paper, warm sal-wood browns, sindoor red as the one accent (used small), a little antique gold.
+   The tokens also sit on its gate or first screen on another theme's page (.mx-part.theme-jhyal, docs/MIX.md §4). */
+body.theme-jhyal, .mx-part.theme-jhyal {
   --jh-paper: #F7F1E5;
   --jh-paper-2: #F1E8D6;
   --jh-sheet: #FCF8EF;
@@ -49,10 +50,10 @@ body.theme-jhyal {
   font-synthesis: none;
   font-variant-numeric: lining-nums;
 }
-html[data-lang='ne'] body.theme-jhyal { font-size: 18px; line-height: 1.8; }
+html[data-lang='ne'] body.theme-jhyal, html[data-lang='ne'] .mx-part.theme-jhyal { font-size: 18px; line-height: 1.8; }
 body.theme-jhyal ::selection { background: var(--jh-sindoor); color: #FFF6EA; }
 body.jh-locked { overflow: hidden; height: 100svh; }
-body.jh-locked main > section:not(.jh-hero), body.jh-locked main > footer, body.jh-locked .jh-sprig { visibility: hidden; }
+body.jh-locked main > section:not(.jh-hero):not(.mx-hero), body.jh-locked main > footer, body.jh-locked .jh-sprig { visibility: hidden; }
 
 /* HUD: carved-wood pills with ivory type */
 .theme-jhyal .hud__btn, .theme-jhyal .pill { background: rgba(62, 36, 20, 0.9); color: #FBF4E6; border-color: rgba(184, 146, 74, 0.6); }

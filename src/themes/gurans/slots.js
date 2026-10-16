@@ -71,4 +71,11 @@ export default {
     '--sage-deep': { label: 'Deep sage', default: '#43574A' },
     '--paper': { label: 'Paper', default: '#FBF7F3' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the arch clears onto whatever first screen is beneath it
+    gateUses: { texts: ['gate.crest', 'gate.welcome', 'gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--rose', '--gold-text'] },
+    heroUses: { texts: ['hero.kicker', 'hero.line'], images: ['hero.photo'], colors: ['--gold-text', '--sage-deep', '--paper'] },
+  },
 };

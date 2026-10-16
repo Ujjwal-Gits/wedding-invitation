@@ -16,11 +16,11 @@ import { createSmooth, reducedMotion, isMobile, getLenis } from '../../core/smoo
 import { initRsvp } from '../../core/rsvp.js';
 import { guestEvents } from '../../core/finale.js';
 import { downloadIcs, share } from '../../core/calendar.js';
-import { photos, photoUrl } from '../../photos.js';
-import credits from '../../generated/credits.json';
+import { photoUrl } from '../../photos.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import { GarlandScene, runScenes, preload } from './garland.js';
+import { aspectOf, keyOf, isUrl, img, plate, kalash, corner, drape, local, hangStrings, buildGate as buildGateIn, gateHtml, heroHtml, heroEnter } from './parts.js';
 import manifest from './slots.js';
 import { createMix } from '../../core/mix.js';
 
@@ -48,16 +48,6 @@ if (DEBUG) {
 const S = useSlots(manifest);
 const txt = S.txt;
 
-const dims = Object.fromEntries(credits.map((k) => [String(k.file || k.slot).replace(/\.(jpe?g|png|webp)$/i, ''), [k.width, k.height]]));
-const isUrl = (s) => typeof s === 'string' && (s.startsWith('/') || s.startsWith('https://'));
-const isLibrary = (ref) => typeof ref === 'string' && !isUrl(ref);
-const keyOf = (ref) => (typeof ref === 'string' ? ref : ref && typeof ref === 'object' ? ref.lg || ref.sm || '' : '');
-const aspectOf = (ref) => {
-  if (typeof ref === 'string' && dims[ref]?.[0]) return dims[ref][0] / dims[ref][1];
-  if (ref && typeof ref === 'object' && ref.w && ref.h) return ref.w / ref.h;
-  return 0;
-};
-const focalOf = (ref) => (typeof ref === 'string' && photos[ref]?.focal) || (ref && typeof ref === 'object' && ref.focal) || [0.5, 0.5];
 const safeHref = (u) => (/^https:\/\//i.test(String(u || '')) ? String(u) : '');
 const safeColor = (s) => (/^#[0-9a-f]{3,8}$/i.test(String(s)) ? s : null);
 const tel = (p) => String(p).replace(/[^\d+]/g, '');
@@ -67,17 +57,6 @@ const isCouple = (ref) => !!ref && (typeof ref === 'object' || isUrl(ref) || PEO
 const portraitAlt = Object.fromEntries((c.portraits || []).filter((p) => p?.photo).map((p) => [keyOf(p.photo), p.alt || '']));
 const altFor = (ref, id) => portraitAlt[keyOf(ref)] || S.alt(id) || `${c.bride.name.en} and ${c.groom.name.en}`;
 
-/** <img> with both sizes and the focal point; never cropped by its frame (frames take the photo's ratio). */
-const img = (ref, alt, sizes, { eager = false } = {}) => {
-  const sm = photoUrl(ref, 'sm'); const lg = photoUrl(ref, 'lg');
-  const [fx, fy] = focalOf(ref);
-  return `<img src="${esc(sm)}" ${sm !== lg ? `srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w"` : ''} sizes="${sizes}" alt="${esc(alt || '')}"
-    style="object-position:${(fx * 100).toFixed(1)}% ${(fy * 100).toFixed(1)}%" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" />`;
-};
-const plate = (ref, alt, sizes, cls = '', opts) => {
-  const ar = aspectOf(ref);
-  return `<span class="ml-plate ${cls}" data-ar="${ar ? '1' : 'auto'}" style="--ar:${(ar || 0.75).toFixed(4)}">${img(ref, alt, sizes, opts)}</span>`;
-};
 
 // ───────────────────────── Which photo goes where ─────────────────────────
 const used = new Set();
@@ -140,29 +119,7 @@ const gate = document.getElementById('gate');
 // net with a cluster of marigolds, roses and hibiscus at every gather and a posy at the foot of every swag,
 // full marigold strings hung from it, brass kalash arrangements standing in a bed of fresh flowers, and photos
 // framed with full corners of fresh roses and marigolds. Text never sits on any of it.
-const DECOR = '/themes/mala/decor/';
-const drape = (cls) => `<picture class="${cls}"><source media="(max-width: 760px)" srcset="${DECOR}drape-sm.webp" /><img src="${DECOR}drape.webp" alt="" decoding="async" /></picture>`;
-const DIM = { 'kalash-a': [760, 926], 'kalash-b': [760, 915], 'corner-tl': [720, 611], 'corner-br': [720, 610], 'corner-tr': [720, 610], 'corner-bl': [720, 612] };
-const wh = (n) => `width="${DIM[n][0]}" height="${DIM[n][1]}"`;
-const kalash = (v, cls, lazy = true) => `<img class="ml-kalash ${cls}" ${wh(`kalash-${v}`)} src="${DECOR}kalash-${v}.webp" srcset="${DECOR}kalash-${v}-sm.webp 380w, ${DECOR}kalash-${v}.webp 760w" sizes="(max-width: 760px) 30vw, 300px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
-const corner = (k, lazy = true) => `<img class="ml-corner ml-corner--${k}" ${wh(`corner-${k}`)} src="${DECOR}corner-${k}.webp" srcset="${DECOR}corner-${k}-sm.webp 400w, ${DECOR}corner-${k}.webp 720w" sizes="(max-width: 760px) 40vw, 260px" alt="" aria-hidden="true" ${lazy ? 'loading="lazy" ' : ''}decoding="async" />`;
-gate.innerHTML = `
-  <div class="ml-arch" id="gate-arch" aria-hidden="true">
-    <div class="ml-arch__strands" id="gate-strands"></div>
-    ${drape('ml-drape ml-arch__drape')}
-    ${kalash('a', 'ml-arch__kl', false)}
-    ${kalash('b', 'ml-arch__kr', false)}
-  </div>
-  <div class="ml-gate__inner">
-    <p class="ml-kicker">${bi(txt('gate.from'))}</p>
-    <p class="ml-gate__names"><span class="ml-gate__n">${bi(c.bride.name)}</span><span class="ml-amp" aria-hidden="true">&amp;</span><span class="sr-only">${bi(T.and)}</span><span class="ml-gate__n">${bi(c.groom.name)}</span></p>
-    <p class="ml-gate__date">${bi(dateOf(config.weddingDate))}</p>
-    <p class="ml-gate__hosts">${bi(config.hosts)}</p>
-    <div class="ml-gate__actions">
-      <button class="ml-btn" type="button" id="enter" disabled>${bi(txt('gate.open'))}</button>
-      <button class="ml-quiet" type="button" id="enter-quiet" disabled>${bi(txt('gate.quiet'))}</button>
-    </div>
-  </div>`;
+gate.innerHTML = gateHtml({ c, config, txt });
 
 // ───────────────────────── Main markup ─────────────────────────
 const eventRows = events.map((e, i) => {
@@ -195,26 +152,7 @@ const eventRows = events.map((e, i) => {
 const mainEvent = events.find((e) => e.id === 'wedding') || events[0];
 const main = document.getElementById('main');
 main.innerHTML = `
-  <section class="ml-hero" id="top" aria-labelledby="hero-names">
-    <div class="ml-hero__grid">
-      <div class="ml-hero__text">
-        <p class="ml-kicker ml-rv">${bi(txt('hero.kicker'))}</p>
-        <h1 class="ml-names ml-rv" id="hero-names">
-          <span class="ml-names__one">${bi(c.bride.name)}</span>
-          <span class="ml-names__amp" aria-hidden="true">&amp;</span><span class="sr-only">${bi(T.and)}</span>
-          <span class="ml-names__two">${bi(c.groom.name)}</span>
-        </h1>
-        <p class="ml-hero__line ml-rv">${bi(txt('hero.line'))}</p>
-        <p class="ml-hero__date ml-rv"><b>${bi(dateOf(config.weddingDate))}</b><span>${bi(bsDateOf(config.weddingDate, config.weddingDateBS?.en ? config.weddingDateBS : null))}</span><span>${bi(config.city)}</span></p>
-      </div>
-      <figure class="ml-hero__fig" id="hero-fig" style="--ar:${(aspectOf(heroRef) || 0.75).toFixed(4)}">
-        ${plate(heroRef, altFor(heroRef, 'hero.photo'), '(max-width: 760px) 74vw, 34vw', 'ml-hero__plate', { eager: true })}
-        ${corner('tl', false)}
-        ${corner('br', false)}
-      </figure>
-    </div>
-    <span class="ml-cue" aria-hidden="true">${bi(T.scroll)}<i></i></span>
-  </section>
+  ${heroHtml({ c, config, txt, heroRef, heroAlt: altFor(heroRef, 'hero.photo') })}
 
   <section class="ml-fam" id="families" aria-labelledby="fam-title">
     <h2 class="ml-h2 ml-in" id="fam-title">${bi(txt('intro.line'))}</h2>
@@ -483,74 +421,20 @@ initLightbox();
 watchAspects();
 
 // ───────────────────────── Garlands ─────────────────────────
-const local = (el, host) => {
-  const a = el.getBoundingClientRect(); const b = host.getBoundingClientRect();
-  return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height, cx: a.left - b.left + a.width / 2 };
-};
 const scenes = [];
-const gateStrands = gate.querySelector('#gate-strands'); // (still found when another theme's gate replaced Mala's)
+// another theme's gate replaced Mala's: no strands to hang (and no WebGL context spent on them)
+const gateStrands = mix.gate ? null : gate.querySelector('#gate-strands');
 const stageSet = document.getElementById('stage-set');
 const swayStage = document.getElementById('sway-stage');
 const lineStage = document.getElementById('line-stage');
-const gateScene = new GarlandScene(gateStrands, { reduced, shadow: { x: 4, y: 9, opacity: 0.18 } });
+const gateScene = gateStrands ? new GarlandScene(gateStrands, { reduced, shadow: { x: 4, y: 9, opacity: 0.18 } }) : null;
 const stageScene = new GarlandScene(stageSet, { reduced, shadow: { x: 4, y: 9, opacity: 0.18 } });
 const swayScene = new GarlandScene(swayStage, { reduced });
 const lineScene = lineStage ? new GarlandScene(lineStage, { reduced, bleed: 0 }) : null;
-scenes.push(gateScene, stageScene, swayScene); if (lineScene) scenes.push(lineScene);
+if (gateScene) scenes.push(gateScene);
+scenes.push(stageScene, swayScene); if (lineScene) scenes.push(lineScene);
 
-/** Marigold strings hung from the valance, each finished with one small marigold. They hang at the
- *  sides and under the rosettes, and are cut short wherever they would reach text, a photo or a kalash. */
-const box = (r, pad = 0) => ({ l: r.x - pad, r: r.x + r.w + pad, t: r.y - pad, b: r.y + r.h + pad });
-function hangStrings(scene, host, drapeImg, obstacles) {
-  scene.clear(); scene.resize();
-  const d = local(drapeImg, host);
-  if (!d.w) return;
-  const small = /drape-sm/.test(drapeImg.currentSrc || '') || d.w < 761;
-  const n = small ? 3 : 5;
-  const W = d.w; const H = scene.h;
-  const jy = d.y + W * (small ? 0.034 : 0.021);
-  const by = d.y + W * (small ? 0.03 : 0.018);
-  const rw = small ? 16 : Math.max(18, Math.min(26, W / 80));
-  const drop = rw * 1.75;
-  const pad = small ? 10 : 30;
-  const tex = ['rope-alt2', 'rope-orange', 'rope-alt'];
-  const plan = [];
-  const side = small ? [[0.026, 0.52], [0.062, 0.42], [0.098, 0.34]] : [[0.012, 0.52], [0.03, 0.44], [0.048, 0.37], [0.066, 0.3]];
-  side.forEach(([f, len], i) => {
-    plan.push([d.x + W * f, by, H * len, tex[i % 3]]);
-    plan.push([d.x + W * (1 - f), by, H * len * 0.95, tex[(i + 1) % 3]]);
-  });
-  for (let k = 1; k < n; k++) plan.push([d.x + (W * k) / n, jy, H * (k === 1 || k === n - 1 ? 0.3 : 0.22), tex[(k + 2) % 3]]);
-  // a short string from the posy at the foot of every swag (dropped wherever it would only be a stub)
-  const fy = d.y + W * (small ? 0.205 : 0.092);
-  for (let k = 0; k < n; k++) plan.push([d.x + (W * (k + 0.5)) / n, fy, H * (k === 0 || k === n - 1 ? 0.24 : 0.16), tex[k % 3]]);
-  const obs = obstacles.filter(Boolean).map((r) => box(r, pad));
-  plan.forEach(([x, y0, len, t], i) => {
-    let end = y0 + len;
-    for (const o of obs) {
-      if (x + rw / 2 > o.l && x - rw / 2 < o.r && end + drop > o.t && y0 < o.b) end = Math.min(end, o.t - drop);
-    }
-    // a string must show a real length below the valance, never just a stub with a flower
-    if (end < d.y + d.h + (small ? 44 : 70)) return;
-    scene.add({
-      tex: t, width: rw, length: end - y0, z: 2 + (i % 2), stiff: 0.5, vOffset: i * 0.37,
-      pins: [{ i: 0, at: () => [x, y0] }],
-      ornaments: [{ tex: 'drop', f: 1, w: drop * 1.36, mode: 'hang', overlap: drop * 1.36 * 0.125 + rw * 0.3 }],
-    });
-  });
-  scene.settle(360);
-}
-function buildGate() {
-  if (!gateStrands.isConnected) return;
-  const inner = [...gate.querySelectorAll('.ml-gate__inner > *')].map((el) => local(el, gateStrands)).filter((r) => r.w);
-  const text = inner.length ? (() => {
-    const l = Math.min(...inner.map((r) => r.x)); const t = Math.min(...inner.map((r) => r.y));
-    const r = Math.max(...inner.map((q) => q.x + q.w)); const b = Math.max(...inner.map((q) => q.y + q.h));
-    return { x: l, y: t, w: r - l, h: b - t };
-  })() : null;
-  const kal = [...gate.querySelectorAll('.ml-kalash')].map((el) => local(el, gateStrands));
-  hangStrings(gateScene, gateStrands, gate.querySelector('.ml-arch__drape img'), [text, ...kal]);
-}
+function buildGate() { if (gateScene) buildGateIn(gateScene, gate, gateStrands); }
 function buildStage() {
   const fig = document.getElementById('stage-fig');
   const obs = [fig, ...fig.querySelectorAll('.ml-corner'), ...stageSet.querySelectorAll('.ml-kalash')].filter(Boolean).map((el) => local(el, stageSet));
@@ -701,14 +585,15 @@ function startOpen(withMusic) {
 /** The hero settles in from `at` (another theme's hero brings its own entrance). */
 function heroIntro(tl, at) {
   if (mix.heroInst) { mix.heroEnter(tl, at); return; }
-  tl.fromTo('.ml-hero__grid', { scale: 0.95 }, { scale: 1, duration: 1.5, ease: 'power2.out', clearProps: 'transform' }, at)
-    .fromTo('.ml-hero .ml-rv', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 }, at + 0.55);
+  heroEnter(tl, at);
 }
-const mixGate = mix.gate ? mix.mountGate({ start: startOpen, intro: heroIntro }) : null;
+// a borrowed first screen has settled (and made its own ScrollTriggers): re-measure Mala's pinned Swayambar after it
+const afterHero = () => { if (mix.heroInst) requestAnimationFrame(() => ScrollTrigger.refresh()); };
+const mixGate = mix.gate ? mix.mountGate({ start: startOpen, intro: heroIntro, finish: afterHero }) : null;
 function open(withMusic) {
   if (mixGate) { mixGate.open(withMusic); return; }
   if (!startOpen(withMusic)) return;
-  const done = () => { gate.remove(); gateScene.active = false; mix.afterOpen?.(); };
+  const done = () => { gate.remove(); if (gateScene) gateScene.active = false; mix.afterOpen?.(); afterHero(); };
   if (reduced) { gsap.to(gate, { opacity: 0, duration: 0.4, onComplete: done }); return; }
   // The entrance: the camera walks forward through the floral arch into the page.
   gate.classList.add('is-entering');
@@ -734,7 +619,7 @@ runScenes(scenes, gsap, {
 });
 // The gate's strands hang and breathe while the guest decides to come in.
 const gateDrape = document.querySelector('.ml-arch__drape img');
-const initGate = () => { buildGate(); gateScene.forceRender = true; };
+const initGate = () => { if (!gateScene) return; buildGate(); gateScene.forceRender = true; };
 if (!gateDrape) { /* another theme's gate */ } else if (gateDrape.complete) requestAnimationFrame(initGate); else gateDrape.addEventListener('load', initGate, { once: true });
 // Fonts and the kalash images change the measured boxes; rebuild once they are in.
 Promise.all([document.fonts?.ready, ...[...gate.querySelectorAll('.ml-kalash')].map((im) => im.decode?.().catch(() => {}))]).then(() => { if (!opened) initGate(); });

@@ -11,14 +11,15 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { loadInvitation } from '../../core/data.js';
-import { photoUrl, photos } from '../../photos.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { pic, fl, namesHtml, bsLine, weddingDayOf, gateHtml, gateArrive, gateLift, heroHtml } from './parts.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger, CustomEase);
 // One custom curve for the whole page: a slow start, a long soft landing.
@@ -27,24 +28,8 @@ CustomEase.create('spOut', '0.2,0.7,0.2,1');
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
-const FLORA = '/themes/sayapatri/flora/';
 
 // ───────────────────────── helpers ─────────────────────────
-const focalOf = (ref) => {
-  const f = (typeof ref === 'string' && photos[ref]?.focal) || (ref && typeof ref === 'object' && Array.isArray(ref.focal) && ref.focal) || [0.5, 0.5];
-  const n = (v) => Math.min(100, Math.max(0, Number(v) * 100 || 50)).toFixed(1);
-  return `${n(f[0])}% ${n(f[1])}%`;
-};
-/** Responsive <img> for any photo reference. Known pixel size is passed on so layout never jumps. */
-const pic = (ref, alt = '', sizes = '50vw', extra = '') => {
-  const sm = photoUrl(ref, 'sm');
-  const lg = photoUrl(ref, 'lg');
-  const set = sm && lg && sm !== lg ? ` srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w" sizes="${esc(sizes)}"` : '';
-  const wh = ref && typeof ref === 'object' && ref.w && ref.h ? ` width="${Number(ref.w)}" height="${Number(ref.h)}"` : '';
-  return `<img src="${esc(sm || lg)}"${set}${wh} alt="${esc(alt)}" style="object-position:${focalOf(ref)}" decoding="async" ${extra} />`;
-};
-/** Decorative floral layer (real marigolds and mango leaves, cut out, transparent WebP). */
-const fl = (name, cls, extra = '') => `<img class="fl ${cls}" src="${FLORA}${name}.webp" alt="" aria-hidden="true" decoding="async" ${extra} />`;
 
 const TZ = 'Asia/Kathmandu';
 /** Pieces of the AD date for the programme's date column. */
@@ -64,6 +49,8 @@ const ratioOf = (img) => (img.naturalWidth ? img.naturalWidth / img.naturalHeigh
 
 async function main() {
   const config = await loadInvitation();
+  // another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+  const mix = await createMix({ host: 'sayapatri', manifest, config });
   if (DEBUG && params.get('slots')) {
     try { config.themeContent = { ...(config.themeContent || {}), sayapatri: JSON.parse(params.get('slots')) }; } catch (err) { console.warn('bad ?slots JSON', err); }
   }
@@ -95,64 +82,16 @@ async function main() {
     if (ref) used.add(keyOf(ref));
     return ref;
   };
-  const bs = (e) => {
-    const b = bsDateOf(e.start, e.dateBS);
-    return e.dateBS && (e.dateBS.en || e.dateBS.ne) ? { en: e.dateBS.en || e.dateBS.ne, ne: e.dateBS.ne || e.dateBS.en } : { en: `${b.short.en} B.S.`, ne: `वि.सं. ${b.short.ne}` };
-  };
-  const names = (tag = 'span') => `
-    <${tag} class="sp-names__a">${bi(bride.name)}</${tag}>
-    <span class="sp-names__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>
-    <${tag} class="sp-names__b">${bi(groom.name)}</${tag}>`;
-  const weddingDay = { start: config.weddingDate, dateBS: events.find((e) => e.id === 'wedding')?.dateBS };
+  const bs = bsLine;
+  const names = (tag = 'span') => namesHtml(c, tag);
+  const weddingDay = weddingDayOf(config, events);
 
   // ───────────────────────── gate: the marigold doorway ─────────────────────────
-  // Strands are listed outer → inner; lengths come from the art itself, so each side differs a little.
-  const strands = (side, list) => `<div class="sp-strands sp-strands--${side}" aria-hidden="true">${list.map((n, i) => fl(`strand-${n}`, `sp-strand sp-strand--${i}`)).join('')}</div>`;
-  const gate = `
-  <div class="sp-gate" id="gate">
-    <div class="sp-door" aria-hidden="true">
-      <span class="sp-door__frame"></span>
-      ${strands('l', [1, 2, 3])}
-      ${strands('r', [4, 5, 6])}
-      <span class="sp-door__lintel"></span>
-      <picture class="sp-toran">
-        <source media="(max-width: 760px)" srcset="${FLORA}toran-sm.webp" />
-        <img src="${FLORA}toran-lg.webp" alt="" decoding="async" fetchpriority="high" />
-      </picture>
-    </div>
-    <div class="sp-gate__card"><div class="sp-gate__panel">
-      <p class="sp-kicker">${bi(txt('gate.kicker'))}</p>
-      <p class="sp-names sp-names--gate">${names()}</p>
-      <p class="sp-gate__date">${bi(dateOf(config.weddingDate))}<span>${bi(bs(weddingDay))}</span></p>
-      <p class="sp-gate__line">${bi(txt('gate.line'))}</p>
-      <p class="sp-gate__guest" id="gate-guest" hidden></p>
-      <div class="sp-gate__choices">
-        <button type="button" class="sp-btn" id="enter-music">${bi(txt('gate.open'))}</button>
-        <button type="button" class="sp-quiet" id="enter-quiet">${bi(txt('gate.quiet'))}</button>
-      </div>
-    </div></div>
-  </div>`;
+  const gate = gateHtml({ c, config, txt, weddingDay });
 
   // ───────────────────────── welcome: names + one feature photo ─────────────────────────
   const heroRef = slot('hero.photo');
-  const hero = `
-  <section class="sp-hero" id="welcome" aria-labelledby="hero-names">
-    <div class="sp-hero__text">
-      <p class="sp-kicker" data-in>${bi(txt('hero.kicker'))}</p>
-      <h1 class="sp-names" id="hero-names" tabindex="-1" data-in>${names()}</h1>
-      <p class="sp-hero__date" data-in>
-        <span class="sp-hero__ad">${bi(dateOf(config.weddingDate))}</span>
-        <span class="sp-hero__bs">${bi(bs(weddingDay))}</span>
-        <span class="sp-hero__city">${bi(config.city)}</span>
-      </p>
-      <p class="sp-hero__line" data-in>${bi(txt('hero.line'))}</p>
-    </div>
-    ${heroRef ? `
-    <figure class="sp-feature" data-in>
-      <span class="sp-feature__frame">${pic(heroRef, altOf('hero.photo', heroRef), '(max-width: 760px) 92vw, 44vw', 'fetchpriority="high"')}</span>
-      ${fl('cluster', 'sp-feature__cluster')}
-    </figure>` : ''}
-  </section>`;
+  const hero = heroHtml({ c, config, txt, weddingDay, heroRef, heroAlt: heroRef ? altOf('hero.photo', heroRef) : '' });
 
   const divider = (cls = '') => `<div class="sp-divider ${cls}" aria-hidden="true">${fl('swag', 'sp-divider__swag', 'loading="lazy"')}</div>`;
 
@@ -246,10 +185,12 @@ async function main() {
   const closing = slot('closing.photo');
 
   document.getElementById('main').innerHTML = hero + divider() + pair + bandHtml + trioHtml + prog + cardDialog;
-  document.body.insertAdjacentHTML('afterbegin', gate);
+  // another theme's gate covers the page instead of the doorway (docs/MIX.md); its first screen replaces the welcome
+  if (!mix.gate) document.body.insertAdjacentHTML('afterbegin', gate);
+  if (mix.hero) mix.mountHero(document.getElementById('welcome'));
 
   const to = params.get('to');
-  if (to) {
+  if (to && !mix.gate) {
     const el = document.getElementById('gate-guest');
     el.replaceChildren(...biNodes(`Dear ${to.slice(0, 60)},`, `आदरणीय ${to.slice(0, 60)},`));
     el.hidden = false;
@@ -309,7 +250,7 @@ async function main() {
   }
 
   const CH = [
-    { id: 'welcome', name: txt('nav.welcome') },
+    { id: mix.heroInst ? 'top' : 'welcome', name: txt('nav.welcome') },
     { id: 'couple', name: txt('nav.couple') },
     { id: 'programme', name: txt('nav.prog') },
     { id: 'gallery', name: txt('nav.gallery') },
@@ -402,12 +343,8 @@ async function main() {
   lenis?.stop();
   if (reduced) document.body.classList.add('is-still');
 
-  if (!reduced) {
-    // Arrival: the toran settles, the strings drop into place, the card appears. Quiet.
-    gsap.from('.sp-toran', { yPercent: -40, autoAlpha: 0, duration: 0.7, ease: 'spOut' });
-    gsap.from('.sp-strand', { yPercent: -14, autoAlpha: 0, duration: 0.8, ease: 'spOut', stagger: 0.04, delay: 0.1 });
-    gsap.from('.sp-gate__card', { y: 14, autoAlpha: 0, duration: 0.7, ease: 'spOut', delay: 0.3 });
-  }
+  // Arrival: the toran settles, the strings drop into place, the card appears. Quiet.
+  if (!reduced && !mix.gate) gateArrive(gsap);
 
   const buildMotion = () => {
     if (reduced) return;
@@ -443,44 +380,62 @@ async function main() {
   });
 
   let opened = false;
-  const gateEl = document.getElementById('gate');
-  const open = (withMusic) => {
-    if (opened) return;
+  const gateEl = mix.gate ? null : document.getElementById('gate');
+  /** Inside the guest's tap: the bell, the music, back to the top. */
+  const startOpen = (withMusic) => {
+    if (opened) return false;
     opened = true;
     player.unlock();
     ringBell(player.ctx, { when: 0.05, gain: 0.12 });
     if (withMusic) setTimeout(() => player.start(true), 400);
     window.scrollTo(0, 0);
-    const done = () => {
-      gateEl.hidden = true;
-      document.body.classList.remove('is-opening', 'is-gated');
+    return true;
+  };
+  const done = () => {
+    if (gateEl) gateEl.hidden = true;
+    document.body.classList.remove('is-opening', 'is-gated');
+    fitRows();
+    buildMotion();
+    ScrollTrigger.refresh();
+    lenis?.start();
+    onScroll();
+    document.getElementById('hero-names')?.focus?.({ preventScroll: true });
+    mix.afterOpen?.();
+  };
+  /** The welcome rises in from `at` (another theme's first screen brings its own entrance). */
+  const heroIntro = (tl, at) => {
+    if (mix.heroInst) { mix.heroEnter(tl, at); return; }
+    tl.from('#welcome [data-in]', { y: 18, autoAlpha: 0, duration: 0.7, ease: 'spOut', stagger: 0.06, clearProps: 'transform,opacity,visibility' }, at);
+  };
+  // another theme's gate: its exit shows the page beneath, then the welcome (or the borrowed first screen) comes in
+  const mixGate = mix.gate ? mix.mountGate({
+    start: (withMusic) => {
+      startOpen(withMusic);
+      document.body.classList.add('is-opening');
+      document.body.classList.remove('is-gated');
       fitRows();
-      buildMotion();
-      ScrollTrigger.refresh();
-      lenis?.start();
-      onScroll();
-      document.getElementById('hero-names')?.focus?.({ preventScroll: true });
-    };
-    if (reduced) return done();
+    },
+    intro: heroIntro,
+    finish: done,
+  }) : null;
+  const open = (withMusic) => {
+    if (mixGate) { mixGate.open(withMusic); return; }
+    if (!startOpen(withMusic)) return;
+    if (reduced) {
+      if (mix.heroInst) mix.heroEnter(gsap.timeline(), 0);
+      return done();
+    }
     document.body.classList.add('is-opening');
     document.body.classList.remove('is-gated');
     fitRows();
-    // Signature: the marigold strings lift into the lintel, inner strings first, like a curtain raised.
-    const byDepth = (side) => gsap.utils.toArray(`.sp-strands--${side} .sp-strand`).reverse();
-    const strandsInOut = [0, 1, 2].flatMap((i) => [byDepth('l')[i], byDepth('r')[i]]).filter(Boolean);
-    gsap.timeline({ onComplete: done })
-      .to('.sp-gate__card', { autoAlpha: 0, y: -12, duration: 0.32, ease: 'sp' }, 0)
-      .to(strandsInOut, { yPercent: -112, duration: 0.85, ease: 'sp', stagger: 0.05 }, 0.1)
-      .to('.sp-strands--l', { x: -24, duration: 0.85, ease: 'sp' }, 0.1)
-      .to('.sp-strands--r', { x: 24, duration: 0.85, ease: 'sp' }, 0.1)
-      .to('.sp-toran', { yPercent: -130, duration: 0.6, ease: 'sp' }, 0.5)
-      .to('.sp-door__frame, .sp-door__lintel', { autoAlpha: 0, duration: 0.4, ease: 'sp' }, 0.45)
-      .to(gateEl, { autoAlpha: 0, duration: 0.45, ease: 'sp' }, 0.8)
-      .from('#welcome [data-in]', { y: 18, autoAlpha: 0, duration: 0.7, ease: 'spOut', stagger: 0.06, clearProps: 'transform,opacity,visibility' }, 0.8);
+    const tl = gsap.timeline({ onComplete: done });
+    gateLift(gsap, tl);
+    tl.to(gateEl, { autoAlpha: 0, duration: 0.45, ease: 'sp' }, 0.8);
+    heroIntro(tl, 0.8);
   };
-  document.getElementById('enter-music').addEventListener('click', () => open(true));
-  document.getElementById('enter-quiet').addEventListener('click', () => open(false));
-  if (params.has('open')) open(false);
+  document.getElementById('enter-music')?.addEventListener('click', () => open(true));
+  document.getElementById('enter-quiet')?.addEventListener('click', () => open(false));
+  if (params.has('open')) { if (mixGate) mixGate.finish(); else open(false); }
 
   document.fonts?.ready.then(() => { fitRows(); if (opened) ScrollTrigger.refresh(); });
   window.addEventListener('load', () => { fitRows(); if (opened) ScrollTrigger.refresh(); });

@@ -61,4 +61,11 @@ export default {
     '--jh-wood-dk': { label: 'Dark wood', default: '#3E2414' },
     '--jh-paper': { label: 'Paper', default: '#F7F1E5' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the view moves through the window and the paper lifts onto whatever first screen is beneath
+    gateUses: { texts: ['gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--jh-sindoor-dk', '--jh-wood-dk', '--jh-paper'] },
+    heroUses: { texts: ['hero.invocation', 'hero.title', 'hero.blessing'], images: ['couple.lead'], colors: ['--jh-sindoor', '--jh-wood-dk', '--jh-paper'] },
+  },
 };

@@ -1,5 +1,6 @@
-/* Phoolbari (फूलबारी) — soft paper, blush, sage and muted gold; real flowers; calm, normal scrolling. */
-body.theme-gurans {
+/* Phoolbari (फूलबारी) — soft paper, blush, sage and muted gold; real flowers; calm, normal scrolling.
+   The tokens also sit on its gate or first screen on another theme's page (.mx-part.theme-gurans, docs/MIX.md §4). */
+body.theme-gurans, .mx-part.theme-gurans {
   --paper: #FBF7F3;
   --white: #FFFFFF;
   --blush: #F7EAE6;
@@ -45,8 +46,9 @@ body.theme-gurans {
   font: 400 19px/1.62 var(--f-body);
 }
 html:has(body.theme-gurans) { background: #FBF7F3; }
-.theme-gurans .l-ne { font-family: var(--f-deva); }
-html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
+/* :where(…) keeps this off another theme's gate or first screen on this page (docs/MIX.md §4), at no specificity */
+.theme-gurans .l-ne:where(:not(.mx-part:not(.theme-gurans) *)) { font-family: var(--f-deva); }
+html[data-lang='ne'] body.theme-gurans, html[data-lang='ne'] .mx-part.theme-gurans { font-size: 18px; line-height: 1.8; }
 .theme-gurans :focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
 .theme-gurans ::selection { background: var(--blush-2); }
 .theme-gurans .pb-nowrap { white-space: nowrap; }
@@ -451,8 +453,8 @@ html[data-lang='ne'] body.theme-gurans { font-size: 18px; line-height: 1.8; }
 
 /* ───────── Phones ───────── */
 @media (max-width: 760px) {
-  body.theme-gurans { font-size: 18px; }
-  html[data-lang='ne'] body.theme-gurans { font-size: 17px; }
+  body.theme-gurans, .mx-part.theme-gurans { font-size: 18px; }
+  html[data-lang='ne'] body.theme-gurans, html[data-lang='ne'] .mx-part.theme-gurans { font-size: 17px; }
   .pb-sec { padding-left: 18px; padding-right: 18px; }
   .pb-gate__board { padding: 14px 12px 6px; }
   .pb-board__names { font-size: clamp(26px, 7.6vw, 30px); }

@@ -45,4 +45,11 @@ export default {
     '--leaf': { label: 'Leaf green', default: '#2E4A27' },
     '--white': { label: 'Background', default: '#FFFFFF' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    ownGateNeedsHero: false, // the doorway's strings lift away onto whatever first screen is beneath
+    gateUses: { texts: ['gate.kicker', 'gate.line', 'gate.open', 'gate.quiet'], images: [], colors: ['--red', '--saffron-ink', '--leaf'] },
+    heroUses: { texts: ['hero.kicker', 'hero.line'], images: ['hero.photo'], colors: ['--red', '--saffron', '--saffron-ink', '--white'] },
+  },
 };

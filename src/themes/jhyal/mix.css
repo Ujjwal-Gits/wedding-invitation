@@ -1,0 +1,10 @@
+/* Jhyal's gate and first screen on another theme's page (docs/MIX.md): the window gate is a fixed layer on its own
+   page; in the mix wrapper (itself the fixed layer) it fills it and keeps its own stacking for the paper veil. */
+.mx-gate--jhyal .jh-gate--mx { position: absolute; inset: 0; z-index: 0; }
+.mx-gate--jhyal .jh-stage, .mx-gate--jhyal .jh-sh { will-change: auto; } /* gsap promotes them only while they move */
+.mx-part.mx-hero--jhyal { background: var(--jh-paper) url('/themes/jhyal/paper.webp') repeat; background-size: 640px; }
+.mx-hero--jhyal .mx-cue { color: var(--jh-ink-3); font-family: var(--f-body); }
+.mx-hero--jhyal .mx-cue i { background: linear-gradient(var(--jh-sindoor), transparent); }
+@media (max-width: 760px) {
+  .mx-hero--jhyal .jh-hero { padding-bottom: 72px; }
+}
