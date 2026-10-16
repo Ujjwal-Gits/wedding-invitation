@@ -12,13 +12,13 @@ export const MAIL_ON = Boolean(KEY && FROM);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Sends one email. Resolves true when Brevo accepted it, false when mail is off or Brevo refused (logged). */
-export async function sendMail({ to, name = '', subject, text, html }) {
+export async function sendMail({ to, name = '', subject, text, html, tag = '' }) {
   if (!MAIL_ON) { console.warn(`[mail] off (BREVO_API_KEY / MAIL_FROM not set): "${subject}" not sent`); return false; }
   try {
     const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': KEY, 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ sender: { email: FROM, name: FROM_NAME }, to: [{ email: to, ...(name ? { name } : {}) }], subject, textContent: text, htmlContent: html }),
+      body: JSON.stringify({ sender: { email: FROM, name: FROM_NAME }, to: [{ email: to, ...(name ? { name } : {}) }], subject, textContent: text, htmlContent: html, ...(tag ? { tags: [tag] } : {}) }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) { console.error(`[mail] Brevo ${r.status}: ${(await r.text()).slice(0, 300)}`); return false; }

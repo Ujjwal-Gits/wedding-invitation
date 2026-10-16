@@ -22,7 +22,7 @@ export async function sendVerify(req, c) {
   const t = newToken(VERIFY_TTL);
   await mutateCustomer(c.id, (x) => { x.verify = { hash: t.hash, exp: t.exp }; });
   const url = `${originOf(req)}/studio/verify/${c.id}.${t.token}`;
-  return sendMail({ to: c.email, name: c.name, subject: 'Confirm your email · Nimtto', ...simpleEmail({
+  return sendMail({ to: c.email, name: c.name, subject: 'Confirm your email · Nimtto', tag: 'verify-email', ...simpleEmail({
     name: c.name, intro: 'Thank you for joining Nimtto. Please confirm this is your email address.',
     button: 'Confirm my email', url, outro: 'This link works for 48 hours. If you did not make a Nimtto account, you can ignore this email.' }) });
 }
@@ -34,7 +34,7 @@ export async function sendReset(req, email) {
   const t = newToken(RESET_TTL);
   await mutateCustomer(c.id, (x) => { x.reset = { hash: t.hash, exp: t.exp }; });
   const url = `${originOf(req)}/studio/reset/${c.id}.${t.token}`;
-  await sendMail({ to: c.email, name: c.name, subject: 'Set a new password · Nimtto', ...simpleEmail({
+  await sendMail({ to: c.email, name: c.name, subject: 'Set a new password · Nimtto', tag: 'reset-password', ...simpleEmail({
     name: c.name, intro: 'Someone asked to reset the password of your Nimtto account. Click below to choose a new one.',
     button: 'Set a new password', url, outro: 'This link works for 30 minutes and only once. If you did not ask for this, ignore this email: your password stays the same.' }) });
 }
