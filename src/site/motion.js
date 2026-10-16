@@ -40,7 +40,7 @@ function hero(mm) {
   let sharp = false;
   mm.add({ wide: '(min-width: 700px)', narrow: '(max-width: 699px)' }, (ctx) => {
     const { wide } = ctx.conditions;
-    const dist = () => window.innerHeight * (wide ? 1.35 : 0.95);
+    const dist = () => window.innerHeight * (wide ? 1.0 : 0.7);
     const unstick = stick(sec, pin, dist);
     const tl = gsap.timeline({
       defaults: { ease: 'none' },
@@ -59,8 +59,7 @@ function hero(mm) {
       .to('.hero__ph--r2', { x: () => window.innerWidth * 0.4, rotation: 20, duration: 0.42, ease: 'power2.in' }, 0.08)
       .to('.hero__ph--l1', { x: () => -window.innerWidth * (wide ? 0.42 : 0.6), rotation: -12, duration: 0.46, ease: 'power2.in' }, 0.18)
       .to('.hero__ph--r1', { x: () => window.innerWidth * (wide ? 0.42 : 0.6), rotation: 12, duration: 0.46, ease: 'power2.in' }, 0.18)
-      .to(c, { scale: fill, duration: 0.56, ease: 'power2.in' }, 0.44)
-      .to('.hero__veil', { autoAlpha: 1, duration: 0.14 }, 0.86);
+      .to(c, { scale: fill, duration: 0.56, ease: 'power2.inOut' }, 0.44);
     return unstick;
   });
 }
@@ -110,19 +109,19 @@ function lotus(mm) {
   mm.add({ wide: '(min-width: 700px)', narrow: '(max-width: 699px)' }, (ctx) => {
     const { wide } = ctx.conditions;
     const petals = { p: 0 };
-    const dist = () => window.innerHeight * (wide ? 1.7 : 1.15);
+    const dist = () => window.innerHeight * (wide ? 1.15 : 0.8);
     const unstick = stick(sec, pin, dist);
     const tl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: { trigger: sec, start: () => `top ${navH()}px`, end: () => `+=${dist()}`, scrub: 0.7, invalidateOnRefresh: true },
     });
-    tl.fromTo('.lotus__disc', { scale: 0.12 }, { scale: 1, duration: 0.24, ease: 'power2.out' }, 0)
+    tl.fromTo('.lotus__disc', { scale: 0.5 }, { scale: 1, duration: 0.24, ease: 'power2.out' }, 0)
       .fromTo(flower, { y: fromY, scale: 1, rotation: -36 }, { y: fromY, scale: 1, rotation: -36, duration: 0.01 }, 0)
       .fromTo(petals, { p: 0 }, { p: 1, duration: 0.52, onUpdate: () => draw(petals.p) }, 0.08)
       .to(flower, { rotation: 0, duration: 0.52, ease: 'power1.out' }, 0.08)
       .fromTo('.lo-frame', { autoAlpha: 0, scale: 0.9, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.14, ease: 'power2.out' }, 0.44)
       .to(flower, { y: 0, scale: k, duration: 0.24, ease: 'power2.inOut' }, 0.62)
-      .fromTo('.lotus__text', { y: 48, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.2, ease: 'power2.out' }, 0.74)
+      .fromTo('.lotus__text', { y: 32, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.22, ease: 'power2.out' }, 0.66)
       .to({}, { duration: 0.06 });
     return () => { draw(1); unstick(); }; // leaving this media query: back to the open, still lotus
   });
