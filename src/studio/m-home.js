@@ -1,6 +1,7 @@
 // Home: a welcome, what is done and what is next, and the share link once the invitation is live.
 import { h, icon, clear, card, fmtDate, fill } from './dom.js';
 import { api } from './api.js';
+import { can } from './perms.js';
 import { label } from './session.js';
 import { shareUrl, shareButtons } from './m-send.js';
 
@@ -61,7 +62,8 @@ export function homeModule(ctx) {
 
   const repliesBox = h('div');
   const repliesCard = h('section.card.minicard', h('header.card__head', h('h2.card__title', 'Replies')), repliesBox);
-  api(`/invitations/${ctx.slug}/rsvps`).then(({ totals }) => {
+  if (ctx.isAdmin && !can('replies')) fill(repliesBox, h('p.muted', 'Guest replies are not in your areas.'));
+  else api(`/invitations/${ctx.slug}/rsvps`).then(({ totals }) => {
     fill(repliesBox, 
       h('p.big', h('b', String(totals.guests)), h('span', ` guest${totals.guests === 1 ? '' : 's'} coming`)),
       h('p.muted', `${totals.replies} repl${totals.replies === 1 ? 'y' : 'ies'} · ${totals.declined} can’t come`),

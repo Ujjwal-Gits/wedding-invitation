@@ -1,5 +1,6 @@
 // Nimtto Studio. Two dashboards on one design system:
-//   the owner (super admin): Overview, Invitations, Clients & access, Orders, Replies, Themes, Website, Settings;
+//   the owner (super admin): Overview, Invitations, Clients & access, Orders, Replies, Themes, Website, Team, Audit log,
+//   Settings; staff admins see only the modules of their areas (perms.js; the server checks every request);
 //   the couple (client link + password): Home, Opening, Couple & family, Dates, Photos, Music, Replies, Send, Themes.
 //   A customer account (email + password, made when ordering): My dashboard (orders, payments, invitations), then the
 //   couple's modules for each invitation the owner linked to the account, with that link's permissions.
@@ -16,14 +17,19 @@ import { CUSTOMER_MODULES, waLink, WA_DISPLAY } from './customer.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCache, clearCacheButton } from './cache.js';
 import { startNav, navigate, current, setUrl } from './nav.js'; // clean /studio/… paths (History API) // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
+import { setAdmin, can, roleName } from './perms.js';
 
 const app = document.getElementById('app');
 enhance(document);
 const S = { me: null, meta: null, ws: null };
+/** The signed-in user (or null); an admin's areas go to perms.js, which hides what they cannot open. */
+const setMe = (me) => { S.me = me; setAdmin(me); };
+/** An admin module this admin may open (its `perm`, admin.js ADMIN_MODULES). */
+const allowed = (m) => !m.perm || can(m.perm);
 
 whenSignedOut(() => {
   const wasCouple = S.me?.role === 'client';
-  S.me = null;
+  setMe(null);
   teardown();
   if (wasCouple) { linkProblem(); return; }
   toast('Please sign in again.', 'error');
@@ -79,7 +85,7 @@ async function doRoute() {
     try {
       // Always ask the server: the session cookie (HttpOnly) is the truth, so a signed-in couple goes straight in.
       const me = await api('/auth/me');
-      S.me = me;
+      setMe(me);
       setCsrf(me.csrf);
     } catch {
       seenFlag(false);
@@ -107,6 +113,7 @@ async function doRoute() {
   const am = /^#\/([a-z-]+)(?:\/([A-Za-z0-9_-]{1,64}))?(?:\?(.*))?$/.exec(hash);
   const mod = ADMIN_MODULES.find((x) => x.id === am?.[1]);
   if (!mod) return redirect('#/overview');
+  if (!allowed(mod)) { toast('You do not have access to that page. Ask the owner.', 'error'); return redirect('#/overview'); }
   return openAdmin(mod, new URLSearchParams(am[3] || ''), am[2] || null);
 }
 
@@ -158,7 +165,7 @@ const siteBtn = () => h('a.btn.btn--icon.btn--ghost', { href: '/', 'aria-label':
 function adminFoot() {
   return h('div.userbox',
     h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.email || 'A').slice(0, 1).toUpperCase()),
-    h('span.userbox__text', h('b', 'Owner'), h('small', S.me.email || '')),
+    h('span.userbox__text', h('b', roleName() === 'Owner' ? 'Owner' : S.me.name || roleName()), h('small', roleName() === 'Owner' ? S.me.email || '' : `${roleName()} · ${S.me.email || ''}`)),
     siteBtn(),
     cacheBtn(),
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
@@ -173,17 +180,17 @@ function openAdmin(mod, params, sub = null) {
       kind: 'admin',
       brand: brand(),
       groups: [
-        { items: ADMIN_MODULES.filter((m) => m.group === 'main').map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
-        { label: 'Business', items: ADMIN_MODULES.filter((m) => m.group === 'business').map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
+        { items: ADMIN_MODULES.filter((m) => m.group === 'main' && allowed(m)).map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
+        { label: 'Business', items: ADMIN_MODULES.filter((m) => m.group === 'business' && allowed(m)).map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) },
       ],
       foot: adminFoot(),
-      tabs: ['overview', 'invitations', 'orders', 'replies'],
+      tabs: ['overview', 'invitations', 'orders', 'replies', 'customers', 'music', 'website', 'themes'].filter((id) => allowed(ADMIN_MODULES.find((m) => m.id === id))).slice(0, 4),
       onAction: onShellAction,
     });
     S.ws = { kind: 'admin', shell };
     fill(app, shell.root);
     shell.attachPreview(null);
-    api('/orders').then((list) => { const n = (Array.isArray(list) ? list : list.orders || []).filter((o) => o.status === 'new').length; shell.setBadge('orders', n ? String(n) : ''); }).catch(() => {});
+    if (can('orders')) api('/orders').then((list) => { const n = (Array.isArray(list) ? list : list.orders || []).filter((o) => o.status === 'new').length; shell.setBadge('orders', n ? String(n) : ''); }).catch(() => {});
   }
   S.ws.modId = mod.id;
   S.ws.onRoute = null;
@@ -231,6 +238,7 @@ async function refreshMeta() { try { S.meta = await api('/meta'); } catch { /* k
 async function openInvitation(slug, modId) {
   let ws = S.ws;
   if (ws?.kind !== 'inv' || ws.slug !== slug) {
+    if (S.me.role === 'admin' && !can('invitations')) { toast('You do not have access to invitations. Ask the owner.', 'error'); return redirect('#/overview'); }
     if (ws?.session) await ws.session.flush();
     teardown();
     fill(app, h('div.boot', { role: 'status' }, h('span.boot__mark', { 'aria-hidden': 'true' }), h('span', 'Opening the invitation…')));
@@ -251,7 +259,8 @@ async function openInvitation(slug, modId) {
     const session = createSession(doc, { meta: S.meta, me: S.me });
     const isAdmin = S.me.role === 'admin';
     const isCustomer = S.me.role === 'customer';
-    const mods = INV_MODULES.filter((m) => !m.adminOnly || isAdmin);
+    // an admin without 'replies' does not see the invitation's Replies module (the server refuses it too)
+    const mods = INV_MODULES.filter((m) => (!m.adminOnly || isAdmin) && !(isAdmin && m.id === 'replies' && !can('replies')));
     const ctxBox = h('div.ctxbox',
       isAdmin ? h('a.ctxbox__back', { href: '#/invitations' }, icon('back', 15), 'All invitations') : null,
       isCustomer ? h('a.ctxbox__back', { href: '#/account' }, icon('back', 15), 'My dashboard') : null,
@@ -310,7 +319,7 @@ async function signOut() {
   try { await api('/auth/logout', { method: 'POST' }); } catch { /* already gone */ }
   const wasCouple = S.me?.role === 'client';
   seenFlag(false);
-  S.me = null;
+  setMe(null);
   S.meta = null;
   setCsrf('');
   teardown();
@@ -360,7 +369,7 @@ function loginPage() {
       const me = await api('/auth/login', { method: 'POST', body: { email: email.value, password: pw.input.value } });
       coupleFlag(false);
       seenFlag(true);
-      S.me = me;
+      setMe(me);
       S.meta = null;
       setCsrf(me.csrf);
       go(me.role === 'customer' ? '#/account' : '#/overview');
@@ -411,7 +420,7 @@ function signupPage() {
       const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: phone.value, password: pw.input.value } });
       coupleFlag(false);
       seenFlag(true);
-      S.me = me;
+      setMe(me);
       S.meta = null;
       setCsrf(me.csrf);
       toast(me.verifySent ? 'Welcome! We sent you an email to confirm your address.' : 'Welcome to Nimtto', 'success');
@@ -438,7 +447,7 @@ function codeInput(id) {
   return el;
 }
 
-/** Forgot password: email -> a 6-digit code by email -> the code and a new password -> My dashboard. */
+/** Forgot password: email -> a 6-digit code by email -> the code (checked) -> a new password -> My dashboard. */
 function forgotPage(prefill = '') {
   teardown();
   document.title = 'Forgot Password · Nimtto Studio';
@@ -463,39 +472,64 @@ function forgotPage(prefill = '') {
       step2();
     } catch (ex) { err.textContent = ex.message; send.disabled = false; }
   });
+  // Step 2: the code alone. A right code comes back as a short-lived reset ticket for step 3.
   function step2() {
     fill(lede, 'If ', h('b', email.value.trim()), ' has an account, we sent a 6-digit code. Check your inbox and spam folder.');
     const err2 = h('p.form-error', { role: 'alert' });
     const code = codeInput('fg-code');
-    const pw = passwordField('fg-password', 'New password', 'new-password');
-    const save = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Save new password');
+    const check = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Continue');
     const again = h('button.link', { type: 'button', onclick: async () => {
       again.disabled = true;
       try { await api('/auth/forgot', { method: 'POST', body: { email: email.value } }); toast('A new code is on its way', 'success'); } catch (ex) { toast(ex.message, 'error'); }
       setTimeout(() => { again.disabled = false; }, 30000);
     } }, 'Send a new code');
     const f = h('form.auth__form', { novalidate: true },
-      h('div.field', h('label.label', { for: 'fg-code' }, 'Code from the email'), code),
-      pw.el, h('p.hint', 'At least 8 characters. Other devices are signed out.'), err2, save, h('p.auth__small', 'No email? ', again));
+      h('div.field', h('label.label', { for: 'fg-code' }, 'Code from the email'), code), err2, check, h('p.auth__small', 'No email? ', again));
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       err2.textContent = '';
       if (code.value.length !== 6) { err2.textContent = 'Enter the 6-digit code from the email.'; code.focus(); return; }
-      if (pw.input.value.length < 8) { err2.textContent = 'The password needs at least 8 characters.'; pw.input.focus(); return; }
+      check.disabled = true;
+      try {
+        const out = await api('/auth/reset/check', { method: 'POST', body: { email: email.value, code: code.value } });
+        step3(out.ticket);
+      } catch (ex) { err2.textContent = ex.message; check.disabled = false; code.select(); }
+    });
+    fill(holder, f);
+    code.focus();
+  }
+  // Step 3: the new password, with the ticket from step 2 (10 minutes, once).
+  function step3(ticket) {
+    fill(lede, 'Code accepted. Choose a new password for ', h('b', email.value.trim()), '.');
+    const err3 = h('p.form-error', { role: 'alert' });
+    const pw = passwordField('fg-password', 'New password', 'new-password');
+    pw.input.minLength = 8;
+    pw.input.maxLength = 128;
+    const save = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Save new password');
+    const f = h('form.auth__form', { novalidate: true }, pw.el, h('p.hint', 'At least 8 characters. Other devices are signed out.'), err3, save);
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err3.textContent = '';
+      if (pw.input.value.length < 8) { err3.textContent = 'The password needs at least 8 characters.'; pw.input.focus(); return; }
       save.disabled = true;
       try {
-        const me = await api('/auth/reset', { method: 'POST', body: { email: email.value, code: code.value, password: pw.input.value } });
+        const me = await api('/auth/reset', { method: 'POST', body: { email: email.value, ticket, password: pw.input.value } });
         coupleFlag(false);
         seenFlag(true);
-        S.me = me;
+        setMe(me);
         S.meta = null;
         setCsrf(me.csrf);
         toast('Password changed', 'success');
         go('#/account');
-      } catch (ex) { err2.textContent = ex.message; save.disabled = false; (ex.body?.fields?.[0] === 'code' ? code : pw.input).focus(); }
+      } catch (ex) {
+        save.disabled = false;
+        if (ex.body?.code === 'ticket_expired') { toast(ex.message, 'error'); step2(); return; }
+        err3.textContent = ex.message;
+        pw.input.focus();
+      }
     });
     fill(holder, f);
-    code.focus();
+    pw.input.focus();
   }
   fill(app, authLayout(brand(true), h('h1.auth__title', 'Forgot password'), lede, holder,
     h('p.auth__small', h('a', { href: '#/login', onclick: toLogin }, 'Back to sign in'))));
@@ -558,7 +592,7 @@ async function passwordPage(token) {
 }
 
 function enterAsCouple(s) {
-  S.me = s;
+  setMe(s);
   S.meta = null;
   setCsrf(s.csrf);
   coupleFlag(true);

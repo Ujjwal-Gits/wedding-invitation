@@ -7,8 +7,11 @@ import { deleteDialog, actionMenu, whenText } from './manage.js';
 import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
 import { clearCache } from './cache.js';
 import { navigate, setUrl, current } from './nav.js';
-import { customersSection } from './admin-customers.js';
+import { customersSection, addCustomer } from './admin-customers.js';
 import { musicLibrary } from './admin-music.js';
+import { teamPage } from './admin-team.js';
+import { auditPage } from './admin-audit.js';
+import { can, canAny, canSomething, roleName } from './perms.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
@@ -212,6 +215,8 @@ export function newInvitation(ctx, prefill = {}) {
 }
 
 const newBtn = (ctx) => h('button.btn.btn--primary', { type: 'button', onclick: () => newInvitation(ctx) }, icon('plus', 16), 'New invitation');
+/** Overview quick action: a customer account (the same form as Customers → New account). */
+const addCustomerBtn = () => h('button.btn', { type: 'button', onclick: () => addCustomer() }, icon('users', 16), 'Add customer');
 
 /** Link now / Dismiss for an invitation waiting for an email (Overview and Customer accounts). after(): redraw. */
 export function pendingActs(p, after) {
@@ -277,12 +282,14 @@ function overview(ctx) {
   ctx.cleanup(() => { alive = false; });
 
   const load = async () => {
+    // only what this admin may open (perms.js); the rest stays empty
+    const none = (v) => Promise.resolve(v);
     const [list, orders, site, stats, pending] = await Promise.all([
-      listInvitations().catch(() => null),
-      api('/orders').then(ordersOf).catch(() => null),
-      loadSite().catch(() => ({ plans: [] })),
-      api('/admin/stats').catch(() => null),
-      api('/admin/customers').then((r) => r.pending || []).catch(() => []),
+      can('invitations') ? listInvitations().catch(() => null) : none([]),
+      can('orders') ? api('/orders').then(ordersOf).catch(() => null) : none(null),
+      canAny('website', 'themes', 'orders', 'finance') ? loadSite().catch(() => ({ plans: [] })) : none({ plans: [] }),
+      canSomething() ? api('/admin/stats').catch(() => null) : none(null),
+      can('customers') ? api('/admin/customers').then((r) => r.pending || []).catch(() => []) : none([]),
     ]);
     if (!alive) return;
     if (!list) {
@@ -290,7 +297,7 @@ function overview(ctx) {
       fill(upcoming); fill(feed);
       return;
     }
-    const rsvps = await repliesFor(list);
+    const rsvps = can('replies') ? await repliesFor(list) : new Map();
     if (!alive) return;
     const planName = (id) => site.plans?.find((p) => p.id === id)?.name || id;
     const fresh = (orders || []).filter((o) => o.status === 'new');
@@ -383,7 +390,7 @@ function overview(ctx) {
           : h('span.task__icon', { class: t.tone ? `is-${t.tone}` : '' }, icon(t.ic, 16)),
         h('div.task__main', h('p.task__title', t.title, t.dot ? h('span.dot', { title: 'New since you last looked', 'aria-label': 'new' }) : null), t.meta ? h('p.task__meta', t.meta) : null),
         h('div.task__acts', t.acts))))
-      : quietEmpty('check', 'All clear', list.length ? 'No payments to check, no orders to call back, no unpublished changes and no new replies. New work shows up here.' : 'Create the first invitation; it starts with sample details.', list.length ? null : newBtn(ctx)));
+      : quietEmpty('check', 'All clear', list.length || !can('invitations') ? 'Nothing needs you right now. New work in your areas shows up here.' : 'Create the first invitation; it starts with sample details.', list.length || !can('invitations') ? null : newBtn(ctx)));
 
     // Upcoming weddings
     const up = list.map((i) => ({ i, n: daysUntil(i.weddingDate) })).filter((x) => x.n != null && x.n >= 0).sort((a, b) => a.n - b.n);
@@ -445,7 +452,7 @@ function overview(ctx) {
   return h('div.ov',
     h('div.ov__main',
       h('section.sect', { 'aria-labelledby': 'ov-needs' }, h('header.sect__head', h('h2.sect__title#ov-needs', 'Needs you', needsCount)), needs),
-      h('section.sect', { 'aria-labelledby': 'ov-up' }, sectHead('Upcoming weddings', { id: 'ov-up', more: more('#/invitations', 'All invitations') }), upcoming)),
+      can('invitations') ? h('section.sect', { 'aria-labelledby': 'ov-up' }, sectHead('Upcoming weddings', { id: 'ov-up', more: more('#/invitations', 'All invitations') }), upcoming) : null),
     h('aside.ov__side', { 'aria-labelledby': 'ov-act' },
       h('section.sect', sectHead('Recent activity', { id: 'ov-act' }), feed)));
 }
@@ -754,7 +761,7 @@ function orderDrawer(ctx, o, { patch, methods, onChange, onDeleted, onClose }) {
     const idx = STAGES.findIndex(([s]) => s === o.status);
     const couple = [o.bride, o.groom].filter(Boolean).join(' & ');
     const pay = payPanel(o, { patch, redraw: () => { draw(); onChange(); }, methods });
-    const invBtn = o.invitation
+    const invBtn = !can('invitations') ? null : o.invitation
       ? h('a.btn.btn--sm', { href: `#/i/${o.invitation}/home` }, icon('edit', 14), 'Open the invitation')
       : (() => {
         const b = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => createFromOrder(ctx, o, b) }, icon('plus', 14), 'Create invitation');
@@ -1201,11 +1208,16 @@ function paymentsCard() {
 }
 
 function settings(ctx) {
+  const role = roleName();
+  const areas = (ctx.me.perms || []).filter((p) => p !== 'team' && p !== 'audit');
   return [
-    paymentsCard(),
-    setting('Your account', 'The owner account has full access to every invitation, client link and order.',
-      h('dl.kv.kv--rows', h('div', h('dt', 'Signed in as'), h('dd', ctx.me.email || 'Owner')), h('div', h('dt', 'Role'), h('dd', 'Owner, full access'))),
-      h('p.hint', icon('info', 14), 'To change the owner email or password, update the server settings (.env) and restart.')),
+    can('website') ? paymentsCard() : null,
+    setting('Your account', role === 'Owner' ? 'The owner account has full access to every invitation, client link and order, and manages the team.'
+      : role === 'Super admin' ? 'A super admin has full access and manages the team.' : 'You can open the areas the owner gave you.',
+      h('dl.kv.kv--rows',
+        h('div', h('dt', 'Signed in as'), h('dd', ctx.me.name && role !== 'Owner' ? `${ctx.me.name} (${ctx.me.email})` : ctx.me.email || 'Owner')),
+        h('div', h('dt', 'Role'), h('dd', role === 'Owner' ? 'Owner, full access' : role === 'Super admin' ? 'Super admin, full access' : `Admin: ${areas.length ? areas.join(', ') : 'no areas yet'}`))),
+      h('p.hint', icon('info', 14), role === 'Owner' ? 'To change the owner email or password, update the server settings (.env) and restart.' : 'To change your password or access, ask the owner or a super admin (Team page).')),
     setting('Clear cache', 'Seeing an old version of a page, a photo or a design? This clears what this browser stored for Nimtto and reloads. You stay signed in.',
       h('p', h('button.btn.btn--sm', { type: 'button', onclick: () => clearCache() }, icon('refresh', 15), 'Clear cache'))),
     setting('Quick help', 'Where things live.',
@@ -1217,15 +1229,18 @@ function settings(ctx) {
   ];
 }
 
+// `perm`: the area an admin needs to see the module (perms.js; the server checks it again on every request).
 export const ADMIN_MODULES = [
-  { id: 'overview', title: 'Overview', icon: 'grid', group: 'main', render: overview, sub: ' ', actions: (ctx) => [newBtn(ctx)] },
-  { id: 'invitations', title: 'Invitations', icon: 'cards', group: 'main', render: invitations, sub: 'Every invitation: its status, replies and the couple’s access.', actions: (ctx) => [newBtn(ctx)] },
-  { id: 'customers', title: 'Customers', icon: 'users', group: 'main', render: (ctx) => customersSection(ctx, listInvitations), sub: 'Everyone with an account: their details, sign-ins, orders and invitations. Open one to see it all.' },
-  { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
-  { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
-  { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
-  { id: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
-  { id: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
-  { id: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },
+  { id: 'overview', title: 'Overview', icon: 'grid', group: 'main', render: overview, sub: ' ', actions: (ctx) => [can('customers') ? addCustomerBtn() : null, can('invitations') ? newBtn(ctx) : null].filter(Boolean) },
+  { id: 'invitations', perm: 'invitations', title: 'Invitations', icon: 'cards', group: 'main', render: invitations, sub: 'Every invitation: its status, replies and the couple’s access.', actions: (ctx) => [newBtn(ctx)] },
+  { id: 'customers', perm: 'customers', title: 'Customers', icon: 'users', group: 'main', render: (ctx) => customersSection(ctx, listInvitations), sub: 'Everyone with an account: their details, sign-ins, orders and invitations. Open one to see it all.' },
+  { id: 'access', perm: 'invitations', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
+  { id: 'replies', perm: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
+  { id: 'orders', perm: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
+  { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
+  { id: 'music', perm: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
+  { id: 'website', perm: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },
+  { id: 'team', perm: 'team', title: 'Team & access', short: 'Team', icon: 'shield', group: 'business', render: teamPage, sub: 'Who can sign in to the studio, and what each person can open.' },
+  { id: 'audit', perm: 'audit', title: 'Audit log', short: 'Audit', icon: 'history', group: 'business', render: auditPage, sub: 'Every change made in the studio: who, what, when and from where.' },
   { id: 'settings', title: 'Settings & help', short: 'Settings', icon: 'settings', group: 'business', render: settings, sub: 'Your account and where things live.' },
 ];

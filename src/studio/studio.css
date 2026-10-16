@@ -1758,3 +1758,32 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .cu-verify__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cu-verify__row .codein { width: 10em; }
 .codein::placeholder { letter-spacing: normal; font-family: inherit; }
+
+/* ── Team & access, Audit log (admin-team.js, admin-audit.js) ── */
+.team-hint { margin-bottom: var(--s3); }
+.team-empty { margin-top: var(--s3); }
+.dtable--team td.cell-couple small { display: block; color: var(--ink-3); font-size: 12.5px; }
+.dtable--team td.cell-couple .tag { margin-left: 8px; height: 20px; vertical-align: 1px; }
+.dtable--team td.team-perms { white-space: normal; max-width: 280px; }
+.dtable--team tr.is-off td { color: var(--ink-3); }
+.dtable--team tr.is-locked { background: var(--surface-2); }
+.team-lock { display: inline-grid; place-items: center; width: 32px; height: 32px; color: var(--ink-4); }
+.permgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s2) var(--s4); margin: 0; padding: 0; border: 0; min-width: 0; }
+.permgrid > legend { padding: 0; margin-bottom: var(--s2); }
+.permgrid__item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
+.permgrid__item:hover { border-color: var(--line-2); }
+.permgrid__item:has(input:checked) { border-color: var(--accent-line); background: var(--accent-soft); }
+.permgrid__item input { margin-top: 2px; flex: none; }
+.permgrid__item span { display: grid; gap: 2px; font-size: 13.5px; color: var(--ink); }
+.permgrid__item small { font-size: 12.5px; color: var(--ink-3); }
+.dtable--audit td.audit-what { white-space: normal; min-width: 260px; }
+.dtable--audit td.audit-what small { overflow-wrap: anywhere; }
+.audit-pager { margin-top: var(--s3); }
+.audit-pager__gap { flex: 1; }
+@media (max-width: 760px) {
+  .dtable--audit td.audit-what { grid-column: 1 / -1; min-width: 0; }
+  .dtable--team td.team-perms { max-width: none; }
+  .dtable--team td.cell-couple { padding-right: 0; }
+  .dtable--team td.cell-act { position: static; grid-column: 1 / -1; }
+  .dtable--team td.cell-act .cell-act__in { justify-content: flex-start; }
+}
