@@ -41,6 +41,16 @@ export const DIST_DIR = resolve(ROOT_DIR, 'dist');
 // Studio sessions (hashed ids, CSRF tokens). Lives in data/, which is never served and is gitignored.
 export const SESSIONS_FILE = resolve(DATA_DIR, 'sessions.json');
 
+// Storage: 'sqlite' (data/nimtto.db) or 'json' (the original files; the rollback path). See lib/store.js.
+export const STORE = String(env.STORE || 'sqlite').trim().toLowerCase() === 'json' ? 'json' : 'sqlite';
+export const DB_FILE = resolve(DATA_DIR, 'nimtto.db');
+export const DB_SYNC = String(env.DB_SYNC || 'normal').trim().toLowerCase() === 'full' ? 'full' : 'normal';
+export const BACKUP_DIR = resolve(DATA_DIR, 'backups');
+// Behind Cloudflare: take the visitor's IP from CF-Connecting-IP when the request came from a Cloudflare address
+// (default on; CLOUDFLARE=0 turns it off). CLOUDFLARE_ONLY=1 also refuses requests that bypassed Cloudflare.
+export const CLOUDFLARE = env.CLOUDFLARE !== '0';
+export const CLOUDFLARE_ONLY = env.CLOUDFLARE_ONLY === '1';
+
 const within = (p, dir) => { const r = relative(dir, p); return r === '' || (!r.startsWith('..') && !isAbsolute(r)); };
 
 export function assertConfigured() {

@@ -1,7 +1,7 @@
 // Guest replies. Public POST (text/plain JSON, Origin-checked, rate limited, honeypot),
 // admin list with totals, CSV export that neutralises spreadsheet formulas, delete.
 import { randomBytes } from 'node:crypto';
-import { withLock, getInvitation, readJson, rsvpPath, writeJsonAtomic } from './store.js';
+import { peekInvitation, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
@@ -9,8 +9,10 @@ const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
 const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const MAX_REPLIES = 5000;
 
-const perIp = rateLimiter({ windowMs: 10 * 60 * 1000, max: 8 });
-const perInvitation = rateLimiter({ windowMs: 60 * 60 * 1000, max: 400 });
+// Sized for a real wedding: hundreds of guests reply within the hour the link goes out, and guests on the same
+// mobile carrier can share one public IP (CGNAT). MAX_REPLIES still bounds an invitation in total.
+const perIp = rateLimiter({ windowMs: 10 * 60 * 1000, max: 30 });
+const perInvitation = rateLimiter({ windowMs: 60 * 60 * 1000, max: 3000 });
 
 const clean = (v, max, multiline = false) => {
   let s = typeof v === 'string' ? v.normalize('NFC').replace(CTRL, '') : '';
@@ -36,7 +38,7 @@ export async function submit(req, res) {
   }
   if (!body || typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ ok: false, error: 'Bad request.' });
 
-  const doc = await getInvitation(slug);
+  const doc = await peekInvitation(slug);
   if (!doc || doc.status !== 'published' || !doc.published) return res.status(404).json({ ok: false, error: 'Not found.' });
   const inv = doc.published;
   if (inv.rsvp.enabled === false) return res.status(403).json({ ok: false, error: 'Replies are closed for this invitation.' });
@@ -69,12 +71,7 @@ export async function submit(req, res) {
 
   const reply = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), name, phone, attending, guests, events, meal, message };
   try {
-    await withLock(`rsvp:${slug}`, async () => {
-      const all = await readJson(rsvpPath(slug), []);
-      if (all.length >= MAX_REPLIES) throw httpError(507, 'This invitation cannot take more replies.');
-      all.push(reply);
-      await writeJsonAtomic(rsvpPath(slug), all);
-    });
+    await addReply(slug, reply, MAX_REPLIES); // 507 when the invitation is full
   } catch (err) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
@@ -100,9 +97,9 @@ function totals(inv, replies) {
 }
 
 async function loadBoth(slug) {
-  const doc = await getInvitation(slug);
+  const doc = await peekInvitation(slug);
   if (!doc) throw httpError(404, 'No invitation with that link name.');
-  const replies = await readJson(rsvpPath(slug), []);
+  const replies = await storedReplies(slug);
   return { inv: doc.published || doc.draft, replies };
 }
 
@@ -115,12 +112,7 @@ export async function listReplies(req, res) {
 export async function deleteReply(req, res) {
   const { slug, id } = req.params;
   if (!/^[A-Za-z0-9_-]{6,20}$/.test(id)) throw httpError(400, 'Bad id.');
-  await withLock(`rsvp:${slug}`, async () => {
-    const all = await readJson(rsvpPath(slug), []);
-    const next = all.filter((r) => r.id !== id);
-    if (next.length === all.length) throw httpError(404, 'Reply not found.');
-    await writeJsonAtomic(rsvpPath(slug), next);
-  });
+  if (!(await dropReply(slug, id))) throw httpError(404, 'Reply not found.');
   console.info(`[admin] delete rsvp slug=${slug} id=${id}`);
   res.json({ ok: true });
 }

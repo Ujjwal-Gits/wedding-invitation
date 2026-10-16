@@ -4,8 +4,12 @@ import express from 'express';
 import { existsSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { IS_PROD, PORT, TRUST_PROXY, UPLOAD_DIR, DIST_DIR, INV_DIR, RSVP_DIR, assertConfigured, DEPTH_ENABLED } from './lib/env.js';
-import { SLUG_RE, getInvitation } from './lib/store.js';
-import { securityHeaders, rateLimiter } from './lib/security.js';
+import { SLUG_RE, peekInvitation, invitationExists, openStore, closeStore, storePing, STORE_KIND } from './lib/store.js';
+import { startSessions } from './lib/sessions.js';
+import { securityHeaders, rateLimiter, cloudflareOnly } from './lib/security.js';
+import { trafficGuard, shedWhenOverloaded, resetLag } from './lib/guard.js';
+import { staticFiles } from './lib/static.js';
+import { startBackups, stopBackups } from './lib/backup.js';
 import { loadSession, requireAdmin, requireSession, requireEditor, clientSession, login, logout, me } from './lib/auth.js';
 import * as inv from './lib/invitations.js';
 import * as rsvp from './lib/rsvp.js';
@@ -16,8 +20,11 @@ import { sharePage } from './lib/share.js';
 import { themePageGate } from './lib/gate.js';
 import { showcaseGate } from './lib/showcase.js';
 import { stopDepth } from './lib/depth.js';
+import { payments } from './lib/payments/routes.js'; // PayPal (off until PAYPAL_* are set); see docs/PAYMENTS.md
 
 assertConfigured();
+openStore();
+startSessions();
 await fs.mkdir(INV_DIR, { recursive: true });
 await fs.mkdir(RSVP_DIR, { recursive: true });
 await fs.mkdir(UPLOAD_DIR, { recursive: true });
@@ -27,6 +34,9 @@ app.disable('x-powered-by');
 app.set('trust proxy', TRUST_PROXY);
 app.set('etag', false);
 app.use(securityHeaders);
+app.use(cloudflareOnly); // CLOUDFLARE_ONLY=1: requests that bypassed Cloudflare get 403 (lib/security.js)
+app.use(trafficGuard); // per-IP budget, requests-in-flight cap (503 + Retry-After), slow-request log (lib/guard.js)
+app.use(payments.pageHeaders); // adds PayPal's SDK sources to the website page's CSP, only when PayPal is on
 app.use(loadSession);
 
 const api = express.Router();
@@ -37,9 +47,11 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.status(400).json({ error: 'Invalid invitation link name.' })));
 
 // Auth
-api.post('/auth/login', json('4kb'), wrap(login));
+// Expensive routes (argon2, scans, image work) are refused with 503 while the process is overloaded (lib/guard.js).
+const heavy = shedWhenOverloaded;
+api.post('/auth/login', heavy, json('4kb'), wrap(login));
 api.post('/auth/logout', requireSession, logout);
-api.post('/client/session', json('1kb'), wrap(clientSession()));
+api.post('/client/session', heavy, json('1kb'), wrap(clientSession()));
 api.get('/auth/me', wrap(me));
 
 // Public
@@ -50,15 +62,15 @@ api.post('/orders', json('8kb'), wrap(orders.submit));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
 // Admin
-const editor = requireEditor(getInvitation);
+const editor = requireEditor(peekInvitation); // read-only check of the couple's link
 api.get('/meta', requireSession, wrap(inv.meta));
-api.get('/admin/stats', requireAdmin, wrap((req, res) => inv.stats(req, res, orders.newCount)));
+api.get('/admin/stats', requireAdmin, heavy, wrap((req, res) => inv.stats(req, res, orders.newCount)));
 api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
 api.get('/orders', requireAdmin, wrap(orders.list));
 api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
 api.delete('/orders/:id', requireAdmin, wrap(orders.remove));
 
-api.get('/invitations', requireAdmin, wrap(inv.list));
+api.get('/invitations', requireAdmin, heavy, wrap(inv.list));
 api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
 api.get('/invitations/:slug', editor, wrap(inv.read));
 api.put('/invitations/:slug', editor, json('768kb'), wrap(inv.update));
@@ -73,21 +85,31 @@ api.post('/invitations/:slug/unpublish', requireAdmin, wrap(inv.unpublish));
 // Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
 // cannot fill the disk.
 const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });
-api.post('/invitations/:slug/uploads', editor, wrap(async (req, res) => {
+api.post('/invitations/:slug/uploads', heavy, editor, wrap(async (req, res) => {
   const lim = uploadLimiter.hit(req.params.slug);
   if (!lim.ok) {
     res.set('Retry-After', String(lim.retryAfter));
     return res.status(429).json({ error: 'Too many uploads in the last hour. Please wait a little and try again.' });
   }
-  if (!existsSync(resolve(INV_DIR, `${req.params.slug}.json`))) return res.status(404).json({ error: 'No invitation with that link name.' });
+  if (!(await invitationExists(req.params.slug))) return res.status(404).json({ error: 'No invitation with that link name.' });
   return handleUpload(req, res);
 }));
 api.get('/invitations/:slug/rsvps', editor, wrap(rsvp.listReplies));
-api.get('/invitations/:slug/rsvps.csv', editor, wrap(rsvp.exportCsv));
+api.get('/invitations/:slug/rsvps.csv', heavy, editor, wrap(rsvp.exportCsv));
 api.delete('/invitations/:slug/rsvps/:id', editor, wrap(rsvp.deleteReply));
 
+api.use('/pay', payments.router);
+
 api.use((req, res) => res.status(404).json({ error: 'Not found.' }));
-app.get('/healthz', (req, res) => res.type('text').send('ok')); // container health check
+// Container health check: 200 only while the store answers and the server is not shutting down. Deliberately not
+// tied to load: an unhealthy container is taken out of Traefik's routing, which would turn a spike into an outage.
+let draining = false;
+app.get('/healthz', (req, res) => {
+  let ok = !draining;
+  try { ok = ok && storePing(); } catch { ok = false; }
+  res.set('Cache-Control', 'no-store');
+  res.status(ok ? 200 : 503).type('text').send(ok ? 'ok' : 'unavailable');
+});
 app.use('/api', api);
 
 // Short guest link: /i/<slug>?to=Name&e=wedding,reception -> a link-preview page that forwards to the theme page.
@@ -109,15 +131,8 @@ if (IS_PROD) {
   // Theme pages (/<theme>/) only for a published invitation's guests or a studio session; see lib/gate.js.
   app.use(showcaseGate(DIST_DIR)); // public watermarked showcase /<theme>/?showcase=1 (lib/showcase.js)
   app.use(themePageGate(DIST_DIR));
-  app.use(express.static(DIST_DIR, {
-    index: 'index.html',
-    redirect: true,
-    dotfiles: 'deny',
-    setHeaders(res, path) {
-      if (res.locals.gatedPage) return; // the gate already set private, no-store
-      res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache');
-    },
-  }));
+  // dist/ with build-time brotli/gzip and the caching policy (lib/static.js; Cloudflare rules in docs/OPERATIONS.md)
+  app.use(staticFiles(DIST_DIR));
 }
 
 app.use((req, res) => res.status(404).type('text/plain').send('Not found'));
@@ -126,7 +141,10 @@ app.use((req, res) => res.status(404).type('text/plain').send('Not found'));
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
-  if (status >= 500) console.error('[error]', req.method, req.path, err);
+  if (res.headersSent) { req.socket.destroy(); return undefined; } // mid-stream: nothing sensible left to send
+  if (err.type === 'request.aborted') return res.status(400).end(); // the client went away
+  if (status >= 500 && status !== 503) console.error('[error]', req.method, req.path, err);
+  if (err.retryAfter) res.set('Retry-After', String(err.retryAfter));
   const body = { error: err.expose || status < 500 ? err.message : 'Something went wrong on our side.' };
   if (err.errors) body.errors = err.errors;
   if (err.problems) body.problems = err.problems;
@@ -137,11 +155,40 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.info(`[studio] API on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'}; depth maps ${DEPTH_ENABLED ? 'on' : 'off'})`);
+  resetLag();
+  console.info(`[studio] API on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'}; store ${STORE_KIND}; depth maps ${DEPTH_ENABLED ? 'on' : 'off'})`);
 });
-server.headersTimeout = 30_000;
+// Slow or stalled clients (slowloris): the headers must arrive within 20 s and a whole request within 120 s (a 15 MB
+// upload on a slow phone). Idle keep-alive connections stay open 95 s: longer than the proxy in front keeps idle
+// connections to us (Traefik: 90 s), so the proxy, not Node, always closes them first and never reuses a socket
+// Node has just closed (that race shows up as random 502s).
+server.headersTimeout = 20_000;
 server.requestTimeout = 120_000;
+server.keepAliveTimeout = 95_000;
+server.maxRequestsPerSocket = 0;
+server.maxHeadersCount = 100;
+server.timeout = 0;
 
-const shutdown = () => { stopDepth(); server.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+// Errors outside a request never take the server down silently: a stray rejection is logged; a thrown exception
+// (state unknown) shuts down cleanly and the container restarts it.
+process.on('unhandledRejection', (err) => console.error('[process] unhandled rejection:', err));
+process.on('uncaughtException', (err) => { console.error('[process] uncaught exception:', err); shutdown('uncaughtException', 1); });
+
+// Graceful shutdown (deploys, restarts): stop taking connections, let requests in flight finish (up to 10 s),
+// then close the database cleanly.
+let stopping = false;
+function shutdown(signal, code = 0) {
+  if (stopping) return;
+  stopping = true;
+  draining = true;
+  console.info(`[studio] ${signal}: finishing requests in flight, then stopping`);
+  stopDepth();
+  stopBackups();
+  const done = () => { try { closeStore(); } catch { /* exiting anyway */ } process.exit(code); };
+  server.close(done);
+  server.closeIdleConnections();
+  setTimeout(() => { server.closeAllConnections(); done(); }, 10_000).unref();
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+startBackups();

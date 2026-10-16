@@ -1,8 +1,10 @@
 // Public website settings: data/site.json = { plans, contact, hero, hiddenThemes, featuredThemes }.
+// plans[].usdPrice (optional): the online price in US dollars (lib/payments reads it; the client never sends a price).
 // GET is public (defaults when the file does not exist yet); PUT is the planner's, fully validated.
 import { resolve } from 'node:path';
 import { DATA_DIR } from './env.js';
-import { withLock, readJson, writeJsonAtomic } from './store.js';
+import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or data/site.json with STORE=json)
+import { entity, sendEntity } from './http-cache.js';
 import { isTheme, listThemes } from './catalog.js';
 import { loadManifest } from './slots.js';
 
@@ -15,9 +17,9 @@ const SLUG_LIKE = /^[a-z][a-z0-9-]{1,30}$/;
 
 const DEFAULTS = {
   plans: [
-    { id: 'classic', name: 'Classic', price: null, currency: 'NPR', note: '', features: [], highlight: false },
-    { id: 'premium', name: 'Premium', price: null, currency: 'NPR', note: '', features: [], highlight: true },
-    { id: 'custom', name: 'Custom', price: null, currency: 'NPR', note: '', features: [], highlight: false },
+    { id: 'classic', name: 'Classic', price: null, currency: 'NPR', usdPrice: null, note: '', features: [], highlight: false },
+    { id: 'premium', name: 'Premium', price: null, currency: 'NPR', usdPrice: null, note: '', features: [], highlight: true },
+    { id: 'custom', name: 'Custom', price: null, currency: 'NPR', usdPrice: null, note: '', features: [], highlight: false },
   ],
   contact: { phone: '', whatsapp: '', email: '', address: '' },
   hero: { title: '', subtitle: '' },
@@ -55,10 +57,17 @@ function sanitizeSite(input) {
       else fail(`${path}.price`, 'must be a whole number of rupees, or empty for "Ask for price"');
     }
     if (p.currency != null && p.currency !== 'NPR') fail(`${path}.currency`, "must be 'NPR'");
+    // Optional price in US dollars: only plans with one can be paid online (PayPal does not take rupees).
+    let usdPrice = null;
+    if (p.usdPrice != null && p.usdPrice !== '') {
+      const n = typeof p.usdPrice === 'string' && /^\d{1,5}(\.\d{1,2})?$/.test(p.usdPrice.trim()) ? Number(p.usdPrice.trim()) : p.usdPrice;
+      if (typeof n === 'number' && Number.isFinite(n) && n >= 1 && n <= 10_000 && Math.abs(Math.round(n * 100) - n * 100) < 1e-6) usdPrice = Math.round(n * 100) / 100;
+      else fail(`${path}.usdPrice`, 'must be US dollars from 1 to 10000 with at most two decimals, or empty (not payable online)');
+    }
     const feats = p.features == null ? [] : p.features;
     if (!Array.isArray(feats) || feats.length > 20) fail(`${path}.features`, 'must be a list of at most 20 lines');
     const features = (Array.isArray(feats) ? feats.slice(0, 20) : []).map((f, j) => text(f, `${path}.features[${j}]`, 120)).filter(Boolean);
-    const out = { id, name, price, currency: 'NPR', note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true };
+    const out = { id, name, price, currency: 'NPR', usdPrice, note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true };
     return out;
   });
   const ids = plans.map((p) => p.id);
@@ -89,20 +98,30 @@ function sanitizeSite(input) {
 
 /** The current settings (defaults merged in for anything missing). */
 export async function readSite() {
-  const s = await readJson(SITE_FILE, null);
-  if (!s || typeof s !== 'object') return structuredClone(DEFAULTS);
-  return { ...structuredClone(DEFAULTS), ...s };
+  return merged((await getDoc('site'))?.value);
 }
+const merged = (s) => (!s || typeof s !== 'object' ? structuredClone(DEFAULTS) : { ...structuredClone(DEFAULTS), ...s });
+
+// Public answers built once per settings revision (and, for the theme list, at most every 10 s, since manifests
+// can change on disk in development), served from memory with an ETag.
+let siteEntity = { rev: -1, e: null };
+let themesEntity = { rev: -1, at: 0, e: null };
 
 /** GET /api/site (public) */
 export async function getSite(req, res) {
-  res.json(await readSite());
+  const d = await getDoc('site');
+  const rev = d?.rev ?? 0;
+  if (siteEntity.rev !== rev || !siteEntity.e) siteEntity = { rev, e: entity(JSON.stringify(merged(d?.value)), 'application/json; charset=utf-8') };
+  res.set('Cache-Control', 'no-cache');
+  return sendEntity(req, res, siteEntity.e);
 }
 
 /** PUT /api/site (admin): the whole object, validated; returns what was stored. */
 export async function putSite(req, res) {
   const clean = sanitizeSite(req.body);
-  await withLock('site', () => writeJsonAtomic(SITE_FILE, clean));
+  await putDoc('site', clean);
+  siteEntity = { rev: -1, e: null };
+  themesEntity = { rev: -1, at: 0, e: null };
   console.info('[admin] site settings saved');
   res.json(clean);
 }
@@ -112,7 +131,13 @@ export async function putSite(req, res) {
  * pages themselves are only served to the studios and to guests of a published invitation (lib/gate.js).
  */
 export async function publicThemes(req, res) {
-  const { hiddenThemes } = await readSite();
+  const d = await getDoc('site');
+  const rev = d?.rev ?? 0;
+  if (themesEntity.e && themesEntity.rev === rev && Date.now() - themesEntity.at < 10_000) {
+    res.set('Cache-Control', 'no-cache');
+    return sendEntity(req, res, themesEntity.e);
+  }
+  const { hiddenThemes } = merged(d?.value);
   const hidden = new Set(hiddenThemes);
   const out = [];
   for (const t of listThemes()) {
@@ -120,6 +145,7 @@ export async function publicThemes(req, res) {
     const m = await loadManifest(t.slug);
     out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'] });
   }
+  themesEntity = { rev, at: Date.now(), e: entity(JSON.stringify(out), 'application/json; charset=utf-8') };
   res.set('Cache-Control', 'no-cache');
-  res.json(out);
+  return sendEntity(req, res, themesEntity.e);
 }

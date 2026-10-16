@@ -2,15 +2,19 @@
 // with a synchronizer CSRF token bound to each session. Sessions persist across restarts (lib/sessions.js)
 // and slide: the planner 30 days, a couple 180 days since last activity, until they sign out.
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
-import { verify as argonVerify, hash as argonHash } from '@node-rs/argon2';
+import { hash as argonHashRaw } from '@node-rs/argon2';
 import { verify as bcryptVerify } from '@node-rs/bcrypt';
 import { IS_PROD, ADMIN_EMAIL, ADMIN_PASSWORD_HASH } from './env.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
-import { getInvitation, listInvitations } from './store.js';
+import { peekInvitation, findInvitationByTokenHash } from './store.js';
+// argon2 runs through a capped queue (lib/guard.js): a burst of sign-in attempts gets 503s, never every core.
+import { verifyPassword as argonVerify, hashPassword as argonHash, mimicVerify } from './guard.js';
 import { TTL, keyOf, expired, getSession, putSession, deleteSession, deleteSessionsWhere, touchSession } from './sessions.js';
 
 export const COOKIE = IS_PROD ? '__Host-studio' : 'studio_sid';
 const sha = (s) => createHash('sha256').update(s).digest('hex');
+/** A failed check counts as "no", but "server busy" (503 from the argon2 queue) is passed on as is. */
+const busyOr = (v) => (err) => { if (err?.status === 503) throw err; return v; };
 const newId = () => randomBytes(32).toString('base64url'); // 256-bit session ids and CSRF tokens
 
 /**
@@ -167,7 +171,7 @@ export function clientSession() {
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
     // Already signed in with this very link (the couple opened it again): go straight in, no password.
     if (req.session?.role === 'client' && /^[A-Za-z0-9_-]{43}$/.test(token)) {
-      const cur = await getInvitation(req.session.slug);
+      const cur = await peekInvitation(req.session.slug);
       if (linkActive(cur, req.session) && safeEqual(cur.access.tokenHash, hashToken(token))) {
         return res.json({ role: 'client', slug: cur.slug, csrf: req.session.csrf, perms: permsOf(cur.access) });
       }
@@ -180,15 +184,13 @@ export function clientSession() {
       return res.status(401).json({ error: 'That link or password is not right. Please check it, or ask your planner.' });
     };
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
-      await argonVerify(dummyHash, password || 'x').catch(() => false); // same timing as a real check
+      await mimicVerify(); // about the time of a real check, without the CPU (lib/guard.js)
       return fail();
     }
-    const h = hashToken(token);
-    const docs = await listInvitations();
-    let doc = null;
-    for (const d of docs) if (d.access?.tokenHash && safeEqual(d.access.tokenHash, h)) doc = d; // no early exit
+    // An indexed lookup by sha256(token) (lib/store.js), not a scan of every invitation.
+    const doc = await findInvitationByTokenHash(hashToken(token));
     if (!doc) {
-      await argonVerify(dummyHash, password || 'x').catch(() => false);
+      await mimicVerify();
       return fail();
     }
     const ss = slugLimiter.peek(doc.slug);
@@ -198,7 +200,7 @@ export function clientSession() {
     }
     // Links made before passwords existed (passwordHash null) still open with the token alone, until the planner sets one.
     if (doc.access.passwordHash) {
-      const ok = password ? await argonVerify(doc.access.passwordHash, password).catch(() => false) : false;
+      const ok = password ? await argonVerify(doc.access.passwordHash, password).catch(busyOr(false)) : false;
       if (!ok) return fail(doc.slug);
     }
     const s = await startSession(req, res, { role: 'client', slug: doc.slug, fp: linkFp(doc.access) });
@@ -212,14 +214,14 @@ export function clientSession() {
 const ipLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 const accountLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
 // A real hash to verify against when the email is wrong, so timing does not reveal valid emails.
-const dummyHash = await argonHash(randomBytes(16).toString('hex'));
+const dummyHash = await argonHashRaw(randomBytes(16).toString('hex'));
 
 async function checkPassword(password) {
   const h = ADMIN_PASSWORD_HASH;
   try {
     if (h.startsWith('$argon2')) return await argonVerify(h, password);
     if (/^\$2[aby]\$/.test(h)) return await bcryptVerify(password, h);
-  } catch { /* malformed hash */ }
+  } catch (err) { if (err?.status === 503) throw err; /* else a malformed hash */ }
   return false;
 }
 
@@ -238,7 +240,7 @@ export async function login(req, res) {
   const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 1024) : '';
 
   const emailOk = safeEqual(email, ADMIN_EMAIL);
-  const passOk = emailOk ? await checkPassword(password) : (await argonVerify(dummyHash, password).catch(() => false), false);
+  const passOk = emailOk ? await checkPassword(password) : (await argonVerify(dummyHash, password).catch(busyOr(false)), false);
 
   if (!emailOk || !passOk) {
     ipLimiter.hit(ip);
@@ -270,7 +272,7 @@ export async function hasStudioSession(req) {
   if (!s) return false;
   if (s.role === 'admin') return true;
   if (s.role !== 'client') return false;
-  const doc = await getInvitation(s.slug);
+  const doc = await peekInvitation(s.slug);
   if (linkActive(doc, s)) return true;
   await deleteSession(req.sessionKey);
   return false;
@@ -280,7 +282,7 @@ export async function me(req, res) {
   if (!req.session) return res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
   if (s.role !== 'client') return res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
-  const doc = await getInvitation(s.slug);
+  const doc = await peekInvitation(s.slug);
   if (!linkActive(doc, s)) {
     await deleteSession(req.sessionKey);
     return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });

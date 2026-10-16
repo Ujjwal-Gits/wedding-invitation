@@ -30,8 +30,63 @@ export const themeThumb = (t, cls = '', src = t.thumb) => (src
 const partsOf = (ctx) => (slug) => ctx.meta.themes.find((t) => t.slug === slug)?.parts || null;
 const themeOf = (ctx, slug) => ctx.meta.themes.find((t) => t.slug === slug) || { slug, name: slug };
 
+/**
+ * Designs that are themselves a fixed mix (docs/MIX.md §6.1). Rajdwar is Mangal's page with Mahal's gate: it takes no
+ * other gate or first screen itself, so its pickers are Mangal's, with Mahal's gate chosen. Choosing anything else
+ * moves the invitation to Mangal with that choice and carries the couple's Rajdwar words, pictures and colours over.
+ */
+const ALIASES = {
+  rajdwar: { host: 'mangal', design: { gate: 'mahal' }, colors: { '--rj-red': '--mg-red', '--rj-gold': '--mg-gold-lt' } },
+};
+/** Notes shown once after such a switch, per invitation. */
+const switched = new Map();
+
 /** The design `want` keeps on `host`: only what that page can show (null = all its own). */
 export const designFor = (ctx, want, host) => cleanDesign(want, host, partsOf(ctx));
+
+/** May this person pick `slug` (allowed by the planner and made for the couple's community)? */
+const mayUse = (ctx, slug) => allowedThemes(ctx).some((t) => t.slug === slug);
+
+/**
+ * Leaves an alias design (Rajdwar) for its host page (Mangal) with `design`. The couple's words and pictures go to the
+ * host where the ids are the same (Rajdwar's body is Mangal's), and to the chosen gate and first screen where their
+ * manifests use those ids (Rajdwar's gate words and Ganesh to Mahal's gate). Colours follow the alias' map. Nothing is
+ * deleted: Rajdwar keeps its own copy in case they come back.
+ */
+async function leaveAlias(ctx, alias, design) {
+  const m = ctx.m;
+  const from = m.data.theme;
+  const own = m.data.themeContent?.[from] || {};
+  const cols = m.data.themeColors?.[from] || {};
+  const parts = [...new Set([design?.gate, design?.hero].filter(Boolean))];
+  const [hostMan, ...partMans] = await Promise.all([loadManifest(alias.host), ...parts.map((p) => loadManifest(p))]);
+  const P = partsOf(ctx);
+  const targets = [
+    { theme: alias.host, man: hostMan, has: () => true },
+    ...parts.map((slug, i) => {
+      const u = P(slug) || {};
+      const uses = new Set([design.gate === slug ? u.gateUses : null, design.hero === slug ? u.heroUses : null]
+        .filter(Boolean).flatMap((x) => [...(x.texts || []), ...(x.images || []), ...(x.colors || [])]));
+      return { theme: slug, man: partMans[i], has: (id) => uses.has(id) };
+    }),
+  ];
+  const copy = (v) => JSON.parse(JSON.stringify(v));
+  for (const { theme, man, has } of targets) {
+    if (!man) continue;
+    for (const kind of ['texts', 'images']) {
+      for (const [id, v] of Object.entries(own[kind] || {})) {
+        if (v == null || !Object.hasOwn(man[kind] || {}, id) || !has(id)) continue;
+        m.set(['themeContent', theme, kind, id], copy(v));
+      }
+    }
+    for (const [token, v] of Object.entries(cols)) {
+      const to = alias.colors?.[token];
+      if (to && v && Object.hasOwn(man.colors || {}, to) && has(to)) m.set(['themeColors', theme, to], v);
+    }
+  }
+  m.set(['theme'], alias.host);
+  setDesign(ctx, design);
+}
 
 function setDesign(ctx, next) {
   const now = JSON.stringify(ctx.m.data.design || null);
@@ -59,14 +114,15 @@ export function themeDemo(ctx, t, { choose = true } = {}) {
         h('button.btn', { type: 'button', onclick: () => d.close() }, choose ? 'Back' : 'Close'),
         choose ? h('button.btn.btn--primary', { type: 'button', onclick: () => { yes = true; d.close(); } }, icon('check', 16), `Use ${t.name}`) : null,
       ].filter(Boolean),
-      onClose: () => { off(); resolve(yes); },
+      onClose: () => { off(); ctx.preview?.pause?.(false); resolve(yes); },
     });
+    ctx.preview?.pause?.(true); // one live page at a time: the preview behind the demo holds still
   });
 }
 
-async function pickTheme(ctx, redraw) {
-  const list = allowedThemes(ctx);
+async function pickTheme(ctx, redraw, { only = null, title = 'Choose a design', text = 'Tap a design to see it with your own names, dates and photos. Nothing changes until you choose it.' } = {}) {
   const cur = ctx.m.data.theme;
+  const list = allowedThemes(ctx).filter((t) => !only || t.slug === cur || only(t));
   let chosen = null;
   const grid = h('ul.tgrid', list.map((t) => h('li', h('button.tcard', { type: 'button', class: t.slug === cur ? 'is-on' : '', 'aria-label': `${t.name}${t.slug === cur ? ' (current)' : ''}: see it with your details`, onclick: async () => {
     if (t.slug === cur) return;
@@ -75,16 +131,20 @@ async function pickTheme(ctx, redraw) {
   h('span.tcard__img', themeThumb(t), t.slug === cur ? h('span.tcard__on', icon('check', 14), 'Current') : h('span.tcard__view', icon('eye', 15), 'See it')),
   h('span.tcard__name', t.name), t.concept ? h('span.tcard__concept', t.concept) : null))));
   const d = openDialog({
-    title: 'Choose a design', wide: true,
-    body: [h('p.dialog__text', 'Tap a design to see it with your own names, dates and photos. Nothing changes until you choose it.'), grid],
+    title, wide: true,
+    body: [h('p.dialog__text', text), grid],
     onClose: async () => {
       if (!chosen) return;
       const ok = await confirmDialog({ title: `Switch to ${chosen.name}?`, message: 'Your names, dates, ceremonies, photos and music move with you. Words you changed only for the old design are kept in case you switch back.', confirm: `Use ${chosen.name}` });
       if (!ok) return;
       // The gate and first screen stay if the new design can take them (and are dropped if they are its own).
       const design = designFor(ctx, ctx.m.data.design, chosen.slug);
-      ctx.m.set(['theme'], chosen.slug);
-      setDesign(ctx, design);
+      const alias = ALIASES[cur];
+      if (alias?.host === chosen.slug) await leaveAlias(ctx, alias, design); // Rajdwar to Mangal: its words come along
+      else {
+        ctx.m.set(['theme'], chosen.slug);
+        setDesign(ctx, design);
+      }
       ctx.preview?.reload();
       redraw();
     },
@@ -95,13 +155,12 @@ async function pickTheme(ctx, redraw) {
  * What each picker offers on this design. ok: [{ t, pair? }]; no: [{ t, why }] (shown with the reason);
  * closed: the design cannot take another one at all (its reason); soon: designs not ready for mixing yet.
  */
-function choicesOf(ctx, kind, r) {
-  const host = ctx.m.data.theme;
+function choicesOf(ctx, kind, r, host = ctx.m.data.theme) {
   const P = partsOf(ctx);
   const H = P(host) || {};
   const hostName = themeOf(ctx, host).name;
   const out = { ok: [], no: [], closed: '', soon: 0 };
-  const list = allowedThemes(ctx).filter((t) => t.slug !== host);
+  const list = allowedThemes(ctx).filter((t) => t.slug !== host && t.slug !== ctx.m.data.theme);
   if (kind === 'gate') {
     if (!H.hostGate) { out.closed = H.why?.hostGate || `${hostName}’s own opening can’t be swapped yet.`; return out; }
     for (const t of list) {
@@ -138,24 +197,41 @@ function option({ img, name, sub, on, disabled, onclick, label }) {
 const stillOf = (t, kind) => (kind === 'gate' ? t.stills?.gate : t.stills?.hero) || t.thumb;
 
 /** One picker: "Its own" first, then the other themes' gates (or first screens). A strip that scrolls sideways on phones. */
-function picker(ctx, kind, r, redraw) {
-  const host = themeOf(ctx, ctx.m.data.theme);
+function picker(ctx, kind, r, redraw, alias = null) {
+  const hostSlug = alias?.host || ctx.m.data.theme;
+  const host = themeOf(ctx, hostSlug);
   const cur = kind === 'gate' ? r.gate : r.hero;
   const curT = cur ? themeOf(ctx, cur) : null;
   const pairGate = r.gate && partsOf(ctx)(r.gate)?.gate === 'pair' ? themeOf(ctx, r.gate) : null;
   const what = kind === 'gate' ? 'gate' : 'first screen';
-  const c = choicesOf(ctx, kind, r);
+  // An alias (Rajdwar) can only switch to its host when the planner allows the host design.
+  const locked = alias && !mayUse(ctx, alias.host);
+  const c = locked ? { ok: [], no: [], closed: '', soon: 0 } : choicesOf(ctx, kind, r, hostSlug);
 
-  const choose = (slug, pair) => {
-    const d = ctx.m.data.design || {};
+  const choose = async (slug, pair) => {
+    const d = alias ? alias.design : (ctx.m.data.design || {});
     let want;
     if (kind === 'gate') {
       want = pair ? { gate: slug, hero: slug } : { gate: slug || undefined, hero: d.hero };
       // Leaving an opening scene: its first screen goes with it.
       if (!pair && pairGate && d.hero === pairGate.slug) want.hero = undefined;
-    } else want = { gate: d.gate, hero: slug || undefined };
-    const next = designFor(ctx, want, ctx.m.data.theme);
+    } else {
+      want = { gate: d.gate, hero: slug || undefined };
+      // The alias' own gate stays only if this person may use that design (the server checks it too).
+      if (alias && want.gate && !mayUse(ctx, want.gate)) want.gate = undefined;
+    }
+    const next = designFor(ctx, want, hostSlug);
     if (want.hero && !next?.hero) toast(`The first screen is ${host.name}’s own again: its own gate opens into it.`);
+    if (alias) {
+      if (JSON.stringify(next || null) === JSON.stringify(alias.design)) return; // what Rajdwar already shows
+      const from = themeOf(ctx, ctx.m.data.theme).name;
+      await leaveAlias(ctx, alias, next);
+      switched.set(ctx.slug, `Switched to ${host.name} with your chosen ${what}; it looks the same inside.`);
+      ctx.preview?.reload();
+      toast(`${from} is now ${host.name} with your chosen ${what}.`);
+      redraw();
+      return;
+    }
     if (setDesign(ctx, next)) redraw();
   };
 
@@ -165,15 +241,31 @@ function picker(ctx, kind, r, redraw) {
     opts = [option({ img: themeThumb(pairGate, '', stillOf(pairGate, 'hero')), name: pairGate.name, sub: 'Comes with the gate', on: true, disabled: true, label: `${pairGate.name}: comes with its opening scene` })];
     notes.push(h('p.hint.mixnote', icon('info', 14), h('span', `${pairGate.name}’s gate opens into its own first screen. Choose another gate to change it.`)));
   } else {
-    opts.push(option({ img: themeThumb(host, '', stillOf(host, kind)), name: `${host.name}’s own`, sub: 'Same as the design', on: !cur, label: `${host.name}’s own ${what}`, onclick: () => choose(null) }));
+    opts.push(option({ img: themeThumb(host, '', stillOf(host, kind)), name: `${host.name}’s own`, sub: alias ? (cur ? `Switches to ${host.name}` : 'As now') : 'Same as the design', on: !cur, disabled: locked, label: `${host.name}’s own ${what}`, onclick: () => choose(null) }));
     const shown = new Set();
     for (const { t, pair } of c.ok) {
       shown.add(t.slug);
-      opts.push(option({ img: themeThumb(t, '', stillOf(t, kind)), name: t.name, sub: pair ? 'With its first screen' : null, on: cur === t.slug, label: `${t.name}’s ${pair ? 'opening scene (gate and first screen)' : what}`, onclick: () => choose(t.slug, pair) }));
+      opts.push(option({ img: themeThumb(t, '', stillOf(t, kind)), name: t.name, sub: pair ? 'With its first screen' : alias && cur === t.slug ? 'As now' : null, on: cur === t.slug, label: `${t.name}’s ${pair ? 'opening scene (gate and first screen)' : what}`, onclick: () => choose(t.slug, pair) }));
     }
     // Chosen by the planner from a design not on this person's list: still shown as chosen.
-    if (cur && !shown.has(cur)) opts.push(option({ img: themeThumb(curT, '', stillOf(curT, kind)), name: curT.name, on: true, label: curT.name, onclick: () => {} }));
-    if (c.closed) notes.push(h('p.hint.mixnote', icon('info', 14), h('span', c.closed)));
+    if (cur && !shown.has(cur)) opts.push(option({ img: themeThumb(curT, '', stillOf(curT, kind)), name: curT.name, sub: alias ? `In ${themeOf(ctx, ctx.m.data.theme).name}` : null, on: true, label: curT.name, onclick: () => {} }));
+    if (locked) {
+      const me = themeOf(ctx, ctx.m.data.theme).name;
+      notes.push(h('p.hint.mixnote', icon('lock', 14), h('span', `${me} is ${host.name}’s page with ${themeOf(ctx, alias.design.gate).name}’s gate. To change its ${what}, ask your planner to allow the ${host.name} design.`)));
+    } else if (c.closed) {
+      // Never a lone "same as the design" without a way forward: one click shows the designs that can.
+      const can = (t) => (kind === 'gate' ? t.parts?.hostGate : t.parts?.hostHero);
+      const others = allowedThemes(ctx).filter((t) => t.slug !== hostSlug && can(t));
+      notes.push(h('div.mixnote.mixnote--act', h('p.hint', icon('info', 14), h('span', c.closed)),
+        ctx.perms.canChangeTheme && others.length
+          ? h('button.btn.btn--sm', { type: 'button', onclick: () => pickTheme(ctx, redraw, { only: can, title: `Designs that can change their ${what}`, text: `These designs can take another ${what}. Tap one to see it with your details; then pick the ${what} here.` }) }, icon('palette', 15), `Designs that can change their ${what}`)
+          : h('p.hint', h('span', 'Ask your planner if you would like another design.'))));
+    } else if (!c.ok.length && !pairGate) {
+      const all = allowedThemes(ctx, { any: true }).length > allowedThemes(ctx).length;
+      notes.push(h('p.hint.mixnote', icon('info', 14), h('span', all
+        ? `The other ${what}s are not made for your community yet, so ${host.name}’s own is the one for now.`
+        : `Your planner has not opened other designs for this invitation. Ask them if you would like another ${what}.`)));
+    }
   }
   const why = c.no.length || c.soon ? h('details.mixwhy',
     h('summary', icon('info', 14), c.no.length ? `Why some designs aren’t here (${c.no.length + c.soon})` : `More ${what}s are on the way`),
@@ -188,10 +280,11 @@ const step = (n, title, help, ...body) => h('div.mixrow',
   h('div.mixrow__body', ...body));
 
 /** What guests see now, when the couple may not change it: the gate, the first screen and the design, with a note. */
-function lockedCard(ctx, r) {
+function lockedCard(ctx, r, alias = null) {
   const host = themeOf(ctx, ctx.m.data.theme);
-  const gateT = r.gate ? themeOf(ctx, r.gate) : host;
-  const heroT = r.hero ? themeOf(ctx, r.hero) : host;
+  const base = alias ? themeOf(ctx, alias.host) : host;
+  const gateT = r.gate ? themeOf(ctx, r.gate) : base;
+  const heroT = r.hero ? themeOf(ctx, r.hero) : base;
   const tile = (kind, t, label, img) => h('li.mixsum__item',
     h('span.mixsum__img', img),
     h('span.mixsum__k', label),
@@ -205,20 +298,25 @@ function lockedCard(ctx, r) {
     h('p.mixlock', icon('lock', 15), h('span', h('b', 'Set by your planner. '), 'Ask your planner to change this.')));
 }
 
-function mixCard(ctx, r, redraw) {
-  if (!ctx.perms.canChangeTheme) return lockedCard(ctx, r);
+function mixCard(ctx, r, redraw, alias = null) {
+  if (!ctx.perms.canChangeTheme) return lockedCard(ctx, r, alias);
   const host = themeOf(ctx, ctx.m.data.theme);
   const list = allowedThemes(ctx);
+  const note = switched.get(ctx.slug);
   return h('section.card.mixcard', { 'aria-label': 'Your opening' },
     h('header.card__head', h('h2.card__title', 'Your opening'), h('p.card__help', 'Pick the gate guests tap and the first screen they see. The preview shows your choice straight away.')),
-    step('1', 'Gate', 'What guests tap to open the invitation.', ...picker(ctx, 'gate', r, redraw)),
-    step('2', 'First screen', 'What they see as the gate opens.', ...picker(ctx, 'hero', r, redraw)),
+    note ? h('p.mixdone', { role: 'status' }, icon('check', 14), h('span', note)) : null,
+    step('1', 'Gate', alias && mayUse(ctx, alias.host)
+      ? `What guests tap to open the invitation. ${host.name} uses ${themeOf(ctx, alias.design.gate).name}’s gate; another one moves you to ${themeOf(ctx, alias.host).name}, which looks the same inside.`
+      : 'What guests tap to open the invitation.', ...picker(ctx, 'gate', r, redraw, alias)),
+    step('2', 'First screen', 'What they see as the gate opens.', ...picker(ctx, 'hero', r, redraw, alias)),
     step('3', 'Design', 'Everything after the first screen.',
       h('div.mixdesign',
         h('div.mixdesign__thumb', themeThumb(host)),
         h('div.mixdesign__text',
           h('b.mixdesign__name', host.name),
           host.concept ? h('span.mixdesign__concept', host.concept) : null,
+          alias ? h('span.mixdesign__concept', `${host.name} is ${themeOf(ctx, alias.host).name}’s page with ${themeOf(ctx, alias.design.gate).name}’s gate.`) : null,
           list.length > 1 ? h('button.btn.btn--sm', { type: 'button', onclick: () => pickTheme(ctx, redraw) }, icon('palette', 15), 'Change design') : null))));
 }
 
@@ -329,9 +427,11 @@ export function openingModule(ctx) {
   const draw = async () => {
     const me = ++run;
     const theme = ctx.m.data.theme;
+    const alias = ALIASES[theme] && ctx.meta.themes.some((t) => t.slug === ALIASES[theme].host) ? ALIASES[theme] : null;
     const r = resolveDesign(ctx.m.data.design, theme, partsOf(ctx));
+    const shownR = alias ? resolveDesign(alias.design, alias.host, partsOf(ctx)) : r;
     const scrolls = new Map([...top.querySelectorAll('.mixopts')].map((ul) => [ul.dataset.kind, ul.scrollLeft]));
-    fill(top, mixCard(ctx, r, draw), faithCard(ctx, { themes: () => allowedThemes(ctx, { any: true }), pickDesign: (list, text) => pickDesignDialog(ctx, list, text, (t) => themeThumb(t)), redraw: draw }));
+    fill(top, mixCard(ctx, shownR, draw, alias), faithCard(ctx, { themes: () => allowedThemes(ctx, { any: true }), pickDesign: (list, text) => pickDesignDialog(ctx, list, text, (t) => themeThumb(t)), redraw: draw }));
     requestAnimationFrame(() => {
       for (const ul of top.querySelectorAll('.mixopts')) {
         if (scrolls.has(ul.dataset.kind)) ul.scrollLeft = scrolls.get(ul.dataset.kind);

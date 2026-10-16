@@ -171,8 +171,8 @@ select.input--sm { padding-right: 32px; background-position: right 15px center, 
 
 /* Bilingual pair */
 .bi { display: grid; gap: 6px; container-type: inline-size; }
+.bi__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s2); }
 @container (max-width: 400px) { .bi__row { grid-template-columns: minmax(0, 1fr); } }
-.bi__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
 .bi__col { position: relative; display: grid; }
 .bi__lang { position: absolute; top: 9px; right: 10px; z-index: 1; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-4); pointer-events: none; }
 .bi__col .input { padding-right: 64px; }
@@ -245,6 +245,12 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); width
 .card--danger { border-color: var(--accent-line); }
 .minicard { gap: var(--s2); }
 .stack { display: grid; gap: var(--s4); min-width: 0; }
+/* One-column grids get an explicit minmax(0, 1fr) track. An implicit (auto) track sizes itself from its content's
+   min/max-content, and every nested auto grid asks its children again: on the Opening module (cards in stacks in
+   stacks, an aspect-ratio photo card, container-query fields) one layout took 5-20 s and GBs of memory, and the tab
+   crashed. A fixed track never measures its content, so a layout is a few ms whatever the nesting. */
+.card, .stack, .page__content, .fold__body, .fold__part, .sec, .group, .rep, .rep__list, .rep__body, .dialog__body,
+.field, .bi, .bi__col, .mixrow, .card__head, .more__body { grid-template-columns: minmax(0, 1fr); }
 .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s4); align-items: start; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
 .row--split { justify-content: space-between; padding-top: var(--s3); border-top: 1px solid var(--line); }
@@ -765,7 +771,7 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 
 /* Theme slot cards */
 .sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s3); }
-.scard { appearance: none; position: relative; display: grid; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
+.scard { appearance: none; position: relative; display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
 .scard__img { position: relative; display: block; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--surface-3); border: 1px solid var(--line); }
 .scard__img img { width: 100%; height: 100%; object-fit: cover; }
 .scard__none { display: grid; place-items: center; height: 100%; color: var(--ink-4); }
@@ -1447,6 +1453,10 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .mixcard .mixrow__title { font-size: 15px; }
 .mixnote { display: flex; gap: 6px; align-items: flex-start; }
 .mixnote svg { flex: none; margin-top: 3px; }
+.mixnote--act { flex-direction: column; align-items: flex-start; gap: var(--s2); }
+.mixnote--act .hint { display: flex; gap: 6px; align-items: flex-start; }
+.mixdone { display: flex; gap: 8px; align-items: center; margin: var(--s2) 0 0; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font-size: 13.5px; }
+.mixdone svg { flex: none; color: var(--accent); }
 .mixsum { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); max-width: 520px; }
 .mixsum__item { display: grid; gap: 2px; min-width: 0; align-content: start; }
 .mixsum__img { display: block; aspect-ratio: 4 / 5; border-radius: var(--r); overflow: hidden; background: var(--surface-3); border: 1px solid var(--line); margin-bottom: 6px; }

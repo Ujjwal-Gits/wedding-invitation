@@ -3,7 +3,8 @@
 //   access? { tokenHash, passwordHash, createdAt, themes, canChangeTheme, canChangeColors }, lastEdit? {at, by, type}, activity? [{at, by, type, sections}], adminSeenAt? }
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { SLUG_RE, withLock, invPath, getInvitation, listInvitations, writeJsonAtomic, trashInvitation, uploadDir, readJson, rsvpPath } from './store.js';
+import { SLUG_RE, withLock, getInvitation, peekInvitation, revOf, listInvitations, createInvitation, saveInvitation, trashInvitation, uploadDir, replyStats } from './store.js';
+import { entity, entityCache, sendEntity } from './http-cache.js';
 import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
@@ -193,11 +194,18 @@ onDepthReady((slug) => withLock(`inv:${slug}`, async () => {
   const before = JSON.stringify([doc.draft, doc.published]);
   attachDepth(slug, doc.draft);
   attachDepth(slug, doc.published);
-  if (JSON.stringify([doc.draft, doc.published]) !== before) await writeJsonAtomic(invPath(slug), doc);
+  if (JSON.stringify([doc.draft, doc.published]) !== before) await saveInvitation(doc);
 }).catch((err) => console.warn('[depth] patch failed', err.message)));
 
+/** A private, mutable copy (for changes under the invitation's lock). */
 const load = async (slug) => {
   const doc = await getInvitation(slug);
+  if (!doc) throw httpError(404, 'No invitation with that link name.');
+  return doc;
+};
+/** The stored doc, shared and read-only (cached; for answers that change nothing). */
+const peek = async (slug) => {
+  const doc = await peekInvitation(slug);
   if (!doc) throw httpError(404, 'No invitation with that link name.');
   return doc;
 };
@@ -205,9 +213,8 @@ const load = async (slug) => {
 // ── Admin handlers ─────────────────────────────────────────────────────────
 
 export async function list(req, res) {
-  const docs = await listInvitations();
-  const counts = await Promise.all(docs.map((d) => readJson(rsvpPath(d.slug), []).then((r) => r.length).catch(() => 0)));
-  const items = docs.map((d, i) => summary(d, counts[i])).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  const [docs, replies] = await Promise.all([listInvitations(), replyStats()]);
+  const items = docs.map((d) => summary(d, replies.get(d.slug)?.count || 0)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
   res.json({ invitations: items });
 }
 
@@ -230,7 +237,7 @@ export async function create(req, res) {
     const theme = ok(b.theme) ? b.theme : (listThemes().find((t) => ok(t.slug))?.slug || b.theme);
     const draft = sanitizeInvitation(starter({ bride, groom, theme, sample: b.sample !== false, religion, colors: b.colors }), slug, slots);
     const d = { slug, version: 1, status: 'draft', createdAt: now, updatedAt: now, publishedAt: null, draft, published: null };
-    await writeJsonAtomic(invPath(slug), d);
+    await createInvitation(d);
     return d;
   });
   console.info(`[admin] create slug=${slug} religion=${religion}`);
@@ -238,7 +245,7 @@ export async function create(req, res) {
 }
 
 export async function read(req, res) {
-  res.json(docOut(await load(req.params.slug), isAdmin(req)));
+  res.json(docOut(await peek(req.params.slug), isAdmin(req)));
 }
 
 export async function update(req, res) {
@@ -257,7 +264,7 @@ export async function update(req, res) {
     cur.version += 1;
     cur.updatedAt = new Date().toISOString();
     logActivity(cur, { at: cur.updatedAt, by: actor(req), type: 'edit', sections: sections.length ? sections : ['other'] });
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
     return cur;
   });
   res.json({ version: doc.version, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null, changed: doc.status === 'published' && !same(doc.draft, doc.published), data: doc.draft });
@@ -310,7 +317,7 @@ export async function publish(req, res) {
     cur.publishedAt = new Date().toISOString();
     cur.version += 1;
     logActivity(cur, { at: cur.publishedAt, by: actor(req), type: 'publish', sections: [] });
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
     return cur;
   });
   console.info(`[admin] publish slug=${slug} by=${req.session.role}`);
@@ -325,7 +332,7 @@ export async function unpublish(req, res) {
     cur.published = null;
     cur.version += 1;
     logActivity(cur, { at: new Date().toISOString(), by: actor(req), type: 'unpublish', sections: [] });
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
     return cur;
   });
   console.info(`[admin] unpublish slug=${slug}`);
@@ -334,7 +341,7 @@ export async function unpublish(req, res) {
 
 /** GET /api/invitations/:slug/version: the cheap check the studio polls to notice changes made elsewhere. */
 export async function version(req, res) {
-  const doc = await load(req.params.slug);
+  const doc = await peek(req.params.slug);
   res.json({ version: doc.version, status: doc.status, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null });
 }
 
@@ -344,7 +351,7 @@ export async function seen(req, res) {
   await withLock(`inv:${slug}`, async () => {
     const cur = await load(slug);
     cur.adminSeenAt = new Date().toISOString();
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
   });
   res.json({ ok: true });
 }
@@ -398,7 +405,7 @@ export async function createClientLink(req, res) {
     const cur = await load(slug);
     const tokenEnc = sealToken(slug, token);
     cur.access = { tokenHash: hashToken(token), ...(tokenEnc ? { tokenEnc } : {}), passwordHash, createdAt: new Date().toISOString(), themes: opts.themes, canChangeTheme: opts.canChangeTheme, canChangeColors: opts.canChangeColors };
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
     return cur;
   });
   await revokeClientSessions(slug);
@@ -417,7 +424,7 @@ export async function patchAccess(req, res) {
     if (!cur.access) throw httpError(404, 'This invitation has no couple link yet.');
     for (const k of ['themes', 'canChangeTheme', 'canChangeColors']) if (opts[k] !== undefined) cur.access[k] = opts[k];
     if (passwordHash) cur.access.passwordHash = passwordHash;
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
     return cur;
   });
   if (passwordHash) await revokeClientSessions(slug); // the same link now needs the new password
@@ -432,7 +439,7 @@ export async function deleteClientLink(req, res) {
     const cur = await load(slug);
     delete cur.access;
     delete cur.clientAccess;
-    await writeJsonAtomic(invPath(slug), cur);
+    await saveInvitation(cur);
   });
   await revokeClientSessions(slug);
   console.info(`[admin] client link removed slug=${slug}`);
@@ -445,18 +452,29 @@ function stillsOf(slug) {
   return { gate: one('gate.jpg'), hero: one('hero.jpg') };
 }
 
-export async function meta(req, res) {
+// The catalog part of /api/meta reads manifests, credits and the photo folder: worked out at most every 10 s.
+let metaCache = { at: 0, value: null };
+async function metaCatalog() {
+  if (metaCache.value && Date.now() - metaCache.at < 10_000) return metaCache.value;
   let credits = [];
   try { credits = JSON.parse(readFileSync(resolve(ROOT_DIR, 'src', 'generated', 'credits.json'), 'utf8')); } catch { credits = []; }
+  const bySlug = new Map();
+  for (const x of Array.isArray(credits) ? credits : []) if (x?.file) { const k = x.file.replace(/\.jpe?g$/i, ''); if (!bySlug.has(k)) bySlug.set(k, x); }
   const lib = [...librarySlugs()].sort().map((slug) => {
-    const c = credits.find((x) => x.file && x.file.replace(/\.jpe?g$/i, '') === slug);
+    const c = bySlug.get(slug);
     return { slug, title: c?.title || slug, focal: c && c.focal_x != null ? [c.focal_x, c.focal_y] : [0.5, 0.5] };
   });
   const themes = await Promise.all(listThemes().map(async (t) => {
     const m = await loadManifest(t.slug);
     return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, religions: m?.religions || ['hindu'], faithInk: m?.faithInk || '', stills: stillsOf(t.slug) };
   }));
-  res.json({ themes, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
+  metaCache = { at: Date.now(), value: { themes, library: lib } };
+  return metaCache.value;
+}
+
+export async function meta(req, res) {
+  const { themes, library } = await metaCatalog();
+  res.json({ themes, tracks: BUNDLED_TRACKS, library, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
 
 
@@ -475,12 +493,29 @@ export function photoUrl(ref) {
  * GET /api/invitations/:slug/public: the published snapshot only, with the RSVP endpoint filled in.
  * A signed-in admin gets the draft instead, so the studio's live preview shows unpublished edits.
  */
+const publicCache = entityCache(1000); // slug -> the guests' JSON at the invitation's current revision
+
 export async function publicData(req, res) {
   const { slug } = req.params;
-  const doc = await getInvitation(slug);
+  const doc = await peekInvitation(slug);
   const preview = Boolean(doc) && canEdit(req, slug); // planner, or the couple for their own invitation
   const src = preview ? doc.draft : doc?.status === 'published' ? doc.published : null;
   if (!src) throw httpError(404, 'Not found.');
+  res.vary('Cookie');
+  if (preview) {
+    res.set('X-Invitation-Preview', 'draft');
+    res.set('Cache-Control', 'no-store');
+    return res.json(publicPayload(src, slug));
+  }
+  // Guests: built once per published revision, then served from memory with an ETag (304 when unchanged).
+  const rev = revOf(doc);
+  const e = publicCache.get(slug, rev) || publicCache.set(slug, rev, entity(JSON.stringify(publicPayload(src, slug)), 'application/json; charset=utf-8'));
+  res.set('Cache-Control', 'no-cache');
+  return sendEntity(req, res, e);
+}
+
+/** The page's data from a draft or published snapshot (a new object; the stored one is never changed). */
+function publicPayload(src, slug) {
   const out = structuredClone(src);
   out.rsvp.endpoint = `/api/invitations/${slug}/rsvp`;
   if (!out.music.tracks.length) out.music.tracks = [BUNDLED_TRACKS[0]];
@@ -498,20 +533,17 @@ export async function publicData(req, res) {
   // Only the content overrides the page shows: its theme's, and those of a borrowed gate or first screen (MIX.md).
   const shown = new Set([out.theme, out.design?.gate, out.design?.hero].filter(Boolean));
   out.themeContent = Object.fromEntries(Object.entries(out.themeContent || {}).filter(([t]) => shown.has(t)));
-  if (preview) res.set('X-Invitation-Preview', 'draft');
-  res.set('Cache-Control', preview ? 'no-store' : 'no-cache');
-  res.json(out);
+  return out;
 }
 
 /** GET /api/admin/stats: counts for the planner's overview. `attending` = guests (people) who said yes. */
 export async function stats(req, res, newOrders) {
-  const docs = await listInvitations();
+  const [docs, replies] = await Promise.all([listInvitations(), replyStats()]);
   let rsvps = 0;
   let attending = 0;
   for (const d of docs) {
-    const replies = await readJson(rsvpPath(d.slug), []).catch(() => []);
-    rsvps += replies.length;
-    for (const r of replies) if (r.attending === 'yes') attending += Number(r.guests) || 0;
+    const r = replies.get(d.slug);
+    if (r) { rsvps += r.count; attending += r.guests; }
   }
   const published = docs.filter((d) => d.status === 'published').length;
   res.json({ invitations: docs.length, published, drafts: docs.length - published, rsvps, attending, newOrders: await newOrders() });

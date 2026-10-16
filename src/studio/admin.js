@@ -526,6 +526,35 @@ function access(ctx) {
 
 // ── Orders & requests ─────────────────────────────────────────────────────
 
+// Online payments (server/lib/payments): order.payment = { status, amount, currency, env, paypalOrderId, captureId, … }
+const PAY_BADGE = {
+  paid: ['ok', 'Paid'], refunded: ['warn', 'Refunded'], partially_refunded: ['warn', 'Part refunded'],
+  pending: ['warn', 'Pending at PayPal'], mismatch: ['accent', 'Check payment'], denied: ['muted', 'Declined'], created: ['muted', 'Unpaid'],
+};
+const payMoney = (p) => (p?.amount ? `${p.currency || 'USD'} ${p.amount}` : '');
+const ppBase = (p) => (p?.env === 'live' ? 'https://www.paypal.com' : 'https://www.sandbox.paypal.com');
+function payBadge(o) {
+  const p = o.payment;
+  if (!p) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'No online payment. Collected by hand, if any.' }, 'Unpaid') : null;
+  const [tone, text] = PAY_BADGE[p.status] || ['muted', 'Unpaid'];
+  const money = p.status === 'partially_refunded' ? `${p.refunded} of ${payMoney(p)}` : payMoney(p);
+  return h('span.pill', { class: `pill--${tone}`, title: p.status === 'created' ? 'Opened PayPal but has not paid' : undefined }, money && p.status !== 'created' ? `${text} · ${money}` : text);
+}
+function paymentFacts(p) {
+  if (!p || p.provider !== 'paypal') return [];
+  const ext = (href, text) => h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: 'Opens PayPal in a new tab' }, text);
+  return [
+    ['Payment', `${payMoney(p)} by PayPal${p.env === 'sandbox' ? ' (sandbox, test money)' : ''}`],
+    p.paidAt ? ['Paid', h('time', { datetime: p.paidAt, title: whenText(p.paidAt) }, fmtRelative(p.paidAt))] : null,
+    p.refunded ? ['Refunded', `${p.currency} ${p.refunded}`] : null,
+    p.payerEmail ? ['Payer', h('a', { href: `mailto:${p.payerEmail}` }, p.payerEmail)] : null,
+    p.captureId ? ['PayPal transaction', ext(`${ppBase(p)}/activity/payment/${encodeURIComponent(p.captureId)}`, p.captureId)] : null,
+    p.paypalOrderId ? ['PayPal order', h('span.tnum', p.paypalOrderId)] : null,
+    p.problem ? ['Note', p.problem] : null,
+    ['', ext(`${ppBase(p)}/activities`, 'Open the PayPal dashboard')],
+  ].filter(Boolean);
+}
+
 function orders(ctx) {
   let list = [];
   let tab = 'new';
@@ -552,10 +581,11 @@ function orders(ctx) {
       o.theme ? ['Design', themeOf(ctx, o.theme)?.name || o.theme] : null,
       o.email ? ['Email', h('a', { href: `mailto:${o.email}` }, o.email)] : null,
       o.invitation ? ['Invitation', h('a', { href: `#/i/${o.invitation}/home` }, `/${o.invitation}`)] : null,
+      ...paymentFacts(o.payment),
     ].filter(Boolean);
     return h('li.ord',
       h('div.ord__who',
-        h('p.ord__name', h('b', o.name), h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order')),
+        h('p.ord__name', h('b', o.name), h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order'), payBadge(o)),
         h('p.ord__when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))),
         h('div.ord__contact',
           h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), h('span.tnum', o.phone)),
@@ -730,6 +760,7 @@ function website(ctx) {
       for (const p of site.plans) {
         if (!p.name.trim()) return 'Every plan needs a name.';
         if (p.price != null && (!Number.isInteger(p.price) || p.price < 0)) return `The price of ${p.name} must be a whole number.`;
+        if (p.usdPrice != null && !(Number.isFinite(p.usdPrice) && p.usdPrice >= 1 && p.usdPrice <= 10000)) return `The online price of ${p.name} must be between 1 and 10000 US dollars, or empty.`;
         p.id = p.id || slugify(p.name) || `plan-${ids.size + 1}`;
         while (ids.has(p.id)) p.id = `${p.id}-2`;
         ids.add(p.id);
@@ -742,6 +773,12 @@ function website(ctx) {
     };
     const planCard = (p, i) => {
       const price = h('input.input', { id: `pl-price-${i}`, inputmode: 'numeric', value: p.price ?? '', placeholder: 'Ask for price', oninput: (e) => { const v = e.target.value.replace(/[^\d]/g, ''); e.target.value = v; p.price = v === '' ? null : Number(v); touch(); } });
+      const usd = h('input.input', { id: `pl-usd-${i}`, inputmode: 'decimal', value: p.usdPrice ?? '', placeholder: 'Not online', oninput: (e) => {
+        const v = e.target.value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1').replace(/^(\d{0,5})\d*(\.\d{0,2})?.*$/, '$1$2');
+        e.target.value = v;
+        p.usdPrice = v === '' || v === '.' ? null : Number(v);
+        touch();
+      } });
       return h('article.plan', { class: p.highlight ? 'is-highlight' : '' },
         h('header.plan__head', h('span.plan__n', `Plan ${i + 1}`),
           h('span.plan__tools',
@@ -750,6 +787,7 @@ function website(ctx) {
             iconBtn('trash', `Remove plan ${i + 1}`, async () => { if (await confirmDialog({ title: `Remove ${p.name || 'this plan'}?`, message: 'It disappears from the website after you save.', confirm: 'Remove', danger: true })) { site.plans.splice(i, 1); touch(); draw(); } }))),
         fieldIn(`pl-name-${i}`, 'Name', p.name, (v) => { p.name = v; }, { max: 60 }),
         h('div.field', h('label.label', { for: `pl-price-${i}` }, 'Price (NPR)'), h('div.inputrow.inputrow--prefix', h('span.prefix', 'Rs'), price), h('p.hint', 'Empty shows “Ask for price”.')),
+        h('div.field', h('label.label', { for: `pl-usd-${i}` }, 'Online price (USD)'), h('div.inputrow.inputrow--prefix', h('span.prefix', '$'), usd), h('p.hint', 'What PayPal charges (it takes no rupees). Empty: this plan is not payable online.')),
         fieldIn(`pl-note-${i}`, 'Short note', p.note, (v) => { p.note = v; }, { max: 160, placeholder: 'e.g. Most couples choose this' }),
         fieldIn(`pl-feat-${i}`, 'Included (one per line)', (p.features || []).join('\n'), (v) => { p.features = v.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 20); }, { multiline: true, rows: 4 }),
         toggle({ label: 'Recommended', hint: 'Highlighted on the website.', checked: p.highlight, onChange: (v) => { site.plans.forEach((x) => { x.highlight = false; }); p.highlight = v; touch(); draw(); } }));
@@ -781,8 +819,32 @@ function website(ctx) {
 
 // ── Settings & help ───────────────────────────────────────────────────────
 
+/** Settings → Payments: is PayPal on, sandbox or live. Keys live only in the server environment; never shown. */
+function paymentsCard() {
+  const body = h('div', rowsSkel(3));
+  api('/pay/status').then(({ paypal: p }) => {
+    const yes = (ok, text = ok ? 'Set' : 'Missing') => st(ok ? 'ok' : 'muted', text);
+    const live = p.env === 'live';
+    fill(body,
+      h('p', p.enabled
+        ? st(live ? 'ok' : 'warn', live ? 'PayPal on · Live (real money)' : 'PayPal on · Sandbox (test money)')
+        : st('muted', 'PayPal off: not configured')),
+      h('dl.kv.kv--rows',
+        h('div', h('dt', 'Mode'), h('dd', live ? 'Live' : 'Sandbox')),
+        h('div', h('dt', 'Client ID'), h('dd', p.clientId ? h('span.tnum', p.clientId) : yes(false))),
+        h('div', h('dt', 'Secret'), h('dd', yes(p.secretSet))),
+        h('div', h('dt', 'Webhook ID'), h('dd', yes(p.webhookIdSet))),
+        h('div', h('dt', 'Webhook URL'), h('dd', h('span.tnum', p.webhookUrl), ' ', h('button.link', { type: 'button', onclick: () => copyText(p.webhookUrl, 'Webhook URL copied') }, 'Copy'))),
+        h('div', h('dt', 'Dashboard'), h('dd', h('a', { href: p.dashboard, target: '_blank', rel: 'noopener noreferrer', title: 'Opens PayPal in a new tab' }, live ? 'PayPal activity' : 'Sandbox activity')))),
+      p.problems?.length && !p.enabled ? h('div.banner.banner--warn', icon('info', 16), h('span', p.problems.join('. '), '.')) : null,
+      h('p.hint', icon('info', 14), 'The PayPal keys are set in the server environment (Coolify), never here. Plans need an online price (USD) under Website to be payable. Steps: docs/PAYMENTS.md.'));
+  }).catch((err) => fill(body, quietEmpty('alert', err.status === 404 ? 'Payments are not available on this server yet' : 'Could not load the payment status', err.status === 404 ? '' : err.message)));
+  return setting('Payments', 'Online payment on the website with PayPal, in US dollars. Off until the server has its keys.', body);
+}
+
 function settings(ctx) {
   return [
+    paymentsCard(),
     setting('Your account', 'The owner account has full access to every invitation, client link and order.',
       h('dl.kv.kv--rows', h('div', h('dt', 'Signed in as'), h('dd', ctx.me.email || 'Owner')), h('div', h('dt', 'Role'), h('dd', 'Owner, full access'))),
       h('p.hint', icon('info', 14), 'To change the owner email or password, update the server settings (.env) and restart.')),

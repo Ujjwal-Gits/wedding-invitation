@@ -343,6 +343,10 @@ closed state (a wash, an unlit night, a lid).
 
 - Mangal and Mahal got standalone gate modules ending in a neutral reveal; their own pages keep the original.
 - Rajdwar is Mangal's page with Mahal's gate, so it does not mix: the same result is Mangal + Mahal's gate.
+  The studio shows Rajdwar's pickers as Mangal's with Mahal's gate chosen; picking another gate or first screen moves
+  the invitation to `theme: 'mangal'` with that `design`, copying the couple's Rajdwar words and pictures to Mangal (same
+  ids) and to the chosen parts (their `gateUses`/`heroUses` ids), and `--rj-red`/`--rj-gold` to `--mg-red`/`--mg-gold-lt`
+  (`ALIASES` in `src/studio/m-opening.js`). Without `mangal` in the couple's allowed themes the pickers say so.
 - Kham: the envelope opens into its own card, so the envelope stays on Kham's page; the card is given as a first
   screen (`kham/hero.js`).
 - Nimantrana: the tri-fold cover and the card are one piece: own-only (a pair is possible later).

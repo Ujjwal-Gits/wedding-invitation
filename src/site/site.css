@@ -374,6 +374,44 @@ ol, ul { padding: 0; list-style: none; }
 .done__title { margin: 8px 0 12px; font: 200 clamp(30px, 3vw, 40px)/1.12 var(--f-display); }
 .done p { color: var(--ink-2); max-width: 44ch; }
 .done .btn { margin-top: 26px; }
+.done__receipt { display: grid; gap: 0; margin-top: 22px; max-width: 30em; border-top: 1px solid var(--line); }
+.done__receipt div { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.done__receipt dt { color: var(--ink-3); }
+.done__receipt dd { color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* pay now (PayPal), only when the server has it on */
+.plan__usd { display: block; margin-top: 8px; font: 400 14px/1.3 var(--f-ui); letter-spacing: 0; color: var(--ink-3); }
+.plan__price--ask .plan__usd { font-family: var(--f-ui); }
+.paywhen { display: grid; gap: 10px; margin: 22px 0 0; padding: 0; border: 0; min-width: 0; }
+.paywhen[hidden] { display: none; }
+.paywhen__legend { margin-bottom: 8px; padding: 0; font: 500 14.5px/1.3 var(--f-ui); color: var(--ink); }
+.paywhen__opt { position: relative; display: block; }
+.paywhen__opt input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.paywhen__box { display: grid; gap: 3px; padding: 14px 16px 14px 48px; border: 1px solid var(--line-input); border-radius: 10px; background: var(--paper); transition: border-color 200ms var(--ease), background-color 200ms var(--ease), box-shadow 200ms var(--ease); }
+.paywhen__box::before { content: ''; position: absolute; left: 17px; top: 17px; width: 18px; height: 18px; border: 1px solid var(--line-input); border-radius: 50%; background: var(--paper); box-shadow: inset 0 0 0 4px var(--paper); transition: background-color 200ms var(--ease), border-color 200ms var(--ease); }
+.paywhen__opt:hover .paywhen__box { border-color: var(--ink-2); }
+.paywhen__opt input:checked + .paywhen__box { border-color: var(--red); background: #FFFBFA; box-shadow: 0 0 0 1px var(--red); }
+.paywhen__opt input:checked + .paywhen__box::before { border-color: var(--red); background: var(--red); }
+.paywhen__opt input:focus-visible + .paywhen__box { outline: 2px solid var(--red); outline-offset: 2px; }
+.paywhen__t { font: 500 15.5px/1.3 var(--f-ui); color: var(--ink); }
+.paywhen__amt { font-variant-numeric: lining-nums tabular-nums; color: var(--red); }
+.paywhen__d { font-size: 14px; color: var(--ink-3); }
+@media (min-width: 640px) { .paywhen { grid-template-columns: repeat(2, minmax(0, 1fr)); } .paywhen__legend { grid-column: 1 / -1; } }
+
+.pay { padding: 6px 0; }
+.pay:focus { outline: none; }
+.pay__saved { font-size: 14.5px; color: var(--ink-3); }
+.pay__ref { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pay__title { margin: 10px 0 6px; font: 200 clamp(28px, 3vw, 38px)/1.12 var(--f-display); letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
+.pay__amt { font: 300 clamp(34px, 3.4vw, 44px)/1.1 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: lining-nums; color: var(--ink); }
+.pay__note { margin-top: 12px; max-width: 40ch; font-size: 15px; color: var(--ink-2); }
+.pay__test { display: inline-block; margin-top: 14px; padding: 6px 12px; border-radius: 8px; background: var(--red-soft); font: 500 13px/1.3 var(--f-ui); color: var(--red-deep); }
+.pay__btns { max-width: 420px; min-height: 120px; margin-top: 24px; }
+.pay__loading { padding: 14px 0; font-size: 14.5px; color: var(--ink-3); }
+.pay__msg { margin-top: 16px; max-width: 46ch; padding: 12px 14px; border-left: 2px solid var(--red); background: var(--blush); font-size: 15px; color: var(--ink); }
+.pay__msg a { color: var(--red); }
+.pay__alt { margin-top: 22px; }
+.pay__later { padding: 8px 0; border: 0; background: none; font: 500 15px/1.3 var(--f-ui); cursor: pointer; }
 
 /* ---------------- contact ---------------- */
 .contact { display: grid; gap: 36px; padding: var(--sec) var(--pad-x); }

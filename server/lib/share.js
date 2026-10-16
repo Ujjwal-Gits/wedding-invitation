@@ -1,7 +1,7 @@
 // GET /i/<slug>: a tiny link-preview page (Open Graph + Twitter card) that forwards guests to the theme page.
 // No JS. Only published invitations. Every value is HTML-escaped; the forward URL is built from the stored
 // theme slug and validated query values only, so this is not an open redirect.
-import { SLUG_RE, getInvitation } from './store.js';
+import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { PUBLIC_ORIGINS } from './env.js';
 import { listThemes } from './catalog.js';
 import { photoUrl } from './invitations.js';

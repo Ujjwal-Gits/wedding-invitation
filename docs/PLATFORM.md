@@ -30,10 +30,11 @@ They edit their own data (names, families, dates, events, photos, music, wording
   - `share: { title, description, image }` (existing): `image` is a photo ref (library slug or upload object).
 
 ### `data/orders.json`
-`[{ id, at, kind: 'order' | 'custom', name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status: 'new' | 'contacted' | 'done' | 'archived', notes? }]`
+`[{ id, at, kind: 'order' | 'custom', name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status: 'new' | 'contacted' | 'done' | 'archived', notes? , payment? }]`
+`payment` (lib/payments, PayPal): `{ provider: 'paypal', env, status: 'created'|'pending'|'paid'|'partially_refunded'|'refunded'|'denied'|'mismatch', plan, amount: '49.00', currency: 'USD', paypalOrderId, captureId?, payerEmail?, payerName?, paidAt?, refunded?, refunds?, problem?, events?, createdAt, updatedAt }`.
 
 ### `data/site.json`
-`{ plans: [{ id, name, price, currency: 'NPR', note?, features: string[], highlight: boolean }], contact: { phone, whatsapp, email, address }, hero: { title, subtitle }, hiddenThemes: string[], featuredThemes: string[] }`
+`{ plans: [{ id, name, price, currency: 'NPR', usdPrice?: number | null, note?, features: string[], highlight: boolean }], contact: { phone, whatsapp, email, address }, hero: { title, subtitle }, hiddenThemes: string[], featuredThemes: string[] }`
 Defaults (no file yet): three placeholder plans named "Classic", "Premium", "Custom" with `price: null`
 (the site shows "Ask for price" when null) and empty contact.
 
@@ -120,6 +121,16 @@ field is validated in `data.js` before use. `live-preview.js` is loaded only in 
   again in a second, invisible iframe (full current model, same focus target, or the scroll position if the client
   scrolled the preview themselves). On `nimtto:settled` it fades in over the old page (140 ms, opacity) and the old
   frame is removed; edits made meanwhile are diffed and patched into it. No blank page, no gate replay, no jump.
+- Frame budget (2026-10-16, the Opening-module crash): at most one page on screen and one rendering behind it. A render
+  asked for while one is loading for the same URL reuses it; renders and module switches are debounced (220 ms). A page
+  that goes away gets `{ type: 'nimtto:teardown' }` (or `window.__nimttoTeardown()`, same origin): it loses its WebGL
+  contexts, kills ScrollTriggers and GSAP, destroys Lenis and stops sound; then the studio sets `src="about:blank"` and
+  removes the frame. `{ type: 'nimtto:pause', on }` holds a page still (its requestAnimationFrame loops, CSS animations,
+  GSAP, Lenis, media): sent while the preview is hidden (phone sheet closed, a module without preview) and while a
+  full-screen design demo is open. Themes need no code for either (data.js wraps getContext/rAF/AudioContext in
+  preview pages); a theme may also listen for the `nimtto:teardown` window event.
+- Studio CSS: one-column grid containers declare `grid-template-columns: minmax(0, 1fr)`. Nested auto-sized grids made
+  one layout of the Opening module take 5-20 s (and GBs), which is what crashed the tab.
 - Opening module: a "Play opening" control posts `{ type: 'nimtto:play' }` (the page presses its own quiet open button,
   then returns to the last target); "Show gate again" renders the closed gate again the same way.
 - Modules point the preview: focusing any field sends its words and part; entering a module sends its part (Couple &
@@ -193,6 +204,8 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 
 ## Change requests
 (append here)
+
+**payments (2026-10-16):** PayPal Checkout, off until `PAYPAL_*` are set (docs/PAYMENTS.md). `POST /api/orders` now returns `ref`; `Site.plans[].usdPrice`; `order.payment`; routes under `/api/pay`; `orders.js` exports `getOrder` / `findOrder` / `mutateOrder` for lib/payments (keep them on the store when storage changes). The CSP on `/` gains PayPal's domains and COOP `same-origin-allow-popups` only when PayPal is on.
 
 **server (2026-10-15):**
 - Legacy links (`clientAccess` migrated to `access` on read) have `passwordHash: null`, full rights (`themes: 'all'`, both flags true) and open with the token alone until the admin sets a password via `PATCH /access`; admin views show `clientLink.hasPassword: false` for them.

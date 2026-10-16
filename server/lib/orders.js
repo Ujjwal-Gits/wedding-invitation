@@ -4,7 +4,9 @@
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import { DATA_DIR, IS_PROD } from './env.js';
-import { withLock, readJson, writeJsonAtomic } from './store.js';
+// Stored by lib/store.js (SQLite table, or data/orders.json with STORE=json). addOrder/deleteOrder take the 'orders'
+// lock themselves; saveOrder is called under it.
+import { withLock, listOrders as storedOrders, getOrderById, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme } from './catalog.js';
 import { readSite, EMAIL_RE } from './site.js';
@@ -13,7 +15,7 @@ export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
 const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const ID_RE = /^[A-Za-z0-9_-]{12}$/;
+export const ID_RE = /^[A-Za-z0-9_-]{12}$/;
 const STATUSES = ['new', 'contacted', 'done', 'archived'];
 const MAX_ORDERS = 5000;
 
@@ -82,23 +84,19 @@ export async function submit(req, res) {
   perIp.hit(ip);
   global.hit('all');
   try {
-    await withLock('orders', async () => {
-      const all = await readJson(ORDERS_FILE, []);
-      if (all.length >= MAX_ORDERS) throw httpError(507, 'We cannot take more requests right now. Please call us.');
-      all.push(order);
-      await writeJsonAtomic(ORDERS_FILE, all);
-    });
+    await addOrder(order, MAX_ORDERS); // 507 when full
   } catch (err) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
   console.info(`[orders] new kind=${kind} id=${order.id}`);
-  res.status(201).json({ ok: true });
+  // ref: the request's id, so the website can offer to pay for it online (lib/payments) and show it as a reference
+  res.status(201).json({ ok: true, ref: order.id });
 }
 
 /** GET /api/orders (admin): newest first. */
 export async function list(req, res) {
-  const all = await readJson(ORDERS_FILE, []);
+  const all = await storedOrders();
   all.sort((x, y) => String(y.at).localeCompare(String(x.at)));
   res.json({ orders: all });
 }
@@ -111,12 +109,11 @@ export async function update(req, res) {
   if (b.status !== undefined && !STATUSES.includes(b.status)) throw httpError(400, `status must be one of ${STATUSES.join(', ')}.`);
   if (b.notes !== undefined && (typeof b.notes !== 'string' || b.notes.length > 2000)) throw httpError(400, 'notes must be text of at most 2000 characters.');
   const order = await withLock('orders', async () => {
-    const all = await readJson(ORDERS_FILE, []);
-    const o = all.find((x) => x.id === id);
+    const o = await getOrderById(id);
     if (!o) throw httpError(404, 'Request not found.');
     if (b.status !== undefined) o.status = b.status;
     if (b.notes !== undefined) o.notes = clean(b.notes, 2000, true);
-    await writeJsonAtomic(ORDERS_FILE, all);
+    await saveOrder(o);
     return o;
   });
   res.json({ order });
@@ -126,18 +123,40 @@ export async function update(req, res) {
 export async function remove(req, res) {
   const { id } = req.params;
   if (!ID_RE.test(id)) throw httpError(400, 'Bad id.');
-  await withLock('orders', async () => {
-    const all = await readJson(ORDERS_FILE, []);
-    const next = all.filter((x) => x.id !== id);
-    if (next.length === all.length) throw httpError(404, 'Request not found.');
-    await writeJsonAtomic(ORDERS_FILE, next);
-  });
+  if (!(await deleteOrder(id))) throw httpError(404, 'Request not found.');
   console.info(`[admin] delete order id=${id}`);
   res.json({ ok: true });
 }
 
 /** Count of orders still marked new (for the admin overview). */
 export async function newCount() {
-  const all = await readJson(ORDERS_FILE, []);
-  return all.filter((o) => o.status === 'new').length;
+  return countNewOrders();
+}
+
+// Store helpers for other modules (lib/payments): every read and write of orders goes through this file.
+
+/** One order by id, or null. */
+export async function getOrder(id) {
+  if (typeof id !== 'string' || !ID_RE.test(id)) return null;
+  return getOrderById(id);
+}
+
+/** The first order for which pred(order) is true, or null. */
+export async function findOrder(pred) {
+  const all = await storedOrders();
+  return all.find(pred) || null;
+}
+
+/**
+ * Runs fn(order) under the orders lock and saves the change; returns the order. fn may return false to skip the
+ * write (nothing changed). A missing order throws 404.
+ */
+export async function mutateOrder(id, fn) {
+  if (typeof id !== 'string' || !ID_RE.test(id)) throw httpError(404, 'Request not found.');
+  return withLock('orders', async () => {
+    const o = await getOrderById(id);
+    if (!o) throw httpError(404, 'Request not found.');
+    if ((await fn(o)) !== false) await saveOrder(o);
+    return structuredClone(o);
+  });
 }

@@ -26,10 +26,10 @@ The client token is the part after `#/c/` in the link (43 chars base64url).
 - **Stay signed in until sign-out.** Sliding expiry since last activity, no absolute cap: **couple 180 days**,
   **admin 30 days**. The cookie is persistent (`Max-Age` = that period) and is re-sent whenever `seen` is
   refreshed (at most every 10 minutes per session), so the browser keeps it as long as the server does.
-- **Survive restarts and deploys.** Stored in `data/sessions.json` (under `DATA_ROOT`; `data/` is gitignored,
-  never served, and the server refuses to start if `DATA_ROOT` sits inside `dist/` or `public/`). The file
-  holds only `sha256(sessionId)` → `{ role, slug?, fp, csrf, created, seen }`, written atomically
-  (`lib/store.js`) on create, delete and `seen` refresh; loaded on start. Expired sessions are swept on load and
+- **Survive restarts and deploys.** Stored by `lib/store.js`: the `sessions` table of `data/nimtto.db` (or
+  `data/sessions.json` with `STORE=json`), under `DATA_ROOT`; `data/` is gitignored, never served, and the server
+  refuses to start if `DATA_ROOT` sits inside `dist/` or `public/`. Only `sha256(sessionId)` →
+  `{ role, slug?, fp, csrf, created, seen }` is stored, on create, delete and `seen` refresh. Expired sessions are swept on load and
   hourly; at most 5000 are kept (least recently seen evicted first).
 - `fp` binds the session to its credentials: a couple's to the link token hash + password hash, the admin's to
   `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`. A couple's session ends at once when they sign out, the admin turns the
@@ -39,15 +39,37 @@ The client token is the part after `#/c/` in the link (43 chars base64url).
 - The CSRF token is per session and persisted with it, so it stays valid across restarts.
 - Failed-password limits are unchanged.
 
+## Caching, limits and busy answers (every route)
+
+- `GET /site`, `GET /themes` and the guests' `GET /invitations/:slug/public` send an `ETag` with `Cache-Control: no-cache`
+  (revalidate every time) and answer `304` to a matching `If-None-Match`; bodies are brotli/gzip when asked. They are
+  built once per stored revision and kept in memory, so they are never stale. Everything else under `/api` is
+  `no-store`. An editor's draft preview of `/public` is `no-store` and `Vary: Cookie`.
+- `429` + `Retry-After` (seconds): more than 3000 requests a minute from one IP, or 1200 to `/api` (production;
+  `RATE_PER_IP_PER_MIN`, `RATE_API_PER_IP_PER_MIN`), besides the per-route limits below.
+- `503` + `Retry-After`: the server is busy. Too many requests in flight (`MAX_INFLIGHT`, 512), the password-check or
+  photo queue is full, or the event loop has been behind for 2 s, in which case sign-in, client sessions, uploads,
+  the admin list, stats and CSV export are refused for the moment (guest routes keep working). Try again after
+  `Retry-After`.
+- The client IP for every limit is `CF-Connecting-IP` when the request came through a Cloudflare address, else
+  Express's `req.ip` (`TRUST_PROXY`). `CLOUDFLARE_ONLY=1`: requests that bypassed Cloudflare get `403`.
+- `GET /healthz` (not under /api): `200 ok` while the database answers and the server is not shutting down, else `503`.
+
 ## Public
 
 | Route | Body | Response |
 |---|---|---|
 | `GET /site` | – | `Site` (defaults when nothing saved yet) |
 | `GET /themes` | – | `[{ slug, name, concept, thumb }]`, ready themes only, minus `hiddenThemes` (no page URLs: see "Theme pages") |
-| `POST /orders` | `{ kind: 'order'\|'custom', name, phone, email?, weddingDate?, theme?, plan?, message?, website }` | `201 { ok: true }` · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
+| `POST /orders` | `{ kind: 'order'\|'custom', name, phone, email?, weddingDate?, theme?, plan?, message?, website }` | `201 { ok: true, ref }` (`ref` = the request id; not on a honeypot hit) · `400 { ok: false, error, fields: string[] }` · `403` cross-site · `429` |
+| `GET /pay/config` | – | `{ paypal: { enabled: false } }` or `{ paypal: { enabled: true, env: 'sandbox'\|'live', clientId, currency: 'USD' } }` |
+| `POST /pay/paypal/order` | `{ ref, website }` | `201 { ok, id, amount, currency }` (price from `Site.plans[].usdPrice`) · `400` · `403` · `404` · `409` already paid · `429` · `502` PayPal · `503` off |
+| `POST /pay/paypal/capture` | `{ ref, orderID, website }` | `{ ok, ref, status: 'paid'\|'pending', amount, currency, captureId, repeat }` · `402 { code: 'retry' }` declined · `409` amount/currency mismatch · `400`/`403`/`429`/`502`/`503` |
+| `POST /pay/paypal/webhook` | PayPal event (raw JSON, signature headers) | `200` · `400` bad signature · `404` off · `500` retry later |
 | `GET /invitations/:slug/public` | – | published data (a signed-in editor of that invitation gets the draft); includes `design`, and `themeContent` only for the theme and its borrowed gate / first screen |
 | `POST /invitations/:slug/rsvp` | `{ name, phone?, attending: 'yes'\|'no', guests, events?, meal?, message?, website }` | `{ ok: true }` |
+
+Payments: see `docs/PAYMENTS.md`. `GET /pay/status` (admin) → `{ paypal: { enabled, env, clientId (masked), secretSet, webhookIdSet, webhookUrl, dashboard, problems } }`; never a secret. `Site.plans[].usdPrice`: `null` or 1–10000 with at most two decimals.
 
 `POST /orders` rules: `name` 2–80, `phone` `^[0-9+()\-\s]{6,20}$`, `email` ≤ 254, `weddingDate` `YYYY-MM-DD`,
 `theme` an existing theme slug, `plan` an existing `Site.plans[].id`, `message` ≤ 2000 (required when `kind: 'custom'`).
@@ -200,3 +222,5 @@ wedding (Shubha Bibaha / Nikah / Holy Matrimony).
 `POST /invitations/:slug/rsvp`: every ceremony is its own answer. With `attending: 'yes'`, a sent `events` list must name at
 least one valid ceremony (an empty or all-unknown list → `400 { fields: ['events'] }`; an older form that sends no list
 still counts for all). Totals in `GET /invitations/:slug/rsvps` are per ceremony (`totals.events[]`).
+Limits: 30 replies per IP per invitation per 10 minutes (guests on one mobile carrier can share an IP), 3000 per
+invitation per hour, 5000 per invitation in total (`507`).

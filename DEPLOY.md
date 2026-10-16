@@ -44,5 +44,7 @@ cd server && printf '%s' 'a-long-new-password' | npm run --silent hash-password 
    `https://nimtto.com/<theme>/?id=<slug>`.
 2. Copy the existing invitations across: copy `server/data/` and `server/uploads/` from this machine
    into the two Coolify volumes (Coolify → Storage → the volume path on the server, then `scp`).
-3. Back up both volumes regularly (Coolify → Backups, or a nightly `tar` of the two folders).
+3. Back up both volumes regularly. The server makes a daily database copy in `data/backups/`; copy both volumes off
+   the VPS too. Coolify settings, Cloudflare rules, backups, restore and the under-attack playbook:
+   `docs/OPERATIONS.md`.
 4. Run the security checklist before sharing links.

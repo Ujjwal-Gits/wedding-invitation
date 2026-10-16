@@ -32,8 +32,10 @@ box-shadow:0 0 0 1px rgba(24,16,4,.55),0 0 0 5px rgba(212,162,76,.24),inset 0 0 
 box-shadow:0 0 0 1px rgba(24,16,4,.4),inset 0 0 0 1px rgba(255,255,255,.35);opacity:0;transition:opacity .16s cubic-bezier(.2,.8,.2,1);will-change:transform,opacity}
 [data-nimtto-hover] span{position:absolute;left:-1.5px;bottom:100%;margin-bottom:2px;padding:0 7px;border-radius:5px;background:#b3122f;color:#fff;
 font:600 11px/18px ui-sans-serif,"Segoe UI",sans-serif;letter-spacing:.02em}
-html.nimtto-pick,html.nimtto-pick *{cursor:pointer!important}`;
+html.nimtto-pick,html.nimtto-pick *{cursor:pointer!important}
+html.nimtto-paused *,html.nimtto-paused *::before,html.nimtto-paused *::after{animation-play-state:paused!important}`;
 let live = null;
+let liveMod = null;
 if (PREVIEW) {
   // The studio's editor keeps the keyboard: a page in the preview frame never takes focus (a gate button, a dialog)
   // unless the client is using the preview itself. A frame rendering in the background never steals it either.
@@ -46,8 +48,79 @@ if (PREVIEW) {
   s.id = 'nimtto-preview-style';
   s.textContent = PREVIEW_STYLE;
   document.head.append(s);
+  // The studio shows this page scaled down in a device frame: more than 2 device pixels per CSS pixel is never seen,
+  // and canvas and WebGL themes size their buffers from devicePixelRatio (a phone at DPR 3 drew 2.25x the pixels).
+  if ((window.devicePixelRatio || 1) > 2) {
+    try { Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: () => 2 }); } catch { /* read-only */ }
+  }
   live = import('./live-preview.js');
-  live.catch((err) => console.warn('preview: helpers did not load', err));
+  live.then((m) => { liveMod = m; }, (err) => console.warn('preview: helpers did not load', err));
+  holdAndRelease();
+}
+
+/**
+ * Pause and teardown for the studio (nimtto:pause, nimtto:teardown; the studio may also call window.__nimttoPause /
+ * __nimttoTeardown directly, same origin). A paused page holds still: requestAnimationFrame loops (three.js, canvas,
+ * the ribbon), CSS animations, GSAP, Lenis and sound wait until it resumes. Teardown is final, just before the studio
+ * blanks the frame: WebGL contexts are lost at once (Chrome keeps only ~16 alive), sound and media stop.
+ */
+function holdAndRelease() {
+  const gls = [];
+  for (const C of [window.HTMLCanvasElement, window.OffscreenCanvas]) {
+    const get = C?.prototype?.getContext;
+    if (!get) continue;
+    C.prototype.getContext = function getContext(type, ...rest) {
+      const ctx = get.call(this, type, ...rest);
+      if (ctx && /webgl/i.test(String(type)) && !gls.some((r) => r.deref() === ctx)) gls.push(new WeakRef(ctx));
+      return ctx;
+    };
+  }
+  const sounds = [];
+  if (typeof window.AudioContext === 'function') {
+    const AC = window.AudioContext;
+    window.AudioContext = class extends AC { constructor(...a) { super(...a); sounds.push(new WeakRef(this)); } };
+  }
+  const raf = window.requestAnimationFrame.bind(window);
+  const caf = window.cancelAnimationFrame.bind(window);
+  let held = null;
+  let heldId = 2 ** 30;
+  window.requestAnimationFrame = (cb) => {
+    if (!held) return raf(cb);
+    held.set(++heldId, cb);
+    return heldId;
+  };
+  window.cancelAnimationFrame = (id) => { if (!held?.delete(id)) caf(id); };
+  const media = () => document.querySelectorAll('audio, video');
+  window.__nimttoPause = (on) => {
+    if (on && !held) {
+      held = new Map();
+      document.documentElement.classList.add('nimtto-paused');
+      for (const m of media()) if (!m.paused) { m.__nimttoWas = true; m.pause(); }
+      for (const r of sounds) r.deref()?.suspend?.().catch(() => {});
+      liveMod?.pause(true);
+    } else if (!on && held && !window.__nimttoGone) {
+      const cbs = held;
+      held = null;
+      document.documentElement.classList.remove('nimtto-paused');
+      for (const m of media()) if (m.__nimttoWas) { m.__nimttoWas = false; m.play().catch(() => {}); }
+      for (const r of sounds) r.deref()?.resume?.().catch(() => {});
+      liveMod?.pause(false);
+      if (cbs.size) raf((t) => { for (const cb of cbs.values()) { try { cb(t); } catch (err) { console.error(err); } } });
+    }
+  };
+  window.__nimttoTeardown = () => {
+    if (window.__nimttoGone) return;
+    window.__nimttoPause(true);
+    window.__nimttoGone = true;
+    try { window.dispatchEvent(new Event('nimtto:teardown')); } catch { /* a theme's own listener */ }
+    try { liveMod?.teardown(); } catch { /* best effort */ }
+    for (const m of media()) { try { m.pause(); m.removeAttribute('src'); m.load(); } catch { /* gone */ } }
+    for (const r of sounds) { try { r.deref()?.close(); } catch { /* closed */ } }
+    for (const r of gls) {
+      const c = r.deref();
+      try { if (c && !c.isContextLost()) c.getExtension('WEBGL_lose_context')?.loseContext(); } catch { /* lost */ }
+    }
+  };
 }
 
 /** The bundled demo music, kept before any invitation replaces the config (YouTube fallback). */
@@ -245,6 +318,10 @@ function startPreviewListener() {
       if (t) live?.then((x) => x.focus(t)).catch(() => {});
     } else if (m.type === 'nimtto:mode' && typeof m.pick === 'boolean') {
       live?.then((x) => x.setPicking(m.pick)).catch(() => {});
+    } else if (m.type === 'nimtto:pause' && typeof m.on === 'boolean') {
+      window.__nimttoPause?.(m.on);
+    } else if (m.type === 'nimtto:teardown') {
+      window.__nimttoTeardown?.();
     } else if (m.type === 'nimtto:play') {
       live?.then((x) => x.play()).catch(() => {});
     } else if (m.type === 'nimtto:patch' && Array.isArray(m.changes)) {

@@ -8,9 +8,11 @@
 import { config } from '../config.js';
 
 let ST = null;
+let GS = null;
 let lenisOf = () => null;
 const libs = Promise.all([
   import('gsap/ScrollTrigger').then((m) => { ST = m.ScrollTrigger; }).catch(() => {}),
+  import('gsap').then((m) => { GS = m.gsap; }).catch(() => {}),
   import('./smooth.js').then((m) => { lenisOf = m.getLenis; }).catch(() => {}),
 ]);
 
@@ -956,6 +958,34 @@ function onClick(e) {
 }
 
 /** "Click to edit" on or off ("Try it": the page behaves exactly as it does for guests). */
+let pausedLenis = null;
+/** The studio cannot see this page (nimtto:pause, via data.js): GSAP and smooth scroll hold still until it can. */
+export function pause(on) {
+  try {
+    const l = lenisOf();
+    if (on) {
+      GS?.globalTimeline.pause();
+      GS?.ticker.sleep();
+      if (l && !l.isStopped) { l.stop(); pausedLenis = l; } // a gate keeps its own stop: only ours is undone
+    } else {
+      GS?.ticker.wake();
+      GS?.globalTimeline.resume();
+      if (pausedLenis && pausedLenis === l) l.start();
+      pausedLenis = null;
+    }
+  } catch { /* best effort */ }
+}
+
+/** The studio is removing this page (nimtto:teardown): stop everything that runs on its own. */
+export function teardown() {
+  try {
+    ST?.killAll();
+    GS?.globalTimeline.clear();
+    GS?.ticker.sleep();
+    lenisOf()?.destroy();
+  } catch { /* best effort */ }
+}
+
 export function setPicking(on) {
   picking = Boolean(on);
   document.documentElement.classList.toggle('nimtto-pick', picking);

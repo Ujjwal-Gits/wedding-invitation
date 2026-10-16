@@ -8,6 +8,7 @@ import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import { uploadDir } from './store.js';
 import { queueDepth } from './depth.js';
+import { limiter } from './guard.js';
 
 export const MAX_BYTES = 15 * 1024 * 1024;
 const MAX_PIXELS = 80_000_000; // decompression-bomb guard
@@ -60,14 +61,12 @@ const HEIC_MSG = 'iPhone HEIC photos cannot be read here yet. Please upload a JP
 
 // WebP effort 2 encodes about twice as fast as 4 for files ~3% larger at the same quality.
 const WEBP_EFFORT = 2;
-// At most two photos are processed at once (each already uses every core); the rest wait their turn.
-let active = 0;
-const waiting = [];
-async function withSlot(fn) {
-  while (active >= 2) await new Promise((r) => waiting.push(r));
-  active += 1;
-  try { return await fn(); } finally { active -= 1; waiting.shift()?.(); }
-}
+// At most two photos are processed at once (each already uses every core); up to 16 more wait their turn, and
+// beyond that the upload gets a 503 (try again) instead of a queue that only grows.
+const images = limiter({ max: Number(process.env.IMAGE_CONCURRENCY) || 2, queue: 16, name: 'images' });
+const withSlot = (fn) => images.run(fn);
+// Bodies being received at once (each is held in memory, up to 15 MB): bounds memory under a burst of uploads.
+const receiving = limiter({ max: 6, queue: 12, name: 'upload bodies' });
 
 async function saveImage(slug, buffer) {
   let meta;
@@ -104,7 +103,8 @@ async function saveImage(slug, buffer) {
       ]);
       return lg;
     });
-  } catch {
+  } catch (err) {
+    if (err.status === 503) throw err; // the queue is full: "try again", not "bad image"
     await Promise.all(['lg', 'sm'].map((s) => fs.rm(resolve(dir, `${id}-${s}.webp`), { force: true })));
     throw httpError(415, looksLikeHeic(buffer) ? HEIC_MSG : 'That image could not be processed.');
   }
@@ -151,7 +151,14 @@ async function saveAudio(slug, buffer) {
 export async function handleUpload(req, res) {
   const len = Number(req.get('content-length') || 0);
   if (len > MAX_BYTES + 64 * 1024) throw httpError(413, 'That file is larger than 15 MB.');
-  const { fields, file } = await readMultipart(req);
+  let parsed;
+  try {
+    parsed = await receiving.run(() => readMultipart(req));
+  } catch (err) {
+    if (err.status === 503) res.set('Connection', 'close'); // do not read a body we refused
+    throw err;
+  }
+  const { fields, file } = parsed;
   const kind = fields.kind === 'audio' ? 'audio' : 'image';
   const t0 = performance.now();
   const out = kind === 'audio' ? await saveAudio(req.params.slug, file.buffer) : await saveImage(req.params.slug, file.buffer);

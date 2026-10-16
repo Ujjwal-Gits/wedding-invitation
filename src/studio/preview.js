@@ -5,11 +5,33 @@
 // showing (nimtto:patch / nimtto:colors). A change that re-shapes the page (a ceremony added, a date,
 // the design) renders a fresh page in a second, hidden iframe that opens at the same spot; it replaces
 // the visible one in one quick crossfade once it is ready. The preview follows the field being edited.
+//
+// Frames are expensive (each is a whole theme page: WebGL, GSAP, Lenis, painted art) and they share the studio's
+// main thread and memory. So: at most one page on screen and one rendering behind it; a render asked for while one
+// is loading reuses it (it takes the newest model when it asks for data); renders are debounced; a page that goes
+// away is torn down (its WebGL contexts lost, its timelines, smooth scroll and sound stopped) and blanked before it is
+// removed; and the page on screen is paused whenever the preview is not visible.
 import { h, icon, debounce } from './dom.js';
 import { diff, targetForField, imageTarget, sectionOfPath, MODULE_TARGETS } from './preview-sync.js';
 
 const DEVICES = { phone: { w: 390, h: 844 }, desktop: { w: 1440, h: 900 } };
 const SWAP_MS = 140;
+const RENDER_MS = 220; // structural edits and quick module switches are coalesced into one render
+
+/**
+ * Ends a preview page for good: the page frees what it holds (nimtto:teardown, synchronously when it can), then the
+ * frame is blanked and removed, so its document, decoded art and WebGL contexts go at once, not at some later GC.
+ */
+export function dropFrame(f) {
+  if (!f) return;
+  try {
+    const w = f.contentWindow;
+    if (w && typeof w.__nimttoTeardown === 'function') w.__nimttoTeardown();
+    else w?.postMessage({ type: 'nimtto:teardown' }, location.origin);
+  } catch { /* already gone */ }
+  try { f.src = 'about:blank'; } catch { /* detached */ }
+  f.remove();
+}
 const clone = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
 
 /**
@@ -26,7 +48,7 @@ export function bridge(frame, getData, { onReady, onMounted } = {}) {
     } else if (type === 'nimtto:mounted') onMounted?.();
   };
   window.addEventListener('message', onMsg);
-  return () => window.removeEventListener('message', onMsg);
+  return () => { window.removeEventListener('message', onMsg); dropFrame(frame); };
 }
 
 const PICK_KEY = 'nimtto-preview-pick';
@@ -113,7 +135,8 @@ export function createPreview(session, { onPick } = {}) {
     deviceEl.style.transform = `translate(-50%, -50%) scale(${s})`;
   }
   fit();
-  new ResizeObserver(fit).observe(stage);
+  const ro = new ResizeObserver(fit);
+  ro.observe(stage);
   // The page inside may scroll an element into view: that must never move the frame (or anything around it).
   for (const box of [stage, screen, deviceEl]) box.addEventListener('scroll', () => { box.scrollTop = 0; box.scrollLeft = 0; });
 
@@ -157,9 +180,19 @@ export function createPreview(session, { onPick } = {}) {
     f.src = u;
     return rec;
   }
+  function drop(rec) {
+    if (!rec) return;
+    clearTimeout(rec.timer);
+    dropFrame(rec.el);
+  }
 
-  /** A full render. The first one shows the spinner; later ones render hidden and swap in. */
+  /**
+   * A full render. The first one shows the spinner; later ones render hidden and swap in. A render already under way
+   * for the same page is reused: it gets the newest model when it asks for its data, and is patched up when it swaps
+   * in (sync), so quick edits and clicks never stack frames.
+   */
   function render() {
+    renderSoon.cancel();
     if (!active) return;
     const u = url();
     openLink.href = u.replace('&preview=1', '');
@@ -170,17 +203,28 @@ export function createPreview(session, { onPick } = {}) {
       drawPlay();
       return;
     }
-    if (next) next.el.remove();
+    if (next && next.url === u) { next.focus = landing(); return; }
+    drop(next);
     next = makeFrame(u, true);
     next.focus = landing();
+    // The page on screen holds still while its successor loads: two theme pages (two WebGL scenes) never animate at
+    // once on the studio's thread. Hot patches still land in it.
+    send(cur, { type: 'nimtto:pause', on: true });
     const rec = next;
     // A page that never says it settled: show it if it rendered, otherwise give up on it (the old one stays).
     rec.timer = setTimeout(() => {
       if (next !== rec) return;
-      if (rec.mounted) swap(); else { rec.el.remove(); next = null; }
+      if (rec.mounted) swap(); else dropNext();
     }, 12000);
   }
-  const renderSoon = debounce(render, 260);
+  /** Gives up the page rendering behind (the one on screen carries on). */
+  function dropNext() {
+    if (!next) return;
+    drop(next);
+    next = null;
+    send(cur, { type: 'nimtto:pause', on: paused });
+  }
+  const renderSoon = debounce(() => render(), RENDER_MS);
 
   function swap() {
     const n = next;
@@ -193,12 +237,22 @@ export function createPreview(session, { onPick } = {}) {
     n.el.removeAttribute('aria-hidden');
     n.el.tabIndex = 0;
     n.el.classList.add('is-in');
-    setTimeout(() => { old?.el.remove(); n.el.classList.remove('is-in'); }, SWAP_MS + 30);
+    // The old page stops at once (nothing animates under the fade) and is gone when the fade ends.
+    try { old?.el.contentWindow?.__nimttoPause?.(true); } catch { /* gone */ }
+    setTimeout(() => { drop(old); n.el.classList.remove('is-in'); }, SWAP_MS + 30);
     veil.classList.remove('is-on');
     played = false;
     pointed = false;
     drawPlay();
+    if (paused) send(cur, { type: 'nimtto:pause', on: true });
     sync(); // anything edited while it rendered
+  }
+
+  /** The page on screen holds still while nobody can see it (the sheet closed, a demo open over it). */
+  let paused = false;
+  function pause(on) {
+    paused = on;
+    send(cur, { type: 'nimtto:pause', on });
   }
 
   /** Brings the page on screen up to date with the model: hot patches, or a background render. */
@@ -223,7 +277,7 @@ export function createPreview(session, { onPick } = {}) {
   let syncQueued = false;
   const syncNow = () => { if (syncQueued) return; syncQueued = true; requestAnimationFrame(() => { syncQueued = false; sync(); }); setTimeout(() => { if (syncQueued) { syncQueued = false; sync(); } }, 60); };
 
-  window.addEventListener('message', (e) => {
+  const onMessage = (e) => {
     if (e.origin !== location.origin) return;
     const rec = [cur, next].find((r) => r && e.source === r.el.contentWindow);
     if (!rec) return;
@@ -232,6 +286,7 @@ export function createPreview(session, { onPick } = {}) {
       rec.shown = clone(m.data);
       const focus = rec === next ? rec.focus : (target ? { ...target, instant: true } : rec.focus);
       send(rec, { type: 'nimtto:data', data: m.data, focus, pick: picking });
+      if (rec === cur && paused) send(rec, { type: 'nimtto:pause', on: true });
     } else if (type === 'nimtto:mounted') {
       rec.mounted = true;
       if (rec === cur) veil.classList.remove('is-on');
@@ -247,7 +302,8 @@ export function createPreview(session, { onPick } = {}) {
     } else if (type === 'nimtto:patched' && rec === cur) {
       if (e.data.ok === false) renderSoon(); // words the page shows differently: render it afresh (hidden)
     }
-  });
+  };
+  window.addEventListener('message', onMessage);
 
   // ── Following the client ───────────────────────────────────────────────
   /** Point the preview at a place (now, or when the next page is ready). */
@@ -273,7 +329,8 @@ export function createPreview(session, { onPick } = {}) {
     point(t);
   };
   document.addEventListener('focusin', onFocusIn);
-  document.addEventListener('focusout', () => { lastFocusKey = ''; });
+  const onFocusOut = () => { lastFocusKey = ''; };
+  document.addEventListener('focusout', onFocusOut);
 
   session.on('edit', ({ path }) => {
     const input = document.activeElement;
@@ -306,7 +363,7 @@ export function createPreview(session, { onPick } = {}) {
       send(cur, { type: 'nimtto:play' });
       drawPlay();
     } else {
-      render(); // the gate, closed again (swaps in when ready)
+      render(); // the gate, closed again (swaps in when ready; a second click while it loads reuses it)
     }
   }
 
@@ -318,16 +375,31 @@ export function createPreview(session, { onPick } = {}) {
       active = on;
       if (on) {
         requestAnimationFrame(fit);
+        pause(false);
         if (!cur || cur.url !== url()) render(); else sync();
-      } else renderSoon.cancel();
+      } else {
+        // Nobody sees it: the page holds still, and a render in flight is dropped (the next sync renders if needed).
+        renderSoon.cancel();
+        pause(true);
+        dropNext();
+      }
     },
+    /** Hold the page on screen still (a full-screen demo of another design is open over the studio). */
+    pause(on) { if (active) pause(on || Boolean(next)); },
     /** Show the opening gate (true while the Opening module is being edited). */
     setOpening(on) {
       if (on === opening) return;
       opening = on;
       played = false;
       drawPlay();
-      if (active && cur && !quiet()) render();
+      // Debounced: switching modules quickly (Opening, Couple, Opening) renders once, or not at all.
+      if (active && cur && !quiet()) {
+        if (cur.url !== url()) renderSoon();
+        else {
+          renderSoon.cancel();
+          if (next && next.url !== cur.url) { dropNext(); sync(); }
+        }
+      }
     },
     /** Entering a module: move the preview to its part of the invitation. */
     setModule(id) {
@@ -348,7 +420,21 @@ export function createPreview(session, { onPick } = {}) {
     },
     reload: render,
     fit,
-    destroy() { document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusin', onFieldIn); window.removeEventListener('blur', onBlur); },
+    destroy() {
+      active = false;
+      renderSoon.cancel();
+      clearTimeout(hintTimer);
+      drop(next);
+      drop(cur);
+      next = null;
+      cur = null;
+      ro.disconnect();
+      window.removeEventListener('message', onMessage);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      document.removeEventListener('focusin', onFieldIn);
+      window.removeEventListener('blur', onBlur);
+    },
   };
 }
 

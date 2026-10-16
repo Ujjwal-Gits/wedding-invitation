@@ -153,6 +153,8 @@ function applyHero(site) {
 }
 
 const fmt = new Intl.NumberFormat('en-IN');
+const usdFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const planInfo = new Map(); // id -> { name, usd } (usd: the online price in US dollars, or null)
 function renderPlans(site) {
   const list = $('#plans');
   const plans = Array.isArray(site.plans) && site.plans.length ? site.plans : FALLBACK_SITE.plans;
@@ -165,6 +167,9 @@ function renderPlans(site) {
     const priced = Number.isFinite(p.price) && p.price >= 0;
     const feats = Array.isArray(p.features) ? p.features.map((f) => str(f, 120)).filter(Boolean).slice(0, 20) : [];
     const note = str(p.note, 200);
+    const usd = Number.isFinite(p.usdPrice) && p.usdPrice >= 1 && p.usdPrice <= 10000 ? p.usdPrice : null;
+    if (id) planInfo.set(id, { name, usd });
+    const online = usd && pay.on ? el('span', { class: 'plan__usd', text: `or USD ${usdFmt.format(usd)} online` }) : null;
     const li = el('li', { class: `plan${p.highlight ? ' plan--hi' : ''}` },
       el('p', { class: 'plan__n', 'aria-hidden': 'true', text: pad(i + 1) }),
       el('div', { class: 'plan__main' },
@@ -172,8 +177,8 @@ function renderPlans(site) {
         note ? el('p', { class: 'plan__note', text: note }) : null,
         feats.length ? el('ul', { class: 'plan__feats' }, ...feats.map((f) => el('li', { text: f }))) : null),
       priced
-        ? el('p', { class: 'plan__price' }, el('span', { class: 'plan__cur', text: 'NPR' }), document.createTextNode(fmt.format(p.price)))
-        : el('p', { class: 'plan__price plan__price--ask', text: 'Ask for price' }),
+        ? el('p', { class: 'plan__price' }, el('span', { class: 'plan__cur', text: 'NPR' }), document.createTextNode(fmt.format(p.price)), online)
+        : el('p', { class: 'plan__price plan__price--ask' }, document.createTextNode('Ask for price'), online),
       el('a', { class: `btn ${p.highlight ? 'btn--accent' : 'btn--line'} plan__cta`, href: '#order', 'data-plan': id, text: `Choose ${name}` }),
     );
     list.append(li);
@@ -184,6 +189,7 @@ function renderPlans(site) {
     if (!a) return;
     setKind('order');
     planSel.value = a.dataset.plan;
+    syncPay();
   };
 }
 
@@ -456,8 +462,13 @@ function syncKind() {
   lab.replaceChildren(document.createTextNode(custom ? 'Your idea ' : 'Anything we should know? '),
     custom ? el('span', { class: 'req', 'aria-hidden': 'true', text: '*' }) : el('span', { class: 'opt', text: 'optional' }));
   $('#f-message').required = custom;
+  syncPay();
 }
-form.addEventListener('change', (e) => { if (e.target.name === 'kind') syncKind(); });
+form.addEventListener('change', (e) => {
+  if (e.target.name === 'kind') syncKind();
+  if (e.target.name === 'plan') syncPay();
+  if (e.target.name === 'payWhen') { syncPay(); if (e.target.value === 'now') loadPayPal().catch(() => {}); } // warm the SDK
+});
 document.querySelectorAll('[data-kind]').forEach((a) => a.addEventListener('click', () => setKind(a.dataset.kind)));
 
 function fieldError(id, show) {
@@ -510,6 +521,7 @@ form.addEventListener('submit', async (e) => {
   if (F.weddingDate.value) body.weddingDate = F.weddingDate.value;
   if (!custom && F.theme.value) body.theme = F.theme.value;
   if (!custom && F.plan.value) body.plan = F.plan.value;
+  const payNow = payable() && F.payWhen.value === 'now';
   const btn = $('#order-submit');
   btn.disabled = true;
   btn.textContent = 'Sending…';
@@ -523,10 +535,8 @@ form.addEventListener('submit', async (e) => {
     let data = null;
     try { data = await r.json(); } catch { /* not JSON */ }
     if (r.ok && data?.ok !== false) {
-      form.hidden = true;
-      const done = $('#order-done');
-      done.hidden = false;
-      done.focus();
+      const ref = typeof data?.ref === 'string' && /^[A-Za-z0-9_-]{12}$/.test(data.ref) ? data.ref : '';
+      if (payNow && ref) showPay(ref, body.plan); else showDone({ ref });
       return;
     }
     const bad = r.status === 400 && Array.isArray(data?.fields) ? data.fields.filter((f) => ['name', 'phone', 'email', 'message'].includes(f)) : [];
@@ -541,16 +551,149 @@ form.addEventListener('submit', async (e) => {
     showError('We could not reach the server. Check your connection and try again.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Send request';
+    syncPay();
   }
 });
 $('#order-again').addEventListener('click', () => {
   form.reset();
   syncKind();
   $('#order-done').hidden = true;
+  $('#order-pay').hidden = true;
   form.hidden = false;
   F.name.focus();
 });
+
+/** The thank-you panel: after a request (pay later) or a payment (with its receipt). */
+function showDone({ ref = '', paid = null } = {}) {
+  form.hidden = true;
+  $('#order-pay').hidden = true;
+  const rows = [];
+  let title = 'Thank you. We have your request.';
+  let text = 'We will call or message you within a day. If it is urgent, write to us on WhatsApp.';
+  if (paid) {
+    const pending = paid.status === 'pending';
+    title = pending ? 'Thank you. PayPal is confirming your payment.' : 'Thank you. Your payment is received.';
+    text = pending
+      ? 'PayPal sometimes takes a little while to confirm. We will let you know, and call you within a day.'
+      : 'We will call or message you within a day to start on your invitation. Keep this reference for your records.';
+    rows.push(['Reference', ref], [pending ? 'Amount' : 'Paid', `${paid.currency} ${paid.amount}`]);
+    if (paid.captureId) rows.push(['PayPal transaction', paid.captureId]);
+  } else if (ref) rows.push(['Reference', ref]);
+  $('#done-title').textContent = title;
+  $('#done-text').textContent = text;
+  const dl = $('#done-receipt');
+  dl.replaceChildren(...rows.map(([k, v]) => el('div', {}, el('dt', { text: k }), el('dd', { text: v }))));
+  dl.hidden = !rows.length;
+  const done = $('#order-done');
+  done.hidden = false;
+  done.focus();
+}
+
+/* ---------------- pay now: PayPal Checkout (only when the server has it switched on) ----------------
+   The request is saved first (POST /api/orders), so nothing is lost if the visitor closes PayPal. The server makes
+   the PayPal order from the plan's price in site.json and captures it itself; the page only passes ids along.
+   The PayPal SDK loads only here, on demand. */
+const pay = { on: false, env: '', clientId: '', sdk: null, ref: '', error: '' };
+const payable = () => pay.on && F.kind.value === 'order' && Boolean(planInfo.get(F.plan.value)?.usd);
+function syncPay() {
+  const ok = payable();
+  $('#paywhen').hidden = !ok;
+  if (ok) $('#paywhen-amt').textContent = `· USD ${usdFmt.format(planInfo.get(F.plan.value).usd)}`;
+  const btn = $('#order-submit');
+  if (!btn.disabled) btn.textContent = ok && F.payWhen.value === 'now' ? 'Continue to payment' : 'Send request';
+}
+
+function loadPayPal() {
+  if (window.paypal?.Buttons) return Promise.resolve(window.paypal);
+  if (pay.sdk) return pay.sdk;
+  const q = new URLSearchParams({ 'client-id': pay.clientId, currency: 'USD', intent: 'capture', components: 'buttons', 'disable-funding': 'venmo,paylater', commit: 'true' });
+  pay.sdk = new Promise((resolve, reject) => {
+    const s = el('script', { src: `https://www.paypal.com/sdk/js?${q}`, 'data-page-type': 'checkout' });
+    s.async = true;
+    const t = setTimeout(() => reject(new Error('timeout')), 20000);
+    s.onload = () => { clearTimeout(t); if (window.paypal?.Buttons) resolve(window.paypal); else reject(new Error('no sdk')); };
+    s.onerror = () => { clearTimeout(t); reject(new Error('blocked')); };
+    document.head.append(s);
+  }).catch((err) => { pay.sdk = null; throw err; });
+  return pay.sdk;
+}
+
+async function payApi(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ ...body, website: F.website.value }),
+  });
+  let data = null;
+  try { data = await r.json(); } catch { /* not JSON */ }
+  return { ok: r.ok && data?.ok !== false, status: r.status, data: data || {} };
+}
+
+function payMessage(text, withWa = false) {
+  const box = $('#pay-msg');
+  box.replaceChildren(document.createTextNode(text));
+  if (withWa && window.__nimttoWa) box.append(document.createTextNode(' You can also '), el('a', { href: window.__nimttoWa, target: '_blank', rel: 'noopener', text: 'write to us on WhatsApp' }), document.createTextNode('.'));
+  box.hidden = !text;
+}
+
+function showPay(ref, planId) {
+  const plan = planInfo.get(planId);
+  pay.ref = ref;
+  form.hidden = true;
+  $('#pay-ref').textContent = ref;
+  $('#pay-plan').textContent = plan.name;
+  $('#pay-amt').textContent = plan.usd.toFixed(2);
+  $('#pay-test').hidden = pay.env !== 'sandbox';
+  payMessage('');
+  const panel = $('#order-pay');
+  panel.hidden = false;
+  panel.focus();
+  const btns = $('#pay-btns');
+  btns.setAttribute('aria-busy', 'true');
+  btns.replaceChildren(el('p', { class: 'pay__loading', text: 'Loading PayPal…' }));
+  loadPayPal().then((paypal) => {
+    btns.replaceChildren();
+    return paypal.Buttons({
+      style: { layout: 'vertical', color: 'white', shape: 'pill', label: 'pay', height: 48 },
+      createOrder: async () => {
+        pay.error = '';
+        payMessage('');
+        const r = await payApi('/api/pay/paypal/order', { ref: pay.ref });
+        if (!r.ok || !r.data.id) {
+          pay.error = r.status === 429 ? 'Too many tries from this connection. Please wait a few minutes.' : r.data.error || 'We could not start the payment.';
+          throw new Error(pay.error);
+        }
+        return r.data.id;
+      },
+      onApprove: async (data, actions) => {
+        payMessage('Confirming your payment…');
+        const r = await payApi('/api/pay/paypal/capture', { ref: pay.ref, orderID: data.orderID });
+        if (r.ok) { showDone({ ref: pay.ref, paid: r.data }); return undefined; }
+        if (r.status === 402 && r.data.code === 'retry') { payMessage(r.data.error); return actions.restart(); }
+        payMessage(r.data.error || 'We could not confirm the payment. Your request is saved and we will call you.', true);
+        return undefined;
+      },
+      onCancel: () => payMessage('Payment cancelled. Your request is saved: try again, or pay later and we will call you.'),
+      onError: () => payMessage(pay.error || 'PayPal could not take the payment just now. Your request is saved: try again, or pay later.', true),
+    }).render(btns);
+  }).then(() => btns.removeAttribute('aria-busy')).catch(() => {
+    btns.removeAttribute('aria-busy');
+    btns.replaceChildren();
+    payMessage('PayPal did not load (a blocker or a slow connection). Your request is saved: choose “Pay later instead” and we will call you.', true);
+  });
+}
+$('#pay-later').addEventListener('click', () => showDone({ ref: pay.ref }));
+
+function applyPayments(cfg) {
+  const p = cfg?.paypal;
+  if (!p?.enabled || typeof p.clientId !== 'string' || !/^[A-Za-z0-9_-]{2,128}$/.test(p.clientId)) return;
+  pay.on = true;
+  pay.env = p.env === 'live' ? 'live' : 'sandbox';
+  pay.clientId = p.clientId;
+  $('#pricing-lede').textContent = 'Pay online in US dollars with PayPal, or send a request and we will call you to talk it through.';
+  $('#order-lede').textContent = 'We call or message you within a day. Nothing is charged unless you choose to pay now.';
+}
 
 /* ---------------- boot ---------------- */
 async function boot() {
@@ -562,10 +705,12 @@ async function boot() {
 
   // these sections sit below the fold: render once, from the API or (on 404 / timeout) from the static fallback,
   // so nodes are never swapped under a visitor's finger
-  const [site, themes] = await Promise.all([getJson('/api/site', 4000), getJson('/api/themes', 4000)]);
+  const [site, themes, payCfg] = await Promise.all([getJson('/api/site', 4000), getJson('/api/themes', 4000), getJson('/api/pay/config', 4000)]);
   const s = site && typeof site === 'object' && !Array.isArray(site) ? { ...FALLBACK_SITE, ...site } : FALLBACK_SITE;
   applyHero(s);
+  applyPayments(payCfg);
   renderPlans(s);
+  syncPay();
   renderContact(s);
   renderGallery(normaliseThemes(Array.isArray(themes) ? themes : null, s));
   preselectFromUrl();

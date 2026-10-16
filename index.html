@@ -195,7 +195,7 @@
     <section class="pricing" id="pricing" aria-labelledby="pricing-title">
       <header class="pricing__head">
         <h2 class="h2" id="pricing-title">Set up by hand, priced in rupees.</h2>
-        <p class="pricing__lede">No payment online. Send a request and we will call you to talk it through.</p>
+        <p class="pricing__lede" id="pricing-lede">No payment online. Send a request and we will call you to talk it through.</p>
       </header>
       <ol class="plans" id="plans"></ol>
     </section>
@@ -205,7 +205,7 @@
       <img class="order__flowers" src="/themes/_nepali/flowers-sm.webp" alt="" width="600" height="600" loading="lazy" decoding="async" />
       <div class="order__aside">
         <h2 class="h2" id="order-title">Tell us about your wedding.</h2>
-        <p class="order__lede">We call or message you within a day. Nothing is charged here.</p>
+        <p class="order__lede" id="order-lede">We call or message you within a day. Nothing is charged here.</p>
         <ol class="next">
           <li>We call you to confirm the design, plan and dates.</li>
           <li>You send photos and details on WhatsApp or by email.</li>
@@ -256,6 +256,17 @@
             <textarea id="f-message" name="message" rows="4" maxlength="2000"></textarea>
             <p class="field__err" id="e-message" hidden>Please describe the design you have in mind.</p>
           </div>
+          <fieldset class="paywhen" id="paywhen" hidden>
+            <legend class="paywhen__legend">Payment</legend>
+            <label class="paywhen__opt">
+              <input type="radio" name="payWhen" value="later" checked />
+              <span class="paywhen__box"><span class="paywhen__t">Send request, pay later</span><span class="paywhen__d">We call you first and agree how to pay.</span></span>
+            </label>
+            <label class="paywhen__opt">
+              <input type="radio" name="payWhen" value="now" />
+              <span class="paywhen__box"><span class="paywhen__t">Pay now <span class="paywhen__amt" id="paywhen-amt"></span></span><span class="paywhen__d">PayPal or a card, in US dollars. Handy from abroad.</span></span>
+            </label>
+          </fieldset>
           <div class="hp" aria-hidden="true">
             <label for="f-website">Website</label>
             <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
@@ -267,10 +278,22 @@
           <p class="form__status" id="order-error" role="alert" hidden></p>
         </form>
 
+        <div class="pay" id="order-pay" hidden tabindex="-1">
+          <p class="pay__saved">Your request is saved<span id="pay-ref-wrap"> · reference <b class="pay__ref" id="pay-ref"></b></span></p>
+          <h3 class="pay__title">Pay for the <span id="pay-plan"></span> plan</h3>
+          <p class="pay__amt"><span class="plan__cur">USD</span><span id="pay-amt"></span></p>
+          <p class="pay__note">PayPal opens in a small window. Pay with a PayPal account or a card; your card details never reach us.</p>
+          <p class="pay__test" id="pay-test" hidden>Test mode (PayPal sandbox): no real money moves.</p>
+          <div class="pay__btns" id="pay-btns" aria-busy="true"><p class="pay__loading">Loading PayPal…</p></div>
+          <p class="pay__msg" id="pay-msg" role="status" hidden></p>
+          <p class="pay__alt"><button class="link pay__later" type="button" id="pay-later">Pay later instead</button></p>
+        </div>
+
         <div class="done" id="order-done" hidden tabindex="-1">
           <p class="done__ne" lang="ne">धन्यवाद</p>
-          <h3 class="done__title">Thank you. We have your request.</h3>
-          <p>We will call or message you within a day. If it is urgent, write to us on WhatsApp.</p>
+          <h3 class="done__title" id="done-title">Thank you. We have your request.</h3>
+          <p id="done-text">We will call or message you within a day. If it is urgent, write to us on WhatsApp.</p>
+          <dl class="done__receipt" id="done-receipt" hidden></dl>
           <button class="btn btn--line" type="button" id="order-again">Send another request</button>
         </div>
       </div>

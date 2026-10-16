@@ -1,10 +1,8 @@
-// Persistent studio sessions: data/sessions.json (outside every served folder, gitignored with data/).
-// Only sha256(session id) is stored, never the id itself. The Map is the live copy; the file is written
-// through (atomically, coalesced) on create, delete and the throttled `seen` updates, and read once on start.
-import { readFileSync } from 'node:fs';
+// Persistent studio sessions, kept by the store (lib/store.js: a table in data/nimtto.db, or data/sessions.json with
+// STORE=json). Outside every served folder. Only sha256(session id) is stored, never the id itself.
+// `seen` is written at most every SEEN_EVERY per session, so browsing does not write on every request.
 import { createHash } from 'node:crypto';
-import { SESSIONS_FILE } from './env.js';
-import { writeJsonAtomic, SLUG_RE } from './store.js';
+import { SLUG_RE, sessionStore } from './store.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 /** Sliding expiry since the last activity, per role. No absolute cap: a session lasts until sign-out. */
@@ -14,8 +12,6 @@ export const SEEN_EVERY = 10 * 60 * 1000;
 const MAX_SESSIONS = 5000;
 
 export const keyOf = (id) => createHash('sha256').update(id).digest('hex');
-
-const map = new Map(); // sha256(id) -> { role, slug?, fp, csrf, created, seen }
 
 const HEX64 = /^[a-f0-9]{64}$/;
 const isTime = (n) => Number.isFinite(n) && n > 0;
@@ -31,85 +27,49 @@ const clean = (s) => (s.role === 'client'
 
 export const expired = (s, now = Date.now()) => now - s.seen >= TTL[s.role];
 
-// ── Write-through, coalesced: one write at a time; changes made during a write trigger one more.
-let writing = null;
-let dirty = false;
-export function persist() {
-  dirty = true;
-  if (!writing) {
-    writing = (async () => {
-      try {
-        while (dirty) {
-          dirty = false;
-          await writeJsonAtomic(SESSIONS_FILE, { v: 1, sessions: Object.fromEntries(map) });
-        }
-      } catch (err) {
-        dirty = true; // retried by the next change or sweep
-        console.error('[auth] could not save sessions:', err.message);
-      } finally {
-        writing = null;
-      }
-    })();
-  }
-  return writing;
-}
-
-/** Drops expired sessions; returns how many. */
+/** Drops expired and malformed sessions, then keeps at most MAX_SESSIONS (least recently seen go first). */
 function sweep(now = Date.now()) {
-  let n = 0;
-  for (const [k, s] of map) if (expired(s, now)) { map.delete(k); n++; }
-  return n;
+  const drop = sessionStore.all().filter(({ k, ...s }) => !validEntry(k, s) || expired(s, now)).map((r) => r.k);
+  if (drop.length) sessionStore.delMany(drop);
+  const over = sessionStore.count() - MAX_SESSIONS;
+  if (over > 0) sessionStore.dropOldest(over);
+  return drop.length;
 }
 
-/** Keeps at most MAX_SESSIONS, evicting the least recently seen. */
-function cap() {
-  if (map.size <= MAX_SESSIONS) return;
-  const oldest = [...map].sort((a, b) => a[1].seen - b[1].seen).slice(0, map.size - MAX_SESSIONS);
-  for (const [k] of oldest) map.delete(k);
-}
-
-// Load on start (synchronously, before the server listens).
-try {
-  const raw = JSON.parse(readFileSync(SESSIONS_FILE, 'utf8'));
-  for (const [k, s] of Object.entries(raw?.sessions || {})) if (validEntry(k, s)) map.set(k, clean(s));
-} catch (err) {
-  if (err.code !== 'ENOENT') console.warn(`[auth] sessions file unreadable, starting empty: ${err.message}`);
-}
-{
-  const before = map.size;
+/** Call once the store is open: tidies the saved sessions, then hourly. */
+export function startSessions() {
   sweep();
-  cap();
-  if (map.size !== before) persist();
-  console.info(`[auth] ${map.size} saved session(s) loaded`);
+  console.info(`[auth] ${sessionStore.count()} saved session(s) loaded`);
+  setInterval(() => { try { sweep(); } catch (err) { console.warn('[auth] session sweep failed:', err.message); } }, 60 * 60 * 1000).unref();
 }
 
-setInterval(() => { if (sweep() || dirty) persist(); }, 60 * 60 * 1000).unref();
-
-export const getSession = (k) => map.get(k);
+/** The session stored under sha256(id) (a copy; `k` is its key), or undefined. */
+export function getSession(k) {
+  const s = sessionStore.get(k);
+  if (!s || !validEntry(k, s)) return undefined;
+  return { ...clean(s), k };
+}
 
 /** Stores a new session under sha256(id). Awaitable so the response follows the durable write. */
-export function putSession(k, s) {
-  map.set(k, clean(s));
-  cap();
-  return persist();
+export async function putSession(k, s) {
+  await sessionStore.put(k, clean(s));
+  if (sessionStore.count() > MAX_SESSIONS) sessionStore.dropOldest(sessionStore.count() - MAX_SESSIONS);
 }
 
-export function deleteSession(k) {
-  if (!k || !map.delete(k)) return Promise.resolve();
-  return persist();
+export async function deleteSession(k) {
+  if (k) await sessionStore.del(k);
 }
 
 /** Deletes every session matching fn(session). */
-export function deleteSessionsWhere(fn) {
-  let n = 0;
-  for (const [k, s] of map) if (fn(s)) { map.delete(k); n++; }
-  return n ? persist() : Promise.resolve();
+export async function deleteSessionsWhere(fn) {
+  const keys = sessionStore.all().filter(({ k, ...s }) => fn(s)).map((r) => r.k);
+  if (keys.length) await sessionStore.delMany(keys);
 }
 
-/** Marks activity; true when `seen` moved (written to disk), so the caller re-sends the cookie. */
+/** Marks activity; true when `seen` moved (written to the store), so the caller re-sends the cookie. */
 export function touchSession(s, now = Date.now()) {
   if (now - s.seen < SEEN_EVERY) return false;
   s.seen = now;
-  persist();
+  sessionStore.seen(s.k, now);
   return true;
 }

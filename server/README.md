@@ -1,7 +1,9 @@
 # Sayapatri Studio server
 
 The API and file server behind the studio dashboard (`/studio/`) and the published invitations.
-Node 22, Express 5, JSON files on disk. No database.
+Node 22, Express 5, SQLite (one file, `data/nimtto.db`, via better-sqlite3; no database server). The original
+JSON-file store is kept as the rollback path (`STORE=json`). Running it in production (Coolify, Cloudflare,
+backups, attacks): `docs/OPERATIONS.md`.
 
 ```
 server/
@@ -12,9 +14,18 @@ server/
   lib/validate.js     server-side validation of the invitation data (THEME-CONTRACT §2)
   lib/invitations.js  create / read / save draft / publish / unpublish / delete, public payload
   lib/rsvp.js         public RSVP intake, admin list, CSV export
-  lib/uploads.js      image + MP3 uploads
+  lib/uploads.js      image + MP3 uploads (bounded queues)
   lib/depth.js        optional background depth maps (depth_worker.py)
-  data/               invitations/<slug>.json, rsvps/<slug>.json, trash/   (gitignored)
+  lib/store.js        storage facade: per-key locks, cached invitations (checked against the stored revision)
+  lib/store-sqlite.js SQLite backend (WAL), one-time import of the JSON files, online backups
+  lib/store-json.js   the original JSON-file backend (STORE=json)
+  lib/sessions.js     persistent sessions (in the store)
+  lib/guard.js        per-IP budget, in-flight cap, overload shedding, argon2 queue
+  lib/http-cache.js   ETag / 304 / brotli for hot JSON
+  lib/static.js       dist/ with precompressed files and the cache policy
+  lib/backup.js       daily database backups into data/backups/
+  scripts/            hash-password, backup, export-json (back to JSON files), compress-dist (build step)
+  data/               nimtto.db, backups/, link.key, trash/ (and the pre-SQLite JSON files)   (gitignored)
   uploads/<slug>/     re-encoded photos and music                         (gitignored)
 ```
 
@@ -40,6 +51,11 @@ npm run hash-password          # type a password (12+ characters); paste the pri
 | `DEPTH_ENABLED` | `1` (default) makes depth maps for uploaded photos when Python is available |
 | `DEPTH_PYTHON` | Python with torch, transformers, scipy, pillow. Default `../tools/.venv/Scripts/python(.exe)` |
 | `LINK_SECRET` | Optional, 32+ chars: key for the stored couple links. Unset: a random key in `data/link.key` |
+| `STORE` | `sqlite` (default) or `json` (the old files; rollback only) |
+| `CLOUDFLARE_ONLY` | `1` refuses requests that did not come through Cloudflare (production behind Cloudflare) |
+| `BACKUP_HOURS`, `BACKUP_KEEP` | database backups: every 24 h, 14 kept (`0` hours = off) |
+
+Tuning knobs (rate limits, queues, shedding) and their defaults: `docs/OPERATIONS.md`.
 
 To change the password, run `npm run hash-password` again, replace the line and restart. That signs the
 admin out everywhere. A plain restart or deploy signs nobody out: sessions persist in `data/sessions.json`
@@ -143,8 +159,8 @@ Admin requests other than GET must send `X-CSRF-Token` (from `/auth/me` or the l
 - **Auth**: one admin from `.env`; argon2id hashes (OWASP parameters), constant-time comparisons,
   a dummy verify when the email is wrong. Login throttled to 10 failures per IP and 20 per account
   per 15 minutes. Login, logout and failures are logged without passwords.
-- **Sessions**: 256-bit random id, stored hashed in memory, HttpOnly + SameSite=Lax cookie,
-  `__Host-` prefix + Secure in production, rotated on every login, 12 h idle / 7 day absolute expiry,
+- **Sessions**: 256-bit random id, stored only as its sha256 (SQLite), HttpOnly + SameSite=Lax cookie,
+  `__Host-` prefix + Secure in production, rotated on every login, sliding expiry (admin 30 days, couple 180 days since last use; docs/API.md "Sessions"),
   destroyed on logout.
 - **CSRF**: synchronizer token bound to the session on every state-changing admin request, plus an
   Origin check (also on login, to stop login CSRF).
@@ -158,13 +174,18 @@ Admin requests other than GET must send `X-CSRF-Token` (from `/auth/me` or the l
   MP3s checked by frame headers. Files are stored outside the web root and served by a strict
   filename pattern with `nosniff`; no directory listings.
 - **RSVP**: published invitations only, Origin check, 8 KB body limit, honeypot (`website`),
-  8 replies per IP per 10 min and 400 per invitation per hour, ceremony ids checked against the
+  30 replies per IP per 10 min and 3000 per invitation per hour (sized for a real wedding on shared mobile IPs), ceremony ids checked against the
   invitation, guest count against `maxGuests`. CSV export prefixes cells starting with
   `= + - @ tab CR` with `'` and quotes properly (formula injection), UTF-8 BOM for Excel.
 - **Headers**: CSP (API: `default-src 'none'`; pages: self + Google Fonts), HSTS in production,
   `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP, CORP, frame protection,
   no `X-Powered-By`, `Cache-Control: no-store` on the API.
-- **Storage**: atomic writes (temp file + fsync + rename) with a per-invitation lock.
+- **Storage**: SQLite in WAL mode, every write one transaction (a crash never leaves a half-written file), integrity
+  check at start, daily online backups; per-invitation locks for read-modify-write and an optimistic revision check
+  across processes. JSON backend: atomic writes (temp file + fsync + rename).
+- **Load and abuse**: per-IP budget for every request, a cap on requests in flight, slow-client timeouts, argon2 and
+  photo work in bounded queues (`503` + `Retry-After` when full), expensive routes shed while the event loop lags,
+  couple-link lookups by an index (no scan, no CPU for tokens that match nothing). See `docs/OPERATIONS.md`.
 - **Errors**: only messages we wrote reach the client; no stack traces.
 
 ## Deploy
@@ -184,8 +205,9 @@ Admin requests other than GET must send `X-CSRF-Token` (from `/auth/me` or the l
 6. Depth maps are optional. Without the Python venv, set `DEPTH_ENABLED=0`; uploads then have
    no depth map and themes show them flat.
 
-The server keeps rate-limit counters in memory and caches sessions (written through to
-`data/sessions.json`), so run a single instance.
+The server keeps rate-limit counters and work queues in memory, so run a single instance (one process handles
+far more than a wedding's guests; Cloudflare serves the static files). The SQLite file itself is safe if two
+processes overlap for a moment during a deploy.
 
 Before handing over, go through `~/.claude/templates/SECURITY-CHECKLIST.md`
 (HTTPS/HSTS check, securityheaders.com, backups, `npm audit`, privacy policy for RSVP data).

@@ -8,7 +8,7 @@
 // Static files (/assets, /themes art, thumbs, fonts) stay public: invitations need them.
 import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { SLUG_RE, getInvitation } from './store.js';
+import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { listThemes } from './catalog.js';
 import { hasStudioSession } from './auth.js';
 
@@ -75,14 +75,24 @@ a:focus-visible{outline:2px solid var(--crimson);outline-offset:3px}
 </html>
 `;
 
+// The names that are designs (catalog + built pages, minus OPEN_PAGES). listThemes() refreshes every 10 s; the set is
+// rebuilt only when that list changes, not on every request.
+let gated = { list: null, set: null };
+function gatedNames(distDir) {
+  const list = listThemes();
+  if (gated.list === list) return gated.set;
+  const set = new Set([...list.map((t) => t.slug), ...builtPages(distDir)]);
+  for (const p of OPEN_PAGES) set.delete(p);
+  gated = { list, set };
+  return set;
+}
+
 /** Express middleware for the production static setup (place it before express.static). */
 export function themePageGate(distDir) {
   return async (req, res, next) => {
     try {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-      const themes = new Set([...listThemes().map((t) => t.slug), ...builtPages(distDir)]);
-      for (const p of OPEN_PAGES) themes.delete(p);
-      const theme = themeOfPath(req.path, themes);
+      const theme = themeOfPath(req.path, gatedNames(distDir));
       if (!theme) return next();
       res.set('Cache-Control', 'private, no-store');
       res.vary('Cookie');

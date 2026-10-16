@@ -118,7 +118,10 @@ function withParts(manifest) {
  * the shared vocabulary, and for each shared text key the smallest `max` any theme allows
  * (so a shared line fits in every theme that shows it).
  */
+// Read by every autosave: worked out at most every 5 s (each pass stats every theme's files). Treat as read-only.
+let slotCache = { at: 0, value: null };
 export async function slotInfo() {
+  if (slotCache.value && Date.now() - slotCache.at < 5000) return slotCache.value;
   const manifests = {};
   for (const t of listThemes()) manifests[t.slug] = await loadManifest(t.slug);
   const vocab = await loadVocab();
@@ -128,5 +131,6 @@ export async function slotInfo() {
       if (spec.shared) sharedMax[spec.shared] = Math.min(sharedMax[spec.shared] ?? Infinity, spec.max);
     }
   }
-  return { manifests, vocab, sharedMax };
+  slotCache = { at: Date.now(), value: { manifests, vocab, sharedMax } };
+  return slotCache.value;
 }

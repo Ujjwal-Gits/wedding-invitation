@@ -1,10 +1,17 @@
-// JSON file storage with atomic writes and a per-key lock (read-modify-write never interleaves).
-import { promises as fs } from 'node:fs';
-import { randomBytes } from 'node:crypto';
-import { resolve, dirname, basename } from 'node:path';
-import { INV_DIR, RSVP_DIR, TRASH_DIR, UPLOAD_DIR } from './env.js';
+// Storage facade. Every module reads and writes data through this file; the backend is SQLite (lib/store-sqlite.js,
+// the default) or the original JSON files (lib/store-json.js, STORE=json, the rollback path).
+// On top of either: a per-key lock (read-modify-write never interleaves in this process) and an in-memory cache of
+// parsed invitations, checked against the stored revision on every read (so it is never stale, even when another
+// process writes).
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { STORE, DB_FILE, INV_DIR, RSVP_DIR, UPLOAD_DIR } from './env.js';
 
 export const SLUG_RE = /^[a-z0-9-]{3,64}$/;
+const backend = STORE === 'json' ? await import('./store-json.js') : await import('./store-sqlite.js');
+export const STORE_KIND = STORE === 'json' ? 'json' : 'sqlite';
+// The original file helpers stay available (scripts, the JSON backend); data goes through the functions below.
+export { writeJsonAtomic, readJson } from './store-json.js';
 
 const locks = new Map();
 /** Runs fn while holding the lock for key; calls for the same key queue up. */
@@ -17,51 +24,26 @@ export function withLock(key, fn) {
   return run;
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-/** Write to a temp file in the same folder, fsync, then rename over the target. */
-export async function writeJsonAtomic(file, value) {
-  await fs.mkdir(dirname(file), { recursive: true });
-  const tmp = resolve(dirname(file), `.${basename(file)}.${randomBytes(6).toString('hex')}.tmp`);
-  const fh = await fs.open(tmp, 'w', 0o600);
-  try {
-    await fh.writeFile(JSON.stringify(value, null, 2));
-    await fh.sync();
-  } finally {
-    await fh.close();
-  }
-  // Windows can briefly refuse a rename while another handle reads the target.
-  for (let i = 0; ; i++) {
-    try {
-      await fs.rename(tmp, file);
-      return;
-    } catch (err) {
-      if (i >= 6 || !['EPERM', 'EBUSY', 'EACCES'].includes(err.code)) {
-        await fs.rm(tmp, { force: true });
-        throw err;
-      }
-      await sleep(25 * (i + 1));
-    }
-  }
-}
-
-export async function readJson(file, fallback = null) {
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8'));
-  } catch (err) {
-    if (err.code === 'ENOENT') return fallback;
-    throw err;
-  }
-}
-
 const must = (slug) => {
   if (!SLUG_RE.test(slug)) throw Object.assign(new Error('Invalid slug'), { status: 400 });
   return slug;
 };
-
 export const invPath = (slug) => resolve(INV_DIR, `${must(slug)}.json`);
 export const rsvpPath = (slug) => resolve(RSVP_DIR, `${must(slug)}.json`);
 export const uploadDir = (slug) => resolve(UPLOAD_DIR, must(slug));
+
+/** Opens the store (SQLite: creates the file and imports the JSON files on first start). Call before listening. */
+export function openStore() {
+  if (STORE_KIND === 'json' && existsSync(DB_FILE)) {
+    console.warn('[store] STORE=json, but data/nimtto.db exists: anything saved while on SQLite is only in that file. '
+      + 'Run `npm run export-json` first to bring it back into the JSON files (docs/OPERATIONS.md).');
+  }
+  backend.open();
+}
+export const closeStore = () => backend.close();
+export const storePing = () => backend.ping();
+export const backupStore = (file) => backend.backupTo(file);
+export const sessionStore = backend.sessions;
 
 /**
  * Client access, normalised. Older files stored `clientAccess: { tokenHash, createdAt }` (a link with no
@@ -84,25 +66,122 @@ export function migrateDoc(doc) {
   return doc;
 }
 
-export const getInvitation = async (slug) => migrateDoc(await readJson(invPath(slug)));
+// ── Invitations ────────────────────────────────────────────────────────────
 
+const CACHE_MAX = 500;
+const cache = new Map(); // slug -> { rev, doc } (doc shared and read-only), least recently used first
+const revs = new WeakMap(); // doc object -> the rev it was read at
+
+function remember(slug, rev, doc) {
+  cache.delete(slug);
+  cache.set(slug, { rev, doc });
+  revs.set(doc, rev);
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+  return doc;
+}
+
+async function cached(slug, rev) {
+  if (!rev) { cache.delete(slug); return null; }
+  const hit = cache.get(slug);
+  if (hit && hit.rev === rev) {
+    cache.delete(slug);
+    cache.set(slug, hit);
+    return hit.doc;
+  }
+  const row = await backend.readInvitation(slug);
+  if (!row) { cache.delete(slug); return null; }
+  return remember(slug, row.rev, migrateDoc(row.doc));
+}
+
+/**
+ * The invitation as stored, shared and READ-ONLY (never mutate it): the hot path for guests, the gate, the share
+ * page and session checks. One indexed lookup of the revision when cached.
+ */
+export async function peekInvitation(slug) {
+  if (!SLUG_RE.test(slug)) return null;
+  return cached(slug, await backend.invitationRev(slug));
+}
+
+/** The revision a doc from peekInvitation/getInvitation was read at (a cache key for derived data). */
+export const revOf = (doc) => revs.get(doc) ?? 0;
+
+/** A private, mutable copy (for read-modify-write under withLock(`inv:<slug>`)), or null. */
+export async function getInvitation(slug) {
+  const doc = await peekInvitation(slug);
+  if (!doc) return null;
+  const copy = structuredClone(doc);
+  revs.set(copy, revs.get(doc));
+  return copy;
+}
+
+export async function invitationExists(slug) {
+  return SLUG_RE.test(slug) && (await backend.invitationRev(slug)) > 0;
+}
+
+/** Every invitation (READ-ONLY docs), from the cache where it is current. */
 export async function listInvitations() {
-  await fs.mkdir(INV_DIR, { recursive: true });
-  const files = (await fs.readdir(INV_DIR)).filter((f) => f.endsWith('.json') && SLUG_RE.test(f.slice(0, -5)));
-  const docs = await Promise.all(files.map((f) => readJson(resolve(INV_DIR, f)).catch(() => null)));
-  return docs.filter(Boolean).map(migrateDoc);
+  const rows = await backend.listInvitationRevs();
+  const docs = await Promise.all(rows.map(({ slug, rev }) => cached(slug, rev).catch(() => null)));
+  return docs.filter(Boolean);
+}
+
+/** The invitation whose couple link has this token hash (READ-ONLY), or null. */
+export async function findInvitationByTokenHash(h) {
+  if (backend.slugByTokenHash) {
+    const slug = backend.slugByTokenHash(h);
+    const doc = slug ? await peekInvitation(slug) : null;
+    return doc?.access?.tokenHash === h ? doc : null;
+  }
+  let found = null;
+  for (const d of await listInvitations()) if (d.access?.tokenHash === h) found = d; // JSON: a scan, no early exit
+  return found;
+}
+
+/** Stores a new invitation; 409 when the link name is taken. */
+export async function createInvitation(doc) {
+  must(doc.slug);
+  const rev = await backend.insertInvitation(doc);
+  cache.delete(doc.slug);
+  revs.set(doc, rev);
+}
+
+/** Saves a doc obtained from getInvitation (call under withLock(`inv:<slug>`)). */
+export async function saveInvitation(doc) {
+  must(doc.slug);
+  const at = revs.get(doc) ?? await backend.invitationRev(doc.slug);
+  const rev = await backend.updateInvitation(doc, at);
+  cache.delete(doc.slug);
+  revs.set(doc, rev);
 }
 
 /** Moves an invitation, its replies and its uploads into data/trash/<slug>-<time>/ (recoverable). */
 export async function trashInvitation(slug) {
-  const dest = resolve(TRASH_DIR, `${must(slug)}-${Date.now()}`);
-  await fs.mkdir(dest, { recursive: true });
-  const moves = [
-    [invPath(slug), resolve(dest, 'invitation.json')],
-    [rsvpPath(slug), resolve(dest, 'rsvps.json')],
-    [uploadDir(slug), resolve(dest, 'uploads')],
-  ];
-  for (const [from, to] of moves) {
-    try { await fs.rename(from, to); } catch (err) { if (err.code !== 'ENOENT') throw err; }
-  }
+  must(slug);
+  await backend.trashInvitation(slug);
+  cache.delete(slug);
 }
+
+// ── Replies ────────────────────────────────────────────────────────────────
+
+export const listReplies = async (slug) => backend.listReplies(must(slug));
+export const addReply = (slug, reply, max) => withLock(`rsvp:${must(slug)}`, async () => backend.addReply(slug, reply, max));
+export const deleteReply = (slug, id) => withLock(`rsvp:${must(slug)}`, async () => backend.deleteReply(slug, id));
+/** Map slug -> { count, guests }. */
+export const replyStats = async () => backend.replyStats();
+
+// ── Orders (lib/orders.js is the only caller) ─────────────────────────────
+
+export const listOrders = async () => backend.listOrders();
+export const getOrderById = async (id) => backend.getOrder(id);
+export const addOrder = (order, max) => withLock('orders', async () => backend.addOrder(order, max));
+/** Replaces the stored order with the same id; false when there is none. Call under withLock('orders'). */
+export const saveOrder = async (order) => backend.saveOrder(order);
+export const deleteOrder = (id) => withLock('orders', async () => backend.deleteOrder(id));
+export const countNewOrders = async () => backend.countNewOrders();
+
+// ── Small documents (site settings) ───────────────────────────────────────
+
+/** { rev, value } or null. */
+export const getDoc = async (k) => backend.getKv(k);
+/** Stores the value; returns its new rev. */
+export const putDoc = (k, value) => withLock(`kv:${k}`, async () => backend.putKv(k, value));
