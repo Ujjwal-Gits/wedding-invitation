@@ -99,6 +99,8 @@
 .rcard__name span { font-size: 17px; color: var(--ink-3); margin-left: 4px; }
 .rcard__meta, .dcard__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-3); }
 .js-rail .rail__view { overflow: visible; scroll-snap-type: none; }
+.js-rail { padding-block: clamp(28px, 3.5vw, 48px); }
+.js-rail .rcard { width: var(--rail-w, 220px); }
 
 /* ---------------- steps ---------------- */
 .steps { display: grid; gap: 12px; counter-reset: s; }

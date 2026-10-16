@@ -132,14 +132,24 @@ function rail(mm) {
   if (!sec) return;
   const view = $('.rail__view', sec);
   const track = $('.rail__track', sec);
+  // size the cards so the heading AND the whole cards fit on screen before the row starts moving sideways
+  const head = $('.rail__head', sec);
+  const fit = () => {
+    const cs = getComputedStyle(sec);
+    const avail = window.innerHeight - navH() - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+      - head.offsetHeight - parseFloat(getComputedStyle(head).marginBottom) - 84; // 84 = name + price under each card
+    sec.style.setProperty('--rail-w', `${Math.round(Math.max(150, Math.min(236, avail / 1.6)))}px`);
+  };
   mm.add('(min-width: 1024px)', () => {
     sec.classList.add('js-rail');
+    fit();
+    ScrollTrigger.addEventListener('refreshInit', fit);
     const dist = () => Math.max(0, track.scrollWidth - (view.clientWidth - 2 * parseFloat(getComputedStyle(view).paddingLeft)));
     gsap.to(track, {
       x: () => -dist(), ease: 'none',
       scrollTrigger: { trigger: sec, start: () => `top ${navH()}px`, end: () => `+=${dist()}`, pin: true, scrub: 0.6, invalidateOnRefresh: true, anticipatePin: 1 },
     });
-    return () => sec.classList.remove('js-rail');
+    return () => { ScrollTrigger.removeEventListener('refreshInit', fit); sec.classList.remove('js-rail'); sec.style.removeProperty('--rail-w'); };
   });
 }
 
