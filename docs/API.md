@@ -13,11 +13,31 @@ The two public POSTs (`/orders`, `/invitations/:slug/rsvp`) use an Origin check 
 |---|---|---|
 | `POST /auth/login` | `{ email, password }` | `{ role: 'admin', email, csrf }` · `401` generic · `429` throttled |
 | `POST /auth/logout` | – (CSRF) | `{ ok: true }` |
-| `POST /client/session` | `{ token, password }` | `{ role: 'client', slug, csrf, perms }` · `401` generic (bad token *or* password, same message) · `429` (20 failures / 15 min per IP, 10 wrong passwords / 15 min per invitation) |
+| `POST /client/session` | `{ token, password }` | `{ role: 'client', slug, csrf, perms }` · `401` generic (bad token *or* password, same message) · `429` (20 failures / 15 min per IP, 10 wrong passwords / 15 min per invitation). Already signed in as this link's couple: `{ token }` alone returns the current session (no password, no new session) |
 | `GET /auth/me` | – | admin: `{ role: 'admin', email, csrf }` · client: `{ role: 'client', slug, csrf, perms }` · `401` (also when the link was revoked/replaced or the password changed) |
 
 `perms = { themes: 'all' | string[], canChangeTheme: boolean, canChangeColors: boolean }`.
-The client token is the part after `#/c/` in the link (43 chars base64url). Sessions: HttpOnly cookie, 12 h idle / 7 days max.
+The client token is the part after `#/c/` in the link (43 chars base64url).
+
+### Sessions
+
+- One HttpOnly cookie (`__Host-studio` in production with `Secure`, `studio_sid` in dev), `SameSite=Lax`, `Path=/`.
+  Session id: 256-bit random; a new id on every sign-in (the browser's previous session is dropped).
+- **Stay signed in until sign-out.** Sliding expiry since last activity, no absolute cap: **couple 180 days**,
+  **admin 30 days**. The cookie is persistent (`Max-Age` = that period) and is re-sent whenever `seen` is
+  refreshed (at most every 10 minutes per session), so the browser keeps it as long as the server does.
+- **Survive restarts and deploys.** Stored in `data/sessions.json` (under `DATA_ROOT`; `data/` is gitignored,
+  never served, and the server refuses to start if `DATA_ROOT` sits inside `dist/` or `public/`). The file
+  holds only `sha256(sessionId)` → `{ role, slug?, fp, csrf, created, seen }`, written atomically
+  (`lib/store.js`) on create, delete and `seen` refresh; loaded on start. Expired sessions are swept on load and
+  hourly; at most 5000 are kept (least recently seen evicted first).
+- `fp` binds the session to its credentials: a couple's to the link token hash + password hash, the admin's to
+  `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`. A couple's session ends at once when they sign out, the admin turns the
+  link off, makes a new link, changes the link password, or deletes the invitation (the sessions are deleted
+  from the store and the `fp` check refuses any leftover; `/auth/me`, editor routes and the theme-page gate all
+  check it). Changing the admin password in `.env` ends admin sessions.
+- The CSRF token is per session and persisted with it, so it stays valid across restarts.
+- Failed-password limits are unchanged.
 
 ## Public
 
@@ -60,14 +80,21 @@ Site = {
 | `POST /invitations/:slug/seen` | – | `{ ok: true }` |
 | `POST /invitations/:slug/unpublish` | – | `Doc` |
 | `DELETE /invitations/:slug` | `{ confirm: slug }` | `{ ok: true }` (moved to trash) |
-| `POST /invitations/:slug/client-link` | `{ password (6–128), themes?: 'all'\|string[], canChangeTheme?: bool, canChangeColors?: bool }` | `201 { url, token, createdAt, clientLink }` — token shown once; any older link and its sessions stop |
-| `PATCH /invitations/:slug/access` | `{ themes?, canChangeTheme?, canChangeColors?, password? }` | `{ clientLink }` · `404` no link · a new password ends the couple's sessions |
+| `POST /invitations/:slug/client-link` | `{ password (6–128), themes?: 'all'\|string[], canChangeTheme?: bool, canChangeColors?: bool }` | `201 { url, token, createdAt, clientLink }` — any older link and its sessions stop |
+| `PATCH /invitations/:slug/access` | `{ themes?, canChangeTheme?, canChangeColors?, password? }` | `{ clientLink }` · `404` no link · a new password keeps the same URL and ends the couple's sessions (they enter the new password once) |
 | `DELETE /invitations/:slug/client-link` | – | `{ ok: true }` (revokes; sessions end) |
 
 `Order = { id, at, kind, name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status, notes? }`.
 Client-link defaults: `themes: 'all'`, `canChangeTheme: false`, `canChangeColors: true`.
 `url` = `<PUBLIC_ORIGIN>/studio/#/c/<token>`.
-`clientLink` (in `Summary`, `Doc` for admins, and the link routes) = `{ createdAt, hasPassword, themes, canChangeTheme, canChangeColors }` or `null`.
+`clientLink` (in `Summary`, `Doc` for admins, and the link routes) = `{ createdAt, hasPassword, url, themes, canChangeTheme, canChangeColors }` or `null`.
+`url` is the couple's link, so the admin can see and copy it any time (admin payloads only; never in client,
+session or public responses). It is absolute when `PUBLIC_ORIGIN` is set, else `/studio/#/c/<token>` (resolve
+against the studio's origin). `url: null` = a link made before links were stored: make a new link to see it.
+The token is stored in the invitation as `access.tokenEnc` (AES-256-GCM, bound to the slug; key from the
+optional env `LINK_SECRET` (32+ chars), else a random key created once in `data/link.key`). If the key is
+lost, links show as `url: null` and keep working. `tokenHash` stays the sign-in lookup. Passwords are only
+ever stored as argon2id hashes and never returned. The link alone grants nothing without the password.
 `hasPassword: false` = a link made before passwords existed: it still opens with the token alone and full rights,
 until the admin sets a password with `PATCH /access`.
 

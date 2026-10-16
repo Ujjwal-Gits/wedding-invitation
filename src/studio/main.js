@@ -62,7 +62,7 @@ async function doRoute() {
 
   if (!S.me) {
     try {
-      if (!seenFlag()) throw new Error('not signed in');
+      // Always ask the server: the session cookie (HttpOnly) is the truth, so a signed-in couple goes straight in.
       const me = await api('/auth/me');
       S.me = me;
       setCsrf(me.csrf);
@@ -305,7 +305,7 @@ async function passwordPage(token) {
   teardown();
   // Signed in as the owner in this browser? Opening the couple's link replaces that session.
   let who = S.me;
-  if (!who && seenFlag()) { try { who = await api('/auth/me'); } catch { who = null; } }
+  if (!who) { try { who = await api('/auth/me'); } catch { who = null; } }
   if (who?.role === 'admin') {
     const ok = await new Promise((resolve) => {
       let yes = false;
@@ -316,7 +316,13 @@ async function passwordPage(token) {
         onClose: () => resolve(yes),
       });
     });
-    if (!ok) { history.replaceState(null, '', '#/overview'); return route(); }
+    if (!ok) { history.replaceState(null, '', '#/overview'); route(); return; } // queued, not awaited (see enterAsCouple)
+  }
+  // The couple opened their link again while signed in: no password, straight to their invitation.
+  if (who?.role === 'client') {
+    let s = null;
+    try { s = await api('/client/session', { method: 'POST', body: { token } }); } catch { /* another link, or it changed */ }
+    if (s) { enterAsCouple(s); return; } // queues the next route; awaiting it here would wait on itself
   }
   document.title = 'Your invitation · Nimtto';
   const err = h('p.form-error', { role: 'alert' });
@@ -329,14 +335,7 @@ async function passwordPage(token) {
     if (!pw.input.value) { err.textContent = 'Please enter the password you were given.'; pw.input.focus(); return; }
     btn.disabled = true;
     try {
-      const s = await api('/client/session', { method: 'POST', body: { token, password: pw.input.value } });
-      S.me = s;
-      S.meta = null;
-      setCsrf(s.csrf);
-      coupleFlag(true);
-      seenFlag(true);
-      history.replaceState(null, '', `#/i/${s.slug}/home`); // never leave the token in the address bar
-      route();
+      enterAsCouple(await api('/client/session', { method: 'POST', body: { token, password: pw.input.value } }));
     } catch (ex) {
       btn.disabled = false;
       if (ex.status === 429) err.textContent = ex.message || 'Too many tries. Please wait a few minutes.';
@@ -354,6 +353,16 @@ async function passwordPage(token) {
     form,
     h('p.auth__small', 'No password? Ask the person who sent you this link.')));
   pw.input.focus();
+}
+
+function enterAsCouple(s) {
+  S.me = s;
+  S.meta = null;
+  setCsrf(s.csrf);
+  coupleFlag(true);
+  seenFlag(true);
+  history.replaceState(null, '', `#/i/${s.slug}/home`); // never leave the token in the address bar
+  route();
 }
 
 function linkProblem(message = 'This link is no longer active. Please ask your planner for a new one.', heading = 'This link has expired') {

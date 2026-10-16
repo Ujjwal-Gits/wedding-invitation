@@ -6,6 +6,7 @@ import { photoUrl } from '../photos.js';
 import { pickPhoto } from './m-photos.js';
 import { qrSvg, qrPng } from './qr.js';
 import { label } from './session.js';
+import { linkUrl, linkRow, resetPasswordDialog } from './admin-access.js';
 
 /** The guest link (production has a short /i/<slug> that follows theme changes and carries the preview card). */
 export function shareUrl(meta, slug, theme, extra = {}) {
@@ -173,6 +174,26 @@ function qrCard(ctx) {
       h('a.btn', { href: '#', download: `invitation-${ctx.slug}-qr.png`, onclick: (e) => { try { e.currentTarget.href = qrPng(url); } catch { e.preventDefault(); toast('Could not make the image.', 'error'); } } }, icon('download', 16), 'Download PNG'))));
 }
 
+/** Planner only: the couple's private studio link, to copy again any time, and a password reset. */
+function coupleLinkCard(ctx) {
+  const doc = ctx.session.doc;
+  const box = h('div.stack');
+  const draw = (note = false) => {
+    const l = doc.clientLink;
+    const url = linkUrl(l);
+    fill(box,
+      url ? linkRow(url) : h('p.notice', icon('info', 16), h('span', 'This link was created before links could be shown again. Create a new link in Admin tools › Client access to see it here.')),
+      h('div.row', h('button.btn', { type: 'button', onclick: async () => {
+        const out = await resetPasswordDialog(ctx.slug, l.hasPassword);
+        if (out) { doc.clientLink = out; draw(true); }
+      } }, icon('key', 15), l.hasPassword ? 'Reset password' : 'Set password')),
+      note ? h('p.notice', { role: 'status' }, icon('check', 16), h('span', 'Password changed. Send the new password to the couple.')) : null);
+  };
+  draw();
+  return card('The couple’s link', 'Their private link to this studio. Send the password separately.', box);
+}
+
 export function sendModule(ctx) {
-  return [publishCard(ctx), linksCard(ctx), shareCardEditor(ctx), qrCard(ctx)];
+  const couple = ctx.isAdmin && ctx.session.doc.clientLink ? coupleLinkCard(ctx) : null;
+  return [publishCard(ctx), linksCard(ctx), couple, shareCardEditor(ctx), qrCard(ctx)].filter(Boolean);
 }

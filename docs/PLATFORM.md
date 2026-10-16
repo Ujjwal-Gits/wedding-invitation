@@ -52,7 +52,7 @@ Admin:
 - `GET /api/admin/stats` → `{ invitations, published, drafts, rsvps, attending, newOrders }`.
 - `PUT /api/site`.
 - `GET /api/orders`, `PATCH /api/orders/:id` `{ status?, notes? }`, `DELETE /api/orders/:id`.
-- `POST /api/invitations/:slug/client-link` `{ password (≥ 6 chars), themes, canChangeTheme, canChangeColors }` → `{ url }` (token shown once).
+- `POST /api/invitations/:slug/client-link` `{ password (≥ 6 chars), themes, canChangeTheme, canChangeColors }` → `{ url }` (the admin can see and copy it again later: `clientLink.url`).
 - `PATCH /api/invitations/:slug/access` `{ themes?, canChangeTheme?, canChangeColors?, password? }`.
 - `DELETE /api/invitations/:slug/client-link` (revokes, ends client sessions).
 - Existing invitation routes stay. On `PUT /api/invitations/:slug` from a **client** session the server enforces:
@@ -215,3 +215,17 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 - Dev: Vite serves the pages, so the gate does not run on 5195. A Vite dev middleware was not added: editing `vite.config.js` restarts the running dev server.
 
 **mix (2026-10-16): separate gate and first-screen choices.** `design: { gate?, hero? }` next to `theme` (theme slugs; absent = the theme's own). Contract, runtime (`src/core/mix.js`), compatibility manifest (`slots.js` `parts`) and the data.js / studio / server changes it needs: `docs/MIX.md`. Theme agents: the token rules of converted themes also match `.mx-part.theme-<slug>`; `_suite/suite.css` defaults match `:where(.mx-part).su`.
+
+**server + studio (2026-10-16): couples stay signed in; the admin can copy the couple's link again.**
+- Owner: "No asking the client again and again for the password. Until they log out, don't sign them out."
+  Sessions now persist in `data/sessions.json` (hashed ids only) and survive restarts and deploys. Sliding
+  expiry: couple 180 days, admin 30 days since last activity, no absolute cap; the persistent cookie is
+  refreshed with `seen` (at most every 10 min). A couple's sessions end on sign-out, link off, new link, a
+  password change or invitation delete. Details: API.md "Sessions". New: `server/lib/sessions.js`.
+- Opening the shared link again while signed in goes straight in (`POST /client/session { token }`, no
+  password). The studio always asks `/auth/me` first, so a valid cookie never shows the password page.
+- `clientLink.url` (admin only): the link is stored encrypted (`access.tokenEnc`, `server/lib/linkkey.js`;
+  optional env `LINK_SECRET`, else `data/link.key`). Clients & access rows show Copy link and a Reset password
+  button; the access panel and the invitation's Send module (admin) show the link with Copy and Reset password.
+  Reset password keeps the same URL. Older links show "created before links could be shown again" with a
+  New link button. The password is never shown again (argon2id hash only).

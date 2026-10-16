@@ -79,6 +79,7 @@ export function migrateDoc(doc) {
     a.canChangeTheme = a.canChangeTheme === true;
     a.canChangeColors = a.canChangeColors === true;
     if (typeof a.passwordHash !== 'string') a.passwordHash = null;
+    if (typeof a.tokenEnc !== 'string') delete a.tokenEnc;
   }
   return doc;
 }

@@ -286,6 +286,7 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); width
 .dtable tbody tr:hover { background: var(--surface-2); }
 .dtable .num { text-align: right; }
 .dtable th.num .sortbtn { flex-direction: row-reverse; }
+.dtable--acc th { white-space: normal; } /* room for the copy and reset-password actions */
 .sortbtn { appearance: none; border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border-radius: 4px; }
 .sortbtn:hover { color: var(--ink); }
 .sortbtn__i { display: inline-grid; opacity: 0; transition: opacity var(--t-fast) var(--ease); }

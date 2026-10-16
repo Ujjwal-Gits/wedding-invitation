@@ -1,24 +1,27 @@
 // Single-admin authentication: server-side sessions in an HttpOnly cookie, rotated on login,
-// with a synchronizer CSRF token bound to each session.
+// with a synchronizer CSRF token bound to each session. Sessions persist across restarts (lib/sessions.js)
+// and slide: the planner 30 days, a couple 180 days since last activity, until they sign out.
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { verify as argonVerify, hash as argonHash } from '@node-rs/argon2';
 import { verify as bcryptVerify } from '@node-rs/bcrypt';
 import { IS_PROD, ADMIN_EMAIL, ADMIN_PASSWORD_HASH } from './env.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { getInvitation, listInvitations } from './store.js';
+import { TTL, keyOf, expired, getSession, putSession, deleteSession, deleteSessionsWhere, touchSession } from './sessions.js';
 
 export const COOKIE = IS_PROD ? '__Host-studio' : 'studio_sid';
-const IDLE_MS = 12 * 60 * 60 * 1000; // 12 h without activity
-const ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days at most
+const sha = (s) => createHash('sha256').update(s).digest('hex');
+const newId = () => randomBytes(32).toString('base64url'); // 256-bit session ids and CSRF tokens
 
-// Sessions live in memory: a restart signs the admin out, which is acceptable for one user.
-const sessions = new Map(); // sha256(id) -> { email, csrf, created, seen }
-const keyOf = (id) => createHash('sha256').update(id).digest('hex');
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, s] of sessions) if (now - s.seen > IDLE_MS || now - s.created > ABSOLUTE_MS) sessions.delete(k);
-}, 10 * 60 * 1000).unref();
+/**
+ * Fingerprints bind a stored session to the credentials it was opened with. The planner's changes when
+ * ADMIN_EMAIL or ADMIN_PASSWORD_HASH change; a couple's when their link is replaced or its password changes,
+ * so such a session stops working even if it was not deleted.
+ */
+const ADMIN_FP = sha(`admin\n${ADMIN_EMAIL}\n${ADMIN_PASSWORD_HASH}`);
+const linkFp = (access) => sha(`client\n${access?.tokenHash || ''}\n${access?.passwordHash || ''}`);
+const linkActive = (doc, s) => Boolean(doc?.access?.tokenHash) && safeEqual(linkFp(doc.access), s.fp);
+const maxAge = (role) => Math.floor(TTL[role] / 1000);
 
 function parseCookies(header = '') {
   const out = {};
@@ -29,10 +32,12 @@ function parseCookies(header = '') {
   return out;
 }
 
+/** Sets (or clears, maxAgeSec 0) the session cookie, replacing any earlier one in this response. */
 function setCookie(res, value, maxAgeSec) {
   const attrs = [`${COOKIE}=${value}`, 'Path=/', 'HttpOnly', 'SameSite=Lax', `Max-Age=${maxAgeSec}`];
   if (IS_PROD) attrs.push('Secure');
-  res.append('Set-Cookie', attrs.join('; '));
+  const prev = [].concat(res.getHeader('Set-Cookie') || []).filter((c) => !String(c).startsWith(`${COOKIE}=`));
+  res.setHeader('Set-Cookie', [...prev, attrs.join('; ')]);
 }
 
 /** Middleware: attaches req.session (or null) for a valid, unexpired session. */
@@ -41,14 +46,15 @@ export function loadSession(req, res, next) {
   req.session = null;
   if (id && /^[A-Za-z0-9_-]{43}$/.test(id)) {
     const k = keyOf(id);
-    const s = sessions.get(k);
+    const s = getSession(k);
     const now = Date.now();
-    if (s && now - s.seen < IDLE_MS && now - s.created < ABSOLUTE_MS) {
-      s.seen = now;
+    if (s && !expired(s, now) && (s.role !== 'admin' || safeEqual(s.fp, ADMIN_FP))) {
       req.session = s;
       req.sessionKey = k;
+      // Sliding expiry: every SEEN_EVERY, save `seen` and re-send the cookie so the browser keeps it as long.
+      if (touchSession(s, now)) setCookie(res, id, maxAge(s.role));
     } else if (s) {
-      sessions.delete(k);
+      deleteSession(k);
     }
   }
   next();
@@ -101,8 +107,8 @@ export function requireEditor(getInvitation) {
       if (!canEdit(req, req.params.slug)) return res.status(403).json({ error: 'You do not have access to this invitation.' });
       if (req.session.role === 'client') {
         const doc = await getInvitation(req.params.slug);
-        if (!doc?.access?.tokenHash || !safeEqual(doc.access.tokenHash, req.session.tokenHash)) {
-          sessions.delete(req.sessionKey);
+        if (!linkActive(doc, req.session)) {
+          await deleteSession(req.sessionKey);
           return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
         }
       }
@@ -118,9 +124,18 @@ export function requireEditor(getInvitation) {
 export const hashToken = (t) => createHash('sha256').update(String(t)).digest('hex');
 export const newClientToken = () => randomBytes(32).toString('base64url');
 
-/** Ends every couple session of one invitation (link turned off or replaced). */
-export function revokeClientSessions(slug) {
-  for (const [k, s] of sessions) if (s.role === 'client' && s.slug === slug) sessions.delete(k);
+/** Ends every couple session of one invitation (link turned off or replaced, password changed, deleted). */
+export const revokeClientSessions = (slug) => deleteSessionsWhere((s) => s.role === 'client' && s.slug === slug);
+
+/** Starts a fresh session (the browser's old one, if any, is dropped first) and sets its cookie. */
+async function startSession(req, res, data) {
+  if (req.sessionKey) await deleteSession(req.sessionKey);
+  const id = newId();
+  const now = Date.now();
+  const s = { ...data, csrf: newId(), created: now, seen: now };
+  await putSession(keyOf(id), s);
+  setCookie(res, id, maxAge(s.role));
+  return s;
 }
 
 const linkLimiter = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 }); // failed attempts per IP
@@ -150,6 +165,13 @@ export function clientSession() {
     }
     if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
+    // Already signed in with this very link (the couple opened it again): go straight in, no password.
+    if (req.session?.role === 'client' && /^[A-Za-z0-9_-]{43}$/.test(token)) {
+      const cur = await getInvitation(req.session.slug);
+      if (linkActive(cur, req.session) && safeEqual(cur.access.tokenHash, hashToken(token))) {
+        return res.json({ role: 'client', slug: cur.slug, csrf: req.session.csrf, perms: permsOf(cur.access) });
+      }
+    }
     const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, PASSWORD_MAX * 4).normalize('NFC') : '';
     const fail = (slug) => {
       linkLimiter.hit(ip);
@@ -179,11 +201,7 @@ export function clientSession() {
       const ok = password ? await argonVerify(doc.access.passwordHash, password).catch(() => false) : false;
       if (!ok) return fail(doc.slug);
     }
-    if (req.sessionKey) sessions.delete(req.sessionKey);
-    const id = randomBytes(32).toString('base64url');
-    const s = { role: 'client', slug: doc.slug, tokenHash: h, csrf: randomBytes(32).toString('base64url'), created: Date.now(), seen: Date.now() };
-    sessions.set(keyOf(id), s);
-    setCookie(res, id, Math.floor(ABSOLUTE_MS / 1000));
+    const s = await startSession(req, res, { role: 'client', slug: doc.slug, fp: linkFp(doc.access) });
     linkLimiter.reset(ip);
     console.info(`[auth] client link ok slug=${doc.slug} ip=${ip}`);
     res.json({ role: 'client', slug: doc.slug, csrf: s.csrf, perms: permsOf(doc.access) });
@@ -230,18 +248,14 @@ export async function login(req, res) {
   }
 
   // Rotate: drop any session this browser had, then issue a fresh id.
-  if (req.sessionKey) sessions.delete(req.sessionKey);
-  const id = randomBytes(32).toString('base64url');
-  const s = { role: 'admin', email: ADMIN_EMAIL, csrf: randomBytes(32).toString('base64url'), created: Date.now(), seen: Date.now() };
-  sessions.set(keyOf(id), s);
-  setCookie(res, id, Math.floor(ABSOLUTE_MS / 1000));
+  const s = await startSession(req, res, { role: 'admin', fp: ADMIN_FP });
   ipLimiter.reset(ip);
   console.info(`[auth] login ok ip=${ip}`);
-  res.json({ role: 'admin', email: s.email, csrf: s.csrf });
+  res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
 }
 
-export function logout(req, res) {
-  if (req.sessionKey) sessions.delete(req.sessionKey);
+export async function logout(req, res) {
+  await deleteSession(req.sessionKey);
   setCookie(res, '', 0);
   console.info(`[auth] logout ip=${clientIp(req)}`);
   res.json({ ok: true });
@@ -257,18 +271,18 @@ export async function hasStudioSession(req) {
   if (s.role === 'admin') return true;
   if (s.role !== 'client') return false;
   const doc = await getInvitation(s.slug);
-  if (doc?.access?.tokenHash && safeEqual(doc.access.tokenHash, s.tokenHash)) return true;
-  sessions.delete(req.sessionKey);
+  if (linkActive(doc, s)) return true;
+  await deleteSession(req.sessionKey);
   return false;
 }
 
 export async function me(req, res) {
   if (!req.session) return res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
-  if (s.role !== 'client') return res.json({ role: 'admin', email: s.email, csrf: s.csrf });
+  if (s.role !== 'client') return res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
   const doc = await getInvitation(s.slug);
-  if (!doc?.access?.tokenHash || !safeEqual(doc.access.tokenHash, s.tokenHash)) {
-    sessions.delete(req.sessionKey);
+  if (!linkActive(doc, s)) {
+    await deleteSession(req.sessionKey);
     return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
   }
   res.json({ role: 'client', slug: s.slug, csrf: s.csrf, perms: permsOf(doc.access) });

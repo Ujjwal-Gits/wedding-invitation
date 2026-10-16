@@ -39,9 +39,11 @@ npm run hash-password          # type a password (12+ characters); paste the pri
 | `TRUST_PROXY` | `1` behind nginx / Caddy / a PaaS router, so rate limits see the real client IP |
 | `DEPTH_ENABLED` | `1` (default) makes depth maps for uploaded photos when Python is available |
 | `DEPTH_PYTHON` | Python with torch, transformers, scipy, pillow. Default `../tools/.venv/Scripts/python(.exe)` |
+| `LINK_SECRET` | Optional, 32+ chars: key for the stored couple links. Unset: a random key in `data/link.key` |
 
-To change the password, run `npm run hash-password` again, replace the line and restart. Restarting
-signs every session out (sessions live in memory).
+To change the password, run `npm run hash-password` again, replace the line and restart. That signs the
+admin out everywhere. A plain restart or deploy signs nobody out: sessions persist in `data/sessions.json`
+(see docs/API.md "Sessions").
 
 Non-interactive (scripts, CI, a password manager): pipe the password on stdin; `--raw` prints only
 the hash. Never put the password itself on the command line or in a file.
@@ -182,7 +184,8 @@ Admin requests other than GET must send `X-CSRF-Token` (from `/auth/me` or the l
 6. Depth maps are optional. Without the Python venv, set `DEPTH_ENABLED=0`; uploads then have
    no depth map and themes show them flat.
 
-The server keeps sessions and rate-limit counters in memory, so run a single instance.
+The server keeps rate-limit counters in memory and caches sessions (written through to
+`data/sessions.json`), so run a single instance.
 
 Before handing over, go through `~/.claude/templates/SECURITY-CHECKLIST.md`
 (HTTPS/HSTS check, securityheaders.com, backups, `npm audit`, privacy policy for RSVP data).

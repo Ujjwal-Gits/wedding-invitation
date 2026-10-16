@@ -10,6 +10,7 @@ import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
 import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
 import { originAllowed } from './security.js';
+import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
@@ -37,8 +38,16 @@ function logActivity(doc, entry) {
 /** The couple changed something the planner has not opened since. */
 const unseenByAdmin = (doc) => doc.lastEdit?.by === 'couple' && (!doc.adminSeenAt || doc.lastEdit.at > doc.adminSeenAt);
 
-/** The couple's link as the planner sees it (never the hashes). */
-const linkOut = (a) => (a ? { createdAt: a.createdAt, hasPassword: Boolean(a.passwordHash), ...permsOf(a) } : null);
+/**
+ * The couple's link as the planner sees it (admin payloads only; never the hashes). `url` is the link itself,
+ * shown and copied again any time; null for links made before links were stored (a new link fixes that).
+ * Relative ('/studio/#/c/...') when no PUBLIC_ORIGIN is set: the studio resolves it against its own origin.
+ */
+const linkOut = (a, slug) => {
+  if (!a) return null;
+  const token = openToken(slug, a);
+  return { createdAt: a.createdAt, hasPassword: Boolean(a.passwordHash), url: token ? `${PUBLIC_ORIGINS[0] || ''}/studio/#/c/${token}` : null, ...permsOf(a) };
+};
 
 const nameText = (v, max = 60) => (typeof v === 'string' ? v.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 
@@ -60,13 +69,13 @@ function summary(doc, rsvpCount = 0) {
     hero,
     lastEdit: doc.lastEdit || null,
     unseen: unseenByAdmin(doc),
-    clientLink: linkOut(doc.access),
+    clientLink: linkOut(doc.access, doc.slug),
   };
 }
 
 const docOut = (doc, admin = true) => ({
   slug: doc.slug,
-  clientLink: admin ? linkOut(doc.access) : null,
+  clientLink: admin ? linkOut(doc.access, doc.slug) : null,
   version: doc.version,
   status: doc.status,
   changed: doc.status === 'published' && !same(doc.draft, doc.published),
@@ -298,6 +307,7 @@ export async function remove(req, res) {
     await load(slug);
     await withLock(`rsvp:${slug}`, () => trashInvitation(slug));
   });
+  await revokeClientSessions(slug);
   console.info(`[admin] delete (to trash) slug=${slug}`);
   res.json({ ok: true });
 }
@@ -337,14 +347,15 @@ export async function createClientLink(req, res) {
   const passwordHash = await hashLinkPassword(opts.password);
   const doc = await withLock(`inv:${slug}`, async () => {
     const cur = await load(slug);
-    cur.access = { tokenHash: hashToken(token), passwordHash, createdAt: new Date().toISOString(), themes: opts.themes, canChangeTheme: opts.canChangeTheme, canChangeColors: opts.canChangeColors };
+    const tokenEnc = sealToken(slug, token);
+    cur.access = { tokenHash: hashToken(token), ...(tokenEnc ? { tokenEnc } : {}), passwordHash, createdAt: new Date().toISOString(), themes: opts.themes, canChangeTheme: opts.canChangeTheme, canChangeColors: opts.canChangeColors };
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
-  revokeClientSessions(slug);
+  await revokeClientSessions(slug);
   console.info(`[admin] client link created slug=${slug}`);
-  // The token is shown once; only its hash is stored.
-  res.status(201).json({ url: `${linkOrigin(req)}/studio/#/c/${token}`, token, createdAt: doc.access.createdAt, clientLink: linkOut(doc.access) });
+  // Stored encrypted (lib/linkkey.js) so the planner can copy it again; tokenHash is what sign-in looks up.
+  res.status(201).json({ url: `${linkOrigin(req)}/studio/#/c/${token}`, token, createdAt: doc.access.createdAt, clientLink: linkOut(doc.access, slug) });
 }
 
 /** PATCH /api/invitations/:slug/access: change what the couple may do, or their password (ends their sessions). */
@@ -360,9 +371,9 @@ export async function patchAccess(req, res) {
     await writeJsonAtomic(invPath(slug), cur);
     return cur;
   });
-  if (passwordHash) revokeClientSessions(slug);
+  if (passwordHash) await revokeClientSessions(slug); // the same link now needs the new password
   console.info(`[admin] client access changed slug=${slug}${passwordHash ? ' (password)' : ''}`);
-  res.json({ clientLink: linkOut(doc.access) });
+  res.json({ clientLink: linkOut(doc.access, slug) });
 }
 
 /** DELETE /api/invitations/:slug/client-link: turn the couple's link off. */
@@ -374,7 +385,7 @@ export async function deleteClientLink(req, res) {
     delete cur.clientAccess;
     await writeJsonAtomic(invPath(slug), cur);
   });
-  revokeClientSessions(slug);
+  await revokeClientSessions(slug);
   console.info(`[admin] client link removed slug=${slug}`);
   res.json({ ok: true });
 }

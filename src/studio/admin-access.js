@@ -1,6 +1,6 @@
 // Clients & access: the couple's private link with a password set by the owner, which designs they
 // may choose from, and whether they may change the design or the colours.
-import { h, icon, clear, toast, copyText, confirmDialog, fmtDate, toggle, fill } from './dom.js';
+import { h, icon, clear, toast, copyText, confirmDialog, openDialog, fmtDate, toggle, fill } from './dom.js';
 import { api } from './api.js';
 
 const genPassword = () => {
@@ -32,8 +32,61 @@ function themePicker(meta, value, onChange, current) {
   return h('fieldset.field', h('legend.label', 'Designs they can see and choose'), h('div.row', radio('all', 'All designs'), radio('some', 'Only these'), count), grid);
 }
 
+/** The couple's link as a full URL (the server may send it relative when no public origin is set). */
+export const linkUrl = (l) => (l?.url ? new URL(l.url, location.origin).href : '');
+
+/** The link in a read-only field with a Copy button. */
+export const linkRow = (url, label = 'The couple’s link') => h('div.inputrow',
+  h('input.input.linkfield', { type: 'text', readonly: true, value: url, 'aria-label': label, onfocus: (e) => e.target.select() }),
+  h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(url) }, icon('copy', 15), 'Copy link'));
+
 /**
- * The access panel for one invitation. clientLink = { createdAt, hasPassword, themes, canChangeTheme, canChangeColors } | null.
+ * "Reset password": one new password for the same link. The couple's sessions end; they open the same URL
+ * with the new password once. Resolves to the new clientLink, or null when cancelled.
+ */
+export function resetPasswordDialog(slug, hasPassword = true) {
+  return new Promise((resolve) => {
+    let result = null;
+    const input = h('input.input', { id: `rpw-${slug}`, type: 'password', minlength: 6, maxlength: 128, autocomplete: 'new-password', spellcheck: 'false', placeholder: 'At least 6 characters' });
+    const eye = h('button.pwfield__eye', { type: 'button', 'aria-label': 'Show the password', title: 'Show', onclick: () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.setAttribute('aria-label', show ? 'Hide the password' : 'Show the password');
+      eye.classList.toggle('is-on', show);
+      input.focus();
+    } }, icon('eye', 18));
+    const err = h('p.form-error', { role: 'alert' });
+    input.addEventListener('input', () => { err.textContent = ''; });
+    const save = h('button.btn.btn--primary', { type: 'submit', form: `rpf-${slug}` }, 'Save');
+    const form = h('form.stack', { id: `rpf-${slug}`, novalidate: true },
+      h('div.field', h('label.label', { for: input.id }, 'New password'), h('div.pwfield', input, eye),
+        h('p.hint', 'The link stays the same. The couple is signed out and opens it once with this password.')), err);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      const p = input.value.trim();
+      if (p.length < 6) { err.textContent = 'The password needs at least 6 characters.'; input.focus(); return; }
+      if (p.length > 128) { err.textContent = 'The password can be at most 128 characters.'; input.focus(); return; }
+      save.disabled = true;
+      try {
+        const out = await api(`/invitations/${slug}/access`, { method: 'PATCH', body: { password: p } });
+        result = out.clientLink;
+        d.close();
+      } catch (ex) { err.textContent = ex.message; save.disabled = false; }
+    });
+    const d = openDialog({
+      title: hasPassword ? 'Reset password' : 'Set a password',
+      body: form,
+      actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), save],
+      onClose: () => resolve(result),
+    });
+    input.focus();
+  });
+}
+
+/**
+ * The access panel for one invitation.
+ * clientLink = { createdAt, hasPassword, url | null, themes, canChangeTheme, canChangeColors } | null.
  */
 export function accessPanel({ slug, names, meta, clientLink, theme, onChange = () => {} }) {
   const root = h('div.access');
@@ -78,9 +131,8 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
     const msg = `Here is the private link to your wedding invitation on Nimtto. I will send you the password separately.\n${url}`;
     fill(root, 
       h('div.fresh',
-        h('p.fresh__title', icon('check', 16), 'Link ready. It is shown only this once.'),
-        h('div.inputrow', h('input.input.linkfield', { type: 'text', readonly: true, value: url, 'aria-label': 'The couple’s link', onfocus: (e) => e.target.select() }),
-          h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(url) }, icon('copy', 15), 'Copy link')),
+        h('p.fresh__title', icon('check', 16), 'Link ready. You can copy it again here any time.'),
+        linkRow(url),
         h('div.row',
           h('a.sharebtn.sharebtn--wa', { href: `https://wa.me/?text=${encodeURIComponent(msg)}`, target: '_blank', rel: 'noopener' }, icon('chat', 17), h('span', 'Send the link on WhatsApp')),
           h('button.btn.btn--quiet', { type: 'button', onclick: () => copyText(password, 'Password copied') }, icon('key', 15), 'Copy the password')),
@@ -88,7 +140,7 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
       h('div.row', h('button.btn', { type: 'button', onclick: () => drawActive() }, 'Done')));
   }
 
-  function drawActive() {
+  function drawActive(pwChanged = false) {
     if (!link) { drawCreate(); return; }
     const state = { themes: link.themes ?? 'all', canChangeTheme: Boolean(link.canChangeTheme), canChangeColors: link.canChangeColors !== false };
     const err = h('p.form-error', { role: 'alert' });
@@ -104,29 +156,28 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
       } catch (ex) { err.textContent = ex.message; }
       save.disabled = false;
     } }, 'Save access');
-    const pw = pwField(`npw-${slug}`);
-    const pwErr = h('p.form-error', { role: 'alert' });
-    const pwBox = h('details.fold.fold--plain', { open: !link.hasPassword },
-      h('summary.fold__sum', h('span', h('b', link.hasPassword ? 'Change the password' : 'Set a password'), h('small', 'Signs the couple out; they open the same link with the new password')), icon('down', 18)),
-      h('div.fold__body', pw.el, pwErr, h('button.btn', { type: 'button', onclick: async (e) => {
-        const p = pw.input.value.trim();
-        if (p.length < 6) { pwErr.textContent = 'The password needs at least 6 characters.'; return; }
-        e.currentTarget.disabled = true;
-        try {
-          const out = await api(`/invitations/${slug}/access`, { method: 'PATCH', body: { password: p } });
-          link = out.clientLink || { ...link, hasPassword: true };
-          onChange(link);
-          toast('Password changed', 'success');
-          drawActive();
-        } catch (ex) { pwErr.textContent = ex.message; e.currentTarget.disabled = false; }
-      } }, icon('key', 15), link.hasPassword ? 'Change password' : 'Set password')));
+    const resetBtn = h('button.btn', { type: 'button', onclick: async () => {
+      const out = await resetPasswordDialog(slug, link.hasPassword);
+      if (!out) return;
+      link = out;
+      onChange(link);
+      drawActive(true);
+    } }, icon('key', 15), link.hasPassword ? 'Reset password' : 'Set password');
+    const url = linkUrl(link);
+    const linkBox = url
+      ? h('div.stack', linkRow(url), h('div.row', resetBtn))
+      : h('div.stack',
+        h('p.notice.notice--row', icon('info', 16), h('span', 'This link was created before links could be shown again. Create a new link to see it here.'),
+          h('button.btn.btn--sm', { type: 'button', onclick: () => drawCreate(true) }, icon('refresh', 15), 'New link')),
+        h('div.row', resetBtn));
     fill(root, 
       h('div.accstate',
         h('span.pill.pill--ok', icon('check', 13), `Active since ${fmtDate(link.createdAt)}`),
         link.hasPassword ? h('span.pill.pill--muted', icon('lock', 13), 'Password set') : h('span.pill.pill--warn', icon('alert', 13), 'No password yet')),
-      !link.hasPassword ? h('p.notice.notice--warn', icon('alert', 16), h('span', 'This older link opens without a password. Set one below to protect it.')) : null,
+      !link.hasPassword ? h('p.notice.notice--warn', icon('alert', 16), h('span', 'This older link opens without a password. Set one to protect it.')) : null,
+      linkBox,
+      pwChanged ? h('p.notice', { role: 'status' }, icon('check', 16), h('span', 'Password changed. Send the new password to the couple.')) : null,
       permsForm(state), err, h('div.row', save),
-      pwBox,
       h('div.row.row--split',
         h('button.btn.btn--quiet', { type: 'button', onclick: () => drawCreate(true) }, icon('refresh', 15), 'Make a new link'),
         h('button.btn.btn--danger-ghost', { type: 'button', onclick: async () => {

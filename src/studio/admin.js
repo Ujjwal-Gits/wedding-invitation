@@ -4,7 +4,7 @@ import { h, icon, iconBtn, toast, openDialog, confirmDialog, fmtDate, fmtRelativ
 import { api } from './api.js';
 import { photoUrl } from '../photos.js';
 import { deleteDialog, actionMenu, whenText } from './manage.js';
-import { accessPanel, accessSummary, permsText } from './admin-access.js';
+import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
@@ -410,12 +410,19 @@ function access(ctx) {
         const designs = !l ? '—' : l.themes === 'all' || !Array.isArray(l.themes) ? 'All designs' : plural(l.themes.length, 'design');
         return h('tr',
           h('td.cell-couple', h('span.cell-main', thumb(i), h('span.cell-main__t', h('b', nameOf(i)), h('small.mono', `/${i.slug}`)))),
-          h('td', { 'data-label': 'Link' }, accessSummary(l)),
+          h('td', { 'data-label': 'Link' }, h('span.cell-2', accessSummary(l),
+            l?.url ? h('button.link.link--quiet', { type: 'button', title: 'Copy the couple’s link', onclick: () => copyText(linkUrl(l)) }, 'Copy link')
+              : l ? h('small', { title: 'Made before links could be shown again. Make a new link (Manage) to copy it.' }, 'Older link') : null)),
           h('td', { 'data-label': 'Designs', title: l ? permsText(l) : '' }, designs),
           h('td.col-perm', { 'data-label': 'Switch design' }, l ? yesNo(l.canChangeTheme) : '—'),
           h('td.col-perm', { 'data-label': 'Colours' }, l ? yesNo(l.canChangeColors) : '—'),
           h('td.col-upd', { 'data-label': 'Since' }, l ? h('span.tnum', fmtDate(l.createdAt)) : '—'),
-          h('td.cell-act', h('button.btn.btn--sm', { type: 'button', class: l ? (l.hasPassword ? '' : 'btn--ink') : '', onclick: () => accessDialog(ctx, i, draw) }, !l ? 'Create link' : l.hasPassword ? 'Manage' : 'Set password')));
+          h('td.cell-act', h('div.cell-act__in',
+            l ? iconBtn('key', l.hasPassword ? 'Reset password' : 'Set password', async () => {
+              const out = await resetPasswordDialog(i.slug, l.hasPassword);
+              if (out) { i.clientLink = out; draw(); toast('Password changed. Send the new password to the couple.', 'success'); }
+            }, 'btn--ghost') : null,
+            h('button.btn.btn--sm', { type: 'button', class: l && !l.hasPassword ? 'btn--ink' : '', onclick: () => accessDialog(ctx, i, draw) }, l ? 'Manage' : 'Create link'))));
       }))));
   }
   listInvitations().then((l) => { items = l; draw(); }).catch((err) => fill(body, quietEmpty('alert', 'Could not load', err.message)));
