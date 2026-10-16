@@ -42,6 +42,28 @@ function formDialog({ title, fields, submitText, submit, wide = false }) {
   });
 }
 
+/** Everything about one account: details, sign-ins, then their dashboard (orders, payments, invitations) read-only. */
+function detailsDialog(ctx, c) {
+  const facts = [
+    ['Name', c.name || '—'], ['Email', c.email], ['Phone', c.phone || '—'],
+    ['Joined', c.createdAt ? fmtDate(c.createdAt) : '—'],
+    ['Last sign-in', c.lastLoginAt ? `${fmtDate(c.lastLoginAt)} (${fmtRelative(c.lastLoginAt)})` : 'Never'],
+    ['Sign-ins', String(c.loginCount || 0)], ['Orders', String(c.orders || 0)],
+    ['Status', c.disabled ? 'Turned off' : 'Active'], ['Account id', c.id],
+  ];
+  const logins = c.logins || [];
+  openDialog({
+    title: c.name || c.email, wide: true,
+    body: h('div.stack',
+      h('section.card', h('header.card__head', h('h2.card__title', 'Details')),
+        h('dl.cu-facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v))))),
+      h('section.card', h('header.card__head', h('h2.card__title', 'Recent sign-ins')),
+        logins.length ? h('ul.cu-logins', logins.map((l) => h('li', h('span', l.device || 'Unknown device'), h('small', { title: fmtDate(l.at) }, fmtRelative(l.at)))))
+          : h('p.hint', c.lastLoginAt ? 'Sign-in history starts from today; earlier sign-ins were not recorded.' : 'They have not signed in yet.')),
+      customerHome({ meta: ctx.meta, viewAs: c })),
+  });
+}
+
 function resetDialog(c) {
   const pw = pwInput(`cr-${c.id}`, 'New password', 'They are signed out everywhere. Send it to them on WhatsApp or by phone.');
   return formDialog({
@@ -137,7 +159,7 @@ export function customersSection(ctx, loadInvitations) {
       h('caption.sr-only', 'Customer accounts'),
       h('thead', h('tr', ['Customer', 'Invitations', 'Orders', 'Status', 'Last sign-in'].map((t) => h('th', { scope: 'col' }, t)), h('th', { scope: 'col', class: 'cell-act' }, h('span.sr-only', 'Actions')))),
       h('tbody', rows.map((c) => h('tr', { class: c.disabled ? 'is-off' : '' },
-        h('td.cell-couple', h('span.cell-main__t', h('b', c.name || '—'), h('small', c.email), c.phone ? h('small.mono', c.phone) : null)),
+        h('td.cell-couple', h('button.cu-open', { type: 'button', title: 'See everything', onclick: () => detailsDialog(ctx, c) }, h('span.cell-main__t', h('b', c.name || '—'), h('small', c.email), c.phone ? h('small.mono', c.phone) : null))),
         h('td', { 'data-label': 'Invitations' }, h('div.cu-links',
           (c.invitations || []).map((l) => h('span.cu-link', { title: permsText(l) },
             h('button.link.link--quiet', { type: 'button', onclick: async () => { const n = await linkDialog(ctx, c, invitations, l); if (n) { replace(n); toast('Access saved', 'success'); } } }, byslug.get(l.slug) ? coupleOf(byslug.get(l.slug)) : `/${l.slug}`),
@@ -150,7 +172,7 @@ export function customersSection(ctx, loadInvitations) {
         h('td', { 'data-label': 'Status' }, c.disabled ? h('span.pill.pill--warn', 'Off') : h('span.pill.pill--ok', 'Active')),
         h('td', { 'data-label': 'Last sign-in', title: c.lastLoginAt ? fmtDate(c.lastLoginAt) : '' }, c.lastLoginAt ? fmtRelative(c.lastLoginAt) : h('small', `Joined ${fmtDate(c.createdAt)}`)),
         h('td.cell-act', h('div.cell-act__in',
-          iconBtn('eye', 'View their dashboard', () => openDialog({ title: `${c.name || c.email} · their dashboard`, wide: true, body: customerHome({ meta: ctx.meta, viewAs: c }) }), 'btn--ghost'),
+          iconBtn('eye', 'See everything', () => detailsDialog(ctx, c), 'btn--ghost'),
           iconBtn('key', 'Reset password', async () => shownPassword(await resetDialog(c), 'Password reset'), 'btn--ghost'),
           h('button.btn.btn--sm', { type: 'button', class: c.disabled ? '' : 'btn--danger-ghost', onclick: async () => {
             const off = !c.disabled;

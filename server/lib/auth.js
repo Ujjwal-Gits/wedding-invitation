@@ -271,10 +271,26 @@ export async function checkCustomer(ip, email, password) {
   return { ok: true, customer: c };
 }
 
+/** "iPhone · Safari": the device and browser of a sign-in, for the planner's Customers page (no IP is kept). */
+function deviceOf(ua = '') {
+  const s = String(ua).slice(0, 400);
+  const os = /iPhone/.test(s) ? 'iPhone' : /iPad/.test(s) ? 'iPad' : /Android/.test(s) ? 'Android' : /Windows/.test(s) ? 'Windows'
+    : /Mac OS X|Macintosh/.test(s) ? 'Mac' : /Linux/.test(s) ? 'Linux' : 'Other device';
+  const br = /Edg\//.test(s) ? 'Edge' : /OPR\//.test(s) ? 'Opera' : /SamsungBrowser/.test(s) ? 'Samsung Internet' : /Firefox\//.test(s) ? 'Firefox'
+    : /Chrome\//.test(s) ? 'Chrome' : /Safari\//.test(s) ? 'Safari' : 'Browser';
+  return `${os} · ${br}`;
+}
+
 /** Signs this browser in as the customer (a new session id, cookie set). Returns the session. */
 export async function signInCustomer(req, res, c) {
   const s = await startSession(req, res, { role: 'customer', cid: c.id, fp: customerFp(c) });
-  mutateCustomer(c.id, (x) => { x.lastLoginAt = new Date().toISOString(); }).catch(() => {});
+  const at = new Date().toISOString();
+  const device = deviceOf(req.get('user-agent'));
+  mutateCustomer(c.id, (x) => {
+    x.lastLoginAt = at;
+    x.loginCount = (Number(x.loginCount) || 0) + 1;
+    x.logins = [{ at, device }, ...(Array.isArray(x.logins) ? x.logins : [])].slice(0, 20);
+  }).catch(() => {});
   console.info(`[auth] customer sign-in id=${c.id} ip=${clientIp(req)}`);
   return s;
 }

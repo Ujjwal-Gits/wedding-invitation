@@ -1744,3 +1744,10 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .odr__sect .paybox { margin: 0; }
 .odr__danger { padding: var(--s4) var(--s5) var(--s6, 32px); }
 .pend { margin-bottom: var(--s3); }
+.cu-open { all: unset; cursor: pointer; display: block; border-radius: 6px; }
+.cu-open:hover b { color: var(--accent); }
+.cu-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.cu-logins { list-style: none; margin: 0; padding: 0; display: grid; }
+.cu-logins li { display: flex; justify-content: space-between; gap: var(--s3); padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.cu-logins li:first-child { border-top: 0; }
+.cu-logins small { color: var(--ink-3); }

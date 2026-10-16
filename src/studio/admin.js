@@ -586,7 +586,7 @@ function access(ctx) {
       h('li', h('b', 'No account yet?'), h('span', 'it waits for them and appears once they order or sign up with that email.')),
       h('li', h('b', 'Separate link (optional)'), h('span', 'for couples without an account: a link plus a password you choose. Send them apart.')),
       h('li', h('b', 'Set what they may do'), h('span', 'which designs they see, and whether they can switch design or change colours.'))));
-  return [customersSection(ctx, listInvitations),
+  return [
     h('section.sect', { 'aria-labelledby': 'sep-h' }, h('header.sect__head', h('h2.sect__title#sep-h', 'Separate links (optional)')),
       notice, h('div.withaside', h('div.withaside__main', h('div.toolbar2', tabs.el, h('div.toolbar2__end', search)), body), how))];
 }
@@ -1220,6 +1220,7 @@ function settings(ctx) {
 export const ADMIN_MODULES = [
   { id: 'overview', title: 'Overview', icon: 'grid', group: 'main', render: overview, sub: ' ', actions: (ctx) => [newBtn(ctx)] },
   { id: 'invitations', title: 'Invitations', icon: 'cards', group: 'main', render: invitations, sub: 'Every invitation: its status, replies and the couple’s access.', actions: (ctx) => [newBtn(ctx)] },
+  { id: 'customers', title: 'Customers', icon: 'users', group: 'main', render: (ctx) => customersSection(ctx, listInvitations), sub: 'Everyone with an account: their details, sign-ins, orders and invitations. Open one to see it all.' },
   { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
   { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
   { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },

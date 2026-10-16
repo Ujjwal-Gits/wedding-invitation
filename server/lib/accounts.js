@@ -140,6 +140,7 @@ export function customersBySlug() {
 /** What the admin sees (never the hash). */
 export const adminCustomer = (c, orders = 0) => ({
   id: c.id, email: c.email, name: c.name || '', phone: c.phone || '', createdAt: c.createdAt, lastLoginAt: c.lastLoginAt || null,
+  loginCount: Number(c.loginCount) || (c.lastLoginAt ? 1 : 0), logins: Array.isArray(c.logins) ? c.logins.slice(0, 20) : [],
   disabled: c.disabled === true, orders,
   invitations: (c.invitations || []).map(({ slug, themes, canChangeTheme, canChangeColors, linkedAt }) => ({ slug, themes, canChangeTheme, canChangeColors, linkedAt })),
 });
