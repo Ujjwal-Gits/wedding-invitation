@@ -152,10 +152,14 @@ function mount(ws, mod, ctx) {
 
 // ── Owner dashboard ──────────────────────────────────────────────────────
 
+/** Back to the public website (nimtto.com), next to Clear cache and Sign out in every account box. */
+const siteBtn = () => h('a.btn.btn--icon.btn--ghost', { href: '/', 'aria-label': 'Go to the website', title: 'Go to the website' }, icon('external', 18));
+
 function adminFoot() {
   return h('div.userbox',
     h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.email || 'A').slice(0, 1).toUpperCase()),
     h('span.userbox__text', h('b', 'Owner'), h('small', S.me.email || '')),
+    siteBtn(),
     cacheBtn(),
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
 }
@@ -196,6 +200,7 @@ function customerFoot() {
   return h('div.userbox',
     h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.name || S.me.email || 'Y').slice(0, 1).toUpperCase()),
     h('span.userbox__text', h('b', S.me.name || 'Your account'), h('small', S.me.email || '')),
+    siteBtn(),
     cacheBtn(),
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
 }
@@ -273,6 +278,7 @@ async function openInvitation(slug, modId) {
       foot: isAdmin ? adminFoot() : isCustomer ? customerFoot() : h('div.userbox',
         h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
         h('span.userbox__text', h('b', 'Your invitation'), h('small', 'Saves as you type')),
+        siteBtn(),
         cacheBtn(),
         h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18))),
       tabs: ['opening', 'couple', 'dates', 'photos', 'send'],
