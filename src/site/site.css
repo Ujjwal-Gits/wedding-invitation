@@ -198,7 +198,7 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 @media (min-width: 900px) { .foot__top { grid-template-columns: 1.6fr 1fr 1fr 1.2fr; } .foot__brand { grid-column: auto; } }
 
 /* ---------------- forms ---------------- */
-.field { display: grid; gap: 6px; }
+.field { display: grid; gap: 6px; align-content: start; } /* never stretch a box to match a taller neighbour (hint lines) */
 .field > label, .field__lab { font-size: 14px; font-weight: 500; color: var(--ink); }
 .req { color: var(--accent); }
 .opt { color: var(--ink-3); font-weight: 400; }
