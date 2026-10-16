@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { THEMES, BY_SLUG, CATEGORIES, FALLBACK_SITE, PLAN_DESC, PLAN_NE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill } from './stills.js';
 import { OCCASIONS, STEPS, FEATURES, faqItems, SITE_URL } from './content.mjs';
+import { pageMeta } from './seo.mjs';
 
 const here = import.meta.dirname;
 const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
@@ -56,30 +57,59 @@ const NAV = [
 ];
 
 /* ---------------- head ---------------- */
-function head() {
+/** title, description, canonical, robots, hreflang, Open Graph and Twitter tags for a page (src/site/seo.mjs) */
+function meta(id = 'home') {
+  const m = pageMeta(id);
+  const t = esc(m.title), d = esc(m.desc), a = esc(m.alt);
+  return `<title>${t}</title>
+  <meta name="description" content="${d}" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <link rel="canonical" href="${m.url}" />
+  <link rel="alternate" hreflang="en" href="${m.url}" />
+  <link rel="alternate" hreflang="x-default" href="${m.url}" />
+  <meta property="og:type" content="${m.ogType}" />
+  <meta property="og:site_name" content="Nimtto" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="ne_NP" />
+  <meta property="og:title" content="${t}" />
+  <meta property="og:description" content="${d}" />
+  <meta property="og:url" content="${m.url}" />
+  <meta property="og:image" content="${m.image}" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="${a}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${t}" />
+  <meta name="twitter:description" content="${d}" />
+  <meta name="twitter:image" content="${m.image}" />
+  <meta name="twitter:image:alt" content="${a}" />
+  ${jsonLd({ '@context': 'https://schema.org', '@type': m.type, '@id': `${m.url}#webpage`, url: m.url, name: m.title, description: m.desc, inLanguage: 'en',
+    isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` },
+    primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 } })}`;
+}
+function head(id = 'home') {
   const org = {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'Nimtto', alternateName: 'निम्तो', url: `${SITE_URL}/`,
-        logo: `${SITE_URL}/site/brand/nimtto-logo.svg`, image: `${SITE_URL}/site/og.jpg`, email: CONTACT.email, telephone: '+977-980-6393298',
+        logo: `${SITE_URL}/site/brand/nimtto-logo.svg`, image: `${SITE_URL}/site/og/home.jpg`, email: CONTACT.email, telephone: '+977-980-6393298',
         description: 'Nimtto is an online invitation maker from Nepal: invitation websites for weddings, bratabandha, pasni, gunyu cholo and every family occasion, in English and Nepali.',
         areaServed: [{ '@type': 'Country', name: 'Nepal' }, 'Worldwide'], knowsLanguage: ['en', 'ne'],
         address: { '@type': 'PostalAddress', addressCountry: 'NP' },
         contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: CONTACT.email, telephone: '+977-980-6393298', availableLanguage: ['English', 'Nepali'] },
       },
-      { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: 'Nimtto online invitation maker', inLanguage: 'en', publisher: { '@id': `${SITE_URL}/#org` } },
+      { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto Online Invitation Maker'], description: 'Online invitation maker for Nepal: wedding invitation websites and e-cards for every family occasion.', inLanguage: 'en', publisher: { '@id': `${SITE_URL}/#org` } },
     ],
   };
-  return `<meta name="theme-color" content="#FFFFFF" />
+  return `${meta(id)}
+  <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preload" href="/site/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/site/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <meta property="og:site_name" content="Nimtto" />
-  <meta property="og:locale" content="en_US" />
-  <meta name="twitter:card" content="summary_large_image" />
   ${jsonLd(org)}`;
 }
 
@@ -265,8 +295,8 @@ function designsGrid() {
 }
 function designsLd() {
   return jsonLd({
-    '@context': 'https://schema.org', '@type': 'ItemList', name: 'Nimtto wedding invitation designs', numberOfItems: THEMES.length,
-    itemListElement: THEMES.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}/designs/${t.slug}/`, name: `${t.name} (${t.ne}) wedding invitation design` })),
+    '@context': 'https://schema.org', '@type': 'ItemList', name: `Wedding Invitation Designs: ${THEMES.length} Nepali Digital Cards`, numberOfItems: THEMES.length,
+    itemListElement: THEMES.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}/designs/${t.slug}/`, name: `${t.name} Wedding Invitation Design` })),
   });
 }
 const RAIL = ['laali', 'gurans', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'sindoor', 'rajdwar', 'shree', 'mala'];
@@ -334,7 +364,7 @@ function plans() {
 }
 function offersLd() {
   return jsonLd({
-    '@context': 'https://schema.org', '@type': 'Service', '@id': `${SITE_URL}/#service`, name: 'Online invitation website',
+    '@context': 'https://schema.org', '@type': 'Service', '@id': `${SITE_URL}/#service`, name: 'Online Invitation Website',
     serviceType: 'Digital invitation card and invitation website', provider: { '@id': `${SITE_URL}/#org` },
     areaServed: [{ '@type': 'Country', name: 'Nepal' }, 'Worldwide'],
     description: 'Invitation websites for Nepali weddings, engagements, bratabandha, gunyu cholo, pasni, nwaran, birthdays, janku and receptions, in English and Nepali, with RSVP, music, maps and Nepali dates.',
@@ -376,7 +406,7 @@ function crumbs(arg = '') {
   ] });
 }
 
-export const PARTIALS = { head, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs };
+export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {

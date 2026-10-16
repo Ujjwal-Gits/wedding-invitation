@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill, STILL_SIZES } from './stills.js';
 import { esc, phone, rs, SIZES } from './partials.mjs';
+import { pageMeta } from './seo.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = resolve(ROOT, 'designs');
@@ -58,11 +59,12 @@ for (const t of THEMES) {
   const rel = religionsOf(t);
   const allFaiths = rel.includes('muslim') && rel.includes('christian');
   const plan = planForTier(FALLBACK_SITE.plans, t.tier);
+  const seo = pageMeta(`design/${t.slug}`);
   const ld = {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Product', name: `${t.name} wedding invitation design`, alternateName: t.ne, image: `${SITE}/themes/${t.slug}/thumb.jpg`, description: t.concept,
+        '@type': 'Product', '@id': `${SITE}/designs/${t.slug}/#product`, name: seo.name, alternateName: t.ne, image: [seo.image, `${SITE}/themes/${t.slug}/thumb.jpg`], description: seo.desc,
         brand: { '@type': 'Brand', name: 'Nimtto' }, category: 'Digital wedding invitation', url: `${SITE}/designs/${t.slug}/`,
         ...(plan ? { offers: { '@type': 'Offer', price: String(plan.price), priceCurrency: 'NPR', availability: 'https://schema.org/InStock', url: `${SITE}/designs/${t.slug}/`, seller: { '@id': `${SITE}/#org` } } } : {}),
       },
@@ -79,7 +81,6 @@ for (const t of THEMES) {
     NAME: esc(t.name),
     NE: esc(t.ne),
     DESC: esc(t.concept),
-    META_DESC: esc(`${t.name} (${t.ne}): ${t.concept} An online wedding invitation for Nepali weddings, in English and Nepali with RSVP and Nepali dates.${plan ? ` From ${rs(plan.price)}.` : ''}`),
     ALT: esc(t.alt),
     CAT: t.cat,
     CAT_LABEL: esc(CATEGORIES[t.cat].label),
