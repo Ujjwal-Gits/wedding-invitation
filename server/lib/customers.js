@@ -10,7 +10,7 @@ import {
 import { syncOrderDetails, prefillFromCustomer } from './handover.js';
 import { PUBLIC_ORIGINS } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
-import { clientIp } from './security.js';
+import { clientIp, originAllowed, rateLimiter } from './security.js';
 import { clean, planView, REF_RE } from './orders.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -156,6 +156,41 @@ export async function adminList(req, res) {
     return { email, slug, at, account: c ? { id: c.id, name: c.name || '', email: c.email, createdAt: c.createdAt } : null };
   });
   res.json({ customers: list.map((c) => adminCustomer(c, counts.get(c.id) || 0)), pending });
+}
+
+const signupLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 5 }); // new accounts per IP per hour
+
+/**
+ * POST /api/auth/signup { name, email, phone?, password }: anyone can make an account from the sign-in page.
+ * The browser is signed in at once. Invitations waiting for this email still need the owner's "Link now".
+ */
+export async function signup(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  const b = req.body || {};
+  const email = normEmail(b.email).slice(0, 254);
+  const name = nameOf(b.name, 80);
+  const phone = nameOf(b.phone, 20);
+  const fields = [];
+  if (name.length < 2) fields.push('name');
+  if (!email || !EMAIL_RE.test(email)) fields.push('email');
+  if (phone && !PHONE_RE.test(phone)) fields.push('phone');
+  if (!passwordOk(b.password)) fields.push('password');
+  if (fields.length) {
+    const what = { name: 'your name', email: 'a valid email', phone: 'a valid phone number', password: PASSWORD_MSG.toLowerCase() };
+    return res.status(400).json({ error: fields.length === 1 && fields[0] === 'password' ? PASSWORD_MSG : `Please enter ${fields.map((f) => f === 'password' ? 'a password of 8+ characters' : what[f]).join(', ')}.`, fields });
+  }
+  const lim = signupLimiter.hit(clientIp(req));
+  if (!lim.ok) { res.set('Retry-After', String(lim.retryAfter)); return res.status(429).json({ error: 'Too many new accounts from here. Please try again later.' }); }
+  const exists = { error: 'This email already has an account. Please sign in instead.', code: 'account_exists', fields: ['email'] };
+  if (customerByEmail(email)) return res.status(409).json(exists);
+  let c;
+  try { c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(String(b.password).normalize('NFC')) }); } catch (err) {
+    if (err.code === 'account_exists') return res.status(409).json(exists);
+    throw err;
+  }
+  console.info(`[account] signed up id=${c.id} ip=${clientIp(req)}`);
+  const s = await signInCustomer(req, res, c);
+  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf });
 }
 
 /** POST /api/admin/customers { email, name, phone?, password }: an account for a couple who did not order online. */

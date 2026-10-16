@@ -84,7 +84,7 @@ async function doRoute() {
     } catch {
       seenFlag(false);
       teardown();
-      return coupleFlag() ? linkProblem() : loginPage();
+      return coupleFlag() ? linkProblem() : hash === '#/signup' ? signupPage() : loginPage();
     }
   }
   if (!S.meta) {
@@ -101,7 +101,7 @@ async function doRoute() {
     if (!im || im[1] !== S.me.slug) return redirect(`#/i/${S.me.slug}/home`);
     return openInvitation(im[1], im[2] || 'home');
   }
-  if (hash === '#/login' || hash === '#/' || hash === '#') return redirect('#/overview');
+  if (hash === '#/login' || hash === '#/signup' || hash === '#/' || hash === '#') return redirect('#/overview');
   if (im) return openInvitation(im[1], im[2] || 'home');
   // #/<module>[/<item>][?query]: the item is a deep link inside the module (e.g. #/orders/NM-12345 opens that order)
   const am = /^#\/([a-z-]+)(?:\/([A-Za-z0-9_-]{1,64}))?(?:\?(.*))?$/.exec(hash);
@@ -383,8 +383,59 @@ function loginPage() {
   form.insertBefore(forgot, err);
   form.append(forgotNote);
   fill(app, authLayout(brand(true), h('h1.auth__title', 'Sign in'), h('p.auth__lede', 'See your orders and edit your wedding invitation.'), form,
-    h('p.auth__small', 'No account yet? It is made when you order a design on ', h('a', { href: '/' }, 'nimtto.com'), '.')));
+    h('p.auth__small', 'New to Nimtto? ', h('a', { href: '#/signup', onclick: (e) => { e.preventDefault(); setUrl('#/signup'); signupPage(); } }, 'Create an account'), '.')));
   email.focus();
+}
+
+/** "Create an account": name, email, phone (optional), password. Signed in at once; lands on My dashboard. */
+function signupPage() {
+  teardown();
+  document.title = 'Create an Account · Nimtto Studio';
+  const err = h('p.form-error', { role: 'alert' });
+  const btn = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Create account');
+  const input = (id, type, autocomplete, max) => h('input.input.input--lg', { id, name: id, type, autocomplete, maxlength: max, required: type !== 'tel' });
+  const name = input('su-name', 'text', 'name', 80);
+  const email = input('su-email', 'email', 'username', 254);
+  const phone = input('su-phone', 'tel', 'tel', 20);
+  const pw = passwordField('su-password', 'Password', 'new-password');
+  pw.input.minLength = 8;
+  pw.input.maxLength = 128;
+  const byField = { name, email, phone, password: pw.input };
+  const form = h('form.auth__form', { novalidate: true },
+    h('div.field', h('label.label', { for: 'su-name' }, 'Your name'), name),
+    h('div.field', h('label.label', { for: 'su-email' }, 'Email'), email),
+    h('div.field', h('label.label', { for: 'su-phone' }, 'WhatsApp number ', h('span.label__opt', '(optional)')), phone),
+    pw.el, h('p.hint', 'At least 8 characters.'), err, btn);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    Object.values(byField).forEach((x) => x.removeAttribute('aria-invalid'));
+    const miss = !name.value.trim() ? name : !email.value.trim() ? email : pw.input.value.length < 8 ? pw.input : null;
+    if (miss) { err.textContent = miss === pw.input ? 'The password needs at least 8 characters.' : 'Please enter your name and email.'; miss.setAttribute('aria-invalid', 'true'); miss.focus(); return; }
+    btn.disabled = true;
+    btn.textContent = 'Creating your account…';
+    try {
+      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: phone.value, password: pw.input.value } });
+      coupleFlag(false);
+      seenFlag(true);
+      S.me = me;
+      S.meta = null;
+      setCsrf(me.csrf);
+      toast('Welcome to Nimtto', 'success');
+      go('#/account');
+    } catch (ex) {
+      err.textContent = ex.message;
+      const f = byField[ex.body?.fields?.[0]];
+      if (f) { f.setAttribute('aria-invalid', 'true'); f.focus(); }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create account';
+    }
+  });
+  const toLogin = (e) => { e.preventDefault(); setUrl('#/login'); loginPage(); };
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Create an account'), h('p.auth__lede', 'Order a design, pay, and edit your invitation, all in one place.'), form,
+    h('p.auth__small', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.')));
+  name.focus();
 }
 
 /** The couple's private link: a calm "Enter your password" page, then the token becomes a session. */

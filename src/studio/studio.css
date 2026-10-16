@@ -1751,3 +1751,4 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .cu-logins li { display: flex; justify-content: space-between; gap: var(--s3); padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .cu-logins li:first-child { border-top: 0; }
 .cu-logins small { color: var(--ink-3); }
+.label__opt { font-weight: 400; color: var(--ink-3); }

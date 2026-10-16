@@ -57,6 +57,7 @@ api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.s
 // Expensive routes (argon2, scans, image work) are refused with 503 while the process is overloaded (lib/guard.js).
 const heavy = shedWhenOverloaded;
 api.post('/auth/login', heavy, json('4kb'), wrap(login));
+api.post('/auth/signup', heavy, json('4kb'), wrap(customers.signup)); // a customer account from the sign-in page
 api.post('/auth/logout', requireSession, logout);
 api.post('/client/session', heavy, json('1kb'), wrap(clientSession()));
 api.get('/auth/me', wrap(me));
