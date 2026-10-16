@@ -1,4 +1,4 @@
-// Single-admin authentication: server-side sessions in an HttpOnly cookie, rotated on login,
+// Studio authentication: server-side sessions in an HttpOnly cookie, rotated on login,
 // with a synchronizer CSRF token bound to each session. Sessions persist across restarts (lib/sessions.js)
 // and slide: the planner 30 days, a couple 180 days since last activity, until they sign out.
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
@@ -11,6 +11,8 @@ import { peekInvitation, findInvitationByTokenHash } from './store.js';
 import { verifyPassword as argonVerify, hashPassword as argonHash, mimicVerify } from './guard.js';
 import { TTL, keyOf, expired, getSession, putSession, deleteSession, deleteSessionsWhere, touchSession } from './sessions.js';
 import { getCustomer, customerByEmail, normEmail, linkOf, mutateCustomer } from './accounts.js';
+import { getStaff, staffByEmail, mutateStaff, permsOfStaff, ALL_PERMS, SUPER_ONLY } from './staff.js';
+import { recordAudit, actorOf } from './audit.js';
 
 export const COOKIE = IS_PROD ? '__Host-studio' : 'studio_sid';
 const sha = (s) => createHash('sha256').update(s).digest('hex');
@@ -29,6 +31,25 @@ const linkActive = (doc, s) => Boolean(doc?.access?.tokenHash) && safeEqual(link
 const maxAge = (role) => Math.floor(TTL[role] / 1000);
 /** A customer's session is bound to their id and password hash: a new password ends every older session. */
 const customerFp = (c) => sha(`customer\n${c.id}\n${c.passwordHash || ''}`);
+/**
+ * A staff session is bound to the member's id, password hash, role, permissions and on/off state: changing any of them
+ * ends every older session of theirs (they are also deleted, revokeStaffSessions).
+ */
+const staffFp = (x) => sha(`staff\n${x.id}\n${x.passwordHash || ''}\n${x.role}\n${[...(x.perms || [])].sort().join(',')}\n${x.disabled === true ? 1 : 0}`);
+/** The env owner: the one super admin nobody can remove or limit. */
+const OWNER = Object.freeze({ id: 'owner', owner: true, email: ADMIN_EMAIL, name: 'Owner', role: 'super', perms: ALL_PERMS });
+/**
+ * Who is behind an admin session: { id, owner?, email, name, role: 'super' | 'admin', perms }, or null (a staff member
+ * gone, turned off or changed since, or the owner's credentials changed in .env).
+ */
+function adminOf(s) {
+  if (s.sid) {
+    const x = getStaff(s.sid);
+    if (!x || x.disabled === true || !safeEqual(staffFp(x), s.fp)) return null;
+    return { id: x.id, email: x.email, name: x.name || '', role: x.role === 'super' ? 'super' : 'admin', perms: permsOfStaff(x) };
+  }
+  return safeEqual(s.fp, ADMIN_FP) ? OWNER : null;
+}
 /** The account behind a customer session, or null (gone, turned off, or the password changed since). */
 const liveCustomer = (s) => {
   const c = getCustomer(s.cid);
@@ -57,14 +78,17 @@ export function loadSession(req, res, next) {
   const id = parseCookies(req.headers.cookie)[COOKIE];
   req.session = null;
   req.customer = null;
+  req.admin = null;
   if (id && /^[A-Za-z0-9_-]{43}$/.test(id)) {
     const k = keyOf(id);
     const s = getSession(k);
     const now = Date.now();
     const customer = s?.role === 'customer' ? liveCustomer(s) : null;
-    if (s && !expired(s, now) && (s.role !== 'admin' || safeEqual(s.fp, ADMIN_FP)) && (s.role !== 'customer' || customer)) {
+    const admin = s?.role === 'admin' ? adminOf(s) : null;
+    if (s && !expired(s, now) && (s.role !== 'admin' || admin) && (s.role !== 'customer' || customer)) {
       req.session = s;
       req.customer = customer;
+      req.admin = admin;
       req.sessionKey = k;
       // Sliding expiry: every SEEN_EVERY, save `seen` and re-send the cookie so the browser keeps it as long.
       if (touchSession(s, now)) setCookie(res, id, maxAge(s.role));
@@ -91,8 +115,18 @@ function csrfProblem(req) {
 }
 
 export const isAdmin = (req) => req.session?.role === 'admin';
-/** The planner, the couple of this one invitation (client link), or a customer account the planner linked it to. */
-export const canEdit = (req, slug) => isAdmin(req)
+/**
+ * Whether this admin may use one area (a key of lib/staff.js PERMS, or 'team' / 'audit'). Super admins (the owner
+ * among them) may use everything; 'team' and 'audit' are theirs alone.
+ */
+export function hasPerm(req, perm) {
+  const a = isAdmin(req) ? req.admin : null;
+  if (!a) return false;
+  if (a.role === 'super') return true;
+  return !SUPER_ONLY.includes(perm) && a.perms.includes(perm);
+}
+/** An admin with 'invitations', the couple of this one invitation (client link), or a customer account it is linked to. */
+export const canEdit = (req, slug) => (isAdmin(req) && hasPerm(req, 'invitations'))
   || (req.session?.role === 'client' && req.session.slug === slug)
   || (req.session?.role === 'customer' && Boolean(linkOf(req.customer, slug)));
 
@@ -112,14 +146,35 @@ export function requireCustomer(req, res, next) {
   next();
 }
 
-/** Middleware: the planner only. */
-export function requireAdmin(req, res, next) {
+const NO_ACCESS = 'You do not have access to this. Ask the owner to give it to you.';
+/** An admin-only guard: signed in, an admin, ok(req), then CSRF. */
+const adminGuard = (ok) => (req, res, next) => {
   if (!req.session) return res.status(401).json({ error: 'Please sign in.' });
   if (!isAdmin(req)) return res.status(403).json({ error: 'Only the planner can do that.' });
+  if (!ok(req)) return res.status(403).json({ error: NO_ACCESS, code: 'no_access' });
   const bad = csrfProblem(req);
   if (bad) return res.status(403).json({ error: bad });
   next();
-}
+};
+
+/** Middleware: an admin with every one of these permissions (lib/staff.js PERMS). */
+export const requirePerm = (...perms) => adminGuard((req) => perms.every((p) => hasPerm(req, p)));
+/** Middleware: an admin with at least one of these permissions. */
+export const requireAnyPerm = (...perms) => adminGuard((req) => perms.some((p) => hasPerm(req, p)));
+/** Middleware: a super admin (the owner, or staff with the Super admin role). */
+export const requireSuper = adminGuard((req) => req.admin?.role === 'super');
+
+/**
+ * Marks a group of routes as one permission's area (server/index.js mounts it on a path prefix, e.g. /admin/finance).
+ * requireAdmin inside such an area lets admins with that permission through.
+ */
+export const adminArea = (perm) => (req, res, next) => { req.adminArea = perm; next(); };
+
+/**
+ * Middleware: a super admin, or, inside an area marked with adminArea(perm), an admin with that permission.
+ * The safe default for any admin route that is not mapped to a permission.
+ */
+export const requireAdmin = adminGuard((req) => req.admin?.role === 'super' || (Boolean(req.adminArea) && hasPerm(req, req.adminArea)));
 
 /** Middleware: anyone signed in (planner or couple). */
 export function requireSession(req, res, next) {
@@ -130,14 +185,14 @@ export function requireSession(req, res, next) {
 }
 
 /**
- * Middleware: the planner, or the couple for their own invitation (:slug). A couple's session also
- * stops working the moment their link is turned off or replaced.
+ * Middleware: an admin with `perm` ('invitations', or 'replies' for the guest replies), or the couple for their own
+ * invitation (:slug). A couple's session also stops working the moment their link is turned off or replaced.
  */
-export function requireEditor(getInvitation) {
+export function requireEditor(getInvitation, perm = 'invitations') {
   return async (req, res, next) => {
     try {
       if (!req.session) return res.status(401).json({ error: 'Please sign in.' });
-      if (!canEdit(req, req.params.slug)) return res.status(403).json({ error: 'You do not have access to this invitation.' });
+      if (isAdmin(req) ? !hasPerm(req, perm) : !canEdit(req, req.params.slug)) return res.status(403).json({ error: 'You do not have access to this invitation.' });
       if (req.session.role === 'client') {
         const doc = await getInvitation(req.params.slug);
         if (!linkActive(doc, req.session)) {
@@ -162,6 +217,9 @@ export const revokeClientSessions = (slug) => deleteSessionsWhere((s) => s.role 
 
 /** Ends every session of one customer account (password changed or reset, account turned off). */
 export const revokeCustomerSessions = (cid) => deleteSessionsWhere((s) => s.role === 'customer' && s.cid === cid);
+
+/** Ends every session of one staff member (turned off, deleted, password reset, role or permissions changed). */
+export const revokeStaffSessions = (id) => deleteSessionsWhere((s) => s.role === 'admin' && s.sid === id);
 
 /** Starts a fresh session (the browser's old one, if any, is dropped first) and sets its cookie. */
 async function startSession(req, res, data) {
@@ -317,8 +375,25 @@ export async function login(req, res) {
   }
   if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
 
-  // Any email but the planner's is a customer account. An unknown email, a wrong password and a turned-off account
-  // all get the same answer (no account enumeration).
+  // Any other email: a staff member's first, else a customer account. An unknown email, a wrong password and a
+  // turned-off account all get the same answer and cost one password check either way (no account enumeration).
+  const member = emailOk ? null : staffByEmail(email);
+  if (member) {
+    const ok = await argonVerify(member.passwordHash, password.normalize('NFC')).catch(busyOr(false));
+    if (!ok || member.disabled === true) {
+      failedLogin(ip, `c:${email}`);
+      console.warn(`[auth] failed login ip=${ip}`);
+      recordAudit({ actor: `staff:${member.id}`, actorEmail: member.email, action: 'POST /auth/login', label: ok ? 'Sign-in refused: turned off' : 'Failed sign-in: wrong password', ip, status: 401 });
+      return res.status(401).json({ error: 'That email and password do not match.' });
+    }
+    const s = await startSession(req, res, { role: 'admin', sid: member.id, fp: staffFp(member) });
+    ipLimiter.reset(ip);
+    mutateStaff(member.id, (x) => { x.lastLoginAt = new Date().toISOString(); }).catch(() => {});
+    console.info(`[auth] staff login ok id=${member.id} ip=${ip}`);
+    const a = adminOf(s);
+    recordAudit({ ...actorOf(a), action: 'POST /auth/login', label: 'Signed in', ip, status: 200 });
+    return res.json(adminMe(a, s.csrf));
+  }
   if (!emailOk) {
     const r = await checkCustomer(ip, email, password);
     if (!r.ok || r.customer.disabled === true) {
@@ -333,6 +408,7 @@ export async function login(req, res) {
   if (!passOk) {
     failedLogin(ip, 'admin');
     console.warn(`[auth] failed login ip=${ip}`);
+    recordAudit({ ...actorOf(OWNER), action: 'POST /auth/login', label: 'Failed sign-in: wrong password', ip, status: 401 });
     return res.status(401).json({ error: 'That email and password do not match.' });
   }
 
@@ -340,8 +416,15 @@ export async function login(req, res) {
   const s = await startSession(req, res, { role: 'admin', fp: ADMIN_FP });
   ipLimiter.reset(ip);
   console.info(`[auth] login ok ip=${ip}`);
-  res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
+  recordAudit({ ...actorOf(OWNER), action: 'POST /auth/login', label: 'Signed in', ip, status: 200 });
+  res.json(adminMe(OWNER, s.csrf));
 }
+
+/** What the studio gets for an admin (login, /auth/me): who they are and what they may open. */
+const adminMe = (a, csrf) => ({
+  role: 'admin', email: a.email, name: a.name || '', owner: Boolean(a.owner), superAdmin: a.role === 'super',
+  perms: a.role === 'super' ? [...ALL_PERMS] : [...a.perms], csrf,
+});
 
 export async function logout(req, res) {
   await deleteSession(req.sessionKey);
@@ -372,7 +455,7 @@ export async function me(req, res) {
   if (!req.session) return req.query.soft != null ? res.json({ role: null }) : res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
   if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, csrf: s.csrf });
-  if (s.role !== 'client') return res.json({ role: 'admin', email: ADMIN_EMAIL, csrf: s.csrf });
+  if (s.role !== 'client') return res.json(adminMe(req.admin, s.csrf));
   const doc = await peekInvitation(s.slug);
   if (!linkActive(doc, s)) {
     await deleteSession(req.sessionKey);

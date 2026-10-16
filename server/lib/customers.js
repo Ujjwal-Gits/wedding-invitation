@@ -1,6 +1,8 @@
 // Customer accounts: the customer's own dashboard data (GET /api/account, ...) and the planner's account admin
 // (GET/POST/PATCH /api/admin/customers, linking invitations). Data helpers: lib/accounts.js. Sign-in: lib/auth.js.
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { EMAIL_RE, readSite } from './site.js';
+import { staffByEmail } from './staff.js';
 import { isTheme } from './catalog.js';
 import { peekInvitation, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
 import {
@@ -8,7 +10,7 @@ import {
   CUSTOMER_ID_RE, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX,
 } from './accounts.js';
 import { syncOrderDetails, prefillFromCustomer } from './handover.js';
-import { PUBLIC_ORIGINS } from './env.js';
+import { PUBLIC_ORIGINS, ADMIN_EMAIL } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
 import { clientIp, originAllowed, rateLimiter } from './security.js';
 import { sendVerify, sendReset, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
@@ -183,7 +185,8 @@ export async function signup(req, res) {
   const lim = signupLimiter.hit(clientIp(req));
   if (!lim.ok) { res.set('Retry-After', String(lim.retryAfter)); return res.status(429).json({ error: 'Too many new accounts from here. Please try again later.' }); }
   const exists = { error: 'This email already has an account. Please sign in instead.', code: 'account_exists', fields: ['email'] };
-  if (customerByEmail(email)) return res.status(409).json(exists);
+  // a team member's email signs in as the team member (lib/auth.js), so it cannot be a customer account too
+  if (customerByEmail(email) || staffByEmail(email) || email === ADMIN_EMAIL) return res.status(409).json(exists);
   let c;
   try { c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(String(b.password).normalize('NFC')) }); } catch (err) {
     if (err.code === 'account_exists') return res.status(409).json(exists);
@@ -213,19 +216,56 @@ export async function forgot(req, res) {
   res.json({ ok: true, mail: true });
 }
 
-/** POST /api/auth/reset { email, code, password }: sets the new password, ends other sessions, signs this browser in. */
-export async function resetPassword(req, res) {
+const TICKET_TTL = 10 * 60 * 1000;
+const TICKET_RE = /^[A-Za-z0-9_-]{43}$/;
+const sha256 = (s) => createHash('sha256').update(String(s)).digest();
+
+/**
+ * POST /api/auth/reset/check { email, code }: step 1 of "Forgot password". A right code is used up and answered with a
+ * one-time reset ticket for step 2 (only its SHA-256 is kept on the account, for 10 minutes). Wrong codes count as
+ * before (5 and the code is gone).
+ */
+export async function checkResetCode(req, res) {
   if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
   if (!codeLimiter.hit(clientIp(req)).ok) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' });
   const b = req.body || {};
   const code = String(b.code ?? '').replace(/\s+/g, '');
   if (!CODE_RE.test(code)) return res.status(400).json({ error: 'Enter the 6-digit code from the email.', fields: ['code'] });
-  if (!passwordOk(b.password)) return res.status(400).json({ error: PASSWORD_MSG, fields: ['password'] });
   const found = customerByEmail(normEmail(b.email));
   const r = found && found.disabled !== true ? await useCode(found, 'reset', code) : 'expired';
   if (r !== 'ok') return res.status(400).json({ error: r === 'wrong' ? 'That code is not right. Check the email and try again.' : 'This code has expired. Please ask for a new one.', fields: ['code'], code: `code_${r}` });
+  const ticket = randomBytes(32).toString('base64url');
+  await mutateCustomer(found.id, (x) => { x.resetTicket = { hash: sha256(ticket).toString('hex'), exp: Date.now() + TICKET_TTL }; });
+  res.json({ ok: true, ticket, expiresIn: TICKET_TTL / 1000 });
+}
+
+/**
+ * POST /api/auth/reset { email, ticket, password }: step 2. Sets the new password with the ticket from step 1 (once),
+ * ends every other session, signs this browser in.
+ */
+export async function resetPassword(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  if (!codeLimiter.hit(clientIp(req)).ok) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' });
+  const b = req.body || {};
+  const ticket = typeof b.ticket === 'string' ? b.ticket : '';
+  const expired = { error: 'This reset has expired. Please start again and ask for a new code.', fields: ['code'], code: 'ticket_expired' };
+  if (!TICKET_RE.test(ticket)) return res.status(400).json(expired);
+  if (!passwordOk(b.password)) return res.status(400).json({ error: PASSWORD_MSG, fields: ['password'] });
+  const found = customerByEmail(normEmail(b.email));
+  if (!found || found.disabled === true) return res.status(400).json(expired);
+  let ok = false;
+  await mutateCustomer(found.id, (x) => {
+    const t = x.resetTicket;
+    if (!t?.hash) return false;
+    const want = Buffer.from(String(t.hash), 'hex');
+    const got = sha256(ticket);
+    const live = t.exp > Date.now();
+    ok = live && want.length === got.length && timingSafeEqual(want, got);
+    if (ok || !live) delete x.resetTicket; else return false; // used once; a wrong ticket leaves the right one alone
+  });
+  if (!ok) return res.status(400).json(expired);
   const passwordHash = await hashAccountPassword(b.password);
-  const c = await mutateCustomer(found.id, (x) => { x.passwordHash = passwordHash; x.emailVerified = true; delete x.verify; });
+  const c = await mutateCustomer(found.id, (x) => { x.passwordHash = passwordHash; x.emailVerified = true; delete x.verify; delete x.reset; });
   await revokeCustomerSessions(c.id);
   console.info(`[account] password reset by email code id=${c.id}`);
   const s = await signInCustomer(req, res, c);
@@ -268,6 +308,7 @@ export async function adminCreate(req, res) {
   if (!passwordOk(b.password)) errors.push({ path: 'password', message: `must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters` });
   if (errors.length) throw httpError(400, 'Please check the account details.', { errors });
   if (customerByEmail(email)) throw httpError(409, 'That email already has an account.');
+  if (staffByEmail(email) || email === ADMIN_EMAIL) throw httpError(409, 'That email belongs to the team. Use another email.');
   const c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(b.password) })
     .catch((err) => { throw err.code === 'account_exists' ? httpError(409, 'That email already has an account.') : err; });
   console.info(`[admin] customer created id=${c.id}`);

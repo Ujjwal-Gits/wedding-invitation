@@ -15,6 +15,7 @@ import { isTheme, listThemes } from './catalog.js';
 import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
 import { sendVerify } from './account-mail.js';
 import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
+import { staffByEmail } from './staff.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
@@ -187,6 +188,7 @@ export async function submit(req, res) {
       return res.status(429).json({ ok: false, error: 'Too many attempts. Please wait a few minutes and try again.' });
     }
     const exists = { ok: false, code: 'account_exists', error: 'This email already has an account. Sign in, or enter that account\u2019s password.', fields: ['password'] };
+    if (staffByEmail(email)) return res.status(409).json(exists); // a team email cannot also be a customer account
     if (customerByEmail(email)) {
       const r = await checkCustomer(ip, email, rawPassword);
       if (!r.ok) return res.status(409).json(exists);

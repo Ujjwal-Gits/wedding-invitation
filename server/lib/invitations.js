@@ -9,7 +9,7 @@ import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
-import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
+import { canEdit, isAdmin, hasPerm, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
 import { customersBySlug, unlinkEverywhere } from './accounts.js';
 import { readSite, tierOf, EMAIL_RE } from './site.js';
 import { originAllowed } from './security.js';
@@ -199,6 +199,8 @@ export async function list(req, res) {
   const [docs, replies] = await Promise.all([listInvitations(), replyStats()]);
   const bySlug = customersBySlug();
   const items = docs.map((d) => summary(d, replies.get(d.slug)?.count || 0, bySlug.get(d.slug) || [])).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  // Staff who see this list only to pick an invitation (replies, customers) never get the couple links themselves.
+  if (!hasPerm(req, 'invitations')) for (const i of items) if (i.clientLink) i.clientLink = { ...i.clientLink, url: null };
   res.json({ invitations: items });
 }
 

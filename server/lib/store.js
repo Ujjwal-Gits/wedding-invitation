@@ -46,6 +46,10 @@ export const backupStore = (file) => backend.backupTo(file);
 export const sessionStore = backend.sessions;
 /** Customer accounts (lib/accounts.js): get(id), byEmail(email), all(), put(c), del(id); reads are synchronous. */
 export const customerStore = backend.customers;
+/** Staff accounts (lib/staff.js): get(id), byEmail(email), all(), put(x), del(id); reads are synchronous. */
+export const staffStore = backend.staff;
+/** The admin audit log (lib/audit.js): add(entry), list({ actor, text, offset, limit }), actors(), prune(before, keep, cap). */
+export const auditStore = backend.audit;
 
 /**
  * Client access, normalised. Older files stored `clientAccess: { tokenHash, createdAt }` (a link with no
