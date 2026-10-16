@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { ROOT_DIR } from './env.js';
 import { listThemes, isTheme } from './catalog.js';
 import { normParts } from '../../src/core/mix-rules.js';
+import { themeReligions } from '../../src/core/faith.js';
 
 const cache = new Map(); // theme -> { mtime, manifest }
 let vocabCache = { mtime: -1, vocab: { images: {}, texts: {} } };
@@ -72,7 +73,11 @@ function clean(raw, theme) {
   // Mix (docs/MIX.md): what the theme gives and takes. Booleans only; `uses` lists keep only ids and tokens this
   // manifest declares; `why` lines at most 200 characters. Whether the modules exist is checked on every load.
   const rawParts = m.parts && typeof m.parts === 'object' && !Array.isArray(m.parts) ? m.parts : null;
-  return { theme, name, description, images, texts, colors, rawParts };
+  // Faith (docs/PLATFORM.md "Religion"): the communities the design suits once its symbols and words are swapped
+  // (no `religions` = Hindu only), and the colour its emblem is drawn in (a declared token or #hex).
+  const religions = themeReligions(m);
+  const faithInk = typeof m.faithInk === 'string' && (COLOR_HEX_RE.test(m.faithInk) || Object.hasOwn(colors, m.faithInk)) ? m.faithInk : '';
+  return { theme, name, description, images, texts, colors, religions, faithInk, rawParts };
 }
 
 /** The theme's `parts`, given only when its module file exists (src/themes/<slug>/gate.js, hero.js). */

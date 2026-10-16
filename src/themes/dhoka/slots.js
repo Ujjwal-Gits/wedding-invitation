@@ -3,6 +3,9 @@
 // Invitation data (names, parents, dates, events, card wording, portraits, gallery, RSVP) is
 // edited in the studio's normal sections and is not repeated here.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a temple door in the art; the rites section is sindoor, saptapadi and the fire.
+  religions: ['hindu'],
+  faithInk: '--gold', // the emblem that replaces Ganesh for other communities is drawn in this colour
   theme: 'dhoka',
   images: {
     'gate.door': { shared: 'place.entrance',

@@ -11,6 +11,9 @@ const gallery = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`gallery.${n}`
 }]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: opens on the Mangal temple card with kalash and diyos.
+  religions: ['hindu'],
+  faithInk: '--rj-gold', // the emblem that replaces Ganesh for other communities is drawn in this colour
   theme: 'rajdwar',
   images: {
     'hero.ganesh': {

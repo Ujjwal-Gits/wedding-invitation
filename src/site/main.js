@@ -271,6 +271,8 @@ function renderGallery(themes) {
           t.ne ? el('span', { class: 'card__ne', lang: 'ne', text: t.ne }) : null,
           t.featured ? el('span', { class: 'card__tag', text: 'Featured' }) : null),
         el('span', { class: 'vh', text: `: ${t.concept} View larger.` })),
+      el('a', { class: 'card__pv', href: showcaseUrl(t.slug), 'data-preview': t.slug, 'aria-label': `Preview the ${t.name} design live` },
+        el('span', { text: 'Preview' }), playIcon()),
     );
     ol.append(li);
   });
@@ -292,7 +294,68 @@ function renderGallery(themes) {
   if (keep && themes.some((t) => t.slug === keep)) sel.value = keep;
 }
 
-/* ---------------- lightbox: a larger still of one design (never the live page) ---------------- */
+/* ---------------- showcase: the live design, demo couple only, watermarked (src/core/showcase.js) ---------------- */
+const showcaseUrl = (slug) => `/${encodeURIComponent(slug)}/?showcase=1`;
+function playIcon() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'M9 6.5v11l9-5.5z');
+  svg.append(path);
+  return svg;
+}
+const pv = $('#pv');
+const pvFrame = $('#pv-frame');
+const preview = { slug: '', opener: null, order: false };
+// phone-sized screens and touch-first devices open the showcase full screen (it has its own close)
+const framed = matchMedia('(min-width: 860px) and (min-height: 560px) and (hover: hover) and (pointer: fine)');
+function openPreview(slug, from) {
+  const t = view.themes.find((x) => x.slug === slug) || BY_SLUG[slug];
+  if (!t || !SLUG_RE.test(slug)) return;
+  if (!framed.matches) { location.assign(showcaseUrl(slug)); return; }
+  preview.slug = slug;
+  preview.opener = from;
+  preview.order = false;
+  $('#pv-name').textContent = t.name;
+  $('#pv-ne').textContent = t.ne || '';
+  $('#pv-ne').hidden = !t.ne;
+  $('#pv-full').href = showcaseUrl(slug);
+  $('#pv-order').setAttribute('aria-label', `Order the ${t.name} design`);
+  pvFrame.title = `The ${t.name} design, live preview with the demo couple`;
+  pvFrame.src = showcaseUrl(slug);
+  pv.showModal();
+  document.documentElement.style.overflow = 'hidden';
+}
+pv.addEventListener('close', () => {
+  pvFrame.src = 'about:blank'; // stops the design's music
+  if (!lb.open) document.documentElement.style.overflow = '';
+  if (preview.order) {
+    if (lb.open) { lightbox.order = true; lb.close(); return; }
+    $('#order').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+    $('#f-name').focus({ preventScroll: true });
+  } else {
+    preview.opener?.focus?.({ preventScroll: true });
+  }
+});
+pv.addEventListener('click', (e) => { if (e.target === pv) pv.close(); });
+$('#pv-close').addEventListener('click', () => pv.close());
+$('#pv-order').addEventListener('click', (e) => {
+  e.preventDefault();
+  chooseTheme(preview.slug);
+  preview.order = true;
+  pv.close();
+});
+document.addEventListener('click', (e) => {
+  const a = e.target instanceof Element ? e.target.closest('a[data-preview]') : null;
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const slug = a.dataset.preview;
+  if (!SLUG_RE.test(slug)) return;
+  if (framed.matches) { e.preventDefault(); openPreview(slug, a); }
+});
+
+/* ---------------- lightbox: a larger still of one design ---------------- */
 const lb = $('#lb');
 const lbImg = $('#lb-img');
 const lightbox = { i: -1, opener: null, order: false };
@@ -309,6 +372,10 @@ function showInLightbox(i) {
   $('#lb-ne').hidden = !t.ne;
   $('#lb-text').textContent = t.concept;
   $('#lb-order').setAttribute('aria-label', `Order the ${t.name} design`);
+  const lbPv = $('#lb-preview');
+  lbPv.href = showcaseUrl(t.slug);
+  lbPv.dataset.preview = t.slug;
+  lbPv.setAttribute('aria-label', `Preview the ${t.name} design live`);
   lbImg.alt = `The ${t.name} design: ${t.alt}`;
   const ss = srcsetFor(t);
   if (ss) { lbImg.srcset = ss; lbImg.sizes = '(min-width: 860px) 62vw, 100vw'; } else { lbImg.removeAttribute('srcset'); lbImg.removeAttribute('sizes'); }
@@ -358,6 +425,19 @@ $('#lb-order').addEventListener('click', (e) => {
   lightbox.order = true;
   lb.close();
 });
+
+/** /?design=<slug>#order (the showcase's "Order this design"): preselect it in the form. */
+function preselectFromUrl() {
+  const q = new URLSearchParams(location.search);
+  const slug = q.get('design');
+  if (!slug) return;
+  if (SLUG_RE.test(slug) && view.themes.some((t) => t.slug === slug)) {
+    chooseTheme(slug);
+    if (location.hash === '#order') $('#order').scrollIntoView({ block: 'start' });
+  }
+  q.delete('design');
+  history.replaceState(history.state, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+}
 
 /* ---------------- order form ---------------- */
 const form = $('#order-form');
@@ -488,6 +568,7 @@ async function boot() {
   renderPlans(s);
   renderContact(s);
   renderGallery(normaliseThemes(Array.isArray(themes) ? themes : null, s));
+  preselectFromUrl();
   const hidden = new Set(Array.isArray(s.hiddenThemes) ? s.hiddenThemes : []);
   if (HERO.some(([slug]) => hidden.has(slug))) buildHero(hidden);
 }

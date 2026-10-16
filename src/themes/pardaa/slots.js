@@ -1,6 +1,9 @@
 // Pardaa (पर्दा) · sheer curtains part on a rose moon-gate: every theme image and text, replaceable from the studio. Plain data, no imports (the server loads this file).
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a mandap with the living fire and kalash.
+  religions: ["hindu"],
+  faithInk: "--su-gold", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "pardaa",
   "images": {
     "hero.ganesh": {

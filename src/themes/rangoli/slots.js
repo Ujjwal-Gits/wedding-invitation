@@ -1,6 +1,9 @@
 // Rangoli (रंगोली) · a flower rangoli on a sunlit Newari courtyard: every theme image and text, replaceable from the studio. Plain data, no imports (the server loads this file).
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a Ganesh shrine and diyos ring the rangoli.
+  religions: ["hindu"],
+  faithInk: "--su-gold", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "rangoli",
   "images": {
     "hero.ganesh": {

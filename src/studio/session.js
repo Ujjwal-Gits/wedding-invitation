@@ -40,14 +40,21 @@ export function createSession(doc, { meta, me }) {
     emit('edit', { path, text: activeText() });
   });
 
-  // ── Save indicator ("Saved" / "Saving…" / "Offline")
-  const saveText = h('span.savechip__t', 'Saved');
-  const saveEl = h('span.savechip', { role: 'status', 'aria-live': 'polite', 'data-state': 'saved' }, h('span.savechip__dot', { 'aria-hidden': 'true' }), saveText);
-  const STATES = { saved: 'Saved', saving: 'Saving…', offline: 'Offline · retrying', error: 'Not saved', invalid: 'Check a field' };
+  // ── Save indicator ("Saved" / "Saving…" / "Offline"). Fixed width, text only changes: it never moves anything.
+  // Only one copy announces (aria-live), the others are visual (the phone's top bar, the page header).
+  const STATES = { saved: 'Saved', saving: 'Saving…', offline: 'Offline', error: 'Not saved', invalid: 'Check a field' };
+  const chips = new Set();
+  const makeSaveChip = (live = false) => {
+    const el = h('span.savechip', { 'data-state': state, ...(live ? { role: 'status', 'aria-live': 'polite' } : { 'aria-hidden': 'true' }) },
+      h('span.savechip__dot', { 'aria-hidden': 'true' }), h('span.savechip__t', STATES[state] || state));
+    chips.add(el);
+    return el;
+  };
+  const saveEl = makeSaveChip(true);
   function setState(s) {
+    if (s === state && chips.size) { emit('state', s); return; }
     state = s;
-    saveEl.dataset.state = s;
-    saveText.textContent = STATES[s] || s;
+    for (const el of chips) { el.dataset.state = s; el.lastChild.textContent = STATES[s] || s; el.title = s === 'offline' ? 'No connection. Your changes are kept and saved when you are back online.' : ''; }
     emit('state', s);
   }
 
@@ -135,7 +142,7 @@ export function createSession(doc, { meta, me }) {
   }
 
   return {
-    slug, doc, m, meta, me, isAdmin, perms, saveEl,
+    slug, doc, m, meta, me, isAdmin, perms, saveEl, makeSaveChip,
     get state() { return state; },
     get errors() { return lastErrors; },
     names: () => coupleName(m.data.couple?.bride?.name, m.data.couple?.groom?.name),

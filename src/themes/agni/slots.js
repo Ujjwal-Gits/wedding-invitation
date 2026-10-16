@@ -1,6 +1,9 @@
 // Agni (अग्नि) · the sacred fire at night, seven rounds around it: every theme image and text, replaceable from the studio. Plain data, no imports (the server loads this file).
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the havan fire and the seven rounds are the design.
+  religions: ["hindu"],
+  faithInk: "--ag-brass", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "agni",
   "images": {
     "hero.ganesh": {

@@ -12,6 +12,7 @@ import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hash
 import { originAllowed } from './security.js';
 import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
+import { isReligion, startingEvents, startingWords, suits } from '../../src/core/faith.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
 
@@ -60,6 +61,7 @@ function summary(doc, rsvpCount = 0) {
     groom: d.couple.groom.name,
     weddingDate: d.weddingDate,
     theme: d.theme,
+    religion: d.religion || 'hindu',
     status: doc.status,
     changed: doc.status === 'published' && !same(doc.draft, doc.published),
     createdAt: doc.createdAt,
@@ -87,11 +89,21 @@ const docOut = (doc, admin = true) => ({
   data: doc.draft,
 });
 
-/** Starting data for a new invitation: the sample wording, or a near-empty card. */
-function starter({ bride, groom, theme, sample }) {
+/** Library photos of Hindu rites in the sample (a temple torana, butter lamps, the sacred thread, sindoor). */
+const HINDU_SAMPLE_PHOTOS = new Set(['torana', 'diyo-lamps-alt', 'wedding-nepali-alt', 'wedding-nepali-alt2', 'sindoor', 'mehendi-hands-alt', 'courtyard-dusk']);
+const HINDU_TRACKS = new Set(['/audio/ceremony-shehnai.mp3']);
+
+/**
+ * Starting data for a new invitation: the sample wording, or a near-empty card. The ceremonies and the wording
+ * follow the couple's community (src/core/faith.js): Hindu Mehendi, Haldi, Janti, Shubha Bibaha and Reception,
+ * each its own event (so guests answer for each); Muslim Mehndi, Nikah, Walima, Reception; Christian Engagement,
+ * Holy Matrimony, Reception; other: the wedding and the reception.
+ */
+function starter({ bride, groom, theme, sample, religion = 'hindu', colors = null }) {
   const demo = demoConfig();
   const blank = { en: '', ne: '' };
   const year = new Date().getFullYear() + 1;
+  const words = startingWords(religion, { bride, groom });
   const base = sample ? demo : {
     ...demo,
     couple: {
@@ -106,11 +118,7 @@ function starter({ bride, groom, theme, sample }) {
     city: { ...blank },
     invitation: { ...demo.invitation, salutation: demo.invitation.salutation, body: { ...blank }, request: demo.invitation.request, signoff: demo.invitation.signoff },
     story: [],
-    events: [{
-      id: 'wedding', title: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, blurb: { ...blank },
-      start: `${year}-02-12T10:30:00+05:45`, end: `${year}-02-12T18:00:00+05:45`,
-      venue: { ...blank }, mapQuery: '', dress: { colors: [], text: { ...blank } }, photo: null,
-    }],
+    events: [],
     gallery: [],
     info: { travel: { ...blank }, stays: [], contacts: [], livestream: '' },
     rsvp: { ...demo.rsvp, deadline: { ...blank } },
@@ -121,6 +129,24 @@ function starter({ bride, groom, theme, sample }) {
   base.couple.groom.photo = null;
   if (bride) base.couple.bride.name = { en: bride, ne: '' };
   if (groom) base.couple.groom.name = { en: groom, ne: '' };
+  // The ceremonies, each its own event. The sample keeps its placeholder places (by day: before, on, after).
+  const all = startingEvents(religion, base.weddingDate);
+  if (sample) {
+    const at = (id) => demo.events.find((e) => e.id === id);
+    const day = (iso) => String(iso).slice(0, 10);
+    const wd = day(base.weddingDate);
+    for (const e of all) {
+      const src = at(e.id) || (day(e.start) < wd ? at('mehendi') : day(e.start) > wd ? at('reception') : at('wedding'));
+      if (!src) continue;
+      e.venue = { ...src.venue };
+      e.mapQuery = src.mapQuery || '';
+      if (!e.photo && src.photo && religion === 'hindu' && !HINDU_SAMPLE_PHOTOS.has(src.photo)) e.photo = src.photo;
+    }
+    base.events = all;
+  } else {
+    const main = all.find((e) => String(e.start).slice(0, 10) === String(base.weddingDate).slice(0, 10)) || all[0];
+    base.events = [{ ...main, venue: { ...blank }, photo: null }];
+  }
   if (sample) {
     // Keep the sample structure and generic wording, but never another family's names,
     // homes, phone numbers or story on a new card.
@@ -131,16 +157,24 @@ function starter({ bride, groom, theme, sample }) {
     base.couple.bride.fullName = { en: bride, ne: '' };
     base.couple.groom.fullName = { en: groom, ne: '' };
     base.hosts = { en: `The families of ${bride} & ${groom}`, ne: '' };
-    base.invitation.body = {
-      en: `By the grace of our family deity and the blessings of our elders, the auspicious marriage of ${groom} with ${bride} has been fixed.`,
-      ne: '',
-    };
+    base.invitation.body = { ...words.body };
     base.story = [];
     base.info.contacts = [];
+    if (religion !== 'hindu') {
+      base.gallery = base.gallery.filter((g) => !HINDU_SAMPLE_PHOTOS.has(g.photo));
+      base.music.tracks = base.music.tracks.filter((t) => !HINDU_TRACKS.has(t.src));
+    }
+  }
+  if (religion !== 'hindu') {
+    base.religion = religion;
+    base.saptapadi = [];
+    base.invitation.shloka = { ...(words.shloka || { sa: '', en: '' }) };
+    base.closing = { ...words.closing };
   }
   base.couple.hashtag = bride && groom ? `#${bride.replace(/\s+/g, '')}Weds${groom.replace(/\s+/g, '')}` : '';
   base.theme = isTheme(theme) ? theme : (listThemes().find((t) => t.ready)?.slug || 'dhoka');
-  base.share = { title: bride && groom ? `${bride} & ${groom} · Shubha Bibaha` : '', description: 'You are warmly invited to our wedding.', image: '', siteUrl: '' };
+  if (colors && typeof colors === 'object' && !Array.isArray(colors)) base.themeColors = { [base.theme]: colors };
+  base.share = { title: bride && groom ? `${bride} & ${groom} · ${words.title.en}` : '', description: 'You are warmly invited to our wedding.', image: '', siteUrl: '' };
   return base;
 }
 
@@ -184,15 +218,22 @@ export async function create(req, res) {
   const bride = nameText(b.bride);
   const groom = nameText(b.groom);
   if (!bride || !groom) throw httpError(400, 'Please enter both first names.');
+  if (b.religion != null && !isReligion(b.religion)) throw httpError(400, "religion must be 'hindu', 'muslim', 'christian' or 'other'.");
+  const religion = b.religion || 'hindu';
+  if (b.colors != null && (typeof b.colors !== 'object' || Array.isArray(b.colors) || Object.keys(b.colors).length > 12)) throw httpError(400, 'colors must be an object of colour tokens.');
   const doc = await withLock(`inv:${slug}`, async () => {
     if (await getInvitation(slug)) throw httpError(409, 'That link name is already taken.');
     const now = new Date().toISOString();
-    const draft = sanitizeInvitation(starter({ bride, groom, theme: b.theme, sample: b.sample !== false }), slug, await slotInfo());
+    const slots = await slotInfo();
+    // the design must suit the community; without one (or with an unsuitable one) the first ready design that does
+    const ok = (t) => isTheme(t) && listThemes().find((x) => x.slug === t)?.ready && suits(slots.manifests[t], religion);
+    const theme = ok(b.theme) ? b.theme : (listThemes().find((t) => ok(t.slug))?.slug || b.theme);
+    const draft = sanitizeInvitation(starter({ bride, groom, theme, sample: b.sample !== false, religion, colors: b.colors }), slug, slots);
     const d = { slug, version: 1, status: 'draft', createdAt: now, updatedAt: now, publishedAt: null, draft, published: null };
     await writeJsonAtomic(invPath(slug), d);
     return d;
   });
-  console.info(`[admin] create slug=${slug}`);
+  console.info(`[admin] create slug=${slug} religion=${religion}`);
   res.status(201).json(docOut(doc));
 }
 
@@ -244,6 +285,14 @@ function clientLimits(cur, draft, manifests = {}) {
     if (p.themes !== 'all' && moved.some((k) => now[k] && !p.themes.includes(now[k]))) {
       throw httpError(403, 'That gate or first screen comes from a design your planner did not choose for you.');
     }
+  }
+  // The community (docs/PLATFORM.md "Religion") brings its own designs, so it changes under the design permission;
+  // and a couple's design, gate and first screen must suit it whenever one of them changes.
+  const rel = draft.religion || 'hindu';
+  if (rel !== (cur.draft.religion || 'hindu') && !p.canChangeTheme) throw httpError(403, 'Your planner has not turned on changing the design, so the community cannot change either.');
+  if (rel !== (cur.draft.religion || 'hindu') || draft.theme !== cur.draft.theme || moved.length) {
+    const parts = [draft.theme, now.gate, now.hero].filter(Boolean);
+    if (parts.some((t) => manifests[t] && !suits(manifests[t], rel))) throw httpError(403, 'That design is not made for this community. Choose one of the designs shown for it.');
   }
   if (!p.canChangeColors && colorKey(cur.draft.themeColors) !== colorKey(draft.themeColors)) {
     throw httpError(403, 'Your planner has not turned on changing the colours.');
@@ -405,7 +454,7 @@ export async function meta(req, res) {
   });
   const themes = await Promise.all(listThemes().map(async (t) => {
     const m = await loadManifest(t.slug);
-    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, stills: stillsOf(t.slug) };
+    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, religions: m?.religions || ['hindu'], faithInk: m?.faithInk || '', stills: stillsOf(t.slug) };
   }));
   res.json({ themes, tracks: BUNDLED_TRACKS, library: lib, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }

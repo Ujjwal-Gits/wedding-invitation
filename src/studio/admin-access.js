@@ -94,7 +94,7 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
 
   const permsForm = (state) => h('div.stack',
     themePicker(meta, state.themes, (v) => { state.themes = v; }, theme),
-    toggle({ label: 'Can change the opening design', hint: 'Lets them switch to another of the designs above.', checked: state.canChangeTheme, onChange: (v) => { state.canChangeTheme = v; } }),
+    toggle({ label: 'Can choose the gate, first screen and design', hint: 'Off: they see the opening you chose, with a note to ask you.', checked: state.canChangeTheme, onChange: (v) => { state.canChangeTheme = v; } }),
     toggle({ label: 'Can change colours', hint: 'The opening’s main colours, with a reset to the original.', checked: state.canChangeColors, onChange: (v) => { state.canChangeColors = v; } }));
 
   const pwField = (id) => {
@@ -105,7 +105,7 @@ export function accessPanel({ slug, names, meta, clientLink, theme, onChange = (
   };
 
   function drawCreate(fromRegenerate = false) {
-    const state = { themes: link?.themes ?? 'all', canChangeTheme: link?.canChangeTheme ?? false, canChangeColors: link?.canChangeColors ?? true };
+    const state = { themes: link?.themes ?? 'all', canChangeTheme: link?.canChangeTheme ?? true, canChangeColors: link?.canChangeColors ?? true };
     const pw = pwField(`pw-${slug}`);
     const err = h('p.form-error', { role: 'alert' });
     const btn = h('button.btn.btn--primary', { type: 'button', onclick: async () => {

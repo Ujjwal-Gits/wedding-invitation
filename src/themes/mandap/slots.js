@@ -2,6 +2,8 @@
 // Read through useSlots(manifest) in src/core/slots.js. Names, dates, events, vows,
 // story lines and the card wording come from the invitation data itself.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the 3D mandap and the seven rounds.
+  religions: ['hindu'],
   theme: 'mandap',
   images: {
     'us.photo1': { label: 'Easel 1 (behind the mandap)', kind: 'couple', default: { portrait: 0 }, note: 'The couple together; any orientation, shown whole. Bright photos read best at night.' },

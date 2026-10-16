@@ -114,6 +114,22 @@ export function createPreview(session, { onPick } = {}) {
   }
   fit();
   new ResizeObserver(fit).observe(stage);
+  // The page inside may scroll an element into view: that must never move the frame (or anything around it).
+  for (const box of [stage, screen, deviceEl]) box.addEventListener('scroll', () => { box.scrollTop = 0; box.scrollLeft = 0; });
+
+  // The editor keeps the keyboard. If a page in the frame takes focus by itself (not a tap in the preview), the
+  // field the client was typing in gets it back, without scrolling.
+  let lastField = null;
+  const onFieldIn = (e) => { if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select, [contenteditable="true"]') && !el.contains(e.target)) lastField = e.target; };
+  document.addEventListener('focusin', onFieldIn);
+  const onBlur = () => setTimeout(() => {
+    const a = document.activeElement;
+    if (!(a instanceof HTMLIFrameElement) || !screen.contains(a) || !lastField?.isConnected) return;
+    let at = 0;
+    try { at = a.contentWindow.__nimttoTouchAt || 0; } catch { /* gone */ }
+    if (Date.now() - at > 1000) lastField.focus({ preventScroll: true });
+  }, 0);
+  window.addEventListener('blur', onBlur);
 
   function setDevice(d) {
     device = d;
@@ -332,7 +348,7 @@ export function createPreview(session, { onPick } = {}) {
     },
     reload: render,
     fit,
-    destroy() { document.removeEventListener('focusin', onFocusIn); },
+    destroy() { document.removeEventListener('focusin', onFocusIn); document.removeEventListener('focusin', onFieldIn); window.removeEventListener('blur', onBlur); },
   };
 }
 

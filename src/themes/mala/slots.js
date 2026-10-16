@@ -12,6 +12,8 @@ const album = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`album.${i
 }]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a dressed mandap with brass kalash in the art.
+  religions: ['hindu'],
   theme: 'mala',
   images: {
     'hero.photo': {

@@ -1,6 +1,8 @@
 // Bagaicha · every image and visible text the studio can replace.
 // Plain data (no imports): the server and the studio load this file directly.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the 3D seven rounds of the fire.
+  religions: ['hindu'],
   theme: 'bagaicha',
   images: {
     'scene.mountains': { shared: 'place.mountain',

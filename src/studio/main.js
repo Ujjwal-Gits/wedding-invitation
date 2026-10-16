@@ -125,7 +125,7 @@ function mount(ws, mod, ctx) {
   try { node = mod.render(scoped); } catch (err) { console.error(err); node = h('p.notice.notice--error', 'This section could not be shown. Reload to try again.'); }
   content.append(...[node].flat().filter(Boolean));
   requestAnimationFrame(() => content.classList.add('is-in'));
-  ws.shell.main.scrollTo({ top: 0 });
+  ws.shell.toTop();
   ws.shell.main.focus({ preventScroll: true });
 }
 
@@ -187,6 +187,7 @@ async function openInvitation(slug, modId) {
       h('p.ctxbox__meta', h('span.ctxbox__date', fmtDate(session.m.data.weddingDate, { day: 'numeric', month: 'short', year: 'numeric' })), h('span.ctxbox__status')));
     const drawCtx = () => {
       ctxBox.querySelector('.ctxbox__names').textContent = session.names();
+      S.ws?.shell?.setTitle(session.names());
       ctxBox.querySelector('.ctxbox__date').textContent = fmtDate(session.m.data.weddingDate, { day: 'numeric', month: 'short', year: 'numeric' });
       const st = ctxBox.querySelector('.ctxbox__status');
       const live = doc.status === 'published';
@@ -206,7 +207,8 @@ async function openInvitation(slug, modId) {
         h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
         h('span.userbox__text', h('b', 'Your invitation'), h('small', 'Saves as you type')),
         h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18))),
-      tabs: ['home', 'opening', 'photos', 'send'],
+      tabs: ['opening', 'couple', 'dates', 'photos', 'send'],
+      mobile: { home: `#/i/${slug}/home`, title: session.names(), save: session.makeSaveChip() },
       onAction: (a) => { if (a === 'signout') signOut(); },
     });
     const preview = createPreview(session, {

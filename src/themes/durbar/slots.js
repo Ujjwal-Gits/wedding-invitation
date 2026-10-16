@@ -1,6 +1,8 @@
 // Durbar · every image and visible text the studio can replace.
 // Plain data (no imports): the server and the studio load this file directly.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a 3D walk among temples.
+  religions: ['hindu'],
   theme: 'durbar',
   images: {
     // The couple's photographs, hung in gilt frames on the palace wall (3 to 5, plus bride/groom portraits).

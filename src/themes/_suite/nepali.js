@@ -27,17 +27,19 @@ export function flame(cls = '') {
 /** a brass lamp (diyo | panas) with live flames on its wicks; width via CSS on .np-lamp or `w` (px) */
 export function lamp(kind = 'diyo', { cls = '', w = null, sizes = '120px' } = {}) {
   const L = LAMP[kind];
-  return `<span class="np-lamp np-lamp--${kind} ${cls}" style="${w ? `width:${w}px;` : ''}--ar:${L.ar}" aria-hidden="true">
+  return `<span class="np-lamp np-lamp--${kind} ${cls}" data-hindu style="${w ? `width:${w}px;` : ''}--ar:${L.ar}" aria-hidden="true">
     ${img(kind, 'np-lamp__img', sizes)}
     ${L.wicks.map(([x, y]) => `<span class="np-lamp__wick" style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%">${flame()}</span>`).join('')}
   </span>`;
 }
 
-export const kalash = (cls = '', sizes = '160px') => `<span class="np-pic np-kalash ${cls}" aria-hidden="true">${img('kalash', '', sizes)}</span>`;
+// Faith (src/core/faith.js): the brass lamps, the kalash and the rites are Hindu; they leave the page when its
+// symbols are not Hindu ([data-hindu]) or its community is not ([data-hindu-rite]). The toran and the flowers stay.
+export const kalash = (cls = '', sizes = '160px') => `<span class="np-pic np-kalash ${cls}" data-hindu aria-hidden="true">${img('kalash', '', sizes)}</span>`;
 export const toran = (cls = '', sizes = '100vw') => `<span class="np-pic np-toran ${cls}" aria-hidden="true">${img('toran', '', sizes)}</span>`;
-export const ganthi = (cls = '', sizes = '300px', alt = '') => `<span class="np-pic np-ganthi ${cls}"${alt ? '' : ' aria-hidden="true"'}>${img('ganthi', '', sizes, alt)}</span>`;
-export const saptapadi = (cls = '', sizes = '200px', alt = '') => `<span class="np-pic np-saptapadi ${cls}"${alt ? '' : ' aria-hidden="true"'}>${img('saptapadi', '', sizes, alt)}</span>`;
-export const sindoorDaan = (cls = '', sizes = '300px', alt = '') => `<span class="np-pic np-sindoor ${cls}"${alt ? '' : ' aria-hidden="true"'}>${img('sindoor-daan', '', sizes, alt)}</span>`;
+export const ganthi = (cls = '', sizes = '300px', alt = '') => `<span class="np-pic np-ganthi ${cls}" data-hindu-rite${alt ? '' : ' aria-hidden="true"'}>${img('ganthi', '', sizes, alt)}</span>`;
+export const saptapadi = (cls = '', sizes = '200px', alt = '') => `<span class="np-pic np-saptapadi ${cls}" data-hindu-rite${alt ? '' : ' aria-hidden="true"'}>${img('saptapadi', '', sizes, alt)}</span>`;
+export const sindoorDaan = (cls = '', sizes = '300px', alt = '') => `<span class="np-pic np-sindoor ${cls}" data-hindu-rite${alt ? '' : ' aria-hidden="true"'}>${img('sindoor-daan', '', sizes, alt)}</span>`;
 /** fresh marigolds, roses and jasmine as a corner spray; corner: tl | tr | bl | br */
 export const flowers = (corner = 'tl', cls = '', sizes = '200px') => `<span class="np-pic np-flowers np-flowers--${corner} ${cls}" aria-hidden="true">${img('flowers', '', sizes)}</span>`;
 /** the Palpali Dhaka weave as a CSS background url (a tile) */

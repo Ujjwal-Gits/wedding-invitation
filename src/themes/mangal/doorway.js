@@ -4,6 +4,7 @@
 // the module's copy carries no element ids; `X` rewrites the SVG paint-server ids for the module (see gate.js).
 import { gsap } from 'gsap';
 import { esc } from '../../core/i18n.js';
+import { roundelRef } from '../../core/faith.js';
 import { photoUrl } from '../../photos.js';
 import {
   frameSVG, panelBorderSVG, leafSVG, bellSVG, diyoSVG, dhakaTile, petalSVG, rosette, beamSVG, medalSVG,
@@ -40,9 +41,15 @@ export function medalFit(ganeshRef) {
   const t = (p) => ((0.5 - 0.5 - s * (p - 0.5)) * 100).toFixed(2);
   return `object-fit:contain;transform:translate(${t(px)}%, ${t(py)}%) scale(${s.toFixed(3)})`;
 }
-export const medalHTML = (ganeshRef, cls = '') => (ganeshRef
-  ? `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"><img style="${medalFit(ganeshRef)}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
-  : '');
+// Another community (src/core/faith.js; only when the planner forces this Hindu design): the emblem in deep red on
+// a pale gold roundel, so the medallion never shows Ganesh and still reads as one gilded piece.
+const ROUNDEL = 'background:radial-gradient(circle at 50% 42%,#fff7df 0%,#f5dd9c 46%,#dcae55 82%,#b9852f 100%)';
+export const medalHTML = (ganeshRef, cls = '') => {
+  if (!ganeshRef) return '';
+  const faith = Boolean(ganeshRef.faith);
+  const ref = faith ? roundelRef(ganeshRef) : ganeshRef;
+  return `<div class="mg-medal ${cls}" aria-hidden="true"><span class="mg-medal__pic"${faith ? ` style="${ROUNDEL}"` : ''}><img style="${medalFit(ref)}" src="${esc(photoUrl(ref, 'sm'))}" srcset="${esc(photoUrl(ref, 'sm'))} 500w, ${esc(photoUrl(ref, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`;
+};
 export const diyoHTML = (cls = '', w = 70) => `<div class="mg-diyo ${cls}" aria-hidden="true"><i class="mg-diyo__halo"></i>${diyoSVG(w, Math.round(w * 1.6))}</div>`;
 export const namesHTML = (bi, c) => `<span class="mg-n">${bi(c.bride.name)}</span> <span class="mg-n"><span class="mg-amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span> ${bi(c.groom.name)}</span>`;
 

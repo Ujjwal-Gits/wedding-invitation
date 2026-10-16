@@ -22,6 +22,7 @@
 //
 // Overrides live in the invitation data: config.themeContent[theme] = { images: { id: ref }, texts: { id: { en, ne } } }.
 import { config } from '../config.js';
+import { faithDefault, isSacredSlot, emblemRef, inkFor, haloFor, religionOf, symbolsFor, isInvocation, INVOCATION } from './faith.js';
 
 const portrait = (n) => {
   const list = config.couple?.portraits || [];
@@ -41,14 +42,24 @@ function resolveImage(def, kind) {
 // Shared content travels between themes: a manifest entry with `shared: '<key>'`
 // reads config.content.images[key] / config.content.texts[key] when the theme has
 // no override of its own. Couple photos always live in config.couple.portraits.
+//
+// Faith (src/core/faith.js): on a page whose symbols are not Hindu, a sacred image slot (a theme's Ganesh) shows the
+// community's emblem in the theme's gold (the couple's own picture still wins, except on a guest link that asks
+// for its own version), and the design's default words follow the community (the invocation, शुभ विवाह …).
+//
+// Bilingual fallback: the couple's words in either language beat the design's default in both views.
 export function useSlots(manifest) {
   const over = config.themeContent?.[manifest.theme] || {};
   const shared = config.content || {};
+  const faith = config.faith || { religion: religionOf(config), symbols: symbolsFor(religionOf(config)), version: null };
   const img = (id) => {
     const spec = manifest.images?.[id];
     if (!spec) console.warn(`[slots] unknown image slot "${id}" in ${manifest.theme}`);
     const o = over.images?.[id] ?? (spec?.shared ? shared.images?.[spec.shared] : undefined);
+    if (faith.symbols !== 'hindu' && isSacredSlot(id, spec) && (!o || faith.version)) return emblemRef(faith.symbols, inkFor(manifest, config.themeColors, spec?.faithInk), haloFor(manifest, config.themeColors, spec?.faithHalo));
     if (o) return resolveImage(o, spec?.kind);
+    // a design's default picture of a temple or rite has a neutral twin for pages whose symbols are not Hindu
+    if (faith.symbols !== 'hindu' && spec?.nonHindu) return spec.nonHindu;
     // Bride/groom slots prefer the couple's dedicated uploads over the manifest default.
     if (spec?.kind === 'bride' && config.couple?.bride?.photo) return config.couple.bride.photo;
     if (spec?.kind === 'groom' && config.couple?.groom?.photo) return config.couple.groom.photo;
@@ -58,8 +69,13 @@ export function useSlots(manifest) {
     const spec = manifest.texts?.[id];
     if (!spec) console.warn(`[slots] unknown text slot "${id}" in ${manifest.theme}`);
     const o = over.texts?.[id] || (spec?.shared ? shared.texts?.[spec.shared] : null) || {};
-    const d = spec?.default || {};
-    return { en: o.en || d.en || '', ne: o.ne || d.ne || o.en || d.en || '' };
+    const d = faithDefault(spec?.default || {}, faith) || {};
+    const en = String(o.en || '').trim();
+    const ne = String(o.ne || '').trim();
+    // a guest link's own version replaces the couple's invocation too (only the symbols change)
+    if (faith.version && (isInvocation(en) || isInvocation(ne))) return { ...INVOCATION[faith.symbols] };
+    if (en || ne) return { en: en || ne, ne: ne || en };
+    return { en: d.en || d.ne || '', ne: d.ne || d.en || '' };
   };
   /** Alt text for an image slot: the override's alt, else the manifest label. */
   const alt = (id) => {

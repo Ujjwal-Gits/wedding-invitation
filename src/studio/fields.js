@@ -56,21 +56,45 @@ export function textField(m, path, opts = {}) {
   );
 }
 
-/** English | नेपाली side by side. */
+const LANG_NAME = { en: 'English', ne: 'नेपाली' };
+const short = (v, n = 36) => (v.length > n ? `${v.slice(0, n - 1).trimEnd()}…` : v);
+
+/**
+ * English | नेपाली: one question, two languages in one joined box (side by side when there is room, stacked on
+ * phones). An empty language shows what the invitation will use instead ("Uses English: Aarati").
+ * opts: { label, hint, max, multiline, rows, placeholderEn, placeholderNe, action (Node, top right, never shifts) }
+ */
 export function biField(m, path, opts = {}) {
   const id = nextId('bi');
   const hintId = opts.hint ? `${id}-hint` : undefined;
-  const col = (lang, label) => {
+  const base = { en: opts.placeholderEn || '', ne: opts.placeholderNe || '' };
+  const inputs = {};
+  const col = (lang) => {
     const cid = `${id}-${lang}`;
-    return h('div.bi__col',
-      h('label.bi__lang', { for: cid }, h('span.sr-only', `${opts.label}, `), label),
-      control(m, [...path, lang], { ...opts, id: cid, lang: lang === 'ne' ? 'ne' : 'en', describedBy: hintId, placeholder: lang === 'ne' ? opts.placeholderNe : opts.placeholderEn }),
-    );
+    const input = control(m, [...path, lang], { ...opts, id: cid, lang: lang === 'ne' ? 'ne' : 'en', describedBy: hintId, placeholder: base[lang] });
+    inputs[lang] = input;
+    return h('div.bi__col', { class: `bi__col--${lang}` },
+      input,
+      h('label.bi__lang', { for: cid }, h('span.sr-only', `${opts.label}, `), LANG_NAME[lang]));
   };
-  return h('fieldset.field.bi', { class: opts.class },
+  const row = h('div.bi__row', col('en'), col('ne'));
+  // The fallback the invitation uses for an empty language, as the empty box's placeholder (an attribute: no reflow).
+  const hintFor = (lang) => {
+    const other = lang === 'en' ? 'ne' : 'en';
+    const ov = inputs[other].value.trim().replace(/\s+/g, ' ');
+    const text = ov ? `Uses ${LANG_NAME[other]}: ${short(ov)}` : base[lang];
+    if (inputs[lang].placeholder !== text) inputs[lang].placeholder = text;
+  };
+  inputs.en.addEventListener('input', () => hintFor('ne'));
+  inputs.ne.addEventListener('input', () => hintFor('en'));
+  hintFor('en');
+  hintFor('ne');
+  const acts = [opts.action].flat().filter(Boolean).length;
+  return h('fieldset.field.bi', { class: [opts.class, acts ? `bi--act bi--act${acts}` : ''].filter(Boolean).join(' ') },
     h('legend.label', opts.label),
+    opts.action ? h('div.bi__act', opts.action) : null,
     opts.hint ? h('p.hint', { id: hintId }, opts.hint) : null,
-    h('div.bi__row', col('en', 'English'), col('ne', 'नेपाली')),
+    row,
   );
 }
 

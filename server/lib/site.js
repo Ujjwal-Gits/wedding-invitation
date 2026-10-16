@@ -118,7 +118,7 @@ export async function publicThemes(req, res) {
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb });
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'] });
   }
   res.set('Cache-Control', 'no-cache');
   res.json(out);

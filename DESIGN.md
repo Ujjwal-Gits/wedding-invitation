@@ -166,8 +166,9 @@ holds it until the picture has decoded (at most 2.5 s) and removes the leaves af
 colour and opacity fades of 180-380 ms, a 2.5% image lift on hover, the lightbox rising 12px over 300 ms.
 Reduced motion: no doors at all, the design is simply there. No scroll-driven motion and no parallax.
 
-Business rules shown on the page: no live demo links or iframes (designs open a still lightbox with "Order this
-design"); prices come from `/api/site` (`price: null` shows "Ask for price"); designs from `/api/themes` with the
+Business rules shown on the page: designs open a still lightbox with "Order this design" and "Preview"; Preview (also
+under every card) opens the watermarked, demo-only showcase (`/<theme>/?showcase=1`): on desktop in a white phone-frame
+modal beside the name, "Order this design" and "Open full screen"; on phones full screen. Never a plain live link; prices come from `/api/site` (`price: null` shows "Ask for price"); designs from `/api/themes` with the
 static fallback in `src/site/themes.js`.
 
 Copy: plain and specific. No "Elevate / Seamless / Unlock", no em-dash asides, no eyebrow-and-dot labels.

@@ -7,15 +7,17 @@ import { slotTools, OPENING_RE } from './slots-ui.js';
 import { sectionOfSlot } from './preview-sync.js';
 import { bridge } from './preview.js';
 import { resolveDesign, cleanDesign } from '../core/mix-rules.js';
+import { faithCard, suitsFaith, pickDesignDialog } from './faith-ui.js';
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const full = (hex) => (hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex).toLowerCase();
 
-/** Themes this person may choose from. */
-export function allowedThemes(ctx) {
+/** Themes this person may choose from: allowed by the planner and made for the couple's community (any: all communities). */
+export function allowedThemes(ctx, { any = false } = {}) {
   const ready = ctx.meta.themes.filter((t) => t.ready !== false);
   const p = ctx.perms.themes;
-  return p === 'all' || !Array.isArray(p) ? ready : ready.filter((t) => p.includes(t.slug) || t.slug === ctx.m.data.theme);
+  const mine = p === 'all' || !Array.isArray(p) ? ready : ready.filter((t) => p.includes(t.slug) || t.slug === ctx.m.data.theme);
+  return any ? mine : mine.filter((t) => t.slug === ctx.m.data.theme || suitsFaith(ctx, t));
 }
 
 export const themeThumb = (t, cls = '', src = t.thumb) => (src
@@ -133,13 +135,13 @@ function option({ img, name, sub, on, disabled, onclick, label }) {
     sub ? h('span.mixopt__sub', sub) : null));
 }
 
-/** One picker: "Same as design" first, then the other themes' gates (or first screens). */
+const stillOf = (t, kind) => (kind === 'gate' ? t.stills?.gate : t.stills?.hero) || t.thumb;
+
+/** One picker: "Its own" first, then the other themes' gates (or first screens). A strip that scrolls sideways on phones. */
 function picker(ctx, kind, r, redraw) {
   const host = themeOf(ctx, ctx.m.data.theme);
-  const can = ctx.perms.canChangeTheme;
   const cur = kind === 'gate' ? r.gate : r.hero;
   const curT = cur ? themeOf(ctx, cur) : null;
-  const still = (t) => (kind === 'gate' ? t.stills?.gate : t.stills?.hero) || t.thumb;
   const pairGate = r.gate && partsOf(ctx)(r.gate)?.gate === 'pair' ? themeOf(ctx, r.gate) : null;
   const what = kind === 'gate' ? 'gate' : 'first screen';
   const c = choicesOf(ctx, kind, r);
@@ -159,51 +161,72 @@ function picker(ctx, kind, r, redraw) {
 
   const notes = [];
   let opts = [];
-  if (!can) {
-    // Read-only: what guests see now, and who sets it.
-    opts = [option({ img: themeThumb(curT || host, '', still(curT || host)), name: curT ? curT.name : 'Same as design', sub: curT ? `${what === 'gate' ? 'Gate' : 'First screen'} from ${curT.name}` : host.name, on: true, disabled: true, label: `${curT ? curT.name : 'Same as design'} (chosen by your planner)` })];
-    notes.push(h('p.hint.mixrow__lock', icon('lock', 14), 'Your planner set the opening. Ask them if you would like a different one.'));
-  } else if (kind === 'hero' && pairGate) {
-    opts = [option({ img: themeThumb(pairGate, '', still(pairGate)), name: pairGate.name, sub: 'Opening scene', on: true, disabled: true, label: `${pairGate.name}: comes with its opening scene` })];
-    notes.push(h('p.hint', icon('info', 14), `Comes with ${pairGate.name}’s opening scene: its gate is this first screen before it opens. Choose another gate to change it.`));
+  if (kind === 'hero' && pairGate) {
+    opts = [option({ img: themeThumb(pairGate, '', stillOf(pairGate, 'hero')), name: pairGate.name, sub: 'Comes with the gate', on: true, disabled: true, label: `${pairGate.name}: comes with its opening scene` })];
+    notes.push(h('p.hint.mixnote', icon('info', 14), h('span', `${pairGate.name}’s gate opens into its own first screen. Choose another gate to change it.`)));
   } else {
-    opts.push(option({ img: themeThumb(host, '', still(host)), name: 'Same as design', sub: host.name, on: !cur, label: `Same as design: ${host.name}’s own ${what}`, onclick: () => choose(null) }));
+    opts.push(option({ img: themeThumb(host, '', stillOf(host, kind)), name: `${host.name}’s own`, sub: 'Same as the design', on: !cur, label: `${host.name}’s own ${what}`, onclick: () => choose(null) }));
     const shown = new Set();
     for (const { t, pair } of c.ok) {
       shown.add(t.slug);
-      opts.push(option({ img: themeThumb(t, '', still(t)), name: t.name, sub: pair ? 'Opening scene' : null, on: cur === t.slug, label: `${t.name}’s ${pair ? 'opening scene (gate and first screen)' : what}`, onclick: () => choose(t.slug, pair) }));
+      opts.push(option({ img: themeThumb(t, '', stillOf(t, kind)), name: t.name, sub: pair ? 'With its first screen' : null, on: cur === t.slug, label: `${t.name}’s ${pair ? 'opening scene (gate and first screen)' : what}`, onclick: () => choose(t.slug, pair) }));
     }
     // Chosen by the planner from a design not on this person's list: still shown as chosen.
-    if (cur && !shown.has(cur)) opts.push(option({ img: themeThumb(curT, '', still(curT)), name: curT.name, on: true, label: curT.name, onclick: () => {} }));
-    if (c.closed) notes.push(h('p.hint', icon('info', 14), c.closed));
+    if (cur && !shown.has(cur)) opts.push(option({ img: themeThumb(curT, '', stillOf(curT, kind)), name: curT.name, on: true, label: curT.name, onclick: () => {} }));
+    if (c.closed) notes.push(h('p.hint.mixnote', icon('info', 14), h('span', c.closed)));
   }
-  const why = can && (c.no.length || c.soon) ? h('details.mixwhy',
-    h('summary', icon('info', 14), c.no.length ? `Why some designs aren’t offered (${c.no.length + c.soon})` : `More ${what}s are on the way`),
+  const why = c.no.length || c.soon ? h('details.mixwhy',
+    h('summary', icon('info', 14), c.no.length ? `Why some designs aren’t here (${c.no.length + c.soon})` : `More ${what}s are on the way`),
     h('ul.mixwhy__list',
       c.no.map(({ t, why: w }) => h('li', h('b', t.name), h('span', w))),
       c.soon ? h('li', h('b', `${c.soon} more design${c.soon === 1 ? '' : 's'}`), h('span', `Being prepared so their ${what} can go on other designs.`)) : null)) : null;
-  return [h('ul.mixopts', { role: 'list', 'aria-label': kind === 'gate' ? 'Gate' : 'First screen after the gate' }, opts), ...notes, why];
+  return [h('ul.mixopts', { role: 'list', 'aria-label': kind === 'gate' ? 'Gate' : 'First screen after the gate', 'data-kind': kind }, opts), ...notes, why];
+}
+
+const step = (n, title, help, ...body) => h('div.mixrow',
+  h('div.mixrow__head', h('span.mixrow__n', { 'aria-hidden': 'true' }, n), h('div', h('h3.mixrow__title', title), h('p.mixrow__help', help))),
+  h('div.mixrow__body', ...body));
+
+/** What guests see now, when the couple may not change it: the gate, the first screen and the design, with a note. */
+function lockedCard(ctx, r) {
+  const host = themeOf(ctx, ctx.m.data.theme);
+  const gateT = r.gate ? themeOf(ctx, r.gate) : host;
+  const heroT = r.hero ? themeOf(ctx, r.hero) : host;
+  const tile = (kind, t, label, img) => h('li.mixsum__item',
+    h('span.mixsum__img', img),
+    h('span.mixsum__k', label),
+    h('b.mixsum__v', t === host && kind !== 'design' ? `${host.name}’s own` : t.name));
+  return h('section.card.mixcard.is-locked', { 'aria-label': 'Your opening' },
+    h('header.card__head', h('h2.card__title', 'Your opening'), h('p.card__help', 'What guests see first. The words, pictures and colours below are yours to change.')),
+    h('ul.mixsum', { role: 'list' },
+      tile('gate', gateT, 'Gate', themeThumb(gateT, '', stillOf(gateT, 'gate'))),
+      tile('hero', heroT, 'First screen', themeThumb(heroT, '', stillOf(heroT, 'hero'))),
+      tile('design', host, 'Design', themeThumb(host))),
+    h('p.mixlock', icon('lock', 15), h('span', h('b', 'Set by your planner. '), 'Ask your planner to change this.')));
 }
 
 function mixCard(ctx, r, redraw) {
+  if (!ctx.perms.canChangeTheme) return lockedCard(ctx, r);
   const host = themeOf(ctx, ctx.m.data.theme);
-  const can = ctx.perms.canChangeTheme;
   const list = allowedThemes(ctx);
-  const row = (n, title, help, ...body) => h('div.mixrow',
-    h('div.mixrow__head', h('span.mixrow__n', { 'aria-hidden': 'true' }, n), h('div', h('h3.mixrow__title', title), h('p.mixrow__help', help))),
-    h('div.mixrow__body', ...body));
   return h('section.card.mixcard', { 'aria-label': 'Your opening' },
-    h('header.card__head', h('h2.card__title', 'Your opening'), h('p.card__help', 'Three choices: the design of the whole invitation, the gate guests open, and the first screen they see after it.')),
-    row('1', 'Design', 'The whole invitation: every section after the first screen.',
+    h('header.card__head', h('h2.card__title', 'Your opening'), h('p.card__help', 'Pick the gate guests tap and the first screen they see. The preview shows your choice straight away.')),
+    step('1', 'Gate', 'What guests tap to open the invitation.', ...picker(ctx, 'gate', r, redraw)),
+    step('2', 'First screen', 'What they see as the gate opens.', ...picker(ctx, 'hero', r, redraw)),
+    step('3', 'Design', 'Everything after the first screen.',
       h('div.mixdesign',
         h('div.mixdesign__thumb', themeThumb(host)),
         h('div.mixdesign__text',
           h('b.mixdesign__name', host.name),
           host.concept ? h('span.mixdesign__concept', host.concept) : null,
-          can && list.length > 1 ? h('button.btn.btn--sm', { type: 'button', onclick: () => pickTheme(ctx, redraw) }, icon('palette', 15), 'Change the design') : null,
-          !can ? h('p.hint.mixrow__lock', icon('lock', 14), 'Your planner set the design. Ask them if you would like a different one.') : null))),
-    row('2', 'Gate', 'The entry screen guests tap, and how it opens.', ...picker(ctx, 'gate', r, redraw)),
-    row('3', 'First screen after the gate', 'What guests see as the gate opens: names, date and the first picture.', ...picker(ctx, 'hero', r, redraw)));
+          list.length > 1 ? h('button.btn.btn--sm', { type: 'button', onclick: () => pickTheme(ctx, redraw) }, icon('palette', 15), 'Change design') : null))));
+}
+
+/** Brings the chosen tile of a sideways strip into view, without moving the page. */
+function centreChosen(ul) {
+  const on = ul.querySelector('[aria-pressed="true"]')?.parentElement;
+  if (!on || ul.scrollWidth <= ul.clientWidth) return;
+  ul.scrollLeft = Math.max(0, on.offsetLeft - (ul.clientWidth - on.offsetWidth) / 2);
 }
 
 // ── Colours ───────────────────────────────────────────────────────────────
@@ -297,18 +320,32 @@ function ownOpening(hostParts, r) {
 }
 
 export function openingModule(ctx) {
-  const root = h('div.stack');
+  // Two parts that update on their own: the choices (strips keep their sideways scroll) and the words, pictures and
+  // colours below (redrawn when the choice changes, holding their height meanwhile so nothing jumps).
+  const top = h('div.stack');
+  const below = h('div.stack', h('section.card', skeleton(4)));
+  const root = h('div.stack', top, below);
+  let run = 0;
   const draw = async () => {
+    const me = ++run;
     const theme = ctx.m.data.theme;
     const r = resolveDesign(ctx.m.data.design, theme, partsOf(ctx));
-    if (!root.childElementCount) fill(root, mixCard(ctx, r, draw), h('section.card', skeleton(4)));
+    const scrolls = new Map([...top.querySelectorAll('.mixopts')].map((ul) => [ul.dataset.kind, ul.scrollLeft]));
+    fill(top, mixCard(ctx, r, draw), faithCard(ctx, { themes: () => allowedThemes(ctx, { any: true }), pickDesign: (list, text) => pickDesignDialog(ctx, list, text, (t) => themeThumb(t)), redraw: draw }));
+    requestAnimationFrame(() => {
+      for (const ul of top.querySelectorAll('.mixopts')) {
+        if (scrolls.has(ul.dataset.kind)) ul.scrollLeft = scrolls.get(ul.dataset.kind);
+        else centreChosen(ul);
+      }
+    });
+    if (below.offsetHeight) below.style.minHeight = `${below.offsetHeight}px`;
     const borrowed = new Map(); // slug -> ['gate', 'hero']
     if (r.gate) borrowed.set(r.gate, ['gate']);
     if (r.hero) borrowed.set(r.hero, [...(borrowed.get(r.hero) || []), 'hero']);
     const [all, man, ...parts] = await Promise.all([loadAll(ctx.meta.themes), loadManifest(theme), ...[...borrowed.keys()].map((s) => loadManifest(s))]);
-    if (ctx.m.data.theme !== theme || JSON.stringify(resolveDesign(ctx.m.data.design, theme, partsOf(ctx))) !== JSON.stringify(r)) return;
+    if (me !== run) return;
     const tools = slotTools(ctx);
-    const out = [mixCard(ctx, r, draw)];
+    const out = [];
     const partCards = [...borrowed.entries()].map(([slug, kinds], i) => partCard(ctx, slug, kinds, parts[i], all));
     if (!man) {
       out.push(...partCards, h('section.card', emptyState('door', 'Nothing to change here yet', `${ctx.session.themeName()} is still being finished. Its opening words will appear here soon.`)));
@@ -318,15 +355,16 @@ export function openingModule(ctx) {
       const rest = tools.render(man, all, (id) => !OPENING_RE.test(id));
       const own = r.gate && r.hero ? null : r.gate ? 'first screen' : r.hero ? 'gate' : null;
       out.push(
-        open.texts ? card(own ? `Words of ${themeOf(ctx, theme).name}’s ${own}` : 'Opening words', 'What guests read first. Leave a line empty to keep the original (shown in grey).', open.texts) : null,
-        open.images ? card(own ? `Pictures of ${themeOf(ctx, theme).name}’s ${own}` : 'Opening pictures', 'Tap a picture to change it.', open.images) : null,
+        open.texts ? card(own ? `Words on ${themeOf(ctx, theme).name}’s ${own}` : 'First words', 'Leave a line empty to keep the design’s own words (shown in grey).', open.texts) : null,
+        open.images ? card(own ? `Pictures on ${themeOf(ctx, theme).name}’s ${own}` : 'First pictures', 'Tap a picture to change it.', open.images) : null,
         ...partCards,
-        colorsCard(ctx, man, borrowed.size ? `The main colours of ${themeOf(ctx, theme).name}. Changes show in the preview straight away.` : 'The main colours of the opening. Changes show in the preview straight away.'),
+        colorsCard(ctx, man, borrowed.size ? `The main colours of ${themeOf(ctx, theme).name}.` : 'The main colours of the opening. The preview changes as you pick.'),
         rest.count ? h('details.fold',
-          h('summary.fold__sum', h('span', h('b', 'Other words and pictures in this design'), h('small', `${rest.count} items, further down the invitation`)), icon('down', 18)),
+          h('summary.fold__sum', h('span', h('b', 'More words and pictures'), h('small', `${rest.count} more, further down the invitation`)), icon('down', 18)),
           h('div.fold__body', rest.images ? h('div.fold__part', h('h3.subhead', 'Pictures'), rest.images) : null, rest.texts ? h('div.fold__part', h('h3.subhead', 'Words'), rest.texts) : null)) : null);
     }
-    fill(root, ...out.filter(Boolean));
+    fill(below, ...out.filter(Boolean));
+    requestAnimationFrame(() => { below.style.minHeight = ''; });
   };
   draw();
   return root;

@@ -229,3 +229,49 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
   button; the access panel and the invitation's Send module (admin) show the link with Copy and Reset password.
   Reset password keeps the same URL. Older links show "created before links could be shown again" with a
   New link button. The password is never shown again (argon2id hash only).
+
+**website + core + server (2026-10-16): public watermarked showcase of every design.**
+- Owner: "Create a preview from the home page design for each theme ... with a complete watermark of Nimtto, so make
+  sure no one can copy text or anything. Even if we can stop the screen recorder or the screenshot ..."
+- `/<theme>/?showcase=1` (short link `/preview/<theme>`) is public for every ready theme: demo couple only (`?id=` is
+  dropped by a 302 and again in the page), server-marked with `data-showcase="1"` + `/showcase.css`. The plain
+  `/<theme>/` stays gated exactly as before. Details: API.md "Public showcase". Files: `server/lib/showcase.js` (one
+  hook in `server/index.js`), `src/core/showcase.js` (one import in `src/core/data.js`), `public/showcase.css`.
+- Website: every design card and the lightbox have "Preview". Desktop opens a phone-frame modal (iframe) with "Order
+  this design" and "Open full screen"; phones and touch devices open it full screen, with a close button in the badge.
+  `/?design=<slug>#order` preselects the design in the order form. Copy no longer says "Ask us for a private preview".
+- **Honest limit:** screenshots and screen recording cannot be technically prevented on the web (the OS and browser
+  capture the screen outside the page's control). The full-screen watermark, copy blocking, the blank card on focus
+  loss / PrintScreen / print, and the reduced photo size are deterrents: they make a copy obviously a Nimtto preview,
+  not impossible.
+
+**faith + server (2026-10-16): religion, bilingual fallback, one RSVP answer per ceremony, guest-link versions.**
+- Owner: "For Muslim or Christian couples there should be designs for their community … ask the religion when creating."
+  Data: `religion: 'hindu' | 'muslim' | 'christian' | 'other'` (omitted = Hindu). The couple changes it only with
+  `canChangeTheme`; the server refuses (403) a couple's save whose theme, gate or hero does not list the religion.
+  Shared layer: `src/core/faith.js` (words, emblems, ceremony presets, share greeting), applied by `data.js`
+  (`config.faith = { religion, symbols, version }`, `<html data-religion data-symbols>`) and `slots.js`: a sacred image
+  slot (`*.ganesh` or `sacred: true`) shows a fine-line emblem (crescent and star in an arch / cross over two rings /
+  laurel wreath) drawn in the theme's `faithInk` (+ optional `faithHalo`); invocation defaults become بسم الله الرحمن الرحيم
+  (Amiri, self-hosted in `public/themes/_faith/`, RTL span) / a Bible verse / nothing; शुभ विवाह becomes निकाह / पवित्र विवाह.
+  Theme markup marks Hindu-only details with `[data-hindu]` (gone when the symbols are not Hindu) or `[data-hindu-rite]`
+  (gone when the community is not Hindu); the `_nepali` kit's lamps, kalash, ganthi, saptapadi and sindoor carry them.
+  A safety net swaps any hard-coded Ganesh invocation left in a design. Hindu pages run nothing new.
+- Every `slots.js` has `religions`. Muslim / Christian: dhaka, hariyo, himal, jhyal, laali, mahal, mehendi. Other adds
+  gurans (Phoolbari), kham, sayapatri, swayambar. Hindu only: agni, bagaicha, chitra, dhoka, durbar, ghar, janti, mala,
+  mandap, mangal, nimantrana, pardaa, rajdwar, rangoli, shree, sindoor.
+- New invitations (`POST /invitations { religion, colors }`) start with the community's ceremonies, each its own event
+  (Hindu: Mehendi, Haldi, Janti, Shubha Bibaha, Reception; Muslim: Mehndi, Nikah, Walima, Reception; Christian:
+  Engagement & Ring Ceremony, Holy Matrimony, Reception; Other: Wedding ceremony, Reception) and wording.
+- Bilingual: an `{en, ne}` with one side empty shows the other side in both views (data.js on load, `bi()`, slot texts;
+  the couple's words in either language beat the design's default).
+- RSVP: one tick per ceremony, labelled with its name; a "yes" must tick at least one (client and server).
+- Guest links: `?v=neutral|hindu|muslim|christian` (Send › personal link › "Religious symbols"); `/i/<slug>` keeps it.
+- Needed from the studio agent: a "Community" selector (four options) in Home or Opening that sets `religion` (couple:
+  only with `canChangeTheme`), and the Themes / Opening gate-and-hero pickers filtering `meta.themes` with
+  `suits({ religions: t.religions }, religion)` from `src/core/faith.js` (the admin may see all, marked).
+- Art sweep (same day): Mahal's crest is a plain painted gold disc; for other communities the emblem now sits on a pale
+  gold roundel inside it (`roundelRef`, also in Mangal's medallion if ever forced). An image slot may name a neutral
+  twin, `nonHindu: '<library slug>'`, used when the symbols are not Hindu (Himal's two temple photos → Phewa Lake,
+  a lit garden). The sample's betel-nut and temple-courtyard photos leave non-Hindu starters. Emblems are drawn as SVG
+  but shown as a cached PNG blob (SwiftShader painted a black band over Hariyo's gate for a stroked SVG <img>).

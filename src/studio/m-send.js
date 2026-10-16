@@ -7,6 +7,7 @@ import { pickPhoto } from './m-photos.js';
 import { qrSvg, qrPng } from './qr.js';
 import { label } from './session.js';
 import { linkUrl, linkRow, resetPasswordDialog } from './admin-access.js';
+import { shareMessage, religionOf, TITLE } from '../core/faith.js';
 
 /** The guest link (production has a short /i/<slug> that follows theme changes and carries the preview card). */
 export function shareUrl(meta, slug, theme, extra = {}) {
@@ -24,7 +25,10 @@ export const refUrl = (ref, size = 'sm') => {
   return photoUrl(ref, size);
 };
 
-const message = (names, url, to) => `${to ? `Dear ${to}, ` : ''}you are warmly invited to the wedding of ${names}. Please open your invitation: ${url}`;
+/** The WhatsApp / Viber text, in the couple's community's words (Namaste, Assalamu Alaikum, Greetings). */
+const message = (religion, names, url, to) => shareMessage(religion, { names, url, to });
+// A personal link's version of the religious symbols (?v=, applied by src/core/data.js; the server's /i/ keeps it).
+const VERSION_OPTIONS = [['', 'Same as the invitation'], ['neutral', 'Neutral: no religious symbol'], ['hindu', 'Hindu: Ganesh'], ['muslim', 'Muslim: Bismillah and a crescent'], ['christian', 'Christian: a verse and a cross']];
 
 export function shareButtons(getUrl, getText) {
   const enc = encodeURIComponent;
@@ -96,20 +100,24 @@ function linksCard(ctx) {
   const m = ctx.m;
   const url = (extra) => shareUrl(ctx.meta, ctx.slug, m.data.theme, extra);
   const main = h('input.input.linkfield', { type: 'text', readonly: true, value: url(), 'aria-label': 'Invitation link', onfocus: (e) => e.target.select() });
-  const mainBtns = shareButtons(() => url(), () => message(ctx.session.names(), url()));
+  const rel = () => religionOf(m.data);
+  const mainBtns = shareButtons(() => url(), () => message(rel(), ctx.session.names(), url()));
 
   const nameIn = h('input.input', { id: 'to-name', maxlength: 60, placeholder: 'e.g. Maiju & family', autocomplete: 'off' });
   const events = m.data.events || [];
   const picks = events.map((e) => h('input', { type: 'checkbox', value: e.id, checked: true }));
+  const version = h('select.input', { id: 'to-version' }, VERSION_OPTIONS.map(([v, t]) => h('option', { value: v }, t)));
   const extra = () => {
     const chosen = picks.filter((p) => p.checked).map((p) => p.value);
-    return { to: nameIn.value.trim(), e: chosen.length && chosen.length < events.length ? chosen.join(',') : '' };
+    return { to: nameIn.value.trim(), e: chosen.length && chosen.length < events.length ? chosen.join(',') : '', v: version.value };
   };
   const personal = h('input.input.linkfield', { type: 'text', readonly: true, value: url(extra()), 'aria-label': 'Personal link', onfocus: (e) => e.target.select() });
-  const persBtns = shareButtons(() => url(extra()), () => message(ctx.session.names(), url(extra()), nameIn.value.trim()));
+  // the greeting follows the guest's version when one is chosen (a Muslim guest gets "Assalamu Alaikum")
+  const persBtns = shareButtons(() => url(extra()), () => message(version.value && version.value !== 'neutral' ? version.value : rel(), ctx.session.names(), url(extra()), nameIn.value.trim()));
   const refresh = () => { personal.value = url(extra()); persBtns.refresh(); };
   nameIn.addEventListener('input', refresh);
   picks.forEach((p) => p.addEventListener('change', refresh));
+  version.addEventListener('change', refresh);
 
   const notLive = h('p.notice', icon('info', 16), h('span', 'Publish first: until then, guests who open the link see “not found”.'));
   const drawLive = () => { notLive.hidden = ctx.session.doc.status === 'published'; };
@@ -123,6 +131,8 @@ function linksCard(ctx) {
       h('p.hint', 'Greets them by name at the top of the invitation, and can show only the ceremonies they are invited to.'),
       h('div.field', h('label.label', { for: 'to-name' }, 'Guest’s name'), nameIn),
       events.length > 1 ? h('fieldset.field', h('legend.label', 'Ceremonies to show'), h('div.chips', events.map((e, i) => h('label.chip', picks[i], h('span', label(e.title, e.id)))))) : null,
+      h('div.field.field--narrow3', h('label.label', { for: 'to-version' }, 'Religious symbols'), version,
+        h('p.hint', 'For families of another faith: this guest’s invitation shows only these symbols and opening words. Everything else stays the same.')),
       personal, persBtns));
 }
 
@@ -153,7 +163,7 @@ function shareCardEditor(ctx) {
     h('div.sharecard',
       h('div.sharecard__form',
         h('div.field', h('span.label', 'Picture'), imgBtns, h('p.hint', 'A landscape photo looks best. If you choose none, the main couple photo is used.')),
-        textField(m, ['share', 'title'], { label: 'Title', max: 140, placeholder: `${ctx.session.names()} · Shubha Bibaha` }),
+        textField(m, ['share', 'title'], { label: 'Title', max: 140, placeholder: `${ctx.session.names()} · ${TITLE[religionOf(m.data)].en}` }),
         textField(m, ['share', 'description'], { label: 'Short message', max: 300, multiline: true, rows: 3, placeholder: 'You are warmly invited to our wedding…' })),
       h('div.sharecard__preview',
         h('p.eyebrow', 'Preview'),

@@ -8,6 +8,9 @@ const photo = (n) => ({
 });
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the sindoor box is the design.
+  religions: ['hindu'],
+  faithInk: '--sd-red', // the emblem that replaces Ganesh for other communities is drawn in this colour
   theme: 'sindoor',
   images: {
     'hero.ganesh': {

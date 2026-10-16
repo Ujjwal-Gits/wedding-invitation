@@ -1,7 +1,7 @@
 // RSVP: validated here and again in the Apps Script. No cookies or sessions are
 // involved, so there is no ambient authority for a CSRF attack to borrow.
 import { config } from '../config.js';
-import { bi } from './i18n.js';
+import { bi, esc } from './i18n.js';
 
 const NAME_MIN = 2;
 const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
@@ -38,8 +38,9 @@ export function initRsvp(eventsList = config.events) {
   };
   step.addEventListener('click', (e) => { const b = e.target.closest('.gstep__b'); if (b) setGuests(Number(gIn.value) + Number(b.dataset.d)); });
   setGuests(1);
+  // One option per ceremony, each with its own name (Janti, the wedding and the reception are separate answers).
   events.innerHTML = eventsList
-    .map((e) => `<label class="choice"><input type="checkbox" name="events" value="${e.id}" checked /><span>${bi(e.title)}</span></label>`)
+    .map((e) => `<label class="choice"><input type="checkbox" name="events" value="${esc(e.id)}" checked /><span>${bi(e.title)}</span></label>`)
     .join('');
 
   form.addEventListener('change', (e) => {
@@ -73,6 +74,11 @@ export function initRsvp(eventsList = config.events) {
       nameInput.setAttribute('aria-invalid', 'true');
       nameErr.innerHTML = bi({ en: 'Please tell us your name.', ne: 'कृपया आफ्नो नाम लेख्नुहोस्।' });
       nameInput.focus();
+      return;
+    }
+    if (data.attending === 'yes' && eventsList.length && !data.events.length) {
+      say(bi({ en: 'Please tick the ceremonies you will come to.', ne: 'कृपया आउने कार्यक्रममा चिनो लगाउनुहोस्।' }), true);
+      events.querySelector('input')?.focus();
       return;
     }
     if (data.phone && !PHONE_RE.test(data.phone)) {

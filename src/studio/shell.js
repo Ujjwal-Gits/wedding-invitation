@@ -37,18 +37,32 @@ export function createShell(opts) {
     navList,
     h('div.sh__foot', opts.foot || null));
 
-  // Phone tab bar: a few modules + "More" (opens the full list as a sheet).
+  // Phone tab bar: the most-used modules. The owner's bar ends with "More"; the couple's studio has a top bar instead
+  // (their names go Home; Preview and the full list sit on the right), so nothing floats over the page.
+  const mob = opts.mobile || null;
   const tabIds = opts.tabs || items.slice(0, 4).map((i) => i.id);
   const tabLinks = new Map();
-  const moreBtn = h('button.tab', { type: 'button', onclick: () => openMore() }, icon('more', 20), h('span.tab__t', 'More'));
-  const tabs = h('nav.sh__tabs', { 'aria-label': 'Studio sections' },
+  const moreBtn = mob ? null : h('button.tab', { type: 'button', onclick: () => openMore() }, icon('more', 20), h('span.tab__t', 'More'));
+  const tabs = h('nav.sh__tabs', { 'aria-label': 'Studio sections', class: mob ? 'sh__tabs--top' : '' },
     tabIds.map((id) => {
       const it = items.find((x) => x.id === id);
       if (!it) return null;
-      const a = h('a.tab', { href: it.href }, icon(it.icon, 20), h('span.tab__t', it.short || it.label));
+      const a = h('a.tab', { href: it.href }, h('span.tab__i', icon(it.icon, 21)), h('span.tab__t', it.short || it.label));
       tabLinks.set(id, a);
       return a;
     }), moreBtn);
+  let mbar = null;
+  let mNames = null;
+  let mPv = null;
+  let mMore = null;
+  if (mob) {
+    mNames = h('span.mbar__names', mob.title || '');
+    mPv = h('button.mbar__pv', { type: 'button', hidden: true, onclick: () => openSheet() }, icon('eye', 17), h('span', 'Preview'));
+    mMore = h('button.mbar__more', { type: 'button', 'aria-label': 'All sections', title: 'All sections', 'aria-haspopup': 'dialog', onclick: () => openMore() }, icon('menu', 20));
+    mbar = h('header.mbar',
+      h('a.mbar__home', { href: mob.home, title: 'Home' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.mbar__text', mNames, h('span.mbar__sub', 'Home'))),
+      h('div.mbar__right', mob.save || null, mPv, mMore));
+  }
 
   const kicker = h('p.page__kicker');
   const title = h('h1.page__title');
@@ -61,7 +75,12 @@ export function createShell(opts) {
   const main = h('main.sh__main#main', { tabindex: -1 }, h('div.page', topbar, content));
   const pvSlot = h('div.sh__preview');
   const scrim = h('div.sh__scrim', { onclick: () => closeSheet() });
-  const root = h('div.sh', { class: opts.kind ? `sh--${opts.kind}` : '' }, nav, main, pvSlot, tabs, scrim);
+  const root = h('div.sh', { class: [opts.kind ? `sh--${opts.kind}` : '', mob ? 'sh--mbar' : ''].filter(Boolean).join(' ') }, mbar, nav, main, pvSlot, tabs, scrim);
+
+  // Phones: while the keyboard is up the tab bar steps aside (opacity/transform only), so it never covers the field.
+  const isTextField = (el) => el instanceof HTMLElement && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=color]):not([type=range]), textarea, select');
+  main.addEventListener('focusin', (e) => { if (isTextField(e.target)) root.classList.add('is-typing'); });
+  main.addEventListener('focusout', () => { setTimeout(() => { if (!isTextField(document.activeElement)) root.classList.remove('is-typing'); }, 60); });
 
   function setCollapsed(on) {
     root.classList.toggle('is-collapsed', on);
@@ -77,6 +96,7 @@ export function createShell(opts) {
     const docked = WIDE.matches && wantPreview;
     root.classList.toggle('has-preview', docked);
     pvBtn.hidden = !wantPreview || docked;
+    if (mPv) mPv.hidden = !wantPreview || docked;
     if (!wantPreview && sheetOpen) closeSheet();
     preview.setActive(wantPreview && (docked || sheetOpen));
     requestAnimationFrame(() => preview.fit());
@@ -94,7 +114,7 @@ export function createShell(opts) {
     sheetOpen = false;
     root.classList.remove('is-sheet');
     layoutPreview();
-    pvBtn.focus({ preventScroll: true });
+    (PHONE.matches && mPv ? mPv : pvBtn).focus({ preventScroll: true });
   }
   const onKey = (e) => { if (e.key === 'Escape' && sheetOpen) closeSheet(); };
   document.addEventListener('keydown', onKey);
@@ -127,7 +147,7 @@ export function createShell(opts) {
     more = null;
     m.classList.remove('is-in');
     setTimeout(() => m.remove(), 220);
-    moreBtn.focus({ preventScroll: true });
+    (moreBtn || mMore)?.focus({ preventScroll: true });
   }
 
   return {
@@ -135,10 +155,11 @@ export function createShell(opts) {
     content,
     main,
     setActive(id) {
+      root.dataset.mod = id;
       for (const [k, a] of navLinks) { if (k === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
       let inTabs = false;
       for (const [k, a] of tabLinks) { if (k === id) { a.setAttribute('aria-current', 'page'); inTabs = true; } else a.removeAttribute('aria-current'); }
-      moreBtn.classList.toggle('is-current', !inTabs);
+      moreBtn?.classList.toggle('is-current', !inTabs);
     },
     setBadge(id, text) {
       const a = navLinks.get(id);
@@ -157,6 +178,10 @@ export function createShell(opts) {
       clear(strip);
       strip.hidden = true;
     },
+    /** The couple's names in the phone top bar. */
+    setTitle(t) { if (mNames) mNames.textContent = t || ''; },
+    /** Scrolls the page to the top (the main column on larger screens, the window on phones). */
+    toTop() { main.scrollTo({ top: 0 }); if (PHONE.matches) window.scrollTo(0, 0); },
     /** Replace the short context line under the title. */
     setSub(s2) { sub.textContent = s2 || ''; sub.hidden = !s2; },
     /** A compact strip of key figures in the page header (or null to remove it). */

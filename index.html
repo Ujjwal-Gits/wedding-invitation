@@ -119,7 +119,7 @@
     <section class="designs" id="designs" aria-labelledby="designs-title">
       <header class="designs__head">
         <h2 class="h2" id="designs-title"><span class="js-count" data-cap="1">Twenty-seven</span> designs, each with its own opening.</h2>
-        <p class="designs__lede">Every design carries the couple, the ceremonies, your music and RSVP. Only the opening and the mood change. Ask us for a private preview of any of them, made with your names.</p>
+        <p class="designs__lede">Every design carries the couple, the ceremonies, your music and RSVP. Only the opening and the mood change. Preview any of them live, then we make it yours with your names.</p>
       </header>
       <ol class="cards" id="gallery"></ol>
       <p class="designs__more"><button class="btn btn--line" type="button" id="gallery-more" hidden>Show all designs</button></p>
@@ -138,7 +138,7 @@
             <span class="step__n" lang="ne" aria-hidden="true">१</span>
             <div>
               <h3 class="step__t">Choose a design</h3>
-              <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a gate of flowers. Ask for a private preview before you decide.</p>
+              <p><span class="js-count" data-cap="1">Twenty-seven</span> openings, from a carved Patan door to a gate of flowers. Preview any of them live before you decide.</p>
             </div>
           </li>
           <li class="step">
@@ -306,14 +306,37 @@
         <h2 class="lb__name" id="lb-name"></h2>
         <p class="lb__ne" id="lb-ne" lang="ne"></p>
         <p class="lb__text" id="lb-text"></p>
-        <a class="btn btn--accent lb__cta" id="lb-order" href="#order">Order this design</a>
-        <p class="lb__fine">Want to see it move? Ask us for a private preview.</p>
+        <p class="lb__acts">
+          <a class="btn btn--accent" id="lb-order" href="#order">Order this design</a>
+          <a class="btn btn--line" id="lb-preview" href="/" data-preview>Preview</a>
+        </p>
+        <p class="lb__fine">The preview carries the demo couple and a Nimtto watermark. Yours shows your names and photos, with no watermark.</p>
         <div class="lb__nav">
           <button type="button" class="round" id="lb-prev" aria-label="Previous design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
           <button type="button" class="round" id="lb-next" aria-label="Next design"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
         </div>
       </div>
       <button type="button" class="round lb__close" id="lb-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </dialog>
+
+  <!-- the live showcase of one design in a phone frame (desktop; phones open it full screen) -->
+  <dialog class="pv" id="pv" aria-labelledby="pv-name">
+    <div class="pv__in">
+      <div class="pv__phone">
+        <iframe class="pv__frame" id="pv-frame" title="Design preview" src="about:blank" loading="lazy" referrerpolicy="same-origin" allow="autoplay"></iframe>
+      </div>
+      <div class="pv__body">
+        <p class="pv__kick">Live preview</p>
+        <h2 class="pv__name" id="pv-name"></h2>
+        <p class="pv__ne" id="pv-ne" lang="ne"></p>
+        <p class="pv__text">Tap the opening as a guest would. The names, dates and photos are our demo couple’s.</p>
+        <p class="pv__acts">
+          <a class="btn btn--accent" id="pv-order" href="#order">Order this design</a>
+          <a class="link pv__full" id="pv-full" href="/">Open full screen</a>
+        </p>
+      </div>
+      <button type="button" class="round pv__close" id="pv-close" aria-label="Close the preview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
   </dialog>
 </body>

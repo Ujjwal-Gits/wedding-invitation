@@ -7,8 +7,37 @@ import { photoUrl } from '../photos.js';
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /** Keys whose change re-shapes the page (dates, ids, links, layout switches): a full render. */
-const STRUCT = new Set(['start', 'end', 'weddingDate', 'theme', 'id', 'mapQuery', 'phone', 'livestream', 'openEnded', 'enabled',
-  'maxGuests', 'volume', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
+const STRUCT = new Set(['start', 'end', 'weddingDate', 'theme', 'religion', 'id', 'openEnded', 'enabled',
+  'maxGuests', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
+/** Words the page also uses in links (a map search, a phone number, a stream): patched in text and in hrefs. */
+const LINKY = new Set(['mapQuery', 'phone', 'livestream']);
+/** A theme line turned off with a code word: the page hides it, so it is a fresh render, never a word swap. */
+const OFF_WORD = /^\s*(-|–|none|off|no|hide)\s*$/i;
+
+// ── What the page shows for an empty field ──────────────────────────────────
+// A bilingual text with one language empty shows the other one (src/core/i18n.js); a theme's own line left empty
+// shows the design's original words. Those are the words a first keystroke replaces, so it stays a hot patch.
+const DEFAULTS = new Map();
+const keyOf = (path) => JSON.stringify(path);
+/** Slot rows tell the preview the design's original words for a text (path without the language). */
+export function registerDefault(path, words) {
+  if (words && (words.en || words.ne)) DEFAULTS.set(keyOf(path), { en: String(words.en || ''), ne: String(words.ne || '') });
+}
+const getAt = (root, path) => path.reduce((o, k) => (o == null ? undefined : o[k]), root);
+const trimmed = (v) => (typeof v === 'string' ? v.trim() : '');
+
+/** { text, fb, olds }: what a page built from `root` shows for the string at `path` (fb: a fallback, not its own words). */
+function shownText(root, path, v) {
+  const own = trimmed(v);
+  const lang = path[path.length - 1];
+  const bil = lang === 'en' || lang === 'ne';
+  const other = lang === 'en' ? 'ne' : 'en';
+  const parent = bil ? getAt(root, path.slice(0, -1)) : null;
+  const d = bil ? DEFAULTS.get(keyOf(path.slice(0, -1))) : null;
+  const fbs = [...new Set([bil ? trimmed(parent?.[other]) : '', trimmed(d?.[lang]), trimmed(d?.[other])].filter(Boolean))];
+  if (own) return { text: own, fb: false, olds: [] };
+  return { text: fbs[0] || '', fb: true, olds: fbs.slice(1) };
+}
 /** Parts of the model the invitation page never shows. */
 const UNSHOWN = new Set(['share', 'clientLink', 'access']);
 
@@ -56,15 +85,26 @@ export function diff(a, b) {
     if (blank(x) && blank(y)) return; // an empty {} or [] the editor created is not a change on the page
     const top = path[0];
     if (UNSHOWN.has(top)) return;
+    if (path[path.length - 1] === 'volume') return; // the starting volume: nothing to see in the preview
     if (top === 'themeColors') return; // handled below
-    if (top === 'design') { out.structural = true; return; } // another gate or first screen: a fresh page
+    // another gate or first screen: a fresh page (compared by value: the copy the preview keeps is a clone)
+    if (top === 'design') { if (JSON.stringify(x ?? null) !== JSON.stringify(y ?? null)) out.structural = true; return; }
     if (path.length && photoPath(path) && (isRef(x) || isRef(y) || x == null || y == null)) { photo(x, y, path); return; }
     const key = path[path.length - 1];
-    if (typeof x === 'string' && typeof y === 'string') {
-      if (path.some((k) => STRUCT.has(k)) || !x.trim() || !y.trim()) out.structural = true;
-      else out.text.push({ kind: 'text', path, old: x, value: y });
+    if ((typeof x === 'string' || x == null) && (typeof y === 'string' || y == null) && (typeof x === 'string' || typeof y === 'string')) {
+      if (path.some((k) => STRUCT.has(k) && !LINKY.has(k)) || OFF_WORD.test(x || '') || OFF_WORD.test(y || '')) { out.structural = true; return; }
+      const sa = shownText(a, path, x);
+      const sb = shownText(b, path, y);
+      if (sa.text === sb.text && sa.fb === sb.fb) return; // the page shows the same words (e.g. a space typed)
+      const lang = key === 'en' || key === 'ne' ? key : null;
+      // The other language is empty, so the page shows these words in its place too.
+      const spill = lang && !trimmed(getAt(a, [...path.slice(0, -1), lang === 'en' ? 'ne' : 'en']));
+      out.text.push({ kind: 'text', path, old: sa.text, value: typeof y === 'string' ? y : '', show: sb.text, ...(sa.olds.length ? { olds: sa.olds } : {}), ...(sa.fb ? { fb: true } : {}), ...(lang ? { lang } : {}), ...(spill ? { spill: true } : {}), ...(LINKY.has(key) ? { link: true } : {}) });
       return;
     }
+    // A text object that appears or goes away ({ en, ne } vs nothing): its words, one by one.
+    if (isPlain(x) && y == null && !photoPath(path)) { walk(x, {}, path); return; }
+    if (x == null && isPlain(y) && !photoPath(path)) { walk({}, y, path); return; }
     if (Array.isArray(x) && Array.isArray(y)) {
       if (x.length !== y.length) { out.structural = true; return; }
       x.forEach((v, i) => walk(v, y[i], [...path, i]));

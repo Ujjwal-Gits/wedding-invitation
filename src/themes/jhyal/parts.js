@@ -46,7 +46,7 @@ const SW = GG.ow / 2;
 const ROWS = shutterRows(GG.oh);
 const toranBox = boxOf(GG, GG.WING * 0.28, GG.yL + 1, GG.TW - GG.WING * 0.56, (GG.TW - GG.WING * 0.56) * (235 / 1708));
 export const DIYO = 84; // diyo width in window units
-const gateDiyo = (k) => `<div class="jh-gdiyo jh-gdiyo--${k}" style="${boxOf(GG, k === 'l' ? GG.WING * 0.5 - DIYO / 2 : GG.TW - GG.WING * 0.5 - DIYO / 2, GG.yS - DIYO * 1.1 + 2, DIYO, DIYO * 1.1)}"><i class="jh-halo"></i>${diyoSVG()}</div>`;
+const gateDiyo = (k) => `<div class="jh-gdiyo jh-gdiyo--${k}" data-hindu style="${boxOf(GG, k === 'l' ? GG.WING * 0.5 - DIYO / 2 : GG.TW - GG.WING * 0.5 - DIYO / 2, GG.yS - DIYO * 1.1 + 2, DIYO, DIYO * 1.1)}"><i class="jh-halo"></i>${diyoSVG()}</div>`;
 
 /** A carved window built around a photograph at its own shape: the photograph is never cropped. */
 export function photoWindow(ref, alt, sizes, { eager = false, cls = '' } = {}) {

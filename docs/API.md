@@ -76,7 +76,7 @@ Site = {
 | `PATCH /orders/:id` | `{ status?: 'new'\|'contacted'\|'done'\|'archived', notes?: string ≤ 2000 }` | `{ order }` |
 | `DELETE /orders/:id` | – | `{ ok: true }` |
 | `GET /invitations` | – | `{ invitations: Summary[] }` |
-| `POST /invitations` | `{ slug, bride, groom, theme?, sample? }` | `201 Doc` |
+| `POST /invitations` | `{ slug, bride, groom, theme?, sample?, religion?, colors? }` (`religion`: see below; `colors`: `{ '--token': '#hex' }` for the chosen theme, unknown tokens dropped; a theme that does not suit the religion is replaced by the first ready one that does; the ceremonies and wording follow the religion) | `201 Doc` |
 | `POST /invitations/:slug/seen` | – | `{ ok: true }` |
 | `POST /invitations/:slug/unpublish` | – | `Doc` |
 | `DELETE /invitations/:slug` | `{ confirm: slug }` | `{ ok: true }` (moved to trash) |
@@ -139,6 +139,15 @@ scene (agni, janti, rangoli, sindoor, shree): its gate only comes with its own f
   omitted when absent, `null` or `id: ''`.
 - `share.image`: a photo ref (library slug, upload object or https URL) or `''`. In `/public` it becomes a URL string
   (`share.image` else the first couple portrait).
+- `religion: 'muslim' | 'christian' | 'other'` — omitted for `'hindu'` (the default; older data compares equal); anything
+  else → `400`. A couple (client session) may change it only with `canChangeTheme`; whenever the religion, `theme` or
+  `design` changes, every one of those themes must list the religion in its manifest `religions`, else `403`. The admin may
+  do anything. `Summary` gains `religion`.
+
+### Religion in the catalog
+`GET /meta` themes and the public `GET /themes` gain `religions: ('hindu'|'muslim'|'christian'|'other')[]` (from each
+theme's `slots.js`; absent = `['hindu']`); `/meta` also gains `faithInk` (the emblem's colour token). Pickers filter by the
+invitation's `religion` (`src/core/faith.js` `suits()`).
 
 ## Theme pages (not under /api)
 
@@ -157,9 +166,37 @@ loading the theme bundles. The public website shows only thumbnails and phone sc
 **Dev:** Vite serves the pages, so the gate does not run there (`localhost:5195/<theme>/` opens freely). Test it
 against a production instance (`npm run build`, then `node server/index.js --production`).
 
+### Public showcase (watermarked preview of a design)
+
+`GET /<theme>/?showcase=1[&lang=en|ne]` → `200` HTML for any **ready** theme in the catalog, no session needed
+(`server/lib/showcase.js`, mounted before the gate). The server marks the page itself: it rewrites the built
+`dist/<theme>/index.html` to add `data-showcase="1"` on `<html>`, `<link rel="stylesheet" href="/showcase.css">`,
+`robots: noindex` and the title `<Design> · Preview · Nimtto` (no inline script; the CSP is unchanged). Headers:
+`Cache-Control: private, no-store`, `X-Robots-Tag: noindex, nofollow`.
+- Any other query (`id`, `preview`, `to`, `e`, `gate`, ...) or `/<theme>/index.html?showcase…` → `302` to the canonical
+  `/<theme>/?showcase=1[&lang=…]`, so a showcase only ever shows the bundled demo couple and never loads an invitation.
+  The page (`src/core/showcase.js`, imported first by `src/core/data.js`) also drops every key but `showcase`/`lang`
+  before anything reads the URL.
+- `GET /preview/<theme>` → `302 /<theme>/?showcase=1` (unknown or not-ready theme → `302 /#designs`).
+- Not a ready theme, or any other path shape → falls through to the gate above, unchanged: `/<theme>/` without the
+  showcase key is still `302 /#designs`.
+- In the page: a tiled `nimtto.com · PREVIEW · निम्तो` watermark above everything (re-inserted if removed or hidden),
+  a badge with "Order this design" (`/?design=<theme>#order` preselects it on the website), selection, copy, context
+  menu and dragging off, RSVP / calendar / share / any non-GET `fetch` answered with a toast, a blank Nimtto card on
+  focus loss, PrintScreen, Ctrl/Cmd+P or S, and print disabled by CSS. Photos use their `-sm` size. These are
+  deterrents only: screenshots and screen recording cannot be prevented on the web.
+- Dev: Vite serves `/<theme>/?showcase=1` with the same page behaviour (no server rewrite, no `/preview/` short link).
+
 ## Share page (not under /api)
 
 `GET /i/:slug?to=Name&e=wedding,reception` → HTML (published only, else `404`): `<title>`, `og:title`,
 `og:description`, `og:image` (absolute; `share.image`, else the first couple portrait, else the theme thumb),
 `og:url`, `twitter:card`, `robots: noindex`, then `<meta http-equiv="refresh">` and a link to
-`/<theme>/?id=<slug>` keeping `to` (≤ 60 chars) and valid `e` ids.
+`/<theme>/?id=<slug>` keeping `to` (≤ 60 chars), valid `e` ids and `v` (the guest's version of the religious symbols:
+`neutral | hindu | muslim | christian`; anything else is dropped). The default title uses the religion's name for the
+wedding (Shubha Bibaha / Nikah / Holy Matrimony).
+
+## RSVP
+`POST /invitations/:slug/rsvp`: every ceremony is its own answer. With `attending: 'yes'`, a sent `events` list must name at
+least one valid ceremony (an empty or all-unknown list → `400 { fields: ['events'] }`; an older form that sends no list
+still counts for all). Totals in `GET /invitations/:slug/rsvps` are per ceremony (`totals.events[]`).

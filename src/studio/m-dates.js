@@ -3,6 +3,7 @@ import { h, icon, iconBtn, clear, confirmDialog, card, append } from './dom.js';
 import { textField, biField, photoSlot } from './fields.js';
 import { colorsEditor, infoSection } from './sections.js';
 import { bsDateOf } from '../core/i18n.js';
+import { CEREMONY_PRESETS, religionOf } from '../core/faith.js';
 
 const blank = () => ({ en: '', ne: '' });
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
@@ -149,16 +150,25 @@ function ceremonies(ctx) {
       ));
     });
     if (list.length < 12) {
-      root.append(h('button.btn.btn--add', { type: 'button', onclick: () => {
+      const add = (preset) => {
         const taken = list.map((e) => e.id);
-        let id = 'ceremony';
-        for (let n = 2; taken.includes(id); n++) id = `ceremony-${n}`;
+        let id = preset?.id || 'ceremony';
+        for (let n = 2; taken.includes(id); n++) id = `${preset?.id || 'ceremony'}-${n}`;
         const day = (list.at(-1)?.start || m.get(['weddingDate']) || '').slice(0, 10);
         if (!m.get(['events'])) m.set(['events'], []);
-        m.get(['events']).push({ id, title: blank(), blurb: blank(), start: day ? iso(day, '11:00') : '', end: '', openEnded: true, venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null });
+        m.get(['events']).push({ id, title: preset ? { ...preset.title } : blank(), blurb: preset ? { ...preset.blurb } : blank(), start: day ? iso(day, '11:00') : '', end: '', openEnded: true, venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null });
         m.touch(['events']);
         render(m.get(['events']).length - 1);
-      } }, icon('plus', 16), 'Add a ceremony'));
+      };
+      // Ceremony presets for the couple's community (src/core/faith.js): one tap adds it as its own ceremony,
+      // so guests answer for each one separately (Janti and the reception are never one tick).
+      const have = new Set(list.map((e) => `${e.id} ${label(e.title).toLowerCase()}`));
+      const presets = (CEREMONY_PRESETS[religionOf(m.data)] || []).filter((p) => ![...have].some((k) => k.startsWith(`${p.id} `) || k.endsWith(` ${p.title.en.toLowerCase()}`)));
+      if (presets.length) {
+        root.append(h('div.cer-presets', h('span.cer-presets__k', 'Quick add'),
+          presets.map((p) => h('button.chip.cer-presets__b', { type: 'button', onclick: () => add(p) }, icon('plus', 14), h('span', p.title.en), h('small', { lang: 'ne' }, p.title.ne)))));
+      }
+      root.append(h('button.btn.btn--add', { type: 'button', onclick: () => add(null) }, icon('plus', 16), 'Add a ceremony'));
     }
     if (focus != null) root.querySelectorAll('.cer')[focus]?.querySelector('input')?.focus({ preventScroll: false });
   };

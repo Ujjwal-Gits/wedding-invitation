@@ -603,44 +603,132 @@ function textNodes() {
   return out;
 }
 
-const memory = new Map(); // field path -> the text nodes it was last written into
+// field path -> where its words sit now: [{ n: Text, at, len }]. Kept per keystroke, so a one-letter or empty value
+// (a field cleared and typed again) still lands in the same place without searching the page.
+const memory = new Map();
 
-/** Replaces the old words with the new ones wherever the page shows them (hidden language and dialogs too). */
-function patchText(path, old, value) {
-  const key = JSON.stringify(path);
-  const from = old.trim();
-  const to = value.trim();
+/** The language a text node is shown in: 'en' | 'ne' (bi() markup or a lang attribute below <html>), else 'any'. */
+function langOf(n) {
+  const el = n.parentElement?.closest('.l-en, .l-ne, [lang]');
+  if (!el || el === document.documentElement) return 'any';
+  if (el.classList.contains('l-ne')) return 'ne';
+  if (el.classList.contains('l-en')) return 'en';
+  return /^ne/i.test(el.getAttribute('lang') || '') ? 'ne' : 'en';
+}
+
+/** All start offsets of `f` in `v` (non-overlapping). */
+const indices = (v, f) => { const out = []; for (let i = v.indexOf(f); i >= 0 && f; i = v.indexOf(f, i + f.length)) out.push(i); return out; };
+
+/** Writes `to` over `len` characters at each offset; returns the new entries. An empty text keeps its node. */
+function writeAt(n, ats, len, to) {
+  const v = n.nodeValue;
+  let out = '';
+  let last = 0;
+  const entries = [];
+  for (const at of ats) {
+    out += v.slice(last, at);
+    entries.push({ n, at: out.length, len: to.length });
+    out += to;
+    last = at + len;
+  }
+  n.nodeValue = out + v.slice(last);
+  return entries;
+}
+
+/**
+ * Replaces the words a field shows with its new words, wherever the page shows them (hidden language and dialogs too).
+ * c: { path, old, olds?, show, fb?, lang?, link? } (data.js validated it). Returns { touched, absent }:
+ * absent = the page does not show this field at all (nothing to do, no fresh render needed).
+ */
+function patchText(c) {
+  const key = JSON.stringify(c.path);
+  const to = (c.show ?? c.value).trim();
+  const olds = [...new Set([c.old, ...(c.olds || [])].map((x) => x.trim()))];
   const touched = new Set();
-  if (from.length < 2) return [];
-  let nodes = (memory.get(key) || []).filter((n) => n.isConnected && n.nodeValue.includes(from));
-  if (!nodes.length) {
-    const short = from.length < 4; // a letter or two: whole words only, never inside other text
-    nodes = textNodes().filter((n) => (short ? n.nodeValue.trim() === from : n.nodeValue.includes(from)));
+  // A fallback (the other language, the design's original words) only stands in for this language's own place.
+  // Its own words: in its language (or the other one too while that one is empty and shows these words).
+  const fits = (n) => {
+    if (!c.lang) return true;
+    const l = langOf(n);
+    if (c.fb) return c.lang === 'ne' ? l === 'ne' : l !== 'ne';
+    return c.spill || l === c.lang || l === 'any';
+  };
+  let entries = [];
+
+  // 1. Where this field's words went last time (exact, any length, even empty).
+  const mem = (memory.get(key) || []).filter((e) => e.n.isConnected);
+  for (const f of olds) {
+    const hit = mem.filter((e) => e.len === f.length && e.n.nodeValue.slice(e.at, e.at + e.len) === f);
+    if (!hit.length) continue;
+    const byNode = new Map();
+    for (const e of hit) byNode.set(e.n, [...(byNode.get(e.n) || []), e.at]);
+    for (const [n, ats] of byNode) { entries.push(...writeAt(n, ats.sort((x, y) => x - y), f.length, to)); touched.add(n.parentElement); }
+    break;
   }
-  for (const n of nodes) {
-    n.nodeValue = n.nodeValue.split(from).join(to);
-    touched.add(n.parentElement);
-  }
-  // Words a theme split into pieces (a span per word or line): replace the whole element's text.
-  const want = norm(from);
-  const seen = new Set();
-  for (const n of textNodes()) {
-    const piece = norm(n.nodeValue);
-    if (!piece || !want.includes(piece) || piece === want) continue;
-    let el = n.parentElement;
-    for (let i = 0; el && el !== document.body && i < 4; i++, el = el.parentElement) {
-      if (seen.has(el)) break;
-      seen.add(el);
-      if (norm(el.textContent) === want) {
-        el.textContent = to;
-        touched.add(el);
-        nodes.push(el.firstChild);
-        break;
-      }
+
+  // 2. A fresh search: the text nodes that show the old words (whole nodes first; short words only as whole nodes).
+  if (!entries.length) {
+    const all = textNodes().filter(fits);
+    for (const f of olds) {
+      if (f.length < 1) continue;
+      const exact = all.filter((n) => n.nodeValue.trim() === f);
+      const hit = exact.length || f.length < 4 ? exact : all.filter((n) => n.nodeValue.includes(f));
+      if (!hit.length) continue;
+      for (const n of hit) { entries.push(...writeAt(n, indices(n.nodeValue, f), f.length, to)); touched.add(n.parentElement); }
+      break;
     }
   }
-  memory.set(key, nodes.filter((n) => n && n.nodeType === 3));
-  return [...touched].filter(Boolean);
+
+  // 3. Words a theme split into pieces (a span per word or line): replace the whole element's text.
+  if (!entries.length) {
+    for (const f of olds) {
+      const want = norm(f);
+      if (want.length < 2) continue;
+      const seen = new Set();
+      for (const n of textNodes()) {
+        if (!fits(n)) continue;
+        const piece = norm(n.nodeValue);
+        if (!piece || !want.includes(piece) || piece === want) continue;
+        let el = n.parentElement;
+        for (let i = 0; el && el !== document.body && i < 4; i++, el = el.parentElement) {
+          if (seen.has(el)) break;
+          seen.add(el);
+          if (norm(el.textContent) === want) {
+            const t = document.createTextNode(to);
+            el.replaceChildren(t);
+            entries.push({ n: t, at: 0, len: to.length });
+            touched.add(el);
+            break;
+          }
+        }
+      }
+      if (entries.length) break;
+    }
+  }
+  if (entries.length) memory.set(key, entries);
+
+  // 4. Links that carry the words (a map search, a phone number, a livestream).
+  let linked = false;
+  const from = olds.find((f) => f.length >= 2);
+  if (from && to && (c.link || !entries.length)) {
+    const forms = [...new Set([from, encodeURIComponent(from), encodeURIComponent(from).replace(/%20/g, '+'), from.replace(/\s+/g, '')])];
+    const toForm = (f) => (f === from ? to : f === encodeURIComponent(from) ? encodeURIComponent(to) : f.includes('+') ? encodeURIComponent(to).replace(/%20/g, '+') : to.replace(/\s+/g, ''));
+    for (const a of document.querySelectorAll('a[href]')) {
+      const href = a.getAttribute('href');
+      const f = forms.find((x) => href.includes(x));
+      if (f) { a.setAttribute('href', href.split(f).join(toForm(f))); linked = true; }
+    }
+  }
+
+  let absent = false;
+  if (!entries.length) {
+    // Not on the page in any form (e.g. a language or a line this design does not show): nothing to update.
+    const body = norm(document.body.textContent || '');
+    const real = olds.filter((f) => f.length >= 2);
+    if (c.fb) absent = real.length > 0 || linked; // the fallback is not shown in this language: the field is not shown
+    else absent = linked || !real.some((f) => body.includes(norm(f)));
+  }
+  return { touched: [...touched].filter(Boolean), absent };
 }
 
 const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -704,8 +792,10 @@ export function patch(changes) {
   for (const c of changes) {
     let got = [];
     if (c.kind === 'text') {
-      got = patchText(c.path, c.old, c.value);
+      const r = patchText(c);
+      got = r.touched;
       setIn(config, c.path, c.value);
+      if (!got.length && r.absent) continue;
     } else if (c.kind === 'image') got = patchImage(c.pairs);
     if (!got.length) missed += 1;
     all.push(...got);

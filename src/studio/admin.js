@@ -65,47 +65,135 @@ const searchBox = (placeholder, onInput) => h('label.search', icon('search', 15)
   h('input.input.input--sm', { type: 'search', placeholder, 'aria-label': placeholder, oninput: (e) => onInput(e.target.value) }));
 
 // ── New invitation ────────────────────────────────────────────────────────
+// Three short steps (docs/PLATFORM.md "Religion"): 1 the couple and their community, 2 a design made for that
+// community (stills only), 3 its opening colours and the link name. Created with the community's own ceremonies
+// and wording (server: starter() in lib/invitations.js).
 
 const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
+// tiny marks for the four choices (constant markup); Hindu shows ॐ as a glyph
+const FAITH_MARK = {
+  muslim: '<path d="M15.5 4.6a8 8 0 1 0 3.9 13.3A6.6 6.6 0 0 1 15.5 4.6z"/><path d="M17.6 7.2l.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"/>',
+  christian: '<path d="M12 3v18M7 8.5h10"/>',
+  other: '<circle cx="12" cy="12" r="2"/><path d="M12 10c-1.5-3-1.2-5.6 0-6.5 1.2.9 1.5 3.5 0 6.5zM14 12c3-1.5 5.6-1.2 6.5 0-.9 1.2-3.5 1.5-6.5 0zM12 14c1.5 3 1.2 5.6 0 6.5-1.2-.9-1.5-3.5 0-6.5zM10 12c-3 1.5-5.6 1.2-6.5 0 .9-1.2 3.5-1.5 6.5 0z"/>',
+};
+const FAITHS = [
+  ['hindu', 'Hindu', 'Ganesh and ॥ श्री गणेशाय नमः ॥'],
+  ['muslim', 'Muslim', 'Bismillah, a crescent; Nikah and Walima'],
+  ['christian', 'Christian', 'A verse, rings and cross; Holy Matrimony'],
+  ['other', 'Other / none', 'No religious symbol'],
+];
+const faithMark = (k) => {
+  if (k === 'hindu') return h('span.nf-mark.nf-mark--om', { 'aria-hidden': 'true', lang: 'ne' }, 'ॐ');
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  for (const [a, v] of Object.entries({ viewBox: '0 0 24 24', width: 22, height: 22, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' })) s.setAttribute(a, v);
+  s.innerHTML = FAITH_MARK[k]; // constant markup only
+  return h('span.nf-mark', s);
+};
+const suitsFaith = (t, r) => (Array.isArray(t.religions) && t.religions.length ? t.religions : ['hindu']).includes(r);
 
 export function newInvitation(ctx) {
-  let slugTouched = false;
+  const st = { step: 1, religion: 'hindu', theme: '', colors: {}, slugTouched: false };
   const err = h('p.form-error', { role: 'alert' });
   const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Aarati' });
   const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Sameer' });
   const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, spellcheck: 'false' });
-  const themes = ctx.meta.themes.filter((t) => t.ready !== false);
-  const theme = h('select.input', { id: 'n-theme' }, themes.map((t) => h('option', { value: t.slug }, t.name)));
-  const auto = () => { if (!slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
+  const auto = () => { if (!st.slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
   bride.addEventListener('input', auto);
   groom.addEventListener('input', auto);
-  slug.addEventListener('input', () => { slugTouched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'); });
-  const submit = h('button.btn.btn--primary', { type: 'submit', form: 'new-inv' }, 'Create');
-  const form = h('form#new-inv.stack', { novalidate: true },
+  slug.addEventListener('input', () => { st.slugTouched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'); });
+  const ready = ctx.meta.themes.filter((t) => t.ready !== false);
+  const themeOfSlug = (s) => ready.find((t) => t.slug === s);
+
+  // step 1 · the couple and their community
+  const faithBox = h('div.nf-faiths', { role: 'radiogroup', 'aria-label': 'Community' });
+  const drawFaiths = () => fill(faithBox, FAITHS.map(([k, name, note]) => {
+    const n = ready.filter((t) => suitsFaith(t, k)).length;
+    return h('button.nf-faith', { type: 'button', role: 'radio', 'aria-checked': String(st.religion === k), onclick: () => { st.religion = k; if (st.theme && !suitsFaith(themeOfSlug(st.theme) || {}, k)) st.theme = ''; drawFaiths(); } },
+      faithMark(k), h('span.nf-faith__t', h('b', name), h('small', note)), h('span.nf-faith__n', `${n} design${n === 1 ? '' : 's'}`));
+  }));
+  drawFaiths();
+  const step1 = h('div.nf-step',
     h('div.pair',
       h('div.field', h('label.label', { for: 'n-bride' }, 'Bride’s first name'), bride),
       h('div.field', h('label.label', { for: 'n-groom' }, 'Groom’s first name'), groom)),
-    h('div.pair',
-      h('div.field', h('label.label', { for: 'n-theme' }, 'Design'), theme),
-      h('div.field', h('label.label', { for: 'n-slug' }, 'Link name'), slug, h('p.hint', 'Lowercase letters, numbers, hyphens. Cannot change later.'))),
-    err);
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    h('div.field', h('span.label', 'Their community'), faithBox,
+      h('p.hint', 'Sets the sacred symbol, the opening words and the first ceremonies. Only designs made for it are shown next.')));
+
+  // step 2 · a design for that community (stills only)
+  const grid = h('div.nf-grid');
+  const drawGrid = () => {
+    const list = ready.filter((t) => suitsFaith(t, st.religion));
+    if (!st.theme || !list.some((t) => t.slug === st.theme)) st.theme = list[0]?.slug || '';
+    fill(grid, list.length ? list.map((t) => {
+      const still = t.stills?.hero || t.stills?.gate || t.thumb;
+      return h('button.nf-design', { type: 'button', 'aria-pressed': String(st.theme === t.slug), onclick: () => { st.theme = t.slug; st.colors = {}; drawGrid(); } },
+        h('span.nf-design__pic', still ? h('img', { src: still, alt: '', loading: 'lazy', decoding: 'async' }) : null),
+        h('span.nf-design__t', h('b', t.name), t.concept ? h('small', t.concept) : null));
+    }) : h('p.hint', 'No design is marked for this community yet. Choose “Other / none”, or ask for a custom design.'));
+  };
+  const step2 = h('div.nf-step', h('p.nf-lead', ''), grid);
+
+  // step 3 · opening colours and the link
+  const colorsBox = h('div.nf-colors');
+  const preview = h('div.nf-chosen');
+  const drawColors = () => {
+    const t = themeOfSlug(st.theme);
+    const entries = Object.entries(t?.colors || {});
+    const still = t?.stills?.gate || t?.stills?.hero || t?.thumb;
+    fill(preview, still ? h('img', { src: still, alt: '' }) : null, h('div', h('b', t?.name || ''), h('small', FAITHS.find((f) => f[0] === st.religion)[1])));
+    fill(colorsBox, entries.length ? entries.map(([tok, spec]) => {
+      const id = `nc-${tok.replace(/[^a-z0-9]/g, '')}`;
+      const inp = h('input.nf-color__in', { type: 'color', id, value: st.colors[tok] || spec.default || '#000000', oninput: (e) => { st.colors[tok] = e.target.value; } });
+      return h('label.nf-color', { for: id }, inp, h('span', spec.label || tok));
+    }).concat(h('button.link', { type: 'button', onclick: () => { st.colors = {}; drawColors(); } }, 'Reset to the design’s colours'))
+      : h('p.hint', 'This design has no colour choices.'));
+  };
+  const step3 = h('div.nf-step',
+    preview,
+    h('div.field', h('span.label', 'Opening colours'), colorsBox, h('p.hint', 'You can change these later in Opening.')),
+    h('div.field', h('label.label', { for: 'n-slug' }, 'Link name'), slug, h('p.hint', 'Lowercase letters, numbers, hyphens. Cannot change later.')));
+
+  const steps = [['Couple', step1], ['Design', step2], ['Colours', step3]];
+  const rail = h('ol.nf-rail');
+  const pane = h('div.nf-pane');
+  const back = h('button.btn', { type: 'button', onclick: () => go(st.step - 1) }, 'Back');
+  const next = h('button.btn.btn--primary', { type: 'button', onclick: () => go(st.step + 1) }, 'Next');
+  const create = h('button.btn.btn--primary', { type: 'button', onclick: () => submit() }, 'Create invitation');
+  const cancel = h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel');
+  function go(n) {
     err.textContent = '';
-    if (!bride.value.trim() || !groom.value.trim()) { err.textContent = 'Please enter both first names.'; return; }
+    if (n > st.step && st.step === 1) {
+      if (!bride.value.trim() || !groom.value.trim()) { err.textContent = 'Please enter both first names.'; return; }
+    }
+    if (n > st.step && st.step === 2 && !st.theme) { err.textContent = 'Choose a design first.'; return; }
+    st.step = Math.max(1, Math.min(3, n));
+    if (st.step === 2) { drawGrid(); step2.firstChild.textContent = st.religion === 'hindu' ? 'Every design suits a Hindu wedding. You can switch later.' : `Designs made for ${st.religion === 'other' ? 'a wedding without religious symbols' : `a ${FAITHS.find((f) => f[0] === st.religion)[1]} wedding`}. The pictures show the sample card; yours shows ${({ muslim: 'Bismillah, a crescent and Nikah', christian: 'a verse, the rings and cross, and Holy Matrimony', other: 'a flower emblem and no invocation' })[st.religion]} instead of Ganesh.`; }
+    if (st.step === 3) { auto(); drawColors(); }
+    fill(rail, steps.map(([name], i) => h('li', { class: i + 1 === st.step ? 'is-on' : i + 1 < st.step ? 'is-done' : '' }, h('span', String(i + 1)), name)));
+    fill(pane, steps[st.step - 1][1], err);
+    back.hidden = st.step === 1;
+    cancel.hidden = st.step !== 1;
+    next.hidden = st.step === 3;
+    create.hidden = st.step !== 3;
+    (st.step === 1 ? bride : st.step === 2 ? grid.querySelector('[aria-pressed="true"]') : colorsBox.querySelector('input'))?.focus({ preventScroll: true });
+  }
+  async function submit() {
+    err.textContent = '';
     if (!/^[a-z0-9-]{3,64}$/.test(slug.value)) { err.textContent = 'The link name needs 3 to 64 lowercase letters, numbers or hyphens.'; return; }
-    submit.disabled = true;
+    const t = themeOfSlug(st.theme);
+    const colors = Object.fromEntries(Object.entries(st.colors).filter(([tok, v]) => /^#[0-9a-f]{6}$/i.test(v) && v.toLowerCase() !== String(t?.colors?.[tok]?.default || '').toLowerCase()));
+    create.disabled = true;
     try {
-      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme: theme.value, sample: true } });
+      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme: st.theme, religion: st.religion, ...(Object.keys(colors).length ? { colors } : {}), sample: true } });
       d.close();
       toast('Invitation created', 'success');
       ctx.go(`#/i/${doc.slug}/home`);
     } catch (ex) {
       err.textContent = ex.status === 409 ? 'That link name is taken. Choose another.' : ex.message;
-    } finally { submit.disabled = false; }
-  });
-  const d = openDialog({ title: 'New invitation', body: [h('p.dialog__text', 'Start with the couple’s first names. It begins with sample details you can change.'), form], actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), submit] });
-  bride.focus();
+    } finally { create.disabled = false; }
+  }
+  const d = openDialog({ title: 'New invitation', wide: true, cls: 'nf', body: [rail, pane], actions: [cancel, back, h('span.nf-gap'), next, create] });
+  go(1);
 }
 
 const newBtn = (ctx) => h('button.btn.btn--primary', { type: 'button', onclick: () => newInvitation(ctx) }, icon('plus', 16), 'New invitation');

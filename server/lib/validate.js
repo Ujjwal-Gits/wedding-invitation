@@ -5,6 +5,7 @@
 import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
 import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
 import { cleanDesign } from '../../src/core/mix-rules.js';
+import { isReligion } from '../../src/core/faith.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -362,6 +363,11 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
   if (design) out.design = design;
   const yt = youtubeOf(c, music.youtube);
   if (yt) out.music.youtube = yt;
+  // religion: 'hindu' (the default, not stored, so older data compares equal) | 'muslim' | 'christian' | 'other'
+  if (d.religion != null && d.religion !== '' && d.religion !== 'hindu') {
+    if (isReligion(d.religion)) out.religion = d.religion;
+    else c.fail('religion', "must be 'hindu', 'muslim', 'christian' or 'other'");
+  }
 
   if (c.errors.length) throw new ValidationError(c.errors.slice(0, 50));
   return out;

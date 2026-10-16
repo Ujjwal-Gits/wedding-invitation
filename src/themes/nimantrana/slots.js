@@ -12,6 +12,9 @@ const album = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`album.${n}`, {
 }]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the tri-fold card is built round Ganesh, kalash and diyos.
+  religions: ['hindu'],
+  faithInk: '--nm-gold', // the emblem that replaces Ganesh for other communities is drawn in this colour
   theme: 'nimantrana',
   images: {
     'card.photo': {

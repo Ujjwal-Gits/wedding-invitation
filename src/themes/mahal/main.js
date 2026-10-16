@@ -298,7 +298,7 @@ main.innerHTML = `
             ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="mhb-fam__home">${bi(c.bride.home)}</p>` : ''}
           </div>
           <div class="mhb-fam__mid" aria-hidden="true">
-            <img class="mhb-fam__kalash" src="${DECOR}kalash-sm.webp?v=5" srcset="${DECOR}kalash-sm.webp?v=5 320w, ${DECOR}kalash.webp?v=5 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
+            <img class="mhb-fam__kalash" data-hindu src="${DECOR}kalash-sm.webp?v=5" srcset="${DECOR}kalash-sm.webp?v=5 320w, ${DECOR}kalash.webp?v=5 640w" sizes="(max-width: 700px) 120px, 200px" alt="" loading="lazy" decoding="async" />
           </div>
           <div class="mhb-fam__side">
             ${brideGroom ? plainFrame(groomPh, c.groom.name.en, '(max-width: 700px) 60vw, 240px', 'mhb-fam__pic') : ''}
@@ -429,7 +429,7 @@ main.innerHTML = `
   <footer class="mhb-close" aria-label="Blessing">
     <div class="mhb-close__garland" aria-hidden="true"><img src="${DECOR}swag-sm.webp?v=5" srcset="${DECOR}swag-sm.webp?v=5 800w, ${DECOR}swag.webp?v=5 1708w" sizes="100vw" alt="" loading="lazy" decoding="async" /></div>
     <div class="mhb-close__row">
-      <div class="mhb-close__lamp">${diyo('mhb-diyo--close', 120)}</div>
+      <div class="mhb-close__lamp" data-hindu>${diyo('mhb-diyo--close', 120)}</div>
       <div class="mhb-close__text mhb-rise">
         ${closeGanesh ? `<figure class="mhb-close__gan" aria-hidden="true"><i class="mhb-close__glow"></i><img src="${esc(photoUrl(closeGanesh, 'sm'))}" srcset="${esc(photoUrl(closeGanesh, 'sm'))} 500w, ${esc(photoUrl(closeGanesh, 'lg'))} 1000w" sizes="260px" alt="" loading="lazy" decoding="async" /></figure>` : ''}
         <p class="mhb-close__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
@@ -437,7 +437,7 @@ main.innerHTML = `
         <p class="mhb-close__names">${names()}</p>
         ${c.hashtag ? `<p class="mhb-close__tag">${esc(c.hashtag)}</p>` : ''}
       </div>
-      <div class="mhb-close__lamp">${diyo('mhb-diyo--close', 120)}</div>
+      <div class="mhb-close__lamp" data-hindu>${diyo('mhb-diyo--close', 120)}</div>
     </div>
     <div class="mhb-band" aria-hidden="true"></div>
     ${madeWith()}

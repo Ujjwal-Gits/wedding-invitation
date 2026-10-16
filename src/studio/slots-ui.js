@@ -5,7 +5,7 @@ import { h, icon, clear, append, toast, openDialog, fill, toggle } from './dom.j
 import { biField, uploadImage, checkImageFile, pickLibrary } from './fields.js';
 import { photoUrl } from '../photos.js';
 import { sharedKey, sharedTextMax } from './slotdata.js';
-import { sectionOfSlot } from './preview-sync.js';
+import { sectionOfSlot, registerDefault } from './preview-sync.js';
 
 const isPortraitRef = (r) => r && typeof r === 'object' && !Array.isArray(r) && 'portrait' in r;
 const COUPLE_KINDS = new Set(['couple', 'bride', 'groom']);
@@ -147,6 +147,8 @@ export function slotTools(ctx, { theme: forTheme, section: forSection } = {}) {
     const key = sharedKey(spec, 'texts');
     const max = key ? Math.min(spec.max || 200, sharedTextMax(all, key, spec.max || 200)) : spec.max || 200;
     const box = h('div.trow', { 'data-item': id, 'data-theme': theme });
+    // The preview: an empty line shows the design's own words, so the first keystroke replaces those in place.
+    registerDefault(where('texts', id, spec), spec.default);
     const draw = () => {
       clear(box);
       const o = valueOf('texts', id, spec);
@@ -155,15 +157,14 @@ export function slotTools(ctx, { theme: forTheme, section: forSection } = {}) {
           h('p.trow__off', h('span', 'Hidden on the invitation.'), h('button.link', { type: 'button', onclick: () => { setValue('texts', id, spec, null); draw(); } }, 'Show it again'))]);
         return;
       }
-      const changed = o && (o.en || o.ne);
-      append(box, [
-        biField(m, where('texts', id, spec), { label: canHide ? cleanLabel(spec.label) : spec.label, max, multiline: spec.multiline, rows: 2, placeholderEn: spec.default?.en || '', placeholderNe: spec.default?.ne || '' }),
-        canHide ? h('button.link.trow__reset', { type: 'button', onclick: () => { setValue('texts', id, spec, { en: '-', ne: '-' }); draw(); } }, icon('close', 13), 'Hide this line') : null,
-        changed ? h('button.link.trow__reset', { type: 'button', onclick: () => { setValue('texts', id, spec, null); draw(); } }, icon('refresh', 13), 'Use the original words') : null]);
+      // Top-right actions sit over the label line, so showing them never moves the box (no jump while typing).
+      reset = h('button.link.trow__reset', { type: 'button', hidden: !(o && (o.en || o.ne)), title: 'Use the design’s original words', onclick: () => { setValue('texts', id, spec, null); draw(); box.querySelector('input, textarea')?.focus({ preventScroll: true }); } }, icon('refresh', 13), 'Original');
+      const hide = canHide ? h('button.link.trow__reset', { type: 'button', title: 'Hide this line on the invitation', onclick: () => { setValue('texts', id, spec, { en: '-', ne: '-' }); draw(); } }, icon('close', 13), 'Hide') : null;
+      append(box, [biField(m, where('texts', id, spec), { label: canHide ? cleanLabel(spec.label) : spec.label, max, multiline: spec.multiline, rows: 2, placeholderEn: spec.default?.en || '', placeholderNe: spec.default?.ne || '', action: [reset, hide] })]);
     };
+    let reset = null;
+    box.addEventListener('input', () => { const v = valueOf('texts', id, spec); if (reset) reset.hidden = !(v && (v.en || v.ne)); });
     draw();
-    // Show the reset link as soon as something is typed.
-    box.addEventListener('input', () => { if (!box.querySelector('.trow__reset')) box.append(h('button.link.trow__reset', { type: 'button', onclick: () => { setValue('texts', id, spec, null); draw(); } }, icon('refresh', 13), 'Use the original words')); });
     return box;
   }
 

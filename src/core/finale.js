@@ -83,7 +83,7 @@ export function renderFinale(root) {
 
   <section class="finale" id="rsvp" aria-labelledby="rsvp-title">
     <div class="finale__count">
-      <p class="eyebrow">${bi({ en: 'Until the sacred fire is lit', ne: 'शुभ लगनसम्म' })}</p>
+      <p class="eyebrow">${bi((config.faith?.religion || 'hindu') === 'hindu' ? { en: 'Until the sacred fire is lit', ne: 'शुभ लगनसम्म' } : { en: 'Until the big day', ne: 'शुभ दिनसम्म' })}</p>
       <div class="count" id="countdown" role="timer" aria-label="Time until the wedding"></div>
       <p class="finale__date">${bi(dateOf(config.weddingDate))}<br /><small>${bi(config.weddingDateBS)}</small></p>
     </div>

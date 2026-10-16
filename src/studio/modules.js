@@ -37,11 +37,11 @@ function adminTools(ctx) {
 
 export const INV_MODULES = [
   { id: 'home', title: 'Home', ne: 'गृहपृष्ठ', icon: 'home', group: 'edit', render: homeModule, sub: '' },
-  { id: 'opening', title: 'Opening', ne: 'सुरुवात', icon: 'door', group: 'edit', opening: true, render: openingModule, sub: 'The design, first words, pictures and colours guests see.', previewHint: 'Showing the opening. Edits appear as you type.' },
-  { id: 'couple', title: 'Couple & family', short: 'Couple', ne: 'दुलाहा, दुलही र परिवार', icon: 'heart', group: 'edit', render: peopleModule, sub: 'Names, photos of each of you, and your families.' },
+  { id: 'opening', title: 'Opening', ne: 'सुरुवात', icon: 'door', group: 'edit', opening: true, render: openingModule, sub: 'The gate, the first screen, and their words, pictures and colours.', previewHint: 'Showing the opening. Edits appear as you type.' },
+  { id: 'couple', title: 'Couple & family', short: 'Couple', ne: 'दुलाहा, दुलही र परिवार', icon: 'heart', group: 'edit', render: peopleModule, sub: 'Your names, your families and your story.' },
   { id: 'dates', title: 'Dates & events', short: 'Dates', ne: 'मिति र कार्यक्रम', icon: 'calendar', group: 'edit', render: datesModule, sub: 'When and where everything happens.' },
-  { id: 'photos', title: 'Photos', ne: 'फोटो', icon: 'camera', group: 'edit', render: photosModule, sub: 'Add as many as you like. Tap a photo to move, replace or remove it.' },
-  { id: 'music', title: 'Music', ne: 'संगीत', icon: 'music', group: 'edit', render: musicModule, sub: 'What plays while guests open the invitation.' },
+  { id: 'photos', title: 'Photos', ne: 'फोटो', icon: 'camera', group: 'edit', render: photosModule, sub: 'Tap a photo to move, replace or remove it.' },
+  { id: 'music', title: 'Music', ne: 'संगीत', icon: 'music', group: 'edit', render: musicModule, sub: 'The song that plays as guests open it.' },
   { id: 'replies', title: 'Replies', ne: 'जवाफहरू', icon: 'chat', group: 'edit', preview: false, render: repliesModule, sub: 'Who is coming, and their messages.' },
   { id: 'send', title: 'Send invitation', short: 'Send', ne: 'निमन्त्रणा पठाउनुहोस्', icon: 'send', group: 'edit', render: sendModule, sub: 'Publish, then share the link with your guests.' },
   { id: 'themes', title: 'Themes', ne: 'डिजाइनहरू', icon: 'palette', group: 'more', preview: false, render: themesModule },

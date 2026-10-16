@@ -6,6 +6,8 @@ const more = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [
 ]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped.
+  religions: ['hindu', 'muslim', 'christian', 'other'],
   theme: 'dhaka',
   images: {
     'welcome.photo': { label: 'Welcome photo (inside the floral frame, rises from the envelope)', kind: 'couple', default: { portrait: 0 }, note: 'The couple together, portrait orientation works best. Shown whole, never cropped.' },

@@ -1,6 +1,9 @@
 // Janti (जन्ती) · walk with the groom's procession down an old Newari street: every theme image and text, replaceable from the studio. Plain data, no imports (the server loads this file).
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the procession with the doli and Ganesh in the carved torana.
+  religions: ["hindu"],
+  faithInk: "--jt-gold", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "janti",
   "images": {
     "hero.ganesh": {

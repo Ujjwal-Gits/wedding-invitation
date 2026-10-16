@@ -12,6 +12,8 @@ const album = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`album.${i
 }]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped.
+  religions: ['hindu', 'muslim', 'christian', 'other'],
   theme: 'himal',
   images: {
     'hero.dawn': {
@@ -33,12 +35,12 @@ export default {
     },
     ...essay,
     ...album,
-    'travel.arrive': {
+    'travel.arrive': { nonHindu: 'phewa-lake', /* a temple photo: its neutral twin for other communities */
       shared: 'place.night', label: 'Travel: arriving', kind: 'scene', default: 'kathmandu-night-alt',
       alt: 'The gilded roof of Taleju temple, Patan, at night',
       note: 'Landscape, the city or region of the wedding. No people in focus.',
     },
-    'travel.stay': {
+    'travel.stay': { nonHindu: 'lights-garden', /* a temple photo: its neutral twin for other communities */
       shared: 'place.courtyard', label: 'Travel: staying', kind: 'scene', default: 'courtyard-dusk-alt',
       alt: 'Taumadhi Square, Bhaktapur, at blue hour',
       note: 'Landscape, a heritage street, square or hotel. No people in focus.',

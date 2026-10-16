@@ -61,6 +61,9 @@ export async function submit(req, res) {
   if (attending === 'no') { guests = 0; events = []; }
   else if (!Number.isInteger(guests) || guests < 1 || guests > max) errors.push('guests');
   if (Array.isArray(body.events) && body.events.length > 20) errors.push('events');
+  // each ceremony is its own answer: a guest who comes must say which (an older form that sends no list counts for all)
+  if (attending === 'yes' && Array.isArray(body.events) && body.events.length && !events.length) errors.push('events');
+  if (attending === 'yes' && Array.isArray(body.events) && !body.events.length && validIds.size > 1) errors.push('events');
   if (errors.length) return res.status(400).json({ ok: false, error: 'Please check your reply.', fields: errors });
   if (attending === 'yes' && !events.length) events = [...validIds];
 

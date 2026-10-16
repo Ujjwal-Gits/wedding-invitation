@@ -10,6 +10,9 @@ const gallery = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`gallery.${n}`
 }]));
 
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. The kalash and the closing diyos leave with the Hindu symbols.
+  religions: ['hindu', 'muslim', 'christian', 'other'],
+  faithInk: '--mh-gold-lt', faithHalo: '--mg-red', // the emblem that replaces Ganesh: light gold with a red halo (gold crest and night sky)
   theme: 'mahal',
   images: {
     'hero.ganesh': {
@@ -18,7 +21,7 @@ export default {
       note: 'A cut-out picture with a transparent background works best (PNG or WebP); the medallion shows his whole head, crown to trunk. A public-domain hand-coloured Ganesh (1842) by default. To remove it, type “off” in the Ganesh line.',
     },
     'close.ganesh': {
-      label: 'Ganesh at the closing blessing (between the two diyos)', kind: 'detail',
+      label: 'Ganesh at the closing blessing (between the two diyos)', kind: 'detail', faithInk: '--mh-gold-lt', // the emblem on the red closing
       default: { lg: '/themes/mahal/ganesh-throne-1000.webp', sm: '/themes/mahal/ganesh-throne-500.webp', w: 1000, h: 1221, alt: 'Shri Ganesh seated on a golden throne' },
       note: 'A cut-out picture with a transparent background works best. Hidden when Ganesh is turned off.',
     },

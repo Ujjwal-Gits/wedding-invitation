@@ -80,7 +80,7 @@ const until = async (find, ms = 3500) => {
 };
 
 function flash(el) {
-  const box = el.closest('.bi__col, .trow, .pslot, .ptile, .scard, .field, .song-wrap') || el;
+  const box = el.closest('.bi, .trow, .pslot, .ptile, .scard, .field, .song-wrap') || el;
   box.classList.remove('is-picked');
   void box.offsetWidth;
   box.classList.add('is-picked');
@@ -93,6 +93,8 @@ async function openField(ctx, mod, locate, { click = false } = {}) {
   if (currentModule() !== mod) ctx.go(`#/i/${ctx.slug}/${mod}`);
   const el = await until(locate);
   if (!el) return false;
+  // Phones: the preview is a sheet over the editor; close it so the field is in view.
+  if (matchMedia('(max-width: 1179px)').matches) ctx.preview?.el.dispatchEvent(new CustomEvent('pv-close'));
   for (let d = el.closest('details'); d; d = d.parentElement?.closest('details')) d.open = true;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });

@@ -7,17 +7,33 @@ const NepaliDate = NepaliDateModule.default?.default || NepaliDateModule.default
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+const filled = (s) => (s == null ? '' : String(s)).trim() !== '';
+const DEVA = /[ऀ-ॿ]/;
+/**
+ * The two sides of a bilingual text, each falling back to the other when it is empty: a name typed only in
+ * English shows in the नेपाली view too, and Nepali typed alone shows in the English view (in a Devanagari face).
+ */
+export const pair = (v) => {
+  const o = typeof v === 'string' ? { en: v } : v ?? {};
+  const en = filled(o.en) ? String(o.en) : filled(o.ne) ? String(o.ne) : '';
+  const ne = filled(o.ne) ? String(o.ne) : en;
+  return { en, ne };
+};
+
 /** Bilingual inline text. Accepts {en, ne} or a plain string. */
 export const bi = (v) => {
-  const o = typeof v === 'string' ? { en: v } : v ?? {};
-  return `<span class="l-en">${esc(o.en)}</span><span class="l-ne" lang="ne">${esc(o.ne ?? o.en)}</span>`;
+  const p = pair(v);
+  return `<span class="l-en"${DEVA.test(p.en) && !/[A-Za-z]/.test(p.en) ? ' lang="ne"' : ''}>${esc(p.en)}</span><span class="l-ne" lang="ne">${esc(p.ne)}</span>`;
 };
 
 /** Same as bi() but builds DOM nodes, for text that came from a guest or URL. */
-export const biNodes = (en, ne) => [
-  Object.assign(document.createElement('span'), { className: 'l-en', textContent: en }),
-  Object.assign(document.createElement('span'), { className: 'l-ne', lang: 'ne', textContent: ne ?? en }),
-];
+export const biNodes = (en, ne) => {
+  const p = pair({ en, ne });
+  return [
+    Object.assign(document.createElement('span'), { className: 'l-en', textContent: p.en }),
+    Object.assign(document.createElement('span'), { className: 'l-ne', lang: 'ne', textContent: p.ne }),
+  ];
+};
 
 // Nepali is formatted by hand: not every browser ships ne-NP locale data.
 const NE_DIGITS = '०१२३४५६७८९';

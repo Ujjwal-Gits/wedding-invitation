@@ -1,6 +1,8 @@
 // Chitra · studio-replaceable images and texts (plain data, no imports).
 // Read through useSlots(manifest) in src/core/slots.js.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the storybook paints the seven rounds of the fire.
+  religions: ['hindu'],
   theme: 'chitra',
   images: {
     'title.photo': { label: 'Title page: framed couple photo', kind: 'couple', default: { portrait: 0 }, note: 'The couple together. Portrait or landscape both fit; the frame takes the photo’s own shape.' },

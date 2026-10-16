@@ -5,6 +5,7 @@ import { SLUG_RE, getInvitation } from './store.js';
 import { PUBLIC_ORIGINS } from './env.js';
 import { listThemes } from './catalog.js';
 import { photoUrl } from './invitations.js';
+import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -24,12 +25,14 @@ export async function sharePage(req, res) {
   const ids = new Set(inv.events.map((e) => e.id));
   const e = typeof req.query.e === 'string' ? req.query.e.split(',').filter((x) => ids.has(x)).slice(0, 12) : [];
   if (e.length) q.set('e', e.join(','));
+  // a personal link's version of the religious symbols (docs/PLATFORM.md "Religion"): only the known values
+  if (typeof req.query.v === 'string' && VERSIONS.includes(req.query.v)) q.set('v', req.query.v);
   const target = `/${inv.theme}/?${q}`;
 
   const origin = originOf(req);
   const nm = (p) => p?.name?.en || p?.name?.ne || '';
   const names = [nm(inv.couple.bride), nm(inv.couple.groom)].filter(Boolean).join(' & ');
-  const title = inv.share?.title || (names ? `${names} · Shubha Bibaha` : 'Wedding invitation');
+  const title = inv.share?.title || (names ? `${names} · ${TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : 'Wedding invitation');
   const description = inv.share?.description || 'You are warmly invited to our wedding.';
   let img = photoUrl(inv.share?.image) || photoUrl(inv.couple.portraits[0]?.photo);
   if (!img) img = listThemes().find((t) => t.slug === inv.theme)?.thumb || '';

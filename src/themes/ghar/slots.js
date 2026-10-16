@@ -4,6 +4,8 @@
 // portraits, gallery, RSVP, closing line) is edited in the studio's normal sections and is not repeated here.
 // Texts may use {hosts}, which is replaced by the inviting families' names.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a Newar house with its shrine and the saptapadi.
+  religions: ['hindu'],
   theme: 'ghar',
   images: {
     'threshold.door': {

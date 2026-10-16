@@ -50,7 +50,7 @@ export function homeModule(ctx) {
       h('span.welcome__ringlab', 'done')));
   // Progress ring (constant SVG markup).
   const pct = done / list.length;
-  hero.querySelector('svg').outerHTML = `<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="ring__bg"/><circle cx="60" cy="60" r="52" class="ring__fg" pathLength="100" stroke-dasharray="${Math.round(pct * 100)} 100"/></svg>`;
+  hero.querySelector('.welcome__ring svg').outerHTML = `<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="ring__bg"/><circle cx="60" cy="60" r="52" class="ring__fg" pathLength="100" stroke-dasharray="${Math.round(pct * 100)} 100"/></svg>`;
 
   const checklist = card('Your checklist', 'Everything saves by itself. Do the steps in any order.',
     h('ol.steplist', list.map((s, i) => h('li', h('a.stepitem', { href: `#/i/${ctx.slug}/${s.id}`, class: s.ok ? 'is-done' : s === next ? 'is-next' : '' },

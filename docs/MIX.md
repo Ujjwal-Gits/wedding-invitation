@@ -425,3 +425,13 @@ The pickers follow these rules:
 - **Public payload.** Include `design`.
 - **`server/lib/gate.js`.** No change: the page is the body theme's, and the parts are public assets.
 - **CSP.** No change: Google Fonts is already allowed for the theme pages.
+
+## 9. Religion filter (2026-10-16)
+Every `slots.js` declares `religions` (the communities the design suits once its symbols and words are swapped; absent =
+Hindu only) and, when it has a Ganesh slot, `faithInk` (the token the replacement emblem is drawn in). A gate or first
+screen may be offered only from a theme whose `religions` include the invitation's `religion` (`suits()` in
+`src/core/faith.js`); the server refuses a couple's save that breaks this (`403`). Borrowed parts adapt on any page
+through the shared slot layer: the sacred image slot shows the community's emblem, the invocation and शुभ विवाह follow
+the community. Suitable today for Muslim and Christian: Dhaka, Hariyo, Himal, Jhyal, Laali, Mahal, Mehendi (Other adds
+Phoolbari, Kham, Sayapatri, Swayambar). Table: docs/PLATFORM.md "Religion".
+

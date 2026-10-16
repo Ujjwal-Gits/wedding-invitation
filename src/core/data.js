@@ -8,6 +8,8 @@
 // live-preview.js, loaded only then). Every message is same-origin only and validated here.
 // The model's `design` ({ gate?, hero? }, docs/MIX.md) travels with it: mix.js reads it from the config.
 import { config } from '../config.js';
+import { religionOf, symbolsFor, VERSIONS, SHLOKA, swapWords, isHinduInvocation, startFaithDom } from './faith.js';
+import './showcase.js'; // showcase mode (docs/API.md): runs first and drops ?id / ?preview, so only the demo shows
 
 const SLUG = /^[a-z0-9-]{3,64}$/;
 const COLOR_NAME = /^--[a-z0-9-]+$/;
@@ -33,6 +35,13 @@ font:600 11px/18px ui-sans-serif,"Segoe UI",sans-serif;letter-spacing:.02em}
 html.nimtto-pick,html.nimtto-pick *{cursor:pointer!important}`;
 let live = null;
 if (PREVIEW) {
+  // The studio's editor keeps the keyboard: a page in the preview frame never takes focus (a gate button, a dialog)
+  // unless the client is using the preview itself. A frame rendering in the background never steals it either.
+  const nativeFocus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function focus(opts) { if (document.hasFocus()) nativeFocus.call(this, opts); };
+  const touched = () => { window.__nimttoTouchAt = Date.now(); };
+  addEventListener('pointerdown', touched, true);
+  addEventListener('keydown', touched, true);
   const s = document.createElement('style');
   s.id = 'nimtto-preview-style';
   s.textContent = PREVIEW_STYLE;
@@ -134,6 +143,7 @@ export async function loadInvitation() {
       console.warn('Could not load the invitation; showing the demo.', err);
     }
   }
+  applyFaith();
   applyThemeColors();
   if (PREVIEW) {
     announceMounted();
@@ -141,6 +151,55 @@ export async function loadInvitation() {
     live?.then((m) => { m.setPicking(firstPick); return m.start({ target: firstTarget }); }).catch(() => document.documentElement.classList.remove('nimtto-hold'));
   }
   return config;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Faith (docs/PLATFORM.md "Religion", src/core/faith.js) and the bilingual fallback.
+
+/**
+ * Every {en, ne} pair with one side empty shows the side the couple did fill, in both views (a name typed only
+ * in English shows in the नेपाली view too). Runs once on the loaded model; the slot layer does the same for
+ * theme texts (src/core/slots.js), where the couple's words in either language beat the design's default.
+ */
+function fillPairs(node, depth = 0) {
+  if (depth > 12 || node === null || typeof node !== 'object') return;
+  if (Array.isArray(node)) { for (const x of node) fillPairs(x, depth + 1); return; }
+  if ('en' in node && 'ne' in node && (typeof node.en === 'string' || node.en == null) && (typeof node.ne === 'string' || node.ne == null)) {
+    const en = String(node.en ?? '').trim();
+    const ne = String(node.ne ?? '').trim();
+    if (!en && ne) node.en = node.ne;
+    else if (!ne && en) node.ne = node.en;
+  }
+  for (const v of Object.values(node)) if (v && typeof v === 'object') fillPairs(v, depth + 1);
+}
+
+/**
+ * config.faith = { religion, symbols, version }: the community (config.religion, default 'hindu') and the
+ * symbols this page shows. A personal guest link's ?v= (neutral | hindu | muslim | christian, validated here and
+ * by the server's /i/ forward) changes only the symbol, the invocation and the card's verse.
+ */
+function applyFaith() {
+  const religion = religionOf(config);
+  const v = params.get('v');
+  const version = VERSIONS.includes(v) ? v : null;
+  const symbols = symbolsFor(religion, version);
+  config.religion = religion;
+  config.faith = { religion, symbols, version };
+  fillPairs(config);
+  const sh = isPlain(config.invitation) && isPlain(config.invitation.shloka) ? config.invitation.shloka : null;
+  if (sh) {
+    const hinduVerse = isHinduInvocation(sh.sa) || /वक्रतुण्ड|Ganesh/i.test(`${sh.sa || ''} ${sh.en || ''}`);
+    const want = symbols === 'hindu' ? (version && !hinduVerse ? demo.invitation?.shloka : null) : (version || hinduVerse ? SHLOKA[symbols] : null);
+    if (want) Object.assign(sh, structuredClone(want));
+  }
+  if (religion !== 'hindu') {
+    // the untouched sample's Hindu sentences (an invitation started as Hindu, then changed)
+    const fix = (o) => { if (isPlain(o)) for (const k of ['en', 'ne']) if (typeof o[k] === 'string') o[k] = swapWords(o[k], religion, { sentences: true }); };
+    fix(config.invitation?.body);
+    (config.story || []).forEach((s) => fix(s?.text));
+    if (JSON.stringify(config.saptapadi) === JSON.stringify(demo.saptapadi)) config.saptapadi = [];
+  }
+  startFaithDom({ religion, symbols });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -227,7 +286,13 @@ function cleanChange(c) {
     if (!Array.isArray(c.path) || !c.path.length || c.path.length > 12) return null;
     const okPath = c.path.every((k) => (typeof k === 'string' && KEY.test(k) && !BAD_KEYS.has(k)) || (Number.isInteger(k) && k >= 0 && k < 1000));
     if (!okPath || typeof c.old !== 'string' || typeof c.value !== 'string' || c.old.length > 4000 || c.value.length > 4000) return null;
-    return { kind: 'text', path: c.path, old: c.old, value: c.value };
+    const str = (v) => typeof v === 'string' && v.length <= 4000;
+    const out = { kind: 'text', path: c.path, old: c.old, value: c.value, show: str(c.show) ? c.show : c.value };
+    // olds: other words the page may show for an empty field (the other language, the design's original words)
+    if (Array.isArray(c.olds)) out.olds = c.olds.slice(0, 4).filter(str);
+    if (c.lang === 'en' || c.lang === 'ne') out.lang = c.lang;
+    for (const k of ['fb', 'spill', 'link']) if (c[k] === true) out[k] = true;
+    return out;
   }
   if (c.kind === 'image' && Array.isArray(c.pairs)) {
     const pairs = c.pairs.slice(0, 6).filter((p) => Array.isArray(p) && p.length === 2 && p.every((u) => typeof u === 'string' && IMG.test(u) && /^(\/|https:\/\/)/.test(u)));

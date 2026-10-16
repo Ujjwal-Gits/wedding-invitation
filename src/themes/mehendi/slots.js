@@ -1,6 +1,9 @@
 // Mehendi (मेहन्दी) · henna on ivory: hands joined, a henna mandala: every theme image and text, replaceable from the studio. Plain data, no imports (the server loads this file).
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
+  // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped.
+  religions: ["hindu", "muslim", "christian", "other"],
+  faithInk: "--su-accent", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "mehendi",
   "images": {
     "hero.ganesh": {

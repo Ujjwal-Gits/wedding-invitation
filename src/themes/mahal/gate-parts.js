@@ -3,6 +3,7 @@
 // its mix module (gate.js, where the gate opens onto another theme's page). Elements are passed in, never looked up
 // by id, so the same code runs inside the mix wrapper on any page.
 import { gsap } from 'gsap';
+import { roundelRef } from '../../core/faith.js';
 import { esc } from '../../core/i18n.js';
 import { photoUrl } from '../../photos.js';
 import { medalSVG } from './art.js';
@@ -32,9 +33,14 @@ function medalFit(ganeshRef) {
   return `object-fit:contain;transform:translate(${t(fx)}%, ${t(fy)}%) scale(${s.toFixed(3)})`;
 }
 /** Ganesh in the gold medallion of the crest (or ॐ when he is turned off). The ring's gold is #mhb-gold (art.js DEFS). */
+// Another community (src/core/faith.js): the emblem, in deep red on a pale gold roundel that fills the painted disc,
+// so the crest reads as one gilded medallion (Ganesh never shows).
+const ROUNDEL = 'background:radial-gradient(circle at 50% 42%,#fff7df 0%,#f5dd9c 46%,#dcae55 82%,#b9852f 100%)';
 export function crestHTML(ganeshRef) {
+  const faith = Boolean(ganeshRef?.faith);
+  if (faith) ganeshRef = roundelRef(ganeshRef);
   const medal = ganeshRef
-    ? `<div class="mhb-medal " aria-hidden="true"><span class="mhb-medal__pic"><img style="${medalFit(ganeshRef)}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
+    ? `<div class="mhb-medal ${faith ? 'mhb-medal--faith' : ''}" aria-hidden="true"><span class="mhb-medal__pic"${faith ? ` style="${ROUNDEL}"` : ''}><img style="${medalFit(ganeshRef)}" src="${esc(photoUrl(ganeshRef, 'sm'))}" srcset="${esc(photoUrl(ganeshRef, 'sm'))} 500w, ${esc(photoUrl(ganeshRef, 'lg'))} 1000w" sizes="240px" alt="" decoding="async" /></span>${medalSVG()}</div>`
     : '<div class="mh-om" lang="ne">ॐ</div>';
   return `<div class="mh-crest"><i class="mh-crest__halo"></i>${medal}</div>`;
 }

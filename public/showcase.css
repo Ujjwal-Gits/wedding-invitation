@@ -1,0 +1,91 @@
+/* Showcase mode (src/core/showcase.js): the public, watermarked preview of a design.
+   Only linked on showcase pages; every rule is scoped to html[data-showcase="1"] anyway.
+   The badge, toast and blank card use the website's language: rose-white paper, wine ink, one sindoor red,
+   Kalnia + Switzer (DESIGN.md "Website"). Never black. */
+
+@font-face { font-family: 'Kalnia'; src: url('/site/fonts/kalnia-latin.woff2') format('woff2'); font-weight: 100 400; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/site/fonts/switzer-var.woff2') format('woff2-variations'), url('/site/fonts/switzer-var.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Martel'; src: url('/site/fonts/martel-300-deva.woff2') format('woff2'); font-weight: 300; font-display: swap; }
+
+html[data-showcase="1"] {
+  --sc-paper: #FCF8F7; --sc-white: #FFFFFF; --sc-line: #EBDCD9; --sc-ink: #3D1E28; --sc-ink-2: #664C55; --sc-ink-3: #7E636C;
+  --sc-red: #A3182F; --sc-red-deep: #86132A; --sc-on-red: #FFF8F6; --sc-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --sc-ui: 'Switzer', 'Segoe UI', Arial, sans-serif; --sc-display: 'Kalnia', 'Iowan Old Style', Georgia, serif;
+}
+
+/* no selecting, no long-press callouts, no dragging pictures (the form fields still take typing) */
+html[data-showcase="1"], html[data-showcase="1"] * {
+  -webkit-user-select: none !important; user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+html[data-showcase="1"] input, html[data-showcase="1"] textarea { -webkit-user-select: text !important; user-select: text !important; }
+html[data-showcase="1"] img, html[data-showcase="1"] svg, html[data-showcase="1"] video { -webkit-user-drag: none !important; }
+
+/* the badge, top left (the designs keep their own buttons top right and their call to open at the bottom):
+   close (full page only), Nimtto, Preview, Order this design */
+.nimtto-sc-badge {
+  position: fixed; left: calc(10px + env(safe-area-inset-left, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 2147483647;
+  display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 120px); padding: 4px 4px 4px 12px;
+  border: 1px solid var(--sc-line); border-radius: 999px; background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px -16px rgba(61, 30, 40, 0.45); color: var(--sc-ink);
+  font: 500 13.5px/1.2 var(--sc-ui); letter-spacing: 0.01em; white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+}
+.nimtto-sc-badge__mark { font: 300 17px/1 var(--sc-display); letter-spacing: -0.01em; color: var(--sc-ink); }
+.nimtto-sc-badge__tag { padding: 3px 8px; border-radius: 999px; background: #F6E0E0; color: var(--sc-red); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.nimtto-sc-badge__order {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 999px;
+  background: var(--sc-red); color: var(--sc-on-red) !important; text-decoration: none; transition: background-color 200ms var(--sc-ease);
+}
+.nimtto-sc-badge__order:hover { background: var(--sc-red-deep); }
+.nimtto-sc-badge__close {
+  order: -1; display: inline-grid; place-items: center; width: 34px; height: 34px; margin-left: -8px; border: 1px solid var(--sc-line); border-radius: 50%;
+  color: var(--sc-ink) !important; background: var(--sc-white); transition: border-color 200ms var(--sc-ease);
+}
+.nimtto-sc-badge__close:hover { border-color: var(--sc-ink); }
+.nimtto-sc-badge__close svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.nimtto-sc-badge a:focus-visible { outline: 2px solid var(--sc-red); outline-offset: 2px; }
+.nimtto-sc-badge--framed { padding: 7px 7px 7px 12px; }
+@media (max-width: 420px) { .nimtto-sc-badge:not(.nimtto-sc-badge--framed) .nimtto-sc-badge__tag { display: none; } }
+
+/* the friendly note when a real action is tried */
+.nimtto-sc-toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 2147483647;
+  display: grid; gap: 2px; width: max-content; max-width: min(420px, calc(100vw - 32px)); padding: 12px 18px;
+  border-radius: 14px; background: var(--sc-white); border: 1px solid var(--sc-line); color: var(--sc-ink);
+  box-shadow: 0 18px 40px -18px rgba(61, 30, 40, 0.5); font: 400 14px/1.45 var(--sc-ui); text-align: center;
+  opacity: 0; transform: translate(-50%, 10px); pointer-events: none;
+  transition: opacity 220ms var(--sc-ease), transform 260ms var(--sc-ease);
+}
+.nimtto-sc-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.nimtto-sc-toast__ne { color: var(--sc-ink-2); font: 400 13px/1.5 'Mukta', 'Nirmala UI', sans-serif; }
+
+/* the blank card shown when the window loses focus, on PrintScreen, print or save */
+.nimtto-sc-veil {
+  position: fixed; inset: 0; z-index: 2147483647; display: none; place-items: center; padding: 24px;
+  background: var(--sc-paper); color: var(--sc-ink); cursor: pointer;
+}
+.nimtto-sc-veil__card {
+  display: grid; justify-items: center; gap: 6px; padding: 44px 40px; border: 1px solid var(--sc-line); border-radius: 18px;
+  background: var(--sc-white); text-align: center; box-shadow: 0 34px 60px -36px rgba(61, 30, 40, 0.32);
+}
+.nimtto-sc-veil__card p { margin: 0; }
+.nimtto-sc-veil__ne { font: 300 34px/1.3 'Martel', 'Nirmala UI', serif; color: var(--sc-red); }
+.nimtto-sc-veil__mark { font: 200 40px/1.05 var(--sc-display); letter-spacing: -0.012em; }
+.nimtto-sc-veil__t { margin-top: 10px !important; font: 500 15px/1.4 var(--sc-ui); }
+.nimtto-sc-veil__s { font: 400 13.5px/1.4 var(--sc-ui); color: var(--sc-ink-3); }
+
+@media (prefers-reduced-motion: reduce) { .nimtto-sc-toast { transition: none; } }
+
+/* printing shows only a note */
+@media print {
+  html[data-showcase="1"] body,
+  html[data-showcase="1"] .nimtto-sc-badge,
+  html[data-showcase="1"] .nimtto-sc-toast,
+  html[data-showcase="1"] .nimtto-sc-veil,
+  html[data-showcase="1"] [data-nimtto-wm] { display: none !important; }
+  html[data-showcase="1"]::before {
+    content: "This is a Nimtto preview, and printing is turned off. Order this design at nimtto.com to get your own invitation.";
+    display: block; margin: 40px; font: 400 16px/1.6 Georgia, serif; color: #3D1E28;
+  }
+}

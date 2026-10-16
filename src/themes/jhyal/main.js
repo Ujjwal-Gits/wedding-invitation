@@ -167,7 +167,7 @@ const closeWindow = () => `<div class="jh-cwin" style="--war:${(GC.TW / GC.H).to
       <span class="jh-cwin__leaf jh-cwin__leaf--l">${shutterSVG('l', GC.ow / 2, GC.oh)}</span>
       <span class="jh-cwin__leaf jh-cwin__leaf--r">${shutterSVG('r', GC.ow / 2, GC.oh)}</span>
     </span>
-    ${['l', 'r'].map((k) => `<span class="jh-cdiyo" style="${boxOf(GC, k === 'l' ? GC.WING * 0.5 - DIYO / 2 : GC.TW - GC.WING * 0.5 - DIYO / 2, GC.yS - DIYO * 1.1 + 2, DIYO, DIYO * 1.1)}${k === 'r' ? ';transform:scaleX(-1)' : ''}"><i class="jh-halo"></i>${diyoSVG()}</span>`).join('')}
+    ${['l', 'r'].map((k) => `<span class="jh-cdiyo" data-hindu style="${boxOf(GC, k === 'l' ? GC.WING * 0.5 - DIYO / 2 : GC.TW - GC.WING * 0.5 - DIYO / 2, GC.yS - DIYO * 1.1 + 2, DIYO, DIYO * 1.1)}${k === 'r' ? ';transform:scaleX(-1)' : ''}"><i class="jh-halo"></i>${diyoSVG()}</span>`).join('')}
   </div>`;
 
 // ───────────────────────── The date: a folded red lagan patra ─────────────────────────
@@ -230,7 +230,7 @@ main.innerHTML = `
         ${(c.bride.home?.en || c.bride.home?.ne) ? `<p class="jh-fam__home">${bi(c.bride.home)}</p>` : ''}
       </div>
       <div class="jh-pillar" aria-hidden="true">
-        <img class="jh-pillar__kalash" src="${DECOR}kalash-sm.webp" srcset="${DECOR}kalash-sm.webp 320w, ${DECOR}kalash.webp 640w" sizes="110px" alt="" loading="lazy" decoding="async" />
+        <img class="jh-pillar__kalash" data-hindu src="${DECOR}kalash-sm.webp" srcset="${DECOR}kalash-sm.webp 320w, ${DECOR}kalash.webp 640w" sizes="110px" alt="" loading="lazy" decoding="async" />
         <span class="jh-pillar__cap">${pillarCapital()}</span>
         <span class="jh-pillar__shaft"></span>
         <span class="jh-pillar__base">${pillarBase()}</span>
