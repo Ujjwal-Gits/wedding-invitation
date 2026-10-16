@@ -6,8 +6,10 @@
 import { bi, esc } from './i18n.js';
 import { lockScroll, unlockScroll } from './modal.js';
 
-const KEY_MUTED = 'sayapatri-muted';
-const KEY_TRACK = 'sayapatri-track';
+// Remembered per invitation, so one invitation's choices never carry over to another.
+const INV = (() => { try { return new URLSearchParams(location.search).get('id') || location.pathname; } catch { return ''; } })();
+const KEY_MUTED = `nimtto-muted:${INV}`;
+const KEY_TRACK = `nimtto-track:${INV}`;
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
 const YT_API_TIMEOUT = 10000;
 const store = {
@@ -57,7 +59,17 @@ export function createPlayer({ tracks: ownTracks = [], volume = 0.7, youtube = n
   let ctx = null;
   let master = null;
   const chans = tracks.map((t) => ({ t, el: null, gain: null }));
-  let current = Math.max(0, Math.min(Number(store.get(KEY_TRACK) ?? 0) || 0, tracks.length - 1));
+  // The couple's first song always plays on the first open. A guest's own pick is kept only while the couple's
+  // first song is unchanged (a new upload or "Play first" starts everyone on the new song again).
+  const pickedIndex = () => {
+    try {
+      const p = JSON.parse(store.get(KEY_TRACK) || 'null');
+      if (!p || p.first !== tracks[0]?.src) return 0;
+      const i = tracks.findIndex((t) => t.src === p.src);
+      return i >= 0 ? i : 0;
+    } catch { return 0; }
+  };
+  let current = pickedIndex();
   let playing = false;
 
   // YouTube state. mode: 'yt' while YouTube is in charge, 'mp3' otherwise.
@@ -150,7 +162,7 @@ export function createPlayer({ tracks: ownTracks = [], volume = 0.7, youtube = n
       setTimeout(() => prev.el.pause(), fade * 1000 + 120);
     }
     current = i;
-    store.set(KEY_TRACK, String(i));
+    store.set(KEY_TRACK, JSON.stringify({ first: tracks[0]?.src, src: tracks[i]?.src }));
     next.el.play().then(() => {
       playing = true;
       ramp(next, volume, fade);
