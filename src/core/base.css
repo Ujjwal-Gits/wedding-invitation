@@ -148,13 +148,19 @@ body.is-gated .chapters { display: none; }
 /* Music sheet */
 .sheet { position: fixed; inset: 0; z-index: 70; background: rgba(10, 2, 4, 0); transition: background-color 300ms var(--ease); display: flex; align-items: flex-end; justify-content: flex-end; }
 .sheet.is-open { background: rgba(var(--scrim), 0.55); }
+/* A long music library never covers the page: the panel stops at 75% of the screen (and always below the showcase
+   badge at the top), the header with × stays put, and only the list scrolls. The dimmed backdrop and Escape close it. */
 .sheet__panel {
   width: min(420px, 100%); margin: 0 14px calc(14px + var(--safe-b)) 14px; padding: 22px 22px 18px;
+  max-height: min(75vh, calc(100vh - 96px)); max-height: min(75dvh, calc(100dvh - 96px));
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--bg-2); border: 1px solid var(--hair); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
   transform: translateY(24px); opacity: 0; transition: transform 320ms var(--ease), opacity 320ms var(--ease);
 }
 .sheet.is-open .sheet__panel { transform: none; opacity: 1; }
-.sheet__head { display: flex; justify-content: space-between; align-items: center; }
+.sheet__head { display: flex; justify-content: space-between; align-items: center; flex: none; }
+.sheet__list { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.sheet__yt, .sheet__toggle { flex: none; }
 .sheet__head .eyebrow { margin: 0; }
 .sheet__close { width: 40px; height: 40px; background: none; border: 0; color: var(--accent-2); font-size: 26px; cursor: pointer; }
 .sheet__list { list-style: none; margin: 10px 0 16px; padding: 0; display: grid; gap: 2px; }

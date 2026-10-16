@@ -191,7 +191,8 @@ function start() {
   window.addEventListener('afterprint', () => setTimeout(hideVeil, 400));
   const capture = (e) => {
     const k = (e.key || '').toLowerCase();
-    if (inFrame && e.key === 'Escape') { try { window.parent.postMessage({ nimtto: 'close-preview' }, location.origin); } catch { /* not ours */ } }
+    // Escape in the website's preview frame closes the preview, unless it is closing the music sheet first
+    if (inFrame && e.key === 'Escape' && document.getElementById('music-sheet')?.hidden !== false) { try { window.parent.postMessage({ nimtto: 'close-preview' }, location.origin); } catch { /* not ours */ } }
     if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
       showVeil(1600);
       navigator.clipboard?.writeText?.('nimtto.com · preview').catch(() => {});

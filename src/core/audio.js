@@ -294,7 +294,8 @@ export function createPlayer({ tracks: ownTracks = [], volume = 0.7, youtube = n
     const b = e.target.closest('button[data-track]');
     if (b) play(Number(b.dataset.track));
   });
-  sheet.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  // Escape closes it wherever the focus is (a tap on the page can move focus out of the sheet)
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) { e.preventDefault(); close(); } });
 
   let resumeYt = false;
   document.addEventListener('visibilitychange', () => {
