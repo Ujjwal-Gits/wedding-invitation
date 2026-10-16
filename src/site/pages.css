@@ -11,7 +11,7 @@
 .hero__stage { --pw: min(50vw, 220px, calc((100svh - 140px) / 2.2)); position: relative; flex: none; width: 0; height: 0; margin-top: clamp(36px, 6vh, 64px); z-index: 2; }
 .hero__ph { position: absolute; left: 0; top: 0; width: var(--pw); margin-left: calc(var(--pw) / -2); will-change: transform; }
 .hero__ph .phone { width: 100%; }
-.hero__ph--c { z-index: 3; }
+.hero__ph--c { z-index: 3; will-change: auto; } /* re-rasterised while it grows, so it stays sharp */
 .hero__ph--l1, .hero__ph--r1 { z-index: 2; width: calc(var(--pw) * 0.82); margin-left: calc(var(--pw) * -0.41); }
 .hero__ph--l1 { transform: translate(calc(var(--pw) * -0.62), calc(var(--pw) * 0.22)) rotate(-7deg); }
 .hero__ph--r1 { transform: translate(calc(var(--pw) * 0.62), calc(var(--pw) * 0.22)) rotate(7deg); }

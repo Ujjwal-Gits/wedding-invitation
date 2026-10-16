@@ -35,7 +35,8 @@ function hero(mm) {
   const img = $('#hero-img');
   // where the centre phone must travel to sit in the middle, and how big it must grow for its screen to fill the view
   const rise = () => pin.clientHeight / 2 - (stage.offsetTop + c.offsetHeight / 2);
-  const fill = () => Math.max(window.innerWidth / (c.offsetWidth * 0.938), pin.clientHeight / (c.offsetHeight * 0.938)) * 1.04;
+  // grow until the phone's screen fills the window HEIGHT (about 2x), never stretched past what the sharp still can show
+  const fill = () => Math.min((pin.clientHeight * 0.96) / c.offsetHeight, (window.innerWidth * 0.92) / c.offsetWidth);
   let sharp = false;
   mm.add({ wide: '(min-width: 700px)', narrow: '(max-width: 699px)' }, (ctx) => {
     const { wide } = ctx.conditions;
@@ -48,7 +49,7 @@ function hero(mm) {
         scrub: 0.6, invalidateOnRefresh: true,
         onUpdate: (self) => {
           // the zoom needs the big still: ask for it the first time the scene moves
-          if (!sharp && self.progress > 0.02 && img) { sharp = true; img.sizes = `${Math.round(window.innerWidth)}px`; }
+          if (!sharp && self.progress > 0.02 && img) { sharp = true; img.sizes = `${Math.round(c.offsetWidth * fill())}px`; }
         },
       },
     });
