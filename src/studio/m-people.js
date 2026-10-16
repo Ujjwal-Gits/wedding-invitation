@@ -26,7 +26,7 @@ export function peopleModule(ctx) {
       h('div.pair',
         h('div.stack', biField(m, ['couple', 'bride', 'parents'], { label: 'Bride’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' }), biField(m, ['couple', 'bride', 'home'], { label: 'Bride’s family home', max: 160 })),
         h('div.stack', biField(m, ['couple', 'groom', 'parents'], { label: 'Groom’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' }), biField(m, ['couple', 'groom', 'home'], { label: 'Groom’s family home', max: 160 }))),
-      biField(m, ['hosts'], { label: 'Who is inviting', max: 200, placeholderEn: 'The Thapa & Shrestha families', placeholderNe: 'थापा तथा श्रेष्ठ परिवार' }),
+      biField(m, ['hosts'], { label: 'Who is inviting', max: 200, placeholderEn: 'The Katwal & Dahal families', placeholderNe: 'कटवाल तथा दाहाल परिवार' }),
       textField(m, ['couple', 'hashtag'], { label: 'Wedding hashtag (optional)', max: 60, placeholder: '#BinishaWedsUjjwal', class: 'field--narrow' })),
     fold('Your story', 'A few short moments, one sentence each', strip(storySection(ctx))),
     fold('Invitation card wording', 'The full traditional card text, shloka and saptapadi', strip(wordingSection(ctx))),

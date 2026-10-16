@@ -8,15 +8,15 @@ export const config = {
   couple: {
     bride: {
       name: { en: 'Binisha', ne: 'बिनिशा' },
-      fullName: { en: 'Binisha Thapa', ne: 'सौ.का. बिनिशा थापा' },
-      parents: { en: 'Mr. Ram Bahadur Thapa & Mrs. Sita Thapa', ne: 'श्री राम बहादुर थापा तथा श्रीमती सीता थापा' },
+      fullName: { en: 'Binisha Katwal', ne: 'सौ.का. बिनिशा कटवाल' },
+      parents: { en: 'Mr. Ram Bahadur Katwal & Mrs. Sita Katwal', ne: 'श्री राम बहादुर कटवाल तथा श्रीमती सीता कटवाल' },
       home: { en: 'Baluwatar, Kathmandu', ne: 'बालुवाटार, काठमाडौं' },
       photo: null, // the bride's own portrait (uploaded in the studio)
     },
     groom: {
       name: { en: 'Ujjwal', ne: 'उज्ज्वल' },
-      fullName: { en: 'Ujjwal Shrestha', ne: 'चि. उज्ज्वल श्रेष्ठ' },
-      parents: { en: 'Mr. Hari Prasad Shrestha & Mrs. Gita Shrestha', ne: 'श्री हरि प्रसाद श्रेष्ठ तथा श्रीमती गीता श्रेष्ठ' },
+      fullName: { en: 'Ujjwal Dahal', ne: 'चि. उज्ज्वल दाहाल' },
+      parents: { en: 'Mr. Hari Prasad Dahal & Mrs. Gita Dahal', ne: 'श्री हरि प्रसाद दाहाल तथा श्रीमती गीता दाहाल' },
       home: { en: 'Jawalakhel, Lalitpur', ne: 'जावलाखेल, ललितपुर' },
       photo: null, // the groom's own portrait
     },
@@ -40,7 +40,7 @@ export const config = {
   },
 
   // Who is inviting (signs the card).
-  hosts: { en: 'The Thapa & Shrestha families', ne: 'थापा तथा श्रेष्ठ परिवार' },
+  hosts: { en: 'The Katwal & Dahal families', ne: 'कटवाल तथा दाहाल परिवार' },
 
   weddingDate: '2027-02-12T10:30:00+05:45',
   weddingDateBS: { en: '29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ साल माघ २९ गते, शुक्रबार' },
@@ -54,8 +54,8 @@ export const config = {
     },
     salutation: { en: 'Respected guest,', ne: 'मान्यवर,' },
     body: {
-      en: 'By the grace of our family deity and the blessings of our elders, the auspicious marriage of Ujjwal, son of Mr. Hari Prasad and Mrs. Gita Shrestha, with Binisha, daughter of Mr. Ram Bahadur and Mrs. Sita Thapa, has been fixed.',
-      ne: 'कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले श्री हरि प्रसाद श्रेष्ठ तथा श्रीमती गीता श्रेष्ठका सुपुत्र चि. उज्ज्वलको शुभ विवाह श्री राम बहादुर थापा तथा श्रीमती सीता थापाकी सुपुत्री सौ.का. बिनिशासँग हुने शुभ साइत जुरेको छ।',
+      en: 'By the grace of our family deity and the blessings of our elders, the auspicious marriage of Ujjwal, son of Mr. Hari Prasad and Mrs. Gita Dahal, with Binisha, daughter of Mr. Ram Bahadur and Mrs. Sita Katwal, has been fixed.',
+      ne: 'कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले श्री हरि प्रसाद दाहाल तथा श्रीमती गीता दाहालका सुपुत्र चि. उज्ज्वलको शुभ विवाह श्री राम बहादुर कटवाल तथा श्रीमती सीता कटवालकी सुपुत्री सौ.का. बिनिशासँग हुने शुभ साइत जुरेको छ।',
     },
     request: {
       en: 'We warmly request you and your family to grace the occasion and bless the newlyweds.',
@@ -78,7 +78,7 @@ export const config = {
       blurb: { en: 'Henna, songs and the women of both families.', ne: 'मेहन्दी, गीत र दुवै परिवारका दिदीबहिनी।' },
       start: '2027-02-09T15:00:00+05:45',
       end: '2027-02-09T20:00:00+05:45',
-      venue: { en: 'Thapa Niwas, Baluwatar', ne: 'थापा निवास, बालुवाटार' },
+      venue: { en: 'Katwal Niwas, Baluwatar', ne: 'कटवाल निवास, बालुवाटार' },
       mapQuery: 'Baluwatar, Kathmandu',
       dress: { colors: ['#4F6B2E', '#A9B85A', '#E9D9A6'], text: { en: 'Shades of green', ne: 'हरियो रङ' } },
       photo: 'mehendi-hands',
@@ -89,7 +89,7 @@ export const config = {
       blurb: { en: 'Turmeric for luck and glow, marigolds everywhere.', ne: 'बेसार लगाउने रमाइलो बिहानी।' },
       start: '2027-02-10T10:00:00+05:45',
       end: '2027-02-10T13:00:00+05:45',
-      venue: { en: 'Thapa Niwas, Baluwatar', ne: 'थापा निवास, बालुवाटार' },
+      venue: { en: 'Katwal Niwas, Baluwatar', ne: 'कटवाल निवास, बालुवाटार' },
       mapQuery: 'Baluwatar, Kathmandu',
       dress: { colors: ['#E8A317', '#F4C542', '#FFF4D6'], text: { en: 'Yellow, and clothes you don’t mind staining', ne: 'पहेँलो पहिरन' } },
       photo: 'sindoor',
@@ -159,8 +159,8 @@ export const config = {
       { name: { en: 'Heritage stay in Patan', ne: 'पाटनको सम्पदा होटल' }, note: { en: 'For guests who want old-city mornings', ne: 'पुरानो सहरको अनुभवका लागि' }, mapQuery: 'heritage hotel Patan Durbar Square' },
     ],
     contacts: [
-      { name: { en: 'Rohan Thapa', ne: 'रोहन थापा' }, role: { en: 'Bride’s brother', ne: 'दुलहीको दाजु' }, phone: '+977 9800000000' },
-      { name: { en: 'Nisha Shrestha', ne: 'निशा श्रेष्ठ' }, role: { en: 'Groom’s sister', ne: 'दुलहाकी बहिनी' }, phone: '+977 9811111111' },
+      { name: { en: 'Rohan Katwal', ne: 'रोहन कटवाल' }, role: { en: 'Bride’s brother', ne: 'दुलहीको दाजु' }, phone: '+977 9800000000' },
+      { name: { en: 'Nisha Dahal', ne: 'निशा दाहाल' }, role: { en: 'Groom’s sister', ne: 'दुलहाकी बहिनी' }, phone: '+977 9811111111' },
     ],
     livestream: '', // e.g. a YouTube link for relatives abroad
   },
