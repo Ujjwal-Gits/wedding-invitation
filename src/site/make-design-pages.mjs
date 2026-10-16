@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { THEMES, CATEGORIES, RELIGION_LABEL } from './themes.js';
+import { phoneStill, STILL_SIZES } from './stills.js';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = resolve(ROOT, 'designs');
@@ -27,13 +28,11 @@ function religionsOf(t) {
 }
 
 const thumbSrc = (slug) => (thumbs.has(slug) ? `/site/thumbs/${slug}-480.webp` : `/themes/${slug}/thumb.jpg`);
-/** the picture inside a phone frame: the opening still, else the invitation still, else the big-screen thumb */
-const phoneSrc = (slug) => {
-  const s = stills[slug] || [];
-  if (s.includes('gate')) return `/site/stills/${slug}-gate.webp`;
-  if (s.includes('hero')) return `/site/stills/${slug}-hero.webp`;
-  return thumbSrc(slug);
-};
+/** the picture inside a phone frame: the design's chosen still (src + srcset), else the big-screen thumb */
+const phonePic = (slug) => phoneStill(stills, slug, thumbSrc(slug));
+const srcsetAttr = (pic, sizes) => (pic.srcset ? ` srcset="${pic.srcset}" sizes="${sizes}"` : '');
+/** the first view's label: the gate is "the opening"; any other chosen frame is simply the design */
+const firstView = (slug) => (['gate', 'mid'].includes(stills[slug]?.kind) ? ['Opening', 'The opening', 'The opening of the'] : ['Design', 'The real design', 'The']);
 const suitsText = (rel) => {
   const names = rel.filter((r) => r !== 'other').map((r) => RELIGION_LABEL[r]);
   if (rel.includes('other')) names.push('other');
@@ -49,7 +48,7 @@ function related(t) {
   return [...same, ...other].slice(0, 3);
 }
 function relatedHtml(x) {
-  return `<li><a class="rcard" href="/designs/${x.slug}/"><span class="rcard__pic" style="--tint:${CATEGORIES[x.cat].tint}"><span class="rcard__phone"><img src="${phoneSrc(x.slug)}" width="480" height="720" alt="" loading="lazy" decoding="async" /></span></span>`
+  return `<li><a class="rcard" href="/designs/${x.slug}/"><span class="rcard__pic" style="--tint:${CATEGORIES[x.cat].tint}"><span class="rcard__phone"><img src="${phonePic(x.slug).src}"${srcsetAttr(phonePic(x.slug), STILL_SIZES.related)} width="390" height="844" alt="" loading="lazy" decoding="async" /></span></span>`
     + `<span class="rcard__name">${esc(x.name)} <span class="rcard__ne" lang="ne">${esc(x.ne)}</span></span>`
     + `<span class="rcard__meta">${esc(CATEGORIES[x.cat].label.toLowerCase())} · <span class="js-from">from Rs. 2,999</span></span></a></li>`;
 }
@@ -82,7 +81,12 @@ for (const t of THEMES) {
     CAT_LABEL: esc(CATEGORIES[t.cat].label.toLowerCase()),
     CAT_ONE: esc(CATEGORIES[t.cat].one),
     NE_LINE: t.ne ? `<p class="info__ne" lang="ne">${esc(t.ne)}</p>` : '',
-    OPEN_SRC: phoneSrc(t.slug),
+    OPEN_SRC: phonePic(t.slug).src,
+    OPEN_SRCSET: srcsetAttr(phonePic(t.slug), STILL_SIZES.gallery),
+    OPEN_PRELOAD: phonePic(t.slug).srcset ? ` imagesrcset="${phonePic(t.slug).srcset}" imagesizes="${STILL_SIZES.gallery}"` : '',
+    OPEN_TAB: firstView(t.slug)[0],
+    OPEN_CAP: firstView(t.slug)[1],
+    OPEN_ALT: `${firstView(t.slug)[2]} ${esc(t.name)} design: ${esc(t.alt)}`,
     SUITS: esc(suitsText(rel)),
     FAITH_NOTE: allFaiths ? ' Muslim, Christian and other weddings get their own events and words.' : '',
     RELATED: related(t).map(relatedHtml).join(''),

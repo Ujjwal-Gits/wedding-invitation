@@ -62,3 +62,6 @@ clients/
 
 # Owner-supplied source images dropped in the project root (processed copies live in public/)
 /ganesh image.webp
+
+# Full-size phone stills (1170x2532) the site stills are made from (node src/site/make-thumbs.mjs)
+art-src/stills/

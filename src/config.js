@@ -7,15 +7,15 @@
 export const config = {
   couple: {
     bride: {
-      name: { en: 'Aarati', ne: 'आरती' },
-      fullName: { en: 'Aarati Thapa', ne: 'सौ.का. आरती थापा' },
+      name: { en: 'Binisha', ne: 'बिनिशा' },
+      fullName: { en: 'Binisha Thapa', ne: 'सौ.का. बिनिशा थापा' },
       parents: { en: 'Mr. Ram Bahadur Thapa & Mrs. Sita Thapa', ne: 'श्री राम बहादुर थापा तथा श्रीमती सीता थापा' },
       home: { en: 'Baluwatar, Kathmandu', ne: 'बालुवाटार, काठमाडौं' },
       photo: null, // the bride's own portrait (uploaded in the studio)
     },
     groom: {
-      name: { en: 'Sameer', ne: 'समीर' },
-      fullName: { en: 'Sameer Shrestha', ne: 'चि. समीर श्रेष्ठ' },
+      name: { en: 'Ujjwal', ne: 'उज्ज्वल' },
+      fullName: { en: 'Ujjwal Shrestha', ne: 'चि. उज्ज्वल श्रेष्ठ' },
       parents: { en: 'Mr. Hari Prasad Shrestha & Mrs. Gita Shrestha', ne: 'श्री हरि प्रसाद श्रेष्ठ तथा श्रीमती गीता श्रेष्ठ' },
       home: { en: 'Jawalakhel, Lalitpur', ne: 'जावलाखेल, ललितपुर' },
       photo: null, // the groom's own portrait
@@ -36,7 +36,7 @@ export const config = {
       { photo: 'bride-6', alt: 'The bride in an embroidered lehenga' },
       { photo: 'bride-1', alt: 'The bride holding out her dupatta' },
     ],
-    hashtag: '#AaratiWedsSameer',
+    hashtag: '#UjjwalWedsBinisha',
   },
 
   // Who is inviting (signs the card).
@@ -54,8 +54,8 @@ export const config = {
     },
     salutation: { en: 'Respected guest,', ne: 'मान्यवर,' },
     body: {
-      en: 'By the grace of our family deity and the blessings of our elders, the auspicious marriage of Sameer, son of Mr. Hari Prasad and Mrs. Gita Shrestha, with Aarati, daughter of Mr. Ram Bahadur and Mrs. Sita Thapa, has been fixed.',
-      ne: 'कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले श्री हरि प्रसाद श्रेष्ठ तथा श्रीमती गीता श्रेष्ठका सुपुत्र चि. समीरको शुभ विवाह श्री राम बहादुर थापा तथा श्रीमती सीता थापाकी सुपुत्री सौ.का. आरतीसँग हुने शुभ साइत जुरेको छ।',
+      en: 'By the grace of our family deity and the blessings of our elders, the auspicious marriage of Ujjwal, son of Mr. Hari Prasad and Mrs. Gita Shrestha, with Binisha, daughter of Mr. Ram Bahadur and Mrs. Sita Thapa, has been fixed.',
+      ne: 'कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले श्री हरि प्रसाद श्रेष्ठ तथा श्रीमती गीता श्रेष्ठका सुपुत्र चि. उज्ज्वलको शुभ विवाह श्री राम बहादुर थापा तथा श्रीमती सीता थापाकी सुपुत्री सौ.का. बिनिशासँग हुने शुभ साइत जुरेको छ।',
     },
     request: {
       en: 'We warmly request you and your family to grace the occasion and bless the newlyweds.',
@@ -195,7 +195,7 @@ export const config = {
   content: { images: {}, texts: {} },
 
   share: {
-    title: 'Aarati & Sameer · Shubha Bibaha',
+    title: 'Ujjwal & Binisha · Shubha Bibaha',
     description: 'You are warmly invited to our wedding in Kathmandu, 12 February 2027.',
     image: 'art/og.jpg',
     siteUrl: '',

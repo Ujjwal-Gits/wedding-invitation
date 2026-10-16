@@ -95,8 +95,8 @@ const suitsFaith = (t, r) => (Array.isArray(t.religions) && t.religions.length ?
 export function newInvitation(ctx) {
   const st = { step: 1, religion: 'hindu', theme: '', colors: {}, slugTouched: false };
   const err = h('p.form-error', { role: 'alert' });
-  const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Aarati' });
-  const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Sameer' });
+  const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Binisha' });
+  const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Ujjwal' });
   const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, spellcheck: 'false' });
   const auto = () => { if (!st.slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
   bride.addEventListener('input', auto);

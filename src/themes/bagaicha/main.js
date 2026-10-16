@@ -364,7 +364,7 @@ let started = false;
 let lenis = null;
 
 async function welcomeSign() {
-  try { await Promise.all([document.fonts.load('60px Italiana'), document.fonts.load('20px Figtree'), document.fonts.load('600 40px Laila', 'आरती')]); } catch { /* fonts optional */ }
+  try { await Promise.all([document.fonts.load('60px Italiana'), document.fonts.load('20px Figtree'), document.fonts.load('600 40px Laila', 'बिनिशा')]); } catch { /* fonts optional */ }
   const cv = document.createElement('canvas');
   cv.width = 1024; cv.height = 256;
   const g = cv.getContext('2d');

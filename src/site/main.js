@@ -7,7 +7,8 @@ import { $, $$, el, reduced, SLUG_RE, str, npr, money, initHeader, initPreview, 
 import { loadSite, loadThemes, normaliseThemes, createOrder, REF_RE } from './api.js';
 import { THEMES, BY_SLUG, CATEGORIES, PLAN_NE, PLAN_DESC, FALLBACK_SITE } from './themes.js';
 import SMALL_THUMBS from './thumbs.json';
-import STILLS from './stills.json'; // { slug: ['gate', 'hero'] } phone-shaped stills (node src/site/make-thumbs.mjs)
+import STILLS from './stills.json'; // { slug: { kind, w } } one chosen phone still per design (node src/site/make-thumbs.mjs)
+import { phoneStill, STILL_SIZES } from './stills.js';
 import PAGES from './design-pages.json'; // slugs with a generated /designs/<slug>/ page (node src/site/make-design-pages.mjs)
 
 // the payment step loads on demand (warmed when the visitor starts the form)
@@ -16,13 +17,9 @@ const loadPayment = () => import('./payment.js');
 const small = new Set(SMALL_THUMBS);
 const pages = new Set(PAGES);
 const designUrl = (slug) => (pages.has(slug) ? `/designs/${slug}/` : showcaseUrl(slug));
-/** the picture inside a phone frame: the opening still, else the invitation still, else the big-screen thumb */
-const phoneSrc = (t) => {
-  const s = STILLS[t.slug] || [];
-  if (s.includes('gate')) return `/site/stills/${t.slug}-gate.webp`;
-  if (s.includes('hero')) return `/site/stills/${t.slug}-hero.webp`;
-  return small.has(t.slug) ? `/site/thumbs/${t.slug}-480.webp` : t.thumb;
-};
+/** the picture inside a phone frame: the design's chosen still (src + srcset), else the big-screen thumb */
+const phonePic = (t) => phoneStill(STILLS, t.slug, small.has(t.slug) ? `/site/thumbs/${t.slug}-480.webp` : t.thumb);
+const imgAttrs = (pic, sizes) => ({ src: pic.src, srcset: pic.srcset || null, sizes: pic.srcset ? sizes : null });
 const cat = (t) => CATEGORIES[t.cat] || CATEGORIES.cards;
 
 const view = { site: null, wa: '', themes: normaliseThemes(null, FALLBACK_SITE), cat: 'all', list: [], i: 0, mode: 'ready' };
@@ -59,7 +56,7 @@ function renderDesigns() {
   ul.replaceChildren(...view.list.map((t, i) => el('li', {},
     el('button', { type: 'button', class: 'thumb', 'aria-pressed': 'false', 'aria-label': `Show ${t.name}`, 'data-i': i, style: `--tint:${cat(t).tint}` },
       el('span', { class: 'thumb__pic' }, el('span', { class: 'thumb__phone' },
-        el('img', { src: phoneSrc(t), alt: '', width: 480, height: 720, loading: 'lazy', decoding: 'async' }))),
+        el('img', { ...imgAttrs(phonePic(t), STILL_SIZES.thumb), alt: '', width: 390, height: 844, loading: 'lazy', decoding: 'async' }))),
       el('span', { class: 'thumb__cap' }, el('span', { class: 'thumb__name', text: t.name }), el('span', { class: 'thumb__mood', text: cat(t).short }))))),
   el('li', {}, el('a', { class: 'thumb thumb--more', href: '#order', 'data-kind': 'custom' },
     el('span', { class: 'thumb__pic' }, el('span', { class: 'thumb__plus', 'aria-hidden': 'true', text: '+' }), el('span', { class: 'thumb__mood', text: 'your own idea' })),
@@ -100,9 +97,10 @@ function showStage(i, instant = false) {
   const t = list[i];
   const img = $('#stage-img');
   const stage = $('#stage');
-  const src = phoneSrc(t);
+  const pic = phonePic(t);
   const apply = () => {
-    img.src = src;
+    if (pic.srcset) { img.sizes = STILL_SIZES.stage; img.srcset = pic.srcset; } else img.removeAttribute('srcset');
+    img.src = pic.src;
     img.alt = `The ${t.name} design on a phone: ${t.alt}`;
     stage.classList.remove('is-swapping');
   };
@@ -111,7 +109,8 @@ function showStage(i, instant = false) {
     stage.classList.add('is-swapping');
     const pre = new Image();
     pre.onload = pre.onerror = apply;
-    pre.src = src;
+    if (pic.srcset) { pre.sizes = STILL_SIZES.stage; pre.srcset = pic.srcset; }
+    pre.src = pic.src;
   }
   $('#stage-pic').style.setProperty('--tint', cat(t).tint);
   $('#stage-cat').textContent = cat(t).one;

@@ -34,6 +34,8 @@
   --ok: #2F6B3B;
   --on-wine: #FFFFFF;
   --wine-tint: #F6D9D5;
+  --wine-press: #6A0F1B;    /* pressed primary */
+  --wine-wash: rgba(154, 24, 41, 0.07); /* outline hover: a soft wine tint */
 
   /* type */
   --f-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
@@ -49,7 +51,8 @@
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px; --s10: 128px;
   --gutter: 20px;
   --max: 1272px;            /* the canvas: 1320 with 24px padding */
-  --sec: var(--s8);
+  --sec: 56px;              /* the one section rhythm: 56 phone, 72 tablet, 96 desktop (top and bottom) */
+  --head-gap: var(--s5);    /* a section heading to its content: 24, then 32 */
   --bar-h: 64px;
 
   --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
@@ -58,9 +61,8 @@
   --shadow-sm: 0 12px 24px -16px rgba(42, 26, 29, 0.35);
   --shadow: 0 32px 64px -40px rgba(42, 26, 29, 0.5);
 }
-@media (min-width: 768px) { :root { --gutter: 32px; --sec: var(--s9); } }
-@media (min-width: 1024px) { :root { --gutter: 48px; --bar-h: 72px; } }
-@media (min-width: 1280px) { :root { --sec: var(--s10); } }
+@media (min-width: 768px) { :root { --gutter: 32px; --sec: 72px; --head-gap: var(--s6); } }
+@media (min-width: 1024px) { :root { --gutter: 48px; --bar-h: 72px; --sec: var(--s9); } }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
@@ -79,7 +81,8 @@ img { height: auto; }
 h1, h2, h3, h4, p, ol, ul, dl, dd, figure, blockquote { margin: 0; }
 ol, ul { padding: 0; list-style: none; }
 a { color: var(--wine); text-underline-offset: 3px; text-decoration-thickness: 1px; }
-a:hover { color: var(--wine-deep); }
+/* :where() keeps this at element weight, so a classed link (a .btn) always keeps its own hover colours */
+a:where(:hover) { color: var(--wine-deep); }
 button { font: inherit; color: inherit; }
 ::selection { background: var(--wine-tint); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--wine); outline-offset: 3px; border-radius: 4px; }
@@ -94,6 +97,8 @@ button { font: inherit; color: inherit; }
 .sec { padding-block: var(--sec); scroll-margin-top: calc(var(--bar-h) + 1px); } /* the header plus its hairline */
 .sec--soft { background: var(--soft); }
 .sec--blush { background: var(--blush); }
+/* two sections on the same background read as one band: never stack their paddings */
+.sec--soft + .sec--soft, .sec--blush + .sec--blush, .sec:not(.sec--soft, .sec--blush) + .sec:not(.sec--soft, .sec--blush) { padding-top: 0; }
 
 /* type */
 .kick { font: 500 12px/1.4 var(--f-text); letter-spacing: 0.3em; text-transform: uppercase; color: var(--wine); }
@@ -117,15 +122,17 @@ button { font: inherit; color: inherit; }
   font: 500 13px/1 var(--f-text); letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
   cursor: pointer; transition: background-color 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
 }
-.btn:hover { --b-bg: var(--ink); --b-fg: var(--white); }
+/* states: quiet colour changes only, and the label always keeps its own colour (never the fill's) */
+.btn:is(:hover, :focus-visible) { --b-bg: var(--wine-wash); color: var(--b-fg); }
 .btn:active { transform: scale(0.98); }
 .btn--accent { --b-bg: var(--wine); --b-fg: var(--on-wine); --b-bd: var(--wine); }
-.btn--accent:hover { --b-bg: var(--wine-deep); --b-bd: var(--wine-deep); --b-fg: var(--on-wine); }
+.btn--accent:is(:hover, :focus-visible) { --b-bg: var(--wine-deep); --b-bd: var(--wine-deep); --b-fg: var(--on-wine); }
+.btn--accent:active { --b-bg: var(--wine-press); --b-bd: var(--wine-press); }
 .btn--soft { --b-bg: var(--blush); --b-fg: var(--wine); --b-bd: var(--blush); }
-.btn--soft:hover { --b-bg: var(--wine); --b-fg: var(--on-wine); --b-bd: var(--wine); }
+.btn--soft:is(:hover, :focus-visible) { --b-bg: var(--wine-tint); --b-fg: var(--wine-deep); --b-bd: var(--wine-tint); }
 .btn--wa { --b-bg: var(--white); --b-fg: var(--ink); --b-bd: var(--line-input); text-transform: none; letter-spacing: 0; font-size: 15px; }
 .btn--wa .ico { width: 18px; height: 18px; color: #1D7F45; }
-.btn--wa:hover { --b-bg: var(--soft); --b-fg: var(--ink); --b-bd: var(--ink); }
+.btn--wa:is(:hover, :focus-visible) { --b-bg: var(--soft); --b-fg: var(--ink); --b-bd: var(--ink); }
 .btn--md { min-height: 52px; padding: 0 var(--s5); }
 .btn--lg { min-height: 56px; padding: 0 var(--s6); }
 .btn--xl { min-height: 56px; padding: 0 var(--s6); }
@@ -134,12 +141,13 @@ button { font: inherit; color: inherit; }
 .btn[disabled] { opacity: 0.6; cursor: progress; }
 .btns { display: flex; flex-wrap: wrap; gap: var(--s3); }
 .link { color: var(--wine); font-weight: 500; text-decoration: underline; text-underline-offset: 4px; }
+.link:hover { color: var(--wine-deep); }
 .chipbtn {
   display: inline-flex; align-items: center; gap: var(--s2); min-height: 40px; padding: 0 var(--s4); border: 1px solid var(--blush-2);
   border-radius: 999px; background: var(--white); color: var(--ink); font: 500 14px/1 var(--f-text); text-decoration: none; cursor: pointer;
   transition: border-color 200ms var(--ease), background-color 200ms var(--ease);
 }
-.chipbtn:hover { border-color: var(--ink); color: var(--ink); }
+.chipbtn:is(:hover, :focus-visible) { border-color: var(--ink); background: var(--soft); color: var(--ink); }
 .chipbtn--sm { min-height: 32px; padding: 0 var(--s3); font-size: 13px; }
 .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -264,9 +272,10 @@ button { font: inherit; color: inherit; }
 .pv__acts { display: grid; gap: var(--s3); justify-items: start; margin-top: var(--s4); }
 .pv__close { position: absolute; top: var(--s4); right: var(--s4); }
 .round { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--ink); border-radius: 50%; background: var(--white); color: var(--ink); cursor: pointer; transition: background-color 200ms var(--ease), color 200ms var(--ease); }
-.round:hover { background: var(--ink); color: var(--white); }
+.round:is(:hover, :focus-visible) { background: var(--blush); color: var(--ink); }
+.round:active { transform: scale(0.96); }
 .round--dark { background: var(--ink); color: var(--white); }
-.round--dark:hover { background: var(--wine); border-color: var(--wine); }
+.round--dark:is(:hover, :focus-visible) { background: var(--wine-deep); border-color: var(--wine-deep); color: var(--white); }
 .round .ico { width: 18px; height: 18px; }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pv[open] { animation: none; } }

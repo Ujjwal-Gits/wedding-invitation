@@ -61,7 +61,7 @@ const short = (v, n = 36) => (v.length > n ? `${v.slice(0, n - 1).trimEnd()}…`
 
 /**
  * English | नेपाली: one question, two languages in one joined box (side by side when there is room, stacked on
- * phones). An empty language shows what the invitation will use instead ("Uses English: Aarati").
+ * phones). An empty language shows what the invitation will use instead ("Uses English: Binisha").
  * opts: { label, hint, max, multiline, rows, placeholderEn, placeholderNe, action (Node, top right, never shifts) }
  */
 export function biField(m, path, opts = {}) {

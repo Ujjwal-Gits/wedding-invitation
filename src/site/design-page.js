@@ -9,10 +9,11 @@ import { loadSite, loadThemes } from './api.js';
 import { BY_SLUG, CATEGORIES, RELIGION_LABEL } from './themes.js';
 import SMALL_THUMBS from './thumbs.json';
 import STILLS from './stills.json';
+import { phoneStill, STILL_SIZES } from './stills.js';
 
 const slug = document.body.dataset.slug;
 const small = new Set(SMALL_THUMBS);
-const CAPS = ['The opening', 'The invitation', 'Every ceremony', 'RSVP'];
+const CAPS = [$('#g-cap')?.textContent || 'The design', 'The invitation', 'Every ceremony', 'RSVP']; // the first is per design (the still)
 
 /** a radio group or tab list with roving focus: arrows, Home and End move; `pick(i)` applies the choice */
 function roving(group, role, pick) {
@@ -58,16 +59,11 @@ function initGallery() {
   });
 }
 
-const phoneSrc = (t) => {
-  const s = STILLS[t.slug] || [];
-  if (s.includes('gate')) return `/site/stills/${t.slug}-gate.webp`;
-  if (s.includes('hero')) return `/site/stills/${t.slug}-hero.webp`;
-  return small.has(t.slug) ? `/site/thumbs/${t.slug}-480.webp` : t.thumb;
-};
+const phonePic = (t) => phoneStill(STILLS, t.slug, small.has(t.slug) ? `/site/thumbs/${t.slug}-480.webp` : t.thumb);
 const relatedCard = (t, from) => el('li', {},
   el('a', { class: 'rcard', href: `/designs/${t.slug}/` },
     el('span', { class: 'rcard__pic', style: `--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}` },
-      el('span', { class: 'rcard__phone' }, el('img', { src: phoneSrc(t), width: 480, height: 720, alt: '', loading: 'lazy', decoding: 'async' }))),
+      el('span', { class: 'rcard__phone' }, el('img', { src: phonePic(t).src, srcset: phonePic(t).srcset || null, sizes: phonePic(t).srcset ? STILL_SIZES.related : null, width: 390, height: 844, alt: '', loading: 'lazy', decoding: 'async' }))),
     el('span', { class: 'rcard__name' }, document.createTextNode(`${t.name} `), t.ne ? el('span', { class: 'rcard__ne', lang: 'ne', text: t.ne }) : null),
     el('span', { class: 'rcard__meta' }, document.createTextNode(`${(CATEGORIES[t.cat]?.label || 'design').toLowerCase()} · `), el('span', { class: 'js-from', text: from }))));
 
