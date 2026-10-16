@@ -164,6 +164,7 @@
   .bento--home > :nth-child(1), .bento--home > :nth-child(4) { grid-column: span 3; }
   .bento--home > :nth-child(2), .bento--home > :nth-child(3) { grid-column: span 3; }
   .bento--all > :nth-child(1), .bento--all > :nth-child(6) { grid-column: span 4; }
+  .bento--all > :nth-child(8), .bento--all > :nth-child(9) { grid-column: span 3; }
   .bento--all > :nth-child(1) { flex-direction: row; align-items: center; }
   .bento--all > :nth-child(1) .fx { order: 2; }
   .feat { min-height: 380px; }
