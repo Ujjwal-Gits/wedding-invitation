@@ -6,6 +6,9 @@
 // order.payment = { provider: 'paypal', env, status, plan, amount: '49.00', currency: 'USD', paypalOrderId,
 //   captureId?, payerEmail?, payerName?, createdAt, paidAt?, refunded?: '10.00', refunds?: [refundId], refundedAt?,
 //   problem?, events?: [webhook event ids], updatedAt }
+// Each refund (made from the dashboard through PayPal's API, or reported by the webhook) is also one line in
+// order.refunds (lib/finance.js counts those); payment.refunds keeps PayPal's refund ids, so a refund is recorded
+// once however it arrives.
 // status: created (checkout opened) · pending (PayPal is holding the capture) · paid · partially_refunded · refunded
 //         · denied · mismatch (PayPal reported an amount or currency we did not ask for; never treated as paid)
 import { randomBytes } from 'node:crypto';
@@ -17,6 +20,8 @@ const SETTLED = new Set(['paid', 'partially_refunded', 'refunded']);
 const MAX_EVENTS = 40;
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
+const REFUND_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
+const MAX_REFUNDS = 50;
 
 /** '49.00' → 4900; anything else → NaN. */
 export function toCents(v) {
@@ -46,6 +51,22 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     if (next === 'confirmed') { pay.confirmedAt = stamp(); pay.via = 'paypal'; pay.reason = null; } else pay.refundedAt = stamp();
     pay.history = [...(pay.history || []), { at: stamp(), status: next, by: 'paypal' }].slice(-50);
   };
+  /**
+   * Records one PayPal refund (cents of the capture's currency): the payment's refunded total and status, PayPal's
+   * refund id, and a line in order.refunds. The caller has checked the id is new.
+   */
+  const recordRefund = (o, { refundId, cents, status, at, reason, by }) => {
+    const p = o.payment;
+    const amount = Math.min(cents, Math.max(0, toCents(p.amount) - toCents(p.refunded || '0')));
+    const total = toCents(p.refunded || '0') + amount;
+    if (refundId) p.refunds = [...(p.refunds || []), refundId].slice(-20);
+    p.refunded = fromCents(Math.min(total, toCents(p.amount)));
+    p.status = total >= toCents(p.amount) ? 'refunded' : 'partially_refunded';
+    p.refundedAt = stamp();
+    const line = { id: randomBytes(6).toString('base64url'), of: 'paypal', via: 'paypal', amount: Number(fromCents(amount)), currency: p.currency, at, reason, status, by, recordedAt: stamp() };
+    if (refundId) line.paypalRefundId = refundId;
+    if (amount > 0) o.refunds = [...(Array.isArray(o.refunds) ? o.refunds : []), line].slice(-MAX_REFUNDS);
+  };
   const mutate = (id, fn) => mutateOrder(id, async (o) => {
     const r = await fn(o);
     if (r !== false) syncPay(o);
@@ -71,6 +92,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       if (p && (SETTLED.has(p.status) || p.status === 'pending')) throw httpError(409, 'This request is already paid.', { code: 'already_paid' });
       if (p?.status === 'mismatch') throw httpError(409, 'We are checking a payment for this request. We will call you.');
       if (order.pay?.status === 'confirmed' || order.pay?.status === 'refunded') throw httpError(409, 'This request is already paid.', { code: 'already_paid' });
+      if (order.pay?.status === 'comped') throw httpError(409, 'There is nothing to pay for this order.', { code: 'already_paid' });
       const { plan, amount } = await priceFor(order);
       const created = await client.createOrder({
         ref, amount, currency: CURRENCY, description: `Nimtto invitation website, ${plan.name} plan`,
@@ -228,14 +250,22 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
         p.captureId = captureId || p.captureId;
       } else if (refund) {
         const refundId = str(r.id, idRe);
-        if (refundId && (p.refunds || []).includes(refundId)) { outcome = 'duplicate refund'; return; }
+        if (refundId && (p.refunds || []).includes(refundId)) {
+          // made from the dashboard (already recorded): only a pending refund that has now completed changes
+          const line = (o.refunds || []).find((x) => x.paypalRefundId === refundId);
+          if (line && line.status === 'PENDING' && r.status === 'COMPLETED') line.status = 'COMPLETED';
+          outcome = 'duplicate refund';
+          return;
+        }
         const cents = toCents(r.amount?.value);
-        const total = toCents(p.refunded || '0') + (Number.isFinite(cents) && r.amount?.currency_code === p.currency ? cents : toCents(p.amount));
-        p.refunds = [...(p.refunds || []), refundId].filter(Boolean).slice(-20);
-        p.refunded = fromCents(Math.min(total, toCents(p.amount)));
-        p.status = total >= toCents(p.amount) ? 'refunded' : 'partially_refunded';
-        p.refundedAt = stamp();
-        if (type === 'PAYMENT.CAPTURE.REVERSED') p.problem = 'Reversed by PayPal (a dispute or chargeback).';
+        const reversed = type === 'PAYMENT.CAPTURE.REVERSED';
+        const when = typeof r.create_time === 'string' && !Number.isNaN(Date.parse(r.create_time)) ? new Date(r.create_time).toISOString() : stamp();
+        recordRefund(o, {
+          refundId, cents: Number.isFinite(cents) && r.amount?.currency_code === p.currency ? cents : toCents(p.amount),
+          status: str(r.status, /^[A-Z_]{3,30}$/) || 'COMPLETED', at: when,
+          reason: reversed ? 'Reversed by PayPal (a dispute or chargeback)' : 'Refunded in PayPal', by: 'paypal',
+        });
+        if (reversed) p.problem = 'Reversed by PayPal (a dispute or chargeback).';
       } else {
         outcome = 'ignored';
       }
@@ -245,5 +275,40 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
   }
   const ok = (type, outcome) => ({ status: 200, body: { ok: true, outcome } });
 
-  return { start, capture, webhook };
+  /**
+   * The planner refunds (part of) the PayPal capture through PayPal's API. amount: '10.00' in the capture's
+   * currency, at most what is not refunded yet. A repeated call for the same amount reuses the PayPal-Request-Id,
+   * so PayPal answers with the first refund and nothing is recorded twice; the webhook that follows is a duplicate.
+   * Returns { order, refundId, status, repeat }.
+   */
+  async function refund(id, { amount, reason = '' }) {
+    return lock(id, async () => {
+      const order = await getOrder(id);
+      if (!order) throw httpError(404, 'Request not found.');
+      const p = order.payment;
+      if (!p || p.provider !== 'paypal' || !p.captureId || !(p.status === 'paid' || p.status === 'partially_refunded')) {
+        throw httpError(409, 'This order has no PayPal payment that can be refunded.');
+      }
+      const cents = toCents(amount);
+      const left = toCents(p.amount) - toCents(p.refunded || '0');
+      if (!Number.isFinite(cents) || cents < 1) throw httpError(400, 'Enter the amount to refund.');
+      if (cents > left) throw httpError(400, `At most ${p.currency} ${fromCents(Math.max(0, left))} can still be refunded.`);
+      const requestId = `nimtto-refund-${id}-${(p.refunds || []).length + 1}-${cents}`;
+      const out = await client.refundCapture(p.captureId, { amount: fromCents(cents), currency: p.currency, requestId, note: reason });
+      const refundId = typeof out?.id === 'string' && REFUND_ID_RE.test(out.id) ? out.id : null;
+      if (!refundId) throw new PayPalError('PayPal returned no refund id.', { status: 502 });
+      const status = /^[A-Z_]{3,30}$/.test(String(out.status || '')) ? out.status : 'COMPLETED';
+      if (status === 'FAILED' || status === 'CANCELLED') throw httpError(502, `PayPal did not make the refund (${status.toLowerCase()}). Nothing was recorded.`);
+      let repeat = false;
+      const saved = await mutate(id, (o) => {
+        if (o.payment?.provider !== 'paypal') return false;
+        if ((o.payment.refunds || []).includes(refundId)) { repeat = true; return false; }
+        recordRefund(o, { refundId, cents, status, at: stamp(), reason, by: 'admin' });
+      });
+      console.info(`[pay] paypal refund ref=${order.ref || id} refund=${refundId} amount=${fromCents(cents)} ${p.currency} status=${status}${repeat ? ' (repeat)' : ''}`);
+      return { order: saved, refundId, status, repeat };
+    });
+  }
+
+  return { start, capture, webhook, refund };
 }

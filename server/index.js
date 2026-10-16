@@ -26,6 +26,7 @@ import { showcaseGate } from './lib/showcase.js';
 import { stopDepth } from './lib/depth.js';
 import { payments } from './lib/payments/routes.js'; // PayPal (off until PAYPAL_* are set); see docs/PAYMENTS.md
 import * as manualPay from './lib/payments/manual.js'; // order -> pay by QR -> screenshot -> admin confirms (docs/PAYMENTS.md)
+import { financeRouter } from './lib/finance-admin.js'; // earnings, refunds, free access (docs/API.md "Finance")
 
 assertConfigured();
 openStore();
@@ -109,6 +110,8 @@ api.delete('/admin/customers/:id/invitations/:slug', requireAdmin, wrap(customer
 api.post('/admin/pending/link', requireAdmin, json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
 api.post('/admin/pending/dismiss', requireAdmin, json('1kb'), wrap(customers.adminDismissPending));
 api.get('/admin/orders/:id/proof/:n', requireAdmin, wrap(manualPay.adminProof));
+// Money: every route under /admin/finance is the planner's (requireAdmin inside the router)
+api.use('/admin/finance', financeRouter({ checkout: payments.checkout, paypal: { enabled: payments.config.enabled, env: payments.config.env } }));
 api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
 api.post('/orders/:id/invitation', requireAdmin, json('1kb'), wrap(handover.createForOrder));
 api.delete('/orders/:id', requireAdmin, wrap(orders.remove));

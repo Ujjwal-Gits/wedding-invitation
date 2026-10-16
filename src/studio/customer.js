@@ -15,6 +15,7 @@ const PAY = {
   confirmed: ['ok', 'Confirmed'],
   rejected: ['warn', 'Rejected'],
   refunded: ['muted', 'Refunded'],
+  comped: ['ok', 'Free, nothing to pay'], // free access the planner gave
 };
 const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
 const usd = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
@@ -69,6 +70,7 @@ function orderCard(o, meta, redraw, ro = false) {
       h('span.pill', { class: `pill--${tone}` }, text)),
     o.payStatus === 'rejected' && o.reason ? h('p.notice.notice--warn', icon('alert', 16), h('span', h('b', 'Why: '), o.reason, '. Please pay again or message us.')) : null,
     o.payStatus === 'proof_submitted' ? h('p.cu-order__note', 'We have your payment screenshot and will confirm it soon.') : null,
+    o.payStatus === 'comped' ? h('p.cu-order__note', 'This plan is on us. There is nothing to pay.') : null,
     h('dl.cu-facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
     ro ? null : h('div.cu-order__acts',
       canPay ? h('a.btn.btn--primary', { href: o.payUrl }, icon('right', 16), o.payStatus === 'rejected' ? 'Pay again' : 'Pay now') : null,

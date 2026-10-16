@@ -1,4 +1,5 @@
-// PayPal REST client: OAuth token (cached), Orders v2 (create, capture, show) and webhook signature verification.
+// PayPal REST client: OAuth token (cached), Orders v2 (create, capture, show), refunds of a capture and webhook
+// signature verification.
 // Off unless PAYPAL_ENV, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET and PAYPAL_WEBHOOK_ID are all set (server/.env).
 // Nothing here ever logs or returns the secret or an access token.
 
@@ -6,6 +7,7 @@ const API_BASE = { sandbox: 'https://api-m.sandbox.paypal.com', live: 'https://a
 const CRED_RE = /^[A-Za-z0-9_-]{16,128}$/;
 const WEBHOOK_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
 export const PAYPAL_ORDER_ID_RE = /^[A-Z0-9]{8,32}$/;
+export const CAPTURE_ID_RE = /^[A-Za-z0-9]{6,64}$/;
 
 /** Reads the PayPal settings from the environment. `enabled` only when every value is present and well formed. */
 export function readConfig(env = process.env) {
@@ -137,6 +139,17 @@ export function createClient({ env, clientId, secret, fetch: fetchFn = globalThi
     getOrder(id) {
       if (!PAYPAL_ORDER_ID_RE.test(id)) throw new PayPalError('Bad PayPal order id.', { status: 400 });
       return request('GET', `/v2/checkout/orders/${id}`);
+    },
+    /**
+     * POST /v2/payments/captures/{id}/refund (full or partial). amount is a string with two decimals. The same
+     * requestId makes a repeated call (a timeout, a double click) return the first refund instead of a second one.
+     */
+    refundCapture(captureId, { amount, currency, requestId, note = '' }) {
+      if (!CAPTURE_ID_RE.test(String(captureId))) throw new PayPalError('Bad PayPal capture id.', { status: 400 });
+      return request('POST', `/v2/payments/captures/${captureId}/refund`, {
+        headers: { 'PayPal-Request-Id': requestId, Prefer: 'return=representation' },
+        body: { amount: { value: amount, currency_code: currency }, ...(note ? { note_to_payer: note.slice(0, 255) } : {}) },
+      });
     },
     /**
      * POST /v1/notifications/verify-webhook-signature. The event goes in exactly as received (re-serialising

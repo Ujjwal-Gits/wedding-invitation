@@ -9,6 +9,7 @@ import { clearCache } from './cache.js';
 import { navigate, setUrl, current } from './nav.js';
 import { customersSection } from './admin-customers.js';
 import { musicLibrary } from './admin-music.js';
+import { financePage, giveFreeAccess, undoFreeAccess, refundDialog, refundsBlock, compFacts } from './admin-finance.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
@@ -599,6 +600,7 @@ function access(ctx) {
 const PAY_STATE = {
   awaiting_payment: ['muted', 'Awaiting payment'], proof_submitted: ['accent', 'Payment to check'],
   confirmed: ['ok', 'Paid'], rejected: ['warn', 'Payment rejected'], refunded: ['warn', 'Refunded'],
+  comped: ['ok', 'Free access'], // given without payment (admin-finance.js); never counted as money
 };
 const payState = (o) => o.payStatus || o.pay?.status || null;
 const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
@@ -610,7 +612,7 @@ const ppBase = (p) => (p?.env === 'live' ? 'https://www.paypal.com' : 'https://w
 function payBadge(o) {
   const s = payState(o);
   if (!s) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'Made before payments were tracked' }, 'Unpaid') : null;
-  const [tone, text] = PAY_STATE[s] || ['muted', s];
+  const [tone, text] = o.refundState === 'partial' ? ['warn', 'Paid · partly refunded'] : PAY_STATE[s] || ['muted', s];
   return h('span.pill', { class: `pill--${tone}` }, text);
 }
 function paypalFacts(p) {
@@ -659,19 +661,34 @@ function rejectDialog(o) {
   });
 }
 
-/** Mark paid by hand (cash, or a transfer seen elsewhere). Resolves to { method, note } or null. */
+/** Mark paid by hand (cash, or a transfer seen elsewhere). Resolves to { method, note, currency, amount } or null. */
 function manualDialog(o, methods) {
   return new Promise((resolve) => {
     let out = null;
     const sel = h('select.input', { id: 'man-method' }, ['Cash', ...methods.map((m) => m.label), 'Other'].map((t) => h('option', { value: t }, t)));
     const note = h('input.input', { id: 'man-note', maxlength: 500, placeholder: 'e.g. Paid at the office on Friday' });
+    // what was received (Finance counts it): the plan price in the method's currency unless they paid another amount
+    const cur = h('select.input', { id: 'man-cur' }, [['NPR', 'Rupees (Rs)'], ['USD', 'US dollars ($)']].map(([v, t]) => h('option', { value: v }, t)));
+    const amt = h('input.input', { id: 'man-amt', type: 'number', inputmode: 'decimal', min: '0.01', step: '0.01' });
+    const err = h('p.form-error', { role: 'alert' });
+    const priceIn = (c) => (c === 'USD' ? o.amount?.usd : o.amount?.npr);
+    const setCur = (c) => { cur.value = c; cur.dispatchEvent(new Event('change')); amt.value = priceIn(c) ?? ''; };
+    setCur(o.amount?.npr == null && o.amount?.usd != null ? 'USD' : 'NPR');
+    cur.addEventListener('change', () => { if (!amt.value || Number(amt.value) === Number(priceIn(cur.value === 'USD' ? 'NPR' : 'USD'))) amt.value = priceIn(cur.value) ?? ''; });
+    sel.addEventListener('change', () => { const m = methods.find((x) => x.label === sel.value); if (m?.currency && m.currency !== cur.value) setCur(m.currency); });
     const d = openDialog({
       title: `Mark ${o.name}’s order as paid`,
       body: [h('p.dialog__text', `For money you received another way. Expected: ${priceLine(o.amount, o.planFrom) || 'no price set'}.`),
         h('div.field', h('label.label', { for: 'man-method' }, 'How they paid'), sel),
-        h('div.field', h('label.label', { for: 'man-note' }, 'Note (only you see it)'), note)],
+        h('div.cu-two', h('div.field', h('label.label', { for: 'man-cur' }, 'Currency'), cur), h('div.field', h('label.label', { for: 'man-amt' }, 'Amount received'), amt)),
+        h('div.field', h('label.label', { for: 'man-note' }, 'Note (only you see it)'), note), err],
       actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'),
-        h('button.btn.btn--primary', { type: 'button', onclick: () => { out = { method: sel.value, note: note.value.trim() }; d.close(); } }, icon('check', 15), 'Mark paid')],
+        h('button.btn.btn--primary', { type: 'button', onclick: () => {
+          const n = Number(amt.value);
+          if (!(n > 0) || Math.round(n * 100) / 100 !== n) { err.textContent = 'Enter the amount you received, with at most 2 decimals.'; amt.focus(); return; }
+          out = { method: sel.value, note: note.value.trim(), currency: cur.value, amount: n };
+          d.close();
+        } }, icon('check', 15), 'Mark paid')],
       onClose: () => resolve(out),
     });
   });
@@ -685,15 +702,18 @@ function payPanel(o, { patch, redraw, methods }) {
   const setPay = async (payment, msg) => { if (await patch(o, { payment })) { toast(msg, 'success'); redraw(); } };
   const confirmBtn = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => setPay({ status: 'confirmed' }, `${o.name}: payment confirmed`) }, icon('check', 15), 'Confirm payment');
   const rejectBtn = h('button.btn.btn--sm', { type: 'button', onclick: async () => { const reason = await rejectDialog(o); if (reason) setPay({ status: 'rejected', reason }, `${o.name}: payment rejected`); } }, 'Reject…');
-  const manualBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const m = await manualDialog(o, methods); if (m) setPay({ status: 'confirmed', manual: true, method: m.method, note: m.note }, `${o.name}: marked paid`); } }, 'Mark paid manually…');
-  const refundBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
-    if (await confirmDialog({ title: 'Mark this payment refunded?', message: 'Only records it here. Send the money back in the app you were paid with.', confirm: 'Mark refunded' })) setPay({ status: 'refunded' }, `${o.name}: marked refunded`);
-  } }, 'Mark refunded…');
-  const reopenBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => setPay({ status: proofs.length ? 'proof_submitted' : 'awaiting_payment', note: 'reopened' }, 'Payment reopened') }, 'Undo');
-  const acts = s === 'confirmed' ? [refundBtn, reopenBtn]
-    : s === 'refunded' ? [reopenBtn]
-      : s === 'proof_submitted' ? [confirmBtn, rejectBtn, manualBtn]
-        : [manualBtn, proofs.length ? rejectBtn : null];
+  const manualBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => { const m = await manualDialog(o, methods); if (m) setPay({ status: 'confirmed', manual: true, method: m.method, note: m.note, currency: m.currency, amount: m.amount }, `${o.name}: marked paid`); } }, 'Mark paid manually…');
+  // money actions (admin-finance.js): refund (full or partial, through PayPal for a PayPal payment), free access
+  const refundBtn = (o.refundable || []).some((x) => x.left > 0) ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => refundDialog(o, redraw) }, 'Refund…') : null;
+  const freeBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => giveFreeAccess(o, redraw) }, 'Give free access…');
+  const undoFreeBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => undoFreeAccess(o, redraw) }, 'Undo free access');
+  const hasRefunds = (o.refunds || []).some((r) => !r.voidedAt);
+  const reopenBtn = hasRefunds ? null : h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => setPay({ status: proofs.length ? 'proof_submitted' : 'awaiting_payment', note: 'reopened' }, 'Payment reopened') }, 'Undo');
+  const acts = s === 'comped' ? [undoFreeBtn]
+    : s === 'confirmed' ? [refundBtn, reopenBtn]
+      : s === 'refunded' ? [refundBtn, reopenBtn]
+        : s === 'proof_submitted' ? [confirmBtn, rejectBtn, manualBtn, freeBtn]
+          : [manualBtn, proofs.length ? rejectBtn : null, freeBtn];
   const last = proofs.at(-1);
   const via = o.pay?.via === 'manual' ? `By hand${o.pay.manual?.method ? ` · ${o.pay.manual.method}` : ''}` : o.pay?.via === 'paypal' ? 'PayPal checkout' : last ? last.methodLabel || last.method : null;
   return h('section.paybox', { class: s ? `is-${s}` : '', 'aria-label': `Payment for ${o.name}` },
@@ -707,6 +727,8 @@ function payPanel(o, { patch, redraw, methods }) {
       last?.note ? h('div', h('dt', 'Their note'), h('dd', last.note)) : null,
       s === 'rejected' && o.pay?.reason ? h('div', h('dt', 'Told them'), h('dd', o.pay.reason)) : null,
       !proofs.length && s === 'awaiting_payment' ? h('div', h('dt', 'Screenshot'), h('dd', 'Not sent yet')) : null),
+    s === 'comped' ? compFacts(o) : null,
+    refundsBlock(o, redraw),
     h('div.paybox__acts', acts.filter(Boolean)));
 }
 
@@ -714,10 +736,10 @@ function payPanel(o, { patch, redraw, methods }) {
 // about one order: #/orders/<ref> deep-links it, and Back closes it.
 const ORDER_FILTERS = [
   ['all', 'All'], ['new', 'New (to call)'], ['check', 'Payment to check'], ['waiting', 'Waiting for payment'],
-  ['paid', 'Paid'], ['done', 'Done'], ['archived', 'Archived'],
+  ['paid', 'Paid'], ['free', 'Free access'], ['done', 'Done'], ['archived', 'Archived'],
 ];
 const LEGACY_PAY = { check: 'check', awaiting: 'waiting', paid: 'paid' }; // older links: #/orders?pay=…
-const SHORT_PAY = { awaiting_payment: ['muted', 'Waiting'], proof_submitted: ['accent', 'To check'], confirmed: ['ok', 'Paid'], rejected: ['warn', 'Rejected'], refunded: ['warn', 'Refunded'] };
+const SHORT_PAY = { awaiting_payment: ['muted', 'Waiting'], proof_submitted: ['accent', 'To check'], confirmed: ['ok', 'Paid'], rejected: ['warn', 'Rejected'], refunded: ['warn', 'Refunded'], comped: ['ok', 'Free'] };
 const STAGE_TONE = { new: 'accent', contacted: 'muted', done: 'ok', archived: 'muted' };
 const orderMatches = (o, f) => {
   const s = payState(o);
@@ -729,13 +751,14 @@ const orderMatches = (o, f) => {
   if (f === 'check') return s === 'proof_submitted';
   if (f === 'waiting') return o.kind === 'order' && (!s || ['awaiting_payment', 'rejected'].includes(s));
   if (f === 'paid') return s === 'confirmed';
+  if (f === 'free') return s === 'comped';
   return true;
 };
 const orderKey = (o) => o.ref || o.id;
 const shortPay = (o) => {
   const s = payState(o);
   if (!s) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'Made before payments were tracked' }, 'Waiting') : h('span.ocell__none', '—');
-  const [tone, text] = SHORT_PAY[s] || ['muted', s];
+  const [tone, text] = o.refundState === 'partial' ? ['warn', 'Part refund'] : SHORT_PAY[s] || ['muted', s];
   return h('span.pill', { class: `pill--${tone}` }, text);
 };
 const stageOf = (o) => st(STAGE_TONE[o.status] || 'muted', STAGES.find(([s]) => s === o.status)?.[1] || o.status);
@@ -866,7 +889,7 @@ function orders(ctx) {
     const empty = {
       all: ['No orders yet', 'Orders and custom design requests from the website arrive here.'], new: ['No new orders', 'New orders wait here until you call them back.'],
       check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here.'], waiting: ['Nobody is waiting to pay', ''],
-      paid: ['No paid orders yet', ''], done: ['Nothing done yet', ''], archived: ['Nothing archived', ''],
+      paid: ['No paid orders yet', ''], free: ['No free access given', 'Orders you give without payment (Give free access) show here.'], done: ['Nothing done yet', ''], archived: ['Nothing archived', ''],
     };
     fill(body, rows.length ? h('table.otable',
       h('caption.sr-only', 'Orders and requests'),
@@ -1225,6 +1248,7 @@ export const ADMIN_MODULES = [
   { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
   { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
   { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
+  { id: 'finance', title: 'Finance', icon: 'wallet', group: 'business', render: financePage, sub: 'Money you actually received, refunds and free access. Rupees and dollars are always kept apart.' },
   { id: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
   { id: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
   { id: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },

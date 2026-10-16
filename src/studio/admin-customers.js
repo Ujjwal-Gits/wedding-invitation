@@ -6,6 +6,7 @@ import { api } from './api.js';
 import { themePicker, permsText } from './admin-access.js';
 import { customerHome } from './customer.js';
 import { pendingActs } from './admin.js'; // Link now / Dismiss (a function: the import cycle is safe)
+import { customerFreeAccess } from './admin-finance.js';
 
 const genPassword = () => {
   const words = ['marigold', 'lotus', 'saffron', 'diyo', 'tika', 'mala', 'kalash', 'shehnai', 'gurans', 'himal'];
@@ -174,6 +175,10 @@ export function customersSection(ctx, loadInvitations) {
         h('td.cell-act', h('div.cell-act__in',
           iconBtn('eye', 'See everything', () => detailsDialog(ctx, c), 'btn--ghost'),
           iconBtn('key', 'Reset password', async () => shownPassword(await resetDialog(c), 'Password reset'), 'btn--ghost'),
+          iconBtn('gift', 'Give free access (a plan without payment)', async () => {
+            const o = await customerFreeAccess(c);
+            if (o) replace({ ...c, orders: (c.orders || 0) + 1 });
+          }, 'btn--ghost'),
           h('button.btn.btn--sm', { type: 'button', class: c.disabled ? '' : 'btn--danger-ghost', onclick: async () => {
             const off = !c.disabled;
             if (off && !(await confirmDialog({ title: 'Turn this account off?', message: `${c.email} is signed out at once and cannot sign in until you turn it on again.`, confirm: 'Turn off', danger: true }))) return;

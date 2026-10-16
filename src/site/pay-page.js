@@ -48,7 +48,7 @@ async function boot() {
         wa ? el('a', { class: 'btn btn--wa', href: waLink(wa, `Hi Nimtto, I need help with order ${ref}.`), target: '_blank', rel: 'noopener', text: 'Ask us on WhatsApp' }) : null)));
     return;
   }
-  if (info && (/proof|confirm|paid|refund/i.test(info.status || '') || info.proof)) {
+  if (info && (/proof|confirm|paid|refund|comped/i.test(info.status || '') || info.proof)) {
     $('#pay-h').textContent = `Order ${ref}`;
     $('.paypage__head .lede').textContent = 'Here is the latest about your order.';
   }
