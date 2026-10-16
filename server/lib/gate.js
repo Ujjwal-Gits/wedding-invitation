@@ -6,11 +6,29 @@
 // Everyone else is sent to the website's gallery (no id) or gets a small "not available" page (unknown or
 // unpublished id: the same answer for both, so it never tells whether a draft exists).
 // Static files (/assets, /themes art, thumbs, fonts) stay public: invitations need them.
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { listThemes } from './catalog.js';
-import { hasStudioSession } from './auth.js';
+import { hasStudioSession, canEdit } from './auth.js';
+import { shareInfo, withShareMeta } from './share.js';
+
+const built = new Map(); // theme -> its built index.html (dist does not change while the server runs)
+/**
+ * Serves the theme page with the invitation's own title and link-preview tags (the build carries neutral brand words,
+ * never the demo couple's). Returns false when the page is not built (the static files answer as before).
+ */
+async function sendWithMeta(req, res, distDir, theme, inv, slug) {
+  let html = built.get(theme);
+  if (html === undefined) {
+    const file = resolve(distDir, theme, 'index.html');
+    html = existsSync(file) ? await fs.readFile(file, 'utf8') : null;
+    built.set(theme, html);
+  }
+  if (!html) return false;
+  res.type('html').send(withShareMeta(html, shareInfo(inv, req, slug)));
+  return true;
+}
 
 // Pages under dist/ that are not designs.
 const OPEN_PAGES = new Set(['studio', 'credits', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
@@ -98,9 +116,14 @@ export function themePageGate(distDir) {
       res.vary('Cookie');
       res.locals.gatedPage = true;
 
-      if (await hasStudioSession(req)) return next(); // (b) planner, (c) couple: any design, drafts included
-
       const id = typeof req.query.id === 'string' ? req.query.id : '';
+      if (await hasStudioSession(req)) { // (b) planner, (c) couple: any design, drafts included
+        const doc = id && SLUG_RE.test(id) ? await getInvitation(id) : null;
+        const inv = doc ? (canEdit(req, id) ? doc.draft : doc.status === 'published' ? doc.published : null) : null;
+        if (inv && (await sendWithMeta(req, res, distDir, theme, inv, id))) return undefined;
+        return next();
+      }
+
       if (!id) return res.redirect(302, '/#designs');
       const doc = SLUG_RE.test(id) ? await getInvitation(id) : null;
       const pub = doc?.status === 'published' ? doc.published : null;
@@ -111,6 +134,7 @@ export function themePageGate(distDir) {
         for (const [k, v] of Object.entries(req.query)) if (typeof v === 'string') q.set(k, v);
         return res.redirect(302, `/${encodeURIComponent(pub.theme)}/?${q}`);
       }
+      if (await sendWithMeta(req, res, distDir, theme, pub, id)) return undefined;
       return next();
     } catch (err) { return next(err); }
   };

@@ -477,7 +477,8 @@ export class World {
    * `yaw` = direction the picture faces. The frame follows the photo's own aspect (never crops).
    */
   async frame(setId, { src, at, yaw = 0, h = 1.2, maxW = 1.6, depth = 0.05 }) {
-    const map = await this.tex(src);
+    const map = src ? await this.tex(src) : null;
+    if (!map?.image) return null; // no picture (a couple with no photos yet): no empty frame
     const ar = map.image.width / map.image.height;
     let ph = h;
     let pw = h * ar;

@@ -7,11 +7,17 @@ import { renderPartials } from './src/site/partials.mjs';
 const root = import.meta.dirname;
 const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
-/** Fills the link-preview meta tags from src/config.js at build time. */
+/**
+ * Fills the link-preview meta tags at build time with our neutral brand words, never the demo couple's: a theme page
+ * is a real couple's invitation (?id=) far more often than the demo. The server writes the invitation's own words into
+ * them for /<theme>/?id=<slug> (server/lib/gate.js), and the page sets its own title (src/core/data.js).
+ */
 const shareMeta = () => ({
   name: 'share-meta',
   transformIndexHtml(html) {
-    const { title, description, image, siteUrl } = config.share;
+    const { image, siteUrl } = config.share;
+    const title = 'Wedding invitation · Nimtto';
+    const description = 'You are warmly invited to our wedding.';
     const img = siteUrl ? new URL(image, siteUrl).href : `/${image}`;
     return html
       .replaceAll('%SHARE_TITLE%', escAttr(title))
@@ -43,11 +49,15 @@ if (existsSync(resolve(root, 'designs'))) {
   }
 }
 
-/** /pay/<ref> serves pay/index.html (the page reads the order number from the path). Production: server/. */
+/** /pay/<ref> serves pay/index.html (the page reads the order number from the path); /studio/<route> serves the studio. Production: server/. */
 const payRoute = () => {
   const rewrite = (req, res, next) => {
     const m = /^\/pay\/([A-Za-z0-9_-]{3,40})\/?(\?.*)?$/.exec(req.url || '');
     if (m) req.url = `/pay/index.html${m[2] || ''}`;
+    // The studio's clean paths (/studio/orders/NM-12345, src/studio/nav.js): every /studio/<route> is its one page.
+    // Production does the same in server/index.js. A path with a dot (a file) is left alone.
+    const s = /^\/studio\/([^?]*)(\?.*)?$/.exec(req.url || '');
+    if (s && s[1] && !s[1].includes('.')) req.url = `/studio/index.html${s[2] || ''}`;
     next();
   };
   return { name: 'pay-route', configureServer: (s) => { s.middlewares.use(rewrite); }, configurePreviewServer: (s) => { s.middlewares.use(rewrite); } };

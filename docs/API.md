@@ -15,6 +15,7 @@ The two public POSTs (`/orders`, `/invitations/:slug/rsvp`) use an Origin check 
 | `POST /auth/logout` | – (CSRF) | `{ ok: true }` |
 | `POST /client/session` | `{ token, password }` | `{ role: 'client', slug, csrf, perms }` · `401` generic (bad token *or* password, same message) · `429` (20 failures / 15 min per IP, 10 wrong passwords / 15 min per invitation). Already signed in as this link's couple: `{ token }` alone returns the current session (no password, no new session) |
 | `GET /auth/me` | – | admin: `{ role: 'admin', email, csrf }` · client: `{ role: 'client', slug, csrf, perms }` · `401` (also when the link was revoked/replaced or the password changed) |
+| `POST /clear-cache` | – (any signed-in role: admin, client, customer; CSRF) | `{ ok: true }` with the header `Clear-Site-Data: "cache"` (never `"cookies"` or `"storage"`: the session cookie and the sign-in stay) and `Cache-Control: no-store` · `401` signed out · `403` CSRF. The studio's "Clear cache" (account box, admin Settings, customer dashboard) calls it, deletes Cache Storage and any service worker, clears its own localStorage/sessionStorage keys except the sign-in flags (`nimtto-session`, `nimtto-couple`), shows "Cache cleared. Reloading…" and reloads with `?fresh=<time>` (`src/studio/cache.js`). |
 
 `perms = { themes: 'all' | string[], canChangeTheme: boolean, canChangeColors: boolean }`.
 The client token is the part after `#/c/` in the link (43 chars base64url).
@@ -49,14 +50,16 @@ Customers get an account when they order on the website. Couples on older secret
 | `GET /auth/me` | – | customer: `{ role: 'customer', name, email, csrf }` · admin / client as before · `401` signed out. **`GET /auth/me?soft=1`** answers `200 { role: null }` instead of `401` (for the website nav: no console error). Cheap (one session + one indexed lookup, no argon2), `Cache-Control: no-store`. The cookie is `SameSite=Lax`, `Path=/`, so any same-origin page can call it (`fetch` sends it by default; `credentials: 'same-origin'`). |
 | `POST /auth/logout` | – (CSRF) | `{ ok: true }` |
 | `GET /account` | – (customer) | `{ customer: { name, email, phone }, orders: CustomerOrder[], invitations: CustomerInvitation[], contact: { whatsapp, phone } }` |
-| `PATCH /account/orders/:ref` | `{ weddingDate?: 'YYYY-MM-DD' or '', venue? ≤ 200, bride? ≤ 80, groom? ≤ 80, message? ≤ 2000 }` (CSRF) | `{ order: CustomerOrder }` · `404` not theirs |
+| `PATCH /account/orders/:ref` | `{ weddingDate?: 'YYYY-MM-DD' or '', venue? ≤ 200, bride? ≤ 80, groom? ≤ 80, message? ≤ 2000 }` (CSRF) | `{ order: CustomerOrder, filled: string[] }` · `404` not theirs. `filled`: the fields of the linked invitation's draft these details filled (see "Invitations for an account") |
 | `POST /account/password` | `{ current, password (8-128) }` (CSRF) | `{ ok: true }` (their other sessions end) · `401` wrong current password |
 
 ```
 CustomerOrder = { ref, at, kind, plan: { id, name, from } | null, amount: { npr, usd }, theme?, weddingDate?, venue?, bride?, groom?, message,
                   payStatus: 'awaiting_payment'|'proof_submitted'|'confirmed'|'rejected'|'refunded', reason: string|null,
                   payUrl: '/pay/<ref>' (no token: the customer's session opens it), invitation?: slug }
-CustomerInvitation = { slug, bride, groom, theme, status: 'draft'|'published', weddingDate, perms }   // perms as for client links
+CustomerInvitation = { slug, bride, groom, theme, status: 'draft'|'published', weddingDate, perms,   // perms as for client links
+                       plan: { id, name, from } | null, payStatus | null, payUrl | null, orderRef | null,  // the order with invitation = slug, else the newest
+                       previewUrl: '/<theme>/?id=<slug>', shareUrl: '<origin>/i/<slug>' | null (null until published) }
 ```
 
 - Accounts: `{ id, email, name, phone, passwordHash (argon2id), createdAt, lastLoginAt?, disabled, invitations: [{ slug, themes,
@@ -75,15 +78,42 @@ Admin (CSRF):
 
 | Route | Body | Response |
 |---|---|---|
-| `GET /admin/customers` | – | `{ customers: AdminCustomer[] }` newest first |
+| `GET /admin/customers` | – | `{ customers: AdminCustomer[], pending: [{ email, slug, at, account: { id, name, email, createdAt } \| null }] }` newest first; `pending`: invitations waiting for the owner to confirm the link |
+| `POST /admin/pending/link` | `{ email, slug }` | `{ customer, filled }` · `404` no such pending link, or no account for the email yet |
+| `POST /admin/pending/dismiss` | `{ email, slug }` | `{ ok: true }` |
 | `POST /admin/customers` | `{ email, name, phone?, password (8-128) }` | `201 { customer }` · `409` email taken |
 | `PATCH /admin/customers/:id` | `{ name?, phone?, password? (8-128), disabled?: boolean }` | `{ customer }` (a new password or `disabled: true` ends their sessions) |
-| `PUT /admin/customers/:id/invitations/:slug` | `{ themes?: 'all' or string[], canChangeTheme?, canChangeColors? }` | `{ customer }` (links it, or updates the perms of the existing link; defaults `'all'`, `false`, `true`) |
+| `PUT /admin/customers/:id/invitations/:slug` | `{ themes?: 'all' or string[], canChangeTheme?, canChangeColors? }` | `{ customer, filled }` (links it, or updates the perms of the existing link; defaults `'all'`, `false`, `true`; the customer's newest order with names, date or venue fills the invitation's still-empty fields: `filled`) |
+| `POST /orders/:id/invitation` | `{ slug? }` | `201 Doc & { slug, customer? }`: one click makes the order's invitation (names, design, wedding date and venue from the order, empty where it has none; the link name from the names, else the order ref) and links it to the order's customer (or a pending link for the order's email). The order gets `invitation: slug`. `409 { current }` when it already has one · `404` |
 | `DELETE /admin/customers/:id/invitations/:slug` | – | `{ customer }` |
 
 `AdminCustomer = { id, email, name, phone, createdAt, lastLoginAt, disabled, orders: number, invitations: [{ slug, themes, canChangeTheme, canChangeColors, linkedAt }] }`.
 `Summary` (admin invitation list) gains `customers: [{ id, email, name }]`. `Order` gains `customerId?`.
-Deleting an invitation unlinks it from every account.
+Deleting an invitation unlinks it from every account and drops its pending links.
+
+### Invitations for an account (the default way a couple gets in; `server/lib/handover.js`)
+
+- The owner makes the invitation for the customer: `POST /invitations` with `customerEmail` (the New invitation dialog's
+  "Customer email", autocompleted from the accounts; prefilled from an order), or `POST /orders/:id/invitation` (one click on
+  the order). It is linked to that account at once and appears in their dashboard: no separate link, no second password.
+  Default perms: `canChangeTheme: true`, `canChangeColors: true`, `themes`: the ready designs the plan's tier includes (`'all'`
+  for Shahi, custom, or no known plan); the plan is the order's, else the customer's newest order's.
+- **No account for that email yet:** a pending link `{ email, slug, themes, canChangeTheme, canChangeColors, at }` is kept (the
+  store's `pending-links` document). It is **never claimed automatically**: emails are not verified, so registering an email
+  first proves nothing. Once an account with that email exists, `GET /admin/customers` returns it on the pending item
+  (`account: { id, name, email, createdAt }`) and the owner sees "<name> (<email>) signed up: link the invitation '<names>'?"
+  on Overview › Needs you and in Customer accounts, with **Link now** (`POST /admin/pending/link { email, slug }` → `{ customer,
+  filled }`, 404 while there is no account) and **Dismiss** (`POST /admin/pending/dismiss { email, slug }` → `{ ok: true }`).
+- An email that already has an account when the owner makes the invitation is linked at once (the owner chose that account;
+  the dialog autocompletes the account list). One click from an order links to the account the order was made from (the
+  customer was signed in to it when ordering), never to an email alone.
+- **Wedding details flow in:** `PATCH /account/orders/:ref` and `PUT /admin/customers/:id/invitations/:slug` fill the
+  invitation's draft fields that are still empty or still the demo's: the first names, the wedding date (only while it is the
+  starter's placeholder, `doc.placeholder.weddingDate`, or empty; the ceremonies move by the same number of days), the venue of
+  the wedding-day ceremonies; and, once both names are known, the empty wording, hosts, hashtag and share title. Never a field
+  the couple changed. The order's own invitation (`order.invitation`) is the target, else the account's only invitation.
+- The secret client link with its password (`POST /invitations/:slug/client-link`) stays as an optional extra for couples
+  without an account; the studio labels it "Share a separate link (optional)".
 
 ## Design tiers
 
@@ -271,7 +301,7 @@ the same id. `GET /site` returns only the public projection (see the contract ab
 | `PATCH /admin/music` | `{ order: [id, …] }` (unknown ids ignored; songs left out keep their order after these) | `{ tracks }` |
 | `DELETE /admin/music/:id` | – | `{ ok: true, inUse }` · `400` a built-in song (turn it off instead) · `404` |
 | `GET /invitations` | – | `{ invitations: Summary[] }` |
-| `POST /invitations` | `{ slug, bride, groom, theme?, sample?, religion?, colors? }` (`religion`: see below; `colors`: `{ '--token': '#hex' }` for the chosen theme, unknown tokens dropped; a theme that does not suit the religion is replaced by the first ready one that does; the ceremonies and wording follow the religion) | `201 Doc` |
+| `POST /invitations` | `{ slug, bride, groom, theme?, religion?, colors?, customerEmail?, weddingDate?: 'YYYY-MM-DD', venue?, order? }` (`religion`: see below; `colors`: `{ '--token': '#hex' }` for the chosen theme, unknown tokens dropped; a theme that does not suit the religion is replaced by the first ready one that does; the ceremonies and wording follow the religion; `customerEmail`: link to that account or keep a pending link, see "Invitations for an account"; `order`: the order id it is made for). `sample` is ignored: a new invitation never starts with the demo couple's details (see "No demo on real invitations") | `201 Doc & { customer?: { email, name?, linked, pending } }` · `400` bad email |
 | `POST /invitations/:slug/seen` | – | `{ ok: true }` |
 | `POST /invitations/:slug/unpublish` | – | `Doc` |
 | `DELETE /invitations/:slug` | `{ confirm: slug }` | `{ ok: true }` (moved to trash) |
@@ -379,7 +409,10 @@ production (`server/lib/gate.js`, before `express.static`). It is served only wh
 - it carries a client session whose link is still active (the client studio's preview and Themes module).
 
 Otherwise: no `id` → `302 /#designs`; unknown, malformed or unpublished `id` → `404` with a small "This invitation
-isn't available" page (the same for both, so a draft's existence never leaks). Gated responses carry
+isn't available" page (the same for both, so a draft's existence never leaks).
+With `?id=<slug>` the gate serves the page itself with that invitation's own `<title>`, `og:title`, `og:description`,
+`description` and `og:image` (lib/share.js `shareInfo`: published data for guests, the draft for its editors). The build
+carries only neutral words ("Wedding invitation · Nimtto"), never the demo couple's (vite.config.js `shareMeta`). Gated responses carry
 `Cache-Control: private, no-store` and `Vary: Cookie`. Static files (`/assets/*`, `/themes/*`, `/site/*`, uploads)
 stay public because invitations need them; `Cross-Origin-Resource-Policy: same-origin` keeps other sites from
 loading the theme bundles. The public website shows only thumbnails and phone screenshots.
@@ -411,11 +444,31 @@ against a production instance (`npm run build`, then `node server/index.js --pro
 ## Share page (not under /api)
 
 `GET /i/:slug?to=Name&e=wedding,reception` → HTML (published only, else `404`): `<title>`, `og:title`,
-`og:description`, `og:image` (absolute; `share.image`, else the first couple portrait, else the theme thumb),
+`og:description`, `og:image` (absolute; `share.image`, else the first couple portrait, else a neutral `/art/og.jpg`; never the theme thumb, which shows the demo couple),
 `og:url`, `twitter:card`, `robots: noindex`, then `<meta http-equiv="refresh">` and a link to
 `/<theme>/?id=<slug>` keeping `to` (≤ 60 chars), valid `e` ids and `v` (the guest's version of the religious symbols:
 `neutral | hindu | muslim | christian`; anything else is dropped). The default title uses the religion's name for the
-wedding (Shubha Bibaha / Nikah / Holy Matrimony).
+wedding (Shubha Bibaha / Nikah / Holy Matrimony); with no names at all it is "Wedding invitation · Nimtto". The demo's share
+title and description and its people photos are never used (lib/demo.js).
+
+## No demo on real invitations
+
+The demo couple of `src/config.js` (Binisha & Ujjwal) shows only on a theme page with no `id` (dev, the owner's design
+browsing), in the watermarked showcase and on the design thumbnails.
+- New invitations start with the names entered and nothing else of the demo (no venues, story, contacts, stays, hashtag,
+  people photos; a placeholder wedding date about six months ahead, recorded in `doc.placeholder`). Generic starter words
+  stay: the community's ceremonies and wording, salutation, request, sign-off, closing, shloka, the seven vows, a song.
+- The page (`src/core/data.js`): `?id=` that does not load (unknown, unpublished, no access, offline) shows a small "not
+  available / could not load" card with Try again instead of the design; missing keys in the studio's model come from
+  `blankModel()`, never the demo; while a first name is empty the lone `&` between the names is hidden; the tab title is
+  the invitation's own (or "Wedding invitation · Nimtto").
+- Stored data: a one-time migration (`server/lib/migrate-demo.js`, run on start, marker `migrations["demo-scrub-2026-10-16"]`)
+  clears fields that still hold the demo's exact value in drafts and published snapshots (lib/demo.js `scrubDemo`: families,
+  homes, full names, hosts, city, B.S. date text, invitation body, RSVP deadline, travel note, venues and map queries, the
+  demo's story lines, stays and contacts, share title and description, the hashtag, the demo couple's photos in portraits,
+  gallery and ceremonies; first names only when both are still the demo pair). Backup first (SQLite: `data/backups/nimtto-*.db`;
+  JSON: `data/backups/demo-scrub-<time>/`), version bumped per changed invitation. `node scripts/scrub-demo.js --dry-run`
+  lists what it would change; `--force` runs it again.
 
 ## RSVP
 `POST /invitations/:slug/rsvp`: every ceremony is its own answer. With `attending: 'yes'`, a sent `events` list must name at

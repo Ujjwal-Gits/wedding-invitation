@@ -11,7 +11,7 @@ import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
 import { canEdit, isAdmin, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
 import { customersBySlug, unlinkEverywhere } from './accounts.js';
-import { readSite, tierOf } from './site.js';
+import { readSite, tierOf, EMAIL_RE } from './site.js';
 import { originAllowed } from './security.js';
 import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
@@ -79,7 +79,7 @@ function summary(doc, rsvpCount = 0, customers = []) {
   };
 }
 
-const docOut = (doc, admin = true) => ({
+export const docOut = (doc, admin = true) => ({
   slug: doc.slug,
   clientLink: admin ? linkOut(doc.access, doc.slug) : null,
   version: doc.version,
@@ -93,93 +93,73 @@ const docOut = (doc, admin = true) => ({
   data: doc.draft,
 });
 
-/** Library photos of Hindu rites in the sample (a temple torana, butter lamps, the sacred thread, sindoor). */
-const HINDU_SAMPLE_PHOTOS = new Set(['torana', 'diyo-lamps-alt', 'wedding-nepali-alt', 'wedding-nepali-alt2', 'sindoor', 'mehendi-hands-alt', 'courtyard-dusk']);
-const HINDU_TRACKS = new Set(['/audio/ceremony-shehnai.mp3']);
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+/** A placeholder wedding day for a card nobody has dated yet (about six months ahead, never the demo's day). */
+function placeholderDay() {
+  const t = new Date(Date.now() + 182 * 864e5);
+  let day = t.toISOString().slice(0, 10);
+  if (day === String(demoConfig().weddingDate).slice(0, 10)) day = new Date(t.getTime() + 864e5).toISOString().slice(0, 10);
+  return day;
+}
 
 /**
- * Starting data for a new invitation: the sample wording, or a near-empty card. The ceremonies and the wording
- * follow the couple's community (src/core/faith.js): Hindu Mehendi, Haldi, Janti, Shubha Bibaha and Reception,
- * each its own event (so guests answer for each); Muslim Mehndi, Nikah, Walima, Reception; Christian Engagement,
- * Holy Matrimony, Reception; other: the wedding and the reception.
+ * Starting data for a new invitation. Never the demo couple (src/config.js): only the names and wedding details the
+ * owner or the customer entered, empty everywhere else. What every new card has is generic: the ceremonies and the
+ * wording of the couple's community (src/core/faith.js; Hindu Mehendi, Haldi, Janti, Shubha Bibaha and Reception,
+ * each its own event, so guests answer for each; Muslim Mehndi, Nikah, Walima, Reception; Christian Engagement,
+ * Holy Matrimony, Reception; other: the wedding and the reception), the salutation and sign-off, the seven vows and
+ * the first bundled song. No sample venues, story, contacts, stays, hashtag or photos (docs/PLATFORM.md "No demo on
+ * real invitations").
+ * Returns { data, placeholder } where placeholder.weddingDate is set when the date is only a placeholder.
  */
-function starter({ bride, groom, theme, sample, religion = 'hindu', colors = null }) {
+export function starter({ bride = '', groom = '', theme, religion = 'hindu', colors = null, weddingDate = '', venue = '' }) {
   const demo = demoConfig();
-  const blank = { en: '', ne: '' };
-  const year = new Date().getFullYear() + 1;
+  const blank = () => ({ en: '', ne: '' });
   const words = startingWords(religion, { bride, groom });
-  const base = sample ? demo : {
-    ...demo,
-    couple: {
-      bride: { name: { ...blank }, fullName: { ...blank }, parents: { ...blank }, home: { ...blank }, photo: null },
-      groom: { name: { ...blank }, fullName: { ...blank }, parents: { ...blank }, home: { ...blank }, photo: null },
-      portraits: [],
-      hashtag: '',
+  const day = DATE_RE.test(weddingDate || '') ? weddingDate : '';
+  const date = `${day || placeholderDay()}T10:30:00+05:45`;
+  const person = (name) => ({ name: { en: name, ne: '' }, fullName: blank(), parents: blank(), home: blank(), photo: null });
+  const base = {
+    couple: { bride: person(bride), groom: person(groom), portraits: [], hashtag: bride && groom ? `#${bride.replace(/\s+/g, '')}Weds${groom.replace(/\s+/g, '')}` : '' },
+    hosts: bride && groom ? { en: `The families of ${bride} & ${groom}`, ne: '' } : blank(),
+    weddingDate: date,
+    weddingDateBS: blank(), // worked out from the date (see publicData)
+    city: blank(),
+    invitation: {
+      shloka: { ...demo.invitation.shloka },
+      salutation: { ...demo.invitation.salutation },
+      body: bride && groom ? { ...words.body } : blank(),
+      request: { ...demo.invitation.request },
+      signoff: { ...demo.invitation.signoff },
     },
-    hosts: { ...blank },
-    weddingDate: `${year}-02-12T10:30:00+05:45`,
-    weddingDateBS: { ...blank },
-    city: { ...blank },
-    invitation: { ...demo.invitation, salutation: demo.invitation.salutation, body: { ...blank }, request: demo.invitation.request, signoff: demo.invitation.signoff },
     story: [],
     events: [],
+    saptapadi: structuredClone(demo.saptapadi),
     gallery: [],
-    info: { travel: { ...blank }, stays: [], contacts: [], livestream: '' },
-    rsvp: { ...demo.rsvp, deadline: { ...blank } },
+    info: { travel: blank(), stays: [], contacts: [], livestream: '' },
+    rsvp: { enabled: true, deadline: blank(), maxGuests: demo.rsvp.maxGuests, endpoint: '' },
     music: { volume: 0.75, tracks: [BUNDLED_TRACKS[0]] },
+    closing: { ...demo.closing },
+    theme: '',
+    themeContent: {},
+    content: { images: {}, texts: {} },
   };
-  base.weddingDateBS = { en: '', ne: '' }; // worked out from the date (see publicData)
-  base.couple.bride.photo = null;
-  base.couple.groom.photo = null;
-  if (bride) base.couple.bride.name = { en: bride, ne: '' };
-  if (groom) base.couple.groom.name = { en: groom, ne: '' };
-  // The ceremonies, each its own event. The sample keeps its placeholder places (by day: before, on, after).
-  const all = startingEvents(religion, base.weddingDate);
-  if (sample) {
-    const at = (id) => demo.events.find((e) => e.id === id);
-    const day = (iso) => String(iso).slice(0, 10);
-    const wd = day(base.weddingDate);
-    for (const e of all) {
-      const src = at(e.id) || (day(e.start) < wd ? at('mehendi') : day(e.start) > wd ? at('reception') : at('wedding'));
-      if (!src) continue;
-      e.venue = { ...src.venue };
-      e.mapQuery = src.mapQuery || '';
-      if (!e.photo && src.photo && religion === 'hindu' && !HINDU_SAMPLE_PHOTOS.has(src.photo)) e.photo = src.photo;
-    }
-    base.events = all;
-  } else {
-    const main = all.find((e) => String(e.start).slice(0, 10) === String(base.weddingDate).slice(0, 10)) || all[0];
-    base.events = [{ ...main, venue: { ...blank }, photo: null }];
-  }
-  if (sample) {
-    // Keep the sample structure and generic wording, but never another family's names,
-    // homes, phone numbers or story on a new card.
-    for (const p of [base.couple.bride, base.couple.groom]) {
-      p.parents = { ...blank };
-      p.home = { ...blank };
-    }
-    base.couple.bride.fullName = { en: bride, ne: '' };
-    base.couple.groom.fullName = { en: groom, ne: '' };
-    base.hosts = { en: `The families of ${bride} & ${groom}`, ne: '' };
-    base.invitation.body = { ...words.body };
-    base.story = [];
-    base.info.contacts = [];
-    if (religion !== 'hindu') {
-      base.gallery = base.gallery.filter((g) => !HINDU_SAMPLE_PHOTOS.has(g.photo));
-      base.music.tracks = base.music.tracks.filter((t) => !HINDU_TRACKS.has(t.src));
-    }
-  }
+  // The ceremonies, each its own event, dated around the wedding day; the venue the customer gave goes on that day's.
+  const wd = date.slice(0, 10);
+  base.events = startingEvents(religion, date).map((e) => {
+    if (venue && String(e.start).slice(0, 10) === wd) e.venue = { en: venue, ne: '' };
+    return e;
+  });
   if (religion !== 'hindu') {
     base.religion = religion;
     base.saptapadi = [];
     base.invitation.shloka = { ...(words.shloka || { sa: '', en: '' }) };
     base.closing = { ...words.closing };
   }
-  base.couple.hashtag = bride && groom ? `#${bride.replace(/\s+/g, '')}Weds${groom.replace(/\s+/g, '')}` : '';
   base.theme = isTheme(theme) ? theme : (listThemes().find((t) => t.ready)?.slug || 'dhoka');
   if (colors && typeof colors === 'object' && !Array.isArray(colors)) base.themeColors = { [base.theme]: colors };
   base.share = { title: bride && groom ? `${bride} & ${groom} · ${words.title.en}` : '', description: 'You are warmly invited to our wedding.', image: '', siteUrl: '' };
-  return base;
+  return { data: base, placeholder: day ? null : { weddingDate: date } };
 }
 
 /** Adds depth URLs to uploaded photo objects whose depth map now exists. */
@@ -222,6 +202,32 @@ export async function list(req, res) {
   res.json({ invitations: items });
 }
 
+/** After a new invitation is stored: link it to a customer account (lib/handover.js registers this). */
+let onCreated = null;
+export const setOnCreated = (fn) => { onCreated = fn; };
+
+/**
+ * Stores a new invitation (starter data, never the demo). opts: { slug, bride, groom, theme, religion, colors,
+ * weddingDate (YYYY-MM-DD), venue }. 409 when the link name is taken. Returns the stored doc.
+ */
+export async function createInvitationDoc({ slug, bride = '', groom = '', theme, religion = 'hindu', colors = null, weddingDate = '', venue = '' }) {
+  if (!SLUG_RE.test(slug)) throw httpError(400, 'The link name must be 3-64 lowercase letters, digits or hyphens.');
+  return withLock(`inv:${slug}`, async () => {
+    if (await getInvitation(slug)) throw httpError(409, 'That link name is already taken.');
+    const now = new Date().toISOString();
+    const slots = await slotInfo();
+    // the design must suit the community; without one (or with an unsuitable one) the first ready design that does
+    const ok = (t) => isTheme(t) && listThemes().find((x) => x.slug === t)?.ready && suits(slots.manifests[t], religion);
+    const chosen = ok(theme) ? theme : (listThemes().find((t) => ok(t.slug))?.slug || theme);
+    const start = starter({ bride, groom, theme: chosen, religion, colors, weddingDate, venue: nameText(venue, 200) });
+    const draft = sanitizeInvitation(start.data, slug, slots);
+    const d = { slug, version: 1, status: 'draft', createdAt: now, updatedAt: now, publishedAt: null, draft, published: null };
+    if (start.placeholder) d.placeholder = start.placeholder; // the wedding date nobody has set yet (lib/handover.js)
+    await createInvitation(d);
+    return d;
+  });
+}
+
 export async function create(req, res) {
   const b = req.body || {};
   const slug = typeof b.slug === 'string' ? b.slug.trim() : '';
@@ -232,20 +238,13 @@ export async function create(req, res) {
   if (b.religion != null && !isReligion(b.religion)) throw httpError(400, "religion must be 'hindu', 'muslim', 'christian' or 'other'.");
   const religion = b.religion || 'hindu';
   if (b.colors != null && (typeof b.colors !== 'object' || Array.isArray(b.colors) || Object.keys(b.colors).length > 12)) throw httpError(400, 'colors must be an object of colour tokens.');
-  const doc = await withLock(`inv:${slug}`, async () => {
-    if (await getInvitation(slug)) throw httpError(409, 'That link name is already taken.');
-    const now = new Date().toISOString();
-    const slots = await slotInfo();
-    // the design must suit the community; without one (or with an unsuitable one) the first ready design that does
-    const ok = (t) => isTheme(t) && listThemes().find((x) => x.slug === t)?.ready && suits(slots.manifests[t], religion);
-    const theme = ok(b.theme) ? b.theme : (listThemes().find((t) => ok(t.slug))?.slug || b.theme);
-    const draft = sanitizeInvitation(starter({ bride, groom, theme, sample: b.sample !== false, religion, colors: b.colors }), slug, slots);
-    const d = { slug, version: 1, status: 'draft', createdAt: now, updatedAt: now, publishedAt: null, draft, published: null };
-    await createInvitation(d);
-    return d;
-  });
+  const weddingDate = typeof b.weddingDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.weddingDate) ? b.weddingDate : '';
+  const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.normalize('NFC').trim().toLowerCase() : '';
+  if (customerEmail && (customerEmail.length > 254 || !EMAIL_RE.test(customerEmail))) throw httpError(400, 'The customer email does not look right.', { errors: [{ path: 'customerEmail', message: 'must be an email address' }] });
+  const doc = await createInvitationDoc({ slug, bride, groom, theme: b.theme, religion, colors: b.colors, weddingDate, venue: b.venue });
   console.info(`[admin] create slug=${slug} religion=${religion}`);
-  res.status(201).json(docOut(doc));
+  const customer = onCreated ? await onCreated(doc, { customerEmail, order: typeof b.order === 'string' ? b.order : '' }) : null;
+  res.status(201).json({ ...docOut(doc), ...(customer ? { customer } : {}) });
 }
 
 export async function read(req, res) {

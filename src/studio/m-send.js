@@ -200,7 +200,7 @@ function coupleLinkCard(ctx) {
       note ? h('p.notice', { role: 'status' }, icon('check', 16), h('span', 'Password changed. Send the new password to the couple.')) : null);
   };
   draw();
-  return card('The couple’s link', 'Their private link to this studio. Send the password separately.', box);
+  return card('Separate link (optional)', 'A private link to this studio with its own password, for a couple without an account. Send the password separately.', box);
 }
 
 export function sendModule(ctx) {

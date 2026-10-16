@@ -40,6 +40,7 @@ before(async () => {
   api.get('/admin/music', auth.requireAdmin, wrap(music.adminList));
   api.post('/admin/music', auth.requireAdmin, wrap(music.upload));
   api.patch('/admin/music', auth.requireAdmin, json, wrap(music.reorder));
+  api.post('/admin/music/restore', auth.requireAdmin, wrap(music.restoreBuiltins));
   api.patch('/admin/music/:musicId', auth.requireAdmin, json, wrap(music.patch));
   api.delete('/admin/music/:musicId', auth.requireAdmin, wrap(music.remove));
   api.post('/invitations', auth.requireAdmin, json, wrap(inv.create));
@@ -183,8 +184,15 @@ test('edit, turn off, reorder: the public list leaves out disabled songs', async
   assert.equal((await admin.req('/api/admin/music', { method: 'PATCH', body: { order: 'x' } })).status, 400);
 });
 
-test('built-ins cannot be deleted; an upload can, and an invitation may use library songs', async () => {
-  assert.equal((await admin.req('/api/admin/music/canon-in-d', { method: 'DELETE' })).status, 400);
+test('a built-in can be removed and restored; an upload can be deleted; an invitation may use library songs', async () => {
+  assert.equal((await admin.req('/api/admin/music/canon-in-d', { method: 'DELETE' })).status, 200);
+  let pub = await admin.req('/api/music');
+  assert.ok(!pub.body.tracks.some((x) => x.id === 'canon-in-d'), 'removed built-in is gone from the public list');
+  let adm = await admin.req('/api/admin/music');
+  assert.ok(!adm.body.tracks.some((x) => x.id === 'canon-in-d'), 'and from the admin list');
+  const back = await admin.req('/api/admin/music/restore', { method: 'POST' });
+  assert.equal(back.status, 200);
+  assert.ok(back.body.tracks.some((x) => x.id === 'canon-in-d' && x.enabled), 'restore brings it back on');
   assert.equal((await admin.req('/api/admin/music/..%2F..%2Fdata', { method: 'DELETE' })).status, 404);
   const up = await admin.req('/api/admin/music', { method: 'POST', form: form(silentMp3(), 'keep.mp3', { title: 'Keep' }) });
   const t = up.body.track;

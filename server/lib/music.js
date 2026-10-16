@@ -35,6 +35,7 @@ function tracksOf(doc) {
   const out = [];
   for (const b of BUILTIN_MUSIC) {
     const o = doc.items[b.id] || {};
+    if (o.removed) continue; // the planner removed this built-in from the library (its file stays in the build)
     out.push({
       id: b.id, builtin: true, src: b.src, duration: b.duration,
       title: o.title || b.title, titleNe: o.titleNe ?? b.titleNe ?? '', artist: o.artist ?? b.artist ?? '',
@@ -133,6 +134,16 @@ export async function upload(req, res) {
 
 const known = (doc, id) => BUILTIN.has(id) || (CUSTOM_ID_RE.test(id) && doc.items[id]);
 
+/** POST /api/admin/music/restore: bring back every built-in song the planner removed. */
+export async function restoreBuiltins(req, res) {
+  await withLock('music', async () => {
+    const doc = await readDoc();
+    for (const id of Object.keys(doc.items)) if (BUILTIN.has(id) && doc.items[id]?.removed) { delete doc.items[id].removed; doc.items[id].enabled = true; }
+    await putDoc('music', doc);
+  });
+  return adminList(req, res);
+}
+
 /** PATCH /api/admin/music/:id { title?, titleNe?, artist?, mood?, credit?, enabled? } */
 export async function patch(req, res) {
   const id = req.params.musicId;
@@ -170,7 +181,16 @@ export async function reorder(req, res) {
  */
 export async function remove(req, res) {
   const id = req.params.musicId;
-  if (BUILTIN.has(id)) throw httpError(400, 'Built-in songs cannot be deleted. Turn it off instead.');
+  if (BUILTIN.has(id)) {
+    // a built-in song's file ships with the site, so "delete" removes it from the library; invitations using it keep it
+    await withLock('music', async () => {
+      const doc = await readDoc();
+      doc.items[id] = { ...(doc.items[id] || {}), removed: true, enabled: false };
+      doc.order = doc.order.filter((x) => x !== id);
+      await putDoc('music', doc);
+    });
+    return res.json({ ok: true, inUse: 0 });
+  }
   if (!CUSTOM_ID_RE.test(id)) throw httpError(404, 'No such song.');
   const src = `${LIBRARY_DIR_URL}${id}.mp3`;
   const used = await withLock('music', async () => {

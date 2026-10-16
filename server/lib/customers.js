@@ -4,9 +4,11 @@ import { EMAIL_RE, readSite } from './site.js';
 import { isTheme } from './catalog.js';
 import { peekInvitation, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
 import {
-  customerByEmail, createCustomer, mutateCustomer, listCustomers, adminCustomer, linkOf, normEmail,
+  customerByEmail, createCustomer, mutateCustomer, listCustomers, adminCustomer, linkOf, normEmail, listPending, confirmPending, dropPending,
   CUSTOMER_ID_RE, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX,
 } from './accounts.js';
+import { syncOrderDetails, prefillFromCustomer } from './handover.js';
+import { PUBLIC_ORIGINS } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
 import { clientIp } from './security.js';
 import { clean, planView, REF_RE } from './orders.js';
@@ -45,9 +47,14 @@ export async function account(req, res) {
     const doc = await peekInvitation(l.slug);
     if (!doc) continue;
     const d = doc.draft;
+    // the order this invitation belongs to (its own, else the newest), for the plan and the payment on its card
+    const o = orders.find((x) => x.invitation === doc.slug) || orders[0] || null;
+    const live = doc.status === 'published';
     invitations.push({
       slug: doc.slug, bride: d.couple?.bride?.name || null, groom: d.couple?.groom?.name || null, theme: d.theme,
       status: doc.status, weddingDate: d.weddingDate || null, updatedAt: doc.updatedAt, perms: permsOf(l),
+      plan: o ? planView(o) : null, payStatus: o ? payStatusOf(o) : null, payUrl: o?.ref ? `/pay/${o.ref}` : null, orderRef: o?.ref || null,
+      previewUrl: `/${d.theme}/?id=${doc.slug}`, shareUrl: live ? `${PUBLIC_ORIGINS[0] || ''}/i/${doc.slug}` : null,
     });
   }
   res.json({
@@ -89,7 +96,9 @@ export async function patchOrder(req, res) {
     await saveOrder(o);
     return o;
   });
-  res.json({ order: customerOrderView(order) });
+  // the linked invitation's names, date and venue that are still empty (or still the demo's) follow these details
+  const filled = await syncOrderDetails(req.customer, order).catch((err) => { console.warn(`[account] sync failed: ${err.message}`); return []; });
+  res.json({ order: customerOrderView(order), filled });
 }
 
 /** POST /api/account/password (customer): { current, password }. Their other sessions end; this browser stays in. */
@@ -130,7 +139,12 @@ const nameOf = (v, max) => (typeof v === 'string' ? clean(v, max) : '');
 export async function adminList(req, res) {
   const counts = await orderCounts();
   const list = listCustomers().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  res.json({ customers: list.map((c) => adminCustomer(c, counts.get(c.id) || 0)) });
+  // invitations waiting for an email; `account` once an account with that email exists (the owner confirms the link)
+  const pending = (await listPending()).map(({ email, slug, at }) => {
+    const c = customerByEmail(email);
+    return { email, slug, at, account: c ? { id: c.id, name: c.name || '', email: c.email, createdAt: c.createdAt } : null };
+  });
+  res.json({ customers: list.map((c) => adminCustomer(c, counts.get(c.id) || 0)), pending });
 }
 
 /** POST /api/admin/customers { email, name, phone?, password }: an account for a couple who did not order online. */
@@ -202,7 +216,9 @@ export async function adminLink(req, res) {
     if (b.canChangeColors !== undefined) l.canChangeColors = b.canChangeColors;
   });
   console.info(`[admin] customer ${id} linked to ${slug}`);
-  res.json({ customer: adminCustomer(c, (await orderCounts()).get(id) || 0) });
+  // the names, date and venue the customer gave fill the invitation's still-empty fields
+  const filled = await prefillFromCustomer(id, slug).catch((err) => { console.warn(`[admin] prefill failed: ${err.message}`); return []; });
+  res.json({ customer: adminCustomer(c, (await orderCounts()).get(id) || 0), filled });
 }
 
 /** DELETE /api/admin/customers/:id/invitations/:slug */
@@ -218,3 +234,24 @@ export async function adminUnlink(req, res) {
 }
 
 
+
+/** POST /api/admin/pending/link { email, slug }: the owner links a waiting invitation to the account with that email. */
+export async function adminConfirmPending(req, res) {
+  const email = normEmail(req.body?.email);
+  const slug = typeof req.body?.slug === 'string' ? req.body.slug : '';
+  if (!email || !SLUG_RE.test(slug)) throw httpError(400, 'Please send the email and the invitation.');
+  const c = await confirmPending(email, slug);
+  console.info(`[admin] pending invitation ${slug} linked to customer ${c.id}`);
+  const filled = await prefillFromCustomer(c.id, slug).catch(() => []);
+  res.json({ customer: adminCustomer(c, (await orderCounts()).get(c.id) || 0), filled });
+}
+
+/** POST /api/admin/pending/dismiss { email, slug }: the owner drops a waiting invitation link. */
+export async function adminDismissPending(req, res) {
+  const email = normEmail(req.body?.email);
+  const slug = typeof req.body?.slug === 'string' ? req.body.slug : '';
+  if (!email || !SLUG_RE.test(slug)) throw httpError(400, 'Please send the email and the invitation.');
+  await dropPending((p) => p.email === email && p.slug === slug);
+  console.info(`[admin] pending invitation ${slug} dismissed`);
+  res.json({ ok: true });
+}

@@ -3,14 +3,50 @@
 // theme slug and validated query values only, so this is not an open redirect.
 import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { PUBLIC_ORIGINS } from './env.js';
-import { listThemes } from './catalog.js';
 import { photoUrl } from './invitations.js';
 import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
+import { DEMO_PEOPLE_PHOTOS, DEMO_SHARE } from './demo.js';
+
+const NEUTRAL_IMAGE = '/art/og.jpg'; // public/art/og.jpg: hands joined at a wedding (no names, no faces)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 /** The origin guests reach us on: the configured public origin, else this request's own host. */
 const originOf = (req) => PUBLIC_ORIGINS[0] || `${req.protocol}://${req.get('host')}`;
+
+/**
+ * What a link preview of this invitation says: its own share words, else its names, else our brand
+ * ("Wedding invitation · Nimtto"). Never the demo couple's (lib/demo.js).
+ */
+export function shareInfo(inv, req, slug) {
+  const origin = originOf(req);
+  // The invitation's own words only, never the demo's (lib/demo.js); no names at all -> our brand.
+  const real = (s) => (typeof s === 'string' && s.trim() && !DEMO_SHARE.has(s.trim()) ? s.trim() : '');
+  const nm = (p) => real(p?.name?.en) || real(p?.name?.ne);
+  const names = [nm(inv.couple?.bride), nm(inv.couple?.groom)].filter(Boolean).join(' & ');
+  const title = real(inv.share?.title) || (names ? `${names} · ${TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : 'Wedding invitation · Nimtto');
+  const description = real(inv.share?.description) || 'You are warmly invited to our wedding.';
+  const portrait = (inv.couple?.portraits || []).find((p) => p?.photo && !(typeof p.photo === 'string' && DEMO_PEOPLE_PHOTOS.has(p.photo)))?.photo;
+  let img = photoUrl(inv.share?.image) || photoUrl(portrait);
+  // No photo of their own yet: a neutral picture (joined hands), never the design's thumbnail (it shows the demo couple).
+  if (!img) img = NEUTRAL_IMAGE;
+  const image = img ? (img.startsWith('https://') ? img : `${origin}${img}`) : '';
+  return { title, description, image, url: `${origin}/i/${slug}` };
+}
+
+/** The built theme page with this invitation's own title and link-preview tags (lib/gate.js, ?id=<slug>). */
+export function withShareMeta(html, info) {
+  const set = (attr, name, value) => {
+    const re = new RegExp(`(<meta\\s+${attr}="${name}"\\s+content=")[^"]*(")`, 'gi');
+    html = html.replace(re, (m, a, b) => `${a}${esc(value)}${b}`);
+  };
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(info.title)}</title>`);
+  set('property', 'og:title', info.title);
+  set('property', 'og:description', info.description);
+  set('name', 'description', info.description);
+  if (info.image) set('property', 'og:image', info.image);
+  return html;
+}
 
 export async function sharePage(req, res) {
   const { slug } = req.params;
@@ -29,16 +65,7 @@ export async function sharePage(req, res) {
   if (typeof req.query.v === 'string' && VERSIONS.includes(req.query.v)) q.set('v', req.query.v);
   const target = `/${inv.theme}/?${q}`;
 
-  const origin = originOf(req);
-  const nm = (p) => p?.name?.en || p?.name?.ne || '';
-  const names = [nm(inv.couple.bride), nm(inv.couple.groom)].filter(Boolean).join(' & ');
-  const title = inv.share?.title || (names ? `${names} · ${TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : 'Wedding invitation');
-  const description = inv.share?.description || 'You are warmly invited to our wedding.';
-  let img = photoUrl(inv.share?.image) || photoUrl(inv.couple.portraits[0]?.photo);
-  if (!img) img = listThemes().find((t) => t.slug === inv.theme)?.thumb || '';
-  const image = img ? (img.startsWith('https://') ? img : `${origin}${img}`) : '';
-  const url = `${origin}/i/${slug}`;
-
+  const { title, description, image, url } = shareInfo(inv, req, slug);
   const meta = [
     ['property', 'og:type', 'website'],
     ['property', 'og:site_name', 'Nimtto'],

@@ -13,7 +13,9 @@ import { handlePick } from './pick.js';
 import { INV_MODULES } from './modules.js';
 import { ADMIN_MODULES } from './admin.js';
 import { CUSTOMER_MODULES, waLink, WA_DISPLAY } from './customer.js';
-import { enhance } from '../ui/enhance.js'; // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
+import { enhance } from '../ui/enhance.js';
+import { clearCache, clearCacheButton } from './cache.js';
+import { startNav, navigate, current, setUrl } from './nav.js'; // clean /studio/… paths (History API) // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
 
 const app = document.getElementById('app');
 enhance(document);
@@ -47,11 +49,21 @@ function coupleFlag(set) {
   return false;
 }
 
-export const go = (hash) => { if (location.hash !== hash) location.hash = hash; else route(); };
-window.addEventListener('hashchange', () => route());
+/** Goes to a studio route ('#/orders/NM-12345'; the address bar shows /studio/orders/NM-12345). Never returns the
+ * routing promise: a redirect from inside the router must not wait for itself. */
+export const go = (route, opts) => { navigate(route, opts); };
+const redirect = (r) => go(r, { replace: true });
+
+/** Clear cache (account box and the phone's "More" sheet): saves the open invitation first, keeps the sign-in. */
+const cacheOpts = { before: () => S.ws?.session?.flush() };
+const cacheBtn = () => clearCacheButton(cacheOpts);
+const onShellAction = (a) => { if (a === 'signout') signOut(); else if (a === 'clearcache') clearCache(cacheOpts); };
 
 const brand = (lg = false) => h('a.brand', { href: '#/', class: lg ? 'brand--lg' : '' },
-  h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', 'Nimtto'), h('span.brand__sub', 'Studio'));
+  // the real logo (public/site/brand/); the mark alone where the nav is collapsed to icons
+  h('img.brand__logo', { src: '/site/brand/nimtto-logo.svg', alt: 'Nimtto', width: 162, height: 38 }),
+  h('img.brand__mark', { src: '/site/brand/nimtto-mark.svg', alt: '', 'aria-hidden': 'true', width: 31, height: 28 }),
+  h('span.brand__sub', 'Studio'));
 
 // ── Routing ────────────────────────────────────────────────────────────────
 
@@ -59,7 +71,7 @@ let routing = Promise.resolve();
 function route() { routing = routing.then(doRoute).catch((err) => { console.error(err); fatal(err); }); return routing; }
 
 async function doRoute() {
-  const hash = location.hash || '#/';
+  const hash = current();
   const cm = /^#\/c\/([A-Za-z0-9_-]{20,128})$/.exec(hash);
   if (cm) return passwordPage(cm[1]);
 
@@ -82,19 +94,20 @@ async function doRoute() {
   const im = /^#\/i\/([a-z0-9-]{3,64})(?:\/([a-z-]+))?$/.exec(hash);
   if (S.me.role === 'customer') {
     if (im) return openInvitation(im[1], im[2] || 'home');
-    if (hash !== '#/account') return go('#/account');
+    if (hash !== '#/account') return redirect('#/account');
     return openCustomer();
   }
   if (S.me.role === 'client') {
-    if (!im || im[1] !== S.me.slug) return go(`#/i/${S.me.slug}/home`);
+    if (!im || im[1] !== S.me.slug) return redirect(`#/i/${S.me.slug}/home`);
     return openInvitation(im[1], im[2] || 'home');
   }
-  if (hash === '#/login' || hash === '#/' || hash === '#') return go('#/overview');
+  if (hash === '#/login' || hash === '#/' || hash === '#') return redirect('#/overview');
   if (im) return openInvitation(im[1], im[2] || 'home');
-  const am = /^#\/([a-z-]+)(?:\?(.*))?$/.exec(hash);
+  // #/<module>[/<item>][?query]: the item is a deep link inside the module (e.g. #/orders/NM-12345 opens that order)
+  const am = /^#\/([a-z-]+)(?:\/([A-Za-z0-9_-]{1,64}))?(?:\?(.*))?$/.exec(hash);
   const mod = ADMIN_MODULES.find((x) => x.id === am?.[1]);
-  if (!mod) return go('#/overview');
-  return openAdmin(mod, new URLSearchParams(am[2] || ''));
+  if (!mod) return redirect('#/overview');
+  return openAdmin(mod, new URLSearchParams(am[3] || ''), am[2] || null);
 }
 
 function teardown() {
@@ -143,10 +156,13 @@ function adminFoot() {
   return h('div.userbox',
     h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.email || 'A').slice(0, 1).toUpperCase()),
     h('span.userbox__text', h('b', 'Owner'), h('small', S.me.email || '')),
+    cacheBtn(),
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
 }
 
-function openAdmin(mod, params) {
+function openAdmin(mod, params, sub = null) {
+  // Same module, only the item changed (a drawer opened or closed, the Back button): the module handles it in place.
+  if (S.ws?.kind === 'admin' && S.ws.modId === mod.id && S.ws.onRoute) { S.ws.onRoute(sub, params); return; }
   if (S.ws?.kind !== 'admin') {
     teardown();
     const shell = createShell({
@@ -158,14 +174,17 @@ function openAdmin(mod, params) {
       ],
       foot: adminFoot(),
       tabs: ['overview', 'invitations', 'orders', 'replies'],
-      onAction: (a) => { if (a === 'signout') signOut(); },
+      onAction: onShellAction,
     });
     S.ws = { kind: 'admin', shell };
     fill(app, shell.root);
     shell.attachPreview(null);
     api('/orders').then((list) => { const n = (Array.isArray(list) ? list : list.orders || []).filter((o) => o.status === 'new').length; shell.setBadge('orders', n ? String(n) : ''); }).catch(() => {});
   }
-  mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, params, refreshMeta });
+  S.ws.modId = mod.id;
+  S.ws.onRoute = null;
+  const ws = S.ws;
+  mount(ws, mod, { me: S.me, meta: S.meta, shell: ws.shell, go, params, sub, refreshMeta, onRoute: (fn) => { ws.onRoute = fn; } });
 }
 
 // ── Customer dashboard (account) ─────────────────────────────────────────
@@ -177,6 +196,7 @@ function customerFoot() {
   return h('div.userbox',
     h('span.userbox__avatar', { 'aria-hidden': 'true' }, (S.me.name || S.me.email || 'Y').slice(0, 1).toUpperCase()),
     h('span.userbox__text', h('b', S.me.name || 'Your account'), h('small', S.me.email || '')),
+    cacheBtn(),
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
 }
 
@@ -190,7 +210,7 @@ function openCustomer() {
       groups: [{ items: CUSTOMER_MODULES.map((m) => ({ id: m.id, label: m.title, icon: m.icon, href: `#/${m.id}`, short: m.short })) }],
       foot: customerFoot(),
       tabs: ['account'], // phones: Dashboard + More (sign out)
-      onAction: (a) => { if (a === 'signout') signOut(); },
+      onAction: onShellAction,
     });
     S.ws = { kind: 'customer', shell };
     fill(app, shell.root);
@@ -253,10 +273,11 @@ async function openInvitation(slug, modId) {
       foot: isAdmin ? adminFoot() : isCustomer ? customerFoot() : h('div.userbox',
         h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
         h('span.userbox__text', h('b', 'Your invitation'), h('small', 'Saves as you type')),
+        cacheBtn(),
         h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18))),
       tabs: ['opening', 'couple', 'dates', 'photos', 'send'],
       mobile: { home: `#/i/${slug}/home`, title: session.names(), save: session.makeSaveChip() },
-      onAction: (a) => { if (a === 'signout') signOut(); },
+      onAction: onShellAction,
     });
     const preview = createPreview(session, {
       // "Click to edit": a click in the preview opens the field that changes it.
@@ -270,7 +291,7 @@ async function openInvitation(slug, modId) {
     if (isAdmin) api(`/invitations/${slug}/seen`, { method: 'POST' }).catch(() => {});
   }
   const mod = ws.mods.find((m) => m.id === modId);
-  if (!mod) return go(`#/i/${slug}/home`);
+  if (!mod) return redirect(`#/i/${slug}/home`);
   ws.preview.setOpening(Boolean(mod.opening)); // first: the page loads straight into the right mode
   ws.shell.wantPreview(mod.preview !== false);
   ws.preview.setHint(mod.previewHint);
@@ -288,7 +309,7 @@ async function signOut() {
   setCsrf('');
   teardown();
   if (wasCouple) { linkProblem('You are signed out. Open your link again to continue.', 'Signed out'); return; }
-  history.replaceState(null, '', '#/login');
+  setUrl('#/login');
   loginPage();
 }
 
@@ -376,7 +397,7 @@ async function passwordPage(token) {
         onClose: () => resolve(yes),
       });
     });
-    if (!ok) { history.replaceState(null, '', '#/overview'); route(); return; } // queued, not awaited (see enterAsCouple)
+    if (!ok) { redirect('#/overview'); return; } // queued, not awaited (see enterAsCouple)
   }
   // The couple opened their link again while signed in: no password, straight to their invitation.
   if (who?.role === 'client') {
@@ -421,8 +442,8 @@ function enterAsCouple(s) {
   setCsrf(s.csrf);
   coupleFlag(true);
   seenFlag(true);
-  history.replaceState(null, '', `#/i/${s.slug}/home`); // never leave the token in the address bar
-  route();
+  // never leave the token in the address bar or the history: this entry (/studio/#/c/<token>) is replaced
+  redirect(`#/i/${s.slug}/home`);
 }
 
 function linkProblem(message = 'This link is no longer active. Please ask your planner for a new one.', heading = 'This link has expired') {
@@ -430,8 +451,9 @@ function linkProblem(message = 'This link is no longer active. Please ask your p
   document.title = 'Nimtto';
   fill(app, authLayout(brand(true),
     h('h1.auth__title', heading), h('p.auth__lede', message),
-    h('button.link', { type: 'button', onclick: () => { coupleFlag(false); history.replaceState(null, '', '#/login'); loginPage(); } }, 'Sign in with your email instead')));
+    h('button.link', { type: 'button', onclick: () => { coupleFlag(false); setUrl('#/login'); loginPage(); } }, 'Sign in with your email instead')));
 }
 
 export { coupleName };
+startNav(() => route());
 route();

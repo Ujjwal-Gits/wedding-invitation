@@ -2,6 +2,7 @@
 // The page sends { text, lang?, section? } | { image: [url], index?, section? } | { section } (nimtto:pick);
 // we find the model value (or the theme's own slot) that shows it, switch to its module, open the card
 // or fold it sits in, scroll to it, focus it and flash it. Photos open their own photo options.
+import { current } from './nav.js';
 import { toast } from './dom.js';
 import { loadManifest, sharedKey } from './slotdata.js';
 import { pathStr } from './fields.js';
@@ -68,7 +69,7 @@ function slotText(spec, id, data, theme = data.theme) {
 
 // ── Moving the editor ─────────────────────────────────────────────────────
 
-const currentModule = () => /^#\/i\/[a-z0-9-]+\/([a-z-]+)/.exec(location.hash)?.[1] || 'home';
+const currentModule = () => /^#\/i\/[a-z0-9-]+\/([a-z-]+)/.exec(current())?.[1] || 'home';
 const until = async (find, ms = 3500) => {
   const t0 = performance.now();
   for (;;) {

@@ -3,7 +3,7 @@
 //   lastLoginAt?, disabled, invitations: [{ slug, themes, canChangeTheme, canChangeColors, linkedAt }] }.
 // Data helpers only: sign-in lives in lib/auth.js, the routes in lib/customers.js.
 import { randomBytes } from 'node:crypto';
-import { customerStore, withLock } from './store.js';
+import { customerStore, withLock, getDoc, putDoc, peekInvitation } from './store.js';
 
 export const CUSTOMER_ID_RE = /^[A-Za-z0-9_-]{12}$/;
 export const ACCOUNT_PASSWORD_MIN = 8;
@@ -45,15 +45,84 @@ export function mutateCustomer(id, fn) {
   });
 }
 
-/** Removes an invitation from every account (the invitation was deleted). */
-export function unlinkEverywhere(slug) {
-  return withLock('customers', async () => {
+/** Removes an invitation from every account and every pending link (the invitation was deleted). */
+export async function unlinkEverywhere(slug) {
+  await withLock('customers', async () => {
     for (const c of customerStore.all()) {
       if (!linkOf(c, slug)) continue;
       c.invitations = c.invitations.filter((l) => l.slug !== slug);
       await customerStore.put(c);
     }
   });
+  await dropPending((p) => p.slug === slug);
+}
+
+/**
+ * Links an invitation to an account (or updates the link's perms). perms: { themes, canChangeTheme, canChangeColors }.
+ * Returns the saved customer.
+ */
+export function linkInvitation(id, slug, perms = {}) {
+  return mutateCustomer(id, (x) => {
+    x.invitations = Array.isArray(x.invitations) ? x.invitations : [];
+    let l = linkOf(x, slug);
+    if (!l) {
+      if (x.invitations.length >= 20) throw httpError(400, 'An account can have at most 20 invitations.');
+      l = { slug, themes: 'all', canChangeTheme: false, canChangeColors: true, linkedAt: new Date().toISOString() };
+      x.invitations.push(l);
+    }
+    for (const k of ['themes', 'canChangeTheme', 'canChangeColors']) if (perms[k] !== undefined) l[k] = perms[k];
+  });
+}
+
+// ── Pending links: an invitation made for an email that has no account yet ─────────────────────────────────────
+// Kept in the store's small documents (`pending-links`): [{ email, slug, themes, canChangeTheme, canChangeColors, at }].
+// NEVER claimed automatically: emails are not verified, so registering an email first is no proof of being that couple.
+// Once an account with that email exists, the owner sees "… signed up: link the invitation?" (Overview, Customer
+// accounts) and links it with one click (confirmPending), or dismisses it.
+
+const PENDING_KEY = 'pending-links';
+const PENDING_MAX = 2000;
+const readPending = async () => {
+  const v = (await getDoc(PENDING_KEY))?.value;
+  return Array.isArray(v?.links) ? v.links : [];
+};
+
+/** Every pending link (admin views). */
+export const listPending = () => readPending();
+
+/** Adds (or replaces) the pending link of this invitation for this email. */
+export function addPending(email, slug, perms = {}) {
+  return withLock(`kv:${PENDING_KEY}:edit`, async () => {
+    const links = (await readPending()).filter((p) => !(p.email === email && p.slug === slug));
+    if (links.length >= PENDING_MAX) throw httpError(507, 'Too many invitations are waiting for an account.');
+    links.push({ email, slug, themes: perms.themes ?? 'all', canChangeTheme: perms.canChangeTheme ?? true, canChangeColors: perms.canChangeColors ?? true, at: new Date().toISOString() });
+    await putDoc(PENDING_KEY, { links });
+    return links.at(-1);
+  });
+}
+
+/** Removes the pending links that match. */
+export function dropPending(match) {
+  return withLock(`kv:${PENDING_KEY}:edit`, async () => {
+    const links = await readPending();
+    const keep = links.filter((p) => !match(p));
+    if (keep.length !== links.length) await putDoc(PENDING_KEY, { links: keep });
+  });
+}
+
+/**
+ * The owner confirms a pending link: the invitation is linked to the account with that email (with the perms kept on
+ * the pending link) and the pending link goes. 404 when there is no such pending link, or no account for the email yet.
+ */
+export async function confirmPending(email, slug) {
+  const p = (await readPending()).find((x) => x.email === email && x.slug === slug);
+  if (!p) throw httpError(404, 'That invitation is not waiting for this email any more.');
+  const c = customerByEmail(email);
+  if (!c) throw httpError(404, 'No account with that email yet.');
+  if (!(await peekInvitation(slug))) { await dropPending((x) => x.slug === slug); throw httpError(404, 'That invitation was deleted.'); }
+  const saved = await linkInvitation(c.id, slug, { themes: p.themes, canChangeTheme: p.canChangeTheme, canChangeColors: p.canChangeColors });
+  await dropPending((x) => x.email === email && x.slug === slug);
+  return saved;
 }
 
 /** slug -> [{ id, email, name }] for the admin's invitation list. */

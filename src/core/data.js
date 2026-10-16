@@ -2,6 +2,11 @@
 // (/api/invitations/<slug>/public); otherwise the demo in src/config.js is used.
 // Every theme must `await loadInvitation()` before rendering.
 //
+// The demo couple (src/config.js) shows ONLY on a theme page without an id (development, the owner's design browsing,
+// the thumbnails) and in the watermarked showcase. A real invitation (?id=, /i/<slug>, the studio preview) never
+// falls back to it: anything missing is blank (blankModel), and an invitation that cannot be loaded shows a small
+// "not available" card instead of the design (docs/PLATFORM.md "No demo on real invitations").
+//
 // Live preview (docs/PLATFORM.md): with ?preview=1 inside an iframe, the page asks the
 // studio (same origin only) for the unsaved model first, tells it when the theme has
 // rendered, and points at what the client is editing (words, a photo or a part of the page; see
@@ -135,11 +140,46 @@ function replaceConfig(data) {
   Object.assign(config, data);
 }
 
-/** The studio sends its raw draft model: fill the few things the public endpoint adds. */
+/**
+ * The empty invitation a real page falls back to, field by field: no demo names, families, venues, dates, story,
+ * hashtag or photos. Only the generic words every new card starts with (salutation, request, sign-off, closing,
+ * shloka, the seven vows) and the bundled music. weddingDate is a placeholder (themes need a date to lay out).
+ */
+export function blankModel() {
+  const b = () => ({ en: '', ne: '' });
+  const person = () => ({ name: b(), fullName: b(), parents: b(), home: b(), photo: null });
+  const soon = new Date(Date.now() + 182 * 864e5).toISOString().slice(0, 10);
+  return {
+    couple: { bride: person(), groom: person(), portraits: [], hashtag: '' },
+    hosts: b(),
+    weddingDate: `${soon}T10:30:00+05:45`,
+    weddingDateBS: b(),
+    city: b(),
+    invitation: {
+      shloka: structuredClone(demo.invitation.shloka), salutation: structuredClone(demo.invitation.salutation),
+      body: b(), request: structuredClone(demo.invitation.request), signoff: structuredClone(demo.invitation.signoff),
+    },
+    story: [],
+    events: [],
+    saptapadi: structuredClone(demo.saptapadi),
+    gallery: [],
+    info: { travel: b(), stays: [], contacts: [], livestream: '' },
+    rsvp: { enabled: true, deadline: b(), maxGuests: demo.rsvp.maxGuests, endpoint: '' },
+    music: { volume: demo.music.volume, tracks: structuredClone(bundledTracks) },
+    closing: structuredClone(demo.closing),
+    theme: SLUG.test(location.pathname.split('/')[1] || '') ? location.pathname.split('/')[1] : demo.theme,
+    themeContent: {},
+    content: { images: {}, texts: {} },
+    share: { title: '', description: '', image: '', siteUrl: '' },
+  };
+}
+
+/** The studio sends its raw draft model: fill the few things the public endpoint adds (never from the demo). */
 function normalisePreview(data, id) {
   const out = structuredClone(data);
-  for (const key of Object.keys(demo)) if (!(key in out)) out[key] = structuredClone(demo[key]);
-  if (!isPlain(out.music)) out.music = structuredClone(demo.music);
+  const blank = blankModel();
+  for (const key of Object.keys(blank)) if (!(key in out)) out[key] = blank[key];
+  if (!isPlain(out.music)) out.music = blank.music;
   if (!Array.isArray(out.music.tracks) || !out.music.tracks.length) out.music.tracks = structuredClone(bundledTracks);
   if (isPlain(out.rsvp) && id && !out.rsvp.endpoint) out.rsvp.endpoint = `/api/invitations/${id}/rsvp`;
   if (Array.isArray(out.events)) {
@@ -208,22 +248,89 @@ export async function loadInvitation() {
   }
   if (fromStudio) {
     replaceConfig(normalisePreview(fromStudio, validId ? id : ''));
-  } else if (validId) {
-    try {
-      const res = await fetch(`/api/invitations/${id}/public`, { headers: { Accept: 'application/json' } });
-      if (res.ok) replaceConfig(await res.json());
-    } catch (err) {
-      console.warn('Could not load the invitation; showing the demo.', err);
+  } else if (params.has('id')) {
+    // A real invitation: its own data, or a "not available" card. Never the demo couple.
+    let problem = 'missing';
+    if (validId) {
+      try {
+        const res = await fetch(`/api/invitations/${id}/public`, { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (isPlain(data) && isPlain(data.couple)) { replaceConfig(normalisePreview(data, id)); problem = null; }
+        } else if (res.status >= 500 || res.status === 429) problem = 'offline';
+      } catch (err) {
+        console.warn('Could not load the invitation.', err);
+        problem = 'offline';
+      }
     }
+    if (problem) return notAvailable(problem);
   }
   applyFaith();
   applyThemeColors();
+  if (fromStudio || params.has('id')) realPage();
   if (PREVIEW) {
     announceMounted();
     // Runs after the theme's own rendering (the caller continues first).
     live?.then((m) => { m.setPicking(firstPick); return m.start({ target: firstTarget }); }).catch(() => document.documentElement.classList.remove('nimtto-hold'));
   }
   return config;
+}
+
+const BRAND_TITLE = 'Wedding invitation · Nimtto';
+const AMP = new Set(['&', '&amp;', 'र', 'and', 'weds', 'Weds', 'संग', 'सँग']);
+/**
+ * A real invitation: the tab title is its own (never the build's), and while a first name is still empty the lone
+ * "&" between the names is hidden (kept in the layout, so nothing jumps), so the page reads blank, not broken.
+ */
+function realPage() {
+  const nm = (p) => String(p?.name?.en || p?.name?.ne || '').trim();
+  const b = nm(config.couple?.bride);
+  const g = nm(config.couple?.groom);
+  const t = String(config.share?.title || '').trim();
+  document.title = t || (b && g ? `${b} & ${g}` : BRAND_TITLE);
+  if (b && g) return;
+  const style = document.createElement('style');
+  style.textContent = '[data-nimtto-blank]{visibility:hidden!important}';
+  document.head.append(style);
+  const sweep = () => {
+    for (const el of document.body?.querySelectorAll('span, b, i, em, p, div, h1, h2, h3, small, strong, text, tspan') || []) {
+      if (el.childElementCount || el.hasAttribute('data-nimtto-blank')) continue;
+      if (AMP.has(String(el.textContent).trim())) el.setAttribute('data-nimtto-blank', '');
+    }
+  };
+  let n = 0;
+  const run = () => { sweep(); if (++n < 40) setTimeout(run, 250); };
+  setTimeout(run, 0);
+  // late renders (a gate opening, a lazy section): watched for the first 20 s
+  const obs = new MutationObserver(() => { clearTimeout(realPage.t); realPage.t = setTimeout(sweep, 60); });
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(() => obs.disconnect(), 20000);
+}
+
+/**
+ * A real invitation that cannot be shown (unknown, not published yet, no access, or offline): a calm card in place of
+ * the design, and the theme never renders (the promise never resolves), so nothing of the demo can appear.
+ */
+function notAvailable(kind) {
+  const ink = '#121116';
+  const card = document.createElement('main');
+  card.setAttribute('data-nimtto-unavailable', kind);
+  card.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:32px 16px;background:#fff;color:' + ink
+    + ';font:400 16.5px/1.6 Geist,"Segoe UI",Arial,sans-serif;text-align:left;overflow:auto';
+  const offline = kind === 'offline';
+  card.innerHTML = `<div style="width:min(100%,440px)">
+<a href="/" style="font:500 24px/1 Gambetta,'Iowan Old Style',Georgia,serif;letter-spacing:-.03em;color:${ink};text-decoration:none">Nimtto</a>
+<h1 style="margin:40px 0 0;font:400 clamp(30px,7vw,44px)/1.08 Gambetta,'Iowan Old Style',Georgia,serif;letter-spacing:-.028em">${offline ? 'This invitation could not load.' : 'This invitation isn’t available.'}</h1>
+<p lang="ne" style="margin:8px 0 0;color:#66636E;font-family:Mukta,'Nirmala UI',sans-serif">${offline ? 'निम्तो खुल्न सकेन। फेरि प्रयास गर्नुहोस्।' : 'यो निम्तो अहिले उपलब्ध छैन।'}</p>
+<p style="margin:16px 0 0;color:#45434C">${offline ? 'Please check your connection and try again.' : 'The link may be mistyped, or the invitation is not shared yet. Please ask the family for their link.'}</p>
+<button type="button" style="margin-top:28px;min-height:48px;padding:0 22px;border:0;border-radius:6px;background:#B3122F;color:#fff;font:500 16px/1 Geist,'Segoe UI',Arial,sans-serif;cursor:pointer">Try again</button>
+</div>`;
+  card.querySelector('button').addEventListener('click', () => location.reload());
+  const show = () => { document.body.append(card); document.documentElement.classList.remove('nimtto-hold'); };
+  if (document.body) show(); else addEventListener('DOMContentLoaded', show, { once: true });
+  document.title = 'Invitation not available · Nimtto';
+  if (PREVIEW) { post({ type: 'nimtto:mounted' }); post({ type: 'nimtto:settled' }); }
+  return new Promise(() => {});
 }
 
 // ---------------------------------------------------------------------------------------------

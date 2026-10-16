@@ -216,7 +216,7 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 - `POST /api/orders` → 201 `{ ok: true }`; 400 `{ ok:false, error, fields }`. `weddingDate` is `YYYY-MM-DD`; `message` required only for `custom`; `plan` must be an existing plan id. `GET /api/themes` lists ready themes only. `stats.attending` = guests (people) who said yes.
 
 **core (2026-10-15):**
-- `nimtto:data` is used only if `data` is a plain object with a `couple` object; send the whole draft model. Missing top-level keys fall back to the demo; empty `music.tracks` gets the bundled tracks; `rsvp.endpoint` and event `end` are filled like `/public` does. Answer every `nimtto:ready` (each iframe reload asks again).
+- `nimtto:data` is used only if `data` is a plain object with a `couple` object; send the whole draft model. Missing top-level keys are blank (`blankModel()`), never the demo (see "no demo" below); empty `music.tracks` gets the bundled tracks; `rsvp.endpoint` and event `end` are filled like `/public` does. Answer every `nimtto:ready` (each iframe reload asks again).
 - `nimtto:focus` `{ text }` (≤ 500 chars, case/space-insensitive): smallest visible element containing it; if none, the largest visible element whose text is part of it (e.g. only a first name is shown); a hidden-language match outlines its visible parent.
 - Colours: `themeColors[<theme in the URL path>]` wins, else `themeColors[config.theme]`, so the preview of `/<theme>/` uses that theme's colours.
 - Theme agents: Mangal's and Mahal's painted doors/gate use literal colours, so their tokens recolour the page below and the hero text, not the doors. To make the opening itself recolourable, route those gate colours through the manifest tokens.
@@ -295,3 +295,45 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
 - Customer dashboard (`#/account`): orders with payment status and "Pay now" (`/pay/<ref>` opens with the session, no token), wedding details, password change, and each invitation the owner linked → the couple's editor with that link's perms. Secret client links keep working.
 - Owner: Clients & access › Customer accounts (link invitations with perms, reset password, turn off, new account); Themes › "Plan from" per design (`Site.themeTiers`). Files: `server/lib/accounts.js`, `server/lib/customers.js`, `src/studio/customer.js`, `src/studio/admin-customers.js`.
 - Website agent: `GET /api/auth/me?soft=1` → `{ role: null }` or `{ role: 'customer', name, email }` for the nav ("My dashboard" → `/studio/`); `/api/site` plans carry `includes`, `/api/themes` carry `tier`.
+
+**server + core + studio (2026-10-16): no demo on real invitations; invitations for accounts; Clear cache.**
+- Owner: "Even after creating all the details for the groom and the bride, the link we share ... still shows Binisha and
+  Ujjwal. If a name isn't added, keep it blank or show our branding name. Also add a proper clear-cache option on all the
+  dashboards." Details: API.md "No demo on real invitations", "Invitations for an account", `POST /clear-cache`.
+- Leaks found: (1) every theme page's built `<title>`/`og:*` carried the demo's share title (vite `shareMeta`) — now neutral,
+  and the gate writes the invitation's own; (2) `?id=` that failed to load (unpublished, no access, offline) kept the demo —
+  now a "not available" card; (3) the studio model's missing keys fell back to the demo — now `blankModel()`; (4) "sample"
+  invitations were seeded with the demo's venues, travel note, stays, people photos and date — the starter no longer does,
+  and a one-time migration (backup first) clears exact demo values from stored invitations; (5) `/i/<slug>` fell back to
+  "Wedding invitation" — now "Wedding invitation · Nimtto", never demo words; (6) Ghar's own `document.title` and an empty
+  hall frame with no photos.
+- Empty first name: the lone "&" is hidden (data.js), so the page reads blank, not broken. Studio placeholders may show
+  "e.g." names in grey; they are never saved.
+- Owner: "once a customer has an account, any invitation the admin makes for them must simply appear in THEIR dashboard."
+  New invitation has "Customer email"; Orders has one-click "Create invitation"; an email with no account gets a pending
+  link that is never claimed by itself (emails are not verified): once someone signs up with it, the owner gets "… signed
+  up: link the invitation?" with Link now / Dismiss (Overview, Customer accounts); the dashboard card shows "Your invitation: names · Plan" with Edit, Preview, Share
+  link and the payment status. The client link + password is "Share a separate link (optional)". Files:
+  `server/lib/handover.js`, `server/lib/demo.js`, `server/lib/migrate-demo.js`, `src/studio/cache.js`.
+- Clear cache: account box (all dashboards), admin Settings, customer dashboard › Account.
+
+**studio (2026-10-16): Orders & requests, simpler.** Owner: "so hard to understand ... very thin, one row each, and open in
+a clear modal." One filter bar (All · New (to call) · Payment to check · Waiting for payment · Paid · Done · Archived, with
+counts) and search (name, phone, order no., email); a thin table (Order no. · Customer · Plan · Design · Payment · Stage ·
+Received, a screenshot icon when a proof exists; stacked rows on phones); a click opens a right-hand drawer (full screen on
+phones) at `#/orders/<ref>` (Back closes it; overview payment tasks link straight to it) with Customer, Order, Payment
+(confirm / reject / mark paid / refund, screenshots), Next step (Create invitation, stage), Private notes, Delete. Same API
+calls as before. Old links `#/orders?pay=check|awaiting|paid` map to the new filters. The studio router passes
+`#/<module>/<item>` to the module (`ctx.sub`, `ctx.onRoute`) without re-rendering it.
+
+**studio + server (2026-10-17): the real logo; clean studio URLs.** The studio shows `public/site/brand/nimtto-logo.svg`
+(the mark `nimtto-mark.svg` where the nav is icons only and in the phone bar) with the "Studio" tag; favicon as the site.
+Addresses are clean paths with the History API: `/studio/overview`, `/studio/orders/NM-12345`, `/studio/invitations`,
+`/studio/i/<slug>/<module>`, `/studio/account`, `/studio/replies?i=<slug>` (`src/studio/nav.js`: code keeps route strings
+`'#/orders/NM-12345'`; `go()` / `navigate()` / `setUrl()` turn them into paths; a delegated click handler routes `href="#/…"`
+and `/studio/…` links; Back, Forward, refresh and deep links work). Old `/studio/#/…` addresses are replaced by their path on
+load. **Exception:** a couple's link stays `/studio/#/c/<token>`: the token lives in the hash (never sent to the server or
+logged), and signing in replaces that history entry with `/studio/i/<slug>/home`. Production: `server/index.js` serves
+`dist/studio/index.html` (`no-store`) for any `/studio/<route>` without a dot; dev: the same rewrite in `vite.config.js`.
+**Pending links (2026-10-17):** never claimed automatically (see API.md "Invitations for an account"): the owner confirms
+with Link now / Dismiss on Overview and in Customer accounts. Create-from-order still links to the order's own account.

@@ -31,7 +31,7 @@ function adminTools(ctx) {
     card('Activity', 'Who changed what, newest first.', activity),
     h('section.card.card--danger',
       h('header.card__head', h('h2.card__title', 'Delete this invitation'), h('p.card__help', 'Removes the invitation, its photos and replies. The link stops working.')),
-      h('button.btn.btn--danger-ghost', { type: 'button', onclick: async () => { if (await deleteDialog({ slug: ctx.slug, names: ctx.session.names() })) { ctx.session.destroy(); location.hash = '#/invitations'; } } }, icon('trash', 16), 'Delete invitation')),
+      h('button.btn.btn--danger-ghost', { type: 'button', onclick: async () => { if (await deleteDialog({ slug: ctx.slug, names: ctx.session.names() })) { ctx.session.destroy(); ctx.go('#/invitations'); } } }, icon('trash', 16), 'Delete invitation')),
   ];
 }
 

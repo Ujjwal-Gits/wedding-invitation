@@ -3,6 +3,7 @@
 import { h, icon, toast, openDialog, fmtDate, fill } from './dom.js';
 import { api } from './api.js';
 import { enhance } from '../ui/enhance.js';
+import { clearCacheCard } from './cache.js';
 
 const WA_DISPLAY = '+977 980-6393298';
 const WA_NUMBER = '9779806393298';
@@ -45,7 +46,7 @@ function detailsDialog(o, onSaved) {
     try {
       const out = await api(`/account/orders/${o.ref}`, { method: 'PATCH', body: { weddingDate: date.value, venue: venue.value, bride: bride.value, groom: groom.value, message: message.value } });
       onSaved(out.order);
-      toast('Details saved', 'success');
+      toast(out.filled?.length ? 'Details saved and added to your invitation' : 'Details saved', 'success');
       d.close();
     } catch (ex) { err.textContent = ex.status === 400 ? 'Please check the date and the lengths of the fields.' : ex.message; save.disabled = false; }
   });
@@ -75,16 +76,25 @@ function orderCard(o, meta, redraw) {
       h('button.btn.btn--quiet', { type: 'button', onclick: () => detailsDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('edit', 15), o.weddingDate || o.venue ? 'Edit details' : 'Add wedding details')));
 }
 
+/** "Your invitation: Ujjwal & Binisha · Shahi", with Edit, Preview, Share link and the payment status. */
 function invitationCard(i, meta) {
   const design = meta?.themes?.find((t) => t.slug === i.theme);
   const live = i.status === 'published';
+  const [tone, payText] = i.payStatus ? (PAY[i.payStatus] || ['muted', i.payStatus]) : [null, null];
+  const named = names(i);
+  const share = i.shareUrl ? new URL(i.shareUrl, location.origin).href : '';
   return h('li.cu-inv',
     h('span.cu-inv__img', design?.thumb ? h('img', { src: design.thumb, alt: '', loading: 'lazy' }) : icon('heart', 18)),
     h('div.cu-inv__body',
-      h('p.cu-inv__names', names(i)),
+      h('p.cu-inv__names', named === 'Your invitation' ? 'Your invitation' : `Your invitation: ${named}`, i.plan?.name ? h('span.cu-inv__plan', ` · ${i.plan.name}`) : null),
       h('p.cu-inv__meta', design?.name || i.theme, i.weddingDate ? ` · ${fmtDate(i.weddingDate)}` : '', ' ',
-        h('span.pill', { class: live ? 'pill--ok' : 'pill--muted' }, live ? 'Live' : 'Draft'))),
-    h('a.btn.btn--primary', { href: `#/i/${i.slug}/home` }, 'Open the editor', icon('right', 16)));
+        h('span.pill', { class: live ? 'pill--ok' : 'pill--muted' }, live ? 'Live' : 'Draft'),
+        payText ? h('span.pill', { class: `pill--${tone}`, title: i.orderRef ? `Order ${i.orderRef}` : '' }, payText) : null),
+      h('div.cu-inv__acts',
+        h('a.btn.btn--primary.btn--sm', { href: `#/i/${i.slug}/home` }, icon('edit', 15), 'Edit'),
+        h('a.btn.btn--sm', { href: i.previewUrl || `/${i.theme}/?id=${i.slug}`, target: '_blank', rel: 'noopener' }, icon('eye', 15), 'Preview'),
+        h('button.btn.btn--sm', { type: 'button', disabled: !share, title: share ? share : 'The share link works once your invitation is published.', onclick: () => navigator.clipboard?.writeText(share).then(() => toast('Share link copied', 'success'), () => toast(share)) }, icon('share', 15), share ? 'Copy share link' : 'Share link after publishing'),
+        ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl ? h('a.btn.btn--sm.btn--quiet', { href: i.payUrl }, icon('right', 15), 'Pay now') : null)));
 }
 
 function passwordCard() {
@@ -141,7 +151,8 @@ export function customerHome(ctx) {
             h('dl.cu-facts', [['Name', acc.customer.name || '—'], ['Email', acc.customer.email], ['Phone', acc.customer.phone || '—']].map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
             h('p.hint', 'To change these, message us on WhatsApp.'),
             h('a.sharebtn.sharebtn--wa', { href: waLink(), target: '_blank', rel: 'noopener' }, icon('chat', 17), h('span', `WhatsApp ${WA_DISPLAY}`))),
-          passwordCard())));
+          passwordCard(),
+          clearCacheCard())));
   };
   api('/account').then(draw).catch((err) => fill(root, h('p.notice.notice--error', icon('alert', 16), h('span', err.message))));
   return root;

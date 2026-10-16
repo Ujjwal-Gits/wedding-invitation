@@ -364,3 +364,14 @@ export async function me(req, res) {
   }
   res.json({ role: 'client', slug: s.slug, csrf: s.csrf, perms: permsOf(doc.access) });
 }
+
+/**
+ * POST /api/clear-cache (any signed-in role, CSRF): tells the browser to drop its HTTP cache for this site
+ * (`Clear-Site-Data: "cache"`). Never "cookies" or "storage": the session cookie and the sign-in stay.
+ * The studio also empties Cache Storage and its own non-sign-in keys, then reloads (src/studio/cache.js).
+ */
+export function clearCache(req, res) {
+  res.set('Clear-Site-Data', '"cache"');
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true });
+}

@@ -4,6 +4,7 @@
 import { h, icon, toast, openDialog, confirmDialog, fmtDate, fmtRelative, toggle, fill, debounce, iconBtn } from './dom.js';
 import { api } from './api.js';
 import { themePicker, permsText } from './admin-access.js';
+import { pendingActs } from './admin.js'; // Link now / Dismiss (a function: the import cycle is safe)
 
 const genPassword = () => {
   const words = ['marigold', 'lotus', 'saffron', 'diyo', 'tika', 'mala', 'kalash', 'shehnai', 'gurans', 'himal'];
@@ -103,9 +104,11 @@ function newAccountDialog() {
 export function customersSection(ctx, loadInvitations) {
   let items = [];
   let invitations = [];
+  let pending = [];
   let q = '';
   const body = h('div.tablebox', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '44%' } }))));
   const count = h('span.sect__count');
+  const waiting = h('div');
   const shownPassword = (out, what) => {
     if (!out) return;
     openDialog({
@@ -118,6 +121,13 @@ export function customersSection(ctx, loadInvitations) {
   const replace = (c) => { items = items.map((x) => (x.id === c.id ? c : x)); draw(); };
   const draw = () => {
     count.textContent = String(items.length);
+    // invitations made for an email: never linked by themselves (emails are not verified); the owner confirms
+    fill(waiting, pending.length ? h('ul.rows.pend', pending.map((p) => h('li.task',
+      h('span.task__icon', { class: p.account ? 'is-accent' : '' }, icon(p.account ? 'key' : 'history', 16)),
+      h('div.task__main',
+        h('p.task__title', p.account ? [h('b', p.account.name || p.account.email), ` (${p.account.email}) signed up: link `, h('span.mono', `/${p.slug}`), '?'] : ['Waiting for an account: ', h('span.mono', `/${p.slug}`), ` for ${p.email}`]),
+        h('p.task__meta', p.account ? 'Link it only if this is your customer.' : 'When someone signs up with this email, you confirm the link here.')),
+      h('div.task__acts', p.account ? pendingActs(p, load) : pendingActs(p, load).slice(1))))) : null);
     const rows = items.filter((c) => !q || `${c.email} ${c.name} ${c.phone} ${(c.invitations || []).map((l) => l.slug).join(' ')}`.toLowerCase().includes(q));
     if (!items.length) { fill(body, h('div.qempty', h('span.qempty__icon', icon('key', 18)), h('div', h('p.qempty__title', 'No accounts yet'), h('p.qempty__text', 'Customers get one when they order on the website.')))); return; }
     if (!rows.length) { fill(body, h('div.qempty', h('span.qempty__icon', icon('search', 18)), h('div', h('p.qempty__title', 'No accounts match')))); return; }
@@ -147,13 +157,13 @@ export function customersSection(ctx, loadInvitations) {
           } }, c.disabled ? 'Turn on' : 'Turn off'))))))));
   };
   const load = () => Promise.all([api('/admin/customers'), loadInvitations()])
-    .then(([r, inv]) => { items = r.customers || []; invitations = inv; draw(); })
+    .then(([r, inv]) => { items = r.customers || []; pending = r.pending || []; invitations = inv; draw(); })
     .catch((err) => fill(body, h('p.notice.notice--error', icon('alert', 16), h('span', err.message))));
   load();
   const search = h('label.search', icon('search', 15), h('input.input.input--sm', { type: 'search', placeholder: 'Search accounts', 'aria-label': 'Search accounts', oninput: debounce((e) => { q = e.target.value.trim().toLowerCase(); draw(); }, 120) }));
   return h('section.sect.cu-admin', { 'aria-labelledby': 'cust-h' },
     h('header.sect__head', h('h2.sect__title#cust-h', 'Customer accounts', count),
       h('div.row', search, h('button.btn.btn--sm', { type: 'button', onclick: async () => { const out = await newAccountDialog(); if (out) { items = [out.customer, ...items]; draw(); shownPassword(out, 'Account created'); } } }, icon('plus', 14), 'New account'))),
-    h('p.hint', 'Customers sign in at /studio/ with their email and password. Forgot it? They message you on WhatsApp and you reset it here.'),
-    body);
+    h('p.hint', 'Customers sign in at /studio/ with their email and password. An invitation you make for their email (or from their order) appears in their dashboard. Forgot the password? They message you on WhatsApp and you reset it here.'),
+    waiting, body);
 }

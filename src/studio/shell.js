@@ -1,6 +1,7 @@
 // The studio frame: left module nav (icons on tablets, a bottom tab bar on phones), the page in the
 // middle, and an optional live preview on the right (a full-screen sheet on smaller screens).
 import { h, icon, clear, fill } from './dom.js';
+import { hrefOf } from './nav.js';
 
 const WIDE = matchMedia('(min-width: 1180px)');
 const PHONE = matchMedia('(max-width: 760px)');
@@ -22,7 +23,7 @@ export function createShell(opts) {
   const navList = h('div.sh__groups', opts.groups.map((g) => h('div.navgroup',
     g.label ? h('p.navgroup__label', g.label) : null,
     h('ul.navgroup__list', g.items.map((it) => {
-      const a = h('a.navlink', { href: it.href, title: it.label, 'data-id': it.id },
+      const a = h('a.navlink', { href: hrefOf(it.href), title: it.label, 'data-id': it.id },
         h('span.navlink__icon', icon(it.icon, 19)),
         h('span.navlink__text', h('span.navlink__en', it.label), it.ne ? h('span.navlink__ne', { lang: 'ne' }, it.ne) : null),
         it.badge ? h('span.navlink__badge', it.badge) : null);
@@ -47,7 +48,7 @@ export function createShell(opts) {
     tabIds.map((id) => {
       const it = items.find((x) => x.id === id);
       if (!it) return null;
-      const a = h('a.tab', { href: it.href }, h('span.tab__i', icon(it.icon, 21)), h('span.tab__t', it.short || it.label));
+      const a = h('a.tab', { href: hrefOf(it.href) }, h('span.tab__i', icon(it.icon, 21)), h('span.tab__t', it.short || it.label));
       tabLinks.set(id, a);
       return a;
     }), moreBtn);
@@ -60,7 +61,7 @@ export function createShell(opts) {
     mPv = h('button.mbar__pv', { type: 'button', hidden: true, onclick: () => openSheet() }, icon('eye', 17), h('span', 'Preview'));
     mMore = h('button.mbar__more', { type: 'button', 'aria-label': 'All sections', title: 'All sections', 'aria-haspopup': 'dialog', onclick: () => openMore() }, icon('menu', 20));
     mbar = h('header.mbar',
-      h('a.mbar__home', { href: mob.home, title: 'Home' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.mbar__text', mNames, h('span.mbar__sub', 'Home'))),
+      h('a.mbar__home', { href: hrefOf(mob.home), title: 'Home' }, h('img.brand__mark', { src: '/site/brand/nimtto-mark.svg', alt: '', 'aria-hidden': 'true', width: 31, height: 28 }), h('span.mbar__text', mNames, h('span.mbar__sub', 'Home'))),
       h('div.mbar__right', mob.save || null, mPv, mMore));
   }
 
@@ -126,7 +127,7 @@ export function createShell(opts) {
     if (more) return;
     const list = h('div.more-sheet__list', opts.groups.map((g) => h('div',
       g.label ? h('p.navgroup__label', g.label) : null,
-      h('ul.navgroup__list', g.items.map((it) => h('li', h('a.navlink', { href: it.href, 'aria-current': navLinks.get(it.id)?.getAttribute('aria-current') || null, onclick: () => closeMore() },
+      h('ul.navgroup__list', g.items.map((it) => h('li', h('a.navlink', { href: hrefOf(it.href), 'aria-current': navLinks.get(it.id)?.getAttribute('aria-current') || null, onclick: () => closeMore() },
         h('span.navlink__icon', icon(it.icon, 19)), h('span.navlink__text', h('span.navlink__en', it.label), it.ne ? h('span.navlink__ne', { lang: 'ne' }, it.ne) : null))))))));
     more = h('div.more-sheet', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'All sections' },
       h('div.more-sheet__scrim', { onclick: () => closeMore() }),

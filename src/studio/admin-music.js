@@ -1,6 +1,6 @@
 // The planner's Music library: the songs every couple can choose for their invitation. Upload an MP3 (with
 // progress), listen, edit the title, artist, credit and mood, turn songs on or off, drag to reorder, delete uploads.
-// Built-in songs (public/audio, src/core/music-library.js) can be turned off but not deleted.
+// Built-in songs (public/audio, src/core/music-library.js) can be turned off or removed from the library (restorable).
 import { h, icon, iconBtn, toast, openDialog, confirmDialog, fill, debounce } from './dom.js';
 import { api, postFormProgress } from './api.js';
 import { playBtn, stopListening } from './m-music.js';
@@ -110,7 +110,7 @@ export function musicLibrary(ctx) {
     const fields = trackFields(moods, t, 'ed');
     const d = openDialog({
       title: 'Edit song',
-      body: h('div.stack', fields.el, t.builtin ? h('p.hint', icon('info', 14), 'A built-in song: you can change how it is listed, or turn it off. Its file stays.') : null),
+      body: h('div.stack', fields.el, t.builtin ? h('p.hint', icon('info', 14), 'A built-in song: you can change how it is listed, turn it off, or delete it from the library (you can restore built-ins later).') : null),
       actions: [
         h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'),
         h('button.btn.btn--primary', { type: 'button', onclick: async () => {
@@ -168,10 +168,15 @@ export function musicLibrary(ctx) {
       iconBtn('up', 'Move up', () => move(t.id, -1), 'mrow__step'),
       iconBtn('down', 'Move down', () => move(t.id, 1), 'mrow__step'),
       iconBtn('edit', `Edit ${t.title}`, () => edit(t)),
-      t.builtin ? null : iconBtn('trash', `Delete ${t.title}`, () => remove(t))));
+      iconBtn('trash', `Delete ${t.title}`, () => remove(t))));
     if (i === 0) li.querySelector('.mrow__step')?.setAttribute('disabled', '');
     if (i === tracks.length - 1) li.querySelectorAll('.mrow__step')[1]?.setAttribute('disabled', '');
     return li;
+  }
+
+  async function restore() {
+    try { const out = await api('/admin/music/restore', { method: 'POST' }); tracks = out.tracks; toast('Built-in songs restored', 'success'); draw(); }
+    catch (err) { toast(err.message, 'error'); }
   }
 
   function draw() {
@@ -187,7 +192,7 @@ export function musicLibrary(ctx) {
       fill(root,
         h('section.card', h('header.card__head', h('h2.card__title', 'Add music')), uploadBox, input),
         h('section.mlib__songs',
-          h('div.toolbar2', summary),
+          h('div.toolbar2', summary, h('button.btn.btn--sm.btn--ghost', { type: 'button', onclick: restore, title: 'Bring back built-in songs you deleted' }, 'Restore built-in songs')),
           h('p.hint', icon('info', 14), 'Couples see the songs that are on, grouped by mood, in this order. Drag a song (or use its arrows) to move it.'),
           list));
       fill(uploadBox, dropArea());

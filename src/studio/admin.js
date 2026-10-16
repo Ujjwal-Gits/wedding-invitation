@@ -5,6 +5,8 @@ import { api, postForm } from './api.js';
 import { photoUrl } from '../photos.js';
 import { deleteDialog, actionMenu, whenText } from './manage.js';
 import { accessPanel, accessSummary, permsText, linkUrl, resetPasswordDialog } from './admin-access.js';
+import { clearCache } from './cache.js';
+import { navigate, setUrl, current } from './nav.js';
 import { customersSection } from './admin-customers.js';
 import { musicLibrary } from './admin-music.js';
 import { repliesView, when } from './m-replies.js';
@@ -93,11 +95,18 @@ const faithMark = (k) => {
 };
 const suitsFaith = (t, r) => (Array.isArray(t.religions) && t.religions.length ? t.religions : ['hindu']).includes(r);
 
-export function newInvitation(ctx) {
-  const st = { step: 1, religion: 'hindu', theme: '', colors: {}, slugTouched: false };
+/**
+ * New invitation. prefill (from an order): { bride, groom, theme, email, weddingDate, venue, order }. The customer's
+ * email links it to their account (it appears in their dashboard; an email with no account yet waits for one).
+ */
+export function newInvitation(ctx, prefill = {}) {
+  const st = { step: 1, religion: 'hindu', theme: prefill.theme || '', colors: {}, slugTouched: false };
   const err = h('p.form-error', { role: 'alert' });
-  const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Binisha' });
-  const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'Ujjwal' });
+  const bride = h('input.input', { id: 'n-bride', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'e.g. Sita', value: prefill.bride || '' });
+  const groom = h('input.input', { id: 'n-groom', maxlength: 60, autocomplete: 'off', required: true, placeholder: 'e.g. Ram', value: prefill.groom || '' });
+  const emails = h('datalist#n-emails');
+  const email = h('input.input', { id: 'n-email', type: 'email', maxlength: 254, autocomplete: 'off', spellcheck: 'false', list: 'n-emails', placeholder: 'name@example.com', value: prefill.email || '' });
+  api('/admin/customers').then((r) => fill(emails, (r.customers || []).map((c) => h('option', { value: c.email }, c.name || c.email)))).catch(() => {});
   const slug = h('input.input', { id: 'n-slug', maxlength: 64, autocomplete: 'off', required: true, spellcheck: 'false' });
   const auto = () => { if (!st.slugTouched) slug.value = slugify(`${bride.value} ${groom.value}`.trim()); };
   bride.addEventListener('input', auto);
@@ -118,6 +127,8 @@ export function newInvitation(ctx) {
     h('div.pair',
       h('div.field', h('label.label', { for: 'n-bride' }, 'Bride’s first name'), bride),
       h('div.field', h('label.label', { for: 'n-groom' }, 'Groom’s first name'), groom)),
+    h('div.field', h('label.label', { for: 'n-email' }, 'Customer email (optional)'), email, emails,
+      h('p.hint', 'The invitation appears in their dashboard when they sign in. No account yet? It waits for them to order or sign up with this email.')),
     h('div.field', h('span.label', 'Their community'), faithBox,
       h('p.hint', 'Sets the sacred symbol, the opening words and the first ceremonies. Only designs made for it are shown next.')));
 
@@ -166,6 +177,7 @@ export function newInvitation(ctx) {
     err.textContent = '';
     if (n > st.step && st.step === 1) {
       if (!bride.value.trim() || !groom.value.trim()) { err.textContent = 'Please enter both first names.'; return; }
+      if (email.value.trim() && !email.checkValidity()) { err.textContent = 'The customer email does not look right.'; email.focus(); return; }
     }
     if (n > st.step && st.step === 2 && !st.theme) { err.textContent = 'Choose a design first.'; return; }
     st.step = Math.max(1, Math.min(3, n));
@@ -186,9 +198,10 @@ export function newInvitation(ctx) {
     const colors = Object.fromEntries(Object.entries(st.colors).filter(([tok, v]) => /^#[0-9a-f]{6}$/i.test(v) && v.toLowerCase() !== String(t?.colors?.[tok]?.default || '').toLowerCase()));
     create.disabled = true;
     try {
-      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme: st.theme, religion: st.religion, ...(Object.keys(colors).length ? { colors } : {}), sample: true } });
+      const extra = { ...(email.value.trim() ? { customerEmail: email.value.trim() } : {}), ...(prefill.weddingDate ? { weddingDate: prefill.weddingDate } : {}), ...(prefill.venue ? { venue: prefill.venue } : {}), ...(prefill.order ? { order: prefill.order } : {}) };
+      const doc = await api('/invitations', { method: 'POST', body: { bride: bride.value, groom: groom.value, slug: slug.value, theme: st.theme, religion: st.religion, ...(Object.keys(colors).length ? { colors } : {}), ...extra } });
       d.close();
-      toast('Invitation created', 'success');
+      toast(doc.customer ? (doc.customer.linked ? `Invitation created and added to ${doc.customer.email}’s dashboard` : `Invitation created. It appears for ${doc.customer.email} once they sign up with that email.`) : 'Invitation created', 'success');
       ctx.go(`#/i/${doc.slug}/home`);
     } catch (ex) {
       err.textContent = ex.status === 409 ? 'That link name is taken. Choose another.' : ex.message;
@@ -199,6 +212,33 @@ export function newInvitation(ctx) {
 }
 
 const newBtn = (ctx) => h('button.btn.btn--primary', { type: 'button', onclick: () => newInvitation(ctx) }, icon('plus', 16), 'New invitation');
+
+/** Link now / Dismiss for an invitation waiting for an email (Overview and Customer accounts). after(): redraw. */
+export function pendingActs(p, after) {
+  const linkBtn = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: async () => {
+    linkBtn.disabled = true;
+    try { await api('/admin/pending/link', { method: 'POST', body: { email: p.email, slug: p.slug } }); toast(`Linked: it is now in ${p.email}’s dashboard`, 'success'); after?.(); } catch (err) { linkBtn.disabled = false; toast(err.message, 'error'); }
+  } }, icon('link', 14), 'Link now');
+  const dismissBtn = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
+    try { await api('/admin/pending/dismiss', { method: 'POST', body: { email: p.email, slug: p.slug } }); toast('Dismissed', 'success'); after?.(); } catch (err) { toast(err.message, 'error'); }
+  } }, 'Dismiss');
+  return [linkBtn, dismissBtn];
+}
+
+/** One click: the order's invitation (names, design, plan and wedding details), linked to the order's customer. */
+async function createFromOrder(ctx, o, btn) {
+  btn.disabled = true;
+  try {
+    const out = await api(`/orders/${encodeURIComponent(o.id)}/invitation`, { method: 'POST', body: {} });
+    o.invitation = out.slug;
+    toast(out.customer?.linked ? `Invitation created and added to ${out.customer.email}’s dashboard` : out.customer?.pending ? `Invitation created. It appears for ${out.customer.email} once they sign up.` : 'Invitation created', 'success');
+    ctx.go(`#/i/${out.slug}/home`);
+  } catch (err) {
+    btn.disabled = false;
+    if (err.status === 409 && err.body?.current) { o.invitation = err.body.current; ctx.go(`#/i/${err.body.current}/home`); return; }
+    toast(err.message, 'error');
+  }
+}
 
 // ── Overview: a work queue ────────────────────────────────────────────────
 
@@ -237,11 +277,12 @@ function overview(ctx) {
   ctx.cleanup(() => { alive = false; });
 
   const load = async () => {
-    const [list, orders, site, stats] = await Promise.all([
+    const [list, orders, site, stats, pending] = await Promise.all([
       listInvitations().catch(() => null),
       api('/orders').then(ordersOf).catch(() => null),
       loadSite().catch(() => ({ plans: [] })),
       api('/admin/stats').catch(() => null),
+      api('/admin/customers').then((r) => r.pending || []).catch(() => []),
     ]);
     if (!alive) return;
     if (!list) {
@@ -280,13 +321,21 @@ function overview(ctx) {
       tasks.push({ ic: 'lock', tone: 'warn', title: [h('b', nameOf(i)), ': the couple’s link has no password'], meta: 'Anyone with the link can open and edit it. Set a password, then send it separately.',
         acts: [h('button.btn.btn--sm', { type: 'button', onclick: () => accessDialog(ctx, i, load) }, 'Set password')] });
     }
+    // Someone signed up with an email an invitation waits for: never linked by itself (emails are not verified)
+    for (const p of pending.filter((x) => x.account)) {
+      const inv = list.find((i) => i.slug === p.slug);
+      tasks.push({ ic: 'key', tone: 'accent',
+        title: [h('b', p.account.name || p.account.email), ` (${p.account.email}) signed up: link the invitation `, h('b', inv ? nameOf(inv) : `/${p.slug}`), '?'],
+        meta: `Made for this email ${fmtRelative(p.at)} · the account was made ${fmtRelative(p.account.createdAt)}. Link it only if this is your customer.`,
+        acts: pendingActs(p, load) });
+    }
     // Payments to check first: money is waiting to be confirmed
     for (const o of toCheck.slice(0, 5)) {
       const p = o.pay.proofs.at(-1);
-      tasks.push({ ic: 'check', tone: 'accent', thumb: p?.thumb,
+      tasks.push({ ic: 'check', tone: 'accent', thumb: p?.thumb, href: `#/orders/${o.ref || o.id}`,
         title: ['Payment to check: ', h('b', o.name)],
         meta: [o.ref, o.planName, p ? `${p.methodLabel || p.method} · says ${p.amountPaid}` : null, o.amount?.npr != null ? `expected Rs ${Number(o.amount.npr).toLocaleString('en-IN')}` : null, p ? fmtRelative(p.at) : null].filter(Boolean).join(' · '),
-        acts: [h('a.btn.btn--sm.btn--primary', { href: '#/orders?pay=check' }, 'Check payment')] });
+        acts: [h('a.btn.btn--sm.btn--primary', { href: `#/orders/${o.ref || o.id}` }, 'Check payment')] });
     }
     if (toCheck.length > 5) tasks.push({ ic: 'inbox', title: [`${toCheck.length - 5} more payments to check`], meta: 'Waiting in Orders & requests.', acts: [h('a.btn.btn--sm', { href: '#/orders?pay=check' }, 'Open')] });
     for (const o of fresh.filter((x) => !toCheck.includes(x)).slice(0, 5)) {
@@ -330,7 +379,7 @@ function overview(ctx) {
     ctx.shell.setSub(`${dateLine} · ${tasks.length ? `${plural(tasks.length, 'thing needs', 'things need')} you` : 'nothing needs you right now'}`);
     fill(needs, tasks.length
       ? h('ul.rows', tasks.map((t) => h('li.task',
-        t.thumb ? h('a.task__thumb', { href: '#/orders?pay=check', 'aria-hidden': 'true', tabindex: '-1' }, h('img', { src: t.thumb, alt: '', loading: 'lazy', decoding: 'async' }))
+        t.thumb ? h('a.task__thumb', { href: t.href || '#/orders?f=check', 'aria-hidden': 'true', tabindex: '-1' }, h('img', { src: t.thumb, alt: '', loading: 'lazy', decoding: 'async' }))
           : h('span.task__icon', { class: t.tone ? `is-${t.tone}` : '' }, icon(t.ic, 16)),
         h('div.task__main', h('p.task__title', t.title, t.dot ? h('span.dot', { title: 'New since you last looked', 'aria-label': 'new' }) : null), t.meta ? h('p.task__meta', t.meta) : null),
         h('div.task__acts', t.acts))))
@@ -442,7 +491,7 @@ function invitations(ctx) {
         sortTh('Wedding', 'wedding', sort, onSort),
         h('th', { scope: 'col' }, 'Status'),
         sortTh('Replies', 'replies', sort, onSort, 'num'),
-        h('th', { scope: 'col' }, 'Client link'),
+        h('th', { scope: 'col' }, 'Separate link'),
         sortTh('Updated', 'updated', sort, onSort, 'col-upd'),
         h('th', { scope: 'col', class: 'cell-act' }, h('span.sr-only', 'Actions')))),
       h('tbody', rows.map((i) => {
@@ -457,7 +506,7 @@ function invitations(ctx) {
           h('td', { 'data-label': 'Wedding' }, i.weddingDate ? h('span.cell-2', h('span.tnum', fmtDate(i.weddingDate)), h('small', daysText(n))) : h('span.muted', 'No date')),
           h('td', { 'data-label': 'Status' }, statusOf(i)),
           h('td.num', { 'data-label': 'Replies' }, h('span.tnum', String(i.rsvpCount || 0))),
-          h('td', { 'data-label': 'Client link' }, accessSummary(i.clientLink)),
+          h('td', { 'data-label': 'Separate link' }, accessSummary(i.clientLink)),
           h('td.col-upd', { 'data-label': 'Updated' }, h('span.cell-2', h('span', fmtRelative(i.updatedAt)), i.lastEdit?.by === 'couple' ? h('small', 'by the couple') : null)),
           h('td.cell-act', h('div.cell-act__in',
             h('a.btn.btn--sm', { href: `#/i/${i.slug}/home` }, 'Open'),
@@ -465,7 +514,7 @@ function invitations(ctx) {
               { label: 'Open', icon: 'edit', href: `#/i/${i.slug}/home` },
               { label: live ? 'Open the live invitation' : 'Preview', icon: 'external', href: live ? shareUrl(ctx.meta, i.slug, i.theme) : `/${i.theme}/?id=${encodeURIComponent(i.slug)}`, newTab: true },
               { label: 'Copy the guest link', icon: 'copy', onSelect: () => copyText(shareUrl(ctx.meta, i.slug, i.theme)) },
-              { label: 'Client access', icon: 'key', onSelect: () => accessDialog(ctx, i, draw) },
+              { label: 'Separate link (optional)', icon: 'key', onSelect: () => accessDialog(ctx, i, draw) },
               { label: 'Replies', icon: 'chat', href: `#/replies?i=${encodeURIComponent(i.slug)}` },
               { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => { if (await deleteDialog({ slug: i.slug, names })) load(); } },
             ], { label: `More for ${names}` }))));
@@ -478,7 +527,7 @@ function invitations(ctx) {
 
 function accessDialog(ctx, i, after) {
   openDialog({
-    title: `Client access · ${nameOf(i)}`, wide: true,
+    title: `Share a separate link (optional) · ${nameOf(i)}`, wide: true,
     body: accessPanel({ slug: i.slug, names: nameOf(i), meta: ctx.meta, clientLink: i.clientLink, theme: i.theme, onChange: (l) => { i.clientLink = l; } }),
     onClose: () => after?.(),
   });
@@ -526,20 +575,20 @@ function access(ctx) {
               const out = await resetPasswordDialog(i.slug, l.hasPassword);
               if (out) { i.clientLink = out; draw(); toast('Password changed. Send the new password to the couple.', 'success'); }
             }, 'btn--ghost') : null,
-            h('button.btn.btn--sm', { type: 'button', class: l && !l.hasPassword ? 'btn--ink' : '', onclick: () => accessDialog(ctx, i, draw) }, l ? 'Manage' : 'Create link'))));
+            h('button.btn.btn--sm', { type: 'button', class: l && !l.hasPassword ? 'btn--ink' : '', onclick: () => accessDialog(ctx, i, draw) }, l ? 'Manage' : 'Separate link'))));
       }))));
   }
   listInvitations().then((l) => { items = l; draw(); }).catch((err) => fill(body, quietEmpty('alert', 'Could not load', err.message)));
   const how = h('aside.howto', { 'aria-labelledby': 'acc-how' },
-    h('h2.howto__title#acc-how', 'How client access works'),
+    h('h2.howto__title#acc-how', 'How couples get in'),
     h('ol.howto__list',
-      h('li', h('b', 'Create a link'), h('span', 'with a password you choose, per invitation.')),
-      h('li', h('b', 'Send them apart'), h('span', 'the link in one message, the password in another (or by phone).')),
-      h('li', h('b', 'Set what they may do'), h('span', 'which designs they see, and whether they can switch design or change colours.')),
-      h('li', h('b', 'Lost or leaked?'), h('span', 'make a new link; the old one stops at once.')),
-      h('li', h('b', 'Or use their account'), h('span', 'customers who ordered online sign in with email and password; link the invitation to their account below.'))));
-  return [notice, h('div.withaside', h('div.withaside__main', h('div.toolbar2', tabs.el, h('div.toolbar2__end', search)), body), how),
-    customersSection(ctx, listInvitations)];
+      h('li', h('b', 'Their account (default)'), h('span', 'make the invitation with the customer’s email, or Create invitation on their order. It appears in their dashboard; they sign in with the password they chose.')),
+      h('li', h('b', 'No account yet?'), h('span', 'it waits for them and appears once they order or sign up with that email.')),
+      h('li', h('b', 'Separate link (optional)'), h('span', 'for couples without an account: a link plus a password you choose. Send them apart.')),
+      h('li', h('b', 'Set what they may do'), h('span', 'which designs they see, and whether they can switch design or change colours.'))));
+  return [customersSection(ctx, listInvitations),
+    h('section.sect', { 'aria-labelledby': 'sep-h' }, h('header.sect__head', h('h2.sect__title#sep-h', 'Separate links (optional)')),
+      notice, h('div.withaside', h('div.withaside__main', h('div.toolbar2', tabs.el, h('div.toolbar2__end', search)), body), how))];
 }
 
 // ── Orders & requests ─────────────────────────────────────────────────────
@@ -551,10 +600,7 @@ const PAY_STATE = {
   awaiting_payment: ['muted', 'Awaiting payment'], proof_submitted: ['accent', 'Payment to check'],
   confirmed: ['ok', 'Paid'], rejected: ['warn', 'Payment rejected'], refunded: ['warn', 'Refunded'],
 };
-const PAY_FILTERS = [['all', 'All'], ['check', 'Payment to check'], ['awaiting', 'Awaiting payment'], ['paid', 'Paid']];
 const payState = (o) => o.payStatus || o.pay?.status || null;
-const payMatches = (o, f) => f === 'all' || (f === 'check' && payState(o) === 'proof_submitted')
-  || (f === 'awaiting' && ['awaiting_payment', 'rejected'].includes(payState(o))) || (f === 'paid' && payState(o) === 'confirmed');
 const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
 const usd = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
 const priceLine = (a, from) => [a?.npr != null ? `${from ? 'from ' : ''}${npr(a.npr)}` : null, a?.usd != null ? usd(a.usd) : null].filter(Boolean).join(' · ');
@@ -664,15 +710,104 @@ function payPanel(o, { patch, redraw, methods }) {
     h('div.paybox__acts', acts.filter(Boolean)));
 }
 
+// One filter bar (stage and payment in plain words), a thin table (one row per order), and a drawer with everything
+// about one order: #/orders/<ref> deep-links it, and Back closes it.
+const ORDER_FILTERS = [
+  ['all', 'All'], ['new', 'New (to call)'], ['check', 'Payment to check'], ['waiting', 'Waiting for payment'],
+  ['paid', 'Paid'], ['done', 'Done'], ['archived', 'Archived'],
+];
+const LEGACY_PAY = { check: 'check', awaiting: 'waiting', paid: 'paid' }; // older links: #/orders?pay=…
+const SHORT_PAY = { awaiting_payment: ['muted', 'Waiting'], proof_submitted: ['accent', 'To check'], confirmed: ['ok', 'Paid'], rejected: ['warn', 'Rejected'], refunded: ['warn', 'Refunded'] };
+const STAGE_TONE = { new: 'accent', contacted: 'muted', done: 'ok', archived: 'muted' };
+const orderMatches = (o, f) => {
+  const s = payState(o);
+  if (f === 'archived') return o.status === 'archived';
+  if (o.status === 'archived') return false;
+  if (f === 'all') return true;
+  if (f === 'new') return o.status === 'new';
+  if (f === 'done') return o.status === 'done';
+  if (f === 'check') return s === 'proof_submitted';
+  if (f === 'waiting') return o.kind === 'order' && (!s || ['awaiting_payment', 'rejected'].includes(s));
+  if (f === 'paid') return s === 'confirmed';
+  return true;
+};
+const orderKey = (o) => o.ref || o.id;
+const shortPay = (o) => {
+  const s = payState(o);
+  if (!s) return o.kind === 'order' ? h('span.pill.pill--muted', { title: 'Made before payments were tracked' }, 'Waiting') : h('span.ocell__none', '—');
+  const [tone, text] = SHORT_PAY[s] || ['muted', s];
+  return h('span.pill', { class: `pill--${tone}` }, text);
+};
+const stageOf = (o) => st(STAGE_TONE[o.status] || 'muted', STAGES.find(([s]) => s === o.status)?.[1] || o.status);
+
+/** The drawer: one order in plain sections. Returns { el, close, redraw }. */
+function orderDrawer(ctx, o, { patch, methods, onChange, onDeleted, onClose }) {
+  const body = h('div.odr');
+  const notes = h('textarea.input', { id: 'odr-notes', rows: 4, maxlength: 2000, placeholder: 'What they want, when to call…', value: o.notes || '' });
+  const saved = h('span.hint', { 'aria-live': 'polite' });
+  const saveNotes = debounce(async () => { if (notes.value === (o.notes || '')) return; saved.textContent = 'Saving…'; if (await patch(o, { notes: notes.value })) { saved.textContent = 'Saved'; onChange(); } }, 800);
+  notes.addEventListener('input', saveNotes);
+  notes.addEventListener('blur', () => saveNotes());
+  const sect = (title, ...kids) => h('section.odr__sect', h('h3.odr__h', title), ...kids);
+  const facts = (rows) => h('dl.kv.kv--rows', rows.filter(Boolean).map(([k, v]) => h('div', h('dt', k), h('dd', v))));
+  const draw = () => {
+    const idx = STAGES.findIndex(([s]) => s === o.status);
+    const couple = [o.bride, o.groom].filter(Boolean).join(' & ');
+    const pay = payPanel(o, { patch, redraw: () => { draw(); onChange(); }, methods });
+    const invBtn = o.invitation
+      ? h('a.btn.btn--sm', { href: `#/i/${o.invitation}/home` }, icon('edit', 14), 'Open the invitation')
+      : (() => {
+        const b = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => createFromOrder(ctx, o, b) }, icon('plus', 14), 'Create invitation');
+        return b;
+      })();
+    fill(body,
+      sect('Customer',
+        h('p.odr__name', o.name, h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order')),
+        h('div.row',
+          h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), 'Call ', h('span.tnum', o.phone)),
+          h('a.btn.btn--sm.btn--wa', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp')),
+        o.email ? facts([['Email', h('a', { href: `mailto:${o.email}` }, o.email)]]) : null),
+      sect('Order',
+        facts([
+          ['Order no.', h('span.tnum', o.ref || '—')],
+          ['Received', h('time', { datetime: o.at, title: whenText(o.at) }, `${fmtDate(o.at)} · ${fmtRelative(o.at)}`)],
+          ['Plan', o.plan ? `${o.planName || o.plan}${o.amount?.npr != null ? ` · ${priceLine(o.amount, o.planFrom)}` : ''}` : '—'],
+          ['Design', o.theme ? themeOf(ctx, o.theme)?.name || o.theme : 'Not chosen'],
+          couple ? ['Couple', couple] : null,
+          ['Wedding date', o.weddingDate ? fmtDate(o.weddingDate) : 'Not given yet'],
+          o.venue ? ['Venue', o.venue] : null,
+          ['Message', o.message || 'No message.'],
+          ...paypalFacts(o.payment),
+        ])),
+      pay ? sect('Payment', pay) : null,
+      sect('Next step',
+        o.kind === 'order' || o.customerId ? h('div.odr__next', invBtn,
+          h('p.hint', o.invitation ? `Linked to ${o.email || 'the customer'}’s dashboard.` : o.email ? `Filled with this order’s details and added to ${o.email}’s dashboard.` : 'Filled with this order’s details.')) : null,
+        h('div.stepper', { role: 'group', 'aria-label': 'Stage' }, STAGES.map(([s, t], k) => h('button.stepper__b', {
+          type: 'button', class: k < idx ? 'is-past' : k === idx ? 'is-on' : '', 'aria-pressed': String(k === idx),
+          onclick: async () => { if (s === o.status) return; if (await patch(o, { status: s })) { toast(`${o.name} moved to ${t}`, 'success'); draw(); onChange(); } },
+        }, s === 'archived' ? 'Archive' : t)))),
+      sect('Private notes', h('div.field', h('label.sr-only', { for: 'odr-notes' }, 'Private notes'), notes, saved)),
+      h('div.odr__danger', h('button.btn.btn--sm.btn--danger-ghost', { type: 'button', onclick: async () => {
+        if (!(await confirmDialog({ title: 'Delete this order?', message: `The request from ${o.name} and any payment screenshots are removed for good.`, confirm: 'Delete', danger: true }))) return;
+        try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'DELETE' }); toast('Order deleted', 'success'); onDeleted(); d.close(); } catch (err) { toast(err.message, 'error'); }
+      } }, icon('trash', 15), 'Delete order')));
+  };
+  draw();
+  const d = openDialog({ title: `${o.ref || 'Order'} · ${o.name}`, body, cls: 'dialog--drawer', onClose });
+  return { ...d, redraw: draw };
+}
+
 function orders(ctx) {
   let list = [];
-  let tab = 'new';
-  let pf = ctx.params.get('pay') || 'all';
-  if (!PAY_FILTERS.some(([v]) => v === pf)) pf = 'all';
   let methods = [];
-  const stages = h('div.stages', { role: 'group', 'aria-label': 'Stage' });
-  const payTabs = ftabs(PAY_FILTERS.map(([v, t]) => [v, t]), pf, (v) => { pf = v; history.replaceState(null, '', v === 'all' ? '#/orders' : `#/orders?pay=${v}`); draw(); }, 'Payment');
-  const body = h('div', rowsSkel(4));
+  let q = '';
+  const fromUrl = ctx.params.get('f') || LEGACY_PAY[ctx.params.get('pay')] || 'all';
+  let f = ORDER_FILTERS.some(([v]) => v === fromUrl) ? fromUrl : 'all';
+  let drawer = null; // { key, d, pushed }
+  const bar = ftabs(ORDER_FILTERS, f, (v) => { f = v; setUrl(v === 'all' ? '#/orders' : `#/orders?f=${v}`); draw(); }, 'Show');
+  const search = searchBox('Search name, phone, order no., email', debounce((v) => { q = v.trim().toLowerCase(); draw(); }, 120));
+  const body = h('div.tablebox', rowsSkel(5));
   const patch = async (o, b) => {
     try {
       const out = await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'PATCH', body: b });
@@ -680,67 +815,73 @@ function orders(ctx) {
       return true;
     } catch (err) { toast(err.message, 'error'); return false; }
   };
-  const orderRow = (o) => {
-    const notes = h('textarea.input', { rows: 2, maxlength: 2000, placeholder: 'Notes only you see: what they want, when to call…', value: o.notes || '', 'aria-label': `Notes for ${o.name}` });
-    const saved = h('span.hint', { 'aria-live': 'polite' });
-    const saveNotes = debounce(async () => { if (notes.value === (o.notes || '')) return; saved.textContent = 'Saving…'; if (await patch(o, { notes: notes.value })) saved.textContent = 'Saved'; }, 800);
-    notes.addEventListener('input', saveNotes);
-    notes.addEventListener('blur', () => saveNotes());
-    const idx = STAGES.findIndex(([s]) => s === o.status);
-    const couple = [o.bride, o.groom].filter(Boolean).join(' & ');
-    const facts = [
-      o.ref ? ['Order', h('span.tnum', o.ref)] : null,
-      o.plan ? ['Plan', `${o.planName || o.plan}${o.amount?.npr != null ? ` · ${priceLine(o.amount, o.planFrom)}` : ''}`] : null,
-      couple ? ['Couple', couple] : null,
-      o.weddingDate ? ['Wedding', fmtDate(o.weddingDate)] : null,
-      o.theme ? ['Design', themeOf(ctx, o.theme)?.name || o.theme] : null,
-      o.email ? ['Email', h('a', { href: `mailto:${o.email}` }, o.email)] : null,
-      o.invitation ? ['Invitation', h('a', { href: `#/i/${o.invitation}/home` }, `/${o.invitation}`)] : null,
-      ...paypalFacts(o.payment),
-    ].filter(Boolean);
-    return h('li.ord', { id: `ord-${o.id}` },
-      h('div.ord__who',
-        h('p.ord__name', h('b', o.name), h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order')),
-        h('p.ord__when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))),
-        h('div.ord__contact',
-          h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), h('span.tnum', o.phone)),
-          h('a.btn.btn--sm.btn--wa', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp')),
-        o.message ? h('blockquote.ord__msg', o.message) : h('p.ord__nomsg', 'No message.'),
-        facts.length ? h('dl.kv.ord__facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))) : null),
-      h('div.ord__side',
-        payPanel(o, { patch, redraw: draw, methods }),
-        h('div.ord__notes', notes, saved),
-        h('div.ord__foot',
-          h('div.stepper', { role: 'group', 'aria-label': `Stage for ${o.name}` }, STAGES.map(([s, t], k) => h('button.stepper__b', {
-            type: 'button', class: k < idx ? 'is-past' : k === idx ? 'is-on' : '', 'aria-pressed': String(k === idx),
-            onclick: async () => { if (s === o.status) return; if (await patch(o, { status: s })) { toast(`${o.name} moved to ${t}`, 'success'); draw(); } },
-          }, t))),
-          iconBtn('trash', `Delete the order from ${o.name}`, async () => {
-            if (!(await confirmDialog({ title: 'Delete this order?', message: `The request from ${o.name} and any payment screenshots are removed for good.`, confirm: 'Delete', danger: true }))) return;
-            try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'DELETE' }); list = list.filter((x) => x !== o); toast('Order deleted', 'success'); draw(); } catch (err) { toast(err.message, 'error'); }
-          }, 'btn--ghost ord__del'))));
-  };
-  function draw() {
-    const counts = Object.fromEntries(STAGES.map(([s]) => [s, list.filter((o) => o.status === s).length]));
-    const payCounts = Object.fromEntries(PAY_FILTERS.map(([v]) => [v, list.filter((o) => o.status !== 'archived' && payMatches(o, v)).length]));
-    const toCheck = payCounts.check;
-    ctx.shell.setBadge('orders', counts.new + toCheck ? String(new Set(list.filter((o) => o.status === 'new' || payState(o) === 'proof_submitted')).size) : '');
-    payTabs.draw(pf, payCounts);
-    const checkTab = [...payTabs.el.children].find((b) => b.textContent.startsWith('Payment to check'));
-    checkTab?.classList.toggle('has-accent', toCheck > 0);
-    const byPay = pf !== 'all';
-    fill(stages, STAGES.map(([s, t], k) => [h('button.stage', { type: 'button', 'aria-pressed': String(!byPay && tab === s), onclick: () => { tab = s; pf = 'all'; history.replaceState(null, '', '#/orders'); draw(); } },
-      h('span.stage__n', { class: s === 'new' && counts.new ? 'is-accent' : '' }, String(counts[s])), h('span.stage__t', t)),
-    k < STAGES.length - 1 ? h('span.stage__arrow', { 'aria-hidden': 'true' }, icon('chevron', 14)) : null]));
-    const rows = byPay ? list.filter((o) => o.status !== 'archived' && payMatches(o, pf)) : list.filter((o) => o.status === tab);
-    const emptyPay = { check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here to confirm.'], awaiting: ['Nobody is waiting to pay', 'Orders that have not sent a payment screenshot yet show up here.'], paid: ['No paid orders yet', 'Payments you confirm show up here.'] };
-    fill(body, rows.length ? h('ul.ords', rows.map(orderRow))
-      : byPay ? quietEmpty('inbox', ...emptyPay[pf])
-        : quietEmpty('inbox', tab === 'new' ? 'No new orders' : `Nothing in ${STAGES.find(([s]) => s === tab)[1].toLowerCase()}`, tab === 'new' ? 'Orders and custom design requests from the website arrive here. Call them back, then move them along.' : 'Orders you move to this stage show up here.'));
+
+  function openOrder(key, pushed) {
+    const o = list.find((x) => orderKey(x) === key);
+    if (!o) { if (list.length) { toast('That order is not here any more.', 'error'); setUrl('#/orders'); } return; }
+    if (drawer?.key === key) return;
+    drawer?.d.close();
+    const me = { key, pushed, d: null, byRoute: false };
+    me.d = orderDrawer(ctx, o, {
+      patch, methods,
+      onChange: () => draw(),
+      onDeleted: () => { list = list.filter((x) => x !== o); draw(); },
+      onClose: () => {
+        if (drawer === me) drawer = null;
+        if (me.byRoute) return; // Back already left #/orders/<ref>
+        if (current().startsWith(`#/orders/${key}`)) {
+          if (me.pushed) history.back();
+          else setUrl('#/orders');
+        }
+      },
+    });
+    drawer = me;
   }
-  loadSite().then((site) => { methods = site.paymentMethods || []; if (list.length) draw(); }).catch(() => {});
-  api('/orders').then((r) => { list = ordersOf(r); draw(); }).catch((err) => fill(body, quietEmpty('inbox', err.status === 404 ? 'Orders are not available yet' : 'Could not load orders', err.status === 404 ? 'They will appear here once the server supports them.' : err.message)));
-  return [h('div.toolbar2', payTabs.el), stages, body];
+  // the address bar: #/orders/<ref> opens that order, #/orders closes the drawer (the Back button)
+  ctx.onRoute?.((sub) => {
+    if (sub) { openOrder(sub, drawer?.pushed ?? true); return; }
+    if (drawer) { drawer.byRoute = true; drawer.d.close(); }
+  });
+
+  const row = (o) => {
+    const proofs = o.pay?.proofs?.length || 0;
+    const go = () => navigate(`#/orders/${orderKey(o)}`);
+    return h('tr.orow', { tabindex: 0, 'aria-label': `${o.ref || 'Order'} from ${o.name}: open`, onclick: go, onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } } },
+      h('td.ocell--ref', h('span.tnum', o.ref || '—')),
+      h('td.ocell--who', h('b', o.name), o.kind === 'custom' ? h('span.tag.tag--accent', 'Custom') : null),
+      h('td.ocell--plan', o.plan ? h('span', o.planName || o.plan, o.amount?.npr != null ? h('small.tnum', ` · ${npr(o.amount.npr)}`) : null) : h('span.ocell__none', '—')),
+      h('td.ocell--design', o.theme ? themeOf(ctx, o.theme)?.name || o.theme : h('span.ocell__none', '—')),
+      h('td.ocell--pay', h('span.ocell__pay', shortPay(o), proofs ? h('span.ocell__proof', { title: `${plural(proofs, 'payment screenshot')}` }, icon('image', 14)) : null)),
+      h('td.ocell--stage', stageOf(o)),
+      h('td.ocell--when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))));
+  };
+
+  function draw() {
+    const counts = Object.fromEntries(ORDER_FILTERS.map(([v]) => [v, list.filter((o) => orderMatches(o, v)).length]));
+    const fresh = list.filter((o) => o.status === 'new' || payState(o) === 'proof_submitted').length;
+    ctx.shell.setBadge('orders', fresh ? String(fresh) : '');
+    bar.draw(f, counts);
+    for (const b of bar.el.children) b.classList.toggle('has-accent', (b.textContent.startsWith('Payment to check') && counts.check > 0) || (b.textContent.startsWith('New') && counts.new > 0));
+    const rows = list.filter((o) => orderMatches(o, f) && (!q || `${o.name} ${o.phone} ${o.ref || ''} ${o.email || ''}`.toLowerCase().includes(q)));
+    const empty = {
+      all: ['No orders yet', 'Orders and custom design requests from the website arrive here.'], new: ['No new orders', 'New orders wait here until you call them back.'],
+      check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here.'], waiting: ['Nobody is waiting to pay', ''],
+      paid: ['No paid orders yet', ''], done: ['Nothing done yet', ''], archived: ['Nothing archived', ''],
+    };
+    fill(body, rows.length ? h('table.otable',
+      h('caption.sr-only', 'Orders and requests'),
+      h('thead', h('tr', ['Order no.', 'Customer', 'Plan', 'Design', 'Payment', 'Stage', 'Received'].map((t, k) => h('th', { scope: 'col', class: ['ocell--ref', 'ocell--who', 'ocell--plan', 'ocell--design', 'ocell--pay', 'ocell--stage', 'ocell--when'][k] }, t)))),
+      h('tbody', rows.map(row)))
+      : q ? quietEmpty('search', 'No orders match', 'Try a name, a phone number or an order number.') : quietEmpty('inbox', ...empty[f]));
+  }
+  loadSite().then((site) => { methods = site.paymentMethods || []; }).catch(() => {});
+  api('/orders').then((r) => {
+    list = ordersOf(r);
+    draw();
+    if (ctx.sub) openOrder(ctx.sub, false); // opened from a link: closing goes to #/orders, not Back
+  }).catch((err) => fill(body, quietEmpty('inbox', err.status === 404 ? 'Orders are not available yet' : 'Could not load orders', err.status === 404 ? 'They will appear here once the server supports them.' : err.message)));
+  ctx.cleanup?.(() => { if (drawer) { drawer.byRoute = true; drawer.d.close(); } });
+  return [h('div.toolbar2.otools', bar.el, h('div.toolbar2__end', search)), body];
 }
 
 // ── Replies (all invitations or one) ──────────────────────────────────────
@@ -776,7 +917,7 @@ function replies(ctx) {
           h('span.byinv__n', h('b.tnum', String(r.totals.guests)), h('small', 'coming')), icon('chevron', 16))))))));
   };
   sel.addEventListener('change', () => {
-    history.replaceState(null, '', sel.value ? `#/replies?i=${encodeURIComponent(sel.value)}` : '#/replies');
+    setUrl(sel.value ? `#/replies?i=${encodeURIComponent(sel.value)}` : '#/replies');
     if (sel.value) { ctx.shell.setStrip(null); fill(body, repliesView(sel.value)); } else showAll();
   });
   listInvitations().then((l) => {
@@ -1065,9 +1206,11 @@ function settings(ctx) {
     setting('Your account', 'The owner account has full access to every invitation, client link and order.',
       h('dl.kv.kv--rows', h('div', h('dt', 'Signed in as'), h('dd', ctx.me.email || 'Owner')), h('div', h('dt', 'Role'), h('dd', 'Owner, full access'))),
       h('p.hint', icon('info', 14), 'To change the owner email or password, update the server settings (.env) and restart.')),
+    setting('Clear cache', 'Seeing an old version of a page, a photo or a design? This clears what this browser stored for Nimtto and reloads. You stay signed in.',
+      h('p', h('button.btn.btn--sm', { type: 'button', onclick: () => clearCache() }, icon('refresh', 15), 'Clear cache'))),
     setting('Quick help', 'Where things live.',
       h('dl.kv.kv--rows',
-        h('div', h('dt', 'New couple'), h('dd', 'Invitations → New invitation, then Clients & access → Create link. Send the link and, separately, the password.')),
+        h('div', h('dt', 'New couple'), h('dd', 'Invitations → New invitation with the customer’s email (or Create invitation on their order): it appears in their dashboard, no extra password. A separate link with a password is optional, for couples without an account.')),
         h('div', h('dt', 'Lost link'), h('dd', 'Make a new one; the old link stops working at once.')),
         h('div', h('dt', 'Prices, contact'), h('dd', h('a', { href: '#/website' }, 'Website'), '. Designs on the website: ', h('a', { href: '#/themes' }, 'Themes'), '.')),
         h('div', h('dt', 'Credits'), h('dd', 'Photo and music credits are on ', h('a', { href: '/credits/', target: '_blank', rel: 'noopener' }, 'the credits page'), '.')))),
@@ -1077,7 +1220,7 @@ function settings(ctx) {
 export const ADMIN_MODULES = [
   { id: 'overview', title: 'Overview', icon: 'grid', group: 'main', render: overview, sub: ' ', actions: (ctx) => [newBtn(ctx)] },
   { id: 'invitations', title: 'Invitations', icon: 'cards', group: 'main', render: invitations, sub: 'Every invitation: its status, replies and the couple’s access.', actions: (ctx) => [newBtn(ctx)] },
-  { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Private links and passwords that let couples edit their invitation.' },
+  { id: 'access', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
   { id: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
   { id: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
   { id: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },

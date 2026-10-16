@@ -10,9 +10,11 @@ import { securityHeaders, rateLimiter, cloudflareOnly } from './lib/security.js'
 import { trafficGuard, shedWhenOverloaded, resetLag } from './lib/guard.js';
 import { staticFiles } from './lib/static.js';
 import { startBackups, stopBackups } from './lib/backup.js';
-import { loadSession, requireAdmin, requireSession, requireEditor, requireCustomer, clientSession, login, logout, me } from './lib/auth.js';
+import { loadSession, requireAdmin, requireSession, requireEditor, requireCustomer, clientSession, login, logout, me, clearCache } from './lib/auth.js';
 import * as customers from './lib/customers.js'; // customer accounts (docs/API.md "Customer accounts")
 import * as inv from './lib/invitations.js';
+import * as handover from './lib/handover.js'; // invitations for customer accounts (docs/API.md "Invitations for an account")
+import { scrubDemoOnce } from './lib/migrate-demo.js';
 import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
@@ -31,6 +33,8 @@ startSessions();
 await fs.mkdir(INV_DIR, { recursive: true });
 await fs.mkdir(RSVP_DIR, { recursive: true });
 await fs.mkdir(UPLOAD_DIR, { recursive: true });
+// One-time: the demo couple's words and photos out of stored invitations (lib/migrate-demo.js; backup first).
+await scrubDemoOnce().catch((err) => console.error('[migrate] demo scrub failed (nothing half-done is saved per invitation):', err));
 
 const app = express();
 app.disable('x-powered-by');
@@ -56,6 +60,7 @@ api.post('/auth/login', heavy, json('4kb'), wrap(login));
 api.post('/auth/logout', requireSession, logout);
 api.post('/client/session', heavy, json('1kb'), wrap(clientSession()));
 api.get('/auth/me', wrap(me));
+api.post('/clear-cache', requireSession, clearCache); // Clear-Site-Data: "cache" (never cookies or storage)
 
 // Public
 api.get('/invitations/:slug/public', wrap(inv.publicData));
@@ -86,6 +91,7 @@ api.param('musicId', (req, res, next, id) => (/^[A-Za-z0-9_-]{2,40}$/.test(id) ?
 api.get('/admin/music', requireAdmin, wrap(music.adminList));
 api.post('/admin/music', requireAdmin, heavy, wrap(music.upload));
 api.patch('/admin/music', requireAdmin, json('8kb'), wrap(music.reorder));
+api.post('/admin/music/restore', requireAdmin, wrap(music.restoreBuiltins));
 api.patch('/admin/music/:musicId', requireAdmin, json('4kb'), wrap(music.patch));
 api.delete('/admin/music/:musicId', requireAdmin, wrap(music.remove));
 api.get('/orders', requireAdmin, wrap(orders.list));
@@ -94,8 +100,11 @@ api.post('/admin/customers', requireAdmin, heavy, json('2kb'), wrap(customers.ad
 api.patch('/admin/customers/:id', requireAdmin, heavy, json('2kb'), wrap(customers.adminPatch));
 api.put('/admin/customers/:id/invitations/:slug', requireAdmin, json('8kb'), wrap(customers.adminLink));
 api.delete('/admin/customers/:id/invitations/:slug', requireAdmin, wrap(customers.adminUnlink));
+api.post('/admin/pending/link', requireAdmin, json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
+api.post('/admin/pending/dismiss', requireAdmin, json('1kb'), wrap(customers.adminDismissPending));
 api.get('/admin/orders/:id/proof/:n', requireAdmin, wrap(manualPay.adminProof));
 api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
+api.post('/orders/:id/invitation', requireAdmin, json('1kb'), wrap(handover.createForOrder));
 api.delete('/orders/:id', requireAdmin, wrap(orders.remove));
 
 api.get('/invitations', requireAdmin, heavy, wrap(inv.list));
@@ -181,6 +190,16 @@ if (IS_PROD) {
     res.set('Cache-Control', 'private, no-store');
     res.set('Referrer-Policy', 'no-referrer');
     res.sendFile(payPage, (err) => { if (err && !res.headersSent) next(); });
+  });
+  // The studio's clean paths (/studio/orders/NM-12345, src/studio/nav.js) are one page: any /studio/<route> without a
+  // dot (not a file) gets dist/studio/index.html, never cached. /studio/ itself, assets and /api are unchanged; a
+  // couple's link keeps its token in the hash (/studio/#/c/<token>), which never reaches the server.
+  const studioPage = resolve(DIST_DIR, 'studio', 'index.html');
+  app.get(/^\/studio\/[^.]+$/, (req, res, next) => {
+    if (!existsSync(studioPage)) return next();
+    res.set('Cache-Control', 'no-store');
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    res.sendFile(studioPage, (err) => { if (err && !res.headersSent) next(); });
   });
   app.use(showcaseGate(DIST_DIR)); // public watermarked showcase /<theme>/?showcase=1 (lib/showcase.js)
   app.use(themePageGate(DIST_DIR));

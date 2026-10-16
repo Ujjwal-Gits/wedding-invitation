@@ -67,7 +67,7 @@ function letterbox() {
 letterbox();
 window.addEventListener('resize', letterbox);
 
-document.title = `${c.bride.name.en} & ${c.groom.name.en} · ${config.share?.title ? config.share.title.split('·').pop().trim() : 'Shubha Bibaha'}`;
+if (c.bride.name.en && c.groom.name.en) document.title = `${c.bride.name.en} & ${c.groom.name.en} · ${config.share?.title ? config.share.title.split('·').pop().trim() : 'Shubha Bibaha'}`; // else data.js's title
 
 /* ───────────────────────── markup ───────────────────────── */
 const names = (cls = '') => `<span class="pair ${cls}">${bi(c.bride.name)}<i class="pair__amp" aria-hidden="true">&amp;</i><span class="sr-only"> and </span>${bi(c.groom.name)}</span>`;
