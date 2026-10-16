@@ -1752,3 +1752,9 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .cu-logins li:first-child { border-top: 0; }
 .cu-logins small { color: var(--ink-3); }
 .label__opt { font-weight: 400; color: var(--ink-3); }
+.codein { font-family: var(--mono, ui-monospace, monospace); letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.cu-verify { display: grid; gap: var(--s3); padding: var(--s4); border: 1px solid var(--line); border-radius: 12px; background: var(--surface, #fff); }
+.cu-verify__text { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.cu-verify__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cu-verify__row .codein { width: 10em; }
+.codein::placeholder { letter-spacing: normal; font-family: inherit; }

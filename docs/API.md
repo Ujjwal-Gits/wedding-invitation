@@ -479,11 +479,12 @@ invitation per hour, 5000 per invitation in total (`507`).
 
 ## Account emails (Brevo)
 
-Off until `BREVO_API_KEY` and `MAIL_FROM` are set (server/lib/mail.js). Links are `/studio/verify/<id>.<token>` (48 h) and
-`/studio/reset/<id>.<token>` (30 min, one use); only the token's SHA-256 is stored.
+Off until a Brevo key (`BREVO_API_KEY`, or `BREVO_SMTP_USER` + `BREVO_SMTP_KEY`) and `MAIL_FROM` are set (server/lib/mail.js).
+Emails carry a 6-digit code in the subject ("123456 is your Nimtto code"), so Gmail and phones offer "Copy code".
+Only a hash is stored; a code is used once, and 5 wrong tries end it. Confirm: 30 min. Reset: 15 min.
 
-- `POST /api/auth/signup { name, email, phone?, password }`: makes the account, signs in, emails the confirm link. 5 per IP per hour.
-- `POST /api/auth/verify { token }`: confirms the email.
-- `POST /api/account/verify` (customer): sends the confirm link again (3 per hour).
+- `POST /api/auth/signup { name, email, phone?, password }`: makes the account, signs in, emails the confirm code. 5 per IP per hour.
+- `POST /api/account/verify` (customer): emails a new confirm code (3 per hour).
+- `POST /api/account/verify/confirm { code }` (customer): confirms the email.
 - `POST /api/auth/forgot { email }`: `{ ok, mail }`, the same for unknown emails; `mail: false` = email is off (WhatsApp instead).
-- `POST /api/auth/reset { token, password }`: new password, other sessions end, this browser is signed in.
+- `POST /api/auth/reset { email, code, password }`: new password, other sessions end, this browser is signed in.

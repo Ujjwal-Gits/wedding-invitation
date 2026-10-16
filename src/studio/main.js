@@ -74,8 +74,6 @@ async function doRoute() {
   const hash = current();
   const cm = /^#\/c\/([A-Za-z0-9_-]{20,128})$/.exec(hash);
   if (cm) return passwordPage(cm[1]);
-  const em = /^#\/(verify|reset)\/([A-Za-z0-9_-]{12}\.[A-Za-z0-9_-]{20,100})$/.exec(hash);
-  if (em) return em[1] === 'verify' ? verifyPage(em[2]) : resetPage(em[2]);
 
   if (!S.me) {
     try {
@@ -86,7 +84,7 @@ async function doRoute() {
     } catch {
       seenFlag(false);
       teardown();
-      return coupleFlag() ? linkProblem() : hash === '#/signup' ? signupPage() : loginPage();
+      return coupleFlag() ? linkProblem() : hash === '#/signup' ? signupPage() : hash === '#/forgot' ? forgotPage() : loginPage();
     }
   }
   if (!S.meta) {
@@ -103,7 +101,7 @@ async function doRoute() {
     if (!im || im[1] !== S.me.slug) return redirect(`#/i/${S.me.slug}/home`);
     return openInvitation(im[1], im[2] || 'home');
   }
-  if (hash === '#/login' || hash === '#/signup' || hash === '#/' || hash === '#') return redirect('#/overview');
+  if (hash === '#/login' || hash === '#/signup' || hash === '#/forgot' || hash === '#/' || hash === '#') return redirect('#/overview');
   if (im) return openInvitation(im[1], im[2] || 'home');
   // #/<module>[/<item>][?query]: the item is a deep link inside the module (e.g. #/orders/NM-12345 opens that order)
   const am = /^#\/([a-z-]+)(?:\/([A-Za-z0-9_-]{1,64}))?(?:\?(.*))?$/.exec(hash);
@@ -375,23 +373,8 @@ function loginPage() {
       btn.textContent = 'Sign in';
     }
   });
-  // Forgot password: a reset link by email (Brevo). When email is not set up, the owner resets it on WhatsApp.
-  const forgotNote = h('p.notice', { hidden: true, role: 'status' });
-  const waNote = () => fill(forgotNote, icon('chat', 16), h('span',
-    'Contact us on WhatsApp ', h('a', { href: waLink('Namaste! I forgot my Nimtto password. My email is: '), target: '_blank', rel: 'noopener' }, WA_DISPLAY), ' to reset it.'));
-  const forgot = h('button.link.auth__forgot', { type: 'button', onclick: async () => {
-    forgotNote.hidden = false;
-    if (!email.value.trim()) { fill(forgotNote, icon('info', 16), h('span', 'Enter your email above, then click “Forgot password?” again.')); email.focus(); return; }
-    forgot.disabled = true;
-    try {
-      const out = await api('/auth/forgot', { method: 'POST', body: { email: email.value } });
-      if (out.mail === false) waNote();
-      else fill(forgotNote, icon('check', 16), h('span', 'If this email has an account, we have sent a link to set a new password. Check your inbox and spam folder.'));
-    } catch (ex) { fill(forgotNote, icon('alert', 16), h('span', ex.message)); }
-    forgot.disabled = false;
-  } }, 'Forgot password?');
+  const forgot = h('a.link.auth__forgot', { href: '#/forgot', onclick: (e) => { e.preventDefault(); setUrl('#/forgot'); forgotPage(email.value); } }, 'Forgot password?');
   form.insertBefore(forgot, err);
-  form.append(forgotNote);
   fill(app, authLayout(brand(true), h('h1.auth__title', 'Sign in'), h('p.auth__lede', 'See your orders and edit your wedding invitation.'), form,
     h('p.auth__small', 'New to Nimtto? ', h('a', { href: '#/signup', onclick: (e) => { e.preventDefault(); setUrl('#/signup'); signupPage(); } }, 'Create an account'), '.')));
   email.focus();
@@ -448,47 +431,75 @@ function signupPage() {
   name.focus();
 }
 
-/** /studio/reset/<id>.<token> (from the email): choose a new password, then straight to My dashboard. */
-function resetPage(token) {
-  teardown();
-  document.title = 'Set a New Password · Nimtto Studio';
-  const err = h('p.form-error', { role: 'alert' });
-  const btn = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Save new password');
-  const pw = passwordField('rs-password', 'New password', 'new-password');
-  const form = h('form.auth__form', { novalidate: true }, pw.el, h('p.hint', 'At least 8 characters. Other devices are signed out.'), err, btn);
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    err.textContent = '';
-    if (pw.input.value.length < 8) { err.textContent = 'The password needs at least 8 characters.'; pw.input.focus(); return; }
-    btn.disabled = true;
-    try {
-      const me = await api('/auth/reset', { method: 'POST', body: { token, password: pw.input.value } });
-      coupleFlag(false);
-      seenFlag(true);
-      S.me = me;
-      S.meta = null;
-      setCsrf(me.csrf);
-      toast('Password changed', 'success');
-      go('#/account');
-    } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
-  });
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Set a new password'), h('p.auth__lede', 'Choose a new password for your Nimtto account.'), form,
-    h('p.auth__small', h('a', { href: '#/login', onclick: (e) => { e.preventDefault(); go('#/login'); } }, 'Back to sign in'))));
-  pw.input.focus();
+/** A 6-digit code box: digits only, and the phone/Gmail "Copy code" pastes straight in (one-time-code). */
+function codeInput(id) {
+  const el = h('input.input.input--lg.codein', { id, name: id, type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: 7, placeholder: '••••••', spellcheck: 'false' });
+  el.addEventListener('input', () => { const v = el.value.replace(/\D/g, '').slice(0, 6); if (v !== el.value) el.value = v; });
+  return el;
 }
 
-/** /studio/verify/<id>.<token> (from the email): confirms the address, then offers the dashboard. */
-async function verifyPage(token) {
+/** Forgot password: email -> a 6-digit code by email -> the code and a new password -> My dashboard. */
+function forgotPage(prefill = '') {
   teardown();
-  document.title = 'Confirm Your Email · Nimtto Studio';
-  const msg = h('p.auth__lede', 'Confirming your email…');
-  const acts = h('div');
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Your email'), msg, acts));
-  try {
-    await api('/auth/verify', { method: 'POST', body: { token } });
-    fill(msg, 'Thank you. Your email is confirmed.');
-  } catch (ex) { fill(msg, ex.message); }
-  fill(acts, h('a.btn.btn--primary.btn--lg.btn--block', { href: '#/account', onclick: (e) => { e.preventDefault(); go('#/account'); } }, 'Go to my dashboard'));
+  document.title = 'Forgot Password · Nimtto Studio';
+  const err = h('p.form-error', { role: 'alert' });
+  const email = h('input.input.input--lg', { id: 'fg-email', type: 'email', autocomplete: 'username', maxlength: 254, value: prefill });
+  const send = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Send me a code');
+  const step1 = h('form.auth__form', { novalidate: true }, h('div.field', h('label.label', { for: 'fg-email' }, 'Your email'), email), err, send);
+  const lede = h('p.auth__lede', 'We will email you a 6-digit code to set a new password.');
+  const holder = h('div', step1);
+  const toLogin = (e) => { e.preventDefault(); go('#/login'); };
+  step1.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    if (!email.value.trim()) { err.textContent = 'Please enter your email.'; email.focus(); return; }
+    send.disabled = true;
+    try {
+      const out = await api('/auth/forgot', { method: 'POST', body: { email: email.value } });
+      if (out.mail === false) {
+        fill(holder, h('p.notice', icon('chat', 16), h('span', 'Contact us on WhatsApp ', h('a', { href: waLink(`Namaste! I forgot my Nimtto password. My email is: ${email.value}`), target: '_blank', rel: 'noopener' }, WA_DISPLAY), ' to reset it.')));
+        return;
+      }
+      step2();
+    } catch (ex) { err.textContent = ex.message; send.disabled = false; }
+  });
+  function step2() {
+    fill(lede, 'If ', h('b', email.value.trim()), ' has an account, we sent a 6-digit code. Check your inbox and spam folder.');
+    const err2 = h('p.form-error', { role: 'alert' });
+    const code = codeInput('fg-code');
+    const pw = passwordField('fg-password', 'New password', 'new-password');
+    const save = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Save new password');
+    const again = h('button.link', { type: 'button', onclick: async () => {
+      again.disabled = true;
+      try { await api('/auth/forgot', { method: 'POST', body: { email: email.value } }); toast('A new code is on its way', 'success'); } catch (ex) { toast(ex.message, 'error'); }
+      setTimeout(() => { again.disabled = false; }, 30000);
+    } }, 'Send a new code');
+    const f = h('form.auth__form', { novalidate: true },
+      h('div.field', h('label.label', { for: 'fg-code' }, 'Code from the email'), code),
+      pw.el, h('p.hint', 'At least 8 characters. Other devices are signed out.'), err2, save, h('p.auth__small', 'No email? ', again));
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err2.textContent = '';
+      if (code.value.length !== 6) { err2.textContent = 'Enter the 6-digit code from the email.'; code.focus(); return; }
+      if (pw.input.value.length < 8) { err2.textContent = 'The password needs at least 8 characters.'; pw.input.focus(); return; }
+      save.disabled = true;
+      try {
+        const me = await api('/auth/reset', { method: 'POST', body: { email: email.value, code: code.value, password: pw.input.value } });
+        coupleFlag(false);
+        seenFlag(true);
+        S.me = me;
+        S.meta = null;
+        setCsrf(me.csrf);
+        toast('Password changed', 'success');
+        go('#/account');
+      } catch (ex) { err2.textContent = ex.message; save.disabled = false; (ex.body?.fields?.[0] === 'code' ? code : pw.input).focus(); }
+    });
+    fill(holder, f);
+    code.focus();
+  }
+  fill(app, authLayout(brand(true), h('h1.auth__title', 'Forgot password'), lede, holder,
+    h('p.auth__small', h('a', { href: '#/login', onclick: toLogin }, 'Back to sign in'))));
+  email.focus();
 }
 
 /** The couple's private link: a calm "Enter your password" page, then the token becomes a session. */

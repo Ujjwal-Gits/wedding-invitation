@@ -58,10 +58,10 @@ api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.s
 const heavy = shedWhenOverloaded;
 api.post('/auth/login', heavy, json('4kb'), wrap(login));
 api.post('/auth/signup', heavy, json('4kb'), wrap(customers.signup)); // a customer account from the sign-in page
-api.post('/auth/forgot', heavy, json('2kb'), wrap(customers.forgot)); // emails a reset link (Brevo, lib/mail.js)
+api.post('/auth/forgot', heavy, json('2kb'), wrap(customers.forgot)); // emails a 6-digit code (Brevo, lib/account-mail.js)
 api.post('/auth/reset', heavy, json('2kb'), wrap(customers.resetPassword));
-api.post('/auth/verify', json('1kb'), wrap(customers.verifyEmail));
 api.post('/account/verify', heavy, requireCustomer, wrap(customers.resendVerify));
+api.post('/account/verify/confirm', requireCustomer, json('1kb'), wrap(customers.confirmVerify));
 api.post('/auth/logout', requireSession, logout);
 api.post('/client/session', heavy, json('1kb'), wrap(clientSession()));
 api.get('/auth/me', wrap(me));

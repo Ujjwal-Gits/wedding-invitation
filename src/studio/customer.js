@@ -123,6 +123,29 @@ function passwordCard() {
   return h('section.card', h('header.card__head', h('h2.card__title', 'Password')), form);
 }
 
+/** "Confirm your email": the 6-digit code from the email (Copy code pastes in), Confirm, and Send again. */
+function verifyNotice(email) {
+  const code = h('input.input.codein', { type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: 7, placeholder: '6-digit code', 'aria-label': 'Code from the email', spellcheck: 'false' });
+  code.addEventListener('input', () => { const v = code.value.replace(/\D/g, '').slice(0, 6); if (v !== code.value) code.value = v; });
+  const ok = h('button.btn.btn--sm.btn--primary', { type: 'submit' }, 'Confirm');
+  const again = h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: async () => {
+    again.disabled = true;
+    try { await api('/account/verify', { method: 'POST' }); toast(`New code sent to ${email}. Check spam too.`, 'success'); } catch (ex) { toast(ex.message, 'error'); }
+    setTimeout(() => { again.disabled = false; }, 30000);
+  } }, 'Send again');
+  const form = h('form.cu-verify', { novalidate: true },
+    h('div.cu-verify__text', icon('info', 16), h('span', h('b', 'Please confirm your email. '), `Enter the 6-digit code we sent to ${email}.`)),
+    h('div.cu-verify__row', code, ok, again));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (code.value.length !== 6) { toast('Enter the 6-digit code from the email.', 'error'); code.focus(); return; }
+    ok.disabled = true;
+    try { await api('/account/verify/confirm', { method: 'POST', body: { code: code.value } }); toast('Email confirmed', 'success'); form.remove(); }
+    catch (ex) { toast(ex.message, 'error'); ok.disabled = false; code.select(); }
+  });
+  return form;
+}
+
 /**
  * The dashboard module: render(ctx) with ctx.meta and ctx.account (from GET /api/account), re-fetched on open.
  * ctx.viewAs (a customer, planner only): that customer's dashboard, read-only, from GET /api/admin/customers/:id/account.
