@@ -67,7 +67,20 @@
 .occ--lead .occ__line { opacity: 0.92; }
 .occ__phones { position: absolute; right: -12px; bottom: -64px; display: flex; gap: 10px; width: 46%; max-width: 250px; transform: rotate(-8deg); pointer-events: none; }
 .occ__phones .phone { flex: 1; }
-.occ__phones .phone:last-child { margin-top: 36px; }
+.occ__phones .phone:nth-child(2) { margin-top: 36px; }
+.occ__phones .phone:nth-child(3) { display: none; margin-top: 8px; }
+.occ__chips, .occ__facts { display: none; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 1024px) {
+  .occ--lead .occ__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .occ__chips li { padding: 7px 14px; border: 1px solid rgba(255, 255, 255, 0.42); border-radius: 999px; font-size: 14px; color: #fff; }
+  .occ__chips li span { margin-left: 4px; font-family: var(--f-ne); opacity: 0.8; }
+  .occ--lead .occ__facts { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 28px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.24); }
+  .occ__facts li { display: grid; gap: 2px; }
+  .occ__facts b { font: 600 clamp(20px, 1.6vw, 26px)/1.1 var(--f-sans); letter-spacing: -0.02em; color: #fff; }
+  .occ__facts span { font-size: 13px; color: rgba(255, 255, 255, 0.82); }
+  .occ--lead .occ__phones { width: 50%; max-width: 380px; bottom: -36px; right: -8px; }
+  .occ--lead .occ__phones .phone:nth-child(3) { display: block; }
+}
 .occ--lead .occ__txt { max-width: 55%; }
 .occ--lead > :not(.occ__phones) { max-width: 58%; position: relative; z-index: 1; }
 .occ--custom { background: transparent !important; border: 1.5px dashed var(--field); }
@@ -78,7 +91,7 @@
   .occs { grid-template-columns: repeat(4, 1fr); }
   .occ--lead { grid-column: span 2; grid-row: span 2; min-height: 460px; }
   .occs--home .occ--lead > :not(.occ__phones) { max-width: 52%; }
-  .occ__phones { max-width: 300px; bottom: -40px; }
+  .occ__phones { max-width: 380px; bottom: -36px; }
 }
 
 /* ---------------- home: the designs rail ---------------- */

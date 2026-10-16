@@ -285,11 +285,15 @@ function occasions(variant = 'full') {
     const cta = o.designs
       ? `<a class="occ__cta" href="/designs/">See ${THEMES.length} designs ${I.arrow}</a>`
       : `<a class="occ__cta" href="/pricing/?plan=custom#plans" data-order data-plan="custom" data-occasion="${o.id}">${o.id === 'custom' ? 'Tell us your idea' : 'Ask for a design'} ${I.arrow}</a>`;
-    const art = o.designs ? `<span class="occ__phones" aria-hidden="true">${phone('laali', { sizes: '120px' })}${phone('gurans', { sizes: '120px' })}</span>` : '';
+    const art = o.designs ? `<span class="occ__phones" aria-hidden="true">${phone('laali', { sizes: '140px' })}${phone('gurans', { sizes: '140px' })}${phone('mahal', { sizes: '140px' })}</span>` : '';
+    // the wedding card is the big one on desktop: give it the ceremonies and a few facts (hidden on phones)
+    const more = o.designs ? `<ul class="occ__chips">${[['Mehendi', 'मेहेन्दी'], ['Haldi', 'हल्दी'], ['Janti', 'जन्ती'], ['Wedding', 'विवाह'], ['Reception', 'स्वागत']].map(([en, ne]) => `<li>${en} <span lang="ne">${ne}</span></li>`).join('')}</ul>
+      <ul class="occ__facts"><li><b>${THEMES.length}</b><span>designs</span></li><li><b>Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
     return `<li class="occ occ--${o.id}${o.designs ? ' occ--lead' : ''}" id="${variant === 'full' ? o.id : `occ-${o.id}`}">
       <p class="occ__ne" lang="ne">${esc(o.ne)}${o.alt ? `<span> · ${esc(o.alt)}</span>` : ''}</p>
       <h3 class="occ__en">${esc(o.en)}</h3>
       <p class="occ__line">${esc(o.line)}</p>
+      ${more}
       <p class="occ__kind">${o.designs ? 'Ready-made designs' : 'Designed for you'}</p>
       ${cta}${art}
     </li>`;
