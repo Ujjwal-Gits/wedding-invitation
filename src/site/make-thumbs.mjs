@@ -41,7 +41,12 @@ for (const slug of readdirSync(resolve(ROOT, 'public', 'themes')).sort()) {
       if (stale(still, outs[i])) await sharp(still).resize({ width: w, withoutEnlargement: true, kernel: 'lanczos3' }).webp({ quality: w >= 1000 ? 82 : 84, effort: 6, smartSubsample: true }).toFile(outs[i]);
     }
   }
-  if (outs.every(existsSync)) stills[slug] = { kind: picks[slug]?.kind || 'hero', w: STILL_W };
+  if (outs.every(existsSync)) {
+    stills[slug] = { kind: picks[slug]?.kind || 'hero', w: STILL_W };
+    // a 200px mini for the order form's design picker (64px wide at 3x)
+    const mini = resolve(OUT_STILLS, `${slug}-200.webp`);
+    if (stale(outs[0], mini)) await sharp(outs[0]).resize({ width: 200 }).webp({ quality: 78, effort: 6 }).toFile(mini);
+  }
   // the old single-size stills (<slug>-gate|hero.webp) are replaced by the chosen frame
   for (const k of ['gate', 'hero']) { const old = resolve(OUT_STILLS, `${slug}-${k}.webp`); if (stills[slug] && existsSync(old)) rmSync(old); }
 }

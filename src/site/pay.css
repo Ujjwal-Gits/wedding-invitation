@@ -1,4 +1,22 @@
-/* The payment step (src/site/payment.js): home page order panel and /pay/<ref>. */
+/* The payment step (src/site/payment.js) on its own page, /pay/<ref>. Uses the site tokens (site.css). */
+.paypage, .pay, .paydone, .pay__error {
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+  --wine: var(--accent); --on-wine: #fff; --blush: var(--blush-100); --blush-2: var(--line-2); --soft: var(--blush-50); --white: #fff;
+  --line-input: var(--field); --f-text: var(--f-sans); --r-sm: 16px; --shadow-sm: 0 1px 3px rgba(34, 20, 26, 0.08); --t-h3: 30px; --bar-h: var(--nav-h);
+}
+.chipbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 999px; background: #fff; color: var(--ink); font: 500 14px/1 var(--f-sans); text-decoration: none; cursor: pointer; transition: border-color 0.2s var(--ease), background-color 0.2s var(--ease), color 0.2s var(--ease); }
+.chipbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+.chipbtn .ico { width: 16px; height: 16px; }
+.chipbtn--sm { min-height: 32px; padding: 0 10px; font-size: 13px; }
+.btn--wa { background: #1D7F45; color: #fff; }
+.btn--wa:hover { background: #166637; }
+.btn--line { background: #fff; color: var(--ink); border-color: var(--line-2); }
+.btn--line:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+.btn--wide { width: 100%; min-height: 56px; font-size: 16px; }
+.grid2 { display: grid; gap: 16px; }
+@media (min-width: 560px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+.field label { font-size: 14px; font-weight: 500; }
+.pay__label { font-size: 15px; font-weight: 600; color: var(--ink); }
 
 .pay, .paydone, .pay__error { display: grid; gap: var(--s6); }
 .pay__loading { color: var(--ink-3); padding: var(--s6) 0; }
@@ -18,7 +36,7 @@
 .pay__saved { display: inline-flex; align-items: center; gap: var(--s2); justify-self: start; padding: var(--s1) var(--s3) var(--s1) var(--s2); border-radius: 999px; background: #EAF3EC; color: var(--ok); font-size: 14px; }
 .pay__saved .ico { width: 16px; height: 16px; stroke-width: 2.2; }
 .pay__saved b { font-weight: 600; letter-spacing: 0.02em; }
-.pay__title { font: 400 clamp(1.75rem, 1.4rem + 1.2vw, 2.5rem)/1.12 var(--f-display); letter-spacing: -0.015em; text-wrap: balance; }
+.pay__title { font: 600 clamp(1.6rem, 1.3rem + 1.1vw, 2.3rem)/1.15 var(--f-sans); letter-spacing: -0.03em; text-wrap: balance; }
 .pay__title--sm { font-size: var(--t-h3); }
 .pay__plan { color: var(--ink-2); font-size: 15px; }
 .pay__note { color: var(--ink-2); }
@@ -38,6 +56,11 @@
 .method__t { display: grid; min-width: 0; }
 .method__name { font-weight: 500; font-size: 15px; line-height: 1.3; }
 .method__sub { color: var(--ink-3); font-size: 12px; line-height: 1.35; }
+
+.method__logo { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--blush-100); color: var(--accent); font: 600 15px/1 var(--f-sans); text-transform: uppercase; }
+.method__logo--khalti { background: #5C2D91; color: #fff; }
+.method__logo--esewa { background: #60BB46; color: #fff; }
+.method__logo--paypal { background: #003087; color: #fff; }
 
 /* the QR */
 .qrbox { display: grid; gap: var(--s4); }
@@ -95,12 +118,19 @@
 .pay__error p:not(.pay__acts) { color: var(--ink-2); }
 
 /* the /pay/ page */
-.bar__help { display: inline-flex; align-items: center; gap: var(--s2); min-height: 44px; padding: 0 var(--s4); border: 1px solid var(--blush-2); border-radius: 999px; color: var(--ink); font-size: 14px; text-decoration: none; }
-.bar__help .ico { color: #1D7F45; }
-.bar__help:hover { border-color: var(--ink); color: var(--ink); }
-.paypage__main { min-height: calc(100svh - var(--bar-h) - 120px); padding-block: var(--s7) var(--s8); }
-.paypage__in { max-width: 880px; display: grid; gap: var(--s6); }
-.paypage__panel { padding: var(--s5); border: 1px solid var(--blush-2); border-radius: var(--r-xl); background: var(--white); box-shadow: var(--shadow); }
-@media (min-width: 768px) { .paypage__panel { padding: var(--s7); } .paypage__main { padding-block: var(--s8) var(--s9); } }
-.foot--min { padding: 0; }
-.foot--min .foot__base { margin-top: 0; border-top: 0; padding-block: var(--s5); }
+.paybar { position: sticky; top: 0; z-index: 30; height: var(--nav-h); background: rgba(255, 255, 255, 0.86); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.paybar__in { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.paybar__end { display: flex; align-items: center; gap: 8px; }
+.paybar__end .nav__auth { display: inline-flex; }
+.bar__help { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 999px; color: var(--ink); font-size: 14px; font-weight: 500; text-decoration: none; }
+.bar__help .ico { color: #1D7F45; width: 18px; height: 18px; }
+.bar__help:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 479px) { .bar__help span { display: none; } .paybar__end .nav__auth { display: none; } }
+.paypage__main { background: radial-gradient(100% 50% at 50% 0%, var(--blush-100) 0%, var(--blush-50) 40%, #fff 100%); padding-block: clamp(40px, 6vw, 96px) clamp(64px, 8vw, 128px); }
+.paypage__in { max-width: 920px; display: grid; gap: 32px; }
+.paypage__head { display: grid; gap: 16px; }
+.paypage__head .h2 { font-size: clamp(42px, 5.6vw, 80px); }
+.paypage__panel { padding: clamp(20px, 4vw, 48px); border-radius: var(--r-xl); background: #fff; box-shadow: var(--shadow); }
+.foot--min { padding: 0; background: #fff; }
+.foot--min .foot__base { margin-top: 0; border-top: 1px solid var(--line); padding-block: 24px; }
+.foot--min a { color: var(--ink-2); }

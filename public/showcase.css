@@ -1,16 +1,16 @@
 /* Showcase mode (src/core/showcase.js): the public, watermarked preview of a design.
    Only linked on showcase pages; every rule is scoped to html[data-showcase="1"] anyway.
    The badge, toast and blank card use the website's language: white, blush, plum ink, one wine accent,
-   the Nimtto logo, Fraunces + Jost + Tiro Devanagari Hindi (DESIGN.md "Website"). */
+   the Nimtto logo, Instrument Serif + Geist + Tiro Devanagari Hindi (DESIGN.md "Website"). */
 
-@font-face { font-family: 'Fraunces'; src: url('/site/fonts/fraunces-latin.woff2') format('woff2'); font-weight: 300 600; font-display: swap; }
-@font-face { font-family: 'Jost'; src: url('/site/fonts/jost-latin.woff2') format('woff2'); font-weight: 300 600; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url('/site/fonts/instrument-serif-latin.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Geist'; src: url('/site/fonts/geist-latin.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
 @font-face { font-family: 'Tiro Devanagari Hindi'; src: url('/site/fonts/tiro-deva.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 html[data-showcase="1"] {
   --sc-paper: #FBF5F3; --sc-white: #FFFFFF; --sc-line: #EFE4E2; --sc-ink: #2A1A1D; --sc-ink-2: #5B474B; --sc-ink-3: #7A6468;
   --sc-red: #9A1829; --sc-red-deep: #7D1321; --sc-on-red: #FFFFFF; --sc-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --sc-ui: 'Jost', 'Segoe UI', Arial, sans-serif; --sc-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --sc-ui: 'Geist', 'Segoe UI', Arial, sans-serif; --sc-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
   --sc-ne: 'Tiro Devanagari Hindi', 'Nirmala UI', serif;
 }
 

@@ -1,5 +1,5 @@
 // The payment step: after an order is saved, the customer pays by QR (Khalti, eSewa, bank, or PayPal from abroad),
-// then sends a screenshot of the payment. Used on the home page right after ordering, and on /pay/<ref>?t=<token>.
+// then sends a screenshot of the payment. Used on /pay/<ref> (the customer's session, or ?t=<token>).
 // Data: GET /api/orders/:ref/pay?t= (per-order QR images with the amount and remark filled in where the wallet
 // allows), POST /api/orders/:ref/proof?t= (multipart). Text from the API goes in with textContent only.
 import './pay.css';
@@ -9,7 +9,7 @@ import { getPayment, sendProof } from './api.js';
 const MAX_MB = 8;
 const STEPS = ['Order', 'Pay by QR', 'Send screenshot', 'We confirm and start'];
 
-export const payLink = (ref, token) => `${location.origin}/pay/${encodeURIComponent(ref)}?t=${encodeURIComponent(token)}`;
+export const payLink = (ref, token) => `${location.origin}/pay/${encodeURIComponent(ref)}${token ? `?t=${encodeURIComponent(token)}` : ''}`;
 
 /** The four steps as a small progress line. `at` = index of the current step (0-3); 4 = all done. */
 export function stepsLine(at) {
@@ -242,7 +242,7 @@ function payView(info, ref, token, wa, onSent) {
   });
 
   const later = el('div', { class: 'pay__later' },
-    el('p', { text: 'Want to pay later? Keep this link. It brings you back to this page.' }),
+    el('p', { text: 'Want to pay later? Sign in with your email any time, or keep this link. Both bring you back to this page.' }),
     el('div', { class: 'pay__acts' },
       copyButton('Copy payment link', () => payLink(ref, token)),
       wa ? el('a', { class: 'chipbtn', href: waLink(wa, `Hi Nimtto, I have a question about order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Ask on WhatsApp' })) : null));

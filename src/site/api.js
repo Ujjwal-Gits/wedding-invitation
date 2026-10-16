@@ -2,7 +2,7 @@
 // The static fallback (themes.js) covers an API that is down. In development only, while the server does not
 // speak the payment contract yet (no `paymentMethods` in /api/site), orders and payments run against a small
 // mock kept in this browser's localStorage, so the whole flow can be built and tested. Production never mocks.
-import { FALLBACK_SITE, THEMES, BY_SLUG } from './themes.js';
+import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, tierOf } from './themes.js';
 import { SLUG_RE, str, localPath } from './common.js';
 
 export const REF_RE = /^[A-Za-z0-9_-]{3,40}$/;
@@ -34,6 +34,7 @@ function normPlan(p) {
     note: str(p.note, 160),
     features: Array.isArray(p.features) ? p.features.map((f) => str(f, 120)).filter(Boolean).slice(0, 20) : [],
     highlight: Boolean(p.highlight),
+    includes: TIER_RANK[p.includes] ? p.includes : (id === 'custom' || p.from ? 'shahi' : TIER_RANK[id] ? id : 'shahi'),
   };
 }
 function normMethod(m) {
@@ -89,6 +90,7 @@ export function normaliseThemes(api, site) {
         alt: local.alt || `${str(t.name, 60) || t.slug} design`,
         religions: rel && rel.length ? rel : (local.religions || ['hindu']),
         thumb: localPath(t.thumb, local.thumb || `/themes/${t.slug}/thumb.jpg`),
+        tier: TIER_RANK[t.tier] ? t.tier : tierOf(t.slug),
       };
     })
     : THEMES.filter((t) => !hidden.has(t.slug));
@@ -130,7 +132,7 @@ export async function createOrder(body, site) {
 /** GET /api/orders/:ref/pay?t= → the order's payment page data, cleaned (see normPay) */
 export async function getPayment(ref, token) {
   if (!REF_RE.test(ref)) return { ok: false, status: 400, data: {} };
-  const r = await send(`/api/orders/${encodeURIComponent(ref)}/pay?t=${encodeURIComponent(token)}`, { method: 'GET' });
+  const r = await send(`/api/orders/${encodeURIComponent(ref)}/pay?t=${encodeURIComponent(token || '')}`, { method: 'GET' });
   if (!r.ok && DEV && (r.status === 404 || r.status === 0) && mock.has(ref)) return mock.pay(ref, token);
   return r.ok ? { ...r, data: normPay(r.data, ref) } : r;
 }
@@ -141,7 +143,7 @@ export async function sendProof(ref, token, form) {
     const probe = await send(`/api/orders/${encodeURIComponent(ref)}/pay?t=${encodeURIComponent(token)}`, { method: 'GET' });
     if (!probe.ok) return mock.proof(ref, form);
   }
-  return send(`/api/orders/${encodeURIComponent(ref)}/proof?t=${encodeURIComponent(token)}`, { method: 'POST', body: form });
+  return send(`/api/orders/${encodeURIComponent(ref)}/proof?t=${encodeURIComponent(token || '')}`, { method: 'POST', body: form });
 }
 
 /** Tolerant reader for the pay endpoint's answer (field names per docs/API.md, with a few aliases). */

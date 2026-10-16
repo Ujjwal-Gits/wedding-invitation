@@ -45,10 +45,10 @@ export const CATEGORIES = {
 
 // The plans' short descriptions (the canvas cards carry one); the admin's `note` wins when it is set.
 export const PLAN_DESC = {
-  saral: 'For couples who want one beautiful link with all the basics.',
-  shubha: 'Everything a full Nepali wedding needs, with every ceremony in one link.',
-  shahi: 'For families who want the whole invitation made around them.',
-  custom: 'A new design, made only for your wedding.',
+  saral: 'One beautiful link with all the basics.',
+  shubha: 'Everything a full Nepali wedding needs, in one link.',
+  shahi: 'Every design, and the whole invitation made around you.',
+  custom: 'A new design, made only for your occasion.',
 };
 
 export const RELIGION_LABEL = { hindu: 'Hindu', muslim: 'Muslim', christian: 'Christian', other: 'Other' };
@@ -56,10 +56,10 @@ export const RELIGION_LABEL = { hindu: 'Hindu', muslim: 'Muslim', christian: 'Ch
 // Shown only when GET /api/site is unavailable (the admin edits the real plans, methods and contact in the studio).
 export const FALLBACK_SITE = {
   plans: [
-    { id: 'saral', name: 'Saral', price: 2999, priceUsd: 49, features: ['Any ready-made design', 'English and Nepali', 'Nepali and English dates', 'Your song', 'RSVP from guests', 'One link for WhatsApp'], highlight: false },
-    { id: 'shubha', name: 'Shubha', price: 4999, priceUsd: 99, features: ['Everything in Saral', 'All your events, from mehendi to reception', 'Photo gallery', 'Countdown to the day', 'Your own page to read replies'], highlight: true },
-    { id: 'shahi', name: 'Shahi', price: 6999, priceUsd: 149, features: ['Everything in Shubha', 'Mix the opening of two designs', 'Colours to match your wedding', 'We make changes for you until the day'], highlight: false },
-    { id: 'custom', name: 'Custom', price: 11111, priceUsd: 199, from: true, features: ['A new design made only for you', 'Your ideas, colours and places', 'Everything in Shahi', 'We talk it through with you first'], highlight: false },
+    { id: 'saral', name: 'Saral', price: 2999, priceUsd: 49, includes: 'saral', features: ['A ready-made design', 'Your names, date and venue', 'Guest replies (RSVP)', 'A link to share on WhatsApp'], highlight: false },
+    { id: 'shubha', name: 'Shubha', price: 4999, priceUsd: 99, includes: 'shubha', note: 'Most couples choose this', features: ['Everything in Saral', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
+    { id: 'shahi', name: 'Shahi', price: 6999, priceUsd: 149, includes: 'shahi', features: ['Everything in Shubha', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
+    { id: 'custom', name: 'Custom', price: 11111, priceUsd: 199, from: true, includes: 'shahi', note: 'A design made only for you', features: ['A design made for your occasion', 'Your colours, art and wording', 'Everything in Shahi'], highlight: false },
   ],
   paymentMethods: [
     { id: 'khalti', label: 'Khalti', kind: 'wallet', currency: 'NPR', accountName: '', qr: '/site/pay/khalti.png' },
@@ -75,3 +75,19 @@ export const FALLBACK_SITE = {
 
 // Nepali names for the usual plans (the API carries the English name only)
 export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शाही', custom: 'आफ्नै' };
+
+// Design tiers (docs/API.md "Design tiers"): the lowest plan that includes a design. /api/themes `tier` wins.
+export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
+export const TIER_LABEL = { saral: 'Saral', shubha: 'Shubha', shahi: 'Shahi' };
+const TIERS = {
+  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli'],
+  saral: ['kham', 'mala', 'gurans', 'sayapatri', 'jhyal', 'chitra', 'dhaka'],
+};
+export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');
+for (const t of THEMES) t.tier = tierOf(t.slug);
+/** the plan a tier starts at, from a plan list (the cheapest plan whose `includes` covers it) */
+export function planForTier(plans, tier) {
+  const need = TIER_RANK[tier] || 2;
+  return plans.filter((p) => !p.from && p.id !== 'custom' && (TIER_RANK[p.includes] || 3) >= need && p.price != null)
+    .sort((a, b) => a.price - b.price)[0] || null;
+}

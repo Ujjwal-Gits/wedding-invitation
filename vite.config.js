@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { readdirSync, existsSync } from 'node:fs';
 import { config } from './src/config.js';
+import { renderPartials } from './src/site/partials.mjs';
 
 const root = import.meta.dirname;
 const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -17,6 +18,12 @@ const shareMeta = () => ({
       .replaceAll('%SHARE_DESCRIPTION%', escAttr(description))
       .replaceAll('%SHARE_IMAGE%', escAttr(img));
   },
+});
+
+/** The public website's shared markup (header, footer, dialogs, design cards, FAQ ...): src/site/partials.mjs. */
+const sitePartials = () => ({
+  name: 'site-partials',
+  transformIndexHtml: { order: 'pre', handler: (html) => (html.includes('<!--@') ? renderPartials(html) : html) },
 });
 
 // Every top-level folder with an index.html is a page (one per theme, plus the studio).
@@ -47,7 +54,7 @@ const payRoute = () => {
 };
 
 export default defineConfig({
-  plugins: [shareMeta(), payRoute()],
+  plugins: [sitePartials(), shareMeta(), payRoute()],
   server: {
     // A fixed port of its own, so it never silently lands on another project's dev server.
     port: 5190,

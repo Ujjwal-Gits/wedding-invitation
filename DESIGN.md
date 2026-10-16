@@ -116,62 +116,56 @@ Banned: "Unlock", "Seamlessly", "Elevate your", "Supercharge", "in seconds",
 
 ---
 
-## Website (home page, design pages, pay page) design
+## Website (public pages) design
 
-Applies to the public site only: `/` (`index.html`), `/designs/<slug>/` (generated), `/pay/<ref>`, `src/site/**`,
-`public/site/**`, plus the showcase chrome (`src/core/showcase.js`, `public/showcase.css`). The invitation themes keep
-their own type; the website must not borrow it.
+Applies to the public site only: `/` (`index.html`), `/designs/`, `/occasions/`, `/how-it-works/`, `/features/`,
+`/pricing/`, `/contact/`, `/designs/<slug>/` (generated), `/pay/<ref>`, `src/site/**`, `public/site/**`, plus the
+showcase chrome (`src/core/showcase.js`, `public/showcase.css`). The invitation themes keep their own type; the website
+must not borrow it. This replaces the earlier "Nimtto Redesign" canvas rules (owner's redesign brief, Oct 2026).
 
-**Source of truth: the owner's Claude Design canvas "Nimtto Redesign" (`Main.dc.html` = home, `Design.dc.html` = a
-design page).** The build reproduces it exactly: same layout, sections and order, fonts, colours, components, cards,
-buttons and (no) motion. Allowed differences only: spacing put on the scale, the plain-English copy, phone and tablet
-layouts, and the working parts the canvas only drew (navigation, the order and pay flow, the design pages). Compare
-with the canvas side by side at 1440 before changing anything.
+Feeling: a premium product page (Apple-like restraint), romantic and clean. White first, blush surfaces, one rose-red
+accent. Big confident type, very small side margins with wide content, generous vertical rhythm, large continuous
+corners (`corner-shape: squircle` where supported), rounded bento cards. Not only weddings: every Nepali occasion.
 
-Fonts (self-hosted in `public/site/fonts/`, OFL licences beside them; Fraunces, Jost and Meow Script are preloaded):
-- Display: Fraunces (variable opsz/wght 300-600, SOFT 100 and WONK 0 baked in), 400 headings, 500 small titles.
-- Text and UI: Jost 300-600 (300 for paragraphs, 400 UI, 500 labels; buttons 13px uppercase, 0.14em tracking).
-- Nepali: Tiro Devanagari Hindi 400. Devanagari digits come from a 4 KB Mukta subset (`mukta-digits.woff2`,
-  "Nimtto Digits" first in `--f-ne`) because Tiro draws ९ almost like ६ and a date must never be misread.
-  Every `[lang=ne]` turns `locl` off.
-- Meow Script (letters-only subset): one accent word per heading, as the canvas ("doorway", "opening", "replies",
-  "needs", "rupees", "invitation"), and the sample names in drawings. Never for UI or body.
+Fonts (self-hosted in `public/site/fonts/`, OFL licences beside them; Instrument Serif and Geist latin preloaded):
+- Display: Instrument Serif 400, roman and italic. The italic in the accent colour carries one emphasis per heading
+  (`<em>`). Never for prices or numbers people must read exactly (its 1 reads like l): those are Geist 600.
+- Text and UI: Geist 300-700 (variable).
+- Nepali: Tiro Devanagari Hindi 400, with Devanagari digits from the 4 KB Mukta subset ("Nimtto Digits" first in
+  `--f-ne`), and `locl` off on every `[lang=ne]`.
 
-Tokens (`src/site/site.css`): wine `#9A1829` (hover `#7D1321`), plum ink `#2A1A1D`, `#5B474B`, `#7A6468` (only on
-white, soft or blush), blush `#F6E9E7`, promo `#F7E9E8`, hairline `#EFE4E2`, soft `#FBF5F3`, white, gold
-`#C9871F`/`#E0A030` for dots only. Field borders are `#9C8689` (the canvas `#DCCBC8` is under the 3:1 needed for
-inputs). Spacing scale only: 4 8 12 16 24 32 48 64 96 128. One section rhythm (`--sec`): 56 on phones, 72 (768+), 96
-(1024+), top and bottom; two sections on the same background never stack their paddings (the second drops its
-top). A section heading sits 24 / 32 (768+) above its content (`--head-gap`). Container 1272
-(the canvas 1320 with 24px padding), gutters 20 / 32 / 48.
+Tokens (`src/site/site.css`): white; blush-50 `#FFF6F7`, blush-100 `#FDEDF0`, blush-200 `#F9DDE3`; rose-300 `#F2B8C6`
+and rose-500 `#D9567A` for decoration only; accent `#A8123A` (hover `#8E0F31`, pressed `#760C29`, 7.5:1 on white);
+ink `#22141A`, `#574550`, `#76646C` (AA on white and blush-100); hairlines `#F1E3E7` / `#E6D1D8`; field borders
+`#A08A91`; one deep surface, night `#2A0C16` (the "Most chosen" plan, Shahi tier label). Gutter
+`clamp(14px, 2vw, 32px)`, container 1680, section rhythm `clamp(88px, 10vw, 168px)`, radii `clamp(26px, 2.6vw, 40px)`.
 
-Home (canvas order): promo bar with arrows; header (logo, five links, Sign in, Order pill; a Menu sheet under 1024px);
-hero (copy, then the flat lay: paper card, envelope with the Nimtto seal, phone drawing of Phoolbari); the word
-निम्तो; designs (chips, the stage with a phone and prev/next, thumbnails that pick the stage, a dashed custom card;
-"View details" opens `/designs/<slug>/`); how it works (four cards, the last wine); features bento; pricing (pill,
-Ready-made / Custom switch, plan cards from `/api/site` with the wine "Most chosen" band, trust row); order (four
-steps beside the form card; the payment step replaces the form); closing (नमस्ते, contact, two buttons); footer.
-Real design stills replace the canvas's placeholder drawings inside phone frames: one chosen frame per design (the
-most beautiful of gate, opening, first screen and body moments; `src/site/stills-picks.json` says which and why),
-shot at 390x844 @3x and served as WebP 480 / 800 / 1170 with `srcset` + `sizes` (`src/site/stills.js`).
+Structure: shared header, footer, order and preview dialogs, design cards, occasions, plans and FAQ (with FAQPage
+JSON-LD) are static HTML from `src/site/partials.mjs`, inserted by the `site-partials` Vite plugin (`<!--@name:arg-->`);
+the words live in `src/site/content.mjs`. One script for every page: `src/site/site.js` (body `data-page`).
+Design pages: `node src/site/make-thumbs.mjs && node src/site/make-design-pages.mjs` (also writes `public/sitemap.xml`).
 
-Design page (canvas `Design.dc.html`, generated by `node src/site/make-thumbs.mjs && node
-src/site/make-design-pages.mjs`): promo strip, two-row header with the category nav, breadcrumb, view tabs
-(Opening = the real still; Invitation, Ceremonies, RSVP drawn), colour theme and language controls on the drawn views,
-square Order / Preview buttons, notes box, Details / What's included / Why Nimtto tabs, every ceremony, "You may also
-love" (three phone cards), slim footer. Never a link to the clean theme page.
+Motion (`src/site/motion.js`, GSAP + ScrollTrigger, loaded only when allowed; transform and opacity only; scrubbed):
+- Home hero: pinned. The copy lifts away, the side phones part, and the centre phone grows until its invitation fills
+  the screen, then fades to blush: we go inside the invitation.
+- THE LOTUS OPENS (after the Shree design's कार्यक्रम): pinned on the home page. A circle of light grows, the rose
+  lotus unfolds ring by ring, then rises to crown "हरेक शुभ कार्यक्रम". At the top of /occasions/ it plays once by
+  itself (the heading is never hidden).
+- Designs rail (home, 1024+): pinned horizontal slide. Phones: a swipe row.
+- Features: the six call-outs gather round one phone (1100+). How it works: a sticky phone changes screen per step.
+- Everything else is quiet: section heads fade up once; hovers 200-350 ms. Phones get shorter scenes and no
+  horizontal pin. Reduced motion: nothing moves, the finished state shows.
 
-Order and payment: order first, then pay. The payment step (`src/site/payment.js`, lazy-loaded) shows the amount,
-method cards, the per-order QR (`GET /api/orders/:ref/pay`; "The amount fills in by itself" when `dynamic`, else
-"Scan, then enter amount ... and remark ..." with copy buttons), an editable remark, "Save QR image", the screenshot
-upload with a preview, then the status. `/pay/<ref>?t=<token>` reopens it.
+Order and payment: every "Order" / "Choose <plan>" opens the order dialog (`src/site/order.js`): plan, design with
+pictures (tier-aware, one-tap upgrade), name, WhatsApp, email, password (show/hide). `409 account_exists` asks for
+that account's password or sign-in; `400 code: tier` switches to the plan needed. Success goes to `/pay/<ref>` (the
+session cookie opens it; `?t=` still works). `?design=`, `?plan=`, `?occasion=` or `#order` on any page open the dialog.
+Nav: "My dashboard" when `/api/auth/me?soft=1` has a role, else "Sign in".
 
-Showcase watermark: the owner's logo (traced to `/site/brand/nimtto-logo-white.svg`) tiled at -16 degrees with a
-small PREVIEW label, white at about 60% with a thin plum outline; it re-inserts itself if removed or hidden.
+Search: per-page titles, descriptions, canonical, OG; JSON-LD Organization + WebSite (every page), Service with
+offers (home, pricing, occasions), ItemList (designs), Product + Offer + BreadcrumbList (each design), HowTo, FAQPage;
+`public/robots.txt`, `public/sitemap.xml`, `public/llms.txt`. New top-level pages must be added to `OPEN_PAGES`
+in `server/lib/gate.js`.
 
-Motion: as the canvas, only quiet hover and state changes (160-300 ms colour, border and opacity; thumbnails lift
-3px). Button states: primary darkens to `#7D1321` (pressed `#6A0F1B`), outline and square buttons take a soft wine
-wash with border and label kept; hover, focus-visible and active never change a label to its fill colour. No entrance animation, no scroll motion, no parallax. Reduced motion: nothing moves.
-
-Copy: plain, warm English for a family member with basic English. Short sentences, common words, one idea per line,
-digits for numbers ("27 designs"), prices as "Rs. 4,999" with "or USD 99 from abroad".
+Copy: plain, warm English for a family member with basic English. Short sentences, digits for numbers, prices as
+"Rs 4,999" with "or USD 99 from abroad".

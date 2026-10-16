@@ -1,20 +1,20 @@
 // Writes one static page per design: designs/<slug>/index.html, from src/site/design-template.html and the list in
-// src/site/themes.js (names, Nepali names, plain-English descriptions, categories, communities from each theme's
-// slots.js). Static pages give every design its own title, description, link preview and crawlable stills;
-// src/site/design-page.js then fills prices, contact and anything the admin changed.
+// src/site/themes.js (names, Nepali names, descriptions, categories, tiers, communities from each theme's slots.js).
+// The shared header, footer, dialogs and FAQ are filled in by the Vite partials plugin (src/site/partials.mjs).
+// Also writes public/sitemap.xml (every public page). designs/index.html (the Designs page) is not touched.
 // Run after adding a theme or changing the template:  node src/site/make-thumbs.mjs && node src/site/make-design-pages.mjs
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { THEMES, CATEGORIES, RELIGION_LABEL } from './themes.js';
+import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill, STILL_SIZES } from './stills.js';
+import { esc, phone, rs, SIZES } from './partials.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = resolve(ROOT, 'designs');
+const SITE = 'https://nimtto.com';
 const tpl = readFileSync(resolve(import.meta.dirname, 'design-template.html'), 'utf8');
 const stills = JSON.parse(readFileSync(resolve(import.meta.dirname, 'stills.json'), 'utf8'));
 const thumbs = new Set(JSON.parse(readFileSync(resolve(import.meta.dirname, 'thumbs.json'), 'utf8')));
-
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const jsonLd = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 
 /** the communities a theme declares in src/themes/<slug>/slots.js (absent = hindu only) */
@@ -28,11 +28,9 @@ function religionsOf(t) {
 }
 
 const thumbSrc = (slug) => (thumbs.has(slug) ? `/site/thumbs/${slug}-480.webp` : `/themes/${slug}/thumb.jpg`);
-/** the picture inside a phone frame: the design's chosen still (src + srcset), else the big-screen thumb */
 const phonePic = (slug) => phoneStill(stills, slug, thumbSrc(slug));
 const srcsetAttr = (pic, sizes) => (pic.srcset ? ` srcset="${pic.srcset}" sizes="${sizes}"` : '');
-/** the first view's label: the gate is "the opening"; any other chosen frame is simply the design */
-const firstView = (slug) => (['gate', 'mid'].includes(stills[slug]?.kind) ? ['Opening', 'The opening', 'The opening of the'] : ['Design', 'The real design', 'The']);
+const firstView = (slug) => (['gate', 'mid'].includes(stills[slug]?.kind) ? 'The opening of the' : 'The');
 const suitsText = (rel) => {
   const names = rel.filter((r) => r !== 'other').map((r) => RELIGION_LABEL[r]);
   if (rel.includes('other')) names.push('other');
@@ -43,60 +41,81 @@ const suitsText = (rel) => {
 function related(t) {
   const i = THEMES.findIndex((x) => x.slug === t.slug);
   const rot = [...THEMES.slice(i + 1), ...THEMES.slice(0, i)];
-  const same = rot.filter((x) => x.cat === t.cat);
-  const other = rot.filter((x) => x.cat !== t.cat);
-  return [...same, ...other].slice(0, 3);
+  return [...rot.filter((x) => x.cat === t.cat), ...rot.filter((x) => x.cat !== t.cat)].slice(0, 4);
 }
 function relatedHtml(x) {
-  return `<li><a class="rcard" href="/designs/${x.slug}/"><span class="rcard__pic" style="--tint:${CATEGORIES[x.cat].tint}"><span class="rcard__phone"><img src="${phonePic(x.slug).src}"${srcsetAttr(phonePic(x.slug), STILL_SIZES.related)} width="390" height="844" alt="" loading="lazy" decoding="async" /></span></span>`
-    + `<span class="rcard__name">${esc(x.name)} <span class="rcard__ne" lang="ne">${esc(x.ne)}</span></span>`
-    + `<span class="rcard__meta">${esc(CATEGORIES[x.cat].label.toLowerCase())} · <span class="js-from">from Rs. 2,999</span></span></a></li>`;
+  const p = planForTier(FALLBACK_SITE.plans, x.tier);
+  return `<li class="rcard"><a class="rcard__pic" href="/designs/${x.slug}/" style="--tint:${CATEGORIES[x.cat].tint}" tabindex="-1" aria-hidden="true">${phone(x.slug, { sizes: SIZES.rail })}</a>`
+    + `<p class="rcard__name"><a href="/designs/${x.slug}/">${esc(x.name)}</a> <span lang="ne">${esc(x.ne)}</span></p>`
+    + `<p class="rcard__meta"><span class="tier tier--${x.tier}">${TIER_LABEL[x.tier]}</span><span data-tier-price="${x.tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></li>`;
 }
 
 if (existsSync(OUT)) for (const d of readdirSync(OUT, { withFileTypes: true })) if (d.isDirectory()) rmSync(resolve(OUT, d.name), { recursive: true });
 mkdirSync(OUT, { recursive: true });
 const done = [];
+const GALLERY = '(max-width: 899px) 58vw, 360px';
 for (const t of THEMES) {
   const rel = religionsOf(t);
   const allFaiths = rel.includes('muslim') && rel.includes('christian');
+  const plan = planForTier(FALLBACK_SITE.plans, t.tier);
   const ld = {
     '@context': 'https://schema.org',
     '@graph': [
-      { '@type': 'Product', name: `${t.name} wedding invitation design`, alternateName: t.ne, image: `https://nimtto.com/themes/${t.slug}/thumb.jpg`, description: t.concept, brand: { '@type': 'Brand', name: 'Nimtto' }, category: 'Wedding invitations', url: `https://nimtto.com/designs/${t.slug}/` },
+      {
+        '@type': 'Product', name: `${t.name} wedding invitation design`, alternateName: t.ne, image: `${SITE}/themes/${t.slug}/thumb.jpg`, description: t.concept,
+        brand: { '@type': 'Brand', name: 'Nimtto' }, category: 'Digital wedding invitation', url: `${SITE}/designs/${t.slug}/`,
+        ...(plan ? { offers: { '@type': 'Offer', price: String(plan.price), priceCurrency: 'NPR', availability: 'https://schema.org/InStock', url: `${SITE}/designs/${t.slug}/`, seller: { '@id': `${SITE}/#org` } } } : {}),
+      },
       { '@type': 'BreadcrumbList', itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://nimtto.com/' },
-        { '@type': 'ListItem', position: 2, name: 'Designs', item: 'https://nimtto.com/#designs' },
-        { '@type': 'ListItem', position: 3, name: t.name, item: `https://nimtto.com/designs/${t.slug}/` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+        { '@type': 'ListItem', position: 2, name: 'Designs', item: `${SITE}/designs/` },
+        { '@type': 'ListItem', position: 3, name: t.name, item: `${SITE}/designs/${t.slug}/` },
       ] },
     ],
   };
+  const pic = phonePic(t.slug);
   const vals = {
     SLUG: t.slug,
     NAME: esc(t.name),
+    NE: esc(t.ne),
     DESC: esc(t.concept),
-    DETAIL: esc(t.concept),
-    META_DESC: esc(`${t.concept} A Nepali wedding invitation website with your song, Nepali dates and RSVP, shared in one link.`),
+    META_DESC: esc(`${t.name} (${t.ne}): ${t.concept} An online wedding invitation for Nepali weddings, in English and Nepali with RSVP and Nepali dates.${plan ? ` From ${rs(plan.price)}.` : ''}`),
     ALT: esc(t.alt),
     CAT: t.cat,
-    CAT_LABEL: esc(CATEGORIES[t.cat].label.toLowerCase()),
+    CAT_LABEL: esc(CATEGORIES[t.cat].label),
     CAT_ONE: esc(CATEGORIES[t.cat].one),
-    NE_LINE: t.ne ? `<p class="info__ne" lang="ne">${esc(t.ne)}</p>` : '',
-    OPEN_SRC: phonePic(t.slug).src,
-    OPEN_SRCSET: srcsetAttr(phonePic(t.slug), STILL_SIZES.gallery),
-    OPEN_PRELOAD: phonePic(t.slug).srcset ? ` imagesrcset="${phonePic(t.slug).srcset}" imagesizes="${STILL_SIZES.gallery}"` : '',
-    OPEN_TAB: firstView(t.slug)[0],
-    OPEN_CAP: firstView(t.slug)[1],
-    OPEN_ALT: `${firstView(t.slug)[2]} ${esc(t.name)} design: ${esc(t.alt)}`,
+    TINT: CATEGORIES[t.cat].tint,
+    NE_LINE: t.ne ? `<p class="dp__ne" lang="ne">${esc(t.ne)}</p>` : '',
+    TIER: t.tier,
+    TIER_LABEL: TIER_LABEL[t.tier],
+    TIER_PRICE: plan ? rs(plan.price) : '',
+    OPEN_SRC: pic.src,
+    OPEN_SRCSET: srcsetAttr(pic, GALLERY),
+    OPEN_PRELOAD: pic.srcset ? ` imagesrcset="${pic.srcset}" imagesizes="${GALLERY}"` : '',
+    OPEN_ALT: `${firstView(t.slug)} ${esc(t.name)} design: ${esc(t.alt)}`,
     SUITS: esc(suitsText(rel)),
     FAITH_NOTE: allFaiths ? ' Muslim, Christian and other weddings get their own events and words.' : '',
     RELATED: related(t).map(relatedHtml).join(''),
     JSONLD: jsonLd(ld),
   };
-  for (const c of Object.keys(CATEGORIES)) vals[`CUR_${c}`] = c === t.cat ? ' class="is-current" aria-current="true"' : '';
-  const html = tpl.replace(/%([A-Za-z_]+)%/g, (m, k) => (k in vals ? vals[k] : m));
+  const html = tpl.replace(/%([A-Z_]+)%/g, (m, k) => (k in vals ? vals[k] : m));
   mkdirSync(resolve(OUT, t.slug), { recursive: true });
   writeFileSync(resolve(OUT, t.slug, 'index.html'), html);
   done.push(t.slug);
 }
 writeFileSync(resolve(import.meta.dirname, 'design-pages.json'), `${JSON.stringify(done)}\n`);
-console.log(`design pages: ${done.length} written to designs/<slug>/index.html`);
+
+// the sitemap: every public page (theme pages, the studio and pay pages are never listed)
+const today = new Date().toISOString().slice(0, 10);
+const urls = [['/', '1.0'], ['/designs/', '0.9'], ['/occasions/', '0.9'], ['/pricing/', '0.9'], ['/how-it-works/', '0.7'], ['/features/', '0.7'], ['/contact/', '0.6'],
+  ...done.map((s) => [`/designs/${s}/`, '0.7']), ['/credits/', '0.2']];
+writeFileSync(resolve(ROOT, 'public', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${urls.map(([u, pr]) => {
+    const slug = u.match(/^\/designs\/([a-z-]+)\/$/)?.[1];
+    const img = slug ? `\n    <image:image><image:loc>${SITE}${phonePic(slug).src}</image:loc></image:image>` : '';
+    return `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod><priority>${pr}</priority>${img}</url>`;
+  }).join('\n')}
+</urlset>
+`);
+console.log(`design pages: ${done.length} written to designs/<slug>/index.html; public/sitemap.xml: ${urls.length} urls`);

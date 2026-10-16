@@ -2,15 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Designs · Nimtto</title>
-  <meta name="robots" content="noindex, follow" />
-  <link rel="canonical" href="https://nimtto.com/#designs" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <meta http-equiv="refresh" content="0; url=/#designs" />
-  <style>body{margin:0;display:grid;place-items:center;min-height:100vh;font:17px/1.6 'Segoe UI',Arial,sans-serif;color:#2A1A1D;background:#fff}a{color:#9A1829}</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>27 Nepali Wedding Invitation Designs: Digital Cards | Nimtto</title>
+  <meta name="description" content="Browse 27 online wedding invitation designs made for Nepali weddings: doors, seals, flower gates and 3D scenes. Each digital wedding card opens like a real one, in English and Nepali. From Rs 2,999." />
+  <link rel="canonical" href="https://nimtto.com/designs/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="27 Nepali wedding invitation designs · Nimtto" />
+  <meta property="og:description" content="Digital wedding cards that open like real ones: doors, seals, flower gates and 3D scenes. In English and Nepali." />
+  <meta property="og:url" content="https://nimtto.com/designs/" />
+  <meta property="og:image" content="https://nimtto.com/site/og.jpg" />
+  <!--@head-->
+  <!--@crumbs:Designs|/designs/-->
+  <!--@designs-ld-->
+  <script type="module" src="/src/site/site.js"></script>
 </head>
-<body>
-  <p>All our designs are on the home page. <a href="/#designs">See the designs</a></p>
+<body data-page="designs">
+  <!--@header:designs-->
+  <main id="main">
+    <header class="wrap pagehead">
+      <div class="pagehead__row">
+        <div>
+          <p class="eyebrow">Wedding designs</p>
+          <h1 class="display">Choose the one that <em>opens</em> your day.</h1>
+          <p class="lede"><span class="js-count"><!--@count--></span> designs for Nepali weddings. Each one opens like a real invitation: a door, a seal, a curtain, a garden gate. Tap Preview to see it move.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="wrap" aria-labelledby="grid-h">
+      <h2 class="vh" id="grid-h">All designs</h2>
+      <div class="filters">
+        <div class="chips" role="group" aria-label="Show designs by look">
+          <button class="chip" type="button" data-f="cat" data-v="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-f="cat" data-v="flowers" aria-pressed="false">Flowers</button>
+          <button class="chip" type="button" data-f="cat" data-v="doors" aria-pressed="false">Doors and gates</button>
+          <button class="chip" type="button" data-f="cat" data-v="cards" aria-pressed="false">Cards and envelopes</button>
+          <button class="chip" type="button" data-f="cat" data-v="film" aria-pressed="false">3D and film</button>
+          <button class="chip" type="button" data-f="cat" data-v="faiths" aria-pressed="false">All faiths</button>
+        </div>
+        <div class="chips" role="group" aria-label="Show designs by plan">
+          <button class="chip" type="button" data-f="tier" data-v="all" aria-pressed="true">Any plan</button>
+          <button class="chip" type="button" data-f="tier" data-v="saral" aria-pressed="false">In Saral</button>
+          <button class="chip" type="button" data-f="tier" data-v="shubha" aria-pressed="false">In Shubha</button>
+          <button class="chip" type="button" data-f="tier" data-v="shahi" aria-pressed="false">In Shahi</button>
+        </div>
+        <p class="filters__count" id="dcount" aria-live="polite"></p>
+      </div>
+      <ul class="dgrid" id="dgrid">
+        <!--@designs-->
+        <li class="dcard dcard--custom">
+          <a class="dcard__pic" href="/pricing/?plan=custom#plans" data-order data-plan="custom"><p><span class="ne" lang="ne">आफ्नै</span><br />A design made only for you</p></a>
+          <div class="dcard__body">
+            <h3 class="dcard__name">Custom design</h3>
+            <p class="dcard__desc">Your colours, your art, your words. For a wedding or any occasion.</p>
+          </div>
+        </li>
+      </ul>
+      <p class="dempty" id="dempty" hidden>No design matches both filters. Try “Any plan”.</p>
+    </section>
+
+    <section class="sec" aria-labelledby="faq-h">
+      <div class="wrap faq">
+        <header class="shead"><p class="eyebrow">Questions</p><h2 class="h2" id="faq-h">Choosing a <em>design.</em></h2></header>
+        <!--@faq:designs-->
+      </div>
+    </section>
+  </main>
+  <!--@footer-->
+  <!--@dialogs-->
 </body>
 </html>

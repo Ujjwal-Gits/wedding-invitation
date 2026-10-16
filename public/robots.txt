@@ -1,0 +1,36 @@
+# Nimtto: online invitations for Nepali weddings and every occasion
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
+
+# Answer engines and AI search are welcome to read and cite the public pages
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://nimtto.com/sitemap.xml

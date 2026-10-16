@@ -52,9 +52,9 @@ export const usd = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 export const money = (n, cur = 'NPR') => (cur === 'USD' ? `USD ${usd.format(n)}` : `Rs ${npr.format(n)}`);
 
 /* ---------------- header ---------------- */
-/** Mobile menu (focus trap, Escape, scroll lock), the header's shadow once scrolled, and the active section. */
+/** The menu sheet under 1080px (focus trap, Escape, scroll lock) and the header's hairline once scrolled. */
 export function initHeader() {
-  const bar = $('.bar');
+  const bar = $('.nav');
   const btn = $('#menu-btn');
   const sheet = $('#menu');
   if (!bar) return;
@@ -63,7 +63,7 @@ export function initHeader() {
   const setOpen = (open, { restore = true } = {}) => {
     bar.classList.toggle('is-open', open);
     btn.setAttribute('aria-expanded', String(open));
-    btn.querySelector('.bar__menu-t').textContent = open ? 'Close' : 'Menu';
+    btn.querySelector('.nav__menu-t').textContent = open ? 'Close' : 'Menu';
     document.documentElement.classList.toggle('is-locked', open);
     sheet.toggleAttribute('inert', !open);
     if (open) $('a', sheet)?.focus();
@@ -72,8 +72,7 @@ export function initHeader() {
   if (btn && sheet) {
     sheet.setAttribute('inert', '');
     btn.addEventListener('click', () => setOpen(!isOpen()));
-    // a link closes the menu first; the browser then follows it (the scroll lock is already gone)
-    sheet.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false, { restore: false }); });
+    sheet.addEventListener('click', (e) => { if (e.target.closest('a, [data-order]')) setOpen(false, { restore: false }); });
     document.addEventListener('keydown', (e) => {
       if (!isOpen()) return;
       if (e.key === 'Escape') { e.preventDefault(); setOpen(false); return; }
@@ -84,48 +83,36 @@ export function initHeader() {
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     });
-    // back on a wide screen: the menu has no business staying open
-    matchMedia('(min-width: 1024px)').addEventListener('change', (m) => { if (m.matches && isOpen()) setOpen(false, { restore: false }); });
+    matchMedia('(min-width: 1080px)').addEventListener('change', (m) => { if (m.matches && isOpen()) setOpen(false, { restore: false }); });
   }
-
-  // the active section: the last one whose top has passed a line a third of the way down the screen
-  const links = $$('a[data-nav]');
-  const targets = links.map((a) => [a, document.getElementById(a.getAttribute('href').split('#')[1] || '')]).filter(([, s]) => s);
   let ticking = false;
-  const update = () => {
-    ticking = false;
-    bar.classList.toggle('is-scrolled', window.scrollY > 4);
-    if (!targets.length) return;
-    const line = bar.getBoundingClientRect().bottom + window.innerHeight * 0.3;
-    let current = null;
-    for (const [, s] of targets) if (s.getBoundingClientRect().top <= line) current = s.id;
-    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = targets[targets.length - 1][1].id;
-    for (const [a, s] of targets) {
-      const on = s.id === current;
-      a.classList.toggle('is-current', on);
-      if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
-    }
-  };
-  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
+  const update = () => { ticking = false; bar.classList.toggle('is-scrolled', window.scrollY > 4); };
+  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
   update();
-  // in-page links: the browser scrolls (CSS scroll-margin keeps the heading clear of the sticky header) and sets the
-  // hash; we only move focus to the section so keyboard and screen-reader users land there too
-  document.addEventListener('click', (e) => {
-    const a = e.target instanceof Element ? e.target.closest('a[href*="#"]') : null;
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const url = new URL(a.href, location.href);
-    if (url.pathname !== location.pathname || url.search !== location.search || !url.hash) return;
-    const t = document.getElementById(decodeURIComponent(url.hash.slice(1)));
-    if (!t) return;
-    e.preventDefault();
-    if (location.hash !== url.hash) history.pushState(null, '', url.hash);
-    t.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
-    if (!t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1');
-    t.focus({ preventScroll: true });
-    onScroll();
-  });
+}
+
+/** Signed in (customer, couple or admin): "My dashboard" instead of "Sign in". GET /api/auth/me?soft=1 */
+export async function initAuth() {
+  let me = null;
+  try {
+    const r = await fetch('/api/auth/me?soft=1', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
+    if (r.ok) me = await r.json();
+  } catch { /* offline: keep "Sign in" */ }
+  const role = me && typeof me.role === 'string' ? me.role : null;
+  if (role) for (const a of $$('a[data-auth]')) { a.textContent = 'My dashboard'; a.href = '/studio/'; }
+  return role ? me : null;
+}
+
+/** Section heads fade up once as they enter (opacity and transform only; never body text). */
+export function initReveal() {
+  if (reduced.matches || !('IntersectionObserver' in window)) return;
+  const items = $$('[data-rv]');
+  if (!items.length) return;
+  document.documentElement.classList.add('rv');
+  const io = new IntersectionObserver((es) => {
+    for (const e of es) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+  }, { rootMargin: '0px 0px -12% 0px' });
+  items.forEach((n) => io.observe(n));
 }
 
 /* ---------------- contact ---------------- */
@@ -153,7 +140,7 @@ export function applyContact(contact = {}) {
   const phone = str(contact.phone, 30);
   const email = validEmail(str(contact.email, 254)) ? str(contact.email, 254) : '';
   const values = {
-    wa: waLink(wa, 'Hi Nimtto, I have a question about a wedding invitation.'),
+    wa: waLink(wa, 'Hi Nimtto, I have a question about an invitation.'),
     'wa-text': prettyPhone(str(contact.whatsapp, 30)) || (wa ? prettyPhone(`+${wa}`) : ''),
     phone: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '',
     'phone-text': prettyPhone(phone),
@@ -167,9 +154,7 @@ export function applyContact(contact = {}) {
   // the same number for calls and WhatsApp: show it once
   const samePhone = wa && phone && phone.replace(/[^\d]/g, '').endsWith(wa.slice(-10));
   for (const row of $$('[data-contact-row]')) row.hidden = !values[row.dataset.contactRow] || (row.dataset.contactRow === 'phone' && samePhone);
-  const waLabel = $('[data-contact-row="wa"] .closing__k');
-  if (waLabel && samePhone) waLabel.textContent = 'WhatsApp and phone';
-  return { wa, phone, email };
+    return { wa, phone, email };
 }
 
 /* ---------------- preview: the live design, demo couple only, watermarked (src/core/showcase.js) ---------------- */
