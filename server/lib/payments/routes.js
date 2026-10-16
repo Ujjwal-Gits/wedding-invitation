@@ -1,6 +1,6 @@
 // Payments API, mounted at /api/pay (server/index.js), plus the page headers the PayPal buttons need on /.
 //   GET  /api/pay/config           public: { paypal: { enabled, env, clientId?, currency } } (the client ID is public)
-//   GET  /api/pay/status           admin: configured or not, sandbox or live; never a secret
+//   GET  /api/pay/status           admin with 'website': configured or not, sandbox or live; never a secret
 //   POST /api/pay/paypal/order     public { ref, t, website }: Origin check, honeypot, rate limits
 //   POST /api/pay/paypal/capture   public { ref, t, orderID, website }: same
 // `ref` is the order's public reference (NM-24817) with its pay token `t`; requests made before references existed
@@ -9,7 +9,7 @@
 import express from 'express';
 import { IS_PROD, PUBLIC_ORIGINS } from '../env.js';
 import { rateLimiter, originAllowed, clientIp } from '../security.js';
-import { requireAdmin } from '../auth.js';
+import { requirePerm } from '../auth.js';
 import { getOrder, findOrder, mutateOrder, orderByRefAndToken, ID_RE, REF_RE } from '../orders.js';
 import { readSite } from '../site.js';
 import { readConfig, createClient, PayPalError, PAYPAL_ORDER_ID_RE } from './paypal.js';
@@ -85,7 +85,7 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
     res.json({ paypal: config.enabled ? { enabled: true, env: config.env, clientId: config.clientId, currency: CURRENCY } : { enabled: false } });
   });
 
-  router.get('/status', requireAdmin, (req, res) => {
+  router.get('/status', requirePerm('website'), (req, res) => {
     const mask = (s) => (s ? `${s.slice(0, 4)}…${s.slice(-4)}` : '');
     const origin = PUBLIC_ORIGINS[0] || `${req.protocol}://${req.get('host')}`;
     res.json({

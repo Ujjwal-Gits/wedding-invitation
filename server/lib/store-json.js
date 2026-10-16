@@ -49,7 +49,7 @@ export async function readJson(file, fallback = null) {
 const invPath = (slug) => resolve(INV_DIR, `${slug}.json`);
 const rsvpPath = (slug) => resolve(RSVP_DIR, `${slug}.json`);
 
-export function open() { loadSessions(); loadCustomers(); }
+export function open() { loadSessions(); loadCustomers(); loadStaff(); loadAudit(); }
 export function close() {}
 
 // ── Invitations: rev = the file's mtime and size (changes on every write, also by another program).
@@ -235,6 +235,126 @@ export const customers = {
   all: () => [...cmap.values()].map((c) => structuredClone(c)),
   put: (c) => { cmap.set(c.id, structuredClone(c)); return persistCustomers(); },
   del: (id) => { const had = cmap.delete(id); if (had) persistCustomers(); return had; },
+};
+
+// ── Staff accounts: an in-memory map written through to data/staff.json (same pattern as the customers).
+const STAFF_FILE = resolve(DATA_DIR, 'staff.json');
+const smap = new Map();
+let sloaded = false;
+function loadStaff() {
+  if (sloaded) return;
+  sloaded = true;
+  try {
+    const raw = JSON.parse(readFileSync(STAFF_FILE, 'utf8'));
+    for (const x of raw?.staff || []) if (x && typeof x.id === 'string' && typeof x.email === 'string') smap.set(x.id, x);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw Object.assign(new Error(`cannot read ${STAFF_FILE}: ${err.message}`), { cause: err });
+  }
+}
+let swriting = null;
+let sdirty = false;
+function persistStaff() {
+  sdirty = true;
+  if (!swriting) {
+    swriting = (async () => {
+      try {
+        while (sdirty) {
+          sdirty = false;
+          await writeJsonAtomic(STAFF_FILE, { v: 1, staff: [...smap.values()] });
+        }
+      } finally {
+        swriting = null;
+      }
+    })();
+  }
+  return swriting;
+}
+export const staff = {
+  get: (id) => (smap.has(id) ? structuredClone(smap.get(id)) : null),
+  byEmail: (email) => { for (const x of smap.values()) if (x.email === email) return structuredClone(x); return null; },
+  all: () => [...smap.values()].map((x) => structuredClone(x)),
+  put: (x) => { smap.set(x.id, structuredClone(x)); return persistStaff(); },
+  del: (id) => { const had = smap.delete(id); if (had) persistStaff(); return had; },
+};
+
+// ── Audit log: data/audit.jsonl, one entry per line, appended; also kept in memory (oldest first). Past
+// AUDIT_SOFT_CAP entries the file is rewritten with the newest 50 000 (lib/audit.js prunes by age as well).
+const AUDIT_FILE = resolve(DATA_DIR, 'audit.jsonl');
+const AUDIT_SOFT_CAP = 60_000;
+const alog = [];
+let aloaded = false;
+let aseq = 0;
+let achain = Promise.resolve();
+function loadAudit() {
+  if (aloaded) return;
+  aloaded = true;
+  let text = '';
+  try { text = readFileSync(AUDIT_FILE, 'utf8'); } catch (err) { if (err.code !== 'ENOENT') console.warn(`[audit] ${AUDIT_FILE} unreadable: ${err.message}`); }
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try { const e = JSON.parse(line); if (e && typeof e.seq === 'number') { alog.push(e); aseq = Math.max(aseq, e.seq); } } catch { /* a torn last line */ }
+  }
+}
+async function writeJsonLines(file, list) {
+  await fs.mkdir(dirname(file), { recursive: true });
+  const tmp = resolve(dirname(file), `.${basename(file)}.${randomBytes(6).toString('hex')}.tmp`);
+  await fs.writeFile(tmp, list.map((e) => JSON.stringify(e)).join('\n') + (list.length ? '\n' : ''), { mode: 0o600 });
+  for (let i = 0; ; i++) {
+    try { await fs.rename(tmp, file); return; } catch (err) {
+      if (i >= 6 || !['EPERM', 'EBUSY', 'EACCES'].includes(err.code)) { await fs.rm(tmp, { force: true }); throw err; }
+      await sleep(25 * (i + 1));
+    }
+  }
+}
+const rewriteAudit = () => {
+  const snapshot = alog.slice();
+  achain = achain.then(() => writeJsonLines(AUDIT_FILE, snapshot)).catch((err) => console.error('[audit] could not save:', err.message));
+  return achain;
+};
+const auditMatch = (e, actor, text) => {
+  if (actor && e.actor !== actor) return false;
+  if (!text) return true;
+  const t = String(text).toLowerCase();
+  return [e.action, e.label, e.target, e.actorEmail, e.ip].some((v) => typeof v === 'string' && v.toLowerCase().includes(t));
+};
+export const audit = {
+  add: (e) => {
+    loadAudit();
+    const row = { seq: ++aseq, ...e, fields: e.fields || [] };
+    alog.push(row);
+    if (alog.length > AUDIT_SOFT_CAP) { alog.splice(0, alog.length - 50_000); return rewriteAudit(); }
+    const line = `${JSON.stringify(row)}\n`;
+    achain = achain.then(async () => { await fs.mkdir(DATA_DIR, { recursive: true }); await fs.appendFile(AUDIT_FILE, line, { mode: 0o600 }); })
+      .catch((err) => console.error('[audit] could not save:', err.message));
+    return achain;
+  },
+  list: ({ actor = null, text = null, offset = 0, limit = 50 } = {}) => {
+    loadAudit();
+    const hits = [];
+    for (let i = alog.length - 1; i >= 0; i--) if (auditMatch(alog[i], actor, text)) hits.push(alog[i]);
+    return { total: hits.length, rows: hits.slice(offset, offset + limit).map((e) => structuredClone(e)) };
+  },
+  actors: () => {
+    loadAudit();
+    const seen = new Map();
+    for (let i = alog.length - 1; i >= 0 && seen.size < 500; i--) {
+      const k = `${alog[i].actor}\n${alog[i].actorEmail || ''}`;
+      if (!seen.has(k)) seen.set(k, { actor: alog[i].actor, email: alog[i].actorEmail || null });
+    }
+    return [...seen.values()];
+  },
+  prune: (before, keep, cap) => {
+    loadAudit();
+    const n = alog.length;
+    let drop = 0;
+    while (drop < n - keep && alog[drop].at < before) drop++;
+    drop = Math.max(drop, n - cap);
+    if (drop <= 0) return 0;
+    alog.splice(0, drop);
+    rewriteAudit();
+    return drop;
+  },
+  flush: () => achain,
 };
 
 export const ping = () => true;

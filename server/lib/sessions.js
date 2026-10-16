@@ -22,13 +22,15 @@ function validEntry(k, s) {
   if (!isTime(s.created) || !isTime(s.seen) || typeof s.fp !== 'string' || !HEX64.test(s.fp)) return false;
   if (s.role === 'client') return SLUG_RE.test(s.slug);
   if (s.role === 'customer') return CID_RE.test(s.cid);
-  return true;
+  return s.sid == null || CID_RE.test(s.sid); // admin: the owner (no sid) or a staff member (lib/staff.js)
 }
 const clean = (s) => (s.role === 'client'
   ? { role: 'client', slug: s.slug, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }
   : s.role === 'customer'
     ? { role: 'customer', cid: s.cid, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }
-    : { role: 'admin', fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen });
+    : s.sid
+      ? { role: 'admin', sid: s.sid, fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen }
+      : { role: 'admin', fp: s.fp, csrf: s.csrf, created: s.created, seen: s.seen });
 
 export const expired = (s, now = Date.now()) => now - s.seen >= TTL[s.role];
 

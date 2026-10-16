@@ -19,7 +19,8 @@ const SITE = resolve(DATA_DIR, 'site.json');
 const MUSIC = resolve(DATA_DIR, 'music.json');
 const ORDERS = resolve(DATA_DIR, 'orders.json');
 const CUSTOMERS = resolve(DATA_DIR, 'customers.json');
-for (const p of [INV_DIR, RSVP_DIR, SITE, MUSIC, ORDERS, CUSTOMERS, SESSIONS_FILE]) if (existsSync(p)) renameSync(p, resolve(keep, p.slice(DATA_DIR.length + 1)));
+const STAFF = resolve(DATA_DIR, 'staff.json');
+for (const p of [INV_DIR, RSVP_DIR, SITE, MUSIC, ORDERS, CUSTOMERS, STAFF, SESSIONS_FILE]) if (existsSync(p)) renameSync(p, resolve(keep, p.slice(DATA_DIR.length + 1)));
 
 const write = (file, value) => writeFileSync(file, JSON.stringify(value, null, 2), { mode: 0o600 });
 mkdirSync(INV_DIR, { recursive: true });
@@ -30,6 +31,7 @@ write(ORDERS, all.orders);
 if (all.site) write(SITE, all.site);
 if (all.music) write(MUSIC, all.music);
 write(CUSTOMERS, { v: 1, customers: all.customers });
+write(STAFF, { v: 1, staff: all.staff });
 write(SESSIONS_FILE, { v: 1, sessions: all.sessions });
 sqlite.close();
 console.log(`export-json: ${all.invitations.length} invitations, ${Object.values(all.rsvps).flat().length} replies, ${all.orders.length} orders, `

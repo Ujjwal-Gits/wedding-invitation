@@ -1,5 +1,6 @@
 // Account emails (Brevo stubbed): sign-up sends a 6-digit "Confirm your email" code (in the subject, for "Copy code");
-// "Forgot password" sends a one-use code that sets a new password and signs in; the same answer for unknown emails.
+// "Forgot password" sends a one-use code; the code alone is checked first (a short-lived reset ticket back), then the
+// ticket sets the new password and signs in; the same answer for unknown emails.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -37,6 +38,7 @@ before(() => {
   api.post('/auth/login', json, wrap(auth.login));
   api.post('/auth/signup', json, wrap(customers.signup));
   api.post('/auth/forgot', json, wrap(customers.forgot));
+  api.post('/auth/reset/check', json, wrap(customers.checkResetCode));
   api.post('/auth/reset', json, wrap(customers.resetPassword));
   api.post('/account/verify', auth.requireCustomer, wrap(customers.resendVerify));
   api.post('/account/verify/confirm', auth.requireCustomer, json, wrap(customers.confirmVerify));
@@ -108,13 +110,43 @@ test('forgot password: same answer for unknown emails; the code sets a new passw
   assert.equal(sent.length, n + 1, 'only the real account gets an email');
   const code = codeIn(sent.at(-1));
   const b = browser();
-  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', code, password: 'short' } })).status, 400);
-  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'nobody@example.com', code, password: 'second-pass-2' } })).status, 400, 'the code belongs to its account');
-  const ok = await b.req('/auth/reset', { method: 'POST', body: { email: 'ASHA@example.com', code, password: 'second-pass-2' } });
+  // step 1: the code alone; a right code is used up and answered with a one-time ticket
+  assert.equal((await b.req('/auth/reset/check', { method: 'POST', body: { email: 'nobody@example.com', code } })).status, 400, 'the code belongs to its account');
+  assert.equal((await b.req('/auth/reset/check', { method: 'POST', body: { email: 'asha@example.com', code: '12345' } })).status, 400);
+  const checked = await b.req('/auth/reset/check', { method: 'POST', body: { email: 'ASHA@example.com', code } });
+  assert.equal(checked.status, 200);
+  const { ticket } = checked.data;
+  assert.match(ticket, /^[A-Za-z0-9_-]{43}$/);
+  assert.equal((await browser().req('/auth/reset/check', { method: 'POST', body: { email: 'asha@example.com', code } })).status, 400, 'the code is used up');
+  // only the ticket's hash is stored
+  const stored = (await import('../lib/accounts.js')).customerByEmail('asha@example.com');
+  assert.equal(JSON.stringify(stored).includes(ticket), false);
+  assert.match(stored.resetTicket.hash, /^[a-f0-9]{64}$/);
+  // step 2: the ticket and the new password
+  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', ticket, password: 'short' } })).status, 400);
+  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', code, password: 'second-pass-2' } })).status, 400, 'a code alone no longer sets a password');
+  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', ticket: 'A'.repeat(43), password: 'second-pass-2' } })).status, 400, 'a wrong ticket');
+  assert.equal((await b.req('/auth/reset', { method: 'POST', body: { email: 'bina@example.com', ticket, password: 'second-pass-2' } })).status, 400, 'the ticket belongs to its account');
+  const ok = await b.req('/auth/reset', { method: 'POST', body: { email: 'ASHA@example.com', ticket, password: 'second-pass-2' } });
   assert.equal(ok.status, 200);
   assert.equal(ok.data.role, 'customer');
   assert.equal((await b.req('/account')).status, 200);
-  assert.equal((await browser().req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', code, password: 'third-pass-3' } })).status, 400, 'one use only');
+  assert.equal((await browser().req('/auth/reset', { method: 'POST', body: { email: 'asha@example.com', ticket, password: 'third-pass-3' } })).status, 400, 'one use only');
   assert.equal((await browser().req('/auth/login', { method: 'POST', body: { email: 'asha@example.com', password: 'first-pass-1' } })).status, 401);
   assert.equal((await browser().req('/auth/login', { method: 'POST', body: { email: 'asha@example.com', password: 'second-pass-2' } })).status, 200);
+});
+
+test('forgot password: wrong codes at the check step count, and five end the code', async () => {
+  const n = sent.length;
+  await browser().req('/auth/forgot', { method: 'POST', body: { email: 'bina@example.com' } });
+  await until(() => sent.length > n);
+  const code = codeIn(sent.at(-1));
+  const wrong = code === '000000' ? '111111' : '000000';
+  for (let i = 0; i < 5; i++) {
+    const r = await browser().req('/auth/reset/check', { method: 'POST', body: { email: 'bina@example.com', code: wrong } });
+    assert.equal(r.status, 400);
+  }
+  const late = await browser().req('/auth/reset/check', { method: 'POST', body: { email: 'bina@example.com', code } });
+  assert.equal(late.status, 400);
+  assert.equal(late.data.code, 'code_expired');
 });

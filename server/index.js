@@ -10,7 +10,13 @@ import { securityHeaders, rateLimiter, cloudflareOnly } from './lib/security.js'
 import { trafficGuard, shedWhenOverloaded, resetLag } from './lib/guard.js';
 import { staticFiles } from './lib/static.js';
 import { startBackups, stopBackups } from './lib/backup.js';
-import { loadSession, requireAdmin, requireSession, requireEditor, requireCustomer, clientSession, login, logout, me, clearCache } from './lib/auth.js';
+import {
+  loadSession, requireSession, requireEditor, requireCustomer, requirePerm, requireAnyPerm, requireSuper, adminArea,
+  clientSession, login, logout, me, clearCache,
+} from './lib/auth.js';
+import { PERM_KEYS } from './lib/staff.js';
+import * as team from './lib/team.js'; // staff accounts: the Team page (docs/API.md "Team and permissions")
+import * as audit from './lib/audit.js'; // the admin audit log (docs/API.md "Audit log")
 import * as customers from './lib/customers.js'; // customer accounts (docs/API.md "Customer accounts")
 import * as inv from './lib/invitations.js';
 import * as handover from './lib/handover.js'; // invitations for customer accounts (docs/API.md "Invitations for an account")
@@ -31,6 +37,7 @@ import { financeRouter } from './lib/finance-admin.js'; // earnings, refunds, fr
 assertConfigured();
 openStore();
 startSessions();
+audit.startAudit();
 await fs.mkdir(INV_DIR, { recursive: true });
 await fs.mkdir(RSVP_DIR, { recursive: true });
 await fs.mkdir(UPLOAD_DIR, { recursive: true });
@@ -51,6 +58,9 @@ const api = express.Router();
 const json = (limit) => express.json({ limit, strict: true, type: 'application/json' });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+// Every POST/PUT/PATCH/DELETE made with an admin session goes into the audit log once it finished (lib/audit.js).
+api.use(audit.auditTrail);
+
 // Every :slug in the API is validated before any handler touches the disk.
 api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.status(400).json({ error: 'Invalid invitation link name.' })));
 
@@ -60,7 +70,8 @@ const heavy = shedWhenOverloaded;
 api.post('/auth/login', heavy, json('4kb'), wrap(login));
 api.post('/auth/signup', heavy, json('4kb'), wrap(customers.signup)); // a customer account from the sign-in page
 api.post('/auth/forgot', heavy, json('2kb'), wrap(customers.forgot)); // emails a 6-digit code (Brevo, lib/account-mail.js)
-api.post('/auth/reset', heavy, json('2kb'), wrap(customers.resetPassword));
+api.post('/auth/reset/check', heavy, json('2kb'), wrap(customers.checkResetCode)); // step 1: the code -> a reset ticket
+api.post('/auth/reset', heavy, json('2kb'), wrap(customers.resetPassword)); // step 2: the ticket + the new password
 api.post('/account/verify', heavy, requireCustomer, wrap(customers.resendVerify));
 api.post('/account/verify/confirm', requireCustomer, json('1kb'), wrap(customers.confirmVerify));
 api.post('/auth/logout', requireSession, logout);
@@ -86,48 +97,60 @@ api.get('/orders/:ref/qr/:file', wrap(manualPay.payQr));
 api.post('/orders/:ref/proof', heavy, wrap(manualPay.submitProof));
 api.post('/invitations/:slug/rsvp', express.text({ type: ['text/plain', 'application/json'], limit: '8kb' }), wrap(rsvp.submit));
 
-// Admin
-const editor = requireEditor(peekInvitation); // read-only check of the couple's link
+// Admin. Every admin route names the permission it needs (lib/staff.js PERMS; docs/API.md "Team and permissions"):
+// requirePerm(p) = an admin with p, requireAnyPerm(a, b) = with either, requireSuper = super admins only. A plain
+// requireAdmin also means super admins only, except inside an area marked below (adminArea), where it lets in the
+// admins with that area's permission: the Finance pages live under /api/admin/finance.
+api.use('/admin/finance', adminArea('finance'), requirePerm('finance'));
+const editor = requireEditor(peekInvitation); // an admin with 'invitations', or the couple (read-only check of their link)
+const replyEditor = requireEditor(peekInvitation, 'replies'); // an admin with 'replies', or the couple
 api.get('/meta', requireSession, wrap(inv.meta));
-api.get('/admin/stats', requireAdmin, heavy, wrap((req, res) => inv.stats(req, res, orders.newCount)));
-api.put('/site', requireAdmin, json('32kb'), wrap(site.putSite));
-api.get('/admin/site', requireAdmin, wrap(site.getAdminSite));
-api.post('/admin/pay/qr', requireAdmin, heavy, wrap(manualPay.uploadQr));
+api.get('/admin/stats', requireAnyPerm(...PERM_KEYS), heavy, wrap((req, res) => inv.stats(req, res, orders.newCount))); // counts only (Overview)
+api.put('/site', requireAnyPerm('website', 'themes'), json('32kb'), wrap(site.putSite)); // each changes only its part (lib/site.js)
+api.get('/admin/site', requireAnyPerm('website', 'themes', 'orders', 'finance'), wrap(site.getAdminSite)); // plans and payment methods
+api.post('/admin/pay/qr', requirePerm('website'), heavy, wrap(manualPay.uploadQr));
 api.param('musicId', (req, res, next, id) => (/^[A-Za-z0-9_-]{2,40}$/.test(id) ? next() : res.status(404).json({ error: 'No such song.' })));
-api.get('/admin/music', requireAdmin, wrap(music.adminList));
-api.post('/admin/music', requireAdmin, heavy, wrap(music.upload));
-api.patch('/admin/music', requireAdmin, json('8kb'), wrap(music.reorder));
-api.post('/admin/music/restore', requireAdmin, wrap(music.restoreBuiltins));
-api.patch('/admin/music/:musicId', requireAdmin, json('4kb'), wrap(music.patch));
-api.delete('/admin/music/:musicId', requireAdmin, wrap(music.remove));
-api.get('/orders', requireAdmin, wrap(orders.list));
-api.get('/admin/customers', requireAdmin, wrap(customers.adminList));
-api.post('/admin/customers', requireAdmin, heavy, json('2kb'), wrap(customers.adminCreate));
-api.get('/admin/customers/:id/account', requireAdmin, wrap(customers.adminAccount)); // view their dashboard, read-only
-api.patch('/admin/customers/:id', requireAdmin, heavy, json('2kb'), wrap(customers.adminPatch));
-api.put('/admin/customers/:id/invitations/:slug', requireAdmin, json('8kb'), wrap(customers.adminLink));
-api.delete('/admin/customers/:id/invitations/:slug', requireAdmin, wrap(customers.adminUnlink));
-api.post('/admin/pending/link', requireAdmin, json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
-api.post('/admin/pending/dismiss', requireAdmin, json('1kb'), wrap(customers.adminDismissPending));
-api.get('/admin/orders/:id/proof/:n', requireAdmin, wrap(manualPay.adminProof));
-// Money: every route under /admin/finance is the planner's (requireAdmin inside the router)
+api.get('/admin/music', requirePerm('music'), wrap(music.adminList));
+api.post('/admin/music', requirePerm('music'), heavy, wrap(music.upload));
+api.patch('/admin/music', requirePerm('music'), json('8kb'), wrap(music.reorder));
+api.post('/admin/music/restore', requirePerm('music'), wrap(music.restoreBuiltins));
+api.patch('/admin/music/:musicId', requirePerm('music'), json('4kb'), wrap(music.patch));
+api.delete('/admin/music/:musicId', requirePerm('music'), wrap(music.remove));
+api.get('/orders', requirePerm('orders'), wrap(orders.list));
+api.get('/admin/customers', requirePerm('customers'), wrap(customers.adminList));
+api.post('/admin/customers', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminCreate));
+api.get('/admin/customers/:id/account', requirePerm('customers'), wrap(customers.adminAccount)); // view their dashboard, read-only
+api.patch('/admin/customers/:id', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminPatch));
+api.put('/admin/customers/:id/invitations/:slug', requirePerm('customers'), json('8kb'), wrap(customers.adminLink));
+api.delete('/admin/customers/:id/invitations/:slug', requirePerm('customers'), wrap(customers.adminUnlink));
+api.post('/admin/pending/link', requirePerm('customers'), json('1kb'), wrap(customers.adminConfirmPending)); // never automatic (docs/API.md)
+api.post('/admin/pending/dismiss', requirePerm('customers'), json('1kb'), wrap(customers.adminDismissPending));
+api.get('/admin/orders/:id/proof/:n', requirePerm('orders'), wrap(manualPay.adminProof));
+api.patch('/orders/:id', requirePerm('orders'), json('8kb'), wrap(orders.update));
+api.post('/orders/:id/invitation', requirePerm('orders', 'invitations'), json('1kb'), wrap(handover.createForOrder));
+api.delete('/orders/:id', requirePerm('orders'), wrap(orders.remove));
+// Team and audit log: super admins only (lib/team.js, lib/audit.js)
+api.get('/admin/team', requireSuper, wrap(team.list));
+api.post('/admin/team', requireSuper, heavy, json('2kb'), wrap(team.create));
+api.patch('/admin/team/:id', requireSuper, heavy, json('2kb'), wrap(team.patch));
+api.delete('/admin/team/:id', requireSuper, wrap(team.remove));
+api.get('/admin/audit', requireSuper, wrap(audit.list));
+// Money: the Finance router (lib/finance-admin.js); the 'finance' area above gates every route in it
 api.use('/admin/finance', financeRouter({ checkout: payments.checkout, paypal: { enabled: payments.config.enabled, env: payments.config.env } }));
-api.patch('/orders/:id', requireAdmin, json('8kb'), wrap(orders.update));
-api.post('/orders/:id/invitation', requireAdmin, json('1kb'), wrap(handover.createForOrder));
-api.delete('/orders/:id', requireAdmin, wrap(orders.remove));
 
-api.get('/invitations', requireAdmin, heavy, wrap(inv.list));
-api.post('/invitations', requireAdmin, json('8kb'), wrap(inv.create));
+// the list: also for picking an invitation on the Replies and Customers pages (couple links left out, lib/invitations.js)
+api.get('/invitations', requireAnyPerm('invitations', 'replies', 'customers'), heavy, wrap(inv.list));
+api.post('/invitations', requirePerm('invitations'), json('8kb'), wrap(inv.create));
 api.get('/invitations/:slug', editor, wrap(inv.read));
 api.put('/invitations/:slug', editor, json('768kb'), wrap(inv.update));
 api.get('/invitations/:slug/version', editor, wrap(inv.version));
-api.post('/invitations/:slug/seen', requireAdmin, wrap(inv.seen));
-api.delete('/invitations/:slug', requireAdmin, json('2kb'), wrap(inv.remove));
+api.post('/invitations/:slug/seen', requirePerm('invitations'), wrap(inv.seen));
+api.delete('/invitations/:slug', requirePerm('invitations'), json('2kb'), wrap(inv.remove));
 api.post('/invitations/:slug/publish', editor, wrap(inv.publish));
-api.post('/invitations/:slug/client-link', requireAdmin, json('2kb'), wrap(inv.createClientLink));
-api.patch('/invitations/:slug/access', requireAdmin, json('2kb'), wrap(inv.patchAccess));
-api.delete('/invitations/:slug/client-link', requireAdmin, wrap(inv.deleteClientLink));
-api.post('/invitations/:slug/unpublish', requireAdmin, wrap(inv.unpublish));
+api.post('/invitations/:slug/client-link', requirePerm('invitations'), json('2kb'), wrap(inv.createClientLink));
+api.patch('/invitations/:slug/access', requirePerm('invitations'), json('2kb'), wrap(inv.patchAccess));
+api.delete('/invitations/:slug/client-link', requirePerm('invitations'), wrap(inv.deleteClientLink));
+api.post('/invitations/:slug/unpublish', requirePerm('invitations'), wrap(inv.unpublish));
 // Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
 // cannot fill the disk.
 const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });
@@ -140,9 +163,9 @@ api.post('/invitations/:slug/uploads', heavy, editor, wrap(async (req, res) => {
   if (!(await invitationExists(req.params.slug))) return res.status(404).json({ error: 'No invitation with that link name.' });
   return handleUpload(req, res);
 }));
-api.get('/invitations/:slug/rsvps', editor, wrap(rsvp.listReplies));
-api.get('/invitations/:slug/rsvps.csv', heavy, editor, wrap(rsvp.exportCsv));
-api.delete('/invitations/:slug/rsvps/:id', editor, wrap(rsvp.deleteReply));
+api.get('/invitations/:slug/rsvps', replyEditor, wrap(rsvp.listReplies));
+api.get('/invitations/:slug/rsvps.csv', heavy, replyEditor, wrap(rsvp.exportCsv));
+api.delete('/invitations/:slug/rsvps/:id', replyEditor, wrap(rsvp.deleteReply));
 
 api.use('/pay', payments.router);
 

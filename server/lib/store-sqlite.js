@@ -61,6 +61,25 @@ CREATE TABLE IF NOT EXISTS customers (
   email TEXT NOT NULL UNIQUE,
   data TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS staff (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  data TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS audit (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  at TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  actor_email TEXT,
+  action TEXT NOT NULL,
+  label TEXT,
+  target TEXT,
+  ip TEXT,
+  status INTEGER,
+  fields TEXT
+);
+CREATE INDEX IF NOT EXISTS audit_at ON audit(at);
+CREATE INDEX IF NOT EXISTS audit_actor ON audit(actor, seq);
 `;
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -119,6 +138,9 @@ function migrateFromJson() {
     for (const c of readJsonSync(resolve(DATA_DIR, 'customers.json'), { customers: [] })?.customers || []) {
       if (c && typeof c.id === 'string' && typeof c.email === 'string') q.custPut.run(c.id, c.email, JSON.stringify(c));
     }
+    for (const x of readJsonSync(resolve(DATA_DIR, 'staff.json'), { staff: [] })?.staff || []) {
+      if (x && typeof x.id === 'string' && typeof x.email === 'string') q.staffPut.run(x.id, x.email, JSON.stringify(x));
+    }
     const site = readJsonSync(siteFile, null);
     if (site && typeof site === 'object') { q.putKv.run('site', 1, JSON.stringify(site)); counts.site = 1; }
     const music = readJsonSync(resolve(DATA_DIR, 'music.json'), null); // the music library (lib/music.js)
@@ -126,7 +148,7 @@ function migrateFromJson() {
     const sess = readJsonSync(SESSIONS_FILE, null);
     for (const [k, s] of Object.entries(sess?.sessions || {})) {
       if (!/^[a-f0-9]{64}$/.test(k) || !s || typeof s !== 'object') continue;
-      counts.sessions += q.insSession.run(k, s.role, s.slug ?? null, s.fp, s.csrf, s.created, s.seen, s.cid ?? null).changes;
+      counts.sessions += q.insSession.run(k, s.role, s.slug ?? null, s.fp, s.csrf, s.created, s.seen, s.cid ?? null, s.sid ?? null).changes;
     }
     db.prepare("INSERT INTO meta (k, v) VALUES ('json_import', ?)").run(JSON.stringify({ at: new Date().toISOString(), backup, ...counts }));
   });
@@ -188,12 +210,21 @@ function prepare() {
   q.insReply = db.prepare('INSERT OR IGNORE INTO rsvps (slug, id, at, attending, guests, data) VALUES (?, ?, ?, ?, ?, ?)');
   q.insOrder = db.prepare('INSERT OR IGNORE INTO orders (id, status, data) VALUES (?, ?, ?)');
   q.putKv = db.prepare('INSERT INTO kv (k, rev, v) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET rev = kv.rev + 1, v = excluded.v');
-  q.insSession = db.prepare('INSERT OR REPLACE INTO sessions (k, role, slug, fp, csrf, created, seen, cid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  q.insSession = db.prepare('INSERT OR REPLACE INTO sessions (k, role, slug, fp, csrf, created, seen, cid, sid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
   q.custPut = db.prepare('INSERT INTO customers (id, email, data) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email, data = excluded.data');
   q.custGet = db.prepare('SELECT data FROM customers WHERE id = ?').pluck();
   q.custByEmail = db.prepare('SELECT data FROM customers WHERE email = ?').pluck();
   q.custAll = db.prepare('SELECT data FROM customers ORDER BY rowid').pluck();
   q.custDel = db.prepare('DELETE FROM customers WHERE id = ?');
+  q.staffPut = db.prepare('INSERT INTO staff (id, email, data) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email, data = excluded.data');
+  q.staffGet = db.prepare('SELECT data FROM staff WHERE id = ?').pluck();
+  q.staffByEmail = db.prepare('SELECT data FROM staff WHERE email = ?').pluck();
+  q.staffAll = db.prepare('SELECT data FROM staff ORDER BY rowid').pluck();
+  q.staffDel = db.prepare('DELETE FROM staff WHERE id = ?');
+  q.auditIns = db.prepare('INSERT INTO audit (at, actor, actor_email, action, label, target, ip, status, fields) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  q.auditActors = db.prepare('SELECT actor, actor_email AS email, max(seq) AS last FROM audit GROUP BY actor, actor_email ORDER BY last DESC LIMIT 500');
+  q.auditPrune = db.prepare('DELETE FROM audit WHERE at < ? AND seq <= (SELECT coalesce(max(seq), 0) FROM audit) - ?');
+  q.auditCap = db.prepare('DELETE FROM audit WHERE seq <= (SELECT coalesce(max(seq), 0) FROM audit) - ?');
 
   q.invRev = db.prepare('SELECT rev FROM invitations WHERE slug = ?').pluck();
   q.invGet = db.prepare('SELECT rev, doc FROM invitations WHERE slug = ?');
@@ -218,8 +249,8 @@ function prepare() {
 
   q.kvGet = db.prepare('SELECT rev, v FROM kv WHERE k = ?');
 
-  q.sGet = db.prepare('SELECT role, slug, fp, csrf, created, seen, cid FROM sessions WHERE k = ?');
-  q.sAll = db.prepare('SELECT k, role, slug, fp, csrf, created, seen, cid FROM sessions');
+  q.sGet = db.prepare('SELECT role, slug, fp, csrf, created, seen, cid, sid FROM sessions WHERE k = ?');
+  q.sAll = db.prepare('SELECT k, role, slug, fp, csrf, created, seen, cid, sid FROM sessions');
   q.sSeen = db.prepare('UPDATE sessions SET seen = ? WHERE k = ?');
   q.sDel = db.prepare('DELETE FROM sessions WHERE k = ?');
   q.sCount = db.prepare('SELECT count(*) FROM sessions').pluck();
@@ -244,6 +275,8 @@ export function open() {
   db.exec(SCHEMA);
   // Customer sessions (role 'customer') keep the account id; databases from before accounts get the column.
   if (!db.prepare('PRAGMA table_info(sessions)').all().some((c) => c.name === 'cid')) db.exec('ALTER TABLE sessions ADD COLUMN cid TEXT');
+  // Staff sessions (role 'admin' with a staff id, lib/staff.js); the owner's admin sessions have none.
+  if (!db.prepare('PRAGMA table_info(sessions)').all().some((c) => c.name === 'sid')) db.exec('ALTER TABLE sessions ADD COLUMN sid TEXT');
   prepare();
   const m = migrateFromJson();
   if (m && (m.invitations || m.rsvps || m.orders || m.sessions || m.site)) {
@@ -341,7 +374,7 @@ export function putKv(k, value) { w(() => q.putKv.run(k, 1, JSON.stringify(value
 export const sessions = {
   get: (k) => q.sGet.get(k) || null,
   all: () => q.sAll.all(),
-  put: (k, s) => w(() => q.insSession.run(k, s.role, s.role === 'client' ? s.slug : null, s.fp, s.csrf, s.created, s.seen, s.role === 'customer' ? s.cid : null)),
+  put: (k, s) => w(() => q.insSession.run(k, s.role, s.role === 'client' ? s.slug : null, s.fp, s.csrf, s.created, s.seen, s.role === 'customer' ? s.cid : null, s.role === 'admin' ? s.sid ?? null : null)),
   seen: (k, t) => w(() => q.sSeen.run(t, k)),
   del: (k) => w(() => q.sDel.run(k).changes),
   delMany: (keys) => w(() => db.transaction(() => { for (const k of keys) q.sDel.run(k); })()),
@@ -356,6 +389,38 @@ export const customers = {
   all: () => q.custAll.all().map((s) => JSON.parse(s)),
   put: (c) => w(() => q.custPut.run(c.id, c.email, JSON.stringify(c))),
   del: (id) => w(() => q.custDel.run(id).changes > 0),
+};
+
+// ── Staff accounts (lib/staff.js). Every read returns a fresh object.
+export const staff = {
+  get: (id) => { const s = q.staffGet.get(id); return s ? JSON.parse(s) : null; },
+  byEmail: (email) => { const s = q.staffByEmail.get(email); return s ? JSON.parse(s) : null; },
+  all: () => q.staffAll.all().map((s) => JSON.parse(s)),
+  put: (x) => w(() => q.staffPut.run(x.id, x.email, JSON.stringify(x))),
+  del: (id) => w(() => q.staffDel.run(id).changes > 0),
+};
+
+// ── Audit log (lib/audit.js): newest first. Filters are bound parameters, never SQL text.
+const likeOf = (text) => `%${String(text).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+const AUDIT_TEXT = "(action LIKE ? ESCAPE '\\' OR label LIKE ? ESCAPE '\\' OR target LIKE ? ESCAPE '\\' OR actor_email LIKE ? ESCAPE '\\' OR ip LIKE ? ESCAPE '\\')";
+export const audit = {
+  add: (e) => w(() => q.auditIns.run(e.at, e.actor, e.actorEmail || null, e.action, e.label || null, e.target || null, e.ip || null, e.status ?? null, e.fields?.length ? JSON.stringify(e.fields) : null)),
+  /** { actor?, text?, offset, limit } -> { total, rows } */
+  list: ({ actor = null, text = null, offset = 0, limit = 50 } = {}) => {
+    const where = [];
+    const args = [];
+    if (actor) { where.push('actor = ?'); args.push(actor); }
+    if (text) { const t = likeOf(text); where.push(AUDIT_TEXT); args.push(t, t, t, t, t); }
+    const cond = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const total = db.prepare(`SELECT count(*) FROM audit ${cond}`).pluck().get(...args);
+    const rows = db.prepare(`SELECT seq, at, actor, actor_email, action, label, target, ip, status, fields FROM audit ${cond} ORDER BY seq DESC LIMIT ? OFFSET ?`)
+      .all(...args, limit, offset)
+      .map((r) => ({ seq: r.seq, at: r.at, actor: r.actor, actorEmail: r.actor_email, action: r.action, label: r.label, target: r.target, ip: r.ip, status: r.status, fields: r.fields ? JSON.parse(r.fields) : [] }));
+    return { total, rows };
+  },
+  actors: () => q.auditActors.all().map((r) => ({ actor: r.actor, email: r.email })),
+  /** Drops rows older than `before` (ISO time) that are not among the newest `keep`, then anything beyond the newest `cap`. */
+  prune: (before, keep, cap) => w(() => q.auditPrune.run(before, keep).changes + q.auditCap.run(cap).changes),
 };
 
 // ── Health and backups
@@ -375,6 +440,7 @@ export function dumpAll() {
     site: getKv('site')?.value ?? null,
     music: getKv('music')?.value ?? null,
     customers: customers.all(),
-    sessions: Object.fromEntries(q.sAll.all().map(({ k, cid, slug, ...s }) => [k, s.role === 'client' ? { ...s, slug } : s.role === 'customer' ? { ...s, cid } : s])),
+    staff: staff.all(),
+    sessions: Object.fromEntries(q.sAll.all().map(({ k, cid, slug, sid, ...s }) => [k, s.role === 'client' ? { ...s, slug } : s.role === 'customer' ? { ...s, cid } : sid ? { ...s, sid } : s])),
   };
 }

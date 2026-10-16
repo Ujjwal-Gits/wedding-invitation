@@ -65,3 +65,6 @@ clients/
 
 # Full-size phone stills (1170x2532) the site stills are made from (node src/site/make-thumbs.mjs)
 art-src/stills/
+
+# agent worktrees
+.claude/worktrees/

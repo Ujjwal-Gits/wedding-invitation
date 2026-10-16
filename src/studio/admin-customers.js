@@ -4,6 +4,7 @@
 import { h, icon, toast, openDialog, confirmDialog, fmtDate, fmtRelative, toggle, fill, debounce, iconBtn } from './dom.js';
 import { api } from './api.js';
 import { themePicker, permsText } from './admin-access.js';
+import { can } from './perms.js';
 import { customerHome } from './customer.js';
 import { pendingActs } from './admin.js'; // Link now / Dismiss (a function: the import cycle is safe)
 import { customerFreeAccess } from './admin-finance.js';
@@ -16,16 +17,28 @@ const genPassword = () => {
 };
 const coupleOf = (i) => [i.bride, i.groom].filter(Boolean).join(' & ') || i.slug;
 
-/** A password input with "Suggest one" (shown as text: the owner passes it on). */
-function pwInput(id, label, hint) {
-  const input = h('input.input', { id, type: 'text', minlength: 8, maxlength: 128, autocomplete: 'new-password', spellcheck: 'false', placeholder: 'At least 8 characters' });
+/** A password input with "Suggest one" (shown as text: the owner passes it on). Also used by the Team page. */
+export function pwInput(id, label, hint, min = 8) {
+  const input = h('input.input', { id, type: 'text', minlength: min, maxlength: 128, autocomplete: 'new-password', spellcheck: 'false', placeholder: `At least ${min} characters` });
   return { input, el: h('div.field', h('label.label', { for: id }, label),
     h('div.inputrow', input, h('button.btn', { type: 'button', onclick: () => { input.value = genPassword(); input.focus(); } }, icon('wand', 15), 'Suggest one')),
     hint ? h('p.hint', hint) : null) };
 }
 
+/** Shows a password once, with Copy: out = { password, customer | member: { name, email } }. */
+export function showPassword(out, what) {
+  if (!out) return;
+  const who = out.customer || out.member;
+  openDialog({
+    title: what, body: h('div.stack',
+      h('p.dialog__text', `Send this password to ${who.name || who.email} (${who.email}). It is not shown again.`),
+      h('div.inputrow', h('input.input.linkfield', { type: 'text', readonly: true, value: out.password, 'aria-label': 'Password', onfocus: (e) => e.target.select() }),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => navigator.clipboard?.writeText(out.password).then(() => toast('Password copied', 'success')) }, icon('copy', 15), 'Copy'))),
+  });
+}
+
 /** A small form dialog; submit(values) resolves to a result (closes) or throws (shows the message). */
-function formDialog({ title, fields, submitText, submit, wide = false }) {
+export function formDialog({ title, fields, submitText, submit, wide = false }) {
   return new Promise((resolve) => {
     let result = null;
     const err = h('p.form-error', { role: 'alert' });
@@ -124,6 +137,13 @@ function newAccountDialog() {
   });
 }
 
+/** "Add customer" (Overview quick action): the New account form, then the password to pass on. Resolves to the account. */
+export async function addCustomer() {
+  const out = await newAccountDialog();
+  if (out) { showPassword(out, 'Account created'); toast(`Account made for ${out.customer.email}`, 'success'); }
+  return out?.customer || null;
+}
+
 /** The section shown under the client links. */
 export function customersSection(ctx, loadInvitations) {
   let items = [];
@@ -133,15 +153,7 @@ export function customersSection(ctx, loadInvitations) {
   const body = h('div.tablebox', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '44%' } }))));
   const count = h('span.sect__count');
   const waiting = h('div');
-  const shownPassword = (out, what) => {
-    if (!out) return;
-    openDialog({
-      title: what, body: h('div.stack',
-        h('p.dialog__text', `Send this password to ${out.customer.name || out.customer.email} (${out.customer.email}). It is not shown again.`),
-        h('div.inputrow', h('input.input.linkfield', { type: 'text', readonly: true, value: out.password, onfocus: (e) => e.target.select() }),
-          h('button.btn.btn--primary', { type: 'button', onclick: () => navigator.clipboard?.writeText(out.password).then(() => toast('Password copied', 'success')) }, icon('copy', 15), 'Copy'))),
-    });
-  };
+  const shownPassword = showPassword;
   const replace = (c) => { items = items.map((x) => (x.id === c.id ? c : x)); draw(); };
   const draw = () => {
     count.textContent = String(items.length);
@@ -175,7 +187,7 @@ export function customersSection(ctx, loadInvitations) {
         h('td.cell-act', h('div.cell-act__in',
           iconBtn('eye', 'See everything', () => detailsDialog(ctx, c), 'btn--ghost'),
           iconBtn('key', 'Reset password', async () => shownPassword(await resetDialog(c), 'Password reset'), 'btn--ghost'),
-          iconBtn('gift', 'Give free access (a plan without payment)', async () => {
+          !can('finance') ? null : iconBtn('gift', 'Give free access (a plan without payment)', async () => {
             const o = await customerFreeAccess(c);
             if (o) replace({ ...c, orders: (c.orders || 0) + 1 });
           }, 'btn--ghost'),

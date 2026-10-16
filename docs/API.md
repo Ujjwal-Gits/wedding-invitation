@@ -11,10 +11,10 @@ The two public POSTs (`/orders`, `/invitations/:slug/rsvp`) use an Origin check 
 
 | Route | Body | Response |
 |---|---|---|
-| `POST /auth/login` | `{ email, password }` | `{ role: 'admin', email, csrf }` · `401` generic · `429` throttled |
+| `POST /auth/login` | `{ email, password }` | admin: `{ role: 'admin', email, name, owner, superAdmin, perms, csrf }` · customer: `{ role: 'customer', name, email, csrf }` · `401` generic · `429` throttled. The email is checked as the owner's first, then a staff member's, then a customer's (one password check either way, same answer). |
 | `POST /auth/logout` | – (CSRF) | `{ ok: true }` |
 | `POST /client/session` | `{ token, password }` | `{ role: 'client', slug, csrf, perms }` · `401` generic (bad token *or* password, same message) · `429` (20 failures / 15 min per IP, 10 wrong passwords / 15 min per invitation). Already signed in as this link's couple: `{ token }` alone returns the current session (no password, no new session) |
-| `GET /auth/me` | – | admin: `{ role: 'admin', email, csrf }` · client: `{ role: 'client', slug, csrf, perms }` · `401` (also when the link was revoked/replaced or the password changed) |
+| `GET /auth/me` | – | admin: `{ role: 'admin', email, name, owner, superAdmin, perms, csrf }` (`perms`: the areas below; a super admin has all, plus `team` and `audit`) · client: `{ role: 'client', slug, csrf, perms }` · `401` (also when the link was revoked/replaced or the password changed) |
 | `POST /clear-cache` | – (any signed-in role: admin, client, customer; CSRF) | `{ ok: true }` with the header `Clear-Site-Data: "cache"` (never `"cookies"` or `"storage"`: the session cookie and the sign-in stay) and `Cache-Control: no-store` · `401` signed out · `403` CSRF. The studio's "Clear cache" (account box, admin Settings, customer dashboard) calls it, deletes Cache Storage and any service worker, clears its own localStorage/sessionStorage keys except the sign-in flags (`nimtto-session`, `nimtto-couple`), shows "Cache cleared. Reloading…" and reloads with `?fresh=<time>` (`src/studio/cache.js`). |
 
 `perms = { themes: 'all' | string[], canChangeTheme: boolean, canChangeColors: boolean }`.
@@ -286,7 +286,57 @@ QR images in `public/site/pay/`; contact `+977 980-6393298`, WhatsApp `+97798063
 A stored document from before v2 is migrated on read: the four plans, keeping the feature lines of a plan with
 the same id. `GET /site` returns only the public projection (see the contract above).
 
+## Team and permissions
+
+The env owner (`ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`) is the super admin nobody can remove or limit. Super admins add
+more admins on the studio's **Team & access** page (`server/lib/team.js`, data `server/lib/staff.js`; SQLite `staff`
+table or `data/staff.json`). Staff sign in on the same `/studio/` form; their session is `role: 'admin'` plus the
+staff id, bound to their id, password hash, role, permissions and on/off state: turning them off, removing them,
+resetting their password or changing their role or areas ends their sessions at once.
+
+Roles: `super` (everything, manages the team, reads the audit log) or `admin` with a checklist of areas:
+
+| Area | Routes (server-side; the studio only hides what they cannot open) |
+|---|---|
+| `invitations` | `GET/POST /invitations` · `GET/PUT /invitations/:slug` · `version` · `publish` · `unpublish` · `seen` · `DELETE` · `client-link` · `access` · `uploads` |
+| `replies` | `GET /invitations/:slug/rsvps`, `rsvps.csv`, `DELETE …/rsvps/:id` · `GET /invitations` (couple link URLs left out) |
+| `customers` | `/admin/customers*`, `/admin/pending/*` · `GET /invitations` (couple link URLs left out) |
+| `orders` | `GET /orders`, `PATCH/DELETE /orders/:id`, `GET /admin/orders/:id/proof/:n` · `POST /orders/:id/invitation` needs `invitations` too |
+| `finance` | everything under `/admin/finance` (marked as the finance area: `requireAdmin` there lets finance admins in) |
+| `website` | `PUT /site` (its part), `POST /admin/pay/qr`, `GET /pay/status` |
+| `themes` | `PUT /site` (only `hiddenThemes`, `featuredThemes`, `themeTiers`; the rest is kept as stored) |
+| `music` | `/admin/music*` |
+| `team`, `audit` | super admins only: `/admin/team*`, `/admin/audit` |
+
+`GET /admin/site` needs `website`, `themes`, `orders` or `finance`; `GET /admin/stats` (counts) any area. Any other
+admin route (plain `requireAdmin`) needs a super admin. Refused: `403 { error, code: 'no_access' }`.
+
+| Route | Body | Response |
+|---|---|---|
+| `GET /admin/team` | – | `{ owner: { email, role: 'super', locked: true }, staff: Member[], perms: [{ key, label, help }], me }` |
+| `POST /admin/team` | `{ email, name, password (10–128), role: 'super'\|'admin', perms?: string[] }` | `201 { member }` · `400 { errors }` · `409` (on the team, the owner's email, or a customer account's email) |
+| `PATCH /admin/team/:id` | any of `{ name, role, perms, disabled, password }` | `{ member }` · `400` (nobody turns off, demotes or limits themselves) · `404` |
+| `DELETE /admin/team/:id` | – | `{ ok: true }` · `400` (not yourself) · `404` |
+
+`Member = { id, email, name, role, perms, disabled, createdAt, updatedAt, lastLoginAt }` (never the hash). A team email
+cannot also be a customer account (sign-up, ordering and New account refuse it).
+
+### Audit log
+
+Every POST/PUT/PATCH/DELETE made with an admin session is recorded once it finished (`server/lib/audit.js`, middleware
+on `/api`), plus admin sign-ins (success and failure). Entry: `{ seq, at, actor: 'owner' | 'staff:<id>', actorEmail,
+action: '<METHOD> <route pattern>', label, target (the route params), ip, status, fields }`. Bodies are never stored,
+only the names of the fields sent. Not recorded: `POST /invitations/:slug/seen`; autosaves (`PUT /invitations/:slug`)
+at most once per person and invitation per 10 minutes. Kept in SQLite (`audit`, indexed by time) or `data/audit.jsonl`
+(the newest 50 000); pruned daily: an entry goes once it is over 400 days old and not among the newest 50 000.
+
+| Route | Query | Response |
+|---|---|---|
+| `GET /admin/audit` (super admins) | `actor=owner\|staff:<id>`, `q=<text>` (what, label, target, email, IP), `page` | `{ total, page, pageSize: 50, rows, actors: [{ actor, email }] }`, newest first |
+
 ## Admin only
+
+Each route below needs an area from "Team and permissions".
 
 | Route | Body | Response |
 |---|---|---|
@@ -523,4 +573,8 @@ Only a hash is stored; a code is used once, and 5 wrong tries end it. Confirm: 3
 - `POST /api/account/verify` (customer): emails a new confirm code (3 per hour).
 - `POST /api/account/verify/confirm { code }` (customer): confirms the email.
 - `POST /api/auth/forgot { email }`: `{ ok, mail }`, the same for unknown emails; `mail: false` = email is off (WhatsApp instead).
-- `POST /api/auth/reset { email, code, password }`: new password, other sessions end, this browser is signed in.
+- `POST /api/auth/reset/check { email, code }`: step 1 of the reset. A right code is used up and answered with
+  `{ ok, ticket, expiresIn: 600 }`: a one-time reset ticket (32 random bytes, base64url; only its SHA-256 is kept on the
+  account, for 10 minutes). Wrong codes count as above (5 and the code is gone): `400 { code: 'code_wrong' | 'code_expired' }`.
+- `POST /api/auth/reset { email, ticket, password }`: step 2. New password, other sessions end, this browser is signed in.
+  A wrong, used or expired ticket: `400 { code: 'ticket_expired' }` (start again). Both steps: 20 tries per IP per 15 min.

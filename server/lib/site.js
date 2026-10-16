@@ -10,6 +10,7 @@ import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or 
 import { entity, sendEntity } from './http-cache.js';
 import { isTheme, listThemes, TIERS, defaultTier } from './catalog.js';
 import { loadManifest } from './slots.js';
+import { hasPerm } from './auth.js';
 
 export const SITE_FILE = resolve(DATA_DIR, 'site.json');
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -233,6 +234,25 @@ function migratePlans(old) {
   });
 }
 
+/** The parts of the site document the Themes page owns; everything else is the Website page's. */
+const THEME_KEYS = ['hiddenThemes', 'featuredThemes', 'themeTiers'];
+
+/**
+ * PUT /api/site sends the whole document. An admin with only one of the 'themes' / 'website' permissions changes only
+ * their part: the other part is taken from what is stored, whatever the browser sent.
+ */
+async function scopedBody(req) {
+  const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const themes = hasPerm(req, 'themes');
+  const website = hasPerm(req, 'website');
+  if (!req.admin || (themes && website)) return b; // no admin: a direct call (scripts, tests); the route checks admins
+  const cur = await readSite();
+  const out = { ...b };
+  for (const k of Object.keys(out)) if (THEME_KEYS.includes(k) ? !themes : !website) delete out[k];
+  for (const k of Object.keys(cur)) if ((THEME_KEYS.includes(k) ? !themes : !website) && cur[k] !== undefined) out[k] = cur[k];
+  return out;
+}
+
 /** The current settings (defaults merged in for anything missing; older documents migrated). */
 export async function readSite() {
   return merged((await getDoc('site'))?.value);
@@ -320,7 +340,7 @@ export async function getAdminSite(req, res) {
 
 /** PUT /api/site (admin): the whole object, validated; returns what was stored (as GET /api/admin/site). */
 export async function putSite(req, res) {
-  const clean = sanitizeSite(req.body);
+  const clean = sanitizeSite(await scopedBody(req));
   await putDoc('site', clean);
   siteEntity = { rev: -1, e: null };
   themesEntity = { rev: -1, at: 0, e: null };
