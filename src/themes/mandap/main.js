@@ -18,9 +18,12 @@ import { renderFinale, animateGallery, guestEvents } from '../../core/finale.js'
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 const config = await loadInvitation();
+// another theme's gate over the night sky (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'mandap', manifest, config });
 const q = new URLSearchParams(location.search);
 const DEBUG = q.has('debug');
 const reduced = reducedMotion() || q.has('still');
@@ -168,9 +171,10 @@ main.innerHTML = `
     </div>
   </section>`;
 
-// Gate
+// Gate (another theme's gate replaces it: mounted below, with the hand-off to the crane)
 const gate = document.getElementById('gate');
-gate.innerHTML = `
+if (mix.gate) gate.remove();
+if (!mix.gate) gate.innerHTML = `
   <div class="m-gate__inner m-paper">
     <p class="m-gate__om">${bi(txt('gate.invocation'))}</p>
     <p class="m-eyebrow" id="gate-guest" hidden></p>
@@ -183,7 +187,7 @@ gate.innerHTML = `
     </div>
   </div>`;
 const to = q.get('to');
-if (to) {
+if (to && !mix.gate) {
   const el = document.getElementById('gate-guest');
   el.replaceChildren(...biNodes(`Dear ${to.slice(0, 60)}`, `आदरणीय ${to.slice(0, 60)}`));
   el.hidden = false;
@@ -254,7 +258,7 @@ const cam = { pos: V(0.4, 15.5, 11.5), look: V(0, 1, 0), fov: 40, snap: true };
 const st = { intro: reduced ? 1 : 0, secs: [], active: -1, frames3d: [], plaques: [], jKnots: [], lastUI: '' };
 
 async function boot() {
-  const bar = document.getElementById('load-bar');
+  const bar = document.getElementById('load-bar') || document.createElement('i'); // another theme's gate has no bar
   let fake = 0;
   const tick = setInterval(() => { fake = Math.min(0.85, fake + 0.04); bar.style.transform = `scaleX(${fake})`; }, 200);
   try {
@@ -606,6 +610,8 @@ function ui(w) {
 
 // ───────────────────────── Entry ─────────────────────────
 function enableGate() {
+  sceneReady();
+  if (mixGate) return;
   const b1 = document.getElementById('enter-music');
   const b2 = document.getElementById('enter-quiet');
   b1.disabled = b2.disabled = false;
@@ -615,34 +621,65 @@ function enableGate() {
   if (DEBUG && q.has('skip')) enter(false, true);
 }
 
-function enter(withMusic, instant = false) {
+/** Music from the guest's tap, and the temple bell. */
+function startEnter(withMusic, instant = false) {
   player.unlock();
   if (!instant) ringBell(player.ctx, { when: 0.05 });
   if (withMusic) player.start(true);
   else player.start(false);
-  const finish = () => {
-    gate.hidden = true;
-    document.body.classList.remove('is-gated');
-    window.scrollTo(0, 0);
-    measure();
-    lenis?.start();
-    document.body.classList.add('is-in');
-    animateGallery({ reduced, mobile });
-    ScrollTrigger.refresh();
-    measure();
-  };
+}
+/** The page is open: scrolling on, the finale's gallery ready. */
+function finishEnter() {
+  if (gate.isConnected) gate.hidden = true;
+  document.body.classList.remove('is-gated');
+  window.scrollTo(0, 0);
+  measure();
+  lenis?.start();
+  document.body.classList.add('is-in');
+  animateGallery({ reduced, mobile });
+  ScrollTrigger.refresh();
+  measure();
+}
+/** The crane: about five seconds from the sky to the mandap; the names arrive in light. */
+function craneIn(delay = 0, instant = false) {
   if (instant || reduced || !view) {
     st.intro = 1;
     cam.snap = true;
     document.body.classList.add('is-landed');
-    finish();
     return;
   }
-  // The crane: about five seconds from the sky to the mandap; the names arrive in light.
-  gsap.to('#gate .m-gate__inner', { autoAlpha: 0, y: -12, duration: 0.7, ease: 'power2.in' });
-  gsap.to(st, { intro: 1, duration: mobile ? 5 : 5.6, ease: 'none', delay: 0.4, onComplete: () => { document.body.classList.add('is-landed'); } });
-  setTimeout(finish, 1200);
+  gsap.to(st, { intro: 1, duration: mobile ? 5 : 5.6, ease: 'none', delay, onComplete: () => { document.body.classList.add('is-landed'); } });
 }
+function enter(withMusic, instant = false) {
+  if (mixGate) { if (instant) mixGate.finish(); else mixGate.open(withMusic); return; }
+  startEnter(withMusic, instant);
+  if (instant || reduced || !view) {
+    craneIn(0, true);
+    finishEnter();
+    return;
+  }
+  gsap.to('#gate .m-gate__inner', { autoAlpha: 0, y: -12, duration: 0.7, ease: 'power2.in' });
+  craneIn(0.4);
+  setTimeout(finishEnter, 1200);
+}
+// Another theme's gate: its own exit plays over the night sky (held there until the 3D mandap has loaded); as it
+// fades, the crane starts down to the mandap, as after Mandap's own gate.
+let sceneReady = () => {};
+let sceneIsReady = false;
+const sceneLoaded = new Promise((r) => { sceneReady = () => { sceneIsReady = true; r(); }; });
+const mixGate = mix.gate ? mix.mountGate({
+  start: (withMusic) => startEnter(withMusic),
+  intro(tl, at) {
+    tl.call(() => {
+      const skip = tl.progress() === 1; // finished at once (?debug&skip, the studio)
+      let held = false;
+      if (!skip && !sceneIsReady && !tl.paused()) { held = true; tl.pause(); }
+      sceneLoaded.then(() => { craneIn(0, skip); if (held) tl.resume(); });
+    }, null, Math.max(0, at - 0.15)); // the moment the gate starts to fade
+  },
+  finish: finishEnter,
+}) : null;
+if (mixGate && DEBUG && (q.has('skip') || q.has('open'))) mixGate.finish();
 
 addEventListener('resize', () => { measure(); });
 // Chapters below the 3D story (the programme and the reply) follow the plain scroll.

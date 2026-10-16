@@ -18,8 +18,10 @@ import { renderFinale, guestEvents } from '../../core/finale.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
-loadInvitation().then((config) => run(config));
+// Another theme's gate may stand over the square (docs/MIX.md); without config.design nothing changes.
+loadInvitation().then((config) => createMix({ host: 'durbar', manifest, config }).then((mix) => run(config, mix)));
 
 function hasWebGL() {
   try {
@@ -28,7 +30,7 @@ function hasWebGL() {
   } catch { return false; }
 }
 
-function run(config) {
+function run(config, mix) {
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion() || params.has('still');
@@ -203,9 +205,11 @@ main.innerHTML = `
   </div>`;
 
 // Gate: guest name, names, date and the way in, over the lane outside the lion gate.
+// Another theme's gate replaces it (mounted below, with the hand-off to the camera's glide in).
 const gate = document.getElementById('gate');
-gate.classList.add('d-gate');
-gate.innerHTML = `
+if (mix.gate) gate.remove();
+else gate.classList.add('d-gate');
+if (!mix.gate) gate.innerHTML = `
   <div class="d-gate__card">
     <p class="d-eyebrow d-gate__guest" id="gate-guest" hidden></p>
     <p class="d-eyebrow">${T('gate.kicker')}</p>
@@ -219,7 +223,7 @@ gate.innerHTML = `
     </div>
   </div>`;
 const to = params.get('to');
-if (to) {
+if (to && !mix.gate) {
   const el = document.getElementById('gate-guest');
   el.replaceChildren(...biNodes(`Dear ${to.slice(0, 60)}`, `आदरणीय ${to.slice(0, 60)}`));
   el.hidden = false;
@@ -374,8 +378,8 @@ async function boot() {
   square.start();
   document.body.classList.add('is-ready');
   document.querySelectorAll('.gallery img').forEach((im) => { im.loading = 'eager'; });
-  document.getElementById('enter-music').disabled = false;
-  document.getElementById('enter-quiet').disabled = false;
+  enableGate();
+  squareReady();
   if (params.has('station')) enter(false, true);
 }
 
@@ -392,15 +396,25 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-function enter(withMusic, instant = false) {
-  if (started) return;
+/** Into the square: music from the guest's tap, the page unlocked, smooth scroll on. */
+function startEnter(withMusic) {
+  if (started) return false;
   started = true;
   try { player.unlock(); ringBell(player.ctx, { gain: 0.16 }); player.start(withMusic); } catch { /* audio optional */ }
   document.body.classList.remove('is-gated');
   document.body.classList.add('is-in');
+  lenis = createSmooth();
+  return true;
+}
+function enter(withMusic, instant = false) {
+  if (mixGate) { if (instant) mixGate.finish(); else mixGate.open(withMusic); return; }
+  if (!startEnter(withMusic)) return;
   gate.classList.add('is-leaving');
   setTimeout(() => { gate.hidden = true; }, instant ? 0 : 900);
-  lenis = createSmooth();
+  glideIn(instant);
+}
+/** The camera's glide from the lane outside the lion gate into the square (3.2 s). */
+function glideIn(instant = false) {
   if (square && !instant && !reduced) {
     const t0 = performance.now();
     const D = 3200;
@@ -412,8 +426,31 @@ function enter(withMusic, instant = false) {
     requestAnimationFrame(step);
   } else square?.setIntro(0);
 }
-document.getElementById('enter-music').addEventListener('click', () => enter(true));
-document.getElementById('enter-quiet').addEventListener('click', () => enter(false));
+function enableGate() {
+  if (mix.gate) return;
+  document.getElementById('enter-music').disabled = false;
+  document.getElementById('enter-quiet').disabled = false;
+}
+if (!mix.gate) {
+  document.getElementById('enter-music').addEventListener('click', () => enter(true));
+  document.getElementById('enter-quiet').addEventListener('click', () => enter(false));
+}
+
+// Another theme's gate: its own exit plays over the lane, which waits beneath it (held there until the 3D square
+// has loaded); as the gate fades, the camera starts its glide in, exactly as after Durbar's own gate.
+let squareReady = () => {};
+const squareLoaded = new Promise((r) => { squareReady = r; });
+const mixGate = mix.gate ? mix.mountGate({
+  start: (withMusic) => { startEnter(withMusic); },
+  intro(tl, at) {
+    tl.call(() => {
+      const skip = tl.progress() === 1; // finished at once (?station, ?debug&open, the studio): no glide
+      let held = false;
+      if (!skip && !square && !STILL && !tl.paused()) { held = true; tl.pause(); }
+      squareLoaded.then(() => { glideIn(reduced || skip); if (held) tl.resume(); });
+    }, null, Math.max(0, at - 0.15)); // the moment the gate starts to fade
+  },
+}) : null;
 
 const scrollToY = (y) => (lenis ? lenis.scrollTo(y, { duration: 1.6 }) : window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' }));
 document.querySelector('.chapters')?.addEventListener('click', (e) => {
@@ -452,6 +489,7 @@ if (DEBUG) {
     path: (aspect = innerWidth / innerHeight) => square?.samplePath(aspect),
     enter: () => enter(false, true),
   };
+  if (mixGate && params.has('open')) mixGate.finish();
 }
 const stParam = params.get('station');
 if (stParam !== null && !STILL) {
@@ -466,10 +504,10 @@ boot().catch((err) => {
   document.body.classList.add('is-still', 'is-ready');
   journey.style.height = '0px';
   document.querySelectorAll('.d-still img').forEach((im) => { im.loading = 'eager'; });
-  gate.style.setProperty('--gate-photo', `url("${photoUrl(slots.img('still.arrival'), mobile ? 'sm' : 'lg')}")`);
+  if (!mix.gate) gate.style.setProperty('--gate-photo', `url("${photoUrl(slots.img('still.arrival'), mobile ? 'sm' : 'lg')}")`);
   stEls.forEach((el) => { el.style.opacity = ''; el.style.visibility = ''; el.style.transform = ''; el.inert = false; el.setAttribute('aria-hidden', 'false'); el.classList.add('is-on'); });
-  document.getElementById('enter-music').disabled = false;
-  document.getElementById('enter-quiet').disabled = false;
+  enableGate();
+  squareReady();
   if (params.has('station')) enter(false, true);
 });
 }

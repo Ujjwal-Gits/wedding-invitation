@@ -85,4 +85,13 @@ export default {
     '--accent': { label: 'Gold', default: '#e3a857' },
     '--accent-2': { label: 'Light gold', default: '#f3d3a0' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    why: {
+      gate: 'Its opening is the title card of a short film, so it only works on its own page.',
+      hero: 'Its first screen is the first shot of the film, so it cannot move to another design.',
+      hostHero: 'The film starts right after the opening, so there is no separate first screen to swap.',
+    },
+  },
 };

@@ -36,8 +36,8 @@
   font: 400 17px/1.6 var(--f-body);
 }
 html:has(.theme-durbar) { background: #FFFFFF; }
-.theme-durbar [lang='ne'], .theme-durbar .l-ne { font-family: var(--f-deva); }
-.theme-durbar :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.theme-durbar [lang='ne']:where(:not(.mx-part:not(.theme-durbar) *)), .theme-durbar .l-ne:where(:not(.mx-part:not(.theme-durbar) *)) { font-family: var(--f-deva); }
+.theme-durbar :focus-visible:where(:not(.mx-part:not(.theme-durbar) *)) { outline: 2px solid var(--accent); outline-offset: 3px; }
 .theme-durbar .stage-canvas { background: linear-gradient(180deg, #9DBCDA 0%, #D9E5EE 55%, #E8DCD0 100%); }
 
 /* ───────── Type ───────── */

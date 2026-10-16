@@ -90,4 +90,12 @@ export default {
     '--gold-rule': { label: 'Thin lines', default: '#B8323A' },
     '--paper': { label: 'Background', default: '#FFFFFF' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: true, hero: true, hostGate: true, hostHero: true,
+    // Dhoka's own door opens and settles onto its own first photo: with another first screen, gate.js runs instead
+    ownGateNeedsHero: true,
+    gateUses: { texts: ['gate.invocation', 'gate.line', 'gate.caption', 'gate.open', 'gate.quiet'], images: ['gate.door', 'gate.courtyard'], colors: ['--gold', '--gold-rule', '--paper'] },
+    heroUses: { texts: ['hero.kicker'], images: ['hero.photo'], colors: ['--gold', '--gold-rule', '--paper'] },
+  },
 };

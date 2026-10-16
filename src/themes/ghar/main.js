@@ -15,8 +15,11 @@ import { photoUrl } from '../../photos.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 const config = await loadInvitation();
+// another theme's gate over the film (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'ghar', manifest, config });
 const params0 = new URLSearchParams(location.search);
 if (params0.has('debug') && params0.has('slottest')) {
   // Debug only: prove that studio overrides reach every slot (config.js is never edited).
@@ -71,8 +74,10 @@ const names = (cls = '') => `<span class="pair ${cls}">${bi(c.bride.name)}<i cla
 const longDate = dateOf(config.weddingDate);
 const city = config.city || { en: 'Kathmandu', ne: 'काठमाडौं' };
 
+// Another theme's gate replaces the title card (mounted below, with the hand-off to the film's first shot).
 const gate = $('#gate');
-gate.innerHTML = `
+if (mix.gate) gate.remove();
+if (!mix.gate) gate.innerHTML = `
   <div class="gate__in">
     <p class="gate__to" id="gate-to" hidden></p>
     <p class="gate__present">${bi(config.hosts || { en: 'Our families', ne: 'हाम्रो परिवार' })}<br /><span>${bi(S.txt('gate.present'))}</span></p>
@@ -85,7 +90,7 @@ gate.innerHTML = `
     <div class="gate__load" aria-hidden="true"><i id="load-bar"></i></div>
   </div>`;
 const to = params.get('to');
-if (to) {
+if (to && !mix.gate) {
   const el = $('#gate-to');
   el.replaceChildren(...biNodes(`For ${to.slice(0, 60)}`, `${to.slice(0, 60)}ज्यूलाई`));
   el.hidden = false;
@@ -362,8 +367,9 @@ let tCur = 0;
 let tTarget = 0;
 let entered = false;
 
-function enter(withMusic) {
-  if (entered) return;
+/** The projector starts: music from the guest's tap, the page unlocked (the bars part separately). */
+function startFilm(withMusic) {
+  if (entered) return false;
   entered = true;
   try {
     player.unlock();
@@ -371,12 +377,43 @@ function enter(withMusic) {
     if (withMusic) player.start(true);
   } catch { /* audio is optional */ }
   document.body.classList.remove('is-gated');
+  return true;
+}
+function enter(withMusic) {
+  if (mixGate) { mixGate.open(withMusic); return; }
+  if (!startFilm(withMusic)) return;
   document.body.classList.add('is-open');
   gate.classList.add('is-out');
   setTimeout(() => { gate.hidden = true; }, 1300);
   lenis?.start();
   window.scrollTo(0, 0);
 }
+/** The gate's buttons wake once the first room has loaded (another theme's gate waits for this before it fades). */
+let filmReady = () => {};
+let filmIsReady = false;
+const filmLoaded = new Promise((r) => { filmReady = () => { filmIsReady = true; r(); }; });
+function enableGate() {
+  filmReady();
+  if (mixGate) return;
+  const b1 = $('#enter-music');
+  const b2 = $('#enter-quiet');
+  b1.disabled = b2.disabled = false;
+  b1.addEventListener('click', () => enter(true), { once: true });
+  b2.addEventListener('click', () => enter(false), { once: true });
+}
+// Another theme's gate: its own exit plays over the dark cinema (held there until the first room has loaded); as it
+// fades to black, the letterbox bars part on the film's first shot, as after Ghar's own title card.
+const mixGate = mix.gate ? mix.mountGate({
+  start(withMusic) { if (startFilm(withMusic)) { lenis?.start(); window.scrollTo(0, 0); } },
+  intro(tl, at) {
+    tl.call(() => {
+      const skip = tl.progress() === 1; // finished at once (?debug&open, the studio)
+      let held = false;
+      if (!skip && !filmIsReady && !tl.paused()) { held = true; tl.pause(); }
+      filmLoaded.then(() => { document.body.classList.add('is-open'); if (held) tl.resume(); });
+    }, null, Math.max(0, at - 0.15)); // the moment the gate starts to fade
+  },
+}) : null;
 
 async function boot() {
   const main = $('#main');
@@ -505,11 +542,7 @@ async function boot() {
   await trackProgress([film.first], $('#load-bar')).catch((e) => console.warn(e));
   film.all().catch((e) => console.warn('Some photographs failed to load', e));
   initStills();
-  const b1 = $('#enter-music');
-  const b2 = $('#enter-quiet');
-  b1.disabled = b2.disabled = false;
-  b1.addEventListener('click', () => enter(true), { once: true });
-  b2.addEventListener('click', () => enter(false), { once: true });
+  enableGate();
   document.body.classList.add('is-ready');
 
   if (DEBUG) {
@@ -570,15 +603,12 @@ async function bootStill(main) {
       <section class="sv__s">${tc('05', 'ch5.title')}${fig(S.img('window.view'), S.alt('window.view'))}${R.wedding ? evc(R.wedding) : ''}<ol class="sv__vows">${(config.saptapadi || []).map((v) => `<li>${bi(v)}</li>`).join('')}</ol></section>
       <section class="sv__s">${tc('06', 'ch6.title')}${fig(S.img('rooftop.view'), S.alt('rooftop.view'))}${R.post.map(evc).join('')}<p class="sub">${bi(config.closing || { en: '', ne: '' })}</p></section>
     </div>`;
-  const b1 = $('#enter-music');
-  const b2 = $('#enter-quiet');
-  $('#load-bar').style.transform = 'scaleX(1)';
-  b1.disabled = b2.disabled = false;
-  b1.addEventListener('click', () => enter(true), { once: true });
-  b2.addEventListener('click', () => enter(false), { once: true });
+  if (!mix.gate) $('#load-bar').style.transform = 'scaleX(1)';
+  enableGate();
   document.body.classList.add('is-ready');
   initStills();
   if (DEBUG) window.__ghar = { enter: () => enter(false), go: () => true, ready: () => Promise.resolve(true) };
 }
 
 boot();
+if (mixGate && DEBUG && (params.has('open') || params.has('skip'))) mixGate.finish();

@@ -49,4 +49,13 @@ export default {
     '--gilt': { label: 'Gilt gold', default: '#B08637' },
     '--accent-2': { label: 'Deep red', default: '#7A2614' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    why: {
+      gate: 'Its opening is a glide through the lion gate into Bhaktapur square, so it only works on its own page.',
+      hero: 'Its first screen is the first stop of the walk through the square, so it cannot move to another design.',
+      hostHero: 'The walk through the square begins on its own first screen, so another first screen cannot take its place.',
+    },
+  },
 };

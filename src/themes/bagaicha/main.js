@@ -16,11 +16,13 @@ import { renderFinale, guestEvents } from '../../core/finale.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 // No top-level await: the build targets es2020.
-loadInvitation().then((config) => run(config));
+// Another theme's gate may stand over the garden (docs/MIX.md); without config.design nothing changes.
+loadInvitation().then((config) => createMix({ host: 'bagaicha', manifest, config }).then((mix) => run(config, mix)));
 
-function run(config) {
+function run(config, mix) {
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion();
@@ -192,9 +194,11 @@ main.innerHTML = `
   </div>`;
 
 // Gate: names are already on the arrival overlay; the gate adds the guest's name and the way in.
+// Another theme's gate replaces it (mounted below, with the hand-off to the garden's walk in).
 const gate = document.getElementById('gate');
-gate.classList.add('b-gate');
-gate.innerHTML = `
+if (mix.gate) gate.remove();
+else gate.classList.add('b-gate');
+if (!mix.gate) gate.innerHTML = `
   <div class="b-gate__inner">
     <p class="b-eyebrow b-gate__guest" id="gate-guest" hidden></p>
     <p class="b-gate__line">${T('gate.line')}</p>
@@ -205,7 +209,7 @@ gate.innerHTML = `
     </div>
   </div>`;
 const to = params.get('to');
-if (to) {
+if (to && !mix.gate) {
   const el = document.getElementById('gate-guest');
   el.replaceChildren(...biNodes(`Dear ${to.slice(0, 60)}`, `आदरणीय ${to.slice(0, 60)}`));
   el.hidden = false;
@@ -404,8 +408,8 @@ async function boot() {
   document.body.classList.add('is-ready');
   // gallery photos have unknown proportions: load them now so the grid never jumps or shows empty mats
   document.querySelectorAll('.gallery img').forEach((im) => { im.loading = 'eager'; });
-  document.getElementById('enter-music').disabled = false;
-  document.getElementById('enter-quiet').disabled = false;
+  enableGate();
+  gardenReady();
   if (params.has('station')) enter(false, true);
 }
 
@@ -424,15 +428,25 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-function enter(withMusic, instant = false) {
-  if (started) return;
+/** Into the garden: music from the guest's tap, the page unlocked, smooth scroll on. */
+function startEnter(withMusic) {
+  if (started) return false;
   started = true;
   try { player.unlock(); ringBell(player.ctx, { gain: 0.16 }); player.start(withMusic); } catch { /* audio optional */ }
   document.body.classList.remove('is-gated');
   document.body.classList.add('is-in');
+  lenis = createSmooth();
+  return true;
+}
+function enter(withMusic, instant = false) {
+  if (mixGate) { if (instant) mixGate.finish(); else mixGate.open(withMusic); return; }
+  if (!startEnter(withMusic)) return;
   gate.classList.add('is-leaving');
   setTimeout(() => { gate.hidden = true; }, instant ? 0 : 1100);
-  lenis = createSmooth();
+  flyIn(instant);
+}
+/** The camera's walk in, from above the reflecting pool down to the arrival (3.6 s). */
+function flyIn(instant = false) {
   if (!instant && !reduced) {
     const t0 = performance.now();
     const D = 3600;
@@ -445,8 +459,31 @@ function enter(withMusic, instant = false) {
   } else garden?.setIntro(0);
   document.getElementById('hero-names')?.closest('.b-st')?.focus?.();
 }
-document.getElementById('enter-music').addEventListener('click', () => enter(true));
-document.getElementById('enter-quiet').addEventListener('click', () => enter(false));
+function enableGate() {
+  if (mix.gate) return;
+  document.getElementById('enter-music').disabled = false;
+  document.getElementById('enter-quiet').disabled = false;
+}
+if (!mix.gate) {
+  document.getElementById('enter-music').addEventListener('click', () => enter(true));
+  document.getElementById('enter-quiet').addEventListener('click', () => enter(false));
+}
+
+// Another theme's gate: its own exit plays over the garden, which waits beneath it (held there until the 3D has
+// loaded); as the gate fades, the camera starts its walk in, exactly as after Bagaicha's own gate.
+let gardenReady = () => {};
+const gardenLoaded = new Promise((r) => { gardenReady = r; });
+const mixGate = mix.gate ? mix.mountGate({
+  start: (withMusic) => { startEnter(withMusic); },
+  intro(tl, at) {
+    tl.call(() => {
+      const skip = tl.progress() === 1; // finished at once (?station, ?debug&open, the studio): no walk
+      let held = false;
+      if (!skip && !garden && !document.body.classList.contains('no-gl') && !tl.paused()) { held = true; tl.pause(); }
+      gardenLoaded.then(() => { flyIn(reduced || skip); if (held) tl.resume(); });
+    }, null, Math.max(0, at - 0.15)); // the moment the gate starts to fade
+  },
+}) : null;
 
 // Chapter buttons scroll to their station.
 const scrollToY = (y) => (lenis ? lenis.scrollTo(y, { duration: 1.6 }) : window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' }));
@@ -490,6 +527,7 @@ if (DEBUG) {
     info: () => { const i = garden.renderer.info; return { calls: i.render.calls, tris: i.render.triangles, geos: i.memory.geometries, tex: i.memory.textures }; },
     enter: () => enter(false, true),
   };
+  if (mixGate && params.has('open')) mixGate.finish();
 }
 const stParam = params.get('station');
 if (stParam !== null) {
@@ -502,7 +540,7 @@ boot().catch((err) => {
   console.error('[bagaicha] 3D garden failed; showing the still version.', err);
   document.body.classList.add('no-gl', 'is-ready');
   canvas.style.backgroundImage = `url("${photoUrl(slots.img('still.backdrop'), 'sm')}")`;
-  document.getElementById('enter-music').disabled = false;
-  document.getElementById('enter-quiet').disabled = false;
+  enableGate();
+  gardenReady();
 });
 }

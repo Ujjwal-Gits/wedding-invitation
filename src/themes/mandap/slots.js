@@ -47,4 +47,13 @@ export default {
     '--paper': { label: 'Card paper', default: '#fffdf8' },
     '--bg': { label: 'Background', default: '#f6efe2' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    why: {
+      gate: 'Its opening is a slow glide down from the night sky to the mandap, so it only works on its own page.',
+      hero: 'Its first screen is the lit mandap itself, the start of the walk around it, so it cannot move to another design.',
+      hostHero: 'The walk around the mandap begins on its own first screen, so another first screen cannot take its place.',
+    },
+  },
 };

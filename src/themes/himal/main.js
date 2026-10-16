@@ -22,10 +22,13 @@ import { createDawn } from './dawn.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const config = await loadInvitation();
+// another theme's gate over the dawn (docs/MIX.md); without config.design nothing changes
+const mix = await createMix({ host: 'himal', manifest, config });
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 const reduced = reducedMotion();
@@ -165,8 +168,10 @@ const pad = (n) => String(n + 1).padStart(2, '0');
 const tel = (p) => String(p).replace(/[^\d+]/g, '');
 
 // ───────────────────────── Gate ─────────────────────────
+// Another theme's gate replaces it (mounted below, with the hand-off to the sunrise).
 const gate = document.getElementById('gate');
-gate.innerHTML = `
+if (mix.gate) gate.remove();
+if (!mix.gate) gate.innerHTML = `
   <div class="hm-gate__inner">
     <p class="hm-gate__from">${bi(txt('gate.from'))}</p>
     <p class="hm-gate__hosts">${bi(config.hosts)}</p>
@@ -552,6 +557,7 @@ const bar = document.getElementById('gate-bar');
 const fallbackImg = document.querySelector('.hm-hero__fallback img');
 const firstLoad = dawn ? dawn.ready : (fallbackImg.decode?.() ?? Promise.resolve());
 firstLoad.catch(() => {}).finally(() => {
+  if (mix.gate) return;
   bar.style.transform = 'scaleX(1)';
   enterBtn.disabled = false;
   quietBtn.disabled = false;
@@ -560,20 +566,43 @@ firstLoad.catch(() => {}).finally(() => {
 if (dawn) { dawn.set({ rise: 0.04 }); dawn.start(); }
 
 let opened = false;
-function open(withMusic) {
-  if (opened) return;
+/** Into the page: music from the guest's tap, scrolling on (the sunrise is separate). */
+function startOpen(withMusic) {
+  if (opened) return false;
   opened = true;
   player.unlock();
   player.start(withMusic);
   document.body.classList.remove('is-gated');
+  window.scrollTo(0, 0);
+  return true;
+}
+function open(withMusic) {
+  if (mixGate) { mixGate.open(withMusic); return; }
+  if (!startOpen(withMusic)) return;
   gate.classList.add('is-leaving');
   setTimeout(() => gate.remove(), 1300);
-  window.scrollTo(0, 0);
   sunrise();
   setupScroll();
 }
-enterBtn.addEventListener('click', () => open(true));
-quietBtn.addEventListener('click', () => open(false));
+if (!mix.gate) {
+  enterBtn.addEventListener('click', () => open(true));
+  quietBtn.addEventListener('click', () => open(false));
+}
+// Another theme's gate: its own exit plays over the night mountain (held there until the dawn has loaded); as it
+// fades, the sun starts to rise behind the peak, exactly as after Himal's own gate.
+let dawnReady = false;
+firstLoad.catch(() => {}).finally(() => { dawnReady = true; });
+const mixGate = mix.gate ? mix.mountGate({
+  start(withMusic) { if (startOpen(withMusic)) setupScroll(); },
+  intro(tl, at) {
+    tl.call(() => {
+      const skip = tl.progress() === 1; // finished at once (?debug&open, the studio)
+      let held = false;
+      if (!skip && !dawnReady && !tl.paused()) { held = true; tl.pause(); }
+      firstLoad.catch(() => {}).finally(() => { sunrise(); if (held) tl.resume(); });
+    }, null, Math.max(0, at - 0.15)); // the moment the gate starts to fade
+  },
+}) : null;
 
 /** The one signature moment: the sun comes up behind the peak. */
 let introTweens = [];
@@ -722,5 +751,5 @@ if (DEBUG) {
     essay: essay.map((p) => keyOf(p.photo)),
     album: album.map((p) => keyOf(p.photo)),
   };
-  if (params.has('open')) open(false);
+  if (params.has('open')) { if (mixGate) mixGate.finish(); else open(false); }
 }

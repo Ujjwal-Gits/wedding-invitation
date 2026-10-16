@@ -47,4 +47,13 @@ export default {
     '--b-gold': { label: 'Gold accents', default: '#B08A3E' },
     '--b-gold-text': { label: 'Gold text', default: '#7A5E26' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    why: {
+      gate: 'Its opening is a slow flight down into the garden, so it only works on its own page.',
+      hero: 'Its first screen is the first stop of the walk through the garden, so it cannot move to another design.',
+      hostHero: 'The garden walk begins on its own first screen, so another first screen cannot take its place.',
+    },
+  },
 };

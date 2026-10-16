@@ -48,9 +48,9 @@ body.theme-himal {
   color: var(--hm-ink);
   font: 400 17px/1.65 var(--f-body);
 }
-.theme-himal ::selection { background: #DCE2E6; color: var(--hm-ink); }
-.theme-himal :focus-visible { outline: 1.5px solid var(--hm-accent); outline-offset: 4px; }
-.theme-himal [lang='ne'], .theme-himal .l-ne { font-family: var(--f-deva); }
+.theme-himal :where(:not(.mx-part:not(.theme-himal) *))::selection { background: #DCE2E6; color: var(--hm-ink); }
+.theme-himal :focus-visible:where(:not(.mx-part:not(.theme-himal) *)) { outline: 1.5px solid var(--hm-accent); outline-offset: 4px; }
+.theme-himal [lang='ne']:where(:not(.mx-part:not(.theme-himal) *)), .theme-himal .l-ne:where(:not(.mx-part:not(.theme-himal) *)) { font-family: var(--f-deva); }
 .theme-himal .skip { background: var(--hm-ink); color: var(--hm-snow); }
 
 /* ───────── Type ───────── */
@@ -97,7 +97,8 @@ body.theme-himal {
 
 /* Quiet reveals */
 .hm-in, .hm-families, .hm-intro__fig, .hm-intro__pair, .hm-pic, .hm-close__fig { opacity: 0; transform: translateY(18px); transition: opacity 1000ms var(--hm-ease), transform 1100ms var(--hm-ease); }
-.is-in { opacity: 1 !important; transform: none !important; }
+/* another theme's gate or first screen on this page keeps its own reveals (docs/MIX.md) */
+.is-in:where(:not(.mx-part:not(.theme-himal) *)) { opacity: 1 !important; transform: none !important; }
 .hm-families.is-in { transition-delay: 120ms; }
 
 /* ───────── HUD on snow ───────── */

@@ -85,4 +85,13 @@ export default {
     '--hm-accent': { label: 'Accent brown', default: '#8A5A3C' },
     '--hm-night': { label: 'Night', default: '#1A1D20' },
   },
+  // Mix (docs/MIX.md): which parts this theme gives to other pages and which it takes. Plain data (the server reads it).
+  parts: {
+    gate: false, hero: false, hostGate: true, hostHero: false,
+    why: {
+      gate: 'Its opening is a few words over the moving mountain dawn; without the dawn behind them it would look empty.',
+      hero: 'Its first screen is the sunrise over the mountain, which only plays on its own page.',
+      hostHero: 'The sunrise is the first screen here and the page grows out of it, so it cannot be replaced.',
+    },
+  },
 };

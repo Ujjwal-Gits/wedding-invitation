@@ -20,6 +20,7 @@ import { downloadIcs, share } from '../../core/calendar.js';
 import { useSlots } from '../../core/slots.js';
 import { openModal } from '../../core/modal.js';
 import manifest from './slots.js';
+import { createMix } from '../../core/mix.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -51,7 +52,7 @@ const pic = (ref, { alt = '', sizes = '50vw', cls = '', eager = false, lazy = !e
   const set = sm && lg && sm !== lg ? ` srcset="${esc(sm)} 1280w, ${esc(lg)} 2560w" sizes="${esc(sizes)}"` : '';
   return `<img class="${cls}" src="${esc(sm || lg)}"${set} alt="${esc(alt)}" style="object-position:${pos(ref)}" ${eager ? 'fetchpriority="high"' : ''} ${lazy ? 'loading="lazy"' : ''} decoding="async" />`;
 };
-const folio = (n, label) => `<p class="d-folio"><span class="d-folio__no">${bi({ en: `No. ${ROMAN[n - 1]}`, ne: `अङ्क ${neNum(n)}` })}</span><span class="d-folio__rule" aria-hidden="true"></span><span class="d-folio__label">${bi(label)}</span></p>`;
+const folio = (n, label) => `<p class="dh-folio"><span class="dh-folio__no">${bi({ en: `No. ${ROMAN[n - 1]}`, ne: `अङ्क ${neNum(n)}` })}</span><span class="dh-folio__rule" aria-hidden="true"></span><span class="dh-folio__label">${bi(label)}</span></p>`;
 
 // The rites: the marriage itself, set as a horizontal sequence of plates (all slots).
 const RITES = ['swayambar', 'kanyadan', 'sindoor', 'saptapadi'];
@@ -66,6 +67,8 @@ async function start() {
       if (o) config.themeContent = { ...(config.themeContent || {}), dhoka: o };
     } catch { /* ignore */ }
   }
+  // another theme's gate and/or first screen on this page (docs/MIX.md); without config.design nothing changes
+  const mix = await createMix({ host: 'dhoka', manifest, config });
   const { img, txt, alt } = useSlots(manifest);
   const T = (id) => bi(txt(id));
   const c = config.couple;
@@ -114,27 +117,30 @@ async function start() {
   // English reads "daughter of <parents>", Nepali "<parents>की सुपुत्री".
   const rel = (parents, r) => bi({ en: `${r.en} ${parents.en}`, ne: `${parents.ne ?? parents.en} ${r.ne}` });
 
-  document.getElementById('gate').innerHTML = `
-    <div class="d-gate__side d-gate__side--l">
-      <p class="d-gate__ganesh">${T('gate.invocation')}</p>
-      <p class="d-gate__guest" id="gate-guest" hidden></p>
-      <p class="d-gate__names">${bi(c.bride.name)}<span class="amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>${bi(c.groom.name)}</p>
-      <p class="d-gate__line">${T('gate.line')}</p>
+  // Another theme's gate (or Dhoka's own gate as a module, before another first screen) replaces the door plate.
+  const gateEl = document.getElementById('gate');
+  if (mix.gate) gateEl.remove();
+  else gateEl.innerHTML = `
+    <div class="dh-gate__side dh-gate__side--l">
+      <p class="dh-gate__ganesh">${T('gate.invocation')}</p>
+      <p class="dh-gate__guest" id="gate-guest" hidden></p>
+      <p class="dh-gate__names">${bi(c.bride.name)}<span class="amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>${bi(c.groom.name)}</p>
+      <p class="dh-gate__line">${T('gate.line')}</p>
     </div>
-    <figure class="d-gate__plate">
+    <figure class="dh-gate__plate">
       <img id="door-img" src="${esc(photoUrl(doorRef, 'sm'))}" alt="${esc(alt('gate.door'))}" fetchpriority="high" />
       <figcaption>${T('gate.caption')}</figcaption>
     </figure>
-    <div class="d-gate__side d-gate__side--r">
-      <p class="d-gate__date">${bi(date)}<small>${bi(config.city)}</small></p>
-      <div class="d-gate__act">
+    <div class="dh-gate__side dh-gate__side--r">
+      <p class="dh-gate__date">${bi(date)}<small>${bi(config.city)}</small></p>
+      <div class="dh-gate__act">
         <div class="loading-bar" aria-hidden="true"><i id="load-bar"></i></div>
-        <button type="button" class="btn d-btn" id="enter-music" disabled>${T('gate.open')}</button>
+        <button type="button" class="btn dh-btn" id="enter-music" disabled>${T('gate.open')}</button>
         <button type="button" class="gate__quiet" id="enter-quiet" disabled>${T('gate.quiet')}</button>
       </div>
     </div>`;
   const to = params.get('to');
-  if (to) {
+  if (to && !mix.gate) {
     const el = document.getElementById('gate-guest');
     el.replaceChildren(...biNodes(`For ${to.slice(0, 60)}`, `आदरणीय ${to.slice(0, 60)}`));
     el.hidden = false;
@@ -142,33 +148,33 @@ async function start() {
 
   const main = document.getElementById('main');
   main.innerHTML = `
-  <section class="d-hero" id="hero" aria-labelledby="hero-names">
-    <div class="d-hero__text">
+  <section class="dh-hero" id="hero" aria-labelledby="hero-names">
+    <div class="dh-hero__text">
       ${folio(1, txt('hero.kicker'))}
-      <h1 class="d-hero__names" id="hero-names">
-        <span class="d-hero__one">${bi(c.bride.name)}</span>
-        <span class="d-hero__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>
-        <span class="d-hero__two">${bi(c.groom.name)}</span>
+      <h1 class="dh-hero__names" id="hero-names">
+        <span class="dh-hero__one">${bi(c.bride.name)}</span>
+        <span class="dh-hero__amp" aria-hidden="true">&amp;</span><span class="sr-only">and</span>
+        <span class="dh-hero__two">${bi(c.groom.name)}</span>
       </h1>
-      <p class="d-hero__date">${bi(date)}<small>${bi(config.weddingDateBS)} · ${bi(config.city)}</small></p>
+      <p class="dh-hero__date">${bi(date)}<small>${bi(config.weddingDateBS)} · ${bi(config.city)}</small></p>
     </div>
-    ${hero ? `<figure class="d-hero__plate"><div class="d-hero__frame" id="hero-frame">${pic(hero.photo, { alt: hero.alt, sizes: '(max-width: 760px) 92vw, 50vw', cls: 'd-hero__img', eager: true })}</div></figure>` : ''}
+    ${hero ? `<figure class="dh-hero__plate"><div class="dh-hero__frame" id="hero-frame">${pic(hero.photo, { alt: hero.alt, sizes: '(max-width: 760px) 92vw, 50vw', cls: 'dh-hero__img', eager: true })}</div></figure>` : ''}
   </section>
 
   ${stack.length ? `
-  <section class="d-stack" id="couple" aria-labelledby="couple-title" style="--n:${stack.length}">
-    <div class="d-stack__pin">
-      <div class="d-stack__text">
+  <section class="dh-stack" id="couple" aria-labelledby="couple-title" style="--n:${stack.length}">
+    <div class="dh-stack__pin">
+      <div class="dh-stack__text">
         ${folio(2, txt('couple.kicker'))}
-        <h2 class="d-h2" id="couple-title">${T('couple.title')}</h2>
-        <dl class="d-families">
+        <h2 class="dh-h2" id="couple-title">${T('couple.title')}</h2>
+        <dl class="dh-families">
           <div><dt>${bi(c.bride.fullName)}</dt><dd>${rel(c.bride.parents, txt('couple.daughterOf'))}</dd></div>
           <div><dt>${bi(c.groom.fullName)}</dt><dd>${rel(c.groom.parents, txt('couple.sonOf'))}</dd></div>
         </dl>
       </div>
-      <div class="d-stack__plates">
+      <div class="dh-stack__plates">
         ${stack.map((s, i) => `
-          <figure class="d-stack__plate" style="--i:${i}">
+          <figure class="dh-stack__plate" style="--i:${i}">
             ${pic(s.photo, { alt: s.alt, sizes: '(max-width: 760px) 90vw, 46vw' })}
             <figcaption><span>${ROMAN[1]}.${i + 1}</span>${s.who ? bi(s.who) : ''}</figcaption>
           </figure>`).join('')}
@@ -177,43 +183,43 @@ async function start() {
   </section>` : ''}
 
   ${rites.length ? `
-  <section class="d-rites" id="rites" aria-labelledby="rites-title" style="--n:${rites.length}">
-    <div class="d-rites__pin">
-      <div class="d-rites__track">
-        <div class="d-rites__intro">
+  <section class="dh-rites" id="rites" aria-labelledby="rites-title" style="--n:${rites.length}">
+    <div class="dh-rites__pin">
+      <div class="dh-rites__track">
+        <div class="dh-rites__intro">
           ${folio(3, txt('rites.kicker'))}
-          <h2 class="d-h2" id="rites-title">${T('rites.title')}</h2>
+          <h2 class="dh-h2" id="rites-title">${T('rites.title')}</h2>
         </div>
         ${rites.map((r, i) => `
-          <figure class="d-rite">
-            <div class="d-rite__frame">${pic(r.photo, { alt: r.alt, sizes: '(max-width: 760px) 84vw, 44vw', lazy: false })}</div>
+          <figure class="dh-rite">
+            <div class="dh-rite__frame">${pic(r.photo, { alt: r.alt, sizes: '(max-width: 760px) 84vw, 44vw', lazy: false })}</div>
             <figcaption>
-              <span class="d-rite__n" aria-hidden="true">${['i', 'ii', 'iii', 'iv', 'v', 'vi'][i]}</span>
-              <span class="d-rite__t"><b lang="ne">${esc(r.t.ne)}</b><span class="l-en">${esc(r.t.en)}</span></span>
-              <span class="d-rite__l">${bi(r.l)}</span>
+              <span class="dh-rite__n" aria-hidden="true">${['i', 'ii', 'iii', 'iv', 'v', 'vi'][i]}</span>
+              <span class="dh-rite__t"><b lang="ne">${esc(r.t.ne)}</b><span class="l-en">${esc(r.t.en)}</span></span>
+              <span class="dh-rite__l">${bi(r.l)}</span>
             </figcaption>
           </figure>`).join('')}
       </div>
     </div>
   </section>` : ''}
 
-  <section class="d-cardsec" id="card" aria-labelledby="card-title">
+  <section class="dh-cardsec" id="card" aria-labelledby="card-title">
     ${folio(4, txt('card.kicker'))}
-    <div class="d-cover" aria-hidden="true">
-      <p class="d-cover__ganesh" lang="ne">${esc(txt('gate.invocation').ne)}</p>
-      <p class="d-cover__title" lang="ne">${esc(txt('card.heading').ne)}</p>
-      <p class="d-cover__names">${names}</p>
+    <div class="dh-cover" aria-hidden="true">
+      <p class="dh-cover__ganesh" lang="ne">${esc(txt('gate.invocation').ne)}</p>
+      <p class="dh-cover__title" lang="ne">${esc(txt('card.heading').ne)}</p>
+      <p class="dh-cover__names">${names}</p>
     </div>
     <h2 class="sr-only" id="card-title">${T('card.kicker')}</h2>
-    <button type="button" class="btn d-btn" id="open-card" aria-haspopup="dialog">${T('card.button')}</button>
+    <button type="button" class="btn dh-btn" id="open-card" aria-haspopup="dialog">${T('card.button')}</button>
   </section>
 
-  <section class="d-days" id="events" aria-labelledby="events-title">
-    <header class="d-days__head">
+  <section class="dh-days" id="events" aria-labelledby="events-title">
+    <header class="dh-days__head">
       ${folio(5, txt('events.kicker'))}
-      <h2 class="d-h2" id="events-title">${T('events.title')}</h2>
+      <h2 class="dh-h2" id="events-title">${T('events.title')}</h2>
     </header>
-    <ol class="d-prog">
+    <ol class="dh-prog">
     ${events.map((e, i) => {
       const p = dayParts(e.start);
       // B.S. date from the shared converter; an event's own dateBS (the family's patro) wins.
@@ -221,49 +227,49 @@ async function start() {
       const bs = e.dateBS ? bsd : { en: `${bsd.short.en} B.S.`, ne: `वि.सं. ${bsd.short.ne}` };
       const colors = (e.dress?.colors || []).slice(0, 4).map((col) => `<i style="background:${esc(col)}"></i>`).join('');
       return `
-      <li class="d-prog__row" aria-labelledby="ev-${esc(e.id)}">
-        <p class="d-prog__date">
-          <span class="d-prog__wd">${bi(p.wd)}</span>
-          <span class="d-prog__d">${bi(p.d)}</span>
-          <span class="d-prog__m">${bi(p.my)}</span>
-          ${bs ? `<span class="d-prog__bs">${bi(bs)}</span>` : ''}
+      <li class="dh-prog__row" aria-labelledby="ev-${esc(e.id)}">
+        <p class="dh-prog__date">
+          <span class="dh-prog__wd">${bi(p.wd)}</span>
+          <span class="dh-prog__d">${bi(p.d)}</span>
+          <span class="dh-prog__m">${bi(p.my)}</span>
+          ${bs ? `<span class="dh-prog__bs">${bi(bs)}</span>` : ''}
         </p>
-        <div class="d-prog__main">
-          <p class="d-prog__k">${bi({ en: `${txt('events.label').en} ${ROMAN[i]}`, ne: `${NE_ORD[i] || neNum(i + 1)} ${txt('events.label').ne}` })}</p>
-          <h3 class="d-prog__t" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
-          <dl class="d-prog__dl">
+        <div class="dh-prog__main">
+          <p class="dh-prog__k">${bi({ en: `${txt('events.label').en} ${ROMAN[i]}`, ne: `${NE_ORD[i] || neNum(i + 1)} ${txt('events.label').ne}` })}</p>
+          <h3 class="dh-prog__t" id="ev-${esc(e.id)}">${bi(e.title)}</h3>
+          <dl class="dh-prog__dl">
             <div><dt>${bi({ en: 'Time', ne: 'समय' })}</dt><dd>${bi(timeLabel(e))}</dd></div>
-            <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="d-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
-            ${e.dress?.text ? `<div><dt>${bi({ en: 'Dress', ne: 'पहिरन' })}</dt><dd>${colors ? `<span class="d-prog__dress" aria-hidden="true">${colors}</span>` : ''}${bi(e.dress.text)}</dd></div>` : ''}
+            <div><dt>${bi({ en: 'Venue', ne: 'स्थान' })}</dt><dd>${bi(e.venue)}<a class="dh-map" href="${esc(mapUrl(e.mapQuery))}" target="_blank" rel="noopener">${bi({ en: 'Map', ne: 'नक्सा' })}<span aria-hidden="true"> ↗</span></a></dd></div>
+            ${e.dress?.text ? `<div><dt>${bi({ en: 'Dress', ne: 'पहिरन' })}</dt><dd>${colors ? `<span class="dh-prog__dress" aria-hidden="true">${colors}</span>` : ''}${bi(e.dress.text)}</dd></div>` : ''}
           </dl>
         </div>
-        ${e.photo ? `<figure class="d-prog__photo">${pic(e.photo, { sizes: '(max-width: 1100px) 40vw, 26vw' })}</figure>` : ''}
+        ${e.photo ? `<figure class="dh-prog__photo">${pic(e.photo, { sizes: '(max-width: 1100px) 40vw, 26vw' })}</figure>` : ''}
       </li>`;
     }).join('')}
     </ol>
   </section>
 
   ${gallery.length ? `
-  <section class="d-album" id="gallery" aria-labelledby="gallery-title">
-    <header class="d-album__head">
+  <section class="dh-album" id="gallery" aria-labelledby="gallery-title">
+    <header class="dh-album__head">
       ${folio(6, txt('album.kicker'))}
-      <h2 class="d-h2" id="gallery-title">${T('album.title')}</h2>
+      <h2 class="dh-h2" id="gallery-title">${T('album.title')}</h2>
     </header>
-    <div class="d-album__cols">
-      ${[0, 1, 2].map((col) => `<ul class="d-album__col" data-col="${col}">${gallery.map((g, i) => (i % 3 === col ? `
-        <li><button type="button" class="d-album__btn" data-idx="${i}" aria-label="${esc(g.alt || 'Open photo')}">
+    <div class="dh-album__cols">
+      ${[0, 1, 2].map((col) => `<ul class="dh-album__col" data-col="${col}">${gallery.map((g, i) => (i % 3 === col ? `
+        <li><button type="button" class="dh-album__btn" data-idx="${i}" aria-label="${esc(g.alt || 'Open photo')}">
           ${pic(g.photo, { alt: g.alt || '', sizes: '(max-width: 760px) 46vw, 30vw' })}
-          ${g.caption && !keyOf(g.photo) ? `<span class="d-album__cap"><span class="d-album__fig">${i + 1}</span>${bi(g.caption)}</span>` : ''}
+          ${g.caption && !keyOf(g.photo) ? `<span class="dh-album__cap"><span class="dh-album__fig">${i + 1}</span>${bi(g.caption)}</span>` : ''}
         </button></li>` : '')).join('')}</ul>`).join('')}
     </div>
   </section>` : ''}
 
-  <section class="d-reply" id="rsvp" aria-labelledby="rsvp-title">
+  <section class="dh-reply" id="rsvp" aria-labelledby="rsvp-title">
     ${folio(7, txt('reply.kicker'))}
-    <div class="d-reply__card">
-      <p class="d-reply__mark" aria-hidden="true">${T('reply.mark')}</p>
-      <h2 class="d-reply__title" id="rsvp-title">${T('reply.title')}</h2>
-      <p class="d-reply__by">${bi(config.rsvp.deadline)}</p>
+    <div class="dh-reply__card">
+      <p class="dh-reply__mark" aria-hidden="true">${T('reply.mark')}</p>
+      <h2 class="dh-reply__title" id="rsvp-title">${T('reply.title')}</h2>
+      <p class="dh-reply__by">${bi(config.rsvp.deadline)}</p>
       <form class="rsvp" id="rsvp-form" novalidate>
         <div class="field">
           <label for="f-name">${bi({ en: 'Your name', ne: 'नाम' })}</label>
@@ -303,71 +309,73 @@ async function start() {
           <textarea id="f-msg" name="message" rows="2" maxlength="500"></textarea>
         </div>
         <div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
-        <button class="btn d-btn" type="submit" id="rsvp-submit">${T('reply.send')}</button>
+        <button class="btn dh-btn" type="submit" id="rsvp-submit">${T('reply.send')}</button>
         <p class="rsvp__status" id="rsvp-status" role="status" aria-live="polite"></p>
       </form>
     </div>
-    <div class="d-reply__aside">
-      <p class="d-reply__count" id="countdown"></p>
-      <div class="d-reply__actions">
-        <button class="d-link" type="button" id="add-calendar">${bi({ en: 'Add to calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' })}</button>
-        <button class="d-link" type="button" id="share">${bi({ en: 'Share', ne: 'पठाउनुहोस्' })}</button>
+    <div class="dh-reply__aside">
+      <p class="dh-reply__count" id="countdown"></p>
+      <div class="dh-reply__actions">
+        <button class="dh-link" type="button" id="add-calendar">${bi({ en: 'Add to calendar', ne: 'क्यालेन्डरमा थप्नुहोस्' })}</button>
+        <button class="dh-link" type="button" id="share">${bi({ en: 'Share', ne: 'पठाउनुहोस्' })}</button>
       </div>
-      ${(config.info?.contacts || []).length ? `<ul class="d-reply__contacts">${config.info.contacts.map((p) => {
+      ${(config.info?.contacts || []).length ? `<ul class="dh-reply__contacts">${config.info.contacts.map((p) => {
         const tel = String(p.phone || '').replace(/[^\d+]/g, '');
         return `<li><b>${bi(p.name)}</b> <small>${bi(p.role)}</small> <a href="tel:${esc(tel)}">${bi({ en: 'Call', ne: 'फोन' })}</a></li>`;
       }).join('')}</ul>` : ''}
     </div>
   </section>
 
-  <footer class="d-colophon">
-    <p class="d-colophon__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
-    <p class="d-colophon__en">${esc(config.closing?.en || '')}</p>
-    <p class="d-colophon__names">${names}</p>
-    ${c.hashtag ? `<p class="d-colophon__tag">${esc(c.hashtag)}</p>` : ''}
+  <footer class="dh-colophon">
+    <p class="dh-colophon__ne" lang="ne">${esc(config.closing?.ne || '')}</p>
+    <p class="dh-colophon__en">${esc(config.closing?.en || '')}</p>
+    <p class="dh-colophon__names">${names}</p>
+    ${c.hashtag ? `<p class="dh-colophon__tag">${esc(c.hashtag)}</p>` : ''}
     ${madeWith()}
   </footer>
 
-  <dialog class="d-sheet" id="card-dialog" aria-labelledby="card-dialog-title">
-    <article class="d-print">
-      <form method="dialog"><button class="d-sheet__close" type="submit"><span aria-hidden="true">×</span><span class="sr-only">Close the card</span></button></form>
-      <header class="d-print__head">
-        <p class="d-print__ganesh" lang="ne">${esc(txt('gate.invocation').ne)}</p>
-        <p class="d-print__shloka" lang="sa">${esc(config.invitation.shloka.sa)}</p>
-        <h2 class="d-print__title" id="card-dialog-title"><span lang="ne">${esc(txt('card.heading').ne)}</span><em>${esc(txt('card.heading').en)}</em></h2>
+  <dialog class="dh-sheet" id="card-dialog" aria-labelledby="card-dialog-title">
+    <article class="dh-print">
+      <form method="dialog"><button class="dh-sheet__close" type="submit"><span aria-hidden="true">×</span><span class="sr-only">Close the card</span></button></form>
+      <header class="dh-print__head">
+        <p class="dh-print__ganesh" lang="ne">${esc(txt('gate.invocation').ne)}</p>
+        <p class="dh-print__shloka" lang="sa">${esc(config.invitation.shloka.sa)}</p>
+        <h2 class="dh-print__title" id="card-dialog-title"><span lang="ne">${esc(txt('card.heading').ne)}</span><em>${esc(txt('card.heading').en)}</em></h2>
       </header>
-      <div class="d-print__cols">
-        <div class="d-print__col" lang="ne">
-          <p class="d-print__salute">${esc(config.invitation.salutation.ne)}</p>
+      <div class="dh-print__cols">
+        <div class="dh-print__col" lang="ne">
+          <p class="dh-print__salute">${esc(config.invitation.salutation.ne)}</p>
           <p>${esc(config.invitation.body.ne)}</p>
-          <p class="d-print__when">${esc(config.weddingDateBS.ne)}</p>
+          <p class="dh-print__when">${esc(config.weddingDateBS.ne)}</p>
           <p>${esc(config.invitation.request.ne)}</p>
-          <p class="d-print__sign">${esc(config.invitation.signoff.ne)}<b>${esc(config.hosts.ne)}</b></p>
+          <p class="dh-print__sign">${esc(config.invitation.signoff.ne)}<b>${esc(config.hosts.ne)}</b></p>
         </div>
-        <div class="d-print__rule" aria-hidden="true"></div>
-        <div class="d-print__col" lang="en">
-          <p class="d-print__salute">${esc(config.invitation.salutation.en)}</p>
+        <div class="dh-print__rule" aria-hidden="true"></div>
+        <div class="dh-print__col" lang="en">
+          <p class="dh-print__salute">${esc(config.invitation.salutation.en)}</p>
           <p>${esc(config.invitation.body.en)}</p>
-          <p class="d-print__when">${esc(date.en)}</p>
+          <p class="dh-print__when">${esc(date.en)}</p>
           <p>${esc(config.invitation.request.en)}</p>
-          <p class="d-print__sign">${esc(config.invitation.signoff.en)}<b>${esc(config.hosts.en)}</b></p>
+          <p class="dh-print__sign">${esc(config.invitation.signoff.en)}<b>${esc(config.hosts.en)}</b></p>
         </div>
       </div>
     </article>
   </dialog>
 
-  <dialog class="d-lightbox" id="lightbox" aria-label="Photo">
-    <form method="dialog"><button class="d-lightbox__close" type="submit"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button></form>
-    <button type="button" class="d-lightbox__nav" data-lb="-1"><span aria-hidden="true">‹</span><span class="sr-only">Previous</span></button>
+  <dialog class="dh-lightbox" id="lightbox" aria-label="Photo">
+    <form method="dialog"><button class="dh-lightbox__close" type="submit"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button></form>
+    <button type="button" class="dh-lightbox__nav" data-lb="-1"><span aria-hidden="true">‹</span><span class="sr-only">Previous</span></button>
     <figure><figcaption></figcaption></figure>
-    <button type="button" class="d-lightbox__nav" data-lb="1"><span aria-hidden="true">›</span><span class="sr-only">Next</span></button>
+    <button type="button" class="dh-lightbox__nav" data-lb="1"><span aria-hidden="true">›</span><span class="sr-only">Next</span></button>
   </dialog>`;
+
+  if (mix.hero) mix.mountHero(document.getElementById('hero'));
 
   // Running head: names left, current folio right.
   const head = document.createElement('div');
-  head.className = 'd-runhead';
+  head.className = 'dh-runhead';
   head.setAttribute('aria-hidden', 'true');
-  head.innerHTML = `<span class="d-runhead__names">${names}</span><span class="d-runhead__no" id="runhead-no"></span>`;
+  head.innerHTML = `<span class="dh-runhead__names">${names}</span><span class="dh-runhead__no" id="runhead-no"></span>`;
   document.body.append(head);
 
   const { player } = mountShell();
@@ -377,7 +385,7 @@ async function start() {
   initCountdown(config.weddingDate, txt('reply.daysToGo'));
   document.getElementById('add-calendar').addEventListener('click', () => downloadIcs(events));
   document.getElementById('share').addEventListener('click', (e) => share(e.currentTarget));
-  document.querySelectorAll('img').forEach((im) => fitOnLoad(im));
+  document.querySelectorAll('img').forEach((im) => { if (!im.closest('.mx-part')) fitOnLoad(im); });
 
   // ───────────────────────── Intro: the door ─────────────────────────
   const lenis = createSmooth();
@@ -390,6 +398,7 @@ async function start() {
   let intro = null;
 
   async function boot() {
+    if (mix.gate) return bootMix();
     if (reduced || params.has('static') || !doorRect || !courtRef) return bootStatic();
     try {
       const [{ PhotoStage }, { PlateDoor }] = await Promise.all([import('../../core/stage.js'), import('./door.js')]);
@@ -402,7 +411,7 @@ async function start() {
       stage.views.set(DOOR, door);
       stage.set({ a: DOOR, pa: 0 });
       governGpu(stage, door);
-      const heroImg = document.querySelector('.d-hero__img');
+      const heroImg = document.querySelector('.dh-hero__img');
       await trackProgress([door.load(), stage.views.get(COURT).load(mobile), heroImg ? imgReady(heroImg) : Promise.resolve()], document.getElementById('load-bar'));
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       document.body.classList.add('is-gl');
@@ -500,7 +509,7 @@ async function start() {
     const court = { p: 0.12 };
     const settle = { t: 0 };
     const tl = (intro = gsap.timeline({ onComplete: finish }));
-    tl.to('.d-gate__side, .d-gate__plate figcaption', { autoAlpha: 0, duration: 0.5, ease: 'power2.out' }, 0)
+    tl.to('.dh-gate__side, .dh-gate__plate figcaption', { autoAlpha: 0, duration: 0.5, ease: 'power2.out' }, 0)
       .to(door, { progress: 0.45, duration: 2.3, ease: 'power1.inOut' }, 0.25)
       .to(door, { progress: 1, duration: 2.0, ease: 'power2.in' }, 2.25)
       .call(() => stage.set({ a: COURT, pa: 0.12 }), null, 4.26)
@@ -508,7 +517,7 @@ async function start() {
       .call(showPage, null, 4.9)
       .to(settle, { t: 1, duration: 1.5, ease: 'expo.inOut', onUpdate: () => setLens(settle.t) }, 4.95)
       .to(canvas, { autoAlpha: 0, duration: 0.7, ease: 'power1.inOut' }, 5.95)
-      .fromTo('.d-hero__text > *', { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.09, ease: 'expo.out' }, 5.6);
+      .fromTo('.dh-hero__text > *', { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.09, ease: 'expo.out' }, 5.6);
     if (instant) tl.progress(1);
     else {
       // Impatient guests: any scroll or key fast-forwards the walk.
@@ -519,7 +528,7 @@ async function start() {
 
   function showPage() {
     window.scrollTo(0, 0);
-    document.getElementById('gate').hidden = true;
+    gateEl.hidden = true;
     document.body.classList.remove('is-gated');
     document.body.classList.add('is-intro');
   }
@@ -557,6 +566,33 @@ async function start() {
     if (DEBUG && params.has('skip')) go(false);
   }
 
+  // Another theme's gate over the page: no door, no lens. Its opening hands over to Dhoka's first plate (or to the
+  // other theme's first screen), then the page is the same calm editorial scroll.
+  function bootMix() {
+    lens.hidden = true;
+    if (reduced || params.has('static')) document.body.classList.add('is-static');
+    const lines = mix.hero ? [] : [...document.querySelectorAll('.dh-hero__text > *')];
+    const plate = mix.hero ? null : document.querySelector('.dh-hero__plate');
+    const mixGate = mix.mountGate({
+      start(withMusic) {
+        player.unlock();
+        ringBell(player.ctx, { when: 0.05, gain: 0.28 });
+        if (withMusic) setTimeout(() => player.start(true), 1500);
+        window.scrollTo(0, 0);
+        document.body.classList.remove('is-gated');
+      },
+      // Dhoka's own first plate, as it settles after the door: the photo first, then the words line by line
+      intro(tl, at) {
+        if (reduced) { tl.fromTo([plate, ...lines].filter(Boolean), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, at); return; }
+        if (plate) tl.fromTo(plate, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: 'expo.out' }, at);
+        tl.fromTo(lines, { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.09, ease: 'expo.out' }, at + 0.25);
+      },
+      finish,
+    });
+    if (DEBUG) window.__dhoka = { finish: () => mixGate.finish() };
+    if (DEBUG && (params.has('skip') || params.has('open'))) mixGate.finish();
+  }
+
   // ───────────────────────── Scroll: calm editorial ─────────────────────────
   function buildScroll() {
     const runNo = document.getElementById('runhead-no');
@@ -566,18 +602,26 @@ async function start() {
         onToggle: (st) => { if (st.isActive) runNo.replaceChildren(...biNodes(`No. ${ROMAN[i]}`, `अङ्क ${neNum(i + 1)}`)); },
       });
     });
-    ScrollTrigger.create({ start: 80, end: 'max', onToggle: (st) => document.body.classList.toggle('is-scrolled', st.isActive) });
+    // Another theme's first screen keeps the page's running head and paper grain off it until it has scrolled away.
+    const mxHero = mix.heroInst?.el;
+    ScrollTrigger.create({ start: mxHero ? () => Math.max(80, mxHero.offsetHeight - 64) : 80, end: 'max', onToggle: (st) => document.body.classList.toggle('is-scrolled', st.isActive) });
+    if (mxHero) {
+      const grain = document.querySelector('.dh-grain');
+      const hide = (on) => { if (grain) grain.style.visibility = on ? 'hidden' : ''; };
+      hide(true);
+      ScrollTrigger.create({ trigger: mxHero, start: 'top bottom', end: 'bottom top', onToggle: (st) => hide(st.isActive) });
+    }
     if (reduced || document.body.classList.contains('is-static')) return;
 
     // Hero: names drift up a touch slower than the plate (two layers).
-    gsap.to('.d-hero__text', { y: () => -window.innerHeight * 0.08, ease: 'none', scrollTrigger: { trigger: '.d-hero', start: 'top top', end: 'bottom top', scrub: true } });
+    if (!mix.hero) gsap.to('.dh-hero__text', { y: () => -window.innerHeight * 0.08, ease: 'none', scrollTrigger: { trigger: '.dh-hero', start: 'top top', end: 'bottom top', scrub: true } });
 
     // No. II · Sticky stack: each print is laid over the last as you scroll.
-    const plates = gsap.utils.toArray('.d-stack__plate');
+    const plates = gsap.utils.toArray('.dh-stack__plate');
     if (plates.length > 1) {
       // Snap so that at rest one print is always whole.
       const stops = plates.map((_, k) => k / (plates.length - 0.6)).concat(1);
-      const tl = gsap.timeline({ scrollTrigger: { trigger: '.d-stack', start: 'top top', end: 'bottom bottom', scrub: 0.6,
+      const tl = gsap.timeline({ scrollTrigger: { trigger: '.dh-stack', start: 'top top', end: 'bottom bottom', scrub: 0.6,
         snap: { snapTo: (v) => stops.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a)), duration: { min: 0.2, max: 0.5 }, delay: 0.12, ease: 'power2.inOut' } } });
       plates.forEach((p, i) => {
         if (i === 0) return;
@@ -593,18 +637,18 @@ async function start() {
     // No. III · The rites travel sideways while the page holds still.
     // Only when the whole plate (photo + caption) fits the screen height; short screens and
     // in-studio previews get a calm two-column layout that scrolls normally instead.
-    const track = document.querySelector('.d-rites__track');
+    const track = document.querySelector('.dh-rites__track');
     const pinRites = !window.matchMedia('(max-width: 760px), (max-height: 760px)').matches;
-    if (track && !pinRites) document.querySelector('.d-rites')?.classList.add('is-flat');
+    if (track && !pinRites) document.querySelector('.dh-rites')?.classList.add('is-flat');
     if (track && pinRites) {
       const dist = () => Math.max(0, track.scrollWidth - document.documentElement.clientWidth);
-      const sec = document.querySelector('.d-rites');
+      const sec = document.querySelector('.dh-rites');
       const setH = () => { sec.style.height = `${window.innerHeight + dist()}px`; };
       setH();
       ScrollTrigger.addEventListener('refreshInit', setH);
       const h = gsap.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: sec, start: 'top top', end: 'bottom bottom', scrub: 0.5, invalidateOnRefresh: true } });
-      gsap.utils.toArray('.d-rite__frame img').forEach((im) => {
-        gsap.fromTo(im, { xPercent: 4 }, { xPercent: -4, ease: 'none', scrollTrigger: { trigger: im.closest('.d-rite'), containerAnimation: h, start: 'left right', end: 'right left', scrub: true } });
+      gsap.utils.toArray('.dh-rite__frame img').forEach((im) => {
+        gsap.fromTo(im, { xPercent: 4 }, { xPercent: -4, ease: 'none', scrollTrigger: { trigger: im.closest('.dh-rite'), containerAnimation: h, start: 'left right', end: 'right left', scrub: true } });
       });
     }
 
@@ -612,18 +656,18 @@ async function start() {
     // No. VI · Album columns drift at three speeds.
     if (!mobile) {
       [-6, 6, -2].forEach((v, i) => {
-        const col = document.querySelector(`.d-album__col[data-col="${i}"]`);
-        if (col) gsap.fromTo(col, { yPercent: -v }, { yPercent: v, ease: 'none', scrollTrigger: { trigger: '.d-album', start: 'top bottom', end: 'bottom top', scrub: true } });
+        const col = document.querySelector(`.dh-album__col[data-col="${i}"]`);
+        if (col) gsap.fromTo(col, { yPercent: -v }, { yPercent: v, ease: 'none', scrollTrigger: { trigger: '.dh-album', start: 'top bottom', end: 'bottom top', scrub: true } });
       });
     }
 
     // Plates arrive like ink settling: a short rise and fade, once.
-    gsap.utils.toArray('.d-prog__row, .d-album__col li, .d-cover, .d-reply__card').forEach((el) => {
+    gsap.utils.toArray('.dh-prog__row, .dh-album__col li, .dh-cover, .dh-reply__card').forEach((el) => {
       gsap.from(el, { autoAlpha: 0, y: 28, duration: 0.9, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
     });
     ScrollTrigger.refresh();
     // The rites' width depends on each photo's proportions: measure again once they are in.
-    Promise.all([...document.querySelectorAll('.d-rite img')].map(imgReady)).then(() => ScrollTrigger.refresh());
+    Promise.all([...document.querySelectorAll('.dh-rite img')].map(imgReady)).then(() => ScrollTrigger.refresh());
   }
 
   boot();
@@ -639,7 +683,7 @@ let refreshTimer;
 function fitOnLoad(im) {
   const set = () => {
     clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => { if (document.body.classList.contains('is-in')) ScrollTrigger.refresh(); }, 400); if (im.naturalWidth) im.style.setProperty('--ar', `${im.naturalWidth} / ${im.naturalHeight}`); im.closest('figure, li, .d-hero__frame')?.style.setProperty('--ar', `${im.naturalWidth} / ${im.naturalHeight}`); };
+    refreshTimer = setTimeout(() => { if (document.body.classList.contains('is-in')) ScrollTrigger.refresh(); }, 400); if (im.naturalWidth) im.style.setProperty('--ar', `${im.naturalWidth} / ${im.naturalHeight}`); im.closest('figure, li, .dh-hero__frame')?.style.setProperty('--ar', `${im.naturalWidth} / ${im.naturalHeight}`); };
   if (im.complete) set(); else im.addEventListener('load', set, { once: true });
 }
 
@@ -673,8 +717,8 @@ function initLightbox(items) {
     im.alt = g.alt || '';
     cap.innerHTML = g.caption && !keyOf(g.photo) ? bi(g.caption) : '';
   };
-  document.querySelector('.d-album')?.addEventListener('click', (e) => {
-    const b = e.target.closest('.d-album__btn');
+  document.querySelector('.dh-album')?.addEventListener('click', (e) => {
+    const b = e.target.closest('.dh-album__btn');
     if (!b) return;
     show(Number(b.dataset.idx));
     lb.showModal();
