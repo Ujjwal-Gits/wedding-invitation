@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 import { DATA_DIR } from './env.js';
 import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or data/site.json with STORE=json)
 import { entity, sendEntity } from './http-cache.js';
-import { isTheme, listThemes, TIERS, defaultTier } from './catalog.js';
+import { isTheme, listThemes, TIERS, defaultTier, metaOf } from './catalog.js';
 import { loadManifest } from './slots.js';
 import { hasPerm } from './auth.js';
 
@@ -366,7 +366,7 @@ export async function publicThemes(req, res) {
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s) });
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s), ...metaOf(t.slug, m) });
   }
   themesEntity = { rev, at: Date.now(), e: entity(JSON.stringify(out), 'application/json; charset=utf-8') };
   res.set('Cache-Control', 'no-cache');

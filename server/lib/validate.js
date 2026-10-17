@@ -2,6 +2,7 @@
 // sanitizeInvitation(): types, lengths, formats and enums. Unknown keys are dropped.
 //   Drafts may be incomplete, so empty strings are allowed here.
 // publishProblems(): what is still missing before an invitation can go live.
+import { isOccasion, isCoupleOccasion } from '../../src/core/markets.js';
 import { isTheme, BUNDLED_SRCS, librarySlugs } from './catalog.js';
 import { LIBRARY_SRC_RE } from '../../src/core/music-library.js';
 import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
@@ -376,6 +377,12 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
     if (isTimeZone(d.timeZone)) out.timeZone = d.timeZone;
     else c.fail('timeZone', 'must be a time zone name such as America/Chicago');
   }
+  // occasion (src/core/markets.js): 'wedding' (the default, not stored) | 'birthday' | 'baby-shower' | … A design reads
+  // its default words for it, and an occasion for one person needs only the first name (couple.bride).
+  if (d.occasion != null && d.occasion !== '' && d.occasion !== 'wedding') {
+    if (isOccasion(d.occasion)) out.occasion = d.occasion;
+    else c.fail('occasion', 'must be a known occasion such as birthday or baby-shower');
+  }
 
   if (c.errors.length) throw new ValidationError(c.errors.slice(0, 50));
   return out;
@@ -385,9 +392,10 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
 export function publishProblems(d) {
   const p = [];
   const has = (b) => b && (b.en || b.ne);
-  if (!has(d.couple.bride.name)) p.push("The bride's name");
-  if (!has(d.couple.groom.name)) p.push("The groom's name");
-  if (!d.weddingDate) p.push('The wedding date');
+  const pair = isCoupleOccasion(d.occasion);
+  if (!has(d.couple.bride.name)) p.push(pair ? "The bride's name" : 'The name on the invitation');
+  if (pair && !has(d.couple.groom.name)) p.push("The groom's name");
+  if (!d.weddingDate) p.push(pair ? 'The wedding date' : 'The date');
   d.events.forEach((e, i) => {
     if (!e.start) p.push(`${e.title.en || e.title.ne || `Ceremony ${i + 1}`}: a date`);
   });
