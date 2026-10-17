@@ -20,11 +20,11 @@ import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOU
 import { staffByEmail } from './staff.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
 import { refundable, refundState, payStatusOf, dayKey, minor, major, CURRENCIES } from './finance.js';
+import { toE164, PHONE_MSG } from './phone.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
 export const PROOF_DIR = resolve(DATA_DIR, 'proofs'); // payment screenshots: private, never served statically
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
-const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 export const ID_RE = /^[A-Za-z0-9_-]{12}$/;
 export const REF_RE = /^NM-\d{5,6}$/;
@@ -33,6 +33,10 @@ const STATUSES = ['new', 'contacted', 'done', 'archived'];
 // The statuses PATCH /api/orders/:id can set. 'comped' (free access) is set and undone only through
 // /api/admin/finance (lib/finance-admin.js), with a plan and a reason.
 export const PAY_STATUSES = ['awaiting_payment', 'proof_submitted', 'confirmed', 'rejected', 'refunded'];
+// Which website the order came from: 'np' (nimtto.com, prices in rupees first) or 'intl' (/international/, US dollars,
+// card or PayPal first on the payment page). Older orders have none: they are Nepal orders.
+export const MARKETS = ['np', 'intl'];
+export const marketOf = (o) => (o?.market === 'intl' ? 'intl' : 'np');
 const MAX_ORDERS = 5000;
 const MAX_HISTORY = 50;
 const MAX_REFUNDS = 50;
@@ -104,7 +108,7 @@ export function whatsappFor(order, site) {
     order.planName ? `Plan: ${order.planName}${money ? ` (${money})` : ''}` : null,
     `Name: ${order.name}`,
     order.weddingDate ? `Wedding: ${order.weddingDate}` : null,
-    'I will send the payment screenshot here.',
+    order.enquiry ? 'I asked for a custom design. Please send me the price.' : 'I will send the payment screenshot here.',
   ].filter(Boolean).join('\n');
   const num = e164(site?.contact?.whatsapp || site?.contact?.phone).replace(/^\+/, '');
   return { text, link: num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : null };
@@ -179,7 +183,8 @@ export async function submit(req, res) {
     const plan = site.plans.find((p) => p.id === b.plan) || null;
     const ref = `NM-${randomInt(10000, 100000)}`;
     const payToken = randomBytes(32).toString('base64url');
-    return res.status(201).json({ ok: true, ref, payToken, amount: amountOf(plan), plan: plan ? { id: plan.id, name: plan.name, from: plan.from === true } : null, payUrl: payUrl(ref, payToken), whatsapp: { text: '', link: null } });
+    const fake = b.kind === 'custom' || plan?.from === true ? { enquiry: true, amount: { npr: null, usd: null } } : { payToken, payUrl: payUrl(ref, payToken), amount: amountOf(plan) };
+    return res.status(201).json({ ok: true, ref, market: b.market === 'intl' ? 'intl' : 'np', plan: plan ? { id: plan.id, name: plan.name, from: plan.from === true } : null, whatsapp: { text: '', link: null }, ...fake });
   }
 
   const fields = [];
@@ -192,8 +197,12 @@ export async function submit(req, res) {
   const kind = b.kind === 'order' || b.kind === 'custom' ? b.kind : (fields.push('kind'), '');
   const name = capped('name', 80, { required: true });
   if (name && name.length < 2) fields.push('name');
-  const phone = capped('phone', 20, { required: true });
-  if (phone && !PHONE_RE.test(phone)) fields.push('phone');
+  // the phone, with its country code, stored as E.164 (lib/phone.js); a number without a code is read as Nepali
+  if (b.phone != null && typeof b.phone !== 'string') fields.push('phone');
+  const phone = toE164(typeof b.phone === 'string' ? b.phone : '');
+  if (!phone) fields.push('phone');
+  if (b.market != null && !MARKETS.includes(b.market)) fields.push('market');
+  const market = b.market === 'intl' ? 'intl' : 'np';
   // The customer's account (docs/API.md "Account on order"): needed for an order unless this browser is signed in.
   const signedIn = req.session?.role === 'customer' && req.customer ? req.customer : null;
   const rawPassword = typeof b.password === 'string' ? b.password : '';
@@ -218,7 +227,7 @@ export async function submit(req, res) {
   const message = capped('message', 2000, { required: kind === 'custom', multiline: true });
   if (fields.length) {
     const f = [...new Set(fields)];
-    const error = f.length === 1 && f[0] === 'password' ? `Please choose a password of at least ${ACCOUNT_PASSWORD_MIN} characters.` : 'Please check the form.';
+    const error = f.length === 1 && f[0] === 'password' ? `Please choose a password of at least ${ACCOUNT_PASSWORD_MIN} characters.` : f.length === 1 && f[0] === 'phone' ? PHONE_MSG : 'Please check the form.';
     return res.status(400).json({ ok: false, error, fields: f });
   }
   // Design tiers: the plan must include the design (amounts always come from the server's plan prices).
@@ -258,7 +267,11 @@ export async function submit(req, res) {
 
   const payToken = randomBytes(32).toString('base64url'); // 256 bits; only the hash is stored
   const now = new Date().toISOString();
-  const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new' };
+  const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new', market };
+  // A custom design is an enquiry: no price yet and no payment page. The planner replies with a price (PATCH amount),
+  // then the customer pays from their account.
+  const enquiry = kind === 'custom' || plan?.from === true;
+  if (enquiry) order.enquiry = true;
   if (email) order.email = email;
   if (customer) order.customerId = customer.id;
   if (venue) order.venue = venue;
@@ -267,7 +280,7 @@ export async function submit(req, res) {
   if (weddingDate) order.weddingDate = weddingDate;
   if (theme) order.theme = theme;
   if (plan) Object.assign(order, { plan: plan.id, planName: plan.name, planFrom: plan.from === true });
-  order.amount = amountOf(plan); // the server's price at the time of ordering
+  order.amount = enquiry ? { npr: null, usd: null } : amountOf(plan); // the server's price at the time of ordering
   order.payTokenHash = tokenHash(payToken).toString('hex');
   order.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [{ at: now, status: 'awaiting_payment', by: 'customer' }] };
   // A couple asking for a custom design from their studio: link the request to their invitation.
@@ -285,10 +298,11 @@ export async function submit(req, res) {
   }
   // A new account, or the right password for an existing one: this browser is now signed in as that customer.
   if (customer && !signedIn) await signInCustomer(req, res, customer);
-  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'}${customer ? ` customer=${customer.id}${created ? ' (new)' : ''}` : ''}`);
+  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'} market=${market}${enquiry ? ' (enquiry)' : ''}${customer ? ` customer=${customer.id}${created ? ' (new)' : ''}` : ''}`);
   res.status(201).json({
-    ok: true, ref: order.ref, payToken, amount: order.amount, plan: planView(order),
-    payUrl: payUrl(order.ref, payToken), whatsapp: whatsappFor(order, site),
+    ok: true, ref: order.ref, market, amount: order.amount, plan: planView(order), whatsapp: whatsappFor(order, site),
+    // an enquiry has no payment page yet
+    ...(enquiry ? { enquiry: true } : { payToken, payUrl: payUrl(order.ref, payToken) }),
     ...(customer ? { account: { email: customer.email, name: customer.name || '', created } } : {}),
   });
 }

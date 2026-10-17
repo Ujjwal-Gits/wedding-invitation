@@ -202,7 +202,7 @@ test('sign-in: wrong password and unknown email get the same answer; email is no
 test('the dashboard: orders with payment status and a pay link the session opens; details filled in later; CSRF', async () => {
   const b = await browser().login('gita.thapa@example.com', 'gita-pass-1');
   const acc = (await b.req('/api/account')).body;
-  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '9800000001', emailVerified: false, mail: false });
+  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '+9779800000001', emailVerified: false, mail: false });
   const o = acc.orders.at(-1);
   assert.equal(o.payStatus, 'awaiting_payment');
   assert.equal(o.reason, null);
@@ -384,11 +384,15 @@ test('password reset by the admin and turning an account off end its sessions; s
 });
 
 test('the admin creates an account for an older couple; duplicate emails refused; logout', async () => {
-  const r = await admin.req('/api/admin/customers', { method: 'POST', body: { email: 'Old.Couple@Example.com', name: 'Old Couple', password: 'old-couple-1' } });
+  // a phone with its country code is required for a new account
+  const noPhone = await admin.req('/api/admin/customers', { method: 'POST', body: { email: 'old.couple@example.com', name: 'Old Couple', password: 'old-couple-1' } });
+  assert.equal(noPhone.status, 400);
+  assert.equal(noPhone.body.error, 'Enter a valid phone number with country code.');
+  const r = await admin.req('/api/admin/customers', { method: 'POST', body: { email: 'Old.Couple@Example.com', name: 'Old Couple', phone: '+977 980-1234567', password: 'old-couple-1' } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.equal(r.body.customer.email, 'old.couple@example.com');
   assert.equal(r.body.customer.passwordHash, undefined);
-  assert.equal((await admin.req('/api/admin/customers', { method: 'POST', body: { email: 'old.couple@example.com', name: 'Again', password: 'old-couple-1' } })).status, 409);
+  assert.equal((await admin.req('/api/admin/customers', { method: 'POST', body: { email: 'old.couple@example.com', name: 'Again', phone: '+977 980-1234567', password: 'old-couple-1' } })).status, 409);
   const b = await browser().login('old.couple@example.com', 'old-couple-1');
   assert.equal((await b.req('/api/auth/logout', { method: 'POST' })).status, 200);
   assert.equal((await b.req('/api/auth/me')).status, 401);

@@ -75,8 +75,16 @@ const until = async (fn) => { for (let i = 0; i < 50 && !fn(); i++) await new Pr
 
 test('sign-up emails a 6-digit code (in the subject); the code confirms the email; wrong codes run out', async () => {
   const b = browser();
-  const r = await b.req('/auth/signup', { method: 'POST', body: { name: 'Asha Rai', email: 'Asha@Example.com', password: 'first-pass-1' } });
+  // the phone (with its country code) is required, and stored as E.164
+  for (const phone of [undefined, '', '555-1234', '+1 555 123 4567']) {
+    const bad = await b.req('/auth/signup', { method: 'POST', body: { name: 'Asha Rai', email: 'Asha@Example.com', phone, password: 'first-pass-1' } });
+    assert.equal(bad.status, 400, String(phone));
+    assert.deepEqual(bad.data.fields, ['phone']);
+    assert.equal(bad.data.error, 'Enter a valid phone number with country code.');
+  }
+  const r = await b.req('/auth/signup', { method: 'POST', body: { name: 'Asha Rai', email: 'Asha@Example.com', phone: '+977 9801234567', password: 'first-pass-1' } });
   assert.equal(r.status, 201);
+  assert.equal(store.customerStore.byEmail('asha@example.com').phone, '+9779801234567');
   assert.equal(r.data.verifySent, true);
   const mail = sent.at(-1);
   assert.equal(mail.headers['api-key'], 'test-key');
@@ -93,7 +101,7 @@ test('sign-up emails a 6-digit code (in the subject); the code confirms the emai
 
   // five wrong tries and a code is gone, even the right one
   const b2 = browser();
-  await b2.req('/auth/signup', { method: 'POST', body: { name: 'Bina Lama', email: 'bina@example.com', password: 'first-pass-1' } });
+  await b2.req('/auth/signup', { method: 'POST', body: { name: 'Bina Lama', email: 'bina@example.com', phone: '+1 201 555 0123', password: 'first-pass-1' } });
   const code2 = codeIn(sent.at(-1));
   const w2 = code2 === '000000' ? '111111' : '000000';
   for (let i = 0; i < 5; i++) await b2.req('/account/verify/confirm', { method: 'POST', body: { code: w2 } });

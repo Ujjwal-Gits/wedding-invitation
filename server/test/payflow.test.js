@@ -170,9 +170,10 @@ test('orders: prices come from the server, the token is returned once and only i
   assert.equal((await post('/api/orders', { ...ORDER, plan: undefined })).status, 400);
   assert.equal((await post('/api/orders', { ...ORDER, plan: 'gold' })).status, 400);
   assert.equal((await post('/api/orders', ORDER, 'https://evil.example')).status, 403);
-  // a custom request without a plan is priced "from" the Custom plan
+  // a custom request without a plan is an enquiry on the Custom plan: no price yet and no payment page
   const c = await newOrder({ kind: 'custom', plan: undefined, message: 'Peacock colours please' });
-  assert.deepEqual([c.plan.id, c.plan.from, c.amount.npr], ['custom', true, 11111]);
+  assert.deepEqual([c.plan.id, c.plan.from, c.amount.npr, c.amount.usd, c.enquiry, c.payToken, c.payUrl], ['custom', true, null, null, true, undefined, undefined]);
+  assert.equal((await store.getOrderByRef(c.ref)).enquiry, true);
   // the admin changes a price: new orders use it, old orders keep theirs
   const s = await (await asAdmin('/api/admin/site')).json();
   s.plans.find((p) => p.id === 'shubha').price = 5555;
@@ -365,4 +366,45 @@ test('admin QR upload: a screenshot is cropped to just the code, decoded, and wi
   // a QR URL that is not ours is refused
   s.paymentMethods[0].qr = 'https://evil.example/qr.png';
   assert.equal((await asAdmin('/api/site', { method: 'PUT', body: s })).status, 400);
+});
+
+test('orders: the phone is checked and stored as E.164; the market is stored and comes back on the pay page', async () => {
+  // no phone, a fake number, a number without a real area code: refused with one clear message
+  for (const phone of [undefined, '', '12345', '+1 555 123 4567']) {
+    const r = await post('/api/orders', { ...ORDER, phone });
+    assert.equal(r.status, 400, String(phone));
+    const d = await r.json();
+    assert.deepEqual(d.fields, ['phone']);
+    assert.equal(d.error, 'Enter a valid phone number with country code.');
+  }
+  // the international site: a US number, market 'intl'
+  const a = await newOrder({ phone: '+1 (201) 555-0123', market: 'intl' });
+  assert.equal(a.market, 'intl');
+  const stored = await store.getOrderByRef(a.ref);
+  assert.equal(stored.phone, '+12015550123');
+  assert.equal(stored.market, 'intl');
+  const info = await (await fetch(`${base}/api/orders/${a.ref}/pay?t=${a.payToken}`)).json();
+  assert.equal(info.market, 'intl');
+  assert.deepEqual(info.amount, { npr: 4999, usd: 99 });
+  // Nepal (no market sent): 'np', and an old-style 98XXXXXXXX number is read as Nepali
+  const b = await newOrder({ phone: '980-1234567' });
+  assert.equal(b.market, 'np');
+  assert.equal((await store.getOrderByRef(b.ref)).phone, '+9779801234567');
+  // an unknown market is refused
+  assert.equal((await post('/api/orders', { ...ORDER, market: 'mars' })).status, 400);
+  // the admin sees both
+  const list = (await (await asAdmin('/api/orders')).json()).orders;
+  assert.equal(list.find((o) => o.ref === a.ref).market, 'intl');
+  assert.equal(list.find((o) => o.ref === b.ref).market, 'np');
+});
+
+test('orders: a custom design on the international site is an enquiry with no price and no pay token', async () => {
+  const c = await newOrder({ kind: 'custom', plan: 'custom', market: 'intl', phone: '+44 7911 123456', message: 'A garden birthday for my mother' });
+  assert.equal(c.enquiry, true);
+  assert.equal(c.payToken, undefined);
+  assert.deepEqual(c.amount, { npr: null, usd: null });
+  const stored = await store.getOrderByRef(c.ref);
+  assert.equal(stored.market, 'intl');
+  assert.equal(stored.phone, '+447911123456');
+  assert.match(c.whatsapp.text, /custom design/);
 });

@@ -188,6 +188,9 @@ app.get('/go', (req, res) => {
   res.redirect(302, req.session?.role ? '/studio/' : '/designs/');
 });
 
+// The international site moved from its hidden preview to /international/ (lib/gate.js keeps it public).
+app.get(/^\/intl-preview(?:\/.*)?$/, (req, res) => res.redirect(301, '/international/'));
+
 // Short guest link: /i/<slug>?to=Name&e=wedding,reception -> a link-preview page that forwards to the theme page.
 app.get('/i/:slug', wrap(sharePage));
 

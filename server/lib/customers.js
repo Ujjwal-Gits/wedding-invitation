@@ -15,10 +15,10 @@ import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, si
 import { clientIp, originAllowed, rateLimiter } from './security.js';
 import { sendVerify, sendReset, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
 import { clean, planView, REF_RE } from './orders.js';
+import { toE164, PHONE_MSG } from './phone.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
 const passwordOk = (p) => typeof p === 'string' && p.length >= ACCOUNT_PASSWORD_MIN && p.length <= ACCOUNT_PASSWORD_MAX;
 const PASSWORD_MSG = `The password must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters.`;
 
@@ -26,14 +26,17 @@ const PASSWORD_MSG = `The password must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PAS
 
 const payStatusOf = (o) => o.pay?.status || (o.payment?.status === 'paid' ? 'confirmed' : o.payment?.status === 'refunded' ? 'refunded' : 'awaiting_payment');
 
+const waitingForPrice = (o) => o.enquiry === true && o.amount?.npr == null && o.amount?.usd == null;
+
 /** An order as its customer sees it: no token hash, no admin notes, no proof files. */
 export function customerOrderView(o) {
   const status = payStatusOf(o);
   const out = {
     ref: o.ref, at: o.at, kind: o.kind, plan: planView(o), amount: o.amount || { npr: null, usd: null },
     message: o.message || '', payStatus: status, reason: status === 'rejected' ? o.pay?.reason || null : null,
-    payUrl: o.ref ? `/pay/${o.ref}` : null,
+    payUrl: o.ref && !waitingForPrice(o) ? `/pay/${o.ref}` : null, market: o.market === 'intl' ? 'intl' : 'np',
   };
+  if (o.enquiry) out.enquiry = true; // a custom design: no payment page until the planner gives it a price
   for (const k of ['theme', 'weddingDate', 'venue', 'bride', 'groom', 'invitation']) if (o[k]) out[k] = o[k];
   return out;
 }
@@ -164,7 +167,8 @@ export async function adminList(req, res) {
 const signupLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 5 }); // new accounts per IP per hour
 
 /**
- * POST /api/auth/signup { name, email, phone?, password }: anyone can make an account from the sign-in page.
+ * POST /api/auth/signup { name, email, phone, password }: anyone can make an account from the sign-in page. The phone
+ * (with its country code) is required and stored as E.164 (lib/phone.js).
  * The browser is signed in at once. Invitations waiting for this email still need the owner's "Link now".
  */
 export async function signup(req, res) {
@@ -172,15 +176,17 @@ export async function signup(req, res) {
   const b = req.body || {};
   const email = normEmail(b.email).slice(0, 254);
   const name = nameOf(b.name, 80);
-  const phone = nameOf(b.phone, 20);
+  const phone = toE164(b.phone);
   const fields = [];
   if (name.length < 2) fields.push('name');
   if (!email || !EMAIL_RE.test(email)) fields.push('email');
-  if (phone && !PHONE_RE.test(phone)) fields.push('phone');
+  if (!phone) fields.push('phone');
   if (!passwordOk(b.password)) fields.push('password');
   if (fields.length) {
-    const what = { name: 'your name', email: 'a valid email', phone: 'a valid phone number', password: PASSWORD_MSG.toLowerCase() };
-    return res.status(400).json({ error: fields.length === 1 && fields[0] === 'password' ? PASSWORD_MSG : `Please enter ${fields.map((f) => f === 'password' ? 'a password of 8+ characters' : what[f]).join(', ')}.`, fields });
+    const what = { name: 'your name', email: 'a valid email', phone: 'a valid phone number with country code', password: PASSWORD_MSG.toLowerCase() };
+    const only = fields.length === 1 ? fields[0] : '';
+    const error = only === 'password' ? PASSWORD_MSG : only === 'phone' ? PHONE_MSG : `Please enter ${fields.map((f) => f === 'password' ? 'a password of 8+ characters' : what[f]).join(', ')}.`;
+    return res.status(400).json({ error, fields });
   }
   const lim = signupLimiter.hit(clientIp(req));
   if (!lim.ok) { res.set('Retry-After', String(lim.retryAfter)); return res.status(429).json({ error: 'Too many new accounts from here. Please try again later.' }); }
@@ -296,18 +302,18 @@ export async function confirmVerify(req, res) {
   res.json({ ok: true });
 }
 
-/** POST /api/admin/customers { email, name, phone?, password }: an account for a couple who did not order online. */
+/** POST /api/admin/customers { email, name, phone, password }: an account for a couple who did not order online. */
 export async function adminCreate(req, res) {
   const b = req.body || {};
   const email = normEmail(b.email);
   const name = nameOf(b.name, 80);
-  const phone = nameOf(b.phone, 20);
+  const phone = toE164(b.phone);
   const errors = [];
   if (!email || email.length > 254 || !EMAIL_RE.test(email)) errors.push({ path: 'email', message: 'must be an email address' });
   if (name.length < 2) errors.push({ path: 'name', message: 'is required' });
-  if (phone && !PHONE_RE.test(phone)) errors.push({ path: 'phone', message: 'must be a phone number' });
+  if (!phone) errors.push({ path: 'phone', message: 'must be a valid phone number with country code' });
   if (!passwordOk(b.password)) errors.push({ path: 'password', message: `must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters` });
-  if (errors.length) throw httpError(400, 'Please check the account details.', { errors });
+  if (errors.length) throw httpError(400, errors.length === 1 && errors[0].path === 'phone' ? PHONE_MSG : 'Please check the account details.', { errors });
   if (customerByEmail(email)) throw httpError(409, 'That email already has an account.');
   if (staffByEmail(email) || email === ADMIN_EMAIL) throw httpError(409, 'That email belongs to the team. Use another email.');
   const c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(b.password) })
@@ -322,7 +328,9 @@ export async function adminPatch(req, res) {
   const b = req.body || {};
   const errors = [];
   if (b.name !== undefined && nameOf(b.name, 80).length < 2) errors.push({ path: 'name', message: 'is required' });
-  if (b.phone !== undefined && (typeof b.phone !== 'string' || (nameOf(b.phone, 20) && !PHONE_RE.test(nameOf(b.phone, 20))))) errors.push({ path: 'phone', message: 'must be a phone number' });
+  // an older account may have no phone: '' keeps it empty, anything else must be a valid number (stored as E.164)
+  const phone = typeof b.phone === 'string' && b.phone.trim() ? toE164(b.phone) : '';
+  if (b.phone !== undefined && (typeof b.phone !== 'string' || (b.phone.trim() && !phone))) errors.push({ path: 'phone', message: 'must be a valid phone number with country code' });
   if (b.password !== undefined && !passwordOk(b.password)) errors.push({ path: 'password', message: `must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters` });
   if (b.disabled !== undefined && typeof b.disabled !== 'boolean') errors.push({ path: 'disabled', message: 'must be true or false' });
   if (errors.length) throw httpError(400, 'Please check the account details.', { errors });
@@ -330,7 +338,7 @@ export async function adminPatch(req, res) {
   const passwordHash = b.password !== undefined ? await hashAccountPassword(b.password) : null;
   const c = await mutateCustomer(id, (x) => {
     if (b.name !== undefined) x.name = nameOf(b.name, 80);
-    if (b.phone !== undefined) x.phone = nameOf(b.phone, 20);
+    if (b.phone !== undefined) x.phone = phone;
     if (passwordHash) x.passwordHash = passwordHash;
     if (b.disabled !== undefined) { x.disabled = b.disabled; if (b.disabled) x.disabledAt = new Date().toISOString(); else delete x.disabledAt; }
   });
