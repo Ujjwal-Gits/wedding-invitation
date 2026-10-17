@@ -153,6 +153,17 @@ async function activateOrder(key, why) {
 }
 onActivate(activateOrder);
 
+/**
+ * Catch-up, once after start: a paid (or free) order of the last 30 days with an account but no invitation and no
+ * activation (the server restarted mid-way, or activation failed) is switched on now. Older orders are left alone.
+ */
+export async function activateMissed() {
+  const since = Date.now() - 30 * 864e5;
+  const missed = (await listOrders()).filter((o) => o.customerId && !o.activatedAt && !o.invitation && isOn(o) && Date.parse(o.at) > since);
+  for (const o of missed) await activateOrder(o.id, 'catch-up').catch((err) => console.warn(`[activate] catch-up ${o.ref || o.id}: ${err.message}`));
+  if (missed.length) console.info(`[activate] caught up ${missed.length} paid order(s)`);
+}
+
 const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 /** "Your plan is active": one button to the dashboard. */
 function activeEmail(c, order, why) {

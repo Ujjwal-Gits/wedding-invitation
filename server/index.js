@@ -267,6 +267,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(PORT, () => {
+  setTimeout(() => handover.activateMissed().catch((err) => console.warn('[activate] catch-up failed:', err.message)), 5000).unref();
   resetLag();
   console.info(`[studio] API on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'}; store ${STORE_KIND}; depth maps ${DEPTH_ENABLED ? 'on' : 'off'})`);
 });

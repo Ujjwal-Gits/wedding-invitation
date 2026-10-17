@@ -1,7 +1,7 @@
 // Fixed lists the studio and the validator share: themes, bundled music, library photos.
 import { readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ROOT_DIR } from './env.js';
+import { ROOT_DIR, DIST_DIR } from './env.js';
 import { config as demo } from '../../src/config.js';
 import { BUILTIN_MUSIC } from '../../src/core/music-library.js';
 
@@ -91,14 +91,16 @@ export const demoConfig = () => structuredClone(demo);
 let libCache = { at: 0, set: new Set() };
 export function librarySlugs() {
   if (Date.now() - libCache.at < 60_000) return libCache.set;
-  const dir = resolve(ROOT_DIR, 'public', 'photos');
+  // the built site (dist/photos) is what production has (the Docker image has no public/); public/ in development
   const set = new Set();
-  if (existsSync(dir)) {
+  for (const dir of [resolve(DIST_DIR, 'photos'), resolve(ROOT_DIR, 'public', 'photos')]) {
+    if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir)) {
       const m = /^([a-z0-9-]+)-lg\.webp$/.exec(f);
       if (m) set.add(m[1]);
     }
   }
+  if (!set.size) console.warn('[catalog] no library photos found in dist/photos or public/photos');
   libCache = { at: Date.now(), set };
   return set;
 }
