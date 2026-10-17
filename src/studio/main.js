@@ -330,12 +330,19 @@ async function signOut() {
 
 // ── Sign-in pages ─────────────────────────────────────────────────────────
 
+/** Sign-in pages: a quiet top bar (brand + the way back to the website), one centred card, a footer of site links. */
+const SITE_LINKS = [['Home', '/'], ['Designs', '/designs/'], ['Pricing', '/pricing/'], ['Contact', '/contact/']];
 function authLayout(...panel) {
-  return h('main.auth', { id: 'main' },
-    h('div.auth__art', { 'aria-hidden': 'true' },
-      h('img', { src: '/photos/marigold-garland-lg.webp', alt: '' }),
-      h('div.auth__quote', h('p.auth__q', 'Every invitation begins with a welcome.'), h('p.auth__qne', { lang: 'ne' }, 'हार्दिक निमन्त्रणा'))),
-    h('div.auth__panel', h('div.auth__inner', ...panel)));
+  const mark = brand();
+  mark.href = '/'; // here the brand leads home to the public website
+  mark.setAttribute('aria-label', 'Nimtto home');
+  return h('div.auth',
+    h('header.auth__top', mark,
+      h('a.auth__site', { href: '/' }, h('span', 'Go to website'), icon('right', 15))),
+    h('main.auth__body', { id: 'main', tabindex: -1 }, h('div.auth__card', ...panel)),
+    h('footer.auth__foot',
+      h('nav.auth__links', { 'aria-label': 'Nimtto website' }, ...SITE_LINKS.map(([t, href]) => h('a', { href }, t))),
+      h('p.auth__copy', `© ${new Date().getFullYear()} Nimtto`)));
 }
 
 function passwordField(id, labelText, autocomplete) {
@@ -384,8 +391,8 @@ function loginPage() {
   });
   const forgot = h('a.link.auth__forgot', { href: '#/forgot', onclick: (e) => { e.preventDefault(); setUrl('#/forgot'); forgotPage(email.value); } }, 'Forgot password?');
   form.insertBefore(forgot, err);
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Sign in'), h('p.auth__lede', 'See your orders and edit your wedding invitation.'), form,
-    h('p.auth__small', 'New to Nimtto? ', h('a', { href: '#/signup', onclick: (e) => { e.preventDefault(); setUrl('#/signup'); signupPage(); } }, 'Create an account'), '.')));
+  fill(app, authLayout(h('h1.auth__title', 'Sign in'), h('p.auth__lede', 'See your orders and edit your wedding invitation.'), form,
+    h('p.auth__small.auth__switch', 'New to Nimtto? ', h('a', { href: '#/signup', onclick: (e) => { e.preventDefault(); setUrl('#/signup'); signupPage(); } }, 'Create an account'), '.')));
   email.focus();
 }
 
@@ -435,8 +442,8 @@ function signupPage() {
     }
   });
   const toLogin = (e) => { e.preventDefault(); setUrl('#/login'); loginPage(); };
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Create an account'), h('p.auth__lede', 'Order a design, pay, and edit your invitation, all in one place.'), form,
-    h('p.auth__small', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.')));
+  fill(app, authLayout(h('h1.auth__title', 'Create an account'), h('p.auth__lede', 'Order a design, pay, and edit your invitation, all in one place.'), form,
+    h('p.auth__small.auth__switch', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.')));
   name.focus();
 }
 
@@ -531,8 +538,8 @@ function forgotPage(prefill = '') {
     fill(holder, f);
     pw.input.focus();
   }
-  fill(app, authLayout(brand(true), h('h1.auth__title', 'Forgot password'), lede, holder,
-    h('p.auth__small', h('a', { href: '#/login', onclick: toLogin }, 'Back to sign in'))));
+  fill(app, authLayout(h('h1.auth__title', 'Forgot password'), lede, holder,
+    h('p.auth__small.auth__switch', h('a', { href: '#/login', onclick: toLogin }, 'Back to sign in'))));
   email.focus();
 }
 
@@ -581,13 +588,12 @@ async function passwordPage(token) {
     }
   });
   fill(app, authLayout(
-    brand(true),
     h('span.auth__seal', { 'aria-hidden': 'true' }, icon('lock', 20)),
     h('h1.auth__title', 'Enter your password'),
     h('p.auth__lede', 'Your planner sent you a password with this link. Enter it to see and edit your wedding invitation.'),
     h('p.auth__lede.auth__lede--ne', { lang: 'ne' }, 'आफ्नो निमन्त्रणा हेर्न र मिलाउन पासवर्ड राख्नुहोस्।'),
     form,
-    h('p.auth__small', 'No password? Ask the person who sent you this link.')));
+    h('p.auth__small.auth__switch', 'No password? Ask the person who sent you this link.')));
   pw.input.focus();
 }
 
@@ -604,7 +610,7 @@ function enterAsCouple(s) {
 function linkProblem(message = 'This link is no longer active. Please ask your planner for a new one.', heading = 'This link has expired') {
   teardown();
   document.title = 'Nimtto';
-  fill(app, authLayout(brand(true),
+  fill(app, authLayout(
     h('h1.auth__title', heading), h('p.auth__lede', message),
     h('button.link', { type: 'button', onclick: () => { coupleFlag(false); setUrl('#/login'); loginPage(); } }, 'Sign in with your email instead')));
 }
