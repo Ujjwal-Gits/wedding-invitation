@@ -2,7 +2,7 @@
 // (src/site/site.js, motion.js), the sage palette over it (intl.css), and the plans in US dollars from the live plans.
 import './site.js';
 import './intl.css';
-import { $$ } from './common.js';
+import { $$, reduced } from './common.js';
 import { loadSite } from './api.js';
 import { intlPlans, usdText } from './intl-plans.js';
 
@@ -58,3 +58,6 @@ function initGallery() {
   }
 }
 initGallery();
+
+// what guests see: the 3D phone whose screen changes step by step (a still list of steps with reduced motion)
+if (!reduced.matches && document.querySelector('[data-scene="journey"]')) import('./intl-journey.js').then((m) => m.initJourney()).catch(() => {});

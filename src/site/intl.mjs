@@ -163,23 +163,31 @@ function wreath() {
     ${ring(RINGS[0], 0)}${ring(RINGS[1], 1)}${pod}${ring(RINGS[2], 2)}</svg>`;
 }
 
-/* ---------------- what guests see: the pages of one invitation, on the pinned rail ---------------- */
+/* ---------------- what guests see: one phone, its screen changing step by step (src/site/intl-journey.js) ----------------
+   The markup is the finished, still state: every step with its own small phone and caption (no JavaScript, reduced
+   motion). The script turns it into the pinned 3D phone (wide screens) or a swipe row under one phone (phones). */
 const GUEST = [
-  ['olive', 'The invitation', 'It opens like a real card, with your names, date and place.'],
-  ['countdown', 'Countdown', 'Days to go, and one tap to add it to their calendar.'],
+  ['olive', 'The invitation', 'It opens like a real card, with your names, the date and the place.'],
+  ['countdown', 'Countdown', 'Days to go, and one tap to add the day to their calendar.'],
   ['schedule', 'Schedule', 'The whole weekend, with a map for every stop.'],
-  ['rsvp', 'RSVP', 'Guests reply in a minute. No account, no app.'],
+  ['rsvp', 'RSVP', 'Guests reply in a minute. No account and no app.'],
   ['stay', 'Travel and hotels', 'Where to stay, how to get there and who to call.'],
   ['story', 'Your story', 'How you met and how it happened, in your own words.'],
-  ['music', 'Your song', 'The song you pick plays as guests open it.'],
+  ['music', 'Your song', 'The song you pick plays as guests open the invitation.'],
   ['live', 'Watch live', 'A live stream link for family who are far away.'],
 ];
-function guestRail() {
-  return GUEST.map(([n, t, d]) => `<li class="rcard gpage">
-    <div class="rcard__pic" style="--tint:#EAF1E7">${iphone(n, { sizes: '(max-width: 599px) 56vw, 260px', alt: `${t}: ${d}` })}</div>
-    <p class="rcard__name">${esc(t)}</p>
-    <p class="gpage__d">${esc(d)}</p>
-  </li>`).join('');
+const SCREEN = '(max-width: 1023px) 52vw, 360px';
+function journey() {
+  const n = GUEST.length;
+  const screens = GUEST.map(([id, t], i) => `<img class="journey__scr${i ? '' : ' is-on'}" data-i="${i}" src="/site/intl/${id}-${V}-480.webp" srcset="${srcset(id)}" sizes="${SCREEN}" width="390" height="844" alt="" loading="lazy" decoding="async" />`).join('');
+  const steps = GUEST.map(([id, t, d], i) => `<li class="journey__step" data-i="${i}">
+      <div class="journey__fig">${iphone(id, { sizes: '(max-width: 699px) 44vw, 220px', alt: `${t}: ${d}` })}</div>
+      <div class="journey__cap"><p class="journey__n">${String(i + 1).padStart(2, '0')} <span>/ ${String(n).padStart(2, '0')}</span></p><h3 class="journey__t">${esc(t)}</h3><p class="journey__d">${esc(d)}</p></div>
+    </li>`).join('');
+  const dots = GUEST.map(([, t], i) => `<button class="journey__dot" type="button" data-i="${i}" aria-label="Step ${i + 1}: ${esc(t)}"${i ? '' : ' aria-current="step"'}></button>`).join('');
+  return `<div class="journey__stage" aria-hidden="true"><div class="journey__float"><div class="journey__phone"><span class="phone"><span class="journey__screens">${screens}</span></span></div></div><div class="journey__glow"></div></div>
+    <ol class="journey__steps">${steps}</ol>
+    <div class="journey__nav" hidden><div class="journey__bar"><i></i></div><div class="journey__dots">${dots}</div></div>`;
 }
 
 /* ---------------- why paperless (the bento) ---------------- */
@@ -276,5 +284,5 @@ function faq() {
 
 export const INTL_PARTIALS = {
   'intl-head': head, 'intl-header': header, 'intl-footer': footer, 'intl-styles': styleChips, 'intl-gallery': gallery,
-  wreath, 'intl-guests': guestRail, 'intl-why': why, 'intl-steps': steps, 'intl-events': events, 'intl-plans': plans, 'intl-faq': faq,
+  wreath, 'intl-journey': journey, 'intl-why': why, 'intl-steps': steps, 'intl-events': events, 'intl-plans': plans, 'intl-faq': faq,
 };

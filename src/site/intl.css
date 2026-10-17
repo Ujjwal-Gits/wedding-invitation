@@ -74,10 +74,58 @@
 /* ---------------- the wreath bridge: a plain eyebrow over the heading ---------------- */
 .market-intl .lotus__text .eyebrow { margin-bottom: 4px; }
 
-/* ---------------- what guests see: the rail of one invitation's pages ---------------- */
-.gpage .rcard__pic { background: var(--blush-100); }
-.gpage:nth-child(even) .rcard__pic { background: var(--blush-50); box-shadow: inset 0 0 0 1px var(--line); }
-.gpage__d { font-size: 14.5px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
+/* ---------------- what guests see: one phone, its screen changing step by step (src/site/intl-journey.js) ----------------
+   Still state (no JavaScript, reduced motion): every step as a card with its own small phone. .is-pin (wide screens):
+   the box is pinned, one big phone in gentle 3D, the caption beside it. .is-swipe (phones): one phone above a swipe row. */
+.journey { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gut); }
+.journey__stage { position: relative; display: none; }
+.journey__steps { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .journey__steps { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.journey__step { display: grid; gap: 16px; align-content: start; padding: clamp(18px, 2vw, 28px); border-radius: var(--r-xl); background: var(--blush-50); }
+.journey__fig { display: grid; place-items: center; padding: 6% 14% 0; }
+.journey__fig .phone { width: 100%; }
+.journey__n { font: 600 12px/1 var(--f-sans); letter-spacing: 0.14em; color: var(--accent); }
+.journey__n span { color: var(--ink-3); font-weight: 500; }
+.journey__t { margin-top: 8px; font: 400 clamp(24px, 2.2vw, 34px)/1.1 var(--f-display); letter-spacing: -0.012em; }
+.journey__d { margin-top: 8px; color: var(--ink-2); max-width: 34ch; }
+.journey__nav { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.journey__bar { width: 168px; height: 2px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.journey__bar i { display: block; height: 100%; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); }
+.journey__dots { display: flex; gap: 2px; }
+.journey__dot { position: relative; width: 24px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; }
+.journey__dot::before { content: ''; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--line-2); transition: transform 0.25s var(--ease), background-color 0.25s var(--ease); }
+.journey__dot:hover::before { background: var(--rose-300); }
+.journey__dot[aria-current]::before { background: var(--accent); transform: scale(1.35); }
+.journey__dot:focus-visible { outline-offset: 0; border-radius: 50%; }
+/* the big phone: its eight screens stack inside the frame; one shows */
+.journey__phone .phone { width: 100%; }
+.journey__screens { position: absolute; left: 2.4%; right: 2.4%; top: 1.2%; bottom: 1.2%; border-radius: 13% / 6.4%; overflow: hidden; background: #FBFCFA; }
+.journey__screens .journey__scr { left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; border-radius: 0; opacity: 0; visibility: hidden; }
+.journey__screens .journey__scr.is-on { opacity: 1; visibility: visible; }
+.journey__float { transform-style: preserve-3d; will-change: transform; }
+.journey__glow { position: absolute; left: 50%; bottom: 3%; width: 440px; height: 64px; margin-left: -220px; border-radius: 50%; background: radial-gradient(closest-side, rgba(47, 77, 58, 0.18), transparent); pointer-events: none; }
+
+/* wide screens: pinned under the header, one big phone in the middle, the caption beside it */
+.journey.is-pin { position: relative; height: calc(100svh - var(--nav-h)); min-height: 620px; max-height: 1000px; }
+.is-pin .journey__stage { display: grid; place-items: center; position: absolute; inset: 0 0 64px; perspective: 1600px; }
+.is-pin .journey__phone { width: min(340px, calc((min(100svh, 1000px) - var(--nav-h) - 120px) / 2)); }
+.is-pin .journey__steps { position: absolute; inset: 0 var(--gut) 64px; display: block; pointer-events: none; }
+.is-pin .journey__step { position: absolute; top: 50%; width: min(360px, 28vw); padding: 28px 32px; background: #fff; box-shadow: var(--shadow); border-radius: 22px; visibility: hidden; pointer-events: auto; }
+.is-pin .journey__step:nth-child(odd) { right: calc(50% + min(340px, calc((min(100svh, 1000px) - var(--nav-h) - 120px) / 2)) / 2 + clamp(40px, 5vw, 96px)); }
+.is-pin .journey__step:nth-child(even) { left: calc(50% + min(340px, calc((min(100svh, 1000px) - var(--nav-h) - 120px) / 2)) / 2 + clamp(40px, 5vw, 96px)); }
+.is-pin .journey__fig { display: none; }
+.is-pin .journey__nav { position: absolute; left: 0; right: 0; bottom: 14px; }
+.sec--journey:has(.is-pin) { padding-bottom: 0; }
+
+/* phones: one phone above a swipe row of captions (no pinning) */
+.is-swipe .journey__stage { display: grid; place-items: center; padding: 4px 0 28px; perspective: 1200px; }
+.is-swipe .journey__phone { width: min(52vw, 230px, calc((100svh - var(--nav-h)) * 0.27)); }
+.is-swipe .journey__glow { width: 300px; margin-left: -150px; bottom: 10px; height: 44px; }
+.is-swipe .journey__steps { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(-1 * var(--gut)); padding-inline: max(var(--gut), calc((100% + 2 * var(--gut) - min(78vw, 340px)) / 2)); }
+.is-swipe .journey__steps::-webkit-scrollbar { display: none; }
+.is-swipe .journey__step { flex: none; width: min(78vw, 340px); scroll-snap-align: center; }
+.is-swipe .journey__fig { display: none; }
+.is-swipe .journey__nav { margin-top: 18px; }
 
 /* ---------------- other events: the occasion cards, a heading and a line each ---------------- */
 .market-intl .occ--lead { background: var(--accent) !important; }
