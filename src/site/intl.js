@@ -30,30 +30,30 @@ async function refreshPlans() {
 }
 refreshPlans().catch(() => {});
 
-/** the design gallery: the style chips show only the designs in that style (a quiet fade, none with reduced motion) */
+/** the designs rail: the style chips show only the designs in that style, then the rail measures itself again.
+ *  While the rail is pinned we first go back to its start, so the shorter (or longer) row never jumps. */
 function initGallery() {
+  const sec = document.getElementById('designs');
   const chips = $$('.gal-chips [data-style]');
-  const cards = $$('#gal [data-style]');
-  const empty = document.getElementById('gal-empty');
-  if (!chips.length || !cards.length) return;
+  const cards = $$('#gal > li');
+  if (!sec || !chips.length || !cards.length) return;
   for (const chip of chips) {
     chip.addEventListener('click', () => {
       const style = chip.dataset.style;
       chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-      let shown = 0;
       cards.forEach((card) => {
         const on = style === 'all' || card.dataset.style === style;
         card.hidden = !on;
-        if (on) {
-          shown += 1;
-          card.classList.remove('is-in');
-          void card.offsetWidth; // restart the fade
-          card.classList.add('is-in');
-        }
+        if (on) { card.classList.remove('is-in'); void card.offsetWidth; card.classList.add('is-in'); } // restart the fade
       });
-      if (empty) empty.hidden = shown > 0;
-      // the pinned scenes below measured the page when it loaded: measure again (same module as motion.js)
-      if (document.querySelector('.is-stuck, .pin-spacer')) import('gsap/ScrollTrigger').then((m) => m.ScrollTrigger.refresh()).catch(() => {});
+      const view = sec.querySelector('.rail__view');
+      if (view) view.scrollLeft = 0; // phones: the swipe row starts again at the first card
+      if (!sec.classList.contains('js-rail')) return; // no pinned scene (phones, reduced motion)
+      import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+        const st = ScrollTrigger.getAll().find((t) => t.trigger === sec);
+        if (st && window.scrollY > st.start) window.scrollTo({ top: st.start, behavior: 'instant' });
+        ScrollTrigger.refresh();
+      }).catch(() => {});
     });
   }
 }

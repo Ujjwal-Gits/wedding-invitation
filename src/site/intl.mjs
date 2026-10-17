@@ -16,7 +16,7 @@ export const STYLES = [['garden', 'Garden'], ['romantic', 'Romantic'], ['classic
 export const DESIGNS = [
   { id: 'olive', name: 'Olive Grove', style: 'garden', tier: 'shubha', alt: 'a watercolor olive wreath around the date' },
   { id: 'rosearch', name: 'Rose Arch', style: 'romantic', tier: 'shahi', alt: 'a stone arch covered in climbing garden roses' },
-  { id: 'dove', name: 'Dove', style: 'classic', tier: 'saral', alt: 'a white dove with a gold olive branch' },
+  { id: 'roses', name: 'Blush Roses', style: 'classic', tier: 'saral', alt: 'peach and blush garden roses inside a thin gold frame' },
   { id: 'arch', name: 'Gold Arch', style: 'modern', tier: 'shubha', alt: 'a thin gold arch with a blush rose' },
   { id: 'amalfi', name: 'Amalfi', style: 'destination', tier: 'shahi', alt: 'lemon branches above the Amalfi coast' },
   { id: 'garden', name: 'Garden Party', style: 'garden', tier: 'shubha', alt: 'a garden ceremony with a rose arbor and white chairs' },
@@ -26,10 +26,12 @@ export const DESIGNS = [
   { id: 'tuscany', name: 'Tuscany', style: 'destination', tier: 'shubha', alt: 'vineyard hills at golden hour' },
 ];
 const W = [480, 800, 1170];
-export const srcset = (n) => W.map((w) => `/site/intl/${n}-${w}.webp ${w}w`).join(', ');
+/** the art version, in every file name: new art gets a new URL, so no browser or CDN cache can show an old picture */
+export const V = 'v3';
+export const srcset = (n) => W.map((w) => `/site/intl/${n}-${V}-${w}.webp ${w}w`).join(', ');
 /** a phone frame with one of the international screens (decorative unless `alt` is given) */
 export function iphone(n, { sizes = '220px', alt = '', eager = false } = {}) {
-  return `<span class="phone"><img src="/site/intl/${n}-480.webp" srcset="${srcset(n)}" sizes="${sizes}" width="390" height="844" alt="${esc(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" /></span>`;
+  return `<span class="phone"><img src="/site/intl/${n}-${V}-480.webp" srcset="${srcset(n)}" sizes="${sizes}" width="390" height="844" alt="${esc(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" /></span>`;
 }
 
 const PLANS = intlPlans(FALLBACK_SITE.plans);
@@ -48,7 +50,7 @@ function head() {
   <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="${esc(title)}" />
   <meta property="og:description" content="${esc(desc)}" />
-  <meta property="og:image" content="${SITE}/site/intl/share.jpg" />
+  <meta property="og:image" content="${SITE}/site/intl/share-${V}.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="The Olive Grove wedding invitation for Emily and James" />
@@ -118,16 +120,16 @@ function footer() {
 function styleChips() {
   return `<button class="chip" type="button" data-style="all" aria-pressed="true">All designs</button>${STYLES.map(([id, t]) => `<button class="chip" type="button" data-style="${id}" aria-pressed="false">${t}</button>`).join('')}`;
 }
+const TINTS = ['#EAF1E7', '#F1F5EF', '#E6EFE3', '#EEF2EA'];
+/** the design cards: the home page's rail cards, with the style beside the name */
 function gallery() {
   const label = Object.fromEntries(STYLES);
-  return DESIGNS.map((d) => {
+  return DESIGNS.map((d, i) => {
     const p = planOf(d.tier);
-    return `<li class="dcard gcard" data-style="${d.style}">
-    <a class="dcard__pic" href="#plans" tabindex="-1" aria-hidden="true">${iphone(d.id, { sizes: '(max-width: 759px) 40vw, (max-width: 1199px) 26vw, 220px' })}</a>
-    <div class="dcard__body">
-      <h3 class="dcard__name"><a href="#plans">${esc(d.name)}</a></h3>
-      <p class="dcard__meta"><span class="gcard__style">${label[d.style]}</span><span class="tier tier--${d.tier}">${esc(p?.name || '')}</span><span class="dcard__price" data-usd-from="${d.tier}">${fromPrice(d.tier)}</span></p>
-    </div>
+    return `<li class="rcard" data-style="${d.style}">
+    <a class="rcard__pic" href="#plans" style="--tint:${TINTS[i % TINTS.length]}">${iphone(d.id, { sizes: '(max-width: 599px) 56vw, 260px', alt: `The ${d.name} design: ${d.alt}` })}</a>
+    <p class="rcard__name"><a href="#plans">${esc(d.name)}</a> <span>${label[d.style]}</span></p>
+    <p class="rcard__meta"><span class="tier tier--${d.tier}">${esc(p?.name || '')}</span><span class="dcard__price" data-usd-from="${d.tier}">${fromPrice(d.tier)}</span></p>
   </li>`;
   }).join('');
 }
@@ -169,6 +171,8 @@ const GUEST = [
   ['rsvp', 'RSVP', 'Guests reply in a minute. No account, no app.'],
   ['stay', 'Travel and hotels', 'Where to stay, how to get there and who to call.'],
   ['story', 'Your story', 'How you met and how it happened, in your own words.'],
+  ['music', 'Your song', 'The song you pick plays as guests open it.'],
+  ['live', 'Watch live', 'A live stream link for family who are far away.'],
 ];
 function guestRail() {
   return GUEST.map(([n, t, d]) => `<li class="rcard gpage">
@@ -191,7 +195,7 @@ const WHY = [
   { id: 'music', t: 'Your song plays', d: 'Pick a song to play as the invitation opens. Guests can turn it off.',
     vis: () => '<div class="fx fx--music" aria-hidden="true"><span class="fx__play"></span><span class="fx__wave">' + Array.from({ length: 28 }, (_, i) => `<i style="--h:${20 + Math.round(Math.abs(Math.sin(i * 1.7)) * 70)}%"></i>`).join('') + '</span></div>' },
   { id: 'share', t: 'Send it by text or email', d: 'Copy your link and send it any way you like. Your names and picture show in the preview.',
-    vis: () => '<div class="fx fx--share" aria-hidden="true"><span class="fx__bubble"><img src="/site/intl/share.jpg" width="1200" height="630" alt="" loading="lazy" decoding="async" /><b>Emily &amp; James · June 12, 2027</b><span>nimtto.com</span></span></div>' },
+    vis: () => '<div class="fx fx--share" aria-hidden="true"><span class="fx__bubble"><img src="/site/intl/share-' + V + '.jpg" width="1200" height="630" alt="" loading="lazy" decoding="async" /><b>Emily &amp; James · June 12, 2027</b><span>nimtto.com</span></span></div>' },
   { id: 'eco', t: 'Kinder to the planet', d: 'No paper, no envelopes and no shipping. Just one link.',
     vis: () => '<div class="fx fx--eco" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M14 50C12 30 26 14 52 12c0 26-14 40-34 40" fill="var(--blush-100)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 50C24 38 32 30 44 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>0 paper · 0 stamps</span></div>' },
 ];

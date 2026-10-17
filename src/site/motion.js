@@ -4,7 +4,7 @@
 //  - hero: the copy lifts away, the side phones part, and we go INTO the centre phone's invitation (zoom-through)
 //  - lotus: THE LOTUS OPENS (after the Shree design's कार्यक्रम): a circle of light, petals unfold ring by ring,
 //    then the flower rises to crown the heading
-//  - rail: the designs slide past while the section holds still (wide screens)
+//  - rail: the designs slide past while the section holds still (wide screens); every [data-scene="rail"] on the page
 //  - orbit: the features gather round one phone (wide screens)
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -128,8 +128,11 @@ function lotus(mm) {
 }
 
 function rail(mm) {
-  const sec = $('[data-scene="rail"]');
-  if (!sec) return;
+  // one page can hold more than one rail (the international page: the designs, then what guests see)
+  $$('[data-scene="rail"]').forEach((sec) => railOne(mm, sec));
+}
+
+function railOne(mm, sec) {
   const view = $('.rail__view', sec);
   const track = $('.rail__track', sec);
   // size the cards so the heading AND the whole cards fit on screen before the row starts moving sideways
