@@ -8,7 +8,7 @@ const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /** Keys whose change re-shapes the page (dates, ids, links, layout switches): a full render. */
 const STRUCT = new Set(['start', 'end', 'weddingDate', 'timeZone', 'theme', 'religion', 'id', 'openEnded', 'enabled',
-  'maxGuests', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
+  'maxGuests', 'guestNames', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
 /** Words the page also uses in links (a map search, a phone number, a stream): patched in text and in hrefs. */
 const LINKY = new Set(['mapQuery', 'phone', 'livestream']);
 /** A theme line turned off with a code word: the page hides it, so it is a fresh render, never a word swap. */

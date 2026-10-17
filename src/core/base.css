@@ -336,6 +336,13 @@ body .madewith .l-ne { font-size: 14px; letter-spacing: 0; }
 .gstep__b:disabled { opacity: 0.3; cursor: default; }
 .gstep__b:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
 .gstep__v { min-width: 40px; text-align: center; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* RSVP: one entry per guest, built from the theme's own fields (core/rsvp.js); spacing follows the form's */
+.rsvp-party, .rsvp-guest { display: grid; gap: inherit; min-width: 0; }
+.rsvp-party:empty { display: none; }
+.rsvp-guest + .rsvp-guest { padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.rsvp-guest.is-new { animation: rsvp-guest-in 260ms cubic-bezier(0.22, 0.8, 0.24, 1) both; }
+@keyframes rsvp-guest-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .rsvp-guest.is-new { animation: none; } }
 
 /* Nepali text: keep the familiar digit shapes. With lang="ne" some fonts (Noto, Tiro) switch to
    localized forms where ८ reads as ५ to most readers (२०८३ looked like २०५३). */

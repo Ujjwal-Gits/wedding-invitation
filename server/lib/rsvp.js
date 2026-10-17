@@ -3,6 +3,7 @@
 import { randomBytes } from 'node:crypto';
 import { peekInvitation, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
+import { rsvpOptions, partyOf, mealLabel, mealTotals, guestName, LIMITS } from '../../src/core/rsvp-rules.js';
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -46,11 +47,12 @@ export async function submit(req, res) {
   // Honeypot: real guests never see or fill "website". Pretend success, store nothing.
   if (typeof body.website === 'string' && body.website.trim()) return res.json({ ok: true });
 
-  const name = clean(body.name, 80);
+  const name = clean(body.name, LIMITS.name);
   const phone = clean(body.phone, 20);
   const attending = body.attending === 'no' ? 'no' : body.attending === 'yes' ? 'yes' : null;
-  const message = clean(body.message, 500, true);
-  const meal = body.meal === 'veg' ? 'veg' : body.meal === 'nonveg' ? 'nonveg' : '';
+  const message = clean(body.message, LIMITS.message, true);
+  const ask = rsvpOptions(inv.rsvp);
+  const mealIds = new Set(ask.meals.map((m) => m.id));
   const max = inv.rsvp.maxGuests || 6;
   let guests = Number(body.guests);
   const validIds = new Set(inv.events.map((e) => e.id));
@@ -66,10 +68,35 @@ export async function submit(req, res) {
   // each ceremony is its own answer: a guest who comes must say which (an older form that sends no list counts for all)
   if (attending === 'yes' && Array.isArray(body.events) && body.events.length && !events.length) errors.push('events');
   if (attending === 'yes' && Array.isArray(body.events) && !body.events.length && validIds.size > 1) errors.push('events');
+
+  // Everyone coming, one entry each: a name (the first is the person replying) and a meal from the couple's list.
+  // An older form sends no `party`, only one meal for everyone: still accepted, nothing more is asked of it.
+  let party = [];
+  if (attending === 'yes' && !errors.includes('guests')) {
+    if (body.party != null && (!Array.isArray(body.party) || body.party.length !== guests)) errors.push('party');
+    else if (Array.isArray(body.party)) {
+      party = body.party.map((g, i) => {
+        const o = g && typeof g === 'object' && !Array.isArray(g) ? g : {};
+        const gName = i === 0 ? name : ask.guestNames === 'off' ? '' : clean(o.name, LIMITS.name);
+        const meal = typeof o.meal === 'string' && mealIds.has(o.meal) ? o.meal : '';
+        if (ask.meals.length && !meal && !errors.includes('meal')) errors.push('meal');
+        if (i > 0 && ask.guestNames === 'required' && gName.length < 2 && !errors.includes('party')) errors.push('party');
+        return { name: gName, meal };
+      });
+    } else {
+      const meal = typeof body.meal === 'string' && mealIds.has(body.meal) ? body.meal : '';
+      party = Array.from({ length: guests }, (_, i) => ({ name: i ? '' : name, meal }));
+    }
+  }
   if (errors.length) return res.status(400).json({ ok: false, error: 'Please check your reply.', fields: errors });
   if (attending === 'yes' && !events.length) events = [...validIds];
 
-  const reply = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), name, phone, attending, guests, events, meal, message };
+  const reply = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), name, phone, attending, guests, events, party };
+  const diet = attending === 'yes' && ask.diet ? clean(body.diet, LIMITS.diet, true) : '';
+  const song = attending === 'yes' && ask.song ? clean(body.song, LIMITS.song) : '';
+  if (diet) reply.diet = diet;
+  if (song) reply.song = song;
+  reply.message = message;
   try {
     await addReply(slug, reply, MAX_REPLIES); // 507 when the invitation is full
   } catch (err) {
@@ -83,7 +110,7 @@ export async function submit(req, res) {
 function totals(inv, replies) {
   const yes = replies.filter((r) => r.attending === 'yes');
   const events = (inv?.events || []).map((e) => {
-    const rs = yes.filter((r) => r.events.includes(e.id));
+    const rs = yes.filter((r) => (r.events || []).includes(e.id));
     return { id: e.id, title: e.title, start: e.start, parties: rs.length, guests: rs.reduce((n, r) => n + r.guests, 0) };
   });
   return {
@@ -91,7 +118,10 @@ function totals(inv, replies) {
     attendingParties: yes.length,
     declined: replies.length - yes.length,
     guests: yes.reduce((n, r) => n + r.guests, 0),
-    veg: yes.filter((r) => r.meal === 'veg').reduce((n, r) => n + r.guests, 0),
+    veg: yes.reduce((n, r) => n + partyOf(r).filter((g) => g.meal === 'veg').length, 0), // older dashboards read this
+    meals: mealTotals(yes, rsvpOptions(inv?.rsvp).meals),
+    diet: yes.filter((r) => r.diet).length,
+    songs: yes.filter((r) => r.song).length,
     events,
   };
 }
@@ -129,11 +159,18 @@ export async function exportCsv(req, res) {
   const { inv, replies } = await loadBoth(slug);
   replies.sort((a, b) => a.at.localeCompare(b.at));
   const titles = Object.fromEntries((inv?.events || []).map((e) => [e.id, e.title.en || e.title.ne || e.id]));
-  const header = ['Received', 'Name', 'Phone', 'Attending', 'Guests', 'Ceremonies', 'Meal', 'Message'];
-  const rows = replies.map((r) => [
-    r.at, r.name, r.phone, r.attending, r.guests, r.events.map((id) => titles[id] || id).join(' / '),
-    r.meal === 'veg' ? 'Vegetarian' : r.meal === 'nonveg' ? 'Non-vegetarian' : '', r.message,
-  ]);
+  const meals = rsvpOptions(inv?.rsvp).meals;
+  // One row per reply; "Guest names" and "Meals" list the party in the same order, joined by " / ".
+  const header = ['Received', 'Name', 'Phone', 'Attending', 'Guests', 'Ceremonies', 'Guest names', 'Meals', 'Dietary needs', 'Song request', 'Message'];
+  const rows = replies.map((r) => {
+    const party = partyOf(r);
+    return [
+      r.at, r.name, r.phone, r.attending, r.guests, (r.events || []).map((id) => titles[id] || id).join(' / '),
+      party.map((g, i) => guestName(g, i)).join(' / '),
+      party.some((g) => g.meal) ? party.map((g) => mealLabel(g.meal, meals).en || '-').join(' / ') : '',
+      r.diet || '', r.song || '', r.message,
+    ];
+  });
   const csv = `﻿${[header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
   res.set('Content-Type', 'text/csv; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="rsvps-${slug}.csv"`);
