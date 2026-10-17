@@ -1,114 +1,71 @@
 # Nimtto
 
-> Nimtto (निम्तो, "invitation" in Nepali) is an online invitation maker from Nepal. It makes invitation websites (digital invitation cards, e-invitations) for Nepali weddings and every family occasion: engagement, bratabandha, gunyu cholo, pasni, nwaran, birthdays, janku, bhoj and receptions. Each invitation works in English and Nepali, shows Bikram Sambat and AD dates, every event with a map, RSVP, music and photos, and is shared as one link on WhatsApp, Viber or Messenger. No app is needed.
+> Nimtto (निम्तो, "invitation" in Nepali) makes animated invitation websites with RSVP, set up with you by a real designer. Two sites: nimtto.com for Nepali weddings and family ceremonies in Nepal (English and Nepali, Bikram Sambat dates, rupees, Khalti/eSewa/QR), and nimtto.com/international/ for weddings and every celebration worldwide (US dollars, card or PayPal), including Nepali and South Asian weddings abroad.
 
 ## Key facts
-- Website: https://nimtto.com
-- Based in: Nepal; serves Nepali families worldwide
-- Contact: WhatsApp and phone +977 980-6393298, email nimttoz@gmail.com (English and Nepali)
-- Payment: from abroad, card or PayPal in US dollars (the plan switches on at once). In Nepal, Khalti, eSewa or bank QR (Fonepay): upload the payment screenshot and Nimtto confirms it.
-- Ordering creates a customer account (email and password) to pay later, edit the invitation and read guest replies.
+- Website: https://nimtto.com (Nepal, prices in rupees) and https://nimtto.com/international/ (worldwide, prices in US dollars)
+- What it is: an animated invitation that opens like a real card, with an event website (schedule, maps, travel notes, story, photos, music) and RSVP, shared as one link. A real designer sets it up with the customer; guests need no app or account.
+- Based in: Nepal. Works online with families in Nepal and couples and hosts worldwide.
+- Contact: email nimttoz@gmail.com, WhatsApp +977 980-6393298 (English and Nepali). Replies usually within one business day.
+- Payment: one payment, no subscription, no charge per guest. Nepal: Khalti, eSewa or bank QR (Fonepay), confirmed by hand. Abroad: card or PayPal in US dollars; the plan switches on as soon as the payment goes through.
+- Delivery: the invitation appears in the customer's dashboard as soon as payment is confirmed; design help usually takes 1 to 3 business days. Invitations stay online for at least one year after the event date.
+- Custom designs: an enquiry. Nimtto replies within one business day with a price.
+- Refunds: full before work starts, 50% after work starts, none after the invitation is published (unless the mistake is Nimtto's). Terms: https://nimtto.com/terms/ · Privacy: https://nimtto.com/privacy/ · Refunds: https://nimtto.com/refunds/
 
-## Prices (one payment, no monthly fee)
-- Standard: Rs 2,999 (USD 49 from abroad). A ready-made design; Your names, date and venue; Guest replies (RSVP); A link to share on WhatsApp.
-- Pro: Rs 4,999 (USD 99 from abroad). Everything in Standard; Photos and your story; Every ceremony with maps; Music and the opening scene.
-- Pro Max: Rs 6,999 (USD 149 from abroad). Everything in Pro; Premium designs; Personal guest links; Priority help until the wedding.
-- Custom: from Rs 11,111 (USD 199 from abroad). A design made for your occasion; Your colours, art and wording; Everything in Pro Max.
+## Prices
+Nepal (https://nimtto.com/pricing/): Standard Rs 2,999; Pro Rs 4,999; Pro Max Rs 6,999; Custom from Rs 11,111.
+International (https://nimtto.com/international/pricing/): Standard $49; Pro $99; Pro Max $149; Custom from $199.
+Plans: Standard: A ready-made design, Your names, date and venue, Guest replies (RSVP), A link to share on WhatsApp. Pro: Everything in Standard, Photos and your story, Every ceremony with maps, Music and the opening scene. Pro Max: Everything in Pro, Premium designs, Personal guest links, Priority help until the wedding.
 
-## Wedding designs (27), by the lowest plan that includes them
-- Standard: Kham (खाम), Mala (माला), Phoolbari (फूलबारी), Dhaka (ढाका), Sayapatri (सयपत्री), Chitra (चित्र), Jhyal (झ्याल)
-- Pro: Dhoka (ढोका), Durbar (दरबार), Himal (हिमाल), Mandap (मण्डप), Bagaicha (बगैंचा), Ghar (घर), Mangal (मंगल), Nimantrana (निमन्त्रणा)
-- Pro Max: Mahal (महल), Laali (लाली), Mehendi (मेहन्दी), Hariyo (हरियो), Shree (श्री), Pardaa (पर्दा), Rajdwar (राजद्वार), Agni (अग्नि), Janti (जन्ती), Swayambar (स्वयम्बर), Sindoor (सिन्दूर), Rangoli (रंगोली)
+## Nepal site
+- [Digital Wedding Invitation Nepal](https://nimtto.com/): Animated wedding invitation website with RSVP, made with a real designer. Pay once from Rs 2,999 via eSewa, Khalti or bank QR.
+- [Nepali Wedding Card Designs and Animated Invites](https://nimtto.com/designs/): Browse 27 premium Nepali wedding card designs with animation, music and RSVP. Pick one and our designer personalises it. From Rs 2,999.
+- [Invitation Cards for Every Nepali Occasion](https://nimtto.com/occasions/): Online invitation cards for maagni, bratabandha, gunyo cholo, pasni, nwaran, birthdays, janku and bhoj, in English and Nepali with RSVP and maps.
+- [How to Make a Digital Invitation in Nepal](https://nimtto.com/how-it-works/): Choose a design, pay once by eSewa, Khalti or bank QR, review it with your designer on WhatsApp, then send one link. Ready in days.
+- [Wedding RSVP Website and Invitation Features](https://nimtto.com/features/): RSVP tracking, every ceremony with Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, in one invitation link.
+- [Digital Invitation Price in Nepal From Rs 2,999](https://nimtto.com/pricing/): Rs 2,999, 4,999 and 6,999 plans, custom from Rs 11,111. Pay once with Khalti, eSewa or bank QR. PayPal from abroad.
+- [Digital Invitation FAQ for Nepal](https://nimtto.com/faq/): Answers on price, payment, timing, changes, RSVP and sharing for Nepali digital invitations, from eSewa and Khalti to guests abroad.
+- [Contact Nimtto to Order a Digital Invitation](https://nimtto.com/contact/): Talk to a designer on WhatsApp or email. Tell us your date and we will suggest a design. WhatsApp +977 980-6393298, in English or Nepali.
+- [Wedding Invitation Card Online in Nepal](https://nimtto.com/wedding-invitation-nepal/): Create a Nepali wedding invitation website: animation, RSVP, map and schedule in one link. Designer-made, from Rs 2,999.
+- [Maagni and Engagement Invitation Card Online](https://nimtto.com/occasions/engagement/): Maagni, tika and engagement invitation cards online, in English and Nepali, with the programme, a map and guest replies. We reply with a price in a day.
+- [Bratabandha Invitation Card Online](https://nimtto.com/occasions/bratabandha/): Bratabandha invitation card online in English and Nepali: the full programme, the date in BS and AD, a map and replies. Designed for your family.
+- [Gunyo Cholo Invitation Card Online](https://nimtto.com/occasions/gunyu-cholo/): Gunyo cholo (gunyu cholo) invitation card online, in English and Nepali, with the programme, the date in BS and AD, a map and replies. Designed for you.
+- [Pasni Invitation Card Online in Nepal](https://nimtto.com/occasions/pasni/): Pasni (annaprashan) invitation card online: your baby’s name, photos, the date in BS and AD, the feast, a map and replies. In English and Nepali.
+- [Nwaran Naming Ceremony Invitation Card](https://nimtto.com/occasions/nwaran/): Nwaran naming ceremony invitation card online: the new name revealed as guests open it, the date in BS and AD, a map and replies. In English and Nepali.
+- [Digital Birthday Invitation in Nepal](https://nimtto.com/occasions/birthday/): Digital birthday invitation for Nepal, for any age, from a first birthday to an 84th. English and Nepali, with a map and replies. Pay by eSewa or Khalti.
+- [Janku Invitation Card Online](https://nimtto.com/occasions/janku/): Janku invitation card online for the Newar old-age rites, from Bhimratha at 77: the programme, the date in BS and AD, a map and replies. Designed for you.
+- [Reception and Bhoj Invitation Card Online](https://nimtto.com/occasions/reception-bhoj/): Reception and bhoj invitation card online: the party, the venue with a map and replies for numbers. In English and Nepali. Pay by eSewa, Khalti or QR.
+- [Nepali Wedding Invitation for Families Abroad](https://nimtto.com/nepali-abroad/): Living abroad with a wedding in Nepal? Make your Nepali wedding invitation online, invite relatives at home on WhatsApp and pay by card or PayPal in USD.
 
-## Occasions
-- Wedding (शुभ विवाह, बिहे): 27 ready designs, with every ceremony from mehendi to reception. Ready-made designs.
-- Engagement (माग्नी, टीका): The tika, the rings and the family lunch, in one link. Designed for you on the Custom plan.
-- Bratabandha (ब्रतबन्ध): The sacred thread day, with the full programme and the feast. Designed for you on the Custom plan.
-- Gunyu Cholo (गुन्यू चोलो): A daughter’s first gunyu cholo, shared with the whole family. Designed for you on the Custom plan.
-- Pasni (पास्नी, अन्नप्राशन): Baby’s first rice, with photos and the time of the feast. Designed for you on the Custom plan.
-- Nwaran (न्वारान): The naming day. The new name appears as guests open it. Designed for you on the Custom plan.
-- Birthday (जन्मदिन): From a first birthday to an 84th, in English and Nepali. Designed for you on the Custom plan.
-- Janku (जंकु): The Newar old-age rites that honour an elder, from Bhimratha on. Designed for you on the Custom plan.
-- Bhoj and reception (भोज): A reception or family feast, with a map and replies for numbers. Designed for you on the Custom plan.
-- Your own occasion (आफ्नै अवसर): Griha pravesh, a puja, an anniversary. Designed for you. Designed for you on the Custom plan.
+## International site
+- [Animated Wedding Invitation Website With RSVP](https://nimtto.com/international/): One link for your animated invitation, event site and RSVP, made with a real designer. Pay once from $49. US, UK, Canada, Australia, UAE.
+- [Animated Wedding Invitation Designs](https://nimtto.com/international/designs/): Browse animated wedding invitation designs in five styles: garden, romantic, classic, modern and destination. Each with RSVP and a website. From $49.
+- [Digital Invitations for Every Occasion, With RSVP](https://nimtto.com/international/occasions/): Digital invitations with RSVP for weddings, birthdays of any age, baby and bridal showers, engagements, anniversaries, graduations and company events.
+- [Wedding RSVP Website Features: Maps, Music, Travel](https://nimtto.com/international/features/): A wedding RSVP website in your invitation: replies per event, the schedule with maps, travel and hotels, your story, your song and a live stream link.
+- [How to Make a Digital Wedding Invitation](https://nimtto.com/international/how-it-works/): How to make a digital wedding invitation: pick a design, pay once by card or PayPal, a real designer sets it up, then send one link by text or email.
+- [Digital Wedding Invitation Cost: $49 to $199](https://nimtto.com/international/pricing/): Transparent one-time pricing: $49, $99, $149, custom from $199. No subscription. Card or PayPal.
+- [Digital Invitation FAQ: RSVP, Cost and Timing](https://nimtto.com/international/faq/): Answers about digital invitations: how guests RSVP, what it costs, if it is a subscription, timing, refunds, privacy and the occasions we design.
+- [Contact Nimtto: Talk to an Invitation Designer](https://nimtto.com/international/contact/): Email nimttoz@gmail.com or WhatsApp +977 980-6393298 about a design, a custom invitation or a payment. A real designer replies within one business day.
+- [Nepali Wedding Invitation Website for the USA](https://nimtto.com/international/nepali-wedding-invitations/): Nepali-style animated wedding invitations in English and Nepali, with RSVP. Designer-made, pay once from $49 by card or PayPal.
+- [South Asian Wedding Invitation Website, USA](https://nimtto.com/international/south-asian-wedding-invitation-website/): South Asian wedding e-invites with multi-day events, RSVP and an animated opening. Designer-made, from $49, paid once by card or PayPal.
+- [Wedding Invitation With RSVP Link, Pay Once](https://nimtto.com/international/wedding-invitation-with-rsvp/): A wedding invitation with an RSVP link: guests reply per event with meal choice and numbers, no app. You download the list. From $49, paid once.
+- [Digital Wedding Invitations in the USA](https://nimtto.com/international/usa/): Digital wedding invitations for couples in the USA: animated invitation, wedding website and RSVP, priced in US dollars and paid once by card or PayPal.
+- [Custom Digital Wedding Invitations, Designer-Made](https://nimtto.com/international/occasions/wedding/): Custom digital wedding invitations set up by a real designer: an animated card, your wedding website and RSVP in one link. Ten designs, from $49.
+- [Digital Birthday Invitation With RSVP](https://nimtto.com/international/occasions/birthday/): A digital birthday invitation with RSVP for any age: 30th, 40th, 50th or a first birthday. Designed for you, with a map and replies. Custom from $199.
+- [Baby Shower Invitation Website With RSVP](https://nimtto.com/international/occasions/baby-shower/): A baby shower invitation website with RSVP, a map and a registry note, designed for you. For showers, sprinkles and gender reveals. Custom from $199.
+- [Bridal Shower Invitation Online With RSVP](https://nimtto.com/international/occasions/bridal-shower/): Bridal shower invitation online, designed for you: brunch, games and gifts in one link, with a map, a registry note and RSVP. Custom from $199.
+- [Engagement Party Invitation Online](https://nimtto.com/international/occasions/engagement-party/): Engagement party invitation online, designed for you, with the party details, a map and RSVP in one link. It can match your wedding. From $199.
+- [25th and 50th Anniversary Invitations, Digital](https://nimtto.com/international/occasions/anniversary/): Digital 25th and 50th anniversary invitations and vow renewals, designed for you, with your story, a map and RSVP in one link. Custom from $199.
+- [Digital Graduation Party Invitation](https://nimtto.com/international/occasions/graduation/): Digital graduation party invitation, designed for the graduate: school colors, a photo, the party details, a map and RSVP in one link. Custom from $199.
+- [Digital Housewarming Invitation With RSVP](https://nimtto.com/international/occasions/housewarming/): A digital housewarming invitation with RSVP: your new address with a map, parking notes and the party time in one link. Designed for you, from $199.
+- [Dinner Party Invitation Online With RSVP](https://nimtto.com/international/occasions/dinner-party/): A dinner party invitation online with RSVP, the menu, dietary notes and a map, designed for you and sent in one link by text or email. Custom from $199.
+- [Corporate Event Invitation Website With RSVP](https://nimtto.com/international/occasions/corporate-events/): A corporate event invitation website with RSVP: the agenda, venue and map, attendee list and updates in one link. Designed for your event, from $199.
 
-## Pages
-- [Online Invitation Maker Nepal: Wedding Websites](https://nimtto.com/): Nimtto is the online invitation maker for Nepal: wedding invitation websites and e-cards for bratabandha, pasni and more, with RSVP. From Rs 2,999. Start now.
-- [Wedding Invitation Designs: 27 Nepali Digital Cards](https://nimtto.com/designs/): Browse 27 wedding invitation designs for Nepali weddings: doors, wax seals, flower gates and 3D scenes that open like real cards. From Rs 2,999. See them now.
-- [Bratabandha, Pasni And Gunyu Cholo Invitation Cards](https://nimtto.com/occasions/): Online invitation cards for bratabandha, pasni, gunyu cholo, nwaran, engagement and bhoj, in English and Nepali with RSVP and maps. Ask for your design today.
-- [How To Make An Online Wedding Invitation In Nepal](https://nimtto.com/how-it-works/): How to make an online wedding invitation in Nepal: choose a design, pay by Khalti, eSewa or PayPal, we build it with you on WhatsApp. Share one link.
-- [E-Invitation Nepal: RSVP, Nepali Dates And Music](https://nimtto.com/features/): Every Nimtto e-invitation has Bikram Sambat and AD dates, English and Nepali, each ceremony with a map, guest RSVP, your song and photos. See all features.
-- [Online Invitation Card Price Nepal: From Rs 2,999](https://nimtto.com/pricing/): Online invitation card prices in Nepal: Standard Rs 2,999, Pro Rs 4,999, Pro Max Rs 6,999, custom from Rs 11,111. Pay once by Khalti, eSewa, card or PayPal.
-- [Contact Us: Wedding Invitation Help On WhatsApp](https://nimtto.com/contact/): Contact Nimtto about an online wedding invitation or a bratabandha or pasni card. WhatsApp or call +977 980-6393298 or email. We reply in English or Nepali.
+## Policies
+- [Terms of Service](https://nimtto.com/terms/): The terms for Nimtto online invitations: your account, orders and payment, what we deliver and when, your content and how long invitations stay online.
+- [Privacy Policy](https://nimtto.com/privacy/): What Nimtto collects (name, email, phone, event details, photos, guest replies), why, who processes it, that we never sell it, and how to delete it.
+- [Refund Policy](https://nimtto.com/refunds/): Nimtto refunds: a full refund before we start work on your invitation, 50% after work starts, none once it is published unless the mistake is ours.
 
-## Design pages
-- [Kham Wedding Invitation Design: Digital Card](https://nimtto.com/designs/kham/): Kham online wedding invitation: a paper envelope with a red wax seal opens into a clear card of every event. RSVP and Nepali dates, from Rs 2,999. Preview it.
-- [Dhoka Wedding Invitation Design: Opening Door Card](https://nimtto.com/designs/dhoka/): Dhoka wedding invitation design: the golden door of Patan opens in 3D to show your names on a white card. RSVP and Nepali dates, from Rs 4,999. See it open.
-- [Mala Wedding Invitation Design: Floral Online Card](https://nimtto.com/designs/mala/): Mala wedding invitation design: red silk, marigold strings and brass kalash frame your mandap. An online card with RSVP and Nepali dates, from Rs 2,999.
-- [Durbar Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/durbar/): Durbar online wedding invitation: a 3D morning walk through Bhaktapur Durbar Square under flower arches. RSVP and Nepali dates, from Rs 4,999. Preview it.
-- [Phoolbari Wedding Invitation Design: Floral E-Card](https://nimtto.com/designs/gurans/): Phoolbari wedding invitation design: a gate of fresh roses and marigold opens on शुभ विवाह, then a calm card with RSVP. From Rs 2,999. See it open.
-- [Dhaka Wedding Invitation Design: Digital Card](https://nimtto.com/designs/dhaka/): Dhaka online wedding invitation: break the wax seal, slide off the Dhaka band and your names rise among flowers. RSVP and Nepali dates, from Rs 2,999.
-- [Sayapatri Wedding Invitation Design: Floral E-Card](https://nimtto.com/designs/sayapatri/): Sayapatri wedding invitation design: marigold strings lift from a doorway to open a calm ivory card with RSVP and maps. From Rs 2,999. Preview it now.
-- [Himal Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/himal/): Himal online wedding invitation: sunrise over the Himalaya, then a quiet photo story of the two of you, with RSVP and Nepali dates. From Rs 4,999. Preview it.
-- [Chitra Wedding Invitation Design: Digital Card](https://nimtto.com/designs/chitra/): Chitra wedding invitation design: a Mithila art picture book of the janti, the garlands and the seven rounds. RSVP and Nepali dates, from Rs 2,999. See it.
-- [Mandap Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/mandap/): Mandap online wedding invitation: a 3D mandap on a bright morning where the couple exchange garlands and walk seven rounds. With RSVP, from Rs 4,999.
-- [Bagaicha Wedding Invitation Design: Film E-Card](https://nimtto.com/designs/bagaicha/): Bagaicha wedding invitation design: a 3D garden wedding through a rose arch, around the sacred fire, on to the reception. With RSVP, from Rs 4,999.
-- [Ghar Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/ghar/): Ghar online wedding invitation: a warm evening walk through a Newar house, room by room, like a film. Every event and RSVP, from Rs 4,999. Preview it.
-- [Mangal Wedding Invitation Design: Opening Door Card](https://nimtto.com/designs/mangal/): Mangal wedding invitation design: a red temple door with garlands and bells swings open on शुभ विवाह. An online card with RSVP, from Rs 4,999. See it open.
-- [Nimantrana Wedding Invitation Design: Digital Card](https://nimtto.com/designs/nimantrana/): Nimantrana online wedding invitation: a red and gold card unfolds in 3D with Ganesh, the couple and the programme. With RSVP, from Rs 4,999. Preview it.
-- [Jhyal Wedding Invitation Design: Opening Door Card](https://nimtto.com/designs/jhyal/): Jhyal wedding invitation design: the shutters of a carved Newari window open on शुभ विवाह. An online card with RSVP and maps, from Rs 2,999. See it open.
-- [Mahal Wedding Invitation Design: Opening Door Card](https://nimtto.com/designs/mahal/): Mahal online wedding invitation: untie the satin bow and a golden palace gate opens onto a balcony at night. RSVP and Nepali dates, from Rs 6,999. See it.
-- [Laali Wedding Invitation Design: Floral Online Card](https://nimtto.com/designs/laali/): Laali wedding invitation design: blush pink and gold, with lanterns that drop in as an arched card draws itself. RSVP and Nepali dates, from Rs 6,999.
-- [Mehendi Wedding Invitation Design: Digital Card](https://nimtto.com/designs/mehendi/): Mehendi online wedding invitation: a henna pattern draws itself on ivory, then two hennaed hands come together. RSVP and Nepali dates, from Rs 6,999.
-- [Hariyo Wedding Invitation Design: Floral E-Card](https://nimtto.com/designs/hariyo/): Hariyo wedding invitation design: green watercolour leaves part to show a white pavilion and two peacocks. An online card with RSVP, from Rs 6,999. See it.
-- [Shree Wedding Invitation Design: Digital Card](https://nimtto.com/designs/shree/): Shree online wedding invitation: deep plum and gold, where a gold lotus opens on Ganesh as two diyas come down. RSVP and Nepali dates, from Rs 6,999.
-- [Pardaa Wedding Invitation Design: Opening Door Card](https://nimtto.com/designs/pardaa/): Pardaa wedding invitation design: red velvet curtains open on a mandap with a living fire, each event in its own colours. With RSVP, from Rs 6,999. See it.
-- [Rajdwar Wedding Invitation Design: Door E-Card](https://nimtto.com/designs/rajdwar/): Rajdwar online wedding invitation: untie the bow and walk through a painted gold palace gate to a red and gold card. RSVP and Nepali dates, from Rs 6,999.
-- [Agni Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/agni/): Agni wedding invitation design: tap to light the sacred fire at night, then the couple walk the seven rounds. An online card with RSVP, from Rs 6,999. See it.
-- [Janti Wedding Invitation Design: Cinematic E-Card](https://nimtto.com/designs/janti/): Janti online wedding invitation: walk with the Naumati Baja band and the doli down an old Newari street to the bride's door. With RSVP, from Rs 6,999.
-- [Swayambar Wedding Invitation Design: Floral E-Card](https://nimtto.com/designs/swayambar/): Swayambar wedding invitation design: two fresh garlands swing apart and both families come together as you scroll. RSVP and Nepali dates, from Rs 6,999.
-- [Sindoor Wedding Invitation Design: Digital Card](https://nimtto.com/designs/sindoor/): Sindoor online wedding invitation: red, white and black, the sindoor box opens and a red line carries your story. RSVP and Nepali dates, from Rs 6,999.
-- [Rangoli Wedding Invitation Design: Floral E-Card](https://nimtto.com/designs/rangoli/): Rangoli wedding invitation design: a flower rangoli on a brick courtyard comes together and the diyo lights up. An online card with RSVP, from Rs 6,999.
-
-## Questions and answers
-### What is Nimtto?
-Nimtto is an online invitation maker from Nepal. We make invitation websites for weddings, bratabandha, pasni, gunyu cholo and other family occasions. Your guests open one link on their phone and see every event, the date in Nepali and English, a map, your photos and a reply form.
-
-### How do I make an online wedding invitation in Nepal?
-Choose a design on Nimtto, fill the short order form and pay by QR. We then message you on WhatsApp for your names, dates, photos and song, and send you the finished link to share.
-
-### How much does a digital wedding card cost in Nepal?
-A Nimtto invitation website costs Rs 2,999 (Standard), Rs 4,999 (Pro) or Rs 6,999 (Pro Max). A custom design made only for you starts at Rs 11,111. From abroad you can pay in US dollars by card or PayPal, from USD 49.
-
-### Do you make invitations for bratabandha, pasni and other occasions?
-Yes. Besides weddings, we make invitation websites for engagement, bratabandha, gunyu cholo, pasni, nwaran, birthdays, janku, bhoj and receptions, and any family occasion. These are designed for you on the Custom plan.
-
-### Can the invitation be in Nepali?
-Yes. Every invitation works in English and Nepali, and guests switch with one tap. Dates show in Bikram Sambat and AD side by side.
-
-### Can guests reply to the invitation?
-Yes. Guests tell you if they are coming, to which events and how many people. You read every reply in your own dashboard and can download the list.
-
-### Do guests need to install an app?
-No. The invitation is a website. It opens in any phone browser from WhatsApp, Viber, Messenger or SMS, also on slow mobile data.
-
-### How long does it take?
-We start as soon as your payment is confirmed and we have your details. A ready-made design is quicker than a custom one. Tell us your date when you order and we plan around it.
-
-### What is the difference between Standard, Pro and Pro Max?
-The plans differ in which designs and extras they include. Standard has 7 designs and all the basics. Pro adds 8 more designs, photos, every ceremony with maps and music. Pro Max includes every design, personal guest links and priority help.
-
-### How do I pay?
-From abroad, you pay by card or PayPal on the payment page, and your plan switches on at once. In Nepal, you pay by Khalti, eSewa or any bank app by scanning the QR with your order number, then upload a screenshot and we confirm it.
-
-### Can family abroad see it and pay from abroad?
-Yes. The invitation opens anywhere in the world, and you can pay in US dollars by PayPal.
-
-### What is a custom design?
-A custom design is a new invitation made only for you, with your colours, art and wording. It suits any occasion, not only weddings. It starts at Rs 11,111 and we talk it through with you before we begin.
-
-### Why do I make an account when I order?
-Your account lets you come back to your order, pay later, and later edit your invitation and read guest replies. You sign in with your email and the password you choose.
-
-### Can I change details after the invitation is shared?
-Yes. The link stays the same and changes show at once. You can update times, venues and photos from your dashboard, or message us and we change it for you.
+## More
+- Every page's words in plain text: https://nimtto.com/llms-full.txt
+- Sitemap: https://nimtto.com/sitemap.xml

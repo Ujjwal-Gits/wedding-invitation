@@ -6,6 +6,8 @@ export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 export const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
+/** Which site this page belongs to: 'intl' (/international/, body.market-intl) or 'np' (nimtto.com) */
+export const MARKET = document.body?.classList.contains('market-intl') ? 'intl' : 'np';
 
 /** create an element with text and attributes (never HTML) */
 export function el(tag, props = {}, ...kids) {

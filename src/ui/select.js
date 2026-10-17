@@ -26,7 +26,7 @@ export function enhanceSelect(native) {
 
   function sync() {
     const o = chosen();
-    val.textContent = o ? labelOf(o) || ' ' : 'Select…';
+    val.textContent = o ? o.dataset.short || labelOf(o) || ' ' : 'Select…';
     wrap.classList.toggle('is-empty', !o || o.value === '');
     if (pop) build(true);
   }
@@ -78,7 +78,7 @@ export function enhanceSelect(native) {
       }, el('span.ui-opt__t', label || ' '), icon('check', 'ui-ic ui-opt__check'));
       node.dataset.i = items.length;
       into.append(node);
-      items.push({ opt, node, disabled, key: norm(label) });
+      items.push({ opt, node, disabled, key: norm(opt.dataset.k ? `${label} ${opt.dataset.k}` : label) }); // data-k: more words to search by
     }
     filter(q, false);
     const i = items.findIndex((it) => it.opt === (keepOpt || chosen()));

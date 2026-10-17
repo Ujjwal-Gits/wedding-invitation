@@ -6,10 +6,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { THEMES, BY_SLUG, CATEGORIES, FALLBACK_SITE, PLAN_DESC, PLAN_NE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill } from './stills.js';
-import { OCCASIONS, STEPS, FEATURES, faqItems, SITE_URL } from './content.mjs';
+import { OCCASIONS, STEPS, FEATURES, FAQ, faqItems, faqItemsOf, SITE_URL } from './content.mjs';
 import { pageMeta } from './seo.mjs';
 import { qrSvg } from '../studio/qr.js';
 import { INTL_PARTIALS } from './intl.mjs';
+import { LANDING_PARTIALS } from './landing.mjs';
+import { EVENTS } from './intl-content.mjs';
 
 const here = import.meta.dirname;
 const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
@@ -59,20 +61,22 @@ const NAV = [
 ];
 
 /* ---------------- head ---------------- */
-/** title, description, canonical, robots, hreflang, Open Graph and Twitter tags for a page (src/site/seo.mjs) */
+/** title, description, canonical, robots, hreflang, Open Graph and Twitter tags for a page (src/site/seo.mjs).
+ *  The Nepal site (en-NP) and the international site (en) are separate sites that cross-link, so each page names only
+ *  its own language (no hreflang twins). Home and FAQ pages carry a SpeakableSpecification (the H1 and [data-speak]). */
 function meta(id = 'home') {
   const m = pageMeta(id);
   const t = esc(m.title), d = esc(m.desc), a = esc(m.alt);
+  const np = m.market === 'np';
+  const lang = np ? 'en-NP' : 'en';
   return `<title>${t}</title>
   <meta name="description" content="${d}" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <link rel="canonical" href="${m.url}" />
-  <link rel="alternate" hreflang="en" href="${m.url}" />
-  <link rel="alternate" hreflang="x-default" href="${m.url}" />
+  <link rel="alternate" hreflang="${lang}" href="${m.url}" />
   <meta property="og:type" content="${m.ogType}" />
   <meta property="og:site_name" content="Nimtto" />
-  <meta property="og:locale" content="en_US" />
-  <meta property="og:locale:alternate" content="ne_NP" />
+  <meta property="og:locale" content="${np ? 'en_NP' : 'en_US'}" />${np ? '\n  <meta property="og:locale:alternate" content="ne_NP" />' : ''}
   <meta property="og:title" content="${t}" />
   <meta property="og:description" content="${d}" />
   <meta property="og:url" content="${m.url}" />
@@ -86,25 +90,29 @@ function meta(id = 'home') {
   <meta name="twitter:description" content="${d}" />
   <meta name="twitter:image" content="${m.image}" />
   <meta name="twitter:image:alt" content="${a}" />
-  ${jsonLd({ '@context': 'https://schema.org', '@type': m.type, '@id': `${m.url}#webpage`, url: m.url, name: m.title, description: m.desc, inLanguage: 'en',
+  ${jsonLd({ '@context': 'https://schema.org', '@type': m.type, '@id': `${m.url}#webpage`, url: m.url, name: m.title, description: m.desc, inLanguage: lang,
     isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` },
-    primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 } })}`;
+    primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 },
+    ...(m.speak ? { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } } : {}) })}`;
 }
+/** The organisation and the website, the same on every page of both sites (no LocalBusiness: there is no shop). */
+export const ORG_LD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'Nimtto', alternateName: 'निम्तो', url: `${SITE_URL}/`,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/site/brand/nimtto-logo.svg` }, image: `${SITE_URL}/site/og/home.jpg`, email: CONTACT.email, telephone: '+977-980-6393298',
+      description: 'Nimtto makes animated invitation websites with RSVP, set up with you by a real designer: for Nepali weddings and family ceremonies in Nepal (nimtto.com, in rupees) and for weddings and every celebration worldwide (nimtto.com/international, in US dollars).',
+      areaServed: [{ '@type': 'Country', name: 'Nepal' }, { '@type': 'Country', name: 'United States' }, { '@type': 'Country', name: 'United Kingdom' }, { '@type': 'Country', name: 'Canada' }, { '@type': 'Country', name: 'Australia' }, { '@type': 'Country', name: 'United Arab Emirates' }],
+      knowsLanguage: ['en', 'ne'],
+      address: { '@type': 'PostalAddress', addressCountry: 'NP' },
+      contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: CONTACT.email, telephone: '+977-980-6393298', availableLanguage: ['English', 'Nepali'] },
+    },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto International'], description: 'Animated invitation websites with RSVP: Nepali weddings and ceremonies in Nepal, and weddings and every celebration worldwide.', inLanguage: ['en', 'ne'], publisher: { '@id': `${SITE_URL}/#org` } },
+  ],
+};
 function head(id = 'home') {
-  const org = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'Nimtto', alternateName: 'निम्तो', url: `${SITE_URL}/`,
-        logo: `${SITE_URL}/site/brand/nimtto-logo.svg`, image: `${SITE_URL}/site/og/home.jpg`, email: CONTACT.email, telephone: '+977-980-6393298',
-        description: 'Nimtto is an online invitation maker from Nepal: invitation websites for weddings, bratabandha, pasni, gunyu cholo and every family occasion, in English and Nepali.',
-        areaServed: [{ '@type': 'Country', name: 'Nepal' }, 'Worldwide'], knowsLanguage: ['en', 'ne'],
-        address: { '@type': 'PostalAddress', addressCountry: 'NP' },
-        contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: CONTACT.email, telephone: '+977-980-6393298', availableLanguage: ['English', 'Nepali'] },
-      },
-      { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto Online Invitation Maker'], description: 'Online invitation maker for Nepal: wedding invitation websites and e-cards for every family occasion.', inLanguage: 'en', publisher: { '@id': `${SITE_URL}/#org` } },
-    ],
-  };
+  const org = ORG_LD;
   return `${meta(id)}
   <meta name="theme-color" content="#FFFFFF" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -116,6 +124,8 @@ function head(id = 'home') {
 }
 
 /* ---------------- header and footer ---------------- */
+/** Terms, Privacy and Refunds: in every footer of both sites, and next to the PayPal buttons (src/site/payment.js) */
+export const LEGAL_LINKS = '<p class="foot__legal"><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a></p>';
 function header(active = '') {
   const links = NAV.map(([k, href, t]) => `<a href="${href}"${k === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>
@@ -149,21 +159,25 @@ function footer() {
           <p>Online invitations for Nepali weddings and every family occasion. Made in Nepal, in English and Nepali.</p>
           <p class="foot__ne" lang="ne">निम्तो, मायाले पठाइएको</p>
         </div>
-        ${col('Invitations', [['/designs/', 'All designs'], ['/occasions/', 'Occasions'], ['/occasions/#bratabandha', 'Bratabandha'], ['/occasions/#pasni', 'Pasni'], ['/occasions/#gunyu-cholo', 'Gunyu Cholo']])}
-        ${col('Nimtto', [['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/contact/', 'Contact'], ['/credits/', 'Credits']])}
+        ${col('Invitations', [['/wedding-invitation-nepal/', 'Wedding cards'], ['/designs/', 'All designs'], ['/occasions/', 'Occasions'], ['/occasions/bratabandha/', 'Bratabandha'], ['/occasions/pasni/', 'Pasni'], ['/occasions/gunyu-cholo/', 'Gunyu Cholo'], ['/nepali-abroad/', 'For families abroad']])}
+        ${col('Nimtto', [['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/faq/', 'FAQ'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
           <li><a href="/studio/" data-auth>Sign in</a></li>
         </ul></div>
       </div>
-      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto · Made in Nepal</p><p>Pay by Khalti, eSewa, bank QR or PayPal</p></div>
+      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto · Made in Nepal</p>${LEGAL_LINKS}<p>Pay by Khalti, eSewa, bank QR or PayPal</p></div>
     </div>
   </footer>`;
 }
 
 /* ---------------- dialogs: the watermarked preview and the order form ---------------- */
-function dialogs() {
+/** `dialogs:intl` on the international site: its occasions, "Phone number", and card or PayPal in the fine print */
+function dialogs(variant = '') {
+  const intl = variant === 'intl';
+  const phoneLabel = intl ? 'Phone number' : 'WhatsApp number';
+  const occ = intl ? EVENTS.map((o) => [o.id, o.en]) : OCCASIONS.map((o) => [o.id, o.en]);
   return `<dialog class="pv" id="pv" aria-labelledby="pv-name">
     <div class="pv__in">
       <div class="pv__phone"><iframe class="pv__frame" id="pv-frame" title="Design preview" src="about:blank" referrerpolicy="same-origin" allow="autoplay"></iframe></div>
@@ -200,11 +214,11 @@ function dialogs() {
           <legend class="om__lab">2. Your idea</legend>
           <div class="field">
             <label for="om-occasion">Occasion</label>
-            <select id="om-occasion" name="occasion">${OCCASIONS.map((o) => `<option value="${o.id}">${esc(o.en)}</option>`).join('')}</select>
+            <select id="om-occasion" name="occasion">${occ.map(([id, en]) => `<option value="${id}">${esc(en)}</option>`).join('')}</select>
           </div>
           <div class="field">
             <label for="om-message">Tell us your idea <span class="req" aria-hidden="true">*</span></label>
-            <textarea id="om-message" name="message" rows="3" maxlength="1800" placeholder="Colours, the feeling you want, the date, anything"></textarea>
+            <textarea id="om-message" name="message" rows="3" maxlength="1800" placeholder="${intl ? 'Colors' : 'Colours'}, the feeling you want, the date, anything"></textarea>
             <p class="field__err" id="om-message-err" hidden>Please write a few words about your idea.</p>
           </div>
         </fieldset>
@@ -218,9 +232,9 @@ function dialogs() {
               <p class="field__err" id="om-name-err" hidden>Please write your name.</p>
             </div>
             <div class="field">
-              <label for="om-phone">WhatsApp number <span class="req" aria-hidden="true">*</span></label>
-              <input id="om-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX or +1 555 123 4567" required />
-              <p class="field__err" id="om-phone-err" hidden>Please write a phone number we can reach on WhatsApp.</p>
+              <label for="om-phone">${phoneLabel} <span class="req" aria-hidden="true">*</span></label>
+              <input id="om-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" required />
+              <p class="field__err" id="om-phone-err" hidden>Enter a valid phone number with country code.</p>
             </div>
           </div>
         </fieldset>
@@ -230,7 +244,7 @@ function dialogs() {
         <p class="om__err" id="om-err" role="alert" hidden></p>
         <div class="om__total"><span id="om-total-l">Total</span><b id="om-total">Rs 4,999</b></div>
         <button class="btn btn--accent btn--lg om__submit" id="om-submit" type="submit">Continue to payment</button>
-        <p class="om__fine">Next, you pay by Khalti, eSewa, bank QR or PayPal on the payment page.</p>
+        <p class="om__fine" id="om-fine">${intl ? 'Next, you pay by card or PayPal, in US dollars, on the payment page.' : 'Next, you pay by Khalti, eSewa, bank QR or PayPal on the payment page.'}</p>
       </footer>
     </form>
   </dialog>
@@ -255,9 +269,9 @@ function dialogs() {
             <p class="field__err" id="oa-email-err" hidden>Please write a full email address.</p>
           </div>
           <div class="field oa-up">
-            <label for="oa-phone">WhatsApp number <span class="om__hint">optional</span></label>
-            <input id="oa-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX or +1 555 123 4567" />
-            <p class="field__err" id="oa-phone-err" hidden>Please write a phone number, or leave it empty.</p>
+            <label for="oa-phone">${phoneLabel} <span class="req" aria-hidden="true">*</span></label>
+            <input id="oa-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" required />
+            <p class="field__err" id="oa-phone-err" hidden>Enter a valid phone number with country code.</p>
           </div>
           <div class="field">
             <label for="oa-password">Password <span class="req" aria-hidden="true">*</span></label>
@@ -355,7 +369,7 @@ function occasions(variant = 'full') {
       <ul class="occ__facts"><li><b>${THEMES.length}</b><span>designs</span></li><li><b data-plan-price="saral">Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
     return `<li class="occ occ--${o.id}${o.designs ? ' occ--lead' : ''}" id="${variant === 'full' ? o.id : `occ-${o.id}`}">
       <p class="occ__ne" lang="ne">${esc(o.ne)}${o.alt ? `<span> · ${esc(o.alt)}</span>` : ''}</p>
-      <h3 class="occ__en">${esc(o.en)}</h3>
+      <h3 class="occ__en">${o.page ? `<a href="${o.page}">${esc(o.en)}</a>` : esc(o.en)}</h3>
       <p class="occ__line">${esc(o.line)}</p>
       ${more}
       <p class="occ__kind">${o.designs ? 'Ready-made designs' : 'Designed for you'}</p>
@@ -425,10 +439,21 @@ function tiers() {
 }
 
 /* ---------------- FAQ ---------------- */
+/** The questions as open/close rows (answers in the HTML) and their FAQPage JSON-LD. items: { q, a, qHtml?, aHtml? } */
+export function faqBlock(items, { ld = true, openFirst = true } = {}) {
+  const html = items.map((x, i) => `<details class="qa"${openFirst && i === 0 ? ' open' : ''}><summary class="qa__q"><span>${x.qHtml ?? esc(x.q)}</span><i aria-hidden="true"></i></summary><div class="qa__a"><p>${x.aHtml ?? esc(x.a)}</p></div></details>`).join('');
+  return `<div class="faq__list">${html}</div>${ld ? faqLd(items) : ''}`;
+}
+export const faqLd = (items) => jsonLd({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) });
+/** `faq:<set>`; the FAQ page's grouped set renders a heading per group and one FAQPage for all of them */
 function faq(set = 'home') {
-  const items = faqItems(set);
-  const html = items.map((x, i) => `<details class="qa"${i === 0 ? ' open' : ''}><summary class="qa__q"><span>${x.qHtml}</span><i aria-hidden="true"></i></summary><div class="qa__a"><p>${x.aHtml}</p></div></details>`).join('');
-  return `<div class="faq__list">${html}</div>${jsonLd({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) })}`;
+  const groups = FAQ[set];
+  if (Array.isArray(groups?.[0])) {
+    const all = groups.map(([h, keys]) => [h, faqItemsOf(keys)]);
+    return all.map(([h, items], g) => `<section class="faq__group" aria-labelledby="fg-${g}"><h2 class="h3 faq__gh" id="fg-${g}">${esc(h)}</h2>${faqBlock(items, { ld: false, openFirst: g === 0 })}</section>`).join('')
+      + faqLd(all.flatMap(([, items]) => items));
+  }
+  return faqBlock(faqItems(set));
 }
 
 /** A real, scannable QR code as inline SVG (src/studio/qr.js): `qr:https://nimtto.com/go`. Only our own URLs. */
@@ -437,16 +462,21 @@ function qr(url = '') {
   return qrSvg(url, { dark: '#2A1A1D', quiet: 2 }).replace('<svg ', `<svg class="qr" role="img" aria-label="QR code for ${esc(url.replace(/^https:\/\//, ''))}" `);
 }
 
-/** BreadcrumbList JSON-LD for a sub page: `crumbs:Designs|/designs/` */
+/** BreadcrumbList JSON-LD for a sub page: `crumbs:Designs|/designs/` or several levels, `crumbs:Occasions|/occasions/|Pasni|/occasions/pasni/`.
+ *  Pages under /international/ start at the international home. */
+export function crumbsLd(pairs) {
+  const intl = pairs[0]?.[1]?.startsWith('/international/');
+  const list = [[intl ? 'Nimtto International' : 'Home', intl ? '/international/' : '/'], ...pairs];
+  return jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: list.map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: `${SITE_URL}${path}` })) });
+}
 function crumbs(arg = '') {
-  const [name, path] = arg.split('|');
-  return jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
-    { '@type': 'ListItem', position: 2, name, item: `${SITE_URL}${path}` },
-  ] });
+  const parts = arg.split('|');
+  const pairs = [];
+  for (let i = 0; i + 1 < parts.length; i += 2) pairs.push([parts[i], parts[i + 1]]);
+  return crumbsLd(pairs);
 }
 
-export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS };
+export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {

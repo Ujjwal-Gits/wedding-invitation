@@ -40,14 +40,22 @@ for (const d of readdirSync(root, { withFileTypes: true })) {
     pages[d.name] = resolve(root, d.name, 'index.html');
   }
 }
-// One generated page per design: designs/<slug>/index.html (node src/site/make-design-pages.mjs).
-if (existsSync(resolve(root, 'designs'))) {
-  for (const d of readdirSync(resolve(root, 'designs'), { withFileTypes: true })) {
-    if (d.isDirectory() && /^[a-z][a-z0-9-]{1,30}$/.test(d.name) && existsSync(resolve(root, 'designs', d.name, 'index.html'))) {
-      pages[`designs-${d.name}`] = resolve(root, 'designs', d.name, 'index.html');
-    }
+// Pages one or two folders down: one generated page per design (designs/<slug>/, make-design-pages.mjs), the Nepal
+// ceremony pages (occasions/<id>/) and the international site (international/<page>/ and
+// international/occasions/<id>/, make-landing-pages.mjs writes the landing pages).
+const nested = (parts, depth) => {
+  const dir = resolve(root, ...parts);
+  if (!existsSync(dir)) return;
+  for (const d of readdirSync(dir, { withFileTypes: true })) {
+    if (!d.isDirectory() || !/^[a-z][a-z0-9-]{1,60}$/.test(d.name)) continue;
+    const at = [...parts, d.name];
+    if (existsSync(resolve(root, ...at, 'index.html'))) pages[at.join('-')] = resolve(root, ...at, 'index.html');
+    if (depth > 1) nested(at, depth - 1);
   }
-}
+};
+nested(['designs'], 1);
+nested(['occasions'], 1);
+nested(['international'], 2);
 
 /** /pay/<ref> serves pay/index.html (the page reads the order number from the path); /studio/<route> serves the studio. Production: server/. */
 const payRoute = () => {

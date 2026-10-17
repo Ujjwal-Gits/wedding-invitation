@@ -78,8 +78,10 @@ export async function loadSite() {
 /** The design list: the API's (minus hidden), enriched from the static list; the static list when the API is down. */
 export function normaliseThemes(api, site) {
   const hidden = new Set(site.hiddenThemes || []);
+  // themes made only for the international site (market 'intl') are not Nepal designs (src/site/intl-designs.js)
+  const intlOnly = (m) => m === 'intl' || (Array.isArray(m) && m.includes('intl') && !m.includes('np'));
   let list = Array.isArray(api) && api.length
-    ? api.filter((t) => isObj(t) && SLUG_RE.test(t.slug) && !hidden.has(t.slug)).map((t) => {
+    ? api.filter((t) => isObj(t) && SLUG_RE.test(t.slug) && !hidden.has(t.slug) && !intlOnly(t.market)).map((t) => {
       const local = BY_SLUG[t.slug] || {};
       const rel = Array.isArray(t.religions) ? t.religions.filter((r) => ['hindu', 'muslim', 'christian', 'other'].includes(r)) : null;
       return {
@@ -111,6 +113,8 @@ export function normaliseThemes(api, site) {
 export async function loadThemes(site) {
   return normaliseThemes(await getJson('/api/themes', 4000), site);
 }
+/** GET /api/themes as it came (the international catalog reads its own fields), or null */
+export const loadThemesRaw = () => getJson('/api/themes', 4000);
 
 /* ---------------- orders and payment ---------------- */
 async function send(url, init) {

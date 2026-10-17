@@ -106,17 +106,6 @@ for (const t of THEMES) {
 }
 writeFileSync(resolve(import.meta.dirname, 'design-pages.json'), `${JSON.stringify(done)}\n`);
 
-// the sitemap: every public page (theme pages, the studio and pay pages are never listed)
-const today = new Date().toISOString().slice(0, 10);
-const urls = [['/', '1.0'], ['/designs/', '0.9'], ['/occasions/', '0.9'], ['/pricing/', '0.9'], ['/how-it-works/', '0.7'], ['/features/', '0.7'], ['/contact/', '0.6'],
-  ...done.map((s) => [`/designs/${s}/`, '0.7']), ['/credits/', '0.2']];
-writeFileSync(resolve(ROOT, 'public', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${urls.map(([u, pr]) => {
-    const slug = u.match(/^\/designs\/([a-z-]+)\/$/)?.[1];
-    const img = slug ? `\n    <image:image><image:loc>${SITE}${phonePic(slug).src}</image:loc></image:image>` : '';
-    return `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod><priority>${pr}</priority>${img}</url>`;
-  }).join('\n')}
-</urlset>
-`);
-console.log(`design pages: ${done.length} written to designs/<slug>/index.html; public/sitemap.xml: ${urls.length} urls`);
+// the sitemap and llms files (every public page of both sites) are written by make-landing-pages.mjs, from
+// design-pages.json above: run it next.
+console.log(`design pages: ${done.length} written to designs/<slug>/index.html; now run node src/site/make-landing-pages.mjs`);

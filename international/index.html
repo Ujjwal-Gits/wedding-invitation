@@ -4,23 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="preload" as="image" href="/site/intl/olive-v3-480.webp" imagesrcset="/site/intl/olive-v3-480.webp 480w, /site/intl/olive-v3-800.webp 800w, /site/intl/olive-v3-1170.webp 1170w" imagesizes="(max-width: 599px) 41vw, 340px" fetchpriority="high" />
-  <!--@intl-head-->
+  <!--@head:intl/home-->
+  <!--@intl-offers-ld-->
+  <!--@intl-designs-ld-->
   <script type="module" src="/src/site/intl.js"></script>
 </head>
 <body data-page="intl" class="market-intl">
-  <!--@intl-header-->
+  <!--@intl-header:intl/home-->
 
   <main id="main">
     <!-- 1. the hero: one phone, then the room around it; on scroll we go inside the invitation -->
     <section class="hero" id="top" data-scene="hero" aria-labelledby="hero-h">
       <div class="hero__pin">
         <div class="wrap hero__copy">
-          <p class="eyebrow">Online wedding invitations</p>
-          <h1 class="display hero__h" id="hero-h">Wedding invitations,<br /> <em>sent in one link.</em></h1>
-          <p class="lede hero__lede">Pick a design and we’ll make it yours. Your invitation, wedding website and RSVPs, all in one link you send by text or email.</p>
+          <!--@intl-hero-->
           <div class="hero__cta">
-            <a class="btn btn--accent btn--lg" href="#designs">Browse designs</a>
-            <a class="btn btn--ghost btn--lg" href="#plans">See pricing</a>
+            <a class="btn btn--accent btn--lg" href="/international/designs/">Browse designs</a>
+            <a class="btn btn--ghost btn--lg" href="/international/occasions/">Every occasion</a>
           </div>
         </div>
         <div class="hero__stage">
@@ -37,23 +37,24 @@
             <span class="phone"><img src="/site/intl/wildflower-v3-480.webp" srcset="/site/intl/wildflower-v3-480.webp 480w, /site/intl/wildflower-v3-800.webp 800w" sizes="(max-width: 599px) 40vw, 240px" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
           </div>
           <div class="hero__ph hero__ph--c">
-            <span class="phone"><img id="hero-img" src="/site/intl/olive-v3-480.webp" srcset="/site/intl/olive-v3-480.webp 480w, /site/intl/olive-v3-800.webp 800w, /site/intl/olive-v3-1170.webp 1170w" sizes="(max-width: 599px) 41vw, 340px" data-sizes="(max-width: 599px) 62vw, 340px" width="390" height="844" alt="The Olive Grove wedding invitation on a phone: a watercolor olive wreath around the date, for Emily and James" fetchpriority="high" decoding="async" /></span>
+            <span class="phone"><img id="hero-img" src="/site/intl/olive-v3-480.webp" srcset="/site/intl/olive-v3-480.webp 480w, /site/intl/olive-v3-800.webp 800w, /site/intl/olive-v3-1170.webp 1170w" sizes="(max-width: 599px) 41vw, 340px" data-sizes="(max-width: 599px) 62vw, 340px" width="390" height="844" alt="The Olive Grove animated wedding invitation on a phone: a watercolor olive wreath around the date, for Emily and James" fetchpriority="high" decoding="async" /></span>
           </div>
         </div>
         <div class="hero__veil" aria-hidden="true"></div>
       </div>
     </section>
 
-    <!-- 2. the designs, right away: the home page's pinned rail (the cards slide past while the section holds still); the chips narrow it by style -->
+    <!-- 2. the designs, right away: the home page's pinned rail; the chips narrow it by style -->
     <section class="rail rail--designs" id="designs" data-scene="rail" aria-labelledby="gal-h">
       <div class="rail__pin">
         <div class="wrap rail__head">
           <div>
-            <p class="eyebrow">Designs</p>
+            <p class="eyebrow">Wedding designs</p>
             <h2 class="h2" id="gal-h">Find your <em>style.</em></h2>
           </div>
           <div class="rail__side">
-            <p class="lede">Every design comes with a matching wedding website. Pick a style to narrow them down.</p>
+            <p class="lede">Every design opens like a real card and comes with a matching wedding website. Pick a style to narrow them down.</p>
+            <a class="btn btn--ghost" href="/international/designs/">See every design</a>
           </div>
           <div class="chips gal-chips" role="group" aria-label="Filter designs by style"><!--@intl-styles--></div>
         </div>
@@ -69,55 +70,54 @@
         <div class="lotus__disc" aria-hidden="true"></div>
         <div class="lotus__slot"><div class="lotus__flower"><!--@wreath--></div></div>
         <div class="lotus__text">
-          <p class="eyebrow">Invitation and wedding website</p>
-          <h2 class="h2 lotus__h" id="lotus-h">One link for <em>the whole wedding.</em></h2>
+          <p class="eyebrow">Invitation and event website</p>
+          <h2 class="h2 lotus__h" id="lotus-h">One link for <em>the whole celebration.</em></h2>
           <p class="lede lotus__lede">Guests open your invitation like a real card. Then they scroll down for the schedule, maps, hotels and the RSVP.</p>
         </div>
       </div>
     </section>
 
-    <!-- 4. what guests see: ONE phone in gentle 3D; its screen changes step by step as you scroll (pinned on wide screens,
-         a swipe row under the phone on phones, a still list with reduced motion). The features page's orbit, grown up. -->
+    <!-- 4. what guests see: ONE phone in gentle 3D; its screen changes step by step as you scroll -->
     <section class="sec sec--journey" id="guests" data-scene="journey" aria-labelledby="j-h">
       <div class="wrap">
         <header class="shead shead--split" data-rv>
           <div><p class="eyebrow">What your guests see</p><h2 class="h2" id="j-h">Everything they need, <em>in one place.</em></h2></div>
-          <p class="lede">No more texts asking “what time is it again?” The plan, the places and the RSVP are all on your page.</p>
+          <p class="lede">No more texts asking “what time is it again?” The plan, the places and the RSVP are all on your page. <a class="link" href="/international/features/">See every feature</a></p>
         </header>
       </div>
       <div class="journey" id="journey"><!--@intl-journey--></div>
     </section>
 
-    <!-- 5. why paperless -->
-    <section class="sec sec--blush" id="why" aria-labelledby="why-h">
+    <!-- 5. every occasion -->
+    <section class="sec sec--blush" id="events" aria-labelledby="ev-h">
+      <div class="wrap">
+        <header class="shead shead--split" data-rv>
+          <div><p class="eyebrow">Every celebration</p><h2 class="h2" id="ev-h">Weddings first. <em>Every party after.</em></h2></div>
+          <p class="lede">Our ready-made designs are for weddings. For birthdays of any age, showers, anniversaries and everything else, we design an invitation for your occasion, from <span data-usd-from="custom">$199</span>.</p>
+        </header>
+        <ul class="occs occs--home"><!--@intl-events:home--></ul>
+      </div>
+    </section>
+
+    <!-- 6. why paperless -->
+    <section class="sec" id="why" aria-labelledby="why-h">
       <div class="wrap">
         <header class="shead shead--center" data-rv>
-          <p class="eyebrow">Why couples go paperless</p>
+          <p class="eyebrow">Why hosts go paperless</p>
           <h2 class="h2" id="why-h">Less paper. <em>Less stress.</em></h2>
         </header>
         <ul class="bento bento--home"><!--@intl-why--></ul>
       </div>
     </section>
 
-    <!-- 6. how it works: a real designer -->
-    <section class="sec" id="how" aria-labelledby="how-h">
+    <!-- 7. how it works: a real designer -->
+    <section class="sec sec--blush" id="how" aria-labelledby="how-h">
       <div class="wrap">
         <header class="shead shead--split" data-rv>
           <div><p class="eyebrow">How it works</p><h2 class="h2" id="how-h">A real designer, <em>not a DIY tool.</em></h2></div>
-          <p class="lede">There’s no editor to learn. Send us your details and a real person sets up your invitation with you.</p>
+          <p class="lede">There’s no editor to learn. Send us your details and a real person sets up your invitation with you. <a class="link" href="/international/how-it-works/">How it works</a></p>
         </header>
         <ol class="steps"><!--@intl-steps--></ol>
-      </div>
-    </section>
-
-    <!-- 7. other events -->
-    <section class="sec sec--blush" id="events" aria-labelledby="ev-h">
-      <div class="wrap">
-        <header class="shead shead--split" data-rv>
-          <div><p class="eyebrow">Other events</p><h2 class="h2" id="ev-h">Planning another party? <em>We can help.</em></h2></div>
-          <p class="lede">Our ready-made designs are for weddings. For anything else, we design one just for you, from <span data-usd-from="custom">$199</span>.</p>
-        </header>
-        <ul class="occs occs--home"><!--@intl-events--></ul>
       </div>
     </section>
 
@@ -127,7 +127,7 @@
         <header class="shead shead--center" data-rv>
           <p class="eyebrow">Pricing</p>
           <h2 class="h2" id="price-h">One price. <em>Paid once.</em></h2>
-          <p class="lede">Pay by card or PayPal, in US dollars. No monthly fees and no subscriptions.</p>
+          <p class="lede">Pay by card or PayPal, in US dollars. No monthly fees, no subscriptions and no charge per guest.</p>
         </header>
         <ul class="plans" id="plan-list" data-plans-usd><!--@intl-plans--></ul>
       </div>
@@ -136,10 +136,12 @@
     <!-- 9. questions -->
     <section class="sec sec--blush" id="faq" aria-labelledby="faq-h">
       <div class="wrap faq">
-        <header class="shead"><p class="eyebrow">FAQ</p><h2 class="h2" id="faq-h">Good to <em>know.</em></h2><p class="lede">Have another question? Send us an email. We’re happy to help.</p></header>
-        <!--@intl-faq-->
+        <header class="shead"><p class="eyebrow">FAQ</p><h2 class="h2" id="faq-h">Good to <em>know.</em></h2><p class="lede">Have another question? See <a class="link" href="/international/faq/">all questions</a>, or email us.</p></header>
+        <!--@intl-faq:home-->
       </div>
     </section>
+
+    <!--@crossband:intl-->
 
     <!-- 10. closing -->
     <section class="sec" aria-labelledby="close-h">
@@ -149,7 +151,7 @@
           <h2 class="h2 closing__h" id="close-h">Let’s make your invitation.</h2>
           <p class="closing__p">Pick a design, or talk to us first. We’d love to hear about your day.</p>
           <div class="closing__acts">
-            <a class="btn btn--white btn--lg" href="#plans">Get started</a>
+            <a class="btn btn--white btn--lg" href="/international/pricing/#plans" data-order>Get started</a>
             <a class="btn btn--line-w btn--lg" data-contact="email" href="mailto:nimttoz@gmail.com">Email us</a>
           </div>
         </div>
@@ -158,6 +160,6 @@
   </main>
 
   <!--@intl-footer-->
-  <!--@dialogs-->
+  <!--@dialogs:intl-->
 </body>
 </html>

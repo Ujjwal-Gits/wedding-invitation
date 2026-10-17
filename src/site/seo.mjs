@@ -1,68 +1,115 @@
-// Search and share meta for every public page: <title>, description, canonical, robots, hreflang, Open Graph,
-// Twitter card and a WebPage JSON-LD node. The `head` partial (src/site/partials.mjs) renders it from <!--@head:<id>-->
-// (design pages: <!--@head:design/<slug>-->); credits uses <!--@meta:credits-->. Share images live in public/site/og/
-// (1200x630 JPG). Titles: Title Case, primary keyword first, brand last, at most 60 characters; descriptions 140-158.
+// Search and share meta for every public page of both sites: <title>, description, canonical, robots, hreflang,
+// Open Graph, Twitter card and a WebPage JSON-LD node. The `head` partial (src/site/partials.mjs) renders it from
+// <!--@head:<id>-->: a Nepal page id, design/<slug>, intl/<page> (src/site/intl-content.mjs), land/<id> (the landing
+// pages in src/site/landings.mjs) or a legal page. Share images live in public/site/og/ (1200x630 JPG).
+// Titles: Title Case, primary keyword first, at most 60 characters; descriptions at most 155 (checkLengths warns).
+// The two sites (nimtto.com for Nepal, /international/) never target the same primary keyword: they are separate
+// sites that cross-link, not hreflang twins. Keyword map: docs/SEO-KEYWORDS.md.
 // Plain module: Node runs it at build, never the browser.
 import { THEMES, BY_SLUG, FALLBACK_SITE, planForTier } from './themes.js';
 import { SITE_URL } from './content.mjs';
+import { INTL_PAGES } from './intl-content.mjs';
+import { LANDINGS } from './landings.mjs';
 
 const N = THEMES.length;
 const rs = (n) => `Rs ${new Intl.NumberFormat('en-IN').format(n)}`;
 
-/** Capitalise the first letter of every word; brand words keep their own case (eSewa). Devanagari is unchanged. */
+/** Title Case: every word capitalised except short joining words (a, and, for, in, of, the, to ...) inside the title;
+ *  brand words keep their own case (eSewa). Devanagari is unchanged. */
 const KEEP = new Set(['eSewa']);
-export const titleCase = (s) => s.split(/(\s+)/).map((w) => (KEEP.has(w.replace(/[^\w-]/g, '')) ? w : w.replace(/^([("']?)([a-z])/, (m, p, c) => p + c.toUpperCase()))).join('');
+const MINOR = new Set(['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'nor', 'of', 'on', 'or', 'the', 'to', 'vs']);
+export const titleCase = (s) => {
+  let first = true;
+  return s.split(/(\s+)/).map((w) => {
+    if (/^\s+$/.test(w) || !w) return w;
+    const bare = w.replace(/[^\w-]/g, '');
+    const out = KEEP.has(bare) ? w
+      : !first && MINOR.has(bare.toLowerCase()) ? w.toLowerCase()
+        : w.replace(/^([("']?)([a-z])/, (m, p, c) => p + c.toUpperCase());
+    first = /[:|]$/.test(w) || w === '|'; // a word after a colon or the brand bar starts again
+    return out;
+  }).join('');
+};
 
-/** Main pages. `img` is the share image in public/site/og/, `type` the schema.org page type. */
+/** The Nepal site's main pages. `img` is the share image in public/site/og/, `type` the schema.org page type.
+ *  `speak`: a SpeakableSpecification on the WebPage node (home and FAQ only). */
 export const PAGES = {
   home: {
-    path: '/', img: 'home', type: 'WebPage', ogType: 'website',
-    title: 'Online Invitation Maker Nepal: Wedding Websites | Nimtto',
-    desc: 'Nimtto is the online invitation maker for Nepal: wedding invitation websites and e-cards for bratabandha, pasni and more, with RSVP. From Rs 2,999. Start now.',
-    alt: 'Nimtto online invitation maker: three wedding invitation designs on phones, in white and blush',
+    path: '/', img: 'home', type: 'WebPage', ogType: 'website', speak: true,
+    title: 'Digital Wedding Invitation Nepal | Nimtto',
+    desc: 'Animated wedding invitation website with RSVP, made with a real designer. Pay once from Rs 2,999 via eSewa, Khalti or bank QR.',
+    alt: 'Nimtto digital wedding invitations for Nepal: three invitation designs on phones, in white and blush',
   },
   designs: {
     path: '/designs/', img: 'designs', type: 'CollectionPage', ogType: 'website',
-    title: `Wedding Invitation Designs: ${N} Nepali Digital Cards | Nimtto`,
-    desc: `Browse ${N} wedding invitation designs for Nepali weddings: doors, wax seals, flower gates and 3D scenes that open like real cards. From Rs 2,999. See them now.`,
-    alt: `${N} Nimtto wedding invitation designs on phones: a sealed envelope, a temple door and a garden pavilion`,
+    title: 'Nepali Wedding Card Designs and Animated Invites | Nimtto',
+    desc: `Browse ${N} premium Nepali wedding card designs with animation, music and RSVP. Pick one and our designer personalises it. From Rs 2,999.`,
+    alt: `${N} Nimtto Nepali wedding card designs on phones: a sealed envelope, a temple door and a garden pavilion`,
   },
   occasions: {
     path: '/occasions/', img: 'occasions', type: 'CollectionPage', ogType: 'website',
-    title: 'Bratabandha, Pasni And Gunyu Cholo Invitation Cards | Nimtto',
-    desc: 'Online invitation cards for bratabandha, pasni, gunyu cholo, nwaran, engagement and bhoj, in English and Nepali with RSVP and maps. Ask for your design today.',
+    title: 'Invitation Cards for Every Nepali Occasion | Nimtto',
+    desc: 'Online invitation cards for maagni, bratabandha, gunyo cholo, pasni, nwaran, birthdays, janku and bhoj, in English and Nepali with RSVP and maps.',
     alt: 'Nimtto invitations for every Nepali occasion: bratabandha, pasni and gunyu cholo, beside an invitation on a phone',
   },
   'how-it-works': {
     path: '/how-it-works/', img: 'how-it-works', type: 'WebPage', ogType: 'article',
-    title: 'How To Make An Online Wedding Invitation In Nepal | Nimtto',
-    desc: 'How to make an online wedding invitation in Nepal: choose a design, pay by Khalti, eSewa or PayPal, we build it with you on WhatsApp. Share one link.',
+    title: 'How to Make a Digital Invitation in Nepal | Nimtto',
+    desc: 'Choose a design, pay once by eSewa, Khalti or bank QR, review it with your designer on WhatsApp, then send one link. Ready in days.',
     alt: 'The four Nimtto steps, choose, order and pay, make it together and share one link, beside an invitation on a phone',
   },
   features: {
     path: '/features/', img: 'features', type: 'WebPage', ogType: 'website',
-    title: 'E-Invitation Nepal: RSVP, Nepali Dates And Music | Nimtto',
-    desc: 'Every Nimtto e-invitation has Bikram Sambat and AD dates, English and Nepali, each ceremony with a map, guest RSVP, your song and photos. See all features.',
-    alt: 'A Nimtto e-invitation on a phone with a Nepali date, guest replies and music',
+    title: 'Wedding RSVP Website and Invitation Features | Nimtto',
+    desc: 'RSVP tracking, every ceremony with Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, in one invitation link.',
+    alt: 'A Nimtto wedding RSVP website on a phone with a Nepali date, guest replies and music',
   },
   pricing: {
     path: '/pricing/', img: 'pricing', type: 'WebPage', ogType: 'website',
-    title: 'Online Invitation Card Price Nepal: From Rs 2,999 | Nimtto',
+    title: 'Digital Invitation Price in Nepal From Rs 2,999 | Nimtto',
     // no plan names here: the planner renames plans in the studio, and meta tags are only built, never refreshed
-    desc: 'Online invitation card prices in Nepal: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, custom from Rs 11,111. Pay once by Khalti, eSewa or PayPal.',
+    desc: 'Rs 2,999, 4,999 and 6,999 plans, custom from Rs 11,111. Pay once with Khalti, eSewa or bank QR. PayPal from abroad.',
     alt: 'Nimtto prices: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, paid once, beside an invitation on a phone',
+  },
+  faq: {
+    path: '/faq/', img: 'faq', type: 'FAQPage', ogType: 'website', speak: true,
+    title: 'Digital Invitation FAQ for Nepal | Nimtto',
+    desc: 'Answers on price, payment, timing, changes, RSVP and sharing for Nepali digital invitations, from eSewa and Khalti to guests abroad.',
+    alt: 'Questions and answers about Nimtto digital invitations in Nepal',
   },
   contact: {
     path: '/contact/', img: 'contact', type: 'ContactPage', ogType: 'website',
-    title: 'Contact Us: Wedding Invitation Help On WhatsApp | Nimtto',
-    desc: 'Contact Nimtto about an online wedding invitation or a bratabandha or pasni card. WhatsApp or call +977 980-6393298 or email. We reply in English or Nepali.',
+    title: 'Contact Nimtto to Order a Digital Invitation',
+    desc: 'Talk to a designer on WhatsApp or email. Tell us your date and we will suggest a design. WhatsApp +977 980-6393298, in English or Nepali.',
     alt: 'Contact Nimtto on WhatsApp at +977 980-6393298, beside a wedding invitation on a phone',
   },
   credits: {
     path: '/credits/', img: 'home', type: 'WebPage', ogType: 'website',
-    title: 'Credits: Photos, Flowers, Art And Music Licences | Nimtto',
-    desc: 'Credits for the photographs, flowers, art and music used in Nimtto\'s online wedding invitation designs, with each author and licence. Thanks to every creator.',
+    title: 'Credits: Photos, Flowers, Art and Music Licences | Nimtto',
+    desc: 'Credits for the photographs, flowers, art and music used in Nimtto\'s online wedding invitation designs, with each author and licence.',
     alt: 'Nimtto online invitation maker: three wedding invitation designs on phones, in white and blush',
+  },
+};
+
+/** The legal pages: one neutral set for both sites (market 'both'). */
+export const LEGAL = {
+  terms: {
+    path: '/terms/', img: 'home', type: 'WebPage', ogType: 'website', market: 'both',
+    title: 'Terms of Service | Nimtto',
+    desc: 'The terms for Nimtto online invitations: your account, orders and payment, what we deliver and when, your content and how long invitations stay online.',
+    alt: 'Nimtto terms of service',
+  },
+  privacy: {
+    path: '/privacy/', img: 'home', type: 'WebPage', ogType: 'website', market: 'both',
+    title: 'Privacy Policy | Nimtto',
+    desc: 'What Nimtto collects (name, email, phone, event details, photos, guest replies), why, who processes it, that we never sell it, and how to delete it.',
+    alt: 'Nimtto privacy policy',
+  },
+  refunds: {
+    path: '/refunds/', img: 'home', type: 'WebPage', ogType: 'website', market: 'both',
+    title: 'Refund Policy | Nimtto',
+    desc: 'Nimtto refunds: a full refund before we start work on your invitation, 50% after work starts, none once it is published unless the mistake is ours.',
+    alt: 'Nimtto refund policy',
   },
 };
 
@@ -113,9 +160,34 @@ export function designMeta(slug) {
   };
 }
 
-/** the meta for a partial argument: a page id, or design/<slug> */
+/** The meta for a partial argument: a Nepal page id, design/<slug>, intl/<page>, land/<id> or a legal page.
+ *  Adds market ('np' | 'intl' | 'both'), url, image and the Title Case title. */
 export function pageMeta(id = 'home') {
-  const m = id.startsWith('design/') ? designMeta(id.slice(7)) : PAGES[id];
+  let m;
+  if (id.startsWith('design/')) m = { ...designMeta(id.slice(7)), market: 'np' };
+  else if (id.startsWith('intl/')) m = INTL_PAGES[id] && { ...INTL_PAGES[id], market: 'intl' };
+  else if (id.startsWith('land/')) m = LANDINGS[id.slice(5)] && { type: 'WebPage', ogType: 'website', ...LANDINGS[id.slice(5)] };
+  else if (LEGAL[id]) m = LEGAL[id];
+  else m = PAGES[id] && { ...PAGES[id], market: 'np' };
   if (!m) throw new Error(`seo: no page "${id}"`);
   return { ...m, title: titleCase(m.title), url: `${SITE_URL}${m.path}`, image: `${SITE_URL}/site/og/${m.img}.jpg` };
+}
+
+/** Every public page id, for the sitemap, llms-full.txt and the length check. */
+export const ALL_PAGE_IDS = [
+  ...Object.keys(PAGES), ...Object.keys(INTL_PAGES), ...Object.keys(LANDINGS).map((k) => `land/${k}`), ...Object.keys(LEGAL),
+];
+
+/** Warnings for titles over 60 and descriptions over 155 characters, and for a primary title used twice. */
+export function checkLengths() {
+  const out = [];
+  const seen = new Map();
+  for (const id of ALL_PAGE_IDS) {
+    const m = pageMeta(id);
+    if (m.title.length > 60) out.push(`${id}: title ${m.title.length} > 60: ${m.title}`);
+    if (m.desc.length > 155) out.push(`${id}: description ${m.desc.length} > 155`);
+    if (seen.has(m.title)) out.push(`${id}: same title as ${seen.get(m.title)}`);
+    seen.set(m.title, id);
+  }
+  return out;
 }

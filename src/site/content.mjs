@@ -7,17 +7,18 @@ import { FALLBACK_SITE } from './themes.js';
 
 export const SITE_URL = 'https://nimtto.com';
 
-/** Occasions: `designs: true` has ready-made designs today; the rest are made for you (Custom plan). */
+/** Occasions: `designs: true` has ready-made designs today; the rest are made for you (Custom plan).
+ *  page: the occasion's own page (src/site/landings.mjs). */
 export const OCCASIONS = [
-  { id: 'wedding', en: 'Wedding', ne: 'शुभ विवाह', alt: 'बिहे', designs: true, line: '27 ready designs, with every ceremony from mehendi to reception.', key: 'wedding invitation card' },
-  { id: 'engagement', en: 'Engagement', ne: 'माग्नी', alt: 'टीका', line: 'The tika, the rings and the family lunch, in one link.', key: 'engagement invitation card' },
-  { id: 'bratabandha', en: 'Bratabandha', ne: 'ब्रतबन्ध', line: 'The sacred thread day, with the full programme and the feast.', key: 'bratabandha invitation card' },
-  { id: 'gunyu-cholo', en: 'Gunyu Cholo', ne: 'गुन्यू चोलो', line: 'A daughter’s first gunyu cholo, shared with the whole family.', key: 'gunyu cholo invitation' },
-  { id: 'pasni', en: 'Pasni', ne: 'पास्नी', alt: 'अन्नप्राशन', line: 'Baby’s first rice, with photos and the time of the feast.', key: 'pasni invitation card' },
-  { id: 'nwaran', en: 'Nwaran', ne: 'न्वारान', line: 'The naming day. The new name appears as guests open it.', key: 'nwaran invitation card' },
-  { id: 'birthday', en: 'Birthday', ne: 'जन्मदिन', line: 'From a first birthday to an 84th, in English and Nepali.', key: 'birthday invitation card' },
-  { id: 'janku', en: 'Janku', ne: 'जंकु', line: 'The Newar old-age rites that honour an elder, from Bhimratha on.', key: 'janku invitation card' },
-  { id: 'bhoj', en: 'Bhoj and reception', ne: 'भोज', line: 'A reception or family feast, with a map and replies for numbers.', key: 'reception invitation card' },
+  { id: 'wedding', en: 'Wedding', ne: 'शुभ विवाह', alt: 'बिहे', designs: true, line: '27 ready designs, with every ceremony from mehendi to reception.', key: 'wedding invitation card', page: '/wedding-invitation-nepal/' },
+  { id: 'engagement', en: 'Engagement', ne: 'माग्नी', alt: 'टीका', line: 'The tika, the rings and the family lunch, in one link.', key: 'engagement invitation card', page: '/occasions/engagement/' },
+  { id: 'bratabandha', en: 'Bratabandha', ne: 'ब्रतबन्ध', line: 'The sacred thread day, with the full programme and the feast.', key: 'bratabandha invitation card', page: '/occasions/bratabandha/' },
+  { id: 'gunyu-cholo', en: 'Gunyu Cholo', ne: 'गुन्यू चोलो', line: 'A daughter’s first gunyu cholo, shared with the whole family.', key: 'gunyu cholo invitation', page: '/occasions/gunyu-cholo/' },
+  { id: 'pasni', en: 'Pasni', ne: 'पास्नी', alt: 'अन्नप्राशन', line: 'Baby’s first rice, with photos and the time of the feast.', key: 'pasni invitation card', page: '/occasions/pasni/' },
+  { id: 'nwaran', en: 'Nwaran', ne: 'न्वारान', line: 'The naming day. The new name appears as guests open it.', key: 'nwaran invitation card', page: '/occasions/nwaran/' },
+  { id: 'birthday', en: 'Birthday', ne: 'जन्मदिन', line: 'Any age, from a first birthday to a chaurasi and beyond, in English and Nepali.', key: 'birthday invitation card', page: '/occasions/birthday/' },
+  { id: 'janku', en: 'Janku', ne: 'जंकु', line: 'The Newar old-age rites that honour an elder, from Bhimratha on.', key: 'janku invitation card', page: '/occasions/janku/' },
+  { id: 'bhoj', en: 'Bhoj and reception', ne: 'भोज', line: 'A reception or family feast, with a map and replies for numbers.', key: 'reception invitation card', page: '/occasions/reception-bhoj/' },
   { id: 'custom', en: 'Your own occasion', ne: 'आफ्नै अवसर', line: 'Griha pravesh, a puja, an anniversary. Designed for you.', key: 'custom invitation' },
 ];
 
@@ -54,20 +55,31 @@ const Q = {
   app: ['Do guests need to install an app?', 'No. The invitation is a website. It opens in any phone browser from WhatsApp, Viber, Messenger or SMS, also on slow mobile data.'],
   abroad: ['Can family abroad see it and pay from abroad?', 'Yes. The invitation opens anywhere in the world, and you can pay in US dollars by card or PayPal.'],
   difference: ['What is the difference between {plan:saral}, {plan:shubha} and {plan:shahi}?', 'The plans differ in which designs and extras they include. {plan:saral} has 7 designs and all the basics. {plan:shubha} adds 8 more designs, photos, every ceremony with maps and music. {plan:shahi} includes every design, personal guest links and priority help.'],
-  custom: ['What is a custom design?', 'A custom design is a new invitation made only for you, with your colours, art and wording. It suits any occasion, not only weddings. It starts at Rs 11,111 and we talk it through with you before we begin.'],
+  custom: ['What is a custom design?', 'A custom design is a new invitation made only for you, with your colours, art and wording. It suits any occasion, not only weddings. It starts at {price:custom}: tell us your idea in the order form and we reply within one business day with a price.'],
   account: ['Why do I make an account when I order?', 'Your account lets you come back to your order, pay later, and later edit your invitation and read guest replies. You sign in with your email and the password you choose.'],
   where: ['Where is Nimtto based?', 'Nimtto is made in Nepal and serves Nepali families in Nepal and around the world. We talk to you on WhatsApp in English or Nepali.'],
+  esewa: ['Can I pay with eSewa or Khalti?', 'Yes. On the payment page, scan the QR with Khalti, eSewa or any bank app (Fonepay), with your order number in the remark. Then upload the payment screenshot and we confirm it, usually the same day. From abroad, pay by card or PayPal in US dollars.'],
+  whatsapp: ['Can I send it on WhatsApp and Viber?', 'Yes. Your invitation is one link: share it on WhatsApp, Viber, Messenger or SMS. The preview shows your names and a picture. Guests open it in their phone browser, with no app, and everyone sees the same up-to-date details.'],
+  outside: ['Do you serve outside Kathmandu?', 'Yes. Nimtto works online across Nepal: Kathmandu, Lalitpur, Bhaktapur, Pokhara, Butwal, Chitwan, Dharan, Biratnagar, Birgunj and everywhere else. We make your invitation with you on WhatsApp, and you pay by QR, so it does not matter where you live.'],
+  acceptable: ['Is an e-invitation acceptable in Nepal?', 'Yes. More Nepali families now send their invitation on WhatsApp or Viber, often with a few printed cards for elders. Guests like having the date, the venue and a map on their phone, and relatives abroad can open it anywhere.'],
 };
 
 export const FAQ = {
-  home: ['what', 'how', 'cost', 'occasions', 'nepali', 'rsvp', 'app', 'time'],
+  home: ['what', 'cost', 'rsvp', 'whatsapp', 'time', 'esewa', 'occasions', 'outside'],
   designs: ['difference', 'nepali', 'app', 'change', 'custom'],
   occasions: ['occasions', 'custom', 'time', 'nepali', 'cost'],
-  how: ['how', 'time', 'pay', 'account', 'change'],
+  how: ['how', 'time', 'pay', 'account', 'change', 'whatsapp'],
   features: ['rsvp', 'nepali', 'app', 'change', 'abroad'],
-  pricing: ['cost', 'difference', 'pay', 'abroad', 'custom', 'account'],
-  contact: ['where', 'time', 'pay', 'abroad'],
+  pricing: ['cost', 'difference', 'esewa', 'abroad', 'custom', 'account', 'outside'],
+  contact: ['where', 'time', 'pay', 'abroad', 'outside'],
   design: ['difference', 'how', 'change', 'app'],
+  // the FAQ page: every question, in groups
+  faq: [
+    ['About Nimtto', ['what', 'where', 'outside', 'occasions', 'custom']],
+    ['Price and payment', ['cost', 'difference', 'esewa', 'pay', 'abroad']],
+    ['Making and sharing', ['how', 'time', 'account', 'change', 'whatsapp']],
+    ['For your guests', ['acceptable', 'rsvp', 'nepali', 'app']],
+  ],
 };
 
 const npr = new Intl.NumberFormat('en-IN');
@@ -90,4 +102,5 @@ export function fillPlans(s, html = false) {
   return out + (html ? escHtml(rest) : rest);
 }
 /** A page's questions: q and a as plain text (JSON-LD), qHtml and aHtml as escaped HTML with live plan names. */
-export const faqItems = (set) => (FAQ[set] || []).map((k) => ({ q: fillPlans(Q[k][0]), a: fillPlans(Q[k][1]), qHtml: fillPlans(Q[k][0], true), aHtml: fillPlans(Q[k][1], true) }));
+export const faqItemsOf = (keys) => keys.filter((k) => Q[k]).map((k) => ({ q: fillPlans(Q[k][0]), a: fillPlans(Q[k][1]), qHtml: fillPlans(Q[k][0], true), aHtml: fillPlans(Q[k][1], true) }));
+export const faqItems = (set) => (Array.isArray(FAQ[set]?.[0]) ? faqItemsOf(FAQ[set].flatMap(([, keys]) => keys)) : faqItemsOf(FAQ[set] || []));
