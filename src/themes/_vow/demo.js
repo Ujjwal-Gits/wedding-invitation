@@ -81,7 +81,7 @@ export function intlDemo(o, base) {
   const mapQuery = o.mapQuery || `${o.venue}, ${o.city}`;
   const opts = { ...o, tz, mapQuery };
   const events = occasion === 'wedding' ? weddingEvents(opts) : partyEvents(opts);
-  const main = events.find((e) => e.id === 'ceremony') || events[0];
+  const main = events.find((e) => e.id === 'ceremony' || e.id === 'nikah') || events[0];
   const who = single ? o.bride : `${o.bride} & ${o.groom}`;
   const portraits = (o.portraits || [P.goldenHour, P.embrace, P.veilBack, P.handsBouquet, P.countryRoad, P.brideBouquet, P.meadow])
     .map((photo) => ({ photo, alt: photo.alt }));
