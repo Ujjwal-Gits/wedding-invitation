@@ -10,7 +10,7 @@
 - Payment: one payment, no subscription, no charge per guest. Nepal: Khalti, eSewa or bank QR (Fonepay), confirmed by hand. Abroad: card or PayPal in US dollars; the plan switches on as soon as the payment goes through.
 - Delivery: the invitation appears in the customer's dashboard as soon as payment is confirmed; design help usually takes 1 to 3 business days. Invitations stay online for at least one year after the event date.
 - Custom designs: an enquiry. Nimtto replies within one business day with a price.
-- Refunds: all payments are final, no refunds; problems with an invitation are fixed free. Terms: https://nimtto.com/terms/ · Privacy: https://nimtto.com/privacy/ · Refunds: https://nimtto.com/refunds/
+- Refunds: payments are final; in a critical case a customer can ask, and Nimtto may approve a full or partial refund; problems with an invitation are fixed free. Terms: https://nimtto.com/terms/ · Privacy: https://nimtto.com/privacy/ · Refunds: https://nimtto.com/refunds/
 
 ## Prices
 Nepal (https://nimtto.com/pricing/): Standard Rs 2,999; Pro Rs 4,999; Pro Max Rs 6,999; Custom from Rs 11,111.
@@ -64,7 +64,7 @@ Plans: Standard: A ready-made design, Your names, date and venue, Guest replies 
 ## Policies
 - [Terms of Service](https://nimtto.com/terms/): The terms for Nimtto online invitations: your account, orders and payment, what we deliver and when, your content and how long invitations stay online.
 - [Privacy Policy](https://nimtto.com/privacy/): What Nimtto collects (name, email, phone, event details, photos, guest replies), why, who processes it, that we never sell it, and how to delete it.
-- [Refund Policy](https://nimtto.com/refunds/): Nimtto refund policy: all payments are final and non-refundable. If anything is wrong with your invitation, we fix it for you at no extra cost.
+- [Refund Policy](https://nimtto.com/refunds/): Nimtto refund policy: payments are final. In a critical case you can ask for a refund, and we may approve a full or partial one.
 
 ## More
 - Every page's words in plain text: https://nimtto.com/llms-full.txt

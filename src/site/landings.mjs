@@ -403,7 +403,7 @@ export const LANDINGS = {
     faq: [
       ['Which time zone do the times use?', 'Each event shows in the venue’s local time, so guests flying in from other states arrive on time. Guests can add each event to their own calendar.'],
       ['How long does it take?', 'Your invitation appears in your dashboard as soon as payment is confirmed. Our design help usually takes 1 to 3 business days once we have your details.'],
-      ['Can I get a refund?', 'No. All payments are final once paid. If anything is wrong with your invitation, we fix it for you.'],
+      ['Can I get a refund?', 'Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. Problems with your invitation are fixed free.'],
     ],
     links: [['Nepali wedding invitations for the USA', '/international/nepali-wedding-invitations/'], ['South Asian wedding invitation websites', '/international/south-asian-wedding-invitation-website/']],
     related: ['i-wedding', 'i-rsvp', 'i-nepali'], cross: 'nepal',

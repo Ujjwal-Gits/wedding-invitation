@@ -10,7 +10,7 @@
 - Payment: one payment, no subscription, no charge per guest. Nepal: Khalti, eSewa or bank QR (Fonepay), confirmed by hand. Abroad: card or PayPal in US dollars; the plan switches on as soon as the payment goes through.
 - Delivery: the invitation appears in the customer's dashboard as soon as payment is confirmed; design help usually takes 1 to 3 business days. Invitations stay online for at least one year after the event date.
 - Custom designs: an enquiry. Nimtto replies within one business day with a price.
-- Refunds: all payments are final, no refunds; problems with an invitation are fixed free. Terms: https://nimtto.com/terms/ · Privacy: https://nimtto.com/privacy/ · Refunds: https://nimtto.com/refunds/
+- Refunds: payments are final; in a critical case a customer can ask, and Nimtto may approve a full or partial refund; problems with an invitation are fixed free. Terms: https://nimtto.com/terms/ · Privacy: https://nimtto.com/privacy/ · Refunds: https://nimtto.com/refunds/
 
 ## Prices
 Nepal (https://nimtto.com/pricing/): Standard Rs 2,999; Pro Rs 4,999; Pro Max Rs 6,999; Custom from Rs 11,111.
@@ -374,7 +374,7 @@ You pay once, in US dollars, by card or PayPal on PayPal’s secure checkout. We
 A custom design is a brand-new invitation made just for you, with your colors, art and words. It works for any occasion, not only weddings, and starts at $199. Send us your idea and we reply within one business day with a price.
 
 ### Can I get a refund?
-No. All payments are final once paid. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
+Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
 
 ### How long does my invitation stay online?
 Your invitation stays online for at least one year after your event date, so guests can look back at the details and photos. If you need it online longer, just ask us.
@@ -423,7 +423,7 @@ No. You pay once for your plan, in US dollars, and that is all. There is no mont
 You pay once, in US dollars, by card or PayPal on PayPal’s secure checkout. We never see your card number. As soon as the payment goes through, your plan switches on and your invitation appears in your dashboard, ready for your details.
 
 ### Can I get a refund?
-No. All payments are final once paid. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
+Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
 
 ### How long does it take?
 Your invitation appears in your dashboard as soon as your payment is confirmed. Our design help usually takes 1 to 3 business days once we have your details. A design made just for you takes longer, so tell us your date and we plan around it.
@@ -454,7 +454,7 @@ Your invitation appears in your dashboard as soon as your payment is confirmed. 
 You pay once, in US dollars, by card or PayPal on PayPal’s secure checkout. We never see your card number. As soon as the payment goes through, your plan switches on and your invitation appears in your dashboard, ready for your details.
 
 ### Can I get a refund?
-No. All payments are final once paid. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
+Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. If anything is wrong with your invitation, we fix it for you. Our refund policy page has the details.
 
 ## Wedding Invitation Card Online in Nepal | Nimtto
 URL: https://nimtto.com/wedding-invitation-nepal/
@@ -810,7 +810,7 @@ Each event shows in the venue’s local time, so guests flying in from other sta
 Your invitation appears in your dashboard as soon as payment is confirmed. Our design help usually takes 1 to 3 business days once we have your details.
 
 ### Can I get a refund?
-No. All payments are final once paid. If anything is wrong with your invitation, we fix it for you.
+Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. Problems with your invitation are fixed free.
 
 ## Custom Digital Wedding Invitations, Designer-Made | Nimtto
 URL: https://nimtto.com/international/occasions/wedding/

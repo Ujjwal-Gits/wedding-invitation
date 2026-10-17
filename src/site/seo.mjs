@@ -108,7 +108,7 @@ export const LEGAL = {
   refunds: {
     path: '/refunds/', img: 'home', type: 'WebPage', ogType: 'website', market: 'both',
     title: 'Refund Policy | Nimtto',
-    desc: 'Nimtto refund policy: all payments are final and non-refundable. If anything is wrong with your invitation, we fix it for you at no extra cost.',
+    desc: 'Nimtto refund policy: payments are final. In a critical case you can ask for a refund, and we may approve a full or partial one.',
     alt: 'Nimtto refund policy',
   },
 };

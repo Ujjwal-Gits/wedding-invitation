@@ -99,7 +99,7 @@ const facts = `## Key facts
 - Payment: one payment, no subscription, no charge per guest. Nepal: Khalti, eSewa or bank QR (Fonepay), confirmed by hand. Abroad: card or PayPal in US dollars; the plan switches on as soon as the payment goes through.
 - Delivery: the invitation appears in the customer's dashboard as soon as payment is confirmed; design help usually takes 1 to 3 business days. Invitations stay online for at least one year after the event date.
 - Custom designs: an enquiry. Nimtto replies within one business day with a price.
-- Refunds: all payments are final, no refunds; problems with an invitation are fixed free. Terms: ${SITE_URL}/terms/ · Privacy: ${SITE_URL}/privacy/ · Refunds: ${SITE_URL}/refunds/
+- Refunds: payments are final; in a critical case a customer can ask, and Nimtto may approve a full or partial refund; problems with an invitation are fixed free. Terms: ${SITE_URL}/terms/ · Privacy: ${SITE_URL}/privacy/ · Refunds: ${SITE_URL}/refunds/
 
 ## Prices
 Nepal (${SITE_URL}/pricing/): ${npPlans.map((p) => `${p.name} ${p.from ? 'from ' : ''}${rs(p.price)}`).join('; ')}.
