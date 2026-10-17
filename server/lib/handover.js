@@ -16,6 +16,7 @@ import { sendMail, MAIL_ON } from './mail.js';
 import { PUBLIC_ORIGINS } from './env.js';
 import { emptyOrDemo } from './demo.js';
 import { startingWords } from '../../src/core/faith.js';
+import { DEFAULT_TZ, zoneOf, wallOf, zonedIso } from '../../src/core/tz.js';
 import { config as demo } from '../../src/config.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
@@ -183,13 +184,14 @@ function activeEmail(c, order, why) {
   return { subject: why === 'free' ? 'Your Nimtto plan is active' : 'Payment received: your Nimtto plan is active', text, html };
 }
 
-/** Shifts an ISO date-time (with its offset) by whole days. */
-const shiftDays = (iso, days) => {
+/** Shifts an ISO date-time (with its offset) by whole days; outside Nepal the offset follows the new day's (DST). */
+const shiftDays = (iso, days, tz = DEFAULT_TZ) => {
   const m = /^(\d{4}-\d{2}-\d{2})(T.*)$/.exec(String(iso || ''));
   if (!m) return iso;
-  const t = new Date(`${m[1]}T00:00:00Z`);
+  const w = tz === DEFAULT_TZ ? { date: m[1] } : wallOf(iso, tz);
+  const t = new Date(`${w.date}T00:00:00Z`);
   t.setUTCDate(t.getUTCDate() + days);
-  return `${t.toISOString().slice(0, 10)}${m[2]}`;
+  return tz === DEFAULT_TZ ? `${t.toISOString().slice(0, 10)}${m[2]}` : zonedIso(t.toISOString().slice(0, 10), w.time, tz);
 };
 const dayDiff = (a, b) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 864e5);
 
@@ -213,12 +215,13 @@ export async function fillDetails(slug, details = {}) {
     const placeholder = doc.placeholder?.weddingDate;
     if (day && (!d.weddingDate || d.weddingDate === placeholder || d.weddingDate === demo.weddingDate)) {
       const was = String(d.weddingDate || '').slice(0, 10);
+      const tz = zoneOf(d);
       const time = /T.*$/.exec(d.weddingDate || '')?.[0] || 'T10:30:00+05:45';
-      d.weddingDate = `${day}${time}`;
+      d.weddingDate = tz === DEFAULT_TZ ? `${day}${time}` : zonedIso(day, wallOf(d.weddingDate, tz).time || '10:30', tz);
       // the ceremonies were dated around the placeholder: move them by the same number of days (times kept)
       if (was) {
         const delta = dayDiff(day, was);
-        if (delta) for (const e of d.events) { if (e.start) e.start = shiftDays(e.start, delta); if (e.end) e.end = shiftDays(e.end, delta); }
+        if (delta) for (const e of d.events) { if (e.start) e.start = shiftDays(e.start, delta, tz); if (e.end) e.end = shiftDays(e.end, delta, tz); }
       }
       delete doc.placeholder;
       changed.push('weddingDate');

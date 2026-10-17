@@ -15,6 +15,7 @@ import { readSite, tierOf, EMAIL_RE } from './site.js';
 import { originAllowed } from './security.js';
 import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
+import { zoneOf } from '../../src/core/tz.js';
 import { isReligion, startingEvents, startingWords, suits } from '../../src/core/faith.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
@@ -523,6 +524,7 @@ export async function publicData(req, res) {
 /** The page's data from a draft or published snapshot (a new object; the stored one is never changed). */
 function publicPayload(src, slug) {
   const out = structuredClone(src);
+  out.timeZone = zoneOf(out); // the venue's zone (absent in older data = Nepal)
   out.rsvp.endpoint = `/api/invitations/${slug}/rsvp`;
   if (!out.music.tracks.length) out.music.tracks = [BUNDLED_TRACKS[0]];
   // Ceremonies with no end time are "onwards": give older themes a sensible end too.
@@ -533,7 +535,7 @@ function publicPayload(src, slug) {
   out.share.siteUrl = PUBLIC_ORIGINS[0] || '';
   // The B.S. wedding date is worked out from the date unless the planner typed their own (§12).
   if (out.weddingDate && !out.weddingDateBS?.en && !out.weddingDateBS?.ne) {
-    const bs = bsDateOf(out.weddingDate);
+    const bs = bsDateOf(out.weddingDate, null, out.timeZone);
     out.weddingDateBS = { en: bs.en, ne: bs.ne };
   }
   // Only the content overrides the page shows: its theme's, and those of a borrowed gate or first screen (MIX.md).

@@ -11,7 +11,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photoUrl } from '../../photos.js';
 import { deviceTier } from './perf.js';
-import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, biNodes } from '../../core/i18n.js';
+import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, biNodes, venueParts } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
 import { renderFinale, animateGallery, guestEvents } from '../../core/finale.js';
@@ -349,8 +349,8 @@ function prewarm() {
 function drawPlaques() {
   const lang = document.documentElement.dataset.lang === 'ne' ? 'ne' : 'en';
   st.plaques.forEach(({ p, e }) => {
-    const d = new Date(new Date(e.start).getTime() + 345 * 60000);
-    const day = String(d.getUTCDate()).padStart(2, '0');
+    const d = venueParts(e.start);
+    const day = String(d.day).padStart(2, '0');
     const NE = '०१२३४५६७८९';
     const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthsNe = ['जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन', 'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'];
@@ -358,7 +358,7 @@ function drawPlaques() {
       lang,
       title: lang === 'ne' ? e.title.ne : e.title.en,
       num: lang === 'ne' ? day.replace(/\d/g, (x) => NE[x]) : day,
-      kicker: lang === 'ne' ? monthsNe[d.getUTCMonth()] : `${monthsEn[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+      kicker: lang === 'ne' ? monthsNe[d.m] : `${monthsEn[d.m]} ${d.y}`,
     });
   });
 }

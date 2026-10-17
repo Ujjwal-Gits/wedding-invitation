@@ -11,7 +11,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf, timeZone } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
@@ -108,7 +108,7 @@ const album = [...albumCouple, ...albumGallery].slice(0, 12);
 // ───────────────────────── Dates ─────────────────────────
 const mainAD = dateOf(config.weddingDate);
 const mainBS = bsDateOf(config.weddingDate, config.weddingDateBS);
-const fmtParts = (iso, opts) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', ...opts }).format(new Date(iso));
+const fmtParts = (iso, opts) => new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), ...opts }).format(new Date(iso));
 const shortAD = (iso) => {
   const ne = dateOf(iso).ne.split(', ');
   return { en: fmtParts(iso, { weekday: 'short', day: 'numeric', month: 'short' }), ne: `${ne[0]}, ${ne[1]}` };

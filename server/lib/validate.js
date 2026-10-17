@@ -7,6 +7,7 @@ import { LIBRARY_SRC_RE } from '../../src/core/music-library.js';
 import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
 import { cleanDesign } from '../../src/core/mix-rules.js';
 import { isReligion } from '../../src/core/faith.js';
+import { DEFAULT_TZ, isTimeZone } from '../../src/core/tz.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -60,7 +61,7 @@ function isoDate(c, v, path, { required = false } = {}) {
   if (!m || Number.isNaN(Date.parse(v))) return c.fail(path, 'must be an ISO date-time with offset, e.g. 2027-02-12T10:30:00+05:45') ?? '';
   const year = Number(m[1]);
   if (year < 2000 || year > 2100) return c.fail(path, 'year out of range') ?? '';
-  // Normalise to seconds precision, keep the given offset (Nepal is +05:45).
+  // Normalise to seconds precision, keep the given offset (the venue's on that day, e.g. +05:45 for Nepal).
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] || '00'}${m[7]}`;
 }
 
@@ -272,7 +273,7 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
     };
     if (ev.start && ev.end && Date.parse(ev.end) < Date.parse(ev.start)) c.fail(`${p}.end`, 'must be after the start');
     // Optional B.S. override (THEME-CONTRACT §12): only stored when the planner typed one.
-    // No fixed end time: shown as "11:00 AM onwards" (timeLabel in src/core/i18n.js).
+    // No fixed end time: shown as "<start> onwards" (timeLabel in src/core/i18n.js).
     if (e.openEnded === true) ev.openEnded = true;
     const bs = bi(c, e.dateBS, `${p}.dateBS`, 120);
     if (bs.en || bs.ne) ev.dateBS = bs;
@@ -368,6 +369,12 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
   if (d.religion != null && d.religion !== '' && d.religion !== 'hindu') {
     if (isReligion(d.religion)) out.religion = d.religion;
     else c.fail('religion', "must be 'hindu', 'muslim', 'christian' or 'other'");
+  }
+  // timeZone: the venue's IANA zone; every time is a wall-clock time there (src/core/tz.js). Nepal (the default)
+  // is not stored, so older data compares equal.
+  if (d.timeZone != null && d.timeZone !== '' && d.timeZone !== DEFAULT_TZ) {
+    if (isTimeZone(d.timeZone)) out.timeZone = d.timeZone;
+    else c.fail('timeZone', 'must be a time zone name such as America/Chicago');
   }
 
   if (c.errors.length) throw new ValidationError(c.errors.slice(0, 50));

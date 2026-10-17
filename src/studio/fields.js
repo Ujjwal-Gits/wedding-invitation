@@ -3,6 +3,7 @@ import { h, icon, iconBtn, clear, toast, openDialog } from './dom.js';
 import { upload } from './api.js';
 import { photoUrl } from '../photos.js';
 import { sectionOfPath } from './preview-sync.js';
+import { zoneOf, zonedIso, wallOf } from '../core/tz.js';
 
 let uid = 0;
 const nextId = (p = 'f') => `${p}-${++uid}`;
@@ -98,21 +99,17 @@ export function biField(m, path, opts = {}) {
   );
 }
 
-// ── Dates (always Nepal time, +05:45) ─────────────────────────────────────
-
-const splitIso = (iso) => {
-  const mm = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
-  return mm ? { date: mm[1], time: mm[2] } : { date: '', time: '' };
-};
+// ── Dates (wall-clock time at the venue: the invitation's timeZone, absent = Nepal; src/core/tz.js) ──
 
 export function dateTimeField(m, path, { label, hint, timeOnlyLabel } = {}) {
   const id = nextId('dt');
-  const cur = splitIso(m.get(path));
+  const tz = zoneOf(m.data);
+  const cur = wallOf(m.get(path), tz);
   const date = h('input.input', { type: 'date', id: `${id}-d`, value: cur.date, 'data-path': pathStr(path), min: '2020-01-01', max: '2099-12-31' });
   const time = h('input.input', { type: 'time', id: `${id}-t`, value: cur.time, step: 300 });
   const write = () => {
     date.removeAttribute('aria-invalid');
-    if (date.value && time.value) m.set(path, `${date.value}T${time.value}:00+05:45`);
+    if (date.value && time.value) m.set(path, zonedIso(date.value, time.value, zoneOf(m.data)));
     else if (!date.value) m.set(path, '');
   };
   date.addEventListener('change', write);
@@ -122,7 +119,7 @@ export function dateTimeField(m, path, { label, hint, timeOnlyLabel } = {}) {
     hint ? h('p.hint', hint) : null,
     h('div.dt__row',
       h('div.dt__col', h('label.bi__lang', { for: date.id }, 'Date'), date),
-      h('div.dt__col', h('label.bi__lang', { for: time.id }, timeOnlyLabel || 'Time (Nepal)'), time),
+      h('div.dt__col', h('label.bi__lang', { for: time.id }, timeOnlyLabel || 'Time (at the venue)'), time),
     ),
   );
 }

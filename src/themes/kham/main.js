@@ -9,7 +9,7 @@ import './kham.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf, timeZone } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
@@ -128,7 +128,7 @@ const twoCols = [[], []];
 const NE_DIGIT = /[०-९]+/;
 /** AD parts in Nepal time: { wd, day, monthYear } bilingual. */
 function adParts(iso) {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
   const g = (t) => en.find((p) => p.type === t)?.value || '';
   const [wdNe, ...restNe] = dateOf(iso).ne.split(', ');
   return { wd: { en: g('weekday'), ne: wdNe }, day: g('day'), month: { en: `${g('month')} ${g('year')}`, ne: restNe.join(', ') }, full: dateOf(iso) };

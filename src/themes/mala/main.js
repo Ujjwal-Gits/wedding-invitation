@@ -9,7 +9,7 @@ import './mala.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, neNum, dayNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, bsDateOf, timeLabel, mapUrl, neNum, dayNum, timeZone } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile, getLenis } from '../../core/smooth.js';
@@ -104,12 +104,12 @@ const countLine = daysLeft > 1
   ? { en: `${daysLeft} days to go`, ne: `${neNum(daysLeft)} दिन बाँकी` }
   : daysLeft === 1 ? { en: 'Tomorrow', ne: 'भोलि' } : { en: 'With love', ne: 'मायासहित' };
 const monthYear = (iso) => {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', month: 'short', year: 'numeric' }).format(new Date(iso));
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), month: 'short', year: 'numeric' }).format(new Date(iso));
   const m = /,\s*(\S+)\s+\S+,\s*(\S+)$/.exec(dateOf(iso).ne);
   return { en, ne: m ? `${m[1]} ${m[2]}` : dateOf(iso).ne };
 };
 const weekday = (iso) => ({
-  en: new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long' }).format(new Date(iso)),
+  en: new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), weekday: 'long' }).format(new Date(iso)),
   ne: dateOf(iso).ne.split(',')[0],
 });
 
