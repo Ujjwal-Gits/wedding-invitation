@@ -93,6 +93,13 @@ const amountIn = (order, currency) => (currency === 'USD' ? order.amount?.usd : 
 const remarkOf = (order, site) => fillRemark(site.payRemark, { ref: order.ref, plan: order.planName, name: order.name });
 const statusOf = (o) => o.pay?.status || (o.payment?.status === 'paid' ? 'confirmed' : 'awaiting_payment');
 
+/** The PayPal payment as the customer's receipt: status, transaction number, amount, when, test or real. */
+function paypalReceipt(o) {
+  const p = o.payment;
+  if (!p || p.provider !== 'paypal' || !['paid', 'partially_refunded', 'refunded', 'pending'].includes(p.status)) return null;
+  return { status: p.status, transactionId: p.captureId || null, amount: p.amount, currency: p.currency, paidAt: p.paidAt || null, test: p.env !== 'live' };
+}
+
 /** GET /api/orders/:ref/pay?t= */
 export async function payInfo(req, res) {
   if (limited(infoLimit, clientIp(req), res)) return;
@@ -119,6 +126,7 @@ export async function payInfo(req, res) {
     canUpload: !['confirmed', 'refunded', 'comped'].includes(status) && proofs.length < MAX_PROOFS, // comped: free access, nothing to pay
     remark, paymentMethods,
     paypalCheckout: { enabled: Boolean(payments.config.enabled && o.kind === 'order' && o.amount?.usd && status !== 'comped') },
+    paypal: paypalReceipt(o),
     whatsapp: whatsappFor(o, site),
   });
 }

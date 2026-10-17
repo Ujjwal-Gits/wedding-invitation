@@ -180,7 +180,24 @@ export function normPay(d, ref) {
     methods,
     proof: proof ? { method: str(proof.method, 32), at: str(proof.at, 40), amountPaid: str(String(proof.amountPaid ?? ''), 20) } : null,
     contact: isObj(d.contact) ? d.contact : null,
+    paypalCheckout: d.paypalCheckout?.enabled === true,
+    paypal: isObj(d.paypal) ? {
+      status: str(d.paypal.status, 30), transactionId: /^[A-Z0-9]{8,30}$/.test(String(d.paypal.transactionId || '')) ? d.paypal.transactionId : '',
+      amount: str(String(d.paypal.amount ?? ''), 20), currency: str(d.paypal.currency, 3), paidAt: str(d.paypal.paidAt, 40), test: d.paypal.test === true,
+    } : null,
   };
+}
+
+/** POST /api/pay/paypal/{order,capture} (public, Origin-checked): { ok, id | status, ... } */
+export function paypalCall(step, body) {
+  return send(`/api/pay/paypal/${step}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, website: '' }) });
+}
+
+/** GET /api/pay/config → { enabled, env, clientId, currency } (the client ID is public). */
+export async function paypalConfig() {
+  const r = await send('/api/pay/config', { method: 'GET' });
+  const p = r.data?.paypal;
+  return p?.enabled && typeof p.clientId === 'string' && /^[A-Za-z0-9_-]{20,128}$/.test(p.clientId) ? p : null;
 }
 
 /* ---------------- development mock (never in production builds) ---------------- */
