@@ -458,7 +458,8 @@ export async function putSite(req, res) {
 export async function publicThemes(req, res) {
   const d = await getDoc('site');
   const rev = d?.rev ?? 0;
-  // ?market=np|intl: only that market's designs ('both' included), in the planner's order, each with `featured`
+  // ?market=np|intl: that market's designs first ('both' included), in the planner's order, each with `featured`;
+  // then every other design (all designs show on both sites, only the order differs)
   const market = req.query?.market === 'intl' || req.query?.market === 'np' ? req.query.market : '';
   const key = market || 'all';
   const fresh = themesEntity.rev === rev && Date.now() - themesEntity.at < 10_000;
@@ -474,7 +475,6 @@ export async function publicThemes(req, res) {
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
     const tm = themeMarketOf(t.slug, s, t);
-    if (market && !themeFits(tm, market)) continue;
     const m = await loadManifest(t.slug);
     // the design's own metadata (catalog: market, style, faith, occasions), then the admin's per-site overrides
     out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s), ...metaOf(t.slug, m), market: tm, style: themeStyleOf(t.slug, s, t) });
@@ -482,7 +482,9 @@ export async function publicThemes(req, res) {
   if (market) {
     const feat = new Set(featuredOf(s, market));
     const by = new Map(out.map((x) => [x.slug, x]));
-    out = orderedFor(out.map((x) => x.slug), s, market).map((slug) => ({ ...by.get(slug), featured: feat.has(slug) }));
+    const own = out.filter((x) => themeFits(x.market, market)).map((x) => x.slug);
+    const rest = out.filter((x) => !themeFits(x.market, market)).map((x) => ({ ...x, featured: false }));
+    out = [...orderedFor(own, s, market).map((slug) => ({ ...by.get(slug), featured: feat.has(slug) })), ...rest];
   }
   themesEntity.e[key] = entity(JSON.stringify(out), 'application/json; charset=utf-8');
   res.set('Cache-Control', 'no-cache');

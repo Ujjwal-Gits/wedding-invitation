@@ -286,9 +286,11 @@ test('designs per market: market and style overrides, featured and order per mar
   assert.deepEqual(list.slice(0, 2).map((t) => t.slug), [b, a], 'in the planner order');
   assert.equal(list[0].featured, true);
   assert.equal(list[1].style, 'garden');
-  assert.ok(list.every((t) => t.market === 'intl' || t.market === 'both'));
+  // every design shows on both websites: the market's own first, then the others (never featured there)
+  const firstOther = list.findIndex((t) => !(t.market === 'intl' || t.market === 'both'));
+  assert.ok(firstOther === -1 || list.slice(firstOther).every((t) => !(t.market === 'intl' || t.market === 'both') && !t.featured));
   const np = (await browser().req('/api/themes?market=np')).body;
-  assert.equal(np.some((t) => t.slug === a), false, 'an International design is not on the Nepal website');
+  assert.ok(np.findIndex((t) => t.slug === a) > np.findIndex((t) => t.slug === c), 'an International design comes after the Nepal ones');
   assert.ok(np.some((t) => t.slug === b) && np.some((t) => t.slug === c));
   const every = (await browser().req('/api/themes')).body;
   assert.equal(every.find((t) => t.slug === a).market, 'intl');
