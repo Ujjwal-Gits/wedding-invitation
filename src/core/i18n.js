@@ -1,7 +1,13 @@
-// Escaping, bilingual markup, Nepal-time dates and the language switch.
+// Escaping, bilingual markup, venue-time dates and the language switch.
 import * as NepaliDateModule from 'nepali-date-converter';
+import { DEFAULT_TZ, isTimeZone, wallParts, zoneLabel } from './tz.js';
 
-const TZ = 'Asia/Kathmandu';
+// Times show as wall-clock times at the venue (src/core/tz.js). The page sets the zone from the invitation's
+// `timeZone` when it loads (src/core/data.js); absent = Nepal, exactly as before time zones existed.
+let TZ = DEFAULT_TZ;
+export const setTimeZone = (z) => { TZ = isTimeZone(z) ? z : DEFAULT_TZ; };
+/** The venue's IANA zone, for a theme's own Intl.DateTimeFormat({ timeZone }). */
+export const timeZone = () => TZ;
 const NepaliDate = NepaliDateModule.default?.default || NepaliDateModule.default;
 
 export const esc = (s) =>
@@ -40,10 +46,9 @@ const NE_DIGITS = '०१२३४५६७८९';
 export const neNum = (n) => String(n).replace(/\d/g, (d) => NE_DIGITS[d]);
 const NE_MONTHS = ['जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन', 'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'];
 const NE_DAYS = ['आइतबार', 'सोमबार', 'मङ्गलबार', 'बुधबार', 'बिहीबार', 'शुक्रबार', 'शनिबार'];
-const npt = (iso) => {
-  const d = new Date(new Date(iso).getTime() + 345 * 60000); // Nepal is UTC+05:45, no DST
-  return { y: d.getUTCFullYear(), m: d.getUTCMonth(), day: d.getUTCDate(), wd: d.getUTCDay(), h: d.getUTCHours(), min: d.getUTCMinutes() };
-};
+const npt = (iso, tz = TZ) => wallParts(new Date(iso).getTime(), tz);
+/** Wall-clock parts at the venue: { y, m (0-11), day, wd (0 = Sunday), h, min }. */
+export const venueParts = (iso) => npt(iso);
 const nePeriod = (h) => (h < 4 ? 'राति' : h < 12 ? 'बिहान' : h < 16 ? 'दिउँसो' : h < 19 ? 'बेलुका' : 'राति');
 const fmt = (iso, opts) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...opts }).format(new Date(iso));
 
@@ -55,13 +60,13 @@ export const dateOf = (iso) => {
   };
 };
 /**
- * Bikram Sambat date of an ISO date-time (in Nepal time), e.g.
+ * Bikram Sambat date of an ISO date-time (on the venue's calendar day; `tz` for the server, which has no page zone), e.g.
  * { en: 'Friday, 29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ माघ २९ गते, शुक्रबार', short: { en: '29 Magh 2083', ne: 'माघ २९, २०८३' } }.
  * An event's own `dateBS` ({en, ne}) always wins, so a family can match their priest's patro exactly.
  */
-export const bsDateOf = (iso, override) => {
+export const bsDateOf = (iso, override, tz) => {
   if (override && (override.en || override.ne)) return { ...override, short: override };
-  const p = npt(iso);
+  const p = npt(iso, isTimeZone(tz) ? tz : TZ);
   const n = new NepaliDate(new Date(p.y, p.m, p.day, 12));
   return {
     en: `${n.format('ddd')}, ${Number(n.format('D'))} ${n.format('MMMM')} ${n.format('YYYY')} B.S.`,
@@ -75,21 +80,28 @@ export const shortDate = (iso) => {
   return { en: fmt(iso, { day: 'numeric', month: 'short' }), ne: `${NE_MONTHS[p.m]} ${neNum(p.day)}` };
 };
 export const dayNum = (iso) => { const p = npt(iso); return { en: String(p.day).padStart(2, '0'), ne: neNum(String(p.day).padStart(2, '0')) }; };
-export const timeOf = (iso) => {
+const clock = (iso) => {
   const p = npt(iso);
   const h12 = p.h % 12 || 12;
   return {
-    en: fmt(iso, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', ' '),
+    en: fmt(iso, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', ' '),
     ne: `${nePeriod(p.h)} ${neNum(h12)}:${neNum(String(p.min).padStart(2, '0'))} बजे`,
   };
 };
-export const timeRange = (a, b) => ({ en: `${timeOf(a).en} – ${timeOf(b).en}`, ne: `${timeOf(a).ne} – ${timeOf(b).ne}` });
+/** The zone's short name after a time ("3:00 pm CDT"); nothing for Nepal, so Nepali invitations read as before. */
+const tagged = (t, iso) => {
+  const z = zoneLabel(iso, TZ);
+  return z ? { en: `${t.en} ${z}`, ne: `${t.ne} (${z})` } : t;
+};
+export const zoneTag = (iso) => zoneLabel(iso, TZ);
+export const timeOf = (iso) => tagged(clock(iso), iso);
+export const timeRange = (a, b) => tagged({ en: `${clock(a).en} – ${clock(b).en}`, ne: `${clock(a).ne} – ${clock(b).ne}` }, a);
 /**
  * When an event happens, for display: "11:00 AM onwards" when the event has no fixed end
  * (event.openEnded, set in the studio), otherwise the start–end range.
  */
 export const timeLabel = (e) => (e?.openEnded || !e?.end
-  ? { en: `${timeOf(e.start).en} onwards`, ne: `${timeOf(e.start).ne}देखि` }
+  ? (({ en, ne }, z) => ({ en: `${en}${z ? ` ${z}` : ''} onwards`, ne: `${ne}देखि${z ? ` (${z})` : ''}` }))(clock(e.start), zoneLabel(e.start, TZ))
   : timeRange(e.start, e.end));
 
 export const mapUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;

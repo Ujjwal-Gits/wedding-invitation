@@ -102,7 +102,7 @@ const countLine = daysLeft > 1
 
 /** Weekday, day number and month + year for a programme date block. */
 const dateParts = (iso) => {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: i18n.timeZone(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     .formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
   const [wdNe, mdNe = '', yNe = ''] = dateOf(iso).ne.split(', ');
   const [mNe = '', dNe = ''] = mdNe.split(' ');

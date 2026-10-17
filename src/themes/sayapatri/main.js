@@ -11,7 +11,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CustomEase } from 'gsap/CustomEase';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, timeZone } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
 import { renderFinale, guestEvents } from '../../core/finale.js';
@@ -31,11 +31,10 @@ const DEBUG = params.has('debug');
 
 // ───────────────────────── helpers ─────────────────────────
 
-const TZ = 'Asia/Kathmandu';
 /** Pieces of the AD date for the programme's date column. */
 const dateParts = (iso) => {
   const d = new Date(iso);
-  const f = (o) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, ...o }).format(d);
+  const f = (o) => new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), ...o }).format(d);
   const ne = dateOf(iso).ne.split(', '); // [weekday, "month day", year]
   const [neMonth, neDay] = (ne[1] || '').split(' ');
   return {

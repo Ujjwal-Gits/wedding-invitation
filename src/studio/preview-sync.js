@@ -7,7 +7,7 @@ import { photoUrl } from '../photos.js';
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /** Keys whose change re-shapes the page (dates, ids, links, layout switches): a full render. */
-const STRUCT = new Set(['start', 'end', 'weddingDate', 'theme', 'religion', 'id', 'openEnded', 'enabled',
+const STRUCT = new Set(['start', 'end', 'weddingDate', 'timeZone', 'theme', 'religion', 'id', 'openEnded', 'enabled',
   'maxGuests', 'shape', 'focal', 'w', 'h', 'depth', 'src', 'file', 'youtube', 'colors', 'kind', 'portrait']);
 /** Words the page also uses in links (a map search, a phone number, a stream): patched in text and in hrefs. */
 const LINKY = new Set(['mapQuery', 'phone', 'livestream']);
@@ -182,7 +182,7 @@ export function sectionOfPath(path) {
   if (/^story/.test(p)) return 'story';
   if (/^(invitation|saptapadi)/.test(p)) return 'card';
   if (/^closing/.test(p)) return 'closing';
-  if (/^(weddingDate|city)/.test(p)) return 'date';
+  if (/^(weddingDate|city|timeZone)/.test(p)) return 'date';
   if (/^info/.test(p)) return 'info';
   if (/^rsvp/.test(p)) return 'rsvp';
   if (/^music/.test(p)) return 'music';

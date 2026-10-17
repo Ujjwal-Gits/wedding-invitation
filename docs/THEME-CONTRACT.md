@@ -32,7 +32,7 @@ const config = await loadInvitation(); // demo data, or the studio's data when ?
 Shape (see `src/config.js` for the full demo):
 - `couple.bride / couple.groom`: `name {en,ne}`, `fullName {en,ne}`, `parents {en,ne}`, `home {en,ne}`, `photo` (ref or null)
 - `couple.portraits`: `[{ photo, alt }]` — the couple's own photos (first = hero). **Show the couple a lot.**
-- `couple.hashtag`, `hosts {en,ne}`, `weddingDate` (ISO with +05:45), `weddingDateBS {en,ne}`, `city {en,ne}`
+- `couple.hashtag`, `hosts {en,ne}`, `weddingDate` (ISO with the venue's offset, e.g. +05:45), `timeZone` (the venue's IANA zone, absent = `Asia/Kathmandu`; every time is a wall-clock time there, so format with `src/core/i18n.js` helpers or `timeZone()`, never a fixed zone), `weddingDateBS {en,ne}`, `city {en,ne}`
 - `invitation`: `shloka {sa,en}`, `salutation`, `body`, `request`, `signoff` — the full card wording (long; show only on demand)
 - `story`: `[{ year {en,ne}, text {en,ne} }]`
 - `events`: `[{ id, title, blurb, start, end, venue, mapQuery, dress {colors[], text}, photo, rituals? }]`
@@ -194,7 +194,7 @@ every joint connected in every frame.
 
 ## 12. B.S. dates — use the shared converter
 
-`bsDateOf(iso, event.dateBS)` from `src/core/i18n.js` returns the verified Bikram Sambat date in Nepal time:
+`bsDateOf(iso, event.dateBS)` from `src/core/i18n.js` returns the verified Bikram Sambat date of the venue's calendar day:
 `{ en: 'Friday, 29 Magh 2083 B.S.', ne: 'वि.सं. २०८३ माघ २९ गते, शुक्रबार', short: { en, ne } }`
 (library: nepali-date-converter, MIT). Show it for **every** ceremony next to the AD date. An event's optional
 `dateBS` override wins (for families matching their priest's patro). Do not hand-compute B.S. dates.

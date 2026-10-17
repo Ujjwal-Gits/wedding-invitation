@@ -19,7 +19,7 @@ export const AREA_IDS = AREAS.map(([id]) => id);
 const LABEL = Object.fromEntries(AREAS);
 
 const KNOWN = new Set(['couple', 'hosts', 'weddingDate', 'weddingDateBS', 'city', 'events', 'invitation', 'story',
-  'saptapadi', 'closing', 'content', 'themeContent', 'share', 'theme', 'design', 'music', 'gallery', 'rsvp', 'info']);
+  'saptapadi', 'closing', 'content', 'themeContent', 'share', 'theme', 'design', 'music', 'gallery', 'rsvp', 'info', 'timeZone']);
 
 const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, o?.[k]]));
 const omit = (o, keys) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => !keys.includes(k)));
@@ -33,7 +33,7 @@ function project(d = {}) {
     names: [omit(c, ['portraits', 'bride', 'groom']), omit(c.bride, ['photo']), omit(c.groom, ['photo']), d.hosts],
     photos: [c.portraits, c.bride?.photo, c.groom?.photo, (d.events || []).map((e) => e?.photo ?? null),
       d.content?.images, perTheme(d.themeContent, 'images')],
-    dates: [pick(d, ['weddingDate', 'weddingDateBS', 'city']), (d.events || []).map((e) => omit(e, ['photo']))],
+    dates: [pick(d, ['weddingDate', 'weddingDateBS', 'city', 'timeZone']), (d.events || []).map((e) => omit(e, ['photo']))],
     wording: [pick(d, ['invitation', 'story', 'saptapadi', 'closing', 'share']), d.content?.texts, perTheme(d.themeContent, 'texts')],
     theme: d.design ? [d.theme, d.design] : d.theme, // the gate and first screen (docs/MIX.md) are part of the design
     music: d.music,

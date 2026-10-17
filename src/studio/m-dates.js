@@ -4,6 +4,7 @@ import { textField, biField, photoSlot } from './fields.js';
 import { colorsEditor, infoSection } from './sections.js';
 import { bsDateOf } from '../core/i18n.js';
 import { CEREMONY_PRESETS, religionOf } from '../core/faith.js';
+import { DEFAULT_TZ, COMMON_ZONES, allZones, zoneOf, zonedIso, wallOf, restamp, offsetMinutes, offsetText } from '../core/tz.js';
 
 const blank = () => ({ en: '', ne: '' });
 const label = (v, f = '') => (v && (v.en || v.ne)) || f;
@@ -11,15 +12,15 @@ const more = (title, ...children) => h('details.more', h('summary', h('span', ti
 
 // ── 2 · Dates & ceremonies ────────────────────────────────────────────────
 
-const parts = (iso) => {
-  const x = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
-  return x ? { date: x[1], time: x[2] } : { date: '', time: '' };
-};
-const iso = (date, time) => `${date}T${time}:00+05:45`;
+// Times are typed as wall-clock times at the venue (`timeZone`, absent = Nepal) and stored with that zone's
+// offset on the day (DST-aware), so the countdown and the calendar file get the right moment (src/core/tz.js).
+let zone = DEFAULT_TZ;
+const parts = (iso) => wallOf(iso, zone);
+const iso = (date, time) => zonedIso(date, time, zone);
 const nextDay = (d) => { const t = new Date(`${d}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
 
 /**
- * When a ceremony happens: a date and a start time, shown to guests as "11:00 AM onwards".
+ * When a ceremony happens: a date and a start time, shown to guests as "<start time> onwards".
  * An end time is optional (under "More"). Returns { main, end }.
  */
 function whenField(m, p, idBase) {
@@ -70,9 +71,43 @@ function whenField(m, p, idBase) {
         h('div.field', h('label.label', { for: from.id }, 'Starts at'), from)),
       bsBox),
     end: h('div.field',
-      h('label.checkline', endOn, h('span', h('b', 'It has an end time'), h('small', 'Otherwise guests see “11:00 AM onwards”.'))),
+      h('label.checkline', endOn, h('span', h('b', 'It has an end time'), h('small', 'Otherwise guests see the start time followed by “onwards”.'))),
       h('div.field.field--narrow2', h('label.label', { for: to.id }, 'Ends at'), to)),
   };
+}
+
+const zoneName = (z) => z.replace(/^[^/]+\//, '').replace(/\//g, ' / ').replace(/_/g, ' ');
+const gmt = (z) => { const o = offsetMinutes(z, Date.now()); return `GMT${o ? offsetText(o).replace(/:00$/, '').replace(/^([+-])0/, '$1') : ''}`; };
+
+/** Where the wedding is, for its clock: the venue's time zone. Changing it keeps every typed time (3 PM stays 3 PM). */
+function zoneField(m) {
+  const sel = h('select.input', { id: 'wd-zone', 'data-path': 'timeZone' });
+  const common = new Set(COMMON_ZONES.map(([z]) => z));
+  const all = allZones().filter((z) => !common.has(z));
+  const opt = (z, name) => h('option', { value: z }, `${name} (${gmt(z)})`);
+  const placeOf = (z) => `${zoneName(z)} · ${z.split('/')[0]}`;
+  sel.append(
+    h('optgroup', { label: 'Common' }, COMMON_ZONES.map(([z, name]) => opt(z, name)), common.has(zone) || all.includes(zone) ? null : opt(zone, placeOf(zone))),
+    h('optgroup', { label: 'All time zones' }, all.map((z) => opt(z, placeOf(z)))),
+  );
+  sel.value = zone;
+  sel.addEventListener('change', () => {
+    const from = zone;
+    const to = sel.value || DEFAULT_TZ;
+    if (to === from) return;
+    zone = to;
+    if (to === DEFAULT_TZ) { delete m.data.timeZone; m.touch(['timeZone']); } else m.set(['timeZone'], to);
+    const wd = m.get(['weddingDate']);
+    if (wd) m.set(['weddingDate'], restamp(wd, from, to));
+    (m.get(['events']) || []).forEach((e, i) => {
+      if (e.start) m.set(['events', i, 'start'], restamp(e.start, from, to));
+      if (e.end) m.set(['events', i, 'end'], restamp(e.end, from, to));
+    });
+  });
+  return h('div.field',
+    h('label.label', { for: 'wd-zone' }, 'Time zone of the venue'),
+    sel,
+    h('p.hint', 'Type every time as the clock shows it at the venue. Guests elsewhere get the right countdown and calendar times.'));
 }
 
 function weddingDay(ctx) {
@@ -108,6 +143,7 @@ function weddingDay(ctx) {
   return card('The wedding day', 'The day and auspicious time of the main ceremony. Guests see a countdown to it.',
     h('div.when.when--2', h('div.field', h('label.label', { for: 'wd-date' }, 'Date'), date), h('div.field', h('label.label', { for: 'wd-time' }, 'Time'), time)),
     bsBox,
+    zoneField(m),
     biField(m, ['city'], { label: 'City', max: 120, placeholderEn: 'Kathmandu, Nepal', placeholderNe: 'काठमाडौं, नेपाल' }),
   );
 }
@@ -154,7 +190,7 @@ function ceremonies(ctx) {
         const taken = list.map((e) => e.id);
         let id = preset?.id || 'ceremony';
         for (let n = 2; taken.includes(id); n++) id = `${preset?.id || 'ceremony'}-${n}`;
-        const day = (list.at(-1)?.start || m.get(['weddingDate']) || '').slice(0, 10);
+        const day = parts(list.at(-1)?.start || m.get(['weddingDate'])).date;
         if (!m.get(['events'])) m.set(['events'], []);
         m.get(['events']).push({ id, title: preset ? { ...preset.title } : blank(), blurb: preset ? { ...preset.blurb } : blank(), start: day ? iso(day, '11:00') : '', end: '', openEnded: true, venue: blank(), mapQuery: '', dress: { colors: [], text: blank() }, photo: null });
         m.touch(['events']);
@@ -178,6 +214,7 @@ function ceremonies(ctx) {
 
 
 export function datesModule(ctx) {
+  zone = zoneOf(ctx.m.data);
   const info = infoSection(ctx);
   info.querySelector(':scope > .sec__head')?.remove();
   return [weddingDay(ctx), ceremonies(ctx),

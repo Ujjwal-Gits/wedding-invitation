@@ -11,7 +11,7 @@ import './mangal.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, neNum, bsDateOf, timeZone } from '../../core/i18n.js';
 import { mountShell, ringBell } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion } from '../../core/smooth.js';
@@ -131,7 +131,7 @@ const medal = (cls = '') => medalHTML(ganeshRef, cls);
 
 // ───────────────────────── Dates ─────────────────────────
 function adParts(iso) {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
   const g = (t) => en.find((p) => p.type === t)?.value || '';
   const [wdNe, ...restNe] = dateOf(iso).ne.split(', ');
   return { wd: { en: g('weekday'), ne: wdNe }, day: g('day'), month: { en: `${g('month')} ${g('year')}`, ne: restNe.join(', ') }, full: dateOf(iso) };
@@ -151,7 +151,7 @@ function bsParts(iso, override) {
   const enShort = String(b.short?.en || b.en || '').replace(/^[A-Za-z]+,\s*/, '');
   return { full: b, day, month, year, monthYear: month ? `${month} ${year}` : null, enShort: /B\.S\./.test(enShort) ? enShort : `${enShort} B.S.` };
 }
-const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu' }).format(new Date(iso));
+const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: timeZone() }).format(new Date(iso));
 // The wedding ceremony itself: the event on the wedding day (else the wedding date).
 const mainEv = events.find((e) => e?.start && npDay(e.start) === npDay(config.weddingDate)) || null;
 const mainIso = mainEv?.start || config.weddingDate;

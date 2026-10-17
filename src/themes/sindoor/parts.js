@@ -48,7 +48,7 @@ export function heroHtml(ctx, { thread = true } = {}) {
   const line = txt('hero.line');
   const bsShort = BS.day && BS.month ? `${BS.month} ${BS.day} गते, ${BS.year}` : BS.full.ne;
   const timeNe = mainEv ? String(ctx.timeLabel(mainEv).ne || '').split('–')[0].trim() : '';
-  const mm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', month: '2-digit' }).format(new Date(mainEv?.start || ctx.config.weddingDate));
+  const mm = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), month: '2-digit' }).format(new Date(mainEv?.start || ctx.config.weddingDate));
   const dots = `${AD.day.padStart(2, '0')} · ${mm} · ${AD.year}`;
   return `<div class="sd-cover">
     <div class="sd-cover__top">

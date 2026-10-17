@@ -9,7 +9,7 @@ import './himal.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
-import { bi, esc, dateOf, dayNum, timeLabel, mapUrl, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, dayNum, timeLabel, mapUrl, neNum, bsDateOf, timeZone } from '../../core/i18n.js';
 import { mountShell } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
@@ -159,7 +159,7 @@ const countLine = daysLeft > 1
 
 /** "Feb · Tue" / "फेब्रुअरी · मङ्गलबार" for the programme's date column. */
 const monthDay = (iso) => {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', month: 'short', weekday: 'short' }).formatToParts(new Date(iso));
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), month: 'short', weekday: 'short' }).formatToParts(new Date(iso));
   const get = (t) => en.find((x) => x.type === t)?.value || '';
   const ne = dateOf(iso).ne.split(', ');
   return { en: `${get('month')} · ${get('weekday')}`, ne: `${(ne[1] || '').split(' ')[0]} · ${ne[0] || ''}` };

@@ -1,15 +1,15 @@
 // Small, dependency-free helpers shared by the suite engine (suite.js) and by gate/hero modules that run on
 // another theme's page (src/core/mix.js, docs/MIX.md). No CSS, no side effects.
-import { dateOf, bsDateOf } from '../../core/i18n.js';
+import { dateOf, bsDateOf, timeZone, zoneTag } from '../../core/i18n.js';
 
 export const isOff = (v) => !v || /^\s*(-|–|none|off|no|hide)\s*$/i.test(v);
 export const on = (o) => !!o && (!isOff(o.en) || !isOff(o.ne));
 
 export function adParts(iso) {
-  const en = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
+  const en = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date(iso));
   const g = (t) => en.find((p) => p.type === t)?.value || '';
   const [wdNe, ...restNe] = dateOf(iso).ne.split(', ');
-  const t = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kathmandu', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso)).replace(/\s?([ap])m$/i, (m, x) => ` ${x.toUpperCase()}M`);
+  const t = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone(), hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso)).replace(/\s?([ap])m$/i, (m, x) => ` ${x.toUpperCase()}M`) + (zoneTag(iso) ? ` ${zoneTag(iso)}` : '');
   return { wd: { en: g('weekday'), ne: wdNe }, day: g('day'), month: { en: g('month'), ne: restNe.join(', ').split(' ')[0] || '' }, year: g('year'), monthYear: { en: `${g('month')} ${g('year')}`, ne: restNe.join(', ') }, full: dateOf(iso), time: t };
 }
 
@@ -27,4 +27,4 @@ export function bsParts(iso, override) {
   return { full: b, day, month, year };
 }
 
-export const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kathmandu' }).format(new Date(iso));
+export const npDay = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: timeZone() }).format(new Date(iso));

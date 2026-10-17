@@ -10,7 +10,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { loadInvitation } from '../../core/data.js';
 import { photos, photoUrl, view } from '../../photos.js';
-import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf } from '../../core/i18n.js';
+import { bi, esc, dateOf, timeLabel, mapUrl, biNodes, neNum, bsDateOf, venueParts } from '../../core/i18n.js';
 import { mountShell, ringBell, trackProgress } from '../../core/shell.js';
 import { madeWith } from '../../core/madewith.js';
 import { createSmooth, reducedMotion, isMobile } from '../../core/smooth.js';
@@ -32,10 +32,9 @@ const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday
 const NE_DAYS = ['आइतबार', 'सोमबार', 'मङ्गलबार', 'बुधबार', 'बिहीबार', 'शुक्रबार', 'शनिबार'];
 const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const NE_MONTHS = ['जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन', 'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'];
-/** Weekday, day and month of an ISO date-time in Nepal time, both languages. */
+/** Weekday, day and month of an ISO date-time at the venue, both languages. */
 const dayParts = (iso) => {
-  const t = new Date(new Date(iso).getTime() + 345 * 60000);
-  const [wd, d, m, y] = [t.getUTCDay(), t.getUTCDate(), t.getUTCMonth(), t.getUTCFullYear()];
+  const { wd, day: d, m, y } = venueParts(iso);
   return { wd: { en: EN_DAYS[wd], ne: NE_DAYS[wd] }, d: { en: String(d), ne: neNum(d) }, my: { en: `${EN_MONTHS[m]} ${y}`, ne: `${NE_MONTHS[m]} ${neNum(y)}` } };
 };
 const NE_ORD = ['पहिलो', 'दोस्रो', 'तेस्रो', 'चौथो', 'पाँचौँ', 'छैटौँ', 'सातौँ', 'आठौँ'];

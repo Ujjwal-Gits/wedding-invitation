@@ -15,6 +15,7 @@
 import { config } from '../config.js';
 import { LIBRARY_SRC_RE } from './music-library.js';
 import { religionOf, symbolsFor, VERSIONS, SHLOKA, swapWords, isHinduInvocation, startFaithDom } from './faith.js';
+import { setTimeZone } from './i18n.js';
 import './showcase.js'; // showcase mode (docs/API.md): runs first and drops ?id / ?preview, so only the demo shows
 
 const SLUG = /^[a-z0-9-]{3,64}$/;
@@ -139,6 +140,7 @@ const post = (msg) => { try { window.parent.postMessage(msg, location.origin); }
 function replaceConfig(data) {
   for (const key of Object.keys(config)) delete config[key];
   Object.assign(config, data);
+  setTimeZone(config.timeZone); // times show at the venue (absent = Nepal, as before)
 }
 
 /**
