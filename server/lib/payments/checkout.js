@@ -78,7 +78,11 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
   async function priceFor(order) {
     if (order.kind !== 'order' || !order.plan) throw httpError(400, 'This request has no plan to pay for. We will call you about the price.');
     const plan = (await readSite()).plans.find((p) => p.id === order.plan);
-    const usd = order.amount?.usd ?? plan?.priceUsd ?? plan?.usdPrice; // the amount fixed when ordering wins
+    // the amount fixed on the order wins; only orders from before amounts were stored fall back to the plan's price.
+    // An order priced only in rupees (a quote in Rs, or an amount the planner set) is never paid by PayPal.
+    const fixed = order.amount && typeof order.amount === 'object';
+    if (fixed && order.amount.usd == null) throw httpError(400, 'This order is priced in rupees. Please pay by QR, or ask us for a price in dollars.');
+    const usd = fixed ? order.amount.usd : plan?.priceUsd ?? plan?.usdPrice;
     const cents = plan ? toCents(usd) : NaN;
     if (!plan || !Number.isFinite(cents) || cents < 100) throw httpError(400, 'This plan cannot be paid online. We will call you about the price.');
     return { plan, amount: fromCents(cents) };

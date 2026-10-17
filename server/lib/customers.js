@@ -99,12 +99,12 @@ async function accountView(c) {
 
 /**
  * PATCH /api/account (customer) { phone }: their phone number, checked and stored in E.164 (+14155552671). A number
- * without a country code is read as their market's (Nepal: 98XXXXXXXX). '' removes it.
+ * without a country code is read as their market's (Nepal: 98XXXXXXXX). It is required, so it can't be removed.
  */
 export async function patchAccount(req, res) {
   const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
   if (b.phone === undefined) return res.status(400).json({ error: 'Nothing to change.', fields: [] });
-  if (typeof b.phone !== 'string') return res.status(400).json({ error: 'Please enter a phone number.', fields: ['phone'] });
+  if (typeof b.phone !== 'string' || !b.phone.trim()) return res.status(400).json({ error: 'Please enter a phone number.', fields: ['phone'] });
   const all = await listOrders();
   const fallback = customerMarket(req.customer, all) === 'intl' ? 'US' : 'NP';
   const r = checkPhone(b.phone, fallback);

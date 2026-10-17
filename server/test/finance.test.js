@@ -229,6 +229,12 @@ test('free access: needs a plan and a reason, is never counted, closes the pay p
   assert.equal((await asAdmin(`/api/admin/finance/orders/${o.id}/comp`, { method: 'POST', body: { plan: 'shahi', reason: 'friend' } })).status, 409);
 });
 
+test('PayPal never charges a plan price for an order priced only in rupees', async () => {
+  const o = await newOrder();
+  assert.equal((await asAdmin(`/api/orders/${o.id}`, { method: 'PATCH', body: { amount: { npr: 80000, usd: null } } })).status, 200);
+  await assert.rejects(checkout.start(o.id), (err) => err.status === 400 && /rupees/.test(err.message));
+});
+
 test('free access for a customer makes a new order in their account', async () => {
   const c = await accounts.createCustomer({ email: 'hari@example.com', name: 'Hari', phone: '', passwordHash: 'x' });
   assert.equal((await asAdmin('/api/admin/finance/customers/AAAAAAAAAAAA/comp', { method: 'POST', body: { plan: 'saral', reason: 'promotion' } })).status, 404);

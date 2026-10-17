@@ -483,8 +483,9 @@ function overview(ctx) {
       ['New orders', (k) => cellLink(`#/orders?f=new&m=${k}`, M[k].newOrders, M[k].newOrders > 0)],
       ['Enquiries waiting', (k) => cellLink(`#/orders?v=enquiries&f=new&m=${k}`, M[k].enquiriesWaiting, M[k].enquiriesWaiting > 0)],
       ['Payments to check', (k) => cellLink(`#/orders?f=check&m=${k}`, M[k].toCheck, M[k].toCheck > 0)],
-      ['Paid this month', (k) => h(can('finance') ? 'a.mkv__money' : 'span.mkv__money', can('finance') ? { href: `#/finance?m=${k}` } : {}, paid(M[k].paidThisMonth))],
-    ];
+      // money received is Finance information: the server sends it only to staff who may see Finance
+      can('finance') ? ['Paid this month', (k) => h('a.mkv__money', { href: `#/finance?m=${k}` }, paid(M[k].paidThisMonth || {}))] : null,
+    ].filter(Boolean);
     fill(marketsBox, h('table.dtable.mkv',
       h('caption.sr-only', 'Figures by market'),
       h('thead', h('tr', h('th', { scope: 'col' }, h('span.sr-only', 'Figure')), h('th.num', { scope: 'col' }, 'Nepal'), h('th.num', { scope: 'col' }, 'International'))),
