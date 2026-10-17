@@ -3,7 +3,7 @@
 // and the style filter of the designs (the home page's rail and the designs page's grid).
 import './site.js';
 import './intl.css';
-import { $, $$, reduced } from './common.js';
+import { $, $$, reduced, money } from './common.js';
 import { loadSite, getJson } from './api.js';
 import { intlPlans, usdText, INTL_NAME } from './intl-plans.js';
 import { intlCatalog, STYLE_LABEL } from './intl-designs.js';
@@ -15,6 +15,8 @@ const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').
 async function refreshPlans() {
   const site = await loadSite();
   const plans = intlPlans(site.plans);
+  // prices follow where the visitor is: someone in Nepal sees rupees here too
+  const priceText = (p) => (site.currency === 'NPR' && p.npr != null ? money(p.npr) : usdText(p.usd));
   if (!plans.length) return;
   for (const box of $$('[data-plans-usd]')) {
     for (const card of $$('[data-plan-id]', box)) if (!plans.some((p) => p.id === card.dataset.planId)) card.remove();
@@ -22,14 +24,14 @@ async function refreshPlans() {
       const card = box.querySelector(`[data-plan-id="${p.id}"]`);
       if (!card) continue;
       const num = card.querySelector('.plan__num');
-      if (num) num.textContent = usdText(p.usd);
+      if (num) num.textContent = priceText(p);
       const feats = card.querySelector('.plan__feats');
       if (feats && p.features.length) feats.innerHTML = p.features.map((f) => `<li>${esc(f)}</li>`).join('');
     }
   }
   for (const n of $$('[data-usd-from]')) {
     const p = plans.find((x) => x.id === n.dataset.usdFrom);
-    if (p) n.textContent = n.classList.contains('dcard__price') ? `from ${usdText(p.usd)}` : usdText(p.usd);
+    if (p) n.textContent = n.classList.contains('dcard__price') ? `from ${priceText(p)}` : priceText(p);
   }
 }
 refreshPlans().catch(() => {});

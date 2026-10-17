@@ -10,7 +10,7 @@
 // their order form (no religious images on the international site).
 export const NP_DESIGNS_INTL = ['laali', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'gurans', 'sindoor', 'rangoli'];
 
-export const STYLES = [['garden', 'Garden'], ['romantic', 'Romantic'], ['classic', 'Classic'], ['modern', 'Modern'], ['destination', 'Destination']];
+export const STYLES = [['garden', 'Garden'], ['romantic', 'Romantic'], ['classic', 'Classic'], ['modern', 'Modern'], ['destination', 'Destination'], ['nepali', 'Nepali']];
 export const STYLE_LABEL = Object.fromEntries(STYLES);
 
 /** the art version, in every file name: new art gets a new URL, so no browser or CDN cache can show an old picture */
@@ -44,11 +44,14 @@ const localPath = (v) => (typeof v === 'string' && /^\/(?!\/)[A-Za-z0-9/_.-]{1,2
  * { slug, name, style, tier, mini, line, alt, art: false }; the artwork designs while there are none.
  */
 export function intlCatalog(apiThemes) {
-  const live = (Array.isArray(apiThemes) ? apiThemes : []).filter((t) => t && typeof t === 'object' && SLUG_RE.test(t.slug) && isIntl(t.market)).map((t) => {
+  // every design is shown here; the international ones come first, then the Nepal ones (style "Nepali")
+  const all = (Array.isArray(apiThemes) ? apiThemes : []).filter((t) => t && typeof t === 'object' && SLUG_RE.test(t.slug));
+  const ordered = [...all.filter((t) => isIntl(t.market)), ...all.filter((t) => !isIntl(t.market))];
+  const live = ordered.map((t) => {
     const name = text(t.name, 60) || t.slug;
     return {
       slug: t.slug, id: t.slug, name,
-      style: STYLE_LABEL[t.style] ? t.style : 'classic',
+      style: !isIntl(t.market) ? 'nepali' : STYLE_LABEL[t.style] ? t.style : 'classic',
       tier: TIERS.includes(t.tier) ? t.tier : 'shubha',
       mini: localPath(t.thumb) || `/themes/${t.slug}/thumb.jpg`,
       line: text(t.concept, 160), alt: text(t.concept, 160) || `${name} design`, art: false,

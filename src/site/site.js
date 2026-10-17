@@ -120,7 +120,7 @@ async function boot() {
   const site = await loadSite();
   state.site = site;
   state.wa = applyContact(MARKET === 'intl' ? site.contactIntl || site.contact : site.contact).wa;
-  for (const box of $$('[data-plans]')) renderPlans(box, { ...site, plans: plansFor(site, 'np') });
+  for (const box of $$('[data-plans]')) renderPlans(box, { ...site, plans: plansFor(site, site.buyerMarket) });
   applyPlanNames(site); // the planner's plan names and prices everywhere the page names a plan
   // the international catalog comes in the planner's order for that market (GET /api/themes?market=intl)
   const raw = await getJson(MARKET === 'intl' && !npCatalog ? '/api/themes?market=intl' : '/api/themes', 4000);

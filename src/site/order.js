@@ -27,14 +27,15 @@ const form = $('#om-form');
 const F = form?.elements;
 const S = { site: null, themes: [], me: null, meKnown: false, wa: '', opener: null, built: false, design: '', plan: '', busy: false, phone: null };
 const isCustom = (p) => p && (p.id === 'custom' || p.from);
-const plans = () => plansFor(S.site, MARKET).filter((p) => !INTL || p.priceUsd != null);
+const usdBuyer = () => S.site?.currency === 'USD'; // prices follow where the visitor is, on either site
+const plans = () => plansFor(S.site, S.site?.buyerMarket || MARKET).filter((p) => !usdBuyer() || p.priceUsd != null);
 const planOf = (id) => plans().find((p) => p.id === id) || null;
 const themeOf = (slug) => S.themes.find((t) => t.slug === slug) || (INTL ? null : BY_SLUG[slug]) || null;
 const fits = (plan, theme) => !theme || !plan || isCustom(plan) || (TIER_RANK[plan.includes] || 3) >= (TIER_RANK[theme.tier] || 2);
 const mini = (t) => t.mini || (STILLS[t.slug] ? `/site/stills/${t.slug}-200.webp` : `/themes/${t.slug}/thumb.jpg`);
 /** a plan's name and price as this site shows them */
 const nameOf = (p) => (INTL ? INTL_NAME[p.id] || p.name : p.name);
-const priceOf = (p) => (INTL ? (p.priceUsd != null ? usdText(p.priceUsd) : null) : p.price != null ? money(p.price) : null);
+const priceOf = (p) => (usdBuyer() ? (p.priceUsd != null ? usdText(p.priceUsd) : null) : p.price != null ? money(p.price) : null);
 const tierLabel = (tier) => (INTL ? INTL_NAME[tier] || tierName(S.site?.plans, tier) : tierName(S.site?.plans, tier));
 const upgradeTo = (tier) => planForTier(plans(), tier);
 const role = () => S.me?.role || null;
@@ -138,7 +139,7 @@ function sync() {
   const total = $('#om-total');
   $('#om-total-l').textContent = plan ? (custom ? 'Custom design' : `${nameOf(plan)} plan`) : 'Total';
   total.textContent = custom ? 'We reply with a price'
-    : priceOf(plan) ? (INTL ? priceOf(plan) : `${priceOf(plan)}${plan.priceUsd != null ? ` · $${plan.priceUsd}` : ''}`) : 'We agree it with you';
+    : priceOf(plan) ? priceOf(plan) : 'We agree it with you';
   const btn = $('#om-submit');
   if (!S.busy) btn.textContent = custom ? 'Send enquiry' : priceOf(plan) ? 'Continue to payment' : 'Send request';
   $('#om-fine').textContent = custom ? FINE.ask : FINE.pay;
@@ -232,7 +233,7 @@ async function submit(e) {
   const t = custom ? null : themeOf(S.design);
   if (t && !fits(plan, t)) { const b = $('#om-tier button'); (b || $('#om-tier')).focus?.(); $('#om-tier').scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
   // no email or password: the server takes the signed-in customer's account (server/lib/orders.js `signedIn`)
-  const body = { kind: custom ? 'custom' : 'order', plan: plan.id, name: F.name.value.trim(), phone: S.phone.e164(), market: MARKET, website: F.website.value };
+  const body = { kind: custom ? 'custom' : 'order', plan: plan.id, name: F.name.value.trim(), phone: S.phone.e164(), market: S.site?.buyerMarket || MARKET, website: F.website.value };
   if (t && !t.art) body.theme = t.slug;
   else if (t?.art) body.message = `Design: ${t.name}`; // an artwork design (no theme page yet): the planner reads it here
   if (custom) {

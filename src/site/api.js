@@ -64,8 +64,17 @@ function normMethod(m) {
 }
 
 /** GET /api/site, cleaned. `mock` is true in development while the server lacks the payment contract. */
+/** The visitor's currency: NPR in Nepal, USD anywhere else (GET /api/geo); unknown → the site's own (Nepal: NPR). */
+let geoLoad = null;
+function visitorCurrency() {
+  geoLoad ||= getJson('/api/geo', 2500).then((g) => (g && (g.currency === 'NPR' || g.currency === 'USD') ? g.currency : null)).catch(() => null);
+  return geoLoad;
+}
+const SITE_MARKET = typeof document !== 'undefined' && document.body?.classList.contains('market-intl') ? 'intl' : 'np';
+
 export async function loadSite() {
-  const raw = await getJson('/api/site', 4000);
+  const [raw, geo] = await Promise.all([getJson('/api/site', 4000), visitorCurrency()]);
+  const currency = geo || (SITE_MARKET === 'intl' ? 'USD' : 'NPR');
   const live = isObj(raw);
   const contract = live && Array.isArray(raw.paymentMethods);
   const src = live && (contract || !DEV) ? raw : FALLBACK_SITE;
@@ -82,16 +91,20 @@ export async function loadSite() {
     hero: isObj(raw?.hero) ? raw.hero : {},
     hiddenThemes: Array.isArray(raw?.hiddenThemes) ? raw.hiddenThemes : [],
     featuredThemes: Array.isArray(raw?.featuredThemes) ? raw.featuredThemes : [],
+    // prices and payment follow where the visitor is: Nepal → Rs + QR; anywhere else → $ + card/PayPal
+    currency,
+    buyerMarket: currency === 'USD' ? 'intl' : 'np',
   };
 }
 
 /** The design list: the API's (minus hidden), enriched from the static list; the static list when the API is down. */
 export function normaliseThemes(api, site) {
   const hidden = new Set(site.hiddenThemes || []);
-  // themes made only for the international site (market 'intl') are not Nepal designs (src/site/intl-designs.js)
+  // every design shows on both sites: on the Nepal site its own designs first, the international ones after them
   const intlOnly = (m) => m === 'intl' || (Array.isArray(m) && m.includes('intl') && !m.includes('np'));
-  let list = Array.isArray(api) && api.length
-    ? api.filter((t) => isObj(t) && SLUG_RE.test(t.slug) && !hidden.has(t.slug) && !intlOnly(t.market)).map((t) => {
+  const rows = Array.isArray(api) ? api.filter((t) => isObj(t) && SLUG_RE.test(t.slug) && !hidden.has(t.slug)) : [];
+  let list = rows.length
+    ? [...rows.filter((t) => !intlOnly(t.market)), ...rows.filter((t) => intlOnly(t.market))].map((t) => {
       const local = BY_SLUG[t.slug] || {};
       const rel = Array.isArray(t.religions) ? t.religions.filter((r) => ['hindu', 'muslim', 'christian', 'other'].includes(r)) : null;
       return {

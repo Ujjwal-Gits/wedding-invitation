@@ -84,6 +84,13 @@ api.post('/clear-cache', requireSession, clearCache); // Clear-Site-Data: "cache
 // Public
 api.get('/invitations/:slug/public', wrap(inv.publicData));
 api.get('/site', wrap(site.getSite));
+// GET /api/geo: { country, currency } of the visitor (Cloudflare's CF-IPCountry; null when unknown). Prices follow it.
+api.get('/geo', (req, res) => {
+  const raw = String(req.get('cf-ipcountry') || '').toUpperCase();
+  const country = /^[A-Z]{2}$/.test(raw) && !['XX', 'T1'].includes(raw) ? raw : null;
+  res.set('Cache-Control', 'private, no-store');
+  res.json({ country, currency: country ? (country === 'NP' ? 'NPR' : 'USD') : null });
+});
 api.get('/themes', wrap(site.publicThemes));
 api.get('/music', wrap(music.publicList));
 api.post('/orders', heavy, json('8kb'), wrap(orders.submit)); // may hash or check an account password

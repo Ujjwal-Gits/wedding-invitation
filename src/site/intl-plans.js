@@ -26,6 +26,7 @@ export function intlPlans(plans) {
       id: p.id,
       name: INTL_NAME[p.id],
       usd: Number(p.priceUsd),
+      npr: p.price != null ? Number(p.price) : null,
       from: Boolean(p.from),
       highlight: Boolean(p.highlight),
       desc: INTL_DESC[p.id],
