@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { SLUG_RE, withLock, getInvitation, peekInvitation, revOf, listInvitations, createInvitation, saveInvitation, trashInvitation, uploadDir, replyStats } from './store.js';
 import { entity, entityCache, sendEntity } from './http-cache.js';
 import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
-import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs } from './catalog.js';
+import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs, metaOf } from './catalog.js';
 import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
 import { canEdit, isAdmin, hasPerm, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
@@ -484,7 +484,7 @@ async function metaCatalog() {
   });
   const themes = await Promise.all(listThemes().map(async (t) => {
     const m = await loadManifest(t.slug);
-    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, religions: m?.religions || ['hindu'], faithInk: m?.faithInk || '', stills: stillsOf(t.slug) };
+    return { ...t, name: m?.name || t.name, concept: m?.description || t.concept, colors: m?.colors || {}, parts: m?.parts || null, religions: m?.religions || ['hindu'], faithInk: m?.faithInk || '', stills: stillsOf(t.slug), ...metaOf(t.slug, m) };
   }));
   metaCache = { at: Date.now(), value: { themes, library: lib } };
   return metaCache.value;

@@ -1,0 +1,193 @@
+/* Wax Seal: white linen, white paper, one deep sage (the wax). Instrument Serif (display) + Instrument Sans (body). */
+body.theme-wax-seal {
+  --vw-bg: #FFFFFF;
+  --vw-paper: #FFFFFF;
+  --vw-ink: #1E2420;
+  --vw-ink-2: #4A534C;
+  --vw-accent: #4C6150;
+  --vw-accent-ink: #FFFFFF;
+  --vw-line: rgba(40, 56, 44, 0.16);
+  --vw-f-display: 'Instrument Serif', Georgia, serif;
+  --vw-f-body: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif;
+  --vw-radius: 3px;
+  --ws-sage: #E9EFE6;
+  --ws-sage-deep: #D6E0D2;
+  --ws-paper: #FFFEFB;
+  --ws-shadow: 0 1px 2px rgba(30, 40, 30, 0.07), 0 22px 44px -26px rgba(30, 44, 32, 0.42);
+}
+.ws-cap { margin: 0; font: 600 12.5px/1.5 var(--vw-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vw-ink-2); }
+.theme-wax-seal .vw-btn { letter-spacing: 0.12em; }
+.ws-linen { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; pointer-events: none; }
+.ws-seal { position: relative; display: block; width: 100%; aspect-ratio: 246 / 249; filter: drop-shadow(0 6px 7px rgba(40, 62, 42, 0.32)); }
+.ws-seal__half { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ───────── gate: the envelope on linen ───────── */
+.theme-wax-seal .vw-gate { background: #ECECEA; }
+.ws-gate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 18px;
+  padding: max(7svh, 44px) 16px max(2.5svh, 14px); box-sizing: border-box; text-align: center; color: var(--vw-ink); }
+.ws-gate > :not(.ws-linen) { position: relative; z-index: 1; }
+.ws-gate__words { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ws-gate__names, .ws-names, .ws-close__names { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 0.2em; font: 400 clamp(54px, 15vw, 88px)/1 var(--vw-f-display); color: var(--vw-ink); }
+.ws-gate__names em, .ws-names em, .ws-close__names em, .ws-hosts__names em, .ws-letter__sign em { font-style: italic; font-size: 0.78em; color: var(--vw-accent); }
+.ws-gate__date { color: var(--vw-ink); }
+.ws-gate__desk { position: relative; flex: none; width: min(calc(100vw - 32px), 620px, calc((100svh - 380px) * 1.45)); aspect-ratio: 1.45; margin: auto 0 0; }
+.ws-env { position: absolute; inset: 0; }
+.ws-env__back { position: absolute; inset: 0; background: #ECEAE4; border-radius: 3px; box-shadow: 0 34px 50px -34px rgba(40, 46, 36, 0.6), 0 2px 6px rgba(40, 46, 36, 0.14); }
+.ws-env__letter { position: absolute; z-index: 1; left: 5%; right: 5%; top: 5%; height: 88%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 6%; box-sizing: border-box;
+  background: var(--ws-paper); box-shadow: 0 1px 3px rgba(30, 40, 30, 0.1); will-change: transform; }
+.ws-env__mono { font: 400 clamp(22px, 6vw, 34px)/1 var(--vw-f-display); color: var(--vw-ink); }
+.ws-env__mono i { margin: 0 0.15em; font-size: 0.8em; color: var(--vw-accent); }
+.ws-env__rule { width: 36px; height: 1px; background: var(--vw-accent); opacity: 0.5; }
+.ws-env__front { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; }
+.ws-env__flap { position: absolute; z-index: 3; left: 0; right: 0; top: 0; height: 64%; transform-style: preserve-3d; will-change: transform; }
+.ws-env__face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.ws-env__face--out { filter: drop-shadow(0 2px 2px rgba(40, 46, 36, 0.12)); }
+.ws-env__face--in { transform: rotateX(180deg); }
+.ws-gate__sprig { position: absolute; z-index: 4; left: -11%; top: 4%; width: 36%; rotate: -4deg; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(30, 44, 26, 0.22)); }
+.ws-gate__seal { position: absolute; z-index: 5; left: 50%; top: 61%; width: 26%; translate: -50% -50%; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer;
+  transition: scale 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ws-gate__seal:hover { scale: 1.04; }
+.ws-gate__seal:active { scale: 0.97; }
+.ws-gate__seal:focus-visible { outline: 2px solid var(--vw-accent); outline-offset: 6px; }
+.ws-gate__seal[disabled] { cursor: progress; }
+.ws-gate__ui { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 4px 0 auto; }
+.ws-gate__tap { color: var(--vw-accent); }
+.theme-wax-seal .ws-gate__quiet { color: var(--vw-ink); }
+
+/* ───────── hero: the letter, risen out of the envelope ───────── */
+.ws-hero { position: relative; min-height: 100svh; box-sizing: border-box; display: grid; place-items: center; padding: 14px 14px 66px; overflow: clip; }
+.ws-card { position: relative; z-index: 1; width: min(100%, 640px); height: calc(100svh - 80px); max-height: 1000px; display: flex; background: var(--ws-paper); box-shadow: var(--ws-shadow); }
+.ws-card__in { margin: auto; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 34px 26px 96px; box-sizing: border-box; text-align: center; }
+.ws-card__emblem { width: 34px; margin: 0 0 4px; }
+.ws-names { margin: 4px 0 0; font-size: clamp(48px, 14vw, 104px); }
+.ws-card__line { margin: 0; max-width: 26ch; font: 400 italic 22px/1.35 var(--vw-f-display); color: var(--vw-ink-2); text-wrap: balance; }
+.ws-card__when { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 14px; padding-top: 18px; border-top: 1px solid var(--vw-line); min-width: 180px; }
+.ws-card__date { margin: 0; font: 400 32px/1.15 var(--vw-f-display); color: var(--vw-ink); }
+.ws-card__time { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ws-card__where { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
+.ws-card__venue { margin: 0; font: 400 italic 26px/1.2 var(--vw-f-display); color: var(--vw-ink); }
+.ws-card__sprig { position: absolute; z-index: 2; left: -22px; bottom: -30px; width: clamp(140px, 38vw, 230px); rotate: -8deg; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(30, 44, 26, 0.2)); }
+.ws-card__seal { position: absolute; z-index: 2; right: 20px; bottom: 18px; width: 62px; }
+.ws-card__seal .ws-seal__half--l { transform: translate(-6px, 2px) rotate(-9deg); }
+.ws-card__seal .ws-seal__half--r { transform: translate(6px, 5px) rotate(8deg); }
+.ws-hero .vw-cue { bottom: 12px; color: var(--vw-ink); }
+@media (max-height: 760px) and (max-width: 699px) {
+  .ws-card__in { gap: 8px; padding: 22px 22px 84px; }
+  .ws-names { font-size: clamp(48px, 14vw, 64px); }
+  .ws-card__date { font-size: 28px; }
+  .ws-card__when { margin-top: 8px; padding-top: 12px; }
+}
+@media (min-width: 900px) {
+  .ws-hero { padding: 40px 0 72px; }
+  .ws-card { width: min(680px, calc((100svh - 112px) * 0.8)); height: calc(100svh - 112px); }
+  .ws-card__in { padding: 40px 48px 90px; gap: 14px; }
+  .ws-names { font-size: clamp(64px, 6vw, 88px); }
+  .ws-card__sprig { left: -110px; bottom: -40px; width: 270px; }
+  .ws-card__seal { right: -46px; bottom: 60px; width: 92px; }
+}
+
+/* ───────── the collection: letters and notes on white ───────── */
+.ws-sec { padding: clamp(80px, 12vh, 128px) 20px; }
+.ws-head { max-width: 640px; margin: 0 auto clamp(36px, 5vh, 52px); display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.ws-h2 { margin: 0; font: 400 clamp(42px, 5vw, 62px)/1.04 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.ws-sheet { position: relative; background: var(--ws-paper); box-shadow: var(--ws-shadow); }
+.ws-note { background: var(--ws-sage); box-shadow: 0 1px 2px rgba(30, 40, 30, 0.06), 0 18px 34px -24px rgba(30, 44, 32, 0.38); }
+
+/* the story letter, a photograph tucked in at the top */
+.ws-letter { max-width: 620px; margin: 0 auto; }
+.ws-letter .ws-sheet__in { padding: 0 26px 44px; }
+.ws-print { width: min(100%, 420px); margin: 0 auto 30px; padding: 10px 10px 34px; background: #FFFFFF; box-shadow: 0 14px 28px -16px rgba(30, 40, 30, 0.45); rotate: -2deg; translate: 0 -34px; box-sizing: border-box; }
+.ws-print img { display: block; width: 100%; height: auto; }
+.ws-letter__body { max-width: 50ch; margin: -6px auto 0; }
+.ws-letter__hi { margin: 0 0 16px; font: 400 italic 28px/1.25 var(--vw-f-display); color: var(--vw-ink); }
+.ws-letter__p { margin: 0 0 16px; font-size: 17px; line-height: 1.75; }
+.ws-letter__yr { margin-right: 4px; font: 700 12.5px/1 var(--vw-f-body); letter-spacing: 0.16em; color: var(--vw-accent); }
+.ws-letter__sign { margin: 26px 0 0; font: 400 italic 22px/1.3 var(--vw-f-display); color: var(--vw-ink-2); }
+.ws-letter__sign span { display: inline-flex; gap: 0.2em; margin-top: 4px; font: 400 40px/1.1 var(--vw-f-display); font-style: normal; color: var(--vw-ink); }
+@media (min-width: 700px) { .ws-letter .ws-sheet__in { padding: 0 64px 56px; } }
+
+/* save the date: a sage note */
+.ws-note--date { max-width: 540px; margin: 0 auto; rotate: -1.2deg; text-align: center; }
+.ws-note--date .ws-sheet__in { padding: 40px 24px 36px; }
+.ws-note__h { font-style: italic; }
+.ws-note__when { margin: 10px 0 26px; font-size: 17px; color: var(--vw-ink-2); }
+.ws-count .vw-count__n { font: 400 clamp(44px, 9vw, 60px)/1 var(--vw-f-display); color: var(--vw-ink); }
+.ws-count .vw-count__cell + .vw-count__cell { border-left: 1px solid rgba(76, 97, 80, 0.25); }
+.ws-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
+
+/* the schedule: note cards that swipe on phones (one whole card at rest), three across on desktop */
+.ws-prog__hint { display: inline-flex; gap: 6px; color: var(--vw-accent); }
+.ws-cards { display: flex; gap: 14px; margin: 0 -20px; padding: 8px 20px 34px; list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px;
+  overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ws-cards::-webkit-scrollbar { display: none; }
+.ws-cards:focus-visible { outline-offset: -4px; }
+.ws-ev { flex: 0 0 calc(100vw - 76px); max-width: 420px; display: flex; scroll-snap-align: start; }
+.ws-cards--one { justify-content: center; }
+.ws-ev__in { position: relative; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 26px 24px 28px; }
+.ws-ev__stamp { position: absolute; top: 18px; right: 18px; margin: 0; width: 58px; padding: 8px 0 7px; display: flex; flex-direction: column; align-items: center; background: var(--ws-sage); outline: 1px dashed rgba(76, 97, 80, 0.45); outline-offset: -4px; }
+.ws-ev__stamp span { font: 600 11.5px/1.3 var(--vw-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--vw-ink-2); }
+.ws-ev__stamp b { font: 400 30px/1 var(--vw-f-display); color: var(--vw-ink); }
+.ws-ev__n { margin-bottom: 18px; color: var(--vw-accent); }
+.ws-ev__title { margin: 0 70px 6px 0; font: 400 34px/1.08 var(--vw-f-display); color: var(--vw-ink); }
+.ws-ev__time { margin: 4px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ws-ev__venue { margin: 0; font: 400 italic 21px/1.3 var(--vw-f-display); color: var(--vw-ink); }
+.ws-ev .vw-link { margin-top: 2px; }
+.ws-ev__blurb { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--vw-line); color: var(--vw-ink-2); align-self: stretch; }
+.ws-ev__dress { margin: 4px 0 0; display: flex; align-items: center; color: var(--vw-ink-2); }
+.ws-ev .vw-order { margin-top: 6px; align-self: stretch; }
+@media (min-width: 900px) {
+  .ws-prog__hint { display: none; }
+  .ws-cards { flex-wrap: wrap; justify-content: center; gap: 28px; max-width: 1120px; margin: 0 auto; padding: 8px 0 0; overflow: visible; }
+  .ws-ev { flex: 0 1 calc((100% - 56px) / 3); max-width: none; }
+}
+
+/* hosts and the verse: two notes side by side */
+.ws-hosts__row { display: grid; gap: 30px; max-width: 980px; margin: 0 auto; align-items: center; }
+.ws-hosts__row--one { max-width: 560px; }
+.ws-note--hosts { background: var(--ws-paper); box-shadow: var(--ws-shadow); text-align: center; }
+.ws-note--hosts .ws-sheet__in { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 26px; }
+.ws-hosts__names { margin: 0; font: 400 clamp(30px, 3.2vw, 38px)/1.2 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.ws-hosts__fam { margin: 0 0 8px; padding: 0; list-style: none; color: var(--vw-ink-2); }
+.ws-note--verse { rotate: 1.4deg; text-align: center; }
+.ws-note--verse .ws-sheet__in { padding: 40px 30px; }
+.ws-note__emblem { margin-bottom: 14px; }
+.ws-verse .vw-verse__t { font: 400 italic clamp(24px, 2.4vw, 30px)/1.35 var(--vw-f-display); color: var(--vw-ink); }
+.ws-verse .vw-verse__r { margin-top: 14px; color: var(--vw-accent); }
+@media (min-width: 900px) { .ws-hosts__row:not(.ws-hosts__row--one) { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 48px; } }
+
+/* snapshots: one column, two, then three; whole photographs */
+.ws-album { max-width: 1120px; margin: 0 auto; columns: 1; column-gap: 20px; }
+.ws-album__it { margin: 0 0 20px; break-inside: avoid; }
+@media (min-width: 700px) { .ws-album { columns: 2; } }
+@media (min-width: 1100px) { .ws-album { columns: 3; column-gap: 24px; } .ws-album__it { margin-bottom: 24px; } }
+
+/* notes for the trip */
+.ws-notes.vw-info { max-width: 1120px; margin: 0 auto; gap: 22px; }
+.ws-notes .vw-info__b { padding: 28px 24px 30px; background: var(--ws-paper); box-shadow: var(--ws-shadow); }
+.ws-notes .vw-info__b h3 { margin-bottom: 14px; font: 400 30px/1.1 var(--vw-f-display); color: var(--vw-ink); }
+.ws-notes .vw-info__b b { font-weight: 600; }
+.theme-wax-seal .ws-live { max-width: 560px; margin: 40px auto 0; padding: 34px 24px; }
+.theme-wax-seal .ws-live .vw-live__line { font-style: italic; }
+@media (min-width: 900px) { .ws-notes.vw-info { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* the reply card, slipped into its own small sage envelope */
+.ws-rsvp__by { margin: 0; font: 400 italic 22px/1.35 var(--vw-f-display); color: var(--vw-ink-2); }
+.ws-reply { position: relative; max-width: 600px; margin: 0 auto; padding: 0 0 18px; }
+.ws-reply__back { position: absolute; left: -3%; right: -3%; bottom: 0; height: 250px; background: var(--ws-sage-deep); border-radius: 3px; box-shadow: 0 26px 40px -30px rgba(30, 44, 32, 0.5); }
+.ws-reply__back svg { position: absolute; left: 0; bottom: 100%; width: 100%; height: 110px; display: block; margin-bottom: -1px; }
+.ws-reply__card { z-index: 1; width: 92%; margin: 0 auto; }
+.ws-reply__card .ws-sheet__in { padding: 34px 24px 150px; }
+.ws-reply__pocket { position: absolute; z-index: 2; left: -3%; bottom: 0; width: 106%; height: 160px; display: block; filter: drop-shadow(0 -2px 3px rgba(30, 44, 32, 0.08)); pointer-events: none; }
+.theme-wax-seal .vw-field input[type='text'], .theme-wax-seal .vw-field input[type='tel'], .theme-wax-seal .vw-field textarea, .theme-wax-seal .vw-field select { border-radius: 3px; border-color: rgba(40, 56, 44, 0.26); }
+.theme-wax-seal .vw-field > label, .theme-wax-seal .vw-field > legend { font: 600 12.5px/1.4 var(--vw-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--vw-ink-2); }
+.theme-wax-seal .rsvp__status { font-size: 22px; }
+@media (min-width: 700px) { .ws-reply__card .ws-sheet__in { padding: 44px 48px 160px; } }
+
+/* closing: the seal, whole again */
+.ws-close { padding: clamp(80px, 12vh, 120px) 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.ws-close__seal { width: 92px; margin-bottom: 10px; }
+.ws-close__line { margin: 0; max-width: 30ch; font: 400 italic clamp(24px, 2.6vw, 30px)/1.35 var(--vw-f-display); color: var(--vw-ink-2); text-wrap: balance; }
+.ws-close__names { font-size: clamp(48px, 7vw, 76px); }
+.ws-close__tag { margin: 0; letter-spacing: 0.06em; color: var(--vw-ink-2); }
+
+@media (prefers-reduced-motion: reduce) { .ws-env__letter, .ws-env__flap { will-change: auto; } .ws-gate__seal { transition: none; } }

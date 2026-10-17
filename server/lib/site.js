@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 import { DATA_DIR } from './env.js';
 import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or data/site.json with STORE=json)
 import { entity, sendEntity } from './http-cache.js';
-import { isTheme, listThemes, TIERS, defaultTier } from './catalog.js';
+import { isTheme, listThemes, TIERS, defaultTier, metaOf } from './catalog.js';
 import { loadManifest } from './slots.js';
 import { hasPerm } from './auth.js';
 import { MARKETS, THEME_MARKETS, STYLES, themeFits } from './market.js';
@@ -80,13 +80,13 @@ const catalogEntry = (slug) => listThemes().find((t) => t.slug === slug) || null
 /** A design's market after the planner's override: 'np' | 'intl' | 'both' (else the catalog's, else Nepal). */
 export function themeMarketOf(slug, site, t = null) {
   if (THEME_MARKETS.includes(site?.themeMarkets?.[slug])) return site.themeMarkets[slug];
-  const own = THEME_MARKETS.includes(t?.market) ? t.market : catalogEntry(slug)?.market;
+  const own = THEME_MARKETS.includes(t?.market) ? t.market : catalogEntry(slug)?.market ?? metaOf(slug).market;
   return THEME_MARKETS.includes(own) ? own : 'np';
 }
 /** A design's style after the planner's override ('' when none). */
 export function themeStyleOf(slug, site, t = null) {
   if (STYLES.includes(site?.themeStyles?.[slug])) return site.themeStyles[slug];
-  const own = STYLES.includes(t?.style) ? t.style : catalogEntry(slug)?.style;
+  const own = STYLES.includes(t?.style) ? t.style : catalogEntry(slug)?.style ?? metaOf(slug).style;
   return STYLES.includes(own) ? own : '';
 }
 /** The markets a plan is offered on (both when the plan does not say). */
@@ -476,7 +476,8 @@ export async function publicThemes(req, res) {
     const tm = themeMarketOf(t.slug, s, t);
     if (market && !themeFits(tm, market)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s), market: tm, style: themeStyleOf(t.slug, s, t) });
+    // the design's own metadata (catalog: market, style, faith, occasions), then the admin's per-site overrides
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s), ...metaOf(t.slug, m), market: tm, style: themeStyleOf(t.slug, s, t) });
   }
   if (market) {
     const feat = new Set(featuredOf(s, market));

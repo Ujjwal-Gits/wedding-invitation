@@ -1,0 +1,221 @@
+/* Letterpress: deckled cotton cards on sage linen, pressed green ink. Cinzel (names, headings) + EB Garamond (body). */
+body.theme-letterpress {
+  --vw-bg: #97977F;
+  --vw-paper: #F1F0EC;
+  --vw-ink: #23261F;
+  --vw-ink-2: #4E5146;
+  --vw-accent: #33472F;
+  --vw-accent-ink: #F4F3EE;
+  --vw-line: rgba(35, 40, 30, 0.22);
+  --vw-f-display: 'EB Garamond', Garamond, Georgia, serif;
+  --vw-f-body: 'EB Garamond', Garamond, Georgia, serif;
+  --vw-radius: 2px;
+  --lp-caps: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --lp-linen: #97977F;
+  --lp-linen-img: url('/themes/letterpress/art/linen.webp');
+  --lp-card-img: url('/themes/letterpress/art/card.webp');
+  --lp-press: 0 1px 0 rgba(255, 255, 255, 0.7), 0 -1px 0 rgba(0, 0, 0, 0.1); /* debossed ink */
+  --lp-bw: clamp(32px, 6vw, 56px);
+}
+body.vw.theme-letterpress { background: var(--lp-linen) var(--lp-linen-img) 0 0 / 512px 200px repeat; font-size: 18px; }
+@media (max-width: 699px) { body.vw.theme-letterpress { font-size: 17px; } }
+.theme-letterpress .vw-btn { border-radius: 2px; font: 500 12.5px/1.2 var(--lp-caps); letter-spacing: 0.16em; }
+.theme-letterpress .vw-btn--line { background: transparent; }
+.theme-letterpress .vw-link { color: var(--vw-accent); }
+.lp-kicker { margin: 0; font: 500 12.5px/1.6 var(--lp-caps); letter-spacing: 0.2em; text-transform: uppercase; color: var(--vw-ink-2); text-shadow: var(--lp-press); text-wrap: balance; }
+.lp-h2 { margin: 0; font: 400 clamp(28px, 3.4vw, 40px)/1.15 var(--lp-caps); letter-spacing: 0.06em; color: var(--vw-accent); text-shadow: var(--lp-press); text-wrap: balance; }
+.lp-head { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0 0 clamp(22px, 3vh, 34px); text-align: center; }
+.lp-rule { display: block; width: 56px; height: 1px; background: rgba(51, 71, 47, 0.4); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
+.lp-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
+
+/* ───────── the stage: linen, the sprig, the card (gate and first screen share it) ───────── */
+.lp-stage { position: relative; min-height: 100svh; overflow: hidden; display: flex; justify-content: center; align-items: flex-start; box-sizing: border-box;
+  --cw: min(88vw, 62svh * 0.687);
+  padding-top: max(28px, calc((100svh - var(--cw) * 1.87) / 2));
+  background:
+    radial-gradient(120% 70% at 15% -10%, rgba(255, 255, 255, 0.16), transparent 60%),
+    linear-gradient(162deg, transparent 22%, rgba(28, 34, 22, 0.12) 38%, transparent 52%, rgba(255, 255, 255, 0.06) 70%, transparent 84%),
+    radial-gradient(90% 60% at 100% 100%, rgba(20, 26, 16, 0.18), transparent 70%),
+    var(--lp-linen) var(--lp-linen-img) 0 0 / 512px 200px repeat; }
+.lp-stage--gate { position: absolute; inset: 0; }
+.lp-group { position: relative; width: var(--cw); }
+.lp-tuck { display: none; }
+.lp-sprig { position: absolute; z-index: 1; left: 38.43%; top: 55.07%; width: 66.48%; height: auto; pointer-events: none; }
+.lp-lift-shadow { position: absolute; z-index: 1; left: 1.5%; right: 1.5%; top: 2%; aspect-ratio: 1098 / 1598; height: auto; border-radius: 2%; background: rgba(22, 28, 16, 0.55); filter: blur(18px); opacity: 0.25; will-change: transform, opacity; }
+.lp-flip { position: relative; z-index: 2; aspect-ratio: 1098 / 1598; transform-style: preserve-3d; will-change: transform; }
+.lp-face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.lp-face--back { transform: rotateY(180deg); }
+.lp-stage--gate .lp-face--back { transform: none; }
+.lp-stage--gate .lp-flip { cursor: pointer; }
+.lp-face__img { display: block; width: 100%; height: 100%; }
+.lp-face__img--back { transform: scaleX(-1); }
+.lp-face__in { position: absolute; inset: 9% 9.5% 9%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4cqi; text-align: center; container-type: inline-size; }
+.lp-face__in { gap: 10px; }
+
+/* the pressed face */
+.lp-emblem { width: max(30px, 9cqi); margin: 0 auto 2px; filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.85)); }
+.lp-front__kicker { margin: 0; max-width: 92%; font: 500 max(12px, 3.5cqi)/1.65 var(--lp-caps); letter-spacing: 0.16em; text-transform: uppercase; color: var(--vw-ink-2); text-shadow: var(--lp-press); text-wrap: balance; }
+.lp-front__names { margin: 4px 0 0; display: flex; flex-direction: column; align-items: center; font: 400 11cqi/1.12 var(--lp-caps); letter-spacing: 0.02em; color: var(--vw-accent); text-shadow: var(--lp-press); }
+.lp-n { text-wrap: balance; }
+.lp-and { margin: 0.1em 0; font: 400 italic 0.62em/1.2 var(--vw-f-display); letter-spacing: 0; color: var(--vw-ink-2); text-transform: none; }
+.lp-front__line { margin: 0; font: 400 italic max(17px, 5.4cqi)/1.4 var(--vw-f-display); color: var(--vw-ink-2); text-shadow: var(--lp-press); }
+.lp-front__rule { display: block; width: 24cqi; height: 1px; margin: 6px 0; background: rgba(51, 71, 47, 0.42); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+.lp-front__date { margin: 0; font: 400 italic max(17px, 5.9cqi)/1.45 var(--vw-f-display); color: var(--vw-ink); text-shadow: var(--lp-press); }
+.lp-front__place { margin: 6px 0 0; display: flex; flex-direction: column; align-items: center; gap: 2px; text-shadow: var(--lp-press); }
+.lp-front__place b { font: 500 max(12px, 3.6cqi)/1.5 var(--lp-caps); letter-spacing: 0.18em; text-transform: uppercase; color: var(--vw-accent); }
+.lp-front__place span { font: 400 italic max(16px, 4.8cqi)/1.4 var(--vw-f-display); color: var(--vw-ink-2); }
+
+/* the back (the gate): a blind-embossed monogram and the buttons */
+.lp-back { gap: 14px; }
+.lp-back__mono { font: 400 17cqi/1 var(--lp-caps); letter-spacing: 0.04em; color: #D8D7D1; text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.26), 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 1px rgba(255, 255, 255, 0.5); }
+.lp-back__mono i { margin: 0 0.12em; font: italic 0.5em var(--vw-f-display); vertical-align: 0.3em; }
+.lp-back__line { margin: 18px 0 2px; font: 400 italic max(19px, 6.4cqi)/1.3 var(--vw-f-display); color: var(--vw-ink-2); text-shadow: var(--lp-press); }
+.lp-back .vw-btn { margin-top: 4px; }
+.lp-back .vw-quiet { color: var(--vw-ink-2); }
+
+.lp-hero { position: relative; }
+.theme-letterpress .vw-cue { color: #1B2117; }
+.theme-letterpress .vw-cue span { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25); }
+
+@media (min-width: 900px) {
+  .lp-stage { --cw: min(74svh * 0.687, 540px); padding-top: max(32px, 6svh); }
+  .lp-group { margin-left: 12vw; }
+  .lp-tuck { display: block; position: absolute; z-index: 0; left: -54%; top: 16%; width: 72%; rotate: -7deg; filter: drop-shadow(0 18px 18px rgba(20, 26, 16, 0.3)); }
+  .lp-tuck img { display: block; width: 100%; height: auto; transform: scaleX(-1); }
+  .lp-face__in { gap: 12px; }
+}
+
+/* ───────── the suite on the linen ───────── */
+.lp-sec { position: relative; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: clamp(20px, 4vw, 48px); padding: clamp(30px, 6vh, 64px) 16px; }
+.lp-lay { position: relative; width: 100%; max-width: var(--w, 620px); rotate: var(--r, 0deg); }
+.lp-sh { position: absolute; z-index: 0; inset: 4% 3% 0 3%; background: rgba(20, 26, 16, 0.5); filter: blur(16px); opacity: 0.45; transform: translateY(12px); pointer-events: none; }
+.lp-card { position: relative; z-index: 1; box-sizing: border-box; border: var(--lp-bw) solid transparent; border-image: var(--lp-card-img) 110 fill / var(--lp-bw) stretch;
+  padding: clamp(8px, 2vw, 22px) clamp(4px, 1.6vw, 20px); text-align: center; color: var(--vw-ink); }
+.lp-card p { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55); }
+.lp-print { margin: 0; padding: clamp(8px, 1.4vw, 14px) clamp(8px, 1.4vw, 14px) clamp(28px, 4vw, 46px); background: #F8F7F2; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.18); position: relative; z-index: 1; }
+.lp-print img { display: block; width: 100%; height: auto; }
+
+/* the story beside a print */
+.lp-couple .lp-lay--print { --w: 400px; }
+.lp-story { }
+.lp-couple > .lp-lay:not(.lp-lay--print) { --w: 560px; }
+.lp-story__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 22px; }
+.lp-story__year { margin: 0; font: 500 15px/1.3 var(--lp-caps); letter-spacing: 0.2em; color: var(--vw-accent); }
+.lp-story__text { margin: 4px auto 0; max-width: 34ch; line-height: 1.6; }
+
+/* the letterpress calendar page */
+.lp-date .lp-lay { --w: 540px; }
+.lp-cal__page { margin: 14px auto 0; max-width: 380px; }
+.lp-cal__month { margin: 0; font: 400 clamp(36px, 5vw, 50px)/1 var(--lp-caps); letter-spacing: 0.1em; color: var(--vw-accent); text-shadow: var(--lp-press); }
+.lp-cal__year { margin: 6px 0 16px; font: 500 14px/1 var(--lp-caps); letter-spacing: 0.4em; color: var(--vw-ink-2); }
+.lp-cal__grid { margin: 0; padding: 14px 0 0; list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 6px; border-top: 1px solid rgba(51, 71, 47, 0.3); }
+.lp-cal__wd { font: 600 12.5px/2 var(--lp-caps); color: var(--vw-ink-2); }
+.lp-cal__d { position: relative; font: 400 18px/2 var(--vw-f-body); font-variant-numeric: lining-nums tabular-nums; color: var(--vw-ink); text-shadow: var(--lp-press); }
+.lp-cal__d.is-day { color: var(--vw-accent); font-weight: 600; }
+.lp-cal__d span { position: relative; z-index: 1; }
+.lp-cal__ring { position: absolute; left: 50%; top: 50%; width: 46px; height: auto; translate: -50% -52%; color: var(--vw-accent); opacity: 0.85; overflow: visible; }
+.lp-cal__when { margin: 20px 0 0; font: 400 italic 19px/1.5 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.lp-count { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(51, 71, 47, 0.24); }
+.lp-count .vw-count__grid { gap: 0; }
+.lp-count .vw-count__n { font: 400 clamp(28px, 4vw, 36px)/1 var(--lp-caps); color: var(--vw-accent); text-shadow: var(--lp-press); }
+.lp-count .vw-count__l { font-family: var(--lp-caps); font-weight: 500; letter-spacing: 0.12em; color: var(--vw-ink-2); }
+
+/* the schedule card, printed like a programme */
+.lp-prog .lp-lay { --w: 900px; }
+.lp-events { margin: 0; padding: 0; list-style: none; display: grid; text-align: left; }
+.lp-ev { padding: 20px 4px; }
+.lp-ev + .lp-ev { border-top: 1px solid rgba(51, 71, 47, 0.22); }
+.lp-ev__day { margin: 0; font: 500 12.5px/1.5 var(--lp-caps); letter-spacing: 0.18em; text-transform: uppercase; color: var(--vw-accent); }
+.lp-ev__title { margin: 4px 0 0; font: 500 clamp(24px, 2.6vw, 28px)/1.2 var(--vw-f-display); color: var(--vw-ink); }
+.lp-ev__time { margin: 4px 0 0; font-variant-numeric: lining-nums; color: var(--vw-ink); }
+.lp-ev__venue, .lp-ev__blurb, .lp-ev__dress { margin: 4px 0 0; }
+.lp-ev__blurb, .lp-ev__dress { color: var(--vw-ink-2); }
+.lp-ev__dress { display: flex; align-items: center; }
+.lp-order { margin-top: 4px; }
+@media (min-width: 900px) {
+  .lp-events:not(.lp-events--one) { grid-template-columns: 1fr 1fr; column-gap: 40px; }
+  .lp-events:not(.lp-events--one) .lp-ev + .lp-ev { border-top: 0; }
+  .lp-events:not(.lp-events--one) .lp-ev:nth-child(n + 3) { border-top: 1px solid rgba(51, 71, 47, 0.22); }
+}
+
+/* the families card */
+.lp-hosts .lp-lay { --w: 520px; }
+.lp-hosts__names { margin: 10px 0 0; font: 400 clamp(22px, 2.6vw, 26px)/1.35 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.lp-hosts__fam { margin: 6px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 10px; color: var(--vw-ink-2); }
+.lp-verse { margin: 22px auto 0; padding-top: 20px; border-top: 1px solid rgba(51, 71, 47, 0.24); max-width: 34ch; }
+.lp-verse .vw-verse__t { font: 400 italic 19px/1.55 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.lp-verse .vw-verse__r { font: 500 12px/1.4 var(--lp-caps); letter-spacing: 0.18em; color: var(--vw-ink-2); }
+
+/* prints on the linen */
+.lp-photos { flex-direction: column; }
+.lp-lay--label { --w: 300px; }
+.lp-label { padding: 2px 0; }
+.lp-label .lp-h2 { font-size: clamp(22px, 2.4vw, 28px); }
+.lp-prints { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; width: 100%; max-width: 1100px; align-items: center; }
+.lp-prints .lp-lay { --w: 100%; }
+.lp-prints .vw-ph { border-radius: 0; }
+@media (min-width: 900px) {
+  .lp-prints { display: flex; justify-content: center; align-items: center; gap: 0; }
+  .lp-prints .lp-lay { flex: 0 1 25%; max-width: 280px; margin: 0 -10px; }
+  .lp-prints .lp-lay:nth-child(even) { margin-top: 60px; }
+}
+
+/* the accommodations card */
+.lp-info .lp-lay { --w: 960px; }
+.lp-info__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 26px 36px; text-align: left; }
+.lp-info__b .lp-kicker { margin-bottom: 10px; color: var(--vw-accent); }
+.lp-info__b p { margin: 0; }
+.lp-info__b ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.lp-info__b li { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.lp-info__b li > span:not(.vw-links) { color: var(--vw-ink-2); }
+.lp-live { margin: 30px auto 0; padding-top: 24px; max-width: 520px; border-top: 1px solid rgba(51, 71, 47, 0.24); }
+.lp-live .vw-live__line { font-style: italic; text-wrap: balance; }
+
+/* the reply card with a stamp in its corner */
+.lp-reply .lp-lay { --w: 600px; }
+.lp-reply .lp-card { padding-top: 104px; text-align: left; }
+.lp-reply__title { text-align: left; }
+.lp-reply__by { margin: 6px 0 22px; font: 400 italic 19px/1.5 var(--vw-f-display); color: var(--vw-ink-2); }
+.lp-stamp { position: absolute; top: 0; right: 0; width: 76px; height: 90px; rotate: 5deg; padding: 5px; box-sizing: border-box; background: #F7F5EE;
+  -webkit-mask: radial-gradient(circle 3.2px, transparent 96%, #000) -4.5px -4.5px / 9px 9px round, linear-gradient(#000 0 0) content-box;
+  mask: radial-gradient(circle 3.2px, transparent 96%, #000) -4.5px -4.5px / 9px 9px round, linear-gradient(#000 0 0) content-box;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18)); }
+.lp-stamp__in { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--vw-accent); color: #F1EFE6; box-shadow: inset 0 0 0 3px var(--vw-accent), inset 0 0 0 4px rgba(241, 239, 230, 0.6); }
+.lp-stamp__in b { font: 400 21px/1 var(--lp-caps); letter-spacing: 0.02em; }
+.lp-stamp__in b i { font: italic 0.6em var(--vw-f-display); margin: 0 1px; }
+.lp-stamp__in span { font: 500 12px/1 var(--lp-caps); letter-spacing: 0.14em; }
+.lp-postmark { position: absolute; top: 18px; right: 46px; width: 150px; height: auto; color: rgba(40, 46, 36, 0.5); font-family: var(--lp-caps); rotate: -6deg; pointer-events: none; }
+.lp-postmark text { fill: currentColor; letter-spacing: 0.06em; }
+.theme-letterpress .lp-reply .vw-field input[type='text'], .theme-letterpress .lp-reply .vw-field input[type='tel'], .theme-letterpress .lp-reply .vw-field select {
+  border: 0; border-bottom: 1px solid rgba(35, 38, 31, 0.45); border-radius: 0; background: transparent; font-size: 18px; }
+.theme-letterpress .lp-reply .vw-field textarea { background: rgba(255, 255, 255, 0.35); border-color: rgba(35, 38, 31, 0.3); border-radius: 0; }
+.theme-letterpress .choice { border-radius: 2px; border-color: rgba(35, 38, 31, 0.32); }
+.theme-letterpress .vw-field > label, .theme-letterpress .vw-field > legend { font: 500 12.5px/1.4 var(--lp-caps); letter-spacing: 0.14em; text-transform: uppercase; color: var(--vw-ink-2); }
+.lp-reply #rsvp-submit { width: 100%; }
+
+/* closing: a small thank-you card */
+.lp-close { padding: clamp(30px, 6vh, 64px) 16px 24px; display: flex; flex-direction: column; align-items: center; color: #151B13; }
+.lp-close .lp-lay { --w: 520px; }
+.lp-close__line { margin: 0; font: 400 italic clamp(20px, 2.2vw, 23px)/1.5 var(--vw-f-display); color: var(--vw-ink-2); text-wrap: balance; }
+.lp-close__names { margin: 10px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.3em; font: 400 clamp(30px, 4vw, 40px)/1.2 var(--lp-caps); color: var(--vw-accent); text-shadow: var(--lp-press); }
+.lp-close__names em { font: italic 0.6em var(--vw-f-display); color: var(--vw-ink-2); }
+.lp-close__tag { margin: 8px 0 0; letter-spacing: 0.06em; color: var(--vw-ink-2); }
+.theme-letterpress .lp-close .madewith a.madewith__a { opacity: 1; }
+
+/* the full card dialog on cotton */
+.theme-letterpress .vw-modal__panel { background: #F1F0EC; }
+.theme-letterpress .vw-modal__title { font: 400 clamp(30px, 6vw, 40px)/1.2 var(--lp-caps); }
+
+@media (min-width: 900px) {
+  .lp-sec { padding-left: 32px; padding-right: 32px; }
+  .lp-couple { flex-wrap: nowrap; gap: 0; max-width: 1080px; margin: 0 auto; }
+  .lp-couple .lp-lay--print { margin-right: -36px; z-index: 2; }
+  .lp-row { display: flex; justify-content: center; align-items: flex-start; gap: clamp(24px, 3vw, 56px); max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+  .lp-row > .lp-sec { flex: 1 1 0; padding-left: 0; padding-right: 0; }
+  .lp-row > .lp-hosts { padding-top: clamp(120px, 18vh, 200px); }
+}
+@media (max-width: 380px) { .lp-sec { padding-left: 10px; padding-right: 10px; } }
+
+/* desktop depth (main.js): GSAP owns the cards' transform there */
+.lp-depth .lp-card, .lp-depth .lp-print, .lp-depth .lp-sh { will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .lp-flip, .lp-lift-shadow { will-change: auto; } }

@@ -1,0 +1,182 @@
+/* Noor: sage, ivory and gold; a painted mihrab arch with carved jali doors; Bellefair + Mulish. */
+body.theme-noor {
+  --vw-bg: #FBF9F2;
+  --vw-paper: #FBF9F2;
+  --vw-ink: #232B25;
+  --vw-ink-2: #4E5A51;
+  --vw-accent: #3D5A44;
+  --vw-accent-ink: #FFFFFF;
+  --vw-line: rgba(61, 90, 68, 0.2);
+  --vw-f-display: 'Bellefair', 'Cormorant Garamond', Georgia, serif;
+  --vw-f-body: 'Mulish', 'Helvetica Neue', Arial, sans-serif;
+  --vw-radius: 4px;
+  --vw-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --nr-gold: #A88442;
+  --nr-field: #D3DBC9;
+  --nr-ivory: #FBF9F2;
+  --nr-env: #A3B49E;
+  --nr-lattice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23A88442' stroke-opacity='.16' stroke-width='1'%3E%3Cpath d='M48 14 58 38 82 48 58 58 48 82 38 58 14 48 38 38Z'/%3E%3Cpath d='M24 24H72V72H24Z' transform='rotate(45 48 48)'/%3E%3Cpath d='M48 14V0M48 82V96M14 48H0M82 48H96'/%3E%3C/g%3E%3C/svg%3E");
+  --sw: max(100vw, 50svh); /* the arch stage: 1 : 2, covering a phone screen */
+}
+@media (min-aspect-ratio: 10 / 16) { body.theme-noor { --sw: 50svh; } }
+.theme-noor .nr-eyebrow { margin: 0; font: 700 12.5px/1.5 var(--vw-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vw-ink-2); }
+.theme-noor .vw-btn { border-radius: 2px; letter-spacing: 0.18em; font-weight: 700; }
+
+/* ───────── the stage: the painting at a fixed 1:2, so the doors and the words sit on the arch ───────── */
+.nr-stage { position: absolute; left: 50%; top: 50%; width: var(--sw); aspect-ratio: 1 / 2; translate: -50% -50%; }
+.nr-stage__art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+@media (min-aspect-ratio: 10 / 16) {
+  .nr-stage__art, .nr-flora { -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+}
+.nr-emblem { position: absolute; left: 50%; top: 1.6%; width: 6.4%; translate: -50% 0; }
+
+/* ───────── gate: the carved doors ───────── */
+.theme-noor .vw-gate { background: transparent; }
+.nr-gate { position: absolute; inset: 0; }
+.nr-stage--gate { perspective: 1700px; }
+.nr-leaf { position: absolute; top: 14.667%; height: 85.333%; width: 38.167%; transform-style: preserve-3d; will-change: transform; backface-visibility: hidden; }
+.nr-leaf--l { left: 11.833%; }
+.nr-leaf--r { left: 50%; }
+.nr-leaf__svg { display: block; width: 100%; height: 100%; }
+.nr-flora { position: absolute; left: 0; top: 54.167%; width: 100%; height: auto; pointer-events: none; }
+.nr-plaque { position: absolute; left: 50%; top: 46%; translate: -50% -50%; width: 62%; box-sizing: border-box; padding: 26px 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center; background: var(--nr-ivory); border: 1px solid var(--nr-gold); box-shadow: inset 0 0 0 5px var(--nr-ivory), inset 0 0 0 6px color-mix(in srgb, var(--nr-gold) 55%, transparent), 0 24px 40px -24px rgba(30, 40, 20, 0.55); }
+.nr-plaque__line { margin: 0; font: 700 12px/1.4 var(--vw-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vw-ink-2); }
+.nr-plaque__names { margin: 2px 0 0; font: 400 clamp(30px, calc(var(--sw) * 0.08), 40px)/1.05 var(--vw-f-display); color: var(--vw-accent); display: flex; flex-direction: column; align-items: center; }
+.nr-plaque__names em { font-style: normal; font-size: 0.6em; color: var(--nr-gold); }
+.nr-plaque__date { margin: 2px 0 8px; font: 600 15px/1.4 var(--vw-f-body); color: var(--vw-ink); }
+.nr-plaque__btn { min-height: 46px; padding: 10px 20px; }
+.nr-plaque__quiet { color: var(--vw-ink-2); font-size: 13.5px; }
+
+/* ───────── hero ───────── */
+.nr-hero { position: relative; height: 100svh; min-height: 560px; overflow: hidden; background-color: #C9D2BD;
+  background-image: var(--nr-lattice), linear-gradient(180deg, #A3AB8A, #BFC8AD 28%, #D0D8C4 48%, #C3CEB4 68%, #8E9F7E); }
+.nr-words { position: absolute; left: 21%; right: 21%; top: 27%; height: 45%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.nr-kicker { margin: 0; max-width: 19ch; font: 700 12px/1.5 var(--vw-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--vw-ink-2); text-wrap: balance; }
+.nr-names { margin: 4px 0; font: 400 clamp(46px, calc(var(--sw) * 0.13), 74px)/0.98 var(--vw-f-display); color: var(--vw-accent); display: flex; flex-direction: column; align-items: center; }
+.nr-names em { font-style: normal; font-size: 0.55em; line-height: 1.3; color: var(--nr-gold); }
+body.vw-single .nr-names { font-size: clamp(54px, calc(var(--sw) * 0.15), 86px); }
+.nr-line { margin: 0; max-width: 20ch; font: 400 clamp(18px, calc(var(--sw) * 0.046), 22px)/1.35 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.nr-when { margin: 8px 0 0; display: flex; flex-direction: column; gap: 2px; }
+.nr-when b { font: 700 15px/1.4 var(--vw-f-body); color: var(--vw-ink); }
+.nr-when span { font: 400 17px/1.35 var(--vw-f-display); color: var(--vw-ink-2); }
+.nr-place { margin: 2px 0 0; font: 600 13px/1.45 var(--vw-f-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--vw-ink-2); }
+.nr-dk { display: none; }
+.nr-hero .vw-cue { color: #F4F1E6; bottom: 10px; }
+body:not(.is-open):not(.is-opening) .nr-side, body:not(.is-open):not(.is-opening) .nr-words { opacity: 0; }
+@media (min-width: 900px) {
+  .nr-ph { display: none; }
+  .nr-dk { display: flex; }
+  .nr-side { position: absolute; top: 50%; translate: 0 -50%; width: min(300px, calc((100vw - var(--sw)) / 2 - 80px)); flex-direction: column; gap: 10px; color: var(--vw-ink); }
+  .nr-side--l { right: calc(50% + var(--sw) / 2 + 40px); align-items: center; text-align: center; }
+  .nr-side--r { left: calc(50% + var(--sw) / 2 + 40px); align-items: center; text-align: center; }
+  .nr-side__t { margin: 0; font: 400 21px/1.4 var(--vw-f-display); }
+  .nr-side__v { margin: 0; font: 700 13px/1.5 var(--vw-f-body); letter-spacing: 0.2em; text-transform: uppercase; }
+  .nr-side .nr-medal--hero { width: 150px; }
+  .nr-side--r::before { content: ''; width: 46px; height: 1px; margin-bottom: 8px; background: var(--nr-gold); }
+}
+
+/* ───────── the body: arch-window panels on a sage field ───────── */
+.nr-field { position: relative; padding: clamp(60px, 9vh, 100px) 0 0; background-color: var(--nr-field);
+  background-image: var(--nr-lattice); }
+.nr-sec { padding: clamp(20px, 3.5vh, 36px) 16px; }
+.nr-rise3d { will-change: transform; }
+.nr-panel { max-width: 640px; margin: 0 auto; filter: drop-shadow(0 26px 34px rgba(36, 56, 38, 0.2)); }
+.nr-panel--wide { max-width: 860px; }
+.nr-panel--slim { max-width: 540px; }
+.nr-panel__cap { display: block; width: 100%; height: clamp(84px, 20vw, 150px); margin-bottom: -1px; }
+.nr-panel__body { position: relative; padding: 0 clamp(22px, 6vw, 60px) clamp(44px, 6vw, 64px); background: var(--nr-ivory); text-align: center; }
+.nr-panel__body::before { content: ''; position: absolute; left: 2%; right: 2%; top: 0; bottom: 14px; border: 1px solid var(--nr-gold); border-top: 0; pointer-events: none; }
+.nr-head { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: clamp(-46px, -4vw, -20px) 0 clamp(26px, 4vh, 40px); }
+.nr-h2 { margin: 0; font: 400 clamp(36px, 4.6vw, 54px)/1.08 var(--vw-f-display); color: var(--vw-accent); text-wrap: balance; }
+.nr-rule { display: flex; align-items: center; gap: 10px; width: 150px; }
+.nr-rule::before, .nr-rule::after { content: ''; flex: 1; height: 1px; background: var(--nr-gold); }
+.nr-rule i { width: 8px; height: 8px; border: 1px solid var(--nr-gold); rotate: 45deg; }
+
+/* blessing */
+.nr-verse { padding-top: 4px; }
+.nr-verse .vw-verse__ar { font-size: clamp(26px, 4vw, 34px); color: var(--vw-accent); }
+.nr-verse .vw-verse__t { font: 400 clamp(20px, 2.4vw, 24px)/1.5 var(--vw-f-display); font-style: normal; color: var(--vw-ink); }
+.nr-verse .vw-verse__r { color: var(--nr-gold); }
+
+/* story */
+.nr-window { margin: 0 auto 34px; max-width: 420px; padding: 9px; background: #FFFFFF; border: 1px solid var(--nr-gold); }
+.nr-window img { display: block; width: 100%; height: auto; }
+.nr-story { margin: 0 auto; padding: 0; max-width: 44ch; list-style: none; display: grid; gap: 28px; }
+.nr-story__star svg { width: 18px; height: 18px; fill: none; stroke: var(--nr-gold); stroke-width: 1.2; }
+.nr-story__y { margin: 4px 0 0; font: 400 28px/1.1 var(--vw-f-display); color: var(--vw-accent); }
+.nr-story__t { margin: 6px 0 0; font-size: 17px; line-height: 1.65; }
+
+/* countdown */
+.nr-count .vw-count__grid { max-width: 520px; gap: 0; }
+.nr-count .vw-count__cell { position: relative; padding: 4px 2px; }
+.nr-count .vw-count__cell + .vw-count__cell::before { content: ''; position: absolute; left: -3px; top: 34%; width: 6px; height: 6px; border: 1px solid var(--nr-gold); rotate: 45deg; }
+.nr-count .vw-count__n { font: 400 clamp(42px, 7vw, 66px)/1 var(--vw-f-display); color: var(--vw-accent); }
+.nr-date__when { margin: 26px auto 0; font: 400 21px/1.45 var(--vw-f-display); color: var(--vw-ink-2); }
+.nr-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px; }
+
+/* events with 8-point-star medallions */
+.nr-events { margin: 0; padding: 0; list-style: none; text-align: left; }
+.nr-ev { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: clamp(18px, 4vw, 40px); align-items: start; padding: 30px 0; border-top: 1px solid var(--vw-line); }
+.nr-ev:first-child { border-top: 0; padding-top: 4px; }
+.nr-medal { position: relative; width: 128px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.nr-medal svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nr-medal span, .nr-medal b { position: relative; }
+.nr-medal__wd, .nr-medal__m { font: 700 12px/1.3 var(--vw-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--vw-ink-2); }
+.nr-medal__day { font: 400 44px/1 var(--vw-f-display); color: var(--vw-accent); margin: 2px 0; }
+.nr-medal--hero .nr-medal__day { font-size: 54px; }
+.nr-ev__title { margin: 6px 0 0; font: 400 clamp(30px, 3.4vw, 40px)/1.1 var(--vw-f-display); color: var(--vw-ink); }
+.nr-ev__date { margin: 6px 0 0; font-weight: 700; }
+.nr-ev__time { margin: 2px 0 0; font-variant-numeric: tabular-nums; color: var(--vw-ink-2); font-weight: 600; }
+.nr-ev__venue, .nr-ev__blurb, .nr-ev__dress { margin: 6px 0 0; }
+.nr-ev__venue .vw-link { margin-left: 8px; }
+.nr-ev__blurb { color: var(--vw-ink-2); }
+.nr-ev__dress { display: flex; align-items: center; gap: 2px; color: var(--vw-ink-2); }
+.nr-ev .vw-order { margin-top: 8px; }
+
+/* hosts */
+.nr-hosts .nr-panel__body { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.nr-hosts .nr-eyebrow { margin-top: -6px; }
+.nr-hosts__names { margin: 0; font: 400 clamp(28px, 3.4vw, 36px)/1.25 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.nr-hosts__fam p { margin: 0; color: var(--vw-ink-2); }
+.nr-hosts .vw-btn { margin-top: 12px; }
+
+/* photos: whole, in fine gold frames */
+.nr-album { columns: 3 200px; column-gap: 16px; }
+.nr-album__it { break-inside: avoid; margin: 0 0 16px; padding: 7px; background: #FFFFFF; border: 1px solid color-mix(in srgb, var(--nr-gold) 60%, transparent); }
+
+/* travel */
+.nr-info__grid { text-align: left; }
+.theme-noor .nr-info__grid h3 { font: 400 26px/1.25 var(--vw-f-display); color: var(--vw-accent); }
+.nr-live { margin: 40px auto 0; padding-top: 32px; border-top: 1px solid var(--vw-line); }
+
+/* RSVP: the reply card in an envelope with an arch-shaped flap */
+.nr-env { position: relative; max-width: 600px; margin: 0 auto; padding-top: 70px; }
+.nr-env__flap { position: absolute; left: 0; top: 0; width: 100%; height: 190px; }
+.nr-env__back { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; background: var(--nr-env); }
+.nr-card { position: relative; z-index: 1; margin: 0 clamp(14px, 3vw, 24px); padding: 52px clamp(20px, 5vw, 46px) 150px; background: var(--nr-ivory); text-align: center; box-shadow: 0 14px 30px -18px rgba(30, 45, 30, 0.45); }
+.nr-card__seal { position: absolute; left: 50%; top: -30px; translate: -50% 0; width: 60px; height: 60px; filter: drop-shadow(0 6px 10px rgba(60, 45, 10, 0.3)); }
+.nr-card__seal svg { display: block; width: 100%; height: 100%; }
+.nr-rsvp__by { margin: 8px 0 26px; font: 400 20px/1.4 var(--vw-f-display); color: var(--vw-ink-2); }
+.nr-rsvp .vw-btn[type='submit'] { width: 100%; }
+.nr-env__pocket { position: absolute; z-index: 2; left: 0; bottom: 0; width: 100%; height: 120px; pointer-events: none; }
+.theme-noor .vw-field input[type='text'], .theme-noor .vw-field input[type='tel'], .theme-noor .vw-field textarea, .theme-noor .vw-field select { border-radius: 2px; background: #FFFFFF; }
+.theme-noor .rsvp__status { text-align: center; font-style: normal; }
+
+/* closing */
+.nr-close { padding: clamp(80px, 12vh, 120px) 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.nr-close__emblem { width: 40px; }
+.nr-close__line { margin: 6px 0 0; max-width: 30ch; font: 400 clamp(23px, 2.6vw, 30px)/1.4 var(--vw-f-display); color: var(--vw-ink); text-wrap: balance; }
+.nr-close__names { margin: 0; font: 400 clamp(48px, 7vw, 80px)/1.05 var(--vw-f-display); color: var(--vw-accent); display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0.2em; }
+.nr-close__names em { font-style: normal; font-size: 0.6em; color: var(--nr-gold); }
+.nr-close__tag { margin: 0; color: var(--vw-ink-2); }
+
+@media (max-width: 699px) {
+  .nr-ev { grid-template-columns: 100px minmax(0, 1fr); gap: 16px; }
+  .nr-medal { width: 100px; }
+  .nr-medal__day { font-size: 34px; }
+  .nr-medal__wd, .nr-medal__m { letter-spacing: 0.12em; }
+  .nr-album { columns: 2; column-gap: 10px; }
+  .nr-album__it { padding: 4px; margin-bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .nr-leaf, .nr-rise3d { will-change: auto; } }
