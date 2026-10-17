@@ -29,3 +29,32 @@ async function refreshPlans() {
   }
 }
 refreshPlans().catch(() => {});
+
+/** the design gallery: the style chips show only the designs in that style (a quiet fade, none with reduced motion) */
+function initGallery() {
+  const chips = $$('.gal-chips [data-style]');
+  const cards = $$('#gal [data-style]');
+  const empty = document.getElementById('gal-empty');
+  if (!chips.length || !cards.length) return;
+  for (const chip of chips) {
+    chip.addEventListener('click', () => {
+      const style = chip.dataset.style;
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      let shown = 0;
+      cards.forEach((card) => {
+        const on = style === 'all' || card.dataset.style === style;
+        card.hidden = !on;
+        if (on) {
+          shown += 1;
+          card.classList.remove('is-in');
+          void card.offsetWidth; // restart the fade
+          card.classList.add('is-in');
+        }
+      });
+      if (empty) empty.hidden = shown > 0;
+      // the pinned scenes below measured the page when it loaded: measure again (same module as motion.js)
+      if (document.querySelector('.is-stuck, .pin-spacer')) import('gsap/ScrollTrigger').then((m) => m.ScrollTrigger.refresh()).catch(() => {});
+    });
+  }
+}
+initGallery();

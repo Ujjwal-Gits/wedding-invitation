@@ -56,21 +56,57 @@
 .lo--wreath .lo-rings circle { fill: none; stroke: var(--gold); stroke-width: 4.2; }
 .lo--wreath .lo-rings circle + circle { stroke: #B8995A; }
 .lo--wreath .lo-spark { fill: var(--gold); }
-.market-intl .lotus__kick { font: italic 400 clamp(26px, 3vw, 42px)/1.2 var(--f-display); letter-spacing: -0.01em; }
+.lo--wreath .lo-bloom ellipse { fill: #F2C4CC; stroke: #fff; stroke-width: 0.6; }
+.lo--wreath .lo-bloom circle { fill: var(--gold); }
 
-/* ---------------- traditions: the occasion cards, with an English kicker ---------------- */
-.market-intl .occ__kick { font: italic 400 clamp(24px, 2.2vw, 32px)/1.2 var(--f-display); letter-spacing: -0.012em; color: var(--accent); }
-.market-intl .occ--lead .occ__kick { color: #fff; }
+/* ---------------- hero: a plain, descriptive headline (a little longer than the home page's) ---------------- */
+.market-intl .hero__h { max-width: none; font-size: clamp(40px, 5.2vw, 84px); }
+.market-intl .hero__lede { max-width: 44ch; }
+
+/* ---------------- the design gallery, right under the hero ---------------- */
+.gal-sec { padding-top: clamp(56px, 6vw, 96px); }
+.gal-chips { margin-bottom: clamp(20px, 2.4vw, 32px); }
+@media (max-width: 699px) { .gal-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); } .gal-chips::-webkit-scrollbar { display: none; } .gal-chips .chip { flex: none; } }
+.market-intl .chip[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.gal { display: grid; gap: clamp(24px, 2.6vw, 40px) 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 760px) { .gal { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; } }
+@media (min-width: 1200px) { .gal { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 20px; } }
+.gcard .dcard__pic { background: var(--blush-100); padding: 10% 18%; }
+.gcard:nth-child(even) .dcard__pic { background: var(--blush-50); box-shadow: inset 0 0 0 1px var(--line); }
+.gcard .dcard__meta { gap: 6px 8px; }
+.gcard__style { color: var(--ink-2); font-weight: 500; }
+.gcard__style::after { content: '·'; margin-left: 8px; color: var(--line-2); }
+.gcard.is-in { animation: gal-in 0.36s var(--ease); }
+@keyframes gal-in { from { opacity: 0; transform: translateY(10px); } }
+.gal-empty { padding: 24px 0; color: var(--ink-2); }
+
+/* ---------------- the wreath bridge: a plain eyebrow over the heading ---------------- */
+.market-intl .lotus__text .eyebrow { margin-bottom: 4px; }
+
+/* ---------------- what guests see: the rail of one invitation's pages ---------------- */
+.gpage .rcard__pic { background: var(--blush-100); }
+.gpage:nth-child(even) .rcard__pic { background: var(--blush-50); box-shadow: inset 0 0 0 1px var(--line); }
+.gpage__d { font-size: 14.5px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
+
+/* ---------------- other events: the occasion cards, a heading and a line each ---------------- */
 .market-intl .occ--lead { background: var(--accent) !important; }
 .market-intl .occ__facts b { white-space: nowrap; }
+.market-intl .occs .occ__en { font-size: clamp(26px, 2.2vw, 34px); }
+.market-intl .occ { min-height: 200px; }
 
-/* ---------------- features ---------------- */
-.market-intl .fx--dates .fx__day { font: 400 clamp(30px, 3vw, 44px)/1.15 var(--f-display); color: var(--accent); text-align: center; }
-.market-intl .fx--dates .fx__chip { margin-top: 6px; padding: 8px 16px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); font-size: 14px; font-weight: 500; color: var(--accent); }
-.market-intl .sec--blush .fx--dates .fx__chip { background: var(--blush-50); }
-.fx--details { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); justify-content: center; gap: 10px; }
-.fx--details span { display: grid; place-items: center; min-width: 128px; padding: 14px 18px; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(23, 32, 26, 0.05); font: 400 22px/1.1 var(--f-display); color: var(--ink); }
-.fx--details span:first-child { background: var(--accent); color: #fff; }
+/* ---------------- why paperless ---------------- */
+.fx--cost { justify-items: center; }
+.fx--cost .fx__num { font: 600 clamp(52px, 5vw, 80px)/0.9 var(--f-sans); letter-spacing: -0.05em; color: var(--accent); }
+.fx--cost .fx__lbl { font-weight: 500; }
+.fx--cost .fx__sub { font-size: 13px; color: var(--ink-3); }
+.fx--change { justify-items: center; gap: 10px; }
+.fx--change .fx__old { font-size: 15px; color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--rose-300); }
+.fx--change .fx__new { display: inline-flex; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 16px; background: #fff; box-shadow: var(--shadow); font: 400 clamp(22px, 2vw, 30px)/1.1 var(--f-display); color: var(--ink); }
+.fx--change .fx__new i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-wash); }
+.fx--change .fx__note { font-size: 13px; font-weight: 500; color: var(--accent); }
+.fx--eco { justify-items: center; color: var(--accent); }
+.fx--eco svg { width: 76px; height: 76px; }
+.fx--eco span { font: 400 clamp(22px, 2vw, 28px)/1.2 var(--f-display); color: var(--ink); }
 
 /* ---------------- plans: the highlighted plan on forest sage, its flag in champagne ---------------- */
 .market-intl .plan__flag { background: var(--gold); color: #1E261F; }
@@ -78,11 +114,11 @@
 .market-intl .plan__feats li::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.2 2.2 4.8-5' fill='none' stroke='%234A7556' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .market-intl .plan--hi .plan__feats li::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.2 2.2 4.8-5' fill='none' stroke='%23fff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 
-/* ---------------- closing and footer ---------------- */
+/* ---------------- closing ---------------- */
 .market-intl .closing { background: radial-gradient(100% 120% at 50% 0%, #5F8C6A 0%, var(--accent) 45%, #2F4D3A 100%); }
-.market-intl .closing__kick { font: italic 400 clamp(28px, 3vw, 44px)/1.2 var(--f-display); color: #E6D7B0; }
-.foot__np { font-size: 15px; }
-.foot__np .link { gap: 6px; }
-.lo--wreath .lo-bloom ellipse { fill: #F2C4CC; stroke: #fff; stroke-width: 0.6; }
-.lo--wreath .lo-bloom circle { fill: var(--gold); }
+.market-intl .closing__kick { color: #E6D7B0; }
 .market-intl .closing__p { text-wrap: balance; }
+@media (prefers-reduced-motion: reduce) { .gcard.is-in { animation: none; } }
+
+/* how it works sits on white here: give the step cards the soft surface */
+.market-intl #how .step:not(:last-child) { background: var(--blush-50); }

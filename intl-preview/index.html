@@ -16,123 +16,140 @@
       <div class="hero__pin">
         <div class="wrap hero__copy">
           <p class="eyebrow">Online wedding invitations</p>
-          <h1 class="display hero__h" id="hero-h">Invitations, made to be <em>opened.</em></h1>
-          <p class="lede hero__lede">Beautiful wedding invitation websites for church, garden and every tradition. Your guests open one link, see the day and reply.</p>
+          <h1 class="display hero__h" id="hero-h">Wedding invitations,<br /> <em>sent in one link.</em></h1>
+          <p class="lede hero__lede">Pick a design and we’ll make it yours. Your invitation, wedding website and RSVPs, all in one link you send by text or email.</p>
           <div class="hero__cta">
-            <a class="btn btn--accent btn--lg" href="#designs">See the designs</a>
-            <a class="btn btn--ghost btn--lg" href="#plans">Order an invitation</a>
+            <a class="btn btn--accent btn--lg" href="#designs">Browse designs</a>
+            <a class="btn btn--ghost btn--lg" href="#plans">See pricing</a>
           </div>
         </div>
         <div class="hero__stage">
           <div class="hero__ph hero__ph--l2">
-            <span class="phone"><img src="/site/intl/cathedral-480.webp" srcset="/site/intl/cathedral-480.webp 480w, /site/intl/cathedral-800.webp 800w" sizes="(max-width: 599px) 40vw, 240px" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
+            <span class="phone"><img src="/site/intl/tuscany-480.webp" srcset="/site/intl/tuscany-480.webp 480w, /site/intl/tuscany-800.webp 800w" sizes="(max-width: 599px) 40vw, 240px" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
           </div>
           <div class="hero__ph hero__ph--l1">
-            <span class="phone"><img src="/site/intl/chapel-480.webp" srcset="/site/intl/chapel-480.webp 480w, /site/intl/chapel-800.webp 800w" sizes="(max-width: 599px) 40vw, 270px" width="390" height="844" alt="The Chapel design: a stone chapel arch under climbing garden roses" fetchpriority="low" decoding="async" /></span>
+            <span class="phone"><img src="/site/intl/rosearch-480.webp" srcset="/site/intl/rosearch-480.webp 480w, /site/intl/rosearch-800.webp 800w" sizes="(max-width: 599px) 40vw, 270px" width="390" height="844" alt="The Rose Arch design: a stone arch covered in climbing roses" fetchpriority="low" decoding="async" /></span>
           </div>
           <div class="hero__ph hero__ph--r1">
             <span class="phone"><img src="/site/intl/dove-480.webp" srcset="/site/intl/dove-480.webp 480w, /site/intl/dove-800.webp 800w" sizes="(max-width: 599px) 40vw, 270px" width="390" height="844" alt="The Dove design: a white dove with a gold olive branch" fetchpriority="low" decoding="async" /></span>
           </div>
           <div class="hero__ph hero__ph--r2">
-            <span class="phone"><img src="/site/intl/garden-480.webp" srcset="/site/intl/garden-480.webp 480w, /site/intl/garden-800.webp 800w" sizes="(max-width: 599px) 40vw, 240px" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
+            <span class="phone"><img src="/site/intl/wildflower-480.webp" srcset="/site/intl/wildflower-480.webp 480w, /site/intl/wildflower-800.webp 800w" sizes="(max-width: 599px) 40vw, 240px" width="390" height="844" alt="" loading="lazy" decoding="async" /></span>
           </div>
           <div class="hero__ph hero__ph--c">
-            <span class="phone"><img id="hero-img" src="/site/intl/olive-480.webp" srcset="/site/intl/olive-480.webp 480w, /site/intl/olive-800.webp 800w, /site/intl/olive-1170.webp 1170w" sizes="(max-width: 599px) 41vw, 340px" data-sizes="(max-width: 599px) 62vw, 340px" width="390" height="844" alt="The Olive wedding invitation on a phone: a watercolour olive wreath around the date, for Emily and James" fetchpriority="high" decoding="async" /></span>
+            <span class="phone"><img id="hero-img" src="/site/intl/olive-480.webp" srcset="/site/intl/olive-480.webp 480w, /site/intl/olive-800.webp 800w, /site/intl/olive-1170.webp 1170w" sizes="(max-width: 599px) 41vw, 340px" data-sizes="(max-width: 599px) 62vw, 340px" width="390" height="844" alt="The Olive Grove wedding invitation on a phone: a watercolor olive wreath around the date, for Emily and James" fetchpriority="high" decoding="async" /></span>
           </div>
         </div>
         <div class="hero__veil" aria-hidden="true"></div>
       </div>
     </section>
 
-    <!-- 2. THE WREATH (the home page's lotus scene, in olive leaves round two rings): the doorway to every tradition -->
+    <!-- 2. the designs, right away: narrow them by style -->
+    <section class="sec gal-sec" id="designs" aria-labelledby="gal-h">
+      <div class="wrap">
+        <header class="shead shead--split" data-rv>
+          <div><p class="eyebrow">Designs</p><h2 class="h2" id="gal-h">Find your <em>style.</em></h2></div>
+          <p class="lede">Every design comes with a matching wedding website. Pick a style to see the ones that fit your day.</p>
+        </header>
+        <div class="chips gal-chips" role="group" aria-label="Filter designs by style"><!--@intl-styles--></div>
+        <ul class="gal" id="gal"><!--@intl-gallery--></ul>
+        <p class="gal-empty" id="gal-empty" hidden>No designs in this style yet. <a class="link" href="#plans">Ask us for one</a></p>
+      </div>
+    </section>
+
+    <!-- 3. THE WREATH (the home page's lotus scene, in olive leaves round two rings): invitation + website in one -->
     <section class="lotus" data-scene="lotus" aria-labelledby="lotus-h">
       <div class="lotus__pin">
         <div class="lotus__disc" aria-hidden="true"></div>
         <div class="lotus__slot"><div class="lotus__flower"><!--@wreath--></div></div>
         <div class="lotus__text">
-          <p class="lotus__ne lotus__kick">With this ring</p>
-          <h2 class="h2 lotus__h" id="lotus-h">For every tradition, <em>every vow.</em></h2>
-          <p class="lede lotus__lede">Church weddings first, and every way two families come together: a Nuptial Mass, an Orthodox crowning, a Nikah, a Hindu wedding or an interfaith day.</p>
+          <p class="eyebrow">Invitation and wedding website</p>
+          <h2 class="h2 lotus__h" id="lotus-h">One link for <em>the whole wedding.</em></h2>
+          <p class="lede lotus__lede">Guests open your invitation like a real card. Then they scroll down for the schedule, maps, hotels and the RSVP.</p>
         </div>
       </div>
     </section>
 
-    <section class="sec sec--blush sec--flush-top occs-sec" id="traditions" aria-label="Traditions">
-      <div class="wrap">
-        <ul class="occs occs--home"><!--@traditions--></ul>
-      </div>
-    </section>
-
-    <!-- 3. the designs: a pinned rail on wide screens, a swipe row on phones -->
-    <section class="rail" id="designs" data-scene="rail" aria-labelledby="rail-h">
+    <!-- 4. what guests see: the pages of one invitation, on the pinned rail -->
+    <section class="rail" id="guests" data-scene="rail" aria-labelledby="rail-h">
       <div class="rail__pin">
         <div class="wrap rail__head">
           <div>
-            <p class="eyebrow">Wedding designs</p>
-            <h2 class="h2" id="rail-h">New designs. <em>Each one opens.</em></h2>
+            <p class="eyebrow">What your guests see</p>
+            <h2 class="h2" id="rail-h">Everything they need, <em>in one place.</em></h2>
           </div>
           <div class="rail__side">
-            <p class="lede">A wax seal, a chapel door, a garden gate or a wreath that unfolds. Guests tap, and your invitation opens like a real one.</p>
-            <a class="btn btn--ghost" href="#plans">Choose a plan</a>
+            <p class="lede">No more texts asking “what time is it again?” The plan, the places and the RSVP are all on your page.</p>
           </div>
         </div>
         <div class="rail__view">
-          <ul class="rail__track" id="rail"><!--@intl-rail--></ul>
+          <ul class="rail__track" id="rail"><!--@intl-guests--></ul>
         </div>
       </div>
     </section>
 
-    <!-- 4. how it works -->
-    <section class="sec sec--blush" id="how" aria-labelledby="how-h">
+    <!-- 5. why paperless -->
+    <section class="sec sec--blush" id="why" aria-labelledby="why-h">
+      <div class="wrap">
+        <header class="shead shead--center" data-rv>
+          <p class="eyebrow">Why couples go paperless</p>
+          <h2 class="h2" id="why-h">Less paper. <em>Less stress.</em></h2>
+        </header>
+        <ul class="bento bento--home"><!--@intl-why--></ul>
+      </div>
+    </section>
+
+    <!-- 6. how it works: a real designer -->
+    <section class="sec" id="how" aria-labelledby="how-h">
       <div class="wrap">
         <header class="shead shead--split" data-rv>
-          <div><p class="eyebrow">How it works</p><h2 class="h2" id="how-h">Four steps. <em>No app.</em></h2></div>
-          <p class="lede">You choose and pay online. We make it with you by email or WhatsApp. Then you share one link.</p>
+          <div><p class="eyebrow">How it works</p><h2 class="h2" id="how-h">A real designer, <em>not a DIY tool.</em></h2></div>
+          <p class="lede">There’s no editor to learn. Send us your details and a real person sets up your invitation with you.</p>
         </header>
         <ol class="steps"><!--@intl-steps--></ol>
       </div>
     </section>
 
-    <!-- 5. features -->
-    <section class="sec" id="features" aria-labelledby="feat-h">
+    <!-- 7. other events -->
+    <section class="sec sec--blush" id="events" aria-labelledby="ev-h">
       <div class="wrap">
-        <header class="shead shead--center" data-rv>
-          <p class="eyebrow">Inside every invitation</p>
-          <h2 class="h2" id="feat-h">Everything guests need. <em>Nothing they don’t.</em></h2>
+        <header class="shead shead--split" data-rv>
+          <div><p class="eyebrow">Other events</p><h2 class="h2" id="ev-h">Planning another party? <em>We can help.</em></h2></div>
+          <p class="lede">Our ready-made designs are for weddings. For anything else, we design one just for you, from <span data-usd-from="custom">$199</span>.</p>
         </header>
-        <ul class="bento bento--home"><!--@intl-features--></ul>
+        <ul class="occs occs--home"><!--@intl-events--></ul>
       </div>
     </section>
 
-    <!-- 6. pricing, in US dollars -->
-    <section class="sec sec--blush" id="plans" aria-labelledby="price-h">
+    <!-- 8. pricing, in US dollars -->
+    <section class="sec" id="plans" aria-labelledby="price-h">
       <div class="wrap">
         <header class="shead shead--center" data-rv>
           <p class="eyebrow">Pricing</p>
           <h2 class="h2" id="price-h">One price. <em>Paid once.</em></h2>
-          <p class="lede">Pay by card or PayPal, in US dollars. No monthly fees.</p>
+          <p class="lede">Pay by card or PayPal, in US dollars. No monthly fees and no subscriptions.</p>
         </header>
         <ul class="plans" id="plan-list" data-plans-usd><!--@intl-plans--></ul>
       </div>
     </section>
 
-    <!-- 7. questions -->
-    <section class="sec" id="faq" aria-labelledby="faq-h">
+    <!-- 9. questions -->
+    <section class="sec sec--blush" id="faq" aria-labelledby="faq-h">
       <div class="wrap faq">
-        <header class="shead"><p class="eyebrow">Questions</p><h2 class="h2" id="faq-h">Good to <em>know.</em></h2><p class="lede">Anything else? Write to us. We answer within a day.</p></header>
+        <header class="shead"><p class="eyebrow">FAQ</p><h2 class="h2" id="faq-h">Good to <em>know.</em></h2><p class="lede">Have another question? Send us an email. We’re happy to help.</p></header>
         <!--@intl-faq-->
       </div>
     </section>
 
-    <!-- 8. closing -->
-    <section class="sec sec--flush-top" aria-labelledby="close-h">
+    <!-- 10. closing -->
+    <section class="sec" aria-labelledby="close-h">
       <div class="wrap">
         <div class="closing">
-          <p class="closing__ne closing__kick">With love,</p>
+          <p class="eyebrow closing__kick">Ready when you are</p>
           <h2 class="h2 closing__h" id="close-h">Let’s make your invitation.</h2>
-          <p class="closing__p">Order online in two minutes, or talk to us first. We reply within a day.</p>
+          <p class="closing__p">Pick a design, or talk to us first. We’d love to hear about your day.</p>
           <div class="closing__acts">
-            <a class="btn btn--white btn--lg" href="#plans">Order now</a>
+            <a class="btn btn--white btn--lg" href="#plans">Get started</a>
             <a class="btn btn--line-w btn--lg" data-contact="email" href="mailto:nimttoz@gmail.com">Email us</a>
           </div>
         </div>

@@ -3,10 +3,10 @@
 // and the page (src/site/intl.js) both use it, so the static cards and the live ones always match.
 export const INTL_NAME = { saral: 'Standard', shubha: 'Pro', shahi: 'Pro Max', custom: 'Custom' };
 export const INTL_DESC = {
-  saral: 'One beautiful link with all the basics.',
-  shubha: 'Everything a full wedding day needs, in one link.',
-  shahi: 'Every design, and the whole invitation made around you.',
-  custom: 'A new design, made only for your wedding.',
+  saral: 'Everything you need for a simple, lovely invitation.',
+  shubha: 'Photos, maps and music for the whole wedding day.',
+  shahi: 'Every design, plus a personal link for each guest.',
+  custom: 'A brand-new design, made just for you.',
 };
 const ORDER = ['saral', 'shubha', 'shahi', 'custom'];
 
@@ -17,7 +17,8 @@ export function intlPlans(plans) {
   const rename = (s) => list.reduce((t, p) => (p.name ? t.split(p.name).join(INTL_NAME[p.id]) : t), String(s))
     .replace(/\bon WhatsApp\b/g, 'anywhere')
     .replace(/\bEvery ceremony\b/g, 'Every event')
-    .replace(/\byour occasion\b/g, 'your wedding');
+    .replace(/\byour occasion\b/g, 'your event')
+    .replace(/\bcolours\b/g, 'colors');
   return list
     .sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
     .map((p) => ({
