@@ -6,7 +6,8 @@ import { hash as argonHashRaw } from '@node-rs/argon2';
 import { verify as bcryptVerify } from '@node-rs/bcrypt';
 import { IS_PROD, ADMIN_EMAIL, ADMIN_PASSWORD_HASH } from './env.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
-import { peekInvitation, findInvitationByTokenHash } from './store.js';
+import { peekInvitation, findInvitationByTokenHash, listOrders } from './store.js';
+import { customerMarket } from './market.js';
 // argon2 runs through a capped queue (lib/guard.js): a burst of sign-in attempts gets 503s, never every core.
 import { verifyPassword as argonVerify, hashPassword as argonHash, mimicVerify } from './guard.js';
 import { TTL, keyOf, expired, getSession, putSession, deleteSession, deleteSessionsWhere, touchSession } from './sessions.js';
@@ -401,7 +402,7 @@ export async function login(req, res) {
       return res.status(401).json({ error: 'That email and password do not match.' });
     }
     const s = await signInCustomer(req, res, r.customer);
-    return res.json({ role: 'customer', name: r.customer.name || '', email: r.customer.email, csrf: s.csrf });
+    return res.json({ role: 'customer', name: r.customer.name || '', email: r.customer.email, csrf: s.csrf, market: await marketOfCustomer(r.customer) });
   }
 
   const passOk = await checkPassword(password);
@@ -449,12 +450,15 @@ export async function hasStudioSession(req) {
   return false;
 }
 
+/** 'np' | 'intl' for a customer (lib/market.js): what the studio shows them follows it (docs/PLATFORM.md "Markets"). */
+const marketOfCustomer = async (c) => customerMarket(c, (await listOrders()).filter((o) => o.customerId === c.id));
+
 export async function me(req, res) {
   res.set('Cache-Control', 'no-store');
   // ?soft=1 (the website's nav): signed out is a normal answer, not an error.
   if (!req.session) return req.query.soft != null ? res.json({ role: null }) : res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
-  if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, csrf: s.csrf });
+  if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, csrf: s.csrf, market: await marketOfCustomer(req.customer) });
   if (s.role !== 'client') return res.json(adminMe(req.admin, s.csrf));
   const doc = await peekInvitation(s.slug);
   if (!linkActive(doc, s)) {

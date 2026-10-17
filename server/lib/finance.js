@@ -13,6 +13,8 @@
 // order's price and its last screenshot's currency; a refund recorded before order.refunds existed (pay.status
 // 'refunded', or PayPal's payment.refunded) becomes one refund for what is missing.
 
+import { orderMarket, MARKETS } from './market.js';
+
 export const TZ = 'Asia/Kathmandu';
 export const CURRENCIES = ['NPR', 'USD'];
 const PAYPAL_SETTLED = new Set(['paid', 'partially_refunded', 'refunded']);
@@ -127,7 +129,7 @@ const compValue = (o) => ({ npr: o.pay?.comp?.value?.npr ?? o.amount?.npr ?? nul
 
 /** The money lines of one order (payments, refunds, free access). */
 export function entriesOf(o) {
-  const base = { orderId: o.id, ref: o.ref || null, name: o.name || '', email: o.email || '', plan: o.planName || o.plan || '' };
+  const base = { orderId: o.id, ref: o.ref || null, name: o.name || '', email: o.email || '', plan: o.planName || o.plan || '', market: orderMarket(o) };
   const out = [];
   const receipts = {};
   for (const source of ['manual', 'paypal']) {
@@ -196,7 +198,7 @@ export function pendingOf(orders) {
  *   refunds }), months: 12 × { month, NPR, USD } newest first, byMethod: [{ method, currency, … }],
  *   pending, comps: { count, value: { NPR, USD }, items }, test: { payments }, keys: { thisMonth, lastMonth, year } }
  */
-export function earnings(orders, { now = new Date() } = {}) {
+export function earnings(orders, { now = new Date(), split = true } = {}) {
   const all = ledger(orders);
   const thisMonth = monthKey(now.toISOString());
   const lastMonth = prevMonth(thisMonth);
@@ -222,9 +224,13 @@ export function earnings(orders, { now = new Date() } = {}) {
     if (c.value?.npr != null && Number.isFinite(minor(c.value.npr))) compValueSum.NPR += minor(c.value.npr);
     if (c.value?.usd != null && Number.isFinite(minor(c.value.usd))) compValueSum.USD += minor(c.value.usd);
   }
+  // per market (docs/API.md "Markets"): the same periods, from each market's orders alone
+  const byMarket = {};
+  if (split) for (const m of MARKETS) byMarket[m] = earnings(orders.filter((o) => orderMarket(o) === m), { now, split: false }).periods;
   return {
     keys: { thisMonth, lastMonth, year },
     periods: Object.fromEntries(Object.entries(periods).map(([k, b]) => [k, finish(b)])),
+    ...(split ? { byMarket } : {}),
     months: monthKeys.map((k) => ({ month: k, ...finish(months.get(k)) })),
     byMethod: [...methods.values()].map((m) => ({ method: m.method, currency: m.currency, ...finish(m.bucket)[m.currency] }))
       .sort((a, b) => a.currency.localeCompare(b.currency) || b.received - a.received || a.method.localeCompare(b.method)),
@@ -238,9 +244,10 @@ export function earnings(orders, { now = new Date() } = {}) {
  * Filters for the transactions list and the CSV: { type, currency, month, from, to, q }. A free-access line matches a
  * currency when its plan has a price in it.
  */
-export function filterEntries(list, { type, currency, month, from, to, q } = {}) {
+export function filterEntries(list, { type, currency, month, from, to, q, market } = {}) {
   const needle = String(q || '').trim().toLowerCase();
   return list.filter((e) => {
+    if (market && e.market !== market) return false;
     if (type && e.type !== type) return false;
     if (currency && (e.type === 'comp' ? e.value?.[currency.toLowerCase()] == null : e.currency !== currency)) return false;
     if (month && e.month !== month) return false;

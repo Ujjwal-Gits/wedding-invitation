@@ -13,13 +13,14 @@ import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS, ADMIN_EMAIL } from './env.js';
 import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme, listThemes } from './catalog.js';
-import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
+import { readSite, EMAIL_RE, e164, tierProblem, planOffered } from './site.js';
 import { sendVerify } from './account-mail.js';
 import { activate } from './activation.js';
 import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
 import { staffByEmail } from './staff.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
 import { refundable, refundState, payStatusOf, dayKey, minor, major, CURRENCIES } from './finance.js';
+import { orderMarket, asMarket, isMarket } from './market.js';
 
 export const ORDERS_FILE = resolve(DATA_DIR, 'orders.json');
 export const PROOF_DIR = resolve(DATA_DIR, 'proofs'); // payment screenshots: private, never served statically
@@ -61,6 +62,13 @@ export function tokenMatches(order, t) {
   const want = order && typeof order.payTokenHash === 'string' && order.payTokenHash.length === 64 ? Buffer.from(order.payTokenHash, 'hex') : DUMMY;
   const same = timingSafeEqual(tokenHash(ok ? t : ''), want);
   return Boolean(ok && order && order.payTokenHash && same);
+}
+
+/** A new pay token for an order: stores its hash on `o` and returns the token (shown once). */
+export function newPayToken(o) {
+  const t = randomBytes(32).toString('base64url');
+  o.payTokenHash = tokenHash(t).toString('hex');
+  return t;
 }
 
 /** The customer's own order by its public ref (an account session instead of the pay token), or null. */
@@ -216,6 +224,10 @@ export async function submit(req, res) {
   const plan = planId ? site.plans.find((p) => p.id === planId) : null;
   if ((planId && !plan) || (kind === 'order' && !plan)) fields.push('plan');
   const message = capped('message', 2000, { required: kind === 'custom', multiline: true });
+  // The website the order came from (docs/API.md "Markets"): 'np' (default) or 'intl'; the plan must be offered there.
+  if (b.market != null && !isMarket(b.market)) fields.push('market');
+  const market = asMarket(b.market);
+  if (plan && kind === 'order' && !planOffered(plan, market)) fields.push('plan');
   if (fields.length) {
     const f = [...new Set(fields)];
     const error = f.length === 1 && f[0] === 'password' ? `Please choose a password of at least ${ACCOUNT_PASSWORD_MIN} characters.` : 'Please check the form.';
@@ -246,7 +258,7 @@ export async function submit(req, res) {
     } else {
       const passwordHash = await hashAccountPassword(rawPassword);
       try {
-        customer = await createCustomer({ email, name, phone, passwordHash });
+        customer = await createCustomer({ email, name, phone, passwordHash, market });
         created = true;
         sendVerify(req, customer).catch(() => {}); // "Confirm your email" (Brevo; nothing when mail is off)
       } catch (err) {
@@ -258,7 +270,7 @@ export async function submit(req, res) {
 
   const payToken = randomBytes(32).toString('base64url'); // 256 bits; only the hash is stored
   const now = new Date().toISOString();
-  const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new' };
+  const order = { id: randomBytes(9).toString('base64url'), at: now, kind, name, phone, message, status: 'new', market };
   if (email) order.email = email;
   if (customer) order.customerId = customer.id;
   if (venue) order.venue = venue;
@@ -304,6 +316,7 @@ export function adminView(o) {
       proofs: (rest.pay.proofs || []).map(({ file, thumb, ...p }) => ({ ...p, url: `/api/admin/orders/${o.id}/proof/${p.n}`, thumb: `/api/admin/orders/${o.id}/proof/${p.n}?size=sm` })),
     };
   }
+  rest.market = orderMarket(o); // 'np' when the order has none (made before markets)
   // PayPal Checkout (lib/payments) paid it: show it as confirmed. 'comped': free access (never counted as money).
   rest.payStatus = payStatusOf(o);
   // per payment: paid, refunded and what can still be refunded; 'partial' / 'full' once money went back
@@ -312,9 +325,11 @@ export function adminView(o) {
   return rest;
 }
 
-/** GET /api/orders (admin): newest first. */
+/** GET /api/orders (admin): newest first. ?market=np|intl: one market only (an order without one is Nepal). */
 export async function list(req, res) {
-  const all = await storedOrders();
+  const m = req.query?.market;
+  if (m != null && m !== '' && !isMarket(m)) throw httpError(400, "market must be 'np' or 'intl'.");
+  const all = (await storedOrders()).filter((o) => !m || orderMarket(o) === m);
   all.sort((x, y) => String(y.at).localeCompare(String(x.at)));
   res.json({ orders: all.map(adminView) });
 }
