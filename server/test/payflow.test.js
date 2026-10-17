@@ -158,7 +158,7 @@ test('orders: prices come from the server, the token is returned once and only i
   assert.match(o.ref, /^NM-\d{5,6}$/);
   assert.match(o.payToken, /^[A-Za-z0-9_-]{43}$/);
   assert.deepEqual(o.amount, { npr: 4999, usd: 99 });
-  assert.deepEqual(o.plan, { id: 'shubha', name: 'Shubha', from: false });
+  assert.deepEqual(o.plan, { id: 'shubha', name: 'Pro', from: false });
   assert.match(o.whatsapp.link, /^https:\/\/wa\.me\/9779806393298\?text=/);
   assert.match(o.whatsapp.text, new RegExp(o.ref));
   assert.equal(o.whatsapp.text.includes(o.payToken), false);

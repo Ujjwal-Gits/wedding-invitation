@@ -347,8 +347,8 @@ function authShowcase() {
   return h('aside.auth__show', { 'aria-label': 'Nimtto invitation designs' },
     h('div.auth__pitch',
       h('p.auth__ne', { lang: 'ne' }, 'हार्दिक निमन्त्रणा'),
-      h('p.auth__line', 'Invitations your guests remember.'),
-      h('p.auth__sub', 'Designs made for Nepali weddings, shared with one link.'),
+      h('p.auth__line', 'Beautiful wedding invitations,', h('br'), 'shared in one link.'),
+      h('p.auth__sub', 'Choose a design, add your names, dates and photos, and send it to every guest.'),
       h('a.auth__browse', { href: '/designs/' }, 'Browse all designs', icon('right', 15))),
     h('div.auth__stage', ...SHOWCASE.map(phone)));
 }

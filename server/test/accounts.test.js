@@ -245,7 +245,7 @@ test('tiers: defaults, the plan must include the design, admin overrides, expose
   assert.equal(r.body.code, 'tier');
   assert.equal(r.body.needs, 'shahi');
   assert.deepEqual(r.body.fields, ['plan']);
-  assert.match(r.body.error, /needs the Shahi plan/);
+  assert.match(r.body.error, /needs the Pro Max plan/);
   assert.equal(b.cookie, '', 'no account made for a refused order');
   assert.equal(store.customerStore.byEmail('tier1@example.com'), null);
   r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'shahi', theme: 'mahal', email: 'tier1@example.com', password: 'tier-pass-1' } });

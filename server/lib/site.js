@@ -26,14 +26,14 @@ const PAYPALME_RE = /^[A-Za-z0-9]{1,40}$/;
 const SITE_V = 2;
 
 const DEFAULT_PLANS = [
-  { id: 'saral', name: 'Saral', nameNe: 'सरल', price: 2999, priceUsd: 49, from: false, currency: 'NPR', note: '',
+  { id: 'saral', name: 'Standard', nameNe: 'सरल', price: 2999, priceUsd: 49, from: false, currency: 'NPR', note: '',
     features: ['A ready-made design', 'Your names, date and venue', 'Guest replies (RSVP)', 'A link to share on WhatsApp'], highlight: false },
-  { id: 'shubha', name: 'Shubha', nameNe: 'शुभ', price: 4999, priceUsd: 99, from: false, currency: 'NPR', note: 'Most couples choose this',
-    features: ['Everything in Saral', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
-  { id: 'shahi', name: 'Shahi', nameNe: 'शाही', price: 6999, priceUsd: 149, from: false, currency: 'NPR', note: '',
-    features: ['Everything in Shubha', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
+  { id: 'shubha', name: 'Pro', nameNe: 'शुभ', price: 4999, priceUsd: 99, from: false, currency: 'NPR', note: 'Most couples choose this',
+    features: ['Everything in Standard', 'Photos and your story', 'Every ceremony with maps', 'Music and the opening scene'], highlight: true },
+  { id: 'shahi', name: 'Pro Max', nameNe: 'शाही', price: 6999, priceUsd: 149, from: false, currency: 'NPR', note: '',
+    features: ['Everything in Pro', 'Premium designs', 'Personal guest links', 'Priority help until the wedding'], highlight: false },
   { id: 'custom', name: 'Custom', nameNe: 'आफ्नै', price: 11111, priceUsd: 199, from: true, currency: 'NPR', note: 'A design made only for you',
-    features: ['A design made for your wedding', 'Your colours, art and wording', 'Everything in Shahi'], highlight: false },
+    features: ['A design made for your wedding', 'Your colours, art and wording', 'Everything in Pro Max'], highlight: false },
 ];
 
 // A plan's name in Nepali (`nameNe`, the website's small Nepali word beside each plan) arrived after the plans did:

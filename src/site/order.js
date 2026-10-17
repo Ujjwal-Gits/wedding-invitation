@@ -120,7 +120,7 @@ function sync() {
   } else note.hidden = true;
   const total = $('#om-total');
   $('#om-total-l').textContent = plan ? `${plan.name} plan${custom ? ', starting price' : ''}` : 'Total';
-  total.textContent = plan?.price != null ? `${plan.from ? 'from ' : ''}${money(plan.price)}` : 'We agree it with you';
+  total.textContent = plan?.price != null ? `${plan.from ? 'from ' : ''}${money(plan.price)}${plan.priceUsd != null ? ` · $${plan.priceUsd}` : ''}` : 'We agree it with you';
   const btn = $('#om-submit');
   if (!S.busy) btn.textContent = plan?.price != null ? 'Continue to payment' : 'Send request';
   $('#om-title').textContent = custom ? 'Ask for a custom design' : 'Order your invitation';

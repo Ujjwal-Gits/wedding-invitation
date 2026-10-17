@@ -23,9 +23,9 @@ export function initRsvp(eventsList = config.events) {
   step.className = 'gstep';
   step.setAttribute('role', 'group');
   step.setAttribute('aria-label', 'Number of guests / पाहुना संख्या');
-  step.innerHTML = `<button type="button" class="gstep__b" data-d="-1" aria-label="One fewer guest">−</button>`
+  step.innerHTML = `<button type="button" class="gstep__b" data-d="-1" aria-label="One fewer guest / एक जना कम">−</button>`
     + `<output class="gstep__v" aria-live="polite">1</output>`
-    + `<button type="button" class="gstep__b" data-d="1" aria-label="One more guest">+</button>`
+    + `<button type="button" class="gstep__b" data-d="1" aria-label="One more guest / एक जना थप">+</button>`
     + `<input type="hidden" name="guests" id="${guests.id}" value="1" />`;
   guests.replaceWith(step);
   const gIn = step.querySelector('input');

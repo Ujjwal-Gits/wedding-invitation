@@ -218,7 +218,7 @@ function dialogs() {
             </div>
             <div class="field">
               <label for="om-phone">WhatsApp number <span class="req" aria-hidden="true">*</span></label>
-              <input id="om-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX" required />
+              <input id="om-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX or +1 555 123 4567" required />
               <p class="field__err" id="om-phone-err" hidden>Please write a phone number we can reach on WhatsApp.</p>
             </div>
           </div>
@@ -255,7 +255,7 @@ function dialogs() {
           </div>
           <div class="field oa-up">
             <label for="oa-phone">WhatsApp number <span class="om__hint">optional</span></label>
-            <input id="oa-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX" />
+            <input id="oa-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="98XXXXXXXX or +1 555 123 4567" />
             <p class="field__err" id="oa-phone-err" hidden>Please write a phone number, or leave it empty.</p>
           </div>
           <div class="field">

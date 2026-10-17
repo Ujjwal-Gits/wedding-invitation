@@ -7,7 +7,7 @@ import { el, icon, ICONS, money, copyButton, waLink, reduced } from './common.js
 import { getPayment, sendProof, paypalCall, paypalConfig } from './api.js';
 
 const MAX_MB = 8;
-const STEPS = ['Order', 'Pay by QR', 'Send screenshot', 'We confirm and start'];
+const STEPS = ['Order', 'Pay', 'We confirm', 'Your plan is active'];
 
 export const payLink = (ref, token) => `${location.origin}/pay/${encodeURIComponent(ref)}${token ? `?t=${encodeURIComponent(token)}` : ''}`;
 

@@ -669,7 +669,7 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
     border-radius: 24px; background: var(--blush-50); border: 1px solid #f6e7eb; overflow: hidden; }
   .auth__pitch { display: grid; gap: 10px; justify-items: start; max-width: 460px; }
   .auth__ne { font-size: 15px; color: var(--accent); line-height: 1.3; }
-  .auth__line { font: 600 clamp(28px, 2.5vw, 38px)/1.12 var(--font-ui); letter-spacing: -0.035em; color: var(--wine); text-wrap: balance; }
+  .auth__line { font: 600 clamp(26px, 2.3vw, 36px)/1.15 var(--font-ui); letter-spacing: -0.035em; color: var(--wine); text-wrap: balance; }
   .auth__sub { font-size: 15px; line-height: 1.5; color: var(--wine-2); }
   .auth__browse { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--accent); font-size: 14px; font-weight: 500; text-decoration: none; }
   .auth__browse svg { transition: transform var(--t) var(--ease-out); }
@@ -677,7 +677,9 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
   .auth__browse:hover svg { transform: translateX(2px); }
 
   /* three phones: the middle one in front, the outer two a little smaller and turned out; a calm blush disc behind */
-  .auth__stage { --pw: min(16.5vw, 31dvh, 300px); flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; padding-bottom: 24px; }
+  /* the phones size to the room left under the text (a size container), so they never cover the words */
+  .auth__stage { container-type: size; flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; margin-top: 12px; padding-bottom: 24px; }
+  .auth__stage > *, .auth__stage::before { --pw: min(16.5vw, 43cqh, 300px); }
   .auth__stage::before { content: ''; position: absolute; width: calc(var(--pw) * 2.3); aspect-ratio: 1; border-radius: 50%; background: var(--blush-100); }
   .auth__phone { position: relative; flex: none; width: var(--pw); aspect-ratio: 1 / 2; margin: 0; border-radius: 15% / 7.5%; background: #241a1e;
     box-shadow: inset 0 0 0 1px #4a3a41, 0 1px 2px rgba(34, 20, 26, 0.08), 0 28px 56px -28px rgba(90, 12, 38, 0.45); }
@@ -693,7 +695,7 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 }
 @media (min-width: 960px) and (max-width: 1199px) {
   .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .auth__stage { --pw: min(19vw, 30dvh, 300px); }
+  .auth__stage > *, .auth__stage::before { --pw: min(19vw, 43cqh, 300px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth__card, .auth__phone { animation: none; }

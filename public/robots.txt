@@ -14,23 +14,53 @@ Allow: /
 Disallow: /api/
 Disallow: /studio/
 Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /api/
 Disallow: /studio/
 Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /i/
+Disallow: /preview/
 
 Sitemap: https://nimtto.com/sitemap.xml
