@@ -51,7 +51,7 @@ export const TITLE = Object.freeze({
   hindu: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' },
   muslim: { en: 'Nikah', ne: 'निकाह' },
   christian: { en: 'Holy Matrimony', ne: 'पवित्र विवाह' },
-  other: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' },
+  other: { en: 'Wedding Celebration', ne: 'शुभ विवाह' }, // neutral in English (international invitations of no stated faith)
 });
 
 const HINDU_INVOCATION = /(?:॥\s*)?(?:ॐ\s*)?श्री\s*गणेशाय\s*नमः?(?:\s*॥)?|(?:Shr[ie]e?|Sri)\s+Ganesh(?:a|aya)\s+Nama[hḥ]?/i;
