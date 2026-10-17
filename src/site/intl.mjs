@@ -31,8 +31,9 @@ const TINTS = ['#EAF1E7', '#F1F5EF', '#E6EFE3', '#EEF2EA'];
 
 /* ---------------- header and footer ---------------- */
 const NAV = [
-  ['intl/designs', 'Designs'], ['intl/occasions', 'Occasions'], ['intl/features', 'Features'],
-  ['intl/how', 'How it works'], ['intl/pricing', 'Pricing'], ['intl/contact', 'Contact'],
+  // same order and labels as the Nepal site's nav, so switching sites feels like one site
+  ['intl/designs', 'Designs'], ['intl/occasions', 'Occasions'], ['intl/how', 'How it works'],
+  ['intl/features', 'Features'], ['intl/pricing', 'Pricing'], ['intl/contact', 'Contact'],
 ];
 /** the page a partial argument names: an INTL_PAGES id or land/<id> */
 const pageOf = (arg) => (arg?.startsWith('land/') ? LANDINGS[arg.slice(5)] : INTL_PAGES[arg]) || null;
@@ -51,7 +52,7 @@ function header(arg = '') {
       <div class="nav__end">
         ${market('mkt--bar', nepal)}
         <a class="nav__auth" href="/studio/" data-auth>Sign in</a>
-        <a class="btn btn--accent btn--sm nav__order" href="${INTL_BASE}pricing/#plans" data-order>Get started</a>
+        <a class="btn btn--accent btn--sm nav__order" href="${INTL_BASE}pricing/#plans" data-order>Order</a>
         <button class="nav__menu" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><span class="nav__menu-i" aria-hidden="true"><i></i><i></i></span><span class="nav__menu-t">Menu</span></button>
       </div>
     </div>
@@ -61,7 +62,7 @@ function header(arg = '') {
         <nav class="sheet__links" aria-label="Main">${links}</nav>
       </div>
       <div class="sheet__end">
-        <a class="btn btn--accent" href="${INTL_BASE}pricing/#plans" data-order>Get started</a>
+        <a class="btn btn--accent" href="${INTL_BASE}pricing/#plans" data-order>Order an invitation</a>
         <a class="btn btn--ghost" href="/studio/" data-auth>Sign in</a>
       </div>
     </div>
