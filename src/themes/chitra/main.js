@@ -6,7 +6,7 @@ import '../../core/base.css';
 import './chitra.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { loadInvitation } from '../../core/data.js';
+import { loadInvitation, afterPaint } from '../../core/data.js';
 import * as photos from '../../photos.js';
 import * as i18n from '../../core/i18n.js';
 import * as shell from '../../core/shell.js';
@@ -210,6 +210,9 @@ async function start() {
   document.querySelector('.gallery__head .display').innerHTML = T('gallery.title');
   document.querySelector('.gallery__head .eyebrow').innerHTML = T('gallery.eyebrow');
   const { player, setChapter } = shell.mountShell({ chapters: PAGES.map((p) => p.name) });
+  // The cover is complete: let the phone paint it before the scenes and their scroll machinery are built below
+  // (seconds of work on a slow phone, none of it visible until the cover opens).
+  if (!mix.gate) await afterPaint();
 
   /* ───────── scenes ───────── */
   const vowEl = document.querySelector('.cap__vowtext');

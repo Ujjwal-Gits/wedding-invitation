@@ -1,6 +1,7 @@
 // The editor's sections. Each returns a DOM node bound to ctx.m (the invitation model).
-import { h, icon, iconBtn, clear, toggle } from './dom.js';
+import { h, icon, iconBtn, clear, toggle, toast, fill } from './dom.js';
 import { textField, biField, repeater, section, group, pathStr } from './fields.js';
+import { DEFAULT_MEALS, MAX_MEALS } from '../core/rsvp-rules.js';
 
 const blank = () => ({ en: '', ne: '' });
 const label = (v, fallback = '') => (v && (v.en || v.ne)) || fallback;
@@ -115,6 +116,43 @@ export function rsvpSection(ctx) {
       biField(m, ['rsvp', 'deadline'], { label: 'Reply-by line', max: 200, placeholderEn: 'Kindly reply by 25 January 2027' }),
       textField(m, ['rsvp', 'maxGuests'], { label: 'Most guests per reply', hint: 'Including the person replying. 1 to 20.', type: 'number', max: 2, inputmode: 'numeric', class: 'field--narrow' }),
     ),
+    rsvpQuestions(m),
+  );
+}
+
+/**
+ * What the reply form asks each party (src/core/rsvp-rules.js): every guest's name, a meal per guest from the
+ * couple's own list (or no meal question), and the optional dietary-needs and song-request boxes.
+ */
+export function rsvpQuestions(m) {
+  if (!m.data.rsvp || typeof m.data.rsvp !== 'object') m.data.rsvp = {};
+  // The built-in two choices, made editable (the server does not store them while they are unchanged).
+  if (!Array.isArray(m.data.rsvp.meals) || !m.data.rsvp.meals.length) m.data.rsvp.meals = DEFAULT_MEALS.map((o) => ({ id: o.id, label: { ...o.label } }));
+  const mode = () => m.get(['rsvp', 'guestNames']) || 'optional';
+  const names = h('div.seg', { role: 'group', 'aria-label': 'Each guest’s name' });
+  const drawNames = () => fill(names, [['optional', 'Ask, optional'], ['required', 'Ask, required'], ['off', 'Don’t ask']].map(([v, t]) => h('button.seg__btn', {
+    type: 'button', 'aria-pressed': String(mode() === v), onclick: () => { m.set(['rsvp', 'guestNames'], v); drawNames(); },
+  }, t)));
+  drawNames();
+  const meals = repeater(m, ['rsvp', 'meals'], {
+    itemName: 'meal choice', addLabel: 'Add a meal choice', max: MAX_MEALS, empty: 'No meal choices yet.',
+    title: (o) => label(o.label, 'New meal choice'),
+    create: () => ({ id: `meal-${Math.random().toString(36).slice(2, 8)}`, label: blank() }),
+    confirmRemove: async () => {
+      if ((m.get(['rsvp', 'meals']) || []).length > 1) return true;
+      toast('Keep at least one choice, or switch off the meal question.', 'error');
+      return false;
+    },
+    render: (i) => [biField(m, ['rsvp', 'meals', i, 'label'], { label: 'Choice', max: 60, placeholderEn: 'Chicken', placeholderNe: 'कुखुराको मासु' })],
+  });
+  const mealBox = h('div.stack', { hidden: m.get(['rsvp', 'mealChoice']) === false },
+    h('p.hint', 'Guests choose one for each person in their party; nothing is picked for them. Leave नेपाली empty to show the English words.'), meals);
+  return group('Questions for guests',
+    h('div.field', h('span.label', 'Each guest’s name'), h('p.hint', 'A name box for everyone after the person replying.'), names),
+    toggle({ label: 'Ask each guest’s meal', checked: m.get(['rsvp', 'mealChoice']) !== false, onChange: (v) => { m.set(['rsvp', 'mealChoice'], v); mealBox.hidden = !v; } }),
+    mealBox,
+    toggle({ label: 'Dietary needs and allergies', hint: 'An optional note box.', checked: m.get(['rsvp', 'askDiet']) === true, onChange: (v) => m.set(['rsvp', 'askDiet'], v) }),
+    toggle({ label: 'Song request', hint: 'An optional box for a song they would love to hear.', checked: m.get(['rsvp', 'askSong']) === true, onChange: (v) => m.set(['rsvp', 'askSong'], v) }),
   );
 }
 

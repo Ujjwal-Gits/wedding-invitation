@@ -246,12 +246,32 @@ function applyThemeColors() {
  * the library, first song first; a real invitation keeps the couple's songs but drops library songs the planner
  * turned off or deleted (their own uploads stay), and falls back to the library when none are left.
  */
+/**
+ * Data the server put in a guest's page (lib/gate.js: <script type="application/json">), read once and removed, so
+ * the first screen does not wait for the API. null when absent or unreadable: the page then asks the API as before.
+ */
+function pageData(elId, id) {
+  const el = document.getElementById(elId);
+  if (!el) return null;
+  el.remove();
+  if (id != null && el.dataset.id !== id) return null;
+  try { return JSON.parse(el.textContent); } catch { return null; }
+}
+
+/** The music list: from the page, or one request started once (in parallel with the invitation's own data). */
+let musicList = null;
+const loadMusicList = () => (musicList ||= (async () => {
+  const inPage = pageData('nimtto-music');
+  if (isPlain(inPage)) return inPage;
+  const res = await fetch('/api/music', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(3000) });
+  return res.ok ? res.json() : null;
+})().catch(() => null));
+
 async function applyLibraryMusic(real) {
   let lib;
   try {
-    const res = await fetch('/api/music', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(3000) });
-    if (!res.ok) return;
-    const out = await res.json();
+    const out = await loadMusicList();
+    if (!out) return;
     const moods = new Map((out.moods || []).map((m) => [m.id, m]));
     lib = (out.tracks || []).filter((t) => t?.src).map((t) => ({ title: { en: t.title || '', ne: t.titleNe || '' }, mood: { en: moods.get(t.mood)?.en || '', ne: moods.get(t.mood)?.ne || '' }, src: t.src, credit: t.credit || '' }));
   } catch { return; } // offline: keep what the page has
@@ -264,6 +284,15 @@ async function applyLibraryMusic(real) {
   const kept = (Array.isArray(config.music.tracks) ? config.music.tracks : []).filter((t) => !isLibrary(t?.src) || on.has(t.src));
   config.music.tracks = kept.length ? kept : structuredClone(lib);
 }
+
+/**
+ * Resolves once the browser has painted what is on the page now. A theme awaits it after its opening is in place and
+ * before heavy setup the guest cannot see yet, so a phone shows the opening first. (rAF does not run in a hidden tab.)
+ */
+export const afterPaint = () => new Promise((resolve) => {
+  const t = setTimeout(resolve, 500);
+  requestAnimationFrame(() => setTimeout(() => { clearTimeout(t); resolve(); }, 0));
+});
 
 export async function loadInvitation() {
   const id = params.get('id');
@@ -278,7 +307,12 @@ export async function loadInvitation() {
   } else if (params.has('id')) {
     // A real invitation: its own data, or a "not available" card. Never the demo couple.
     let problem = 'missing';
-    if (validId) {
+    loadMusicList(); // starts now, read below
+    const inPage = validId ? pageData('nimtto-data', id) : null;
+    if (isPlain(inPage) && isPlain(inPage.couple)) {
+      replaceConfig(normalisePreview(inPage, id));
+      problem = null;
+    } else if (validId) {
       try {
         const res = await fetch(`/api/invitations/${id}/public`, { headers: { Accept: 'application/json' } });
         if (res.ok) {

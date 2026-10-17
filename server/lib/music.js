@@ -62,11 +62,16 @@ function tracksOf(doc) {
 
 const publicTrack = ({ id, title, titleNe, artist, mood, duration, src, credit, builtin }) => ({ id, title, titleNe, artist, mood, duration, src, credit, builtin });
 
-/** GET /api/music (public): the enabled tracks, in order, and the moods to group them by. */
+/** The enabled tracks, in order, and the moods to group them by (GET /api/music; lib/gate.js puts it in the page). */
+export async function publicMusic() {
+  return { moods: MUSIC_MOODS, tracks: tracksOf(await readDoc()).filter((t) => t.enabled).map(publicTrack) };
+}
+
+/** GET /api/music (public). */
 export async function publicList(req, res) {
-  const tracks = tracksOf(await readDoc()).filter((t) => t.enabled).map(publicTrack);
+  const out = await publicMusic();
   res.set('Cache-Control', 'no-cache');
-  res.json({ moods: MUSIC_MOODS, tracks });
+  res.json(out);
 }
 
 /** GET /api/admin/music: every track, with enabled and builtin. */

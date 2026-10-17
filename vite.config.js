@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { readdirSync, existsSync } from 'node:fs';
 import { config } from './src/config.js';
 import { renderPartials } from './src/site/partials.mjs';
+import googleFonts from './scripts/vite-google-fonts.mjs';
 
 const root = import.meta.dirname;
 const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -72,7 +73,7 @@ const payRoute = () => {
 };
 
 export default defineConfig({
-  plugins: [sitePartials(), shareMeta(), payRoute()],
+  plugins: [sitePartials(), shareMeta(), payRoute(), googleFonts({ root })],
   server: {
     // A fixed port of its own, so it never silently lands on another project's dev server.
     port: 5190,

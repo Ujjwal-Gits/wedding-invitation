@@ -9,6 +9,7 @@ import { COLOR_TOKEN_RE, COLOR_HEX_RE } from './slots.js';
 import { cleanDesign } from '../../src/core/mix-rules.js';
 import { isReligion } from '../../src/core/faith.js';
 import { DEFAULT_TZ, isTimeZone } from '../../src/core/tz.js';
+import { MEAL_ID_RE, MAX_MEALS, GUEST_NAME_MODES, isDefaultMeals } from '../../src/core/rsvp-rules.js';
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -384,8 +385,34 @@ export function sanitizeInvitation(input, slug, slots = { manifests: {}, vocab: 
     else c.fail('occasion', 'must be a known occasion such as birthday or baby-shower');
   }
 
+  rsvpQuestionsOf(c, rsvp, out.rsvp);
+
   if (c.errors.length) throw new ValidationError(c.errors.slice(0, 50));
   return out;
+}
+
+/**
+ * What the reply form asks besides the basics (src/core/rsvp-rules.js). Each key is stored only when it differs
+ * from the default, so an invitation saved before these existed compares equal and its guests see the same form.
+ */
+function rsvpQuestionsOf(c, rsvp, out) {
+  if (rsvp.meals != null) {
+    const meals = list(c, rsvp.meals, 'rsvp.meals', MAX_MEALS, (m, p) => ({
+      id: typeof m.id === 'string' && MEAL_ID_RE.test(m.id) ? m.id : c.fail(`${p}.id`, 'must be 1-32 lowercase letters, digits or hyphens') ?? '',
+      label: bi(c, m.label, `${p}.label`, 60),
+    }));
+    const ids = meals.map((m) => m.id);
+    if (new Set(ids).size !== ids.length) c.fail('rsvp.meals', 'two meal choices have the same id');
+    if (meals.length && !isDefaultMeals(meals)) out.meals = meals;
+  }
+  if (rsvp.mealChoice === false) out.mealChoice = false;
+  else if (rsvp.mealChoice != null && rsvp.mealChoice !== true) c.fail('rsvp.mealChoice', 'must be true or false');
+  if (rsvp.guestNames != null && rsvp.guestNames !== '' && rsvp.guestNames !== 'optional') {
+    if (GUEST_NAME_MODES.includes(rsvp.guestNames)) out.guestNames = rsvp.guestNames;
+    else c.fail('rsvp.guestNames', "must be 'optional', 'required' or 'off'");
+  }
+  if (rsvp.askDiet === true) out.askDiet = true;
+  if (rsvp.askSong === true) out.askSong = true;
 }
 
 /** Human-readable list of what is missing before publishing. Only the names and the main date are required. */

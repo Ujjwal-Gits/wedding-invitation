@@ -104,7 +104,8 @@ export function buildGate(W, H, r, { reduced = false, decor = DECOR, mask = fals
   leavesEl.style.perspective = px(iw * 2.4);
   place(leafL, 0, 0, (lxc - lx0) * iw, (ly1 - ly0) * ih);
   place(leafR, (lxc - lx0) * iw, 0, (lx1 - lxc) * iw, (ly1 - ly0) * ih);
-  const leaf = (side, big, sm, w) => `<img class="mh-leaf__img" ${pic(`gate-leaf-${side}`, big, sm, w)} />${mask
+  // the two leaves are the largest pieces of the first screen: fetched first, with the frame
+  const leaf = (side, big, sm, w) => `<img class="mh-leaf__img" ${pic(`gate-leaf-${side}`, big, sm, w)} fetchpriority="high" />${mask
     ? `<i class="mh-leaf__dark mh-leaf__dark--mask" style="--m:url('${decor}gate-leaf-${side}-sm.webp')"></i>`
     : `<img class="mh-leaf__img mh-leaf__dark" ${pic(`gate-leaf-${side}`, big, sm, w)} />`}`;
   leafL.innerHTML = leaf('l', 343, 189, (lxc - lx0) * iw);
