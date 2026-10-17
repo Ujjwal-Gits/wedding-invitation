@@ -9,6 +9,7 @@ import { phoneStill } from './stills.js';
 import { OCCASIONS, STEPS, FEATURES, faqItems, SITE_URL } from './content.mjs';
 import { pageMeta } from './seo.mjs';
 import { qrSvg } from '../studio/qr.js';
+import { INTL_PARTIALS } from './intl.mjs';
 
 const here = import.meta.dirname;
 const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
@@ -445,7 +446,7 @@ function crumbs(arg = '') {
   ] });
 }
 
-export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr };
+export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {
