@@ -458,7 +458,7 @@ export async function me(req, res) {
   // ?soft=1 (the website's nav): signed out is a normal answer, not an error.
   if (!req.session) return req.query.soft != null ? res.json({ role: null }) : res.status(401).json({ error: 'Not signed in.' });
   const s = req.session;
-  if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, csrf: s.csrf, market: await marketOfCustomer(req.customer) });
+  if (s.role === 'customer') return res.json({ role: 'customer', name: req.customer.name || '', email: req.customer.email, phone: req.customer.phone || '', csrf: s.csrf, market: await marketOfCustomer(req.customer) });
   if (s.role !== 'client') return res.json(adminMe(req.admin, s.csrf));
   const doc = await peekInvitation(s.slug);
   if (!linkActive(doc, s)) {

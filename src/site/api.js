@@ -36,7 +36,16 @@ function normPlan(p) {
     features: Array.isArray(p.features) ? p.features.map((f) => str(f, 120)).filter(Boolean).slice(0, 20) : [],
     highlight: Boolean(p.highlight),
     includes: TIER_RANK[p.includes] ? p.includes : (id === 'custom' || p.from ? 'shahi' : TIER_RANK[id] ? id : 'shahi'),
+    // the markets the plan is offered on (docs/API.md "Markets"); missing: both
+    markets: Array.isArray(p.markets) && p.markets.some((m) => m === 'np' || m === 'intl') ? p.markets.filter((m) => m === 'np' || m === 'intl') : ['np', 'intl'],
   };
+}
+/** the plans offered on one market */
+export const plansFor = (site, market) => (site?.plans || []).filter((p) => p.markets.includes(market === 'intl' ? 'intl' : 'np'));
+/** one market's contact (GET /api/site `markets`): the International website falls back to Nepal's on the server */
+function marketContact(raw, market) {
+  const c = raw?.markets?.[market]?.contact;
+  return isObj(c) && Object.values(c).some(Boolean) ? c : null;
 }
 function normMethod(m) {
   if (!isObj(m)) return null;
@@ -69,6 +78,7 @@ export async function loadSite() {
     plans: plans.length ? plans : FALLBACK_SITE.plans.map(normPlan),
     paymentMethods: methods.length ? methods : FALLBACK_SITE.paymentMethods.map(normMethod),
     contact: Object.values(contact).some(Boolean) ? contact : FALLBACK_SITE.contact,
+    contactIntl: marketContact(src, 'intl'),
     hero: isObj(raw?.hero) ? raw.hero : {},
     hiddenThemes: Array.isArray(raw?.hiddenThemes) ? raw.hiddenThemes : [],
     featuredThemes: Array.isArray(raw?.featuredThemes) ? raw.featuredThemes : [],
@@ -113,8 +123,6 @@ export function normaliseThemes(api, site) {
 export async function loadThemes(site) {
   return normaliseThemes(await getJson('/api/themes', 4000), site);
 }
-/** GET /api/themes as it came (the international catalog reads its own fields), or null */
-export const loadThemesRaw = () => getJson('/api/themes', 4000);
 
 /* ---------------- orders and payment ---------------- */
 async function send(url, init) {
@@ -173,6 +181,7 @@ export function normPay(d, ref) {
   const proof = proofs.length ? proofs[proofs.length - 1] : isObj(order.proof) ? order.proof : null;
   return {
     ref: str(order.ref, 40) || ref,
+    market: (d.market ?? order.market) === 'intl' ? 'intl' : 'np', // the site it was ordered on: card or PayPal first for 'intl'
     status: str(order.status, 40) || (proof ? 'proof_submitted' : 'awaiting_payment'),
     reason: str(order.reason, 300),
     canUpload: order.canUpload !== false,

@@ -1,4 +1,4 @@
-/* The international site (/intl-preview/): the same design system as every Nimtto page, re-toned. The romantic
+/* The international site (/international/ and its pages): the same design system as every Nimtto page, re-toned. The romantic
    crimson and blush become one fresh sage accent on white with soft sage tints; champagne gold only for small
    details. Everything is scoped to body.market-intl, so no other page changes. Contrast on white: accent 5.3:1,
    ink-2 8.6:1, ink-3 5.6:1 (5.0:1 on sage-100). */
@@ -30,17 +30,7 @@
 /* tiers: Standard, Pro, Pro Max */
 .market-intl .tier--shahi { background: var(--night); color: #EBD9AE; }
 
-/* ---------------- the market switch: International | Nepal ---------------- */
-.mkt { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--blush-50); border: 1px solid var(--line-2); font-size: 13px; font-weight: 500; }
-.mkt__a { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; color: var(--ink-2); text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
-.mkt__a:hover { color: var(--accent); }
-.mkt__a[aria-current='page'] { background: #fff; color: var(--accent); box-shadow: 0 1px 2px rgba(23, 32, 26, 0.08), inset 0 0 0 1px var(--line-2); }
-.mkt--bar { display: none; }
-.mkt--sheet { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: 16px; font-size: 15px; }
-.mkt--sheet .mkt__a { justify-content: center; min-height: 44px; padding: 0 12px; }
-.mkt--sheet .mkt__a[aria-current='page'] { background: var(--accent); color: #fff; box-shadow: none; }
-.sheet__top { display: grid; }
-@media (min-width: 1080px) { .mkt--bar { display: inline-flex; margin-right: 4px; } }
+/* ---------------- the market switch: International | Nepal (its styles: pages.css, the legal pages use it too) ---------------- */
 @media (min-width: 1080px) and (max-width: 1279px) { .market-intl .nav__links a { padding: 8px 10px; font-size: 14.5px; } .market-intl .nav__in { gap: 16px; } }
 
 /* ---------------- hero: the sage glow under the phones ---------------- */

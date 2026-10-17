@@ -12,7 +12,8 @@ const ORDER = ['saral', 'shubha', 'shahi', 'custom'];
 
 /** The plans to show, in order, each as { id, name, usd, from, highlight, desc, features }. Plans without a USD price are left out. */
 export function intlPlans(plans) {
-  const list = (plans || []).filter((p) => p && INTL_NAME[p.id] && p.priceUsd != null);
+  // only the plans offered on the international site (a plan without `markets` is offered on both)
+  const list = (plans || []).filter((p) => p && INTL_NAME[p.id] && p.priceUsd != null && (!Array.isArray(p.markets) || p.markets.includes('intl')));
   // the planner's names (Saral, Shubha ...) appear inside feature lines ("Everything in Saral"): use ours
   const rename = (s) => list.reduce((t, p) => (p.name ? t.split(p.name).join(INTL_NAME[p.id]) : t), String(s))
     .replace(/\bon WhatsApp\b/g, 'anywhere')

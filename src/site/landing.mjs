@@ -122,7 +122,7 @@ function body(id) {
   const steps = (l.steps || []).map((s, i) => `<li class="step"><span class="step__n">${String(i + 1).padStart(2, '0')}</span><h3 class="step__t">${esc(s.t)}</h3><p class="step__d">${esc(s.d)}</p></li>`).join('');
   const faqItems = (l.faq || []).map(([q, a]) => ({ q, a: fill(l, a, false), aHtml: fill(l, a, true) }));
   const related = (l.related || []).map((r) => LANDINGS[r]).filter(Boolean);
-  const links = [...(l.links || []), ...related.map((r) => [r.h1.replace(/<[^>]+>/g, ''), r.path])];
+  const links = [...(l.links || []), ...related.map((r) => [r.eyebrow, r.path])];
   return `<div class="wrap">
       <nav class="crumbs dp-crumbs" aria-label="Breadcrumb"><ol>${crumbHtml}</ol></nav>
     </div>
@@ -151,7 +151,7 @@ function body(id) {
     <section class="sec" aria-label="Good to know">
       <div class="wrap lp-ans">
         ${(l.answers || []).map(([q, a]) => `<article class="lp-ans__i"><h2 class="h3 lp-ans__q">${esc(q)}</h2><p class="lp-ans__a">${fill(l, a)}</p></article>`).join('')}
-        <aside class="lp-ideas" aria-labelledby="lp-ideas-h"><h2 class="lp-ideas__h" id="lp-ideas-h">${esc(l.ideasTitle)}</h2><ul class="occ__chips lp-ideas__list">${(l.ideas || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></aside>
+        <aside class="lp-ideas" aria-labelledby="lp-ideas-h"><h2 class="lp-ideas__h" id="lp-ideas-h">${esc(l.ideasTitle)}</h2><ul class="lp-ideas__list">${(l.ideas || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></aside>
       </div>
     </section>
 

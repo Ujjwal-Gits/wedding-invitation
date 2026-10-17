@@ -22,7 +22,21 @@ const ALIAS = {
 };
 const COUNTRIES = new Set(getCountries());
 
-const flag = (cc) => String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+const emojiFlag = (cc) => String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+/** Windows has no flag emoji (it draws two grey letters): there, the country code itself (US, NP) is the flag. */
+const flagsDraw = (() => {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 20; c.height = 20;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.font = '16px sans-serif';
+    x.fillText(emojiFlag('US'), 0, 16);
+    const d = x.getImageData(0, 0, 20, 20).data;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0 && (d[i] !== d[i + 1] || d[i + 1] !== d[i + 2])) return true; // colour: a real flag
+    return false;
+  } catch { return false; }
+})();
+const flag = (cc) => (flagsDraw ? emojiFlag(cc) : cc);
 let names = null;
 const nameOf = (cc) => {
   try { names ||= new Intl.DisplayNames(['en'], { type: 'region' }); return names.of(cc) || cc; } catch { return cc; }
@@ -57,11 +71,11 @@ function options() {
 /**
  * Turns <input type="tel"> into the phone field (once; later calls return the same handle). The input keeps its id,
  * name and label and holds the national number; read the number with handle.e164().
- * Options: country (ISO code to start with).
+ * Options: country (ISO code to start with, before the visitor's last choice), fallback (after it; else the site's).
  */
-export function phoneField(input, { country = '' } = {}) {
+export function phoneField(input, { country = '', fallback = '' } = {}) {
   if (input.__phone) return input.__phone;
-  const start = [country, remembered(), siteCountry()].find((c) => CC_RE.test(c || '') && COUNTRIES.has(c));
+  const start = [country, remembered(), fallback, siteCountry()].find((c) => CC_RE.test(c || '') && COUNTRIES.has(c));
   const sel = el('select', { class: input.className || 'input', id: input.id ? `${input.id}-cc` : null, 'aria-label': 'Country code', autocomplete: 'tel-country-code' });
   const { top, rest, opt } = options();
   sel.append(el('optgroup', { label: 'Popular' }, top.map(opt)), el('optgroup', { label: 'All countries' }, rest.map(opt)));

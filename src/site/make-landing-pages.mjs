@@ -5,11 +5,11 @@
 // Run after changing a landing page, a slug or any page copy:  node src/site/make-landing-pages.mjs
 // (designs/<slug>/ pages come from make-design-pages.mjs; run that first after adding a design.)
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { resolve } from 'node:path';
 import { LANDINGS } from './landings.mjs';
 import { pageMeta, checkLengths, PAGES, LEGAL } from './seo.mjs';
 import { INTL_PAGES, FAQ_SETS, faqList, fillUsd, EVENTS } from './intl-content.mjs';
-import { FAQ, faqItems, fillPlans, OCCASIONS, SITE_URL } from './content.mjs';
+import { faqItems, fillPlans, OCCASIONS, SITE_URL } from './content.mjs';
 import { THEMES, FALLBACK_SITE, TIER_LABEL } from './themes.js';
 import { phoneStill } from './stills.js';
 import { intlPlans, usdText } from './intl-plans.js';

@@ -148,3 +148,5 @@
 .ppbox__msg.is-bad { color: #a3112b; }
 .ppbox__safe { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 13px; color: var(--ink-3, #7a6a70); }
 .ppbox__safe svg { flex: none; width: 16px; height: 16px; margin-top: 2px; color: #1f7a4d; }
+.ppbox__legal { margin: 0; font-size: 13px; color: var(--ink-3, #7a6a70); }
+.ppbox__legal a { color: inherit; }

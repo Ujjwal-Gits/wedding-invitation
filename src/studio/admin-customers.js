@@ -136,17 +136,21 @@ function linkDialog(ctx, c, invitations, current = null) {
 function newAccountDialog() {
   const email = h('input.input', { id: 'na-email', type: 'email', maxlength: 254, autocomplete: 'off', required: true });
   const name = h('input.input', { id: 'na-name', maxlength: 80, autocomplete: 'off', required: true });
-  const phone = h('input.input', { id: 'na-phone', type: 'tel', maxlength: 20, autocomplete: 'off', placeholder: '+977 98… or +1 …' });
+  const phone = h('input.input', { id: 'na-phone', type: 'tel', maxlength: 24, autocomplete: 'off', required: true });
   const market = h('select.input', { id: 'na-market' }, [['np', 'Nepal'], ['intl', 'International']].map(([v, t]) => h('option', { value: v }, t)));
+  // the country picker and the number check (src/ui/phone.js, loaded when the dialog opens); Nepal +977 unless chosen
+  let ph = null;
+  import('../ui/phone.js').then((m) => { if (phone.isConnected) ph = m.phoneField(phone, { fallback: 'NP' }); }).catch(() => {});
   const pw = pwInput('na-pw', 'Password', 'Send it to them separately. They can change it after signing in.');
   return formDialog({
     title: 'New customer account', submitText: 'Create account',
     fields: [h('div.field', h('label.label', { for: 'na-email' }, 'Email'), email), h('div.field', h('label.label', { for: 'na-name' }, 'Name'), name),
-      h('div.cu-two', h('div.field', h('label.label', { for: 'na-phone' }, 'Phone or WhatsApp (optional)'), phone),
+      h('div.cu-two', h('div.field', h('label.label', { for: 'na-phone' }, 'Phone or WhatsApp'), phone),
         h('div.field', h('label.label', { for: 'na-market' }, 'Market'), market, h('p.hint', 'International: dollars, English only.'))), pw.el],
     submit: async () => {
       if (pw.input.value.trim().length < 8) throw new Error('The password needs at least 8 characters.');
-      const out = await api('/admin/customers', { method: 'POST', body: { email: email.value, name: name.value, phone: phone.value, market: market.value, password: pw.input.value.trim() } })
+      if (ph ? !ph.valid() : phone.value.trim().length < 6) { phone.focus(); throw new Error('Enter a valid phone number with country code.'); }
+      const out = await api('/admin/customers', { method: 'POST', body: { email: email.value, name: name.value, phone: ph ? ph.e164() : phone.value, market: market.value, password: pw.input.value.trim() } })
         .catch((ex) => { throw new Error(ex.body?.errors?.map((x) => `${x.path} ${x.message}`).join(', ') || ex.message); });
       return { customer: out.customer, password: pw.input.value.trim() };
     },

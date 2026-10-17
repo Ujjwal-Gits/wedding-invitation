@@ -1,14 +1,16 @@
 // The account step before the order form (markup: src/site/partials.mjs `dialogs`, #oa). A visitor who is not
-// signed in makes an account here (POST /api/auth/signup: name, email, WhatsApp optional, password) or switches to
-// "Sign in" (POST /api/auth/login: email, password) in the same dialog. Both sign this browser in (session cookie) and
-// answer { role, name, email, csrf }; the order form then needs no email or password. Text only, never HTML.
-import { $, $$, validEmail } from './common.js';
+// signed in makes an account here (POST /api/auth/signup: name, email, phone with its country code, password, and
+// the market of the site they are on) or switches to "Sign in" (POST /api/auth/login: email, password) in the same
+// dialog. Both sign this browser in (session cookie) and answer { role, name, email, csrf }; the order form then needs
+// no email or password. The phone field is src/ui/phone.js (Nepal +977 on nimtto.com, United States +1 on
+// /international/). Text only, never HTML.
+import { $, $$, validEmail, MARKET } from './common.js';
+import { phoneField, PHONE_MSG } from '../ui/phone.js';
 
 const dlg = $('#oa');
 const form = $('#oa-form');
 const F = form?.elements;
-const S = { mode: 'up', busy: false, built: false, done: null, opener: null, ok: false };
-const PHONE_RE = /^[0-9+()\-\s]{6,20}$/;
+const S = { mode: 'up', busy: false, built: false, done: null, opener: null, ok: false, phone: null };
 
 const MODES = {
   up: { title: 'Make your account', submit: 'Make account and continue', busy: 'Making your account…', switchT: 'Already have an account?', switchB: 'Sign in', pw: 'new-password' },
@@ -46,12 +48,11 @@ function fieldError(name, msg) {
 
 function validate() {
   const up = S.mode === 'up';
-  const phone = F.phone.value.trim();
   const pw = F.password.value;
   const ok = [
     fieldError('name', up && F.name.value.trim().length < 2),
     fieldError('email', !validEmail(F.email.value.trim())),
-    fieldError('phone', up && phone !== '' && (!PHONE_RE.test(phone) || phone.replace(/\D/g, '').length < 7)),
+    fieldError('phone', up && !S.phone?.valid() && PHONE_MSG),
     fieldError('password', up ? (pw.length < 8 || pw.length > 128) && 'Please choose a password of 8 or more characters.' : !pw && 'Please write your password.'),
   ];
   return ok.every(Boolean);
@@ -83,7 +84,7 @@ async function submit(e) {
   const up = S.mode === 'up';
   const email = F.email.value.trim();
   const body = up
-    ? { name: F.name.value.trim(), email, password: F.password.value, ...(F.phone.value.trim() ? { phone: F.phone.value.trim() } : {}) }
+    ? { name: F.name.value.trim(), email, password: F.password.value, phone: S.phone.e164(), market: MARKET }
     : { email, password: F.password.value };
   const btn = $('#oa-submit');
   S.busy = true;
@@ -113,7 +114,7 @@ async function submit(e) {
   if (r.status === 401) { fieldError('password', 'That email and password do not match.'); F.password.focus(); return; }
   if (r.status === 429) { showError('Too many tries from this connection. Please wait a few minutes and try again.'); return; }
   if (r.status === 400 && Array.isArray(d.fields)) {
-    d.fields.filter((f) => ['name', 'email', 'phone', 'password'].includes(f)).forEach((f) => fieldError(f, true));
+    d.fields.filter((f) => ['name', 'email', 'phone', 'password'].includes(f)).forEach((f) => fieldError(f, f === 'phone' ? PHONE_MSG : true));
     form.querySelector('[aria-invalid="true"]')?.focus();
     showError(short(d.error, 'Please check the fields in red.'));
     return;
@@ -125,6 +126,7 @@ async function submit(e) {
 function build() {
   if (S.built || !form) return;
   S.built = true;
+  S.phone = phoneField(F.phone);
   form.addEventListener('submit', submit);
   $('#oa-switch').addEventListener('click', () => { setMode(S.mode === 'up' ? 'in' : 'up'); (S.mode === 'up' ? F.name : F.email).focus(); });
   for (const name of ['name', 'email', 'phone', 'password']) {

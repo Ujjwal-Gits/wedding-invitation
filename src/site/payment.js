@@ -76,15 +76,22 @@ function errorView(status, ref, wa) {
 
 /* ---------------- step 2 and 3: pay by QR, then send the screenshot ---------------- */
 function payView(info, ref, token, wa, onSent) {
-  // PayPal checkout (cards too) replaces a PayPal QR when it is on: one way to pay from abroad
+  // PayPal checkout (cards too) replaces a PayPal QR when it is on: one way to pay from abroad. An order from the
+  // international site shows "Card or PayPal" first and in dollars; the QR methods come second.
+  const intl = info.market === 'intl';
   const checkout = info.paypalCheckout && info.amount.usd != null;
-  const methods = [...info.methods.filter((m) => m.qr && !(checkout && m.kind === 'paypal')),
-    ...(checkout ? [{ id: 'paypal-checkout', label: 'PayPal or card', kind: 'checkout', currency: 'USD' }] : [])];
+  const card = checkout ? [{ id: 'paypal-checkout', label: intl ? 'Card or PayPal' : 'PayPal or card', kind: 'checkout', currency: 'USD' }] : [];
+  const qrs = info.methods.filter((m) => m.qr && !(checkout && m.kind === 'paypal'));
+  // international: card or PayPal first, then any dollar method (a PayPal QR), the Nepal wallets last
+  const methods = intl ? [...card, ...qrs.filter((m) => m.currency === 'USD'), ...qrs.filter((m) => m.currency !== 'USD')] : [...qrs, ...card];
+  const usdFirst = intl && info.amount.usd != null;
   const priced = info.amount.npr != null;
   const head = el('header', { class: 'pay__head' },
     el('p', { class: 'pay__saved' }, icon(ICONS.check), el('span', {}, 'Order ', el('b', { text: ref }), ' is saved')),
-    el('h3', { class: 'pay__title', text: priced ? `Pay ${money(info.amount.npr)}` : 'Pay for your order' }),
-    el('p', { class: 'pay__plan', text: [info.plan?.name ? `${info.plan.name} plan` : '', info.amount.usd != null ? `or ${money(info.amount.usd, 'USD')} by PayPal from abroad` : ''].filter(Boolean).join(' · ') }));
+    el('h3', { class: 'pay__title', text: usdFirst ? `Pay $${info.amount.usd}` : priced ? `Pay ${money(info.amount.npr)}` : 'Pay for your order' }),
+    el('p', { class: 'pay__plan', text: usdFirst
+      ? [info.plan?.name ? `${info.plan.name} plan` : '', 'paid once, by card or PayPal'].filter(Boolean).join(' · ')
+      : [info.plan?.name ? `${info.plan.name} plan` : '', info.amount.usd != null ? `or ${money(info.amount.usd, 'USD')} by PayPal from abroad` : ''].filter(Boolean).join(' · ') }));
 
   if (!methods.length) {
     return el('div', { class: 'pay' }, stepsLine(1), head,
@@ -98,7 +105,7 @@ function payView(info, ref, token, wa, onSent) {
     el('span', { class: 'method__box' },
       el('span', { class: `method__logo method__logo--${m.id}`, 'aria-hidden': 'true', text: m.label.slice(0, 1) }),
       el('span', { class: 'method__t' }, el('span', { class: 'method__name', text: m.label }),
-        el('span', { class: 'method__sub', text: m.kind === 'checkout' ? `From abroad: PayPal, Visa, Mastercard · ${money(info.amount.usd, 'USD')}` : m.currency === 'USD' ? 'From abroad, in US dollars' : m.kind === 'bank' ? 'Any mobile banking app' : 'Wallet app' }))))));
+        el('span', { class: 'method__sub', text: m.kind === 'checkout' ? `${intl ? 'Visa, Mastercard or PayPal' : 'From abroad: PayPal, Visa, Mastercard'} · ${money(info.amount.usd, 'USD')}` : m.currency === 'USD' ? 'From abroad, in US dollars' : m.kind === 'bank' ? `${intl ? 'In Nepal: ' : ''}Any mobile banking app` : `${intl ? 'In Nepal: ' : ''}Wallet app` }))))));
   const methodsBox = el('fieldset', { class: 'methods' }, el('legend', { class: 'pay__label', text: '1. Choose how to pay' }), radios);
 
   const qrImg = el('img', { class: 'qr__img', width: 320, height: 320, alt: '', decoding: 'async' });
@@ -301,7 +308,11 @@ function checkoutBox(info, ref, token, onPaid) {
       el('h4', { class: 'pay__label', id: `pp-h-${ref}`, text: '2. Pay with PayPal or a card' }), testChip),
     el('p', { class: 'ppbox__amt' }, el('b', { text: money(info.amount.usd, 'USD') }), el('span', { text: ` ${info.plan?.name ? `· ${info.plan.name} plan` : ''}` })),
     buttons, msg,
-    el('p', { class: 'ppbox__safe' }, icon(ICONS.check), el('span', { text: 'Secure checkout by PayPal. We never see your card number or PayPal password. Your plan switches on as soon as the payment goes through.' })));
+    el('p', { class: 'ppbox__safe' }, icon(ICONS.check), el('span', { text: 'Secure checkout by PayPal. We never see your card number or PayPal password. Your plan switches on as soon as the payment goes through.' })),
+    // the policies, next to the buttons (Terms, Privacy, Refunds)
+    el('p', { class: 'ppbox__legal' }, document.createTextNode('By paying you agree to our '), el('a', { href: '/terms/', target: '_blank', rel: 'noopener', text: 'Terms' }),
+      document.createTextNode(' and '), el('a', { href: '/refunds/', target: '_blank', rel: 'noopener', text: 'Refund policy' }), document.createTextNode('. '),
+      el('a', { href: '/privacy/', target: '_blank', rel: 'noopener', text: 'Privacy' }), document.createTextNode('.')));
   let shown = false;
   const show = async () => {
     if (shown) return;

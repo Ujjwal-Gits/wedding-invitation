@@ -443,7 +443,11 @@ function signupPage() {
   const input = (id, type, autocomplete, max) => h('input.input.input--lg', { id, name: id, type, autocomplete, maxlength: max, required: type !== 'tel' });
   const name = input('su-name', 'text', 'name', 80);
   const email = input('su-email', 'email', 'username', 254);
-  const phone = input('su-phone', 'tel', 'tel', 20);
+  const phone = input('su-phone', 'tel', 'tel', 24);
+  phone.required = true;
+  // the country picker and the number check (src/ui/phone.js, loaded only here: it carries the phone metadata)
+  let ph = null;
+  import('../ui/phone.js').then((m) => { if (phone.isConnected) ph = m.phoneField(phone, { fallback: signupMarket() === 'intl' ? 'US' : 'NP' }); }).catch(() => {});
   const pw = passwordField('su-password', 'Password', 'new-password');
   pw.input.minLength = 8;
   pw.input.maxLength = 128;
@@ -451,18 +455,19 @@ function signupPage() {
   const form = h('form.auth__form', { novalidate: true },
     h('div.field', h('label.label', { for: 'su-name' }, 'Your name'), name),
     h('div.field', h('label.label', { for: 'su-email' }, 'Email'), email),
-    h('div.field', h('label.label', { for: 'su-phone' }, signupMarket() === 'intl' ? 'Phone number ' : 'WhatsApp number ', h('span.label__opt', '(optional)')), phone),
+    h('div.field', h('label.label', { for: 'su-phone' }, signupMarket() === 'intl' ? 'Phone number' : 'WhatsApp number'), phone),
     pw.el, h('p.hint', 'At least 8 characters.'), err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
     Object.values(byField).forEach((x) => x.removeAttribute('aria-invalid'));
-    const miss = !name.value.trim() ? name : !email.value.trim() ? email : pw.input.value.length < 8 ? pw.input : null;
-    if (miss) { err.textContent = miss === pw.input ? 'The password needs at least 8 characters.' : 'Please enter your name and email.'; miss.setAttribute('aria-invalid', 'true'); miss.focus(); return; }
+    const phoneOk = ph ? ph.valid() : phone.value.trim().length >= 6;
+    const miss = !name.value.trim() ? name : !email.value.trim() ? email : !phoneOk ? phone : pw.input.value.length < 8 ? pw.input : null;
+    if (miss) { err.textContent = miss === pw.input ? 'The password needs at least 8 characters.' : miss === phone ? 'Enter a valid phone number with country code.' : 'Please enter your name and email.'; miss.setAttribute('aria-invalid', 'true'); miss.focus(); return; }
     btn.disabled = true;
     btn.textContent = 'Creating your account…';
     try {
-      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: phone.value, password: pw.input.value, market: signupMarket() } });
+      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: ph ? ph.e164() : phone.value, password: pw.input.value, market: signupMarket() } });
       coupleFlag(false);
       seenFlag(true);
       setMe(me);

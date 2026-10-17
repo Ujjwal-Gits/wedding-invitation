@@ -2,6 +2,7 @@
 // the order opens it with their session; /pay/<ref>?t=<token> (and /pay/?ref=<ref>&t=<token>) keeps working, and
 // the token from this tab's order is used as a backup. The token stays out of the Referer (meta referrer).
 import './site.css';
+import './intl.css';
 import { $, el, initHeader, initAuth, applyContact, setYear, waLink } from './common.js';
 import { loadSite, REF_RE } from './api.js';
 import { mountPayment } from './payment.js';
@@ -38,6 +39,14 @@ async function boot() {
   }
   document.title = `Order ${ref} · Nimtto`;
   const info = await mountPayment(box, { ref, token, wa, focus: false });
+  // an order from the international site: its sage palette, words and home link (intl.css is scoped to .market-intl)
+  if (info?.market === 'intl') {
+    document.body.classList.add('market-intl');
+    const lede = $('.paypage__head .lede');
+    if (lede) lede.textContent = 'Pay once, by card or PayPal, in US dollars. Your plan switches on as soon as the payment goes through.';
+    const home = $('.paybar .nav__logo');
+    if (home) home.href = '/international/';
+  }
   if (!info && !token && !me) {
     // not signed in and no token: this browser cannot open the order yet
     box.replaceChildren(el('div', { class: 'pay__error', role: 'alert' },

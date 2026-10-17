@@ -34,7 +34,7 @@ export const ARTWORK = [
 ].map((d) => ({ ...d, slug: d.id, mini: artSrc(d.id, 480), art: true }));
 
 const TIERS = ['saral', 'shubha', 'shahi'];
-const isIntl = (m) => m === 'intl' || (Array.isArray(m) && m.includes('intl'));
+const isIntl = (m) => m === 'intl' || m === 'both' || (Array.isArray(m) && m.includes('intl')); // GET /api/themes: market 'np' | 'intl' | 'both'
 const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
 const text = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 const localPath = (v) => (typeof v === 'string' && /^\/(?!\/)[A-Za-z0-9/_.-]{1,200}$/.test(v) ? v : '');

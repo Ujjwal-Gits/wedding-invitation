@@ -2,13 +2,19 @@
 // design pages). body[data-page] says which page; its own code and the scroll scenes load on demand.
 import './site.css';
 import './pages.css';
-import { $, $$, el, reduced, SLUG_RE, initHeader, initAuth, initReveal, initPreview, applyContact, setYear } from './common.js';
-import { loadSite, loadThemes, normaliseThemes } from './api.js';
+import { $, $$, el, reduced, SLUG_RE, MARKET, initHeader, initAuth, initReveal, initPreview, applyContact, setYear } from './common.js';
+import { loadSite, getJson, normaliseThemes, plansFor } from './api.js';
 import { BY_SLUG, FALLBACK_SITE } from './themes.js';
 import { renderPlans, applyPlanNames } from './plans.js';
+import { intlCatalog, NP_DESIGNS_INTL } from './intl-designs.js';
 
 const page = document.body.dataset.page || '';
-const state = { site: null, themes: normaliseThemes(null, FALLBACK_SITE), me: undefined, wa: '' };
+// the designs the order form offers: Nepal's on nimtto.com; on the international site its own catalog, or (its
+// Nepali and South Asian wedding pages, body[data-catalog="np"]) the Nepal designs without religious images
+const npCatalog = document.body.dataset.catalog === 'np';
+const designsFrom = (raw, site) => (MARKET !== 'intl' ? normaliseThemes(raw, site)
+  : npCatalog ? normaliseThemes(raw, site).filter((t) => NP_DESIGNS_INTL.includes(t.slug)) : intlCatalog(raw));
+const state = { site: null, themes: designsFrom(null, FALLBACK_SITE), me: undefined, wa: '' };
 let order = null; // the order module, once loaded
 const loadOrder = () => import('./order.js').then(async (m) => {
   if (!order) {
@@ -113,11 +119,12 @@ async function boot() {
   initAuth().then((me) => { if (state.me === undefined) state.me = me; if (order) order.setOrderData(state); });
   const site = await loadSite();
   state.site = site;
-  state.wa = applyContact(site.contact).wa;
-  for (const box of $$('[data-plans]')) renderPlans(box, site);
+  state.wa = applyContact(MARKET === 'intl' ? site.contactIntl || site.contact : site.contact).wa;
+  for (const box of $$('[data-plans]')) renderPlans(box, { ...site, plans: plansFor(site, 'np') });
   applyPlanNames(site); // the planner's plan names and prices everywhere the page names a plan
-  const themes = await loadThemes(site);
-  state.themes = themes;
+  // the international catalog comes in the planner's order for that market (GET /api/themes?market=intl)
+  const raw = await getJson(MARKET === 'intl' && !npCatalog ? '/api/themes?market=intl' : '/api/themes', 4000);
+  state.themes = designsFrom(raw, site);
   updateCounts();
   if (order) order.setOrderData(state);
   if (pageMod) (await pageMod).init?.(state);
