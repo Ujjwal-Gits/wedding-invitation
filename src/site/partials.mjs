@@ -134,12 +134,14 @@ function header(active = '') {
       <a class="nav__logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto home" /></a>
       <nav class="nav__links" aria-label="Main">${links}</nav>
       <div class="nav__end">
+        <nav class="mkt mkt--bar" aria-label="Choose your site"><a class="mkt__a" href="/international/" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav>
         <a class="nav__auth" href="/studio/" data-auth>Sign in</a>
         <a class="btn btn--accent btn--sm nav__order" href="/pricing/#plans" data-order>Order</a>
         <button class="nav__menu" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><span class="nav__menu-i" aria-hidden="true"><i></i><i></i></span><span class="nav__menu-t">Menu</span></button>
       </div>
     </div>
     <div class="sheet" id="menu">
+      <div class="sheet__top"><nav class="mkt mkt--sheet" aria-label="Choose your site"><a class="mkt__a" href="/international/" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav></div>
       <nav class="sheet__links" aria-label="Main">${links}</nav>
       <div class="sheet__end">
         <a class="btn btn--accent" href="/pricing/#plans" data-order>Order an invitation</a>
