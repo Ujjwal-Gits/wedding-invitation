@@ -326,3 +326,7 @@ dialog { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* "Sign in" / "My dashboard": hidden until common.js knows which (no flash of the wrong word); always shown without JS */
+[data-auth]:not([data-auth-ready]) { visibility: hidden; }
+@media (scripting: none) { [data-auth] { visibility: visible; } }

@@ -94,19 +94,30 @@ export function initHeader() {
 }
 
 /** Signed in (customer, couple or admin): "My dashboard" instead of "Sign in". GET /api/auth/me?soft=1 */
+// The link stays hidden (CSS) until we know which word it is, so it never flashes "Sign in" for a signed-in
+// visitor; the last answer is remembered, so the next page shows the right word at once.
+const AUTH_HINT = 'nimtto-signed-in';
+const showAuth = () => { for (const a of $$('[data-auth]')) a.setAttribute('data-auth-ready', ''); };
 export async function initAuth() {
+  let hinted = false;
+  try { hinted = localStorage.getItem(AUTH_HINT) === '1'; } catch { /* private mode */ }
+  if (hinted) markSignedIn();
+  showAuth();
   let me = null;
   try {
     const r = await fetch('/api/auth/me?soft=1', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
     if (r.ok) me = await r.json();
-  } catch { /* offline: keep "Sign in" */ }
+  } catch { /* offline: keep what we have */ }
   const role = me && typeof me.role === 'string' ? me.role : null;
   if (role) markSignedIn();
+  else if (hinted && me) for (const a of $$('a[data-auth]')) { a.textContent = 'Sign in'; a.href = '/studio/'; }
+  try { if (me) localStorage.setItem(AUTH_HINT, role ? '1' : '0'); } catch { /* private mode */ }
   return role ? me : null;
 }
 /** The header's "Sign in" links become "My dashboard" (also after signing in from the order's account step). */
 export function markSignedIn() {
   for (const a of $$('a[data-auth]')) { a.textContent = 'My dashboard'; a.href = '/studio/'; }
+  try { localStorage.setItem(AUTH_HINT, '1'); } catch { /* private mode */ }
 }
 
 /** Section heads fade up once as they enter (opacity and transform only; never body text). */
