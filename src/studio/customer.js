@@ -1,9 +1,12 @@
 // The customer's dashboard (signed in with email + password): their orders with the payment status and a pay link,
-// the invitation(s) the owner made for them, the wedding details they can add later, and their password.
+// the invitation(s) the owner made for them, the wedding details they can add later, their phone and their password.
+// International customers (acc.market 'intl', docs/PLATFORM.md "Markets") see dollars, PayPal or card wording,
+// English only, and email first for help; Nepal customers see what they always saw.
 import { h, icon, toast, openDialog, fmtDate, fill } from './dom.js';
 import { api } from './api.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCacheCard } from './cache.js';
+import { priceFor, countryName } from './markets.js';
 
 const WA_DISPLAY = '+977 980-6393298';
 const WA_NUMBER = '9779806393298';
@@ -17,16 +20,16 @@ const PAY = {
   refunded: ['muted', 'Refunded'],
   comped: ['ok', 'Free, nothing to pay'], // free access the planner gave
 };
-const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
-const usd = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
-const money = (a, from) => [a?.npr != null ? `${from ? 'from ' : ''}${npr(a.npr)}` : null, a?.usd != null ? usd(a.usd) : null].filter(Boolean).join(' · ');
+let market = 'np'; // the dashboard being drawn (customerHome sets it from GET /api/account)
+const money = (a, from) => priceFor(a, market, from);
+const quoteMoney = (q) => (q ? priceFor(q.currency === 'USD' ? { usd: q.amount } : { npr: q.amount }, q.currency === 'USD' ? 'intl' : 'np') : '');
 const ymd = (s) => (s ? fmtDate(`${String(s).slice(0, 10)}T12:00:00`, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const names = (i) => [i.bride?.en || i.bride, i.groom?.en || i.groom].filter((x) => typeof x === 'string' && x).join(' & ') || 'Your invitation';
 
 /** "Add wedding details": the date, venue and names they could leave out when ordering. */
 function detailsDialog(o, onSaved) {
   const date = h('input.input', { id: 'od-date', type: 'date', value: o.weddingDate || '' });
-  const venue = h('input.input', { id: 'od-venue', maxlength: 200, value: o.venue || '', placeholder: 'e.g. Hotel Yak & Yeti, Kathmandu' });
+  const venue = h('input.input', { id: 'od-venue', maxlength: 200, value: o.venue || '', placeholder: market === 'intl' ? 'e.g. The Foundry, Long Island City' : 'e.g. Hotel Yak & Yeti, Kathmandu' });
   const bride = h('input.input', { id: 'od-bride', maxlength: 80, value: o.bride || '', autocomplete: 'off' });
   const groom = h('input.input', { id: 'od-groom', maxlength: 80, value: o.groom || '', autocomplete: 'off' });
   const message = h('textarea.input', { id: 'od-msg', rows: 3, maxlength: 2000 }, o.message || '');
@@ -61,6 +64,7 @@ function orderCard(o, meta, redraw, ro = false) {
   const canPay = ['awaiting_payment', 'rejected'].includes(o.payStatus) && o.payUrl;
   const facts = [
     ['Plan', o.plan ? `${o.plan.name}${money(o.amount, o.plan.from) ? ` · ${money(o.amount, o.plan.from)}` : ''}` : (o.kind === 'custom' ? 'Custom design request' : '—')],
+    o.quote && o.kind === 'custom' ? ['Our price', `${quoteMoney(o.quote)}${o.quote.note ? ` · ${o.quote.note}` : ''}`] : null,
     ['Design', design?.name || (o.theme ? o.theme : 'Not chosen yet')],
     ['Wedding', [ymd(o.weddingDate), o.venue].filter(Boolean).join(' · ') || 'Add the date and venue when you know them'],
   ];
@@ -71,9 +75,10 @@ function orderCard(o, meta, redraw, ro = false) {
     o.payStatus === 'rejected' && o.reason ? h('p.notice.notice--warn', icon('alert', 16), h('span', h('b', 'Why: '), o.reason, '. Please pay again or message us.')) : null,
     o.payStatus === 'proof_submitted' ? h('p.cu-order__note', 'We have your payment screenshot and will confirm it soon.') : null,
     o.payStatus === 'comped' ? h('p.cu-order__note', 'This plan is on us. There is nothing to pay.') : null,
-    h('dl.cu-facts', facts.map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
+    h('dl.cu-facts', facts.filter(Boolean).map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
+    o.quote && o.kind === 'custom' ? h('p.cu-order__note', 'Happy with the price? Reply to our message and we will send you a link to pay.') : null,
     ro ? null : h('div.cu-order__acts',
-      canPay ? h('a.btn.btn--primary', { href: o.payUrl }, icon('right', 16), o.payStatus === 'rejected' ? 'Pay again' : 'Pay now') : null,
+      canPay ? h('a.btn.btn--primary', { href: o.payUrl }, icon('right', 16), o.payStatus === 'rejected' ? 'Pay again' : market === 'intl' ? 'Pay with PayPal or card' : 'Pay now') : null,
       o.payStatus === 'proof_submitted' && o.payUrl ? h('a.btn', { href: o.payUrl }, 'See payment') : null,
       h('button.btn.btn--quiet', { type: 'button', onclick: () => detailsDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('edit', 15), o.weddingDate || o.venue ? 'Edit details' : 'Add wedding details')));
 }
@@ -97,6 +102,48 @@ function invitationCard(i, meta, ro = false) {
         h('a.btn.btn--sm', { href: i.previewUrl || `/${i.theme}/?id=${i.slug}`, target: '_blank', rel: 'noopener' }, icon('eye', 15), 'Preview'),
         h('button.btn.btn--sm', { type: 'button', disabled: !share, title: share ? share : 'The share link works once your invitation is published.', onclick: () => navigator.clipboard?.writeText(share).then(() => toast('Share link copied', 'success'), () => toast(share)) }, icon('share', 15), share ? 'Copy share link' : 'Share link after publishing'),
         !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl ? h('a.btn.btn--sm.btn--quiet', { href: i.payUrl }, icon('right', 15), 'Pay now') : null)));
+}
+
+/** Their phone, with its country, and Change (checked on the server and saved as +1 415 555 2671, E.164). */
+function phoneField(acc) {
+  const box = h('div.cu-phone');
+  const show = () => fill(box,
+    h('span', acc.customer.phone || '—', acc.country ? h('small.cu-country', countryName(acc.country)) : null),
+    h('button.link', { type: 'button', onclick: edit }, acc.customer.phone ? 'Change' : 'Add your phone'));
+  function edit() {
+    const input = h('input.input', { id: 'cu-phone', type: 'tel', inputmode: 'tel', autocomplete: 'tel', maxlength: 24, value: acc.customer.phone || '', placeholder: market === 'intl' ? '+1 415 555 2671' : '+977 98XXXXXXXX', 'aria-label': 'Phone number' });
+    const err = h('p.form-error', { role: 'alert' });
+    const save = h('button.btn.btn--sm.btn--primary', { type: 'submit' }, 'Save');
+    const form = h('form.cu-phone', { novalidate: true },
+      h('div.inputrow', input, save, h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: show }, 'Cancel')),
+      h('p.hint', 'With the country code, so we can reach you on WhatsApp too.'), err);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      save.disabled = true;
+      try {
+        const out = await api('/account', { method: 'PATCH', body: { phone: input.value } });
+        acc.customer.phone = out.customer.phone;
+        acc.country = out.customer.country;
+        toast('Phone number saved', 'success');
+        show();
+      } catch (ex) { err.textContent = ex.message; save.disabled = false; input.focus(); }
+    });
+    fill(box, form);
+    input.focus();
+  }
+  show();
+  return box;
+}
+
+/** How to reach us: International leads with email, Nepal with WhatsApp (GET /api/account contact). */
+function contactBlock(acc) {
+  const c = acc.contact || {};
+  const wa = c.whatsapp ? `https://wa.me/${String(c.whatsapp).replace(/\D/g, '')}` : waLink();
+  const waBtn = h('a.sharebtn.sharebtn--wa', { href: wa, target: '_blank', rel: 'noopener' }, icon('chat', 17), h('span', `WhatsApp ${c.whatsapp || WA_DISPLAY}`));
+  if (market !== 'intl' || !c.email) return [h('p.hint', 'To change your name or email, message us on WhatsApp.'), waBtn];
+  return [h('p.hint', 'Questions, or a change to your name or email? Email us and we reply within a day.'),
+    h('div.cu-contact', h('a.btn.btn--primary.btn--sm', { href: `mailto:${c.email}` }, icon('mail', 15), `Email ${c.email}`), waBtn)];
 }
 
 function passwordCard() {
@@ -157,6 +204,8 @@ export function customerHome(ctx) {
   const root = h('div.cu', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '50%' } }))));
   const draw = (acc) => {
     if (!ro) ctx.onAccount?.(acc);
+    market = acc.market === 'intl' ? 'intl' : 'np';
+    const intl = market === 'intl';
     const orders = acc.orders || [];
     const invs = acc.invitations || [];
     const ordersEl = h('ul.cu-orders');
@@ -166,8 +215,8 @@ export function customerHome(ctx) {
     fill(root,
       ro ? h('p.notice.notice--row', icon('eye', 16), h('span', h('b', 'Read-only view. '), `This is what ${acc.customer.email} sees when they sign in.`)) : null,
       !ro && acc.customer.mail && !acc.customer.emailVerified ? verifyNotice(acc.customer.email) : null,
-      h('p.cu-hello', `Namaste${acc.customer.name ? `, ${acc.customer.name.split(' ')[0]}` : ''}.`, h('span.cu-hello__ne', { lang: 'ne' }, ' नमस्ते')),
-      due ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, ' We start on your invitation once it is confirmed.')) : null,
+      h('p.cu-hello', `${intl ? 'Hello' : 'Namaste'}${acc.customer.name ? `, ${acc.customer.name.split(' ')[0]}` : ''}.`, intl ? null : h('span.cu-hello__ne', { lang: 'ne' }, ' नमस्ते')),
+      due ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, intl ? ' Pay with PayPal or a card; we start on your invitation once it is confirmed.' : ' We start on your invitation once it is confirmed.')) : null,
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Your invitation', invs.length ? h('span.sect__count', String(invs.length)) : null)),
         invs.length ? h('ul.cu-invs', invs.map((i) => invitationCard(i, ctx.meta, ro)))
           : h('div.qempty', h('span.qempty__icon', icon('heart', 18)), h('div',
@@ -175,13 +224,12 @@ export function customerHome(ctx) {
             h('p.qempty__text', 'Once it is ready it appears here, and you can change the names, dates, photos and music yourself.')))),
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Your orders', orders.length ? h('span.sect__count', String(orders.length)) : null)),
         orders.length ? ordersEl : h('div.qempty', h('span.qempty__icon', icon('inbox', 18)), h('div', h('p.qempty__title', 'No orders yet'),
-          h('p.qempty__text', 'Choose a design on our website to order your invitation.')), h('div.qempty__acts', h('a.btn', { href: '/#designs' }, 'See the designs')))),
+          h('p.qempty__text', 'Choose a design on our website to order your invitation.')), h('div.qempty__acts', h('a.btn', { href: intl ? '/international/#designs' : '/#designs' }, 'See the designs')))),
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Account')),
         h('div.cu-account',
           h('section.card', h('header.card__head', h('h2.card__title', 'Your details')),
-            h('dl.cu-facts', [['Name', acc.customer.name || '—'], ['Email', acc.customer.email], ['Phone', acc.customer.phone || '—']].map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
-            h('p.hint', 'To change these, message us on WhatsApp.'),
-            h('a.sharebtn.sharebtn--wa', { href: waLink(), target: '_blank', rel: 'noopener' }, icon('chat', 17), h('span', `WhatsApp ${WA_DISPLAY}`))),
+            h('dl.cu-facts', [['Name', acc.customer.name || '—'], ['Email', acc.customer.email], ['Phone', ro ? h('span', acc.customer.phone || '—', acc.country ? h('small.cu-country', countryName(acc.country)) : null) : phoneField(acc)]].map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
+            ...contactBlock(acc)),
           ro ? null : passwordCard(),
           ro ? null : clearCacheCard())));
   };

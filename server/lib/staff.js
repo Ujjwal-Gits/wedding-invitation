@@ -18,11 +18,11 @@ export const STAFF_PASSWORD_MAX = 128;
 export const PERMS = [
   { key: 'invitations', label: 'Invitations', help: 'Invitations, clients and access links' },
   { key: 'replies', label: 'Replies', help: 'Guest replies' },
-  { key: 'customers', label: 'Customers', help: 'Customer accounts' },
-  { key: 'orders', label: 'Orders', help: 'Orders and requests, payment checks' },
-  { key: 'finance', label: 'Finance', help: 'Money pages' },
-  { key: 'website', label: 'Website', help: 'Website settings, plans, payment methods' },
-  { key: 'themes', label: 'Themes', help: 'Which designs the website shows' },
+  { key: 'customers', label: 'Customers', help: 'Customer accounts, their market and phone' },
+  { key: 'orders', label: 'Orders', help: 'Orders, enquiries and quotes, payment checks, figures by market' },
+  { key: 'finance', label: 'Finance', help: 'Money pages, per market' },
+  { key: 'website', label: 'Website', help: 'Both websites: plans per market, payment methods, contact, headlines' },
+  { key: 'themes', label: 'Themes', help: 'Designs per market: shown, featured, order, style' },
   { key: 'music', label: 'Music', help: 'The music library' },
 ];
 export const PERM_KEYS = PERMS.map((p) => p.key);

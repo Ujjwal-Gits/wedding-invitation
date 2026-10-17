@@ -1933,3 +1933,57 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
   .dtable--team td.cell-act { position: static; grid-column: 1 / -1; }
   .dtable--team td.cell-act .cell-act__in { justify-content: flex-start; }
 }
+
+/* ── Markets (Nepal / International): small tags, filters, enquiries, per-market figures ── */
+.mkt { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 5px; font-size: 11.5px; font-weight: 600; white-space: nowrap; background: var(--surface-3); color: var(--ink-3); }
+.mkt--intl { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.mkt__cc { font-size: 11px; font-weight: 500; color: var(--ink-4); }
+.odr__name .mkt { margin-left: 6px; vertical-align: 2px; }
+.toolbar2 select.input.mktsel, select.input.mktsel { min-width: 0; width: 172px; }
+.ui-sel:has(> .mktsel) { width: 172px; flex: none; }
+.otabs { margin: 0 0 var(--s4); }
+.otabs .seg__n.is-accent { background: var(--accent-soft); color: var(--accent); }
+.otools__bar { display: contents; }
+.otable .ocell--mkt { width: 1%; }
+.otable .ocell--msg { max-width: 320px; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+.ocell__quote { font-weight: 600; color: var(--ink); }
+.tag.mkt-m { display: none; }
+.quote { display: grid; gap: var(--s3); }
+.quote .row { flex-wrap: wrap; gap: var(--s2); }
+.mkv th[scope='row'] { font-weight: 500; color: var(--ink-2); font-size: 13px; }
+.mkv td { padding-top: 9px; padding-bottom: 9px; }
+.mkv__n { font-weight: 600; color: var(--ink); text-decoration: none; }
+.mkv__n.is-accent { color: var(--accent); }
+.mkv__n:hover, .mkv__money:hover { text-decoration: underline; }
+.mkv__zero { color: var(--ink-4); }
+.mkv__money { color: var(--ink); text-decoration: none; font-size: 13px; }
+.tadmin__bar { gap: var(--s3); }
+.tadmin__sels { display: grid; gap: var(--s2); }
+.tadmin__move { display: flex; align-items: center; gap: 2px; }
+.tadmin__move .btn { width: 30px; min-height: 30px; box-shadow: none; border-color: transparent; background: transparent; color: var(--ink-3); }
+.tadmin__move .btn:hover { background: var(--surface-3); color: var(--ink); }
+.tadmin__pos { margin-right: auto; font-size: 12.5px; color: var(--ink-3); }
+.tadmin__else { margin: 0; font-size: 12.5px; }
+.tadmin.is-elsewhere .tcard__img { opacity: 0.6; }
+.plan__mk { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; min-width: 0; }
+.plan__mk-row { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); font-size: 13.5px; }
+.intl-sum { margin-top: var(--s2); }
+.intl-sum small.hint { display: inline; }
+.fin-mkt { margin-bottom: var(--s4); }
+.fin-bymkt { margin-top: var(--s4); }
+.fin-mkts caption { text-align: left; font-size: 12.5px; color: var(--ink-3); padding-bottom: 6px; }
+.fin-mkts tr.is-muted td, .fin-mkts tr.is-muted th { color: var(--ink-4); }
+.fin-mkts .link[aria-pressed='true'] { font-weight: 600; color: var(--ink); }
+.cu-country { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.cu-phone { display: grid; gap: var(--s2); }
+.cu-phone .inputrow { max-width: 380px; }
+.cu-contact { display: grid; gap: var(--s2); justify-items: start; }
+.bs__show { font-size: 13px; }
+@media (max-width: 760px) {
+  .otable .ocell--mkt { display: none; }
+  .tag.mkt-m { display: inline-flex; height: 20px; margin-left: 4px; }
+  .otable--enq .ocell--msg { display: none; }
+  .ui-sel:has(> .mktsel), select.input.mktsel, .toolbar2 select.input.mktsel { width: 136px; }
+  .toolbar2__end:has(.mktsel) { width: 100%; }
+  .toolbar2__end:has(.mktsel) .search { flex: 1; min-width: 0; }
+}

@@ -8,6 +8,8 @@ import { can } from './perms.js';
 import { customerHome } from './customer.js';
 import { pendingActs } from './admin.js'; // Link now / Dismiss (a function: the import cycle is safe)
 import { customerFreeAccess } from './admin-finance.js';
+import { coupleName } from './session.js';
+import { MARKET_NAME, MARKET_FILTER, marketTag, countryName } from './markets.js';
 
 const genPassword = () => {
   const words = ['marigold', 'lotus', 'saffron', 'diyo', 'tika', 'mala', 'kalash', 'shehnai', 'gurans', 'himal'];
@@ -15,7 +17,8 @@ const genPassword = () => {
   crypto.getRandomValues(a);
   return `${words[a[0] % words.length]}-${words[a[1] % words.length]}-${1000 + (a[2] % 9000)}`;
 };
-const coupleOf = (i) => [i.bride, i.groom].filter(Boolean).join(' & ') || i.slug;
+// names may be { en, ne } (the invitation list): coupleName reads either
+const coupleOf = (i) => (i.bride || i.groom ? coupleName(i.bride, i.groom) : i.slug);
 
 /** A password input with "Suggest one" (shown as text: the owner passes it on). Also used by the Team page. */
 export function pwInput(id, label, hint, min = 8) {
@@ -57,9 +60,20 @@ export function formDialog({ title, fields, submitText, submit, wide = false }) 
 }
 
 /** Everything about one account: details, sign-ins, then their dashboard (orders, payments, invitations) read-only. */
-function detailsDialog(ctx, c) {
+function detailsDialog(ctx, c, onChange) {
+  // the market: saved on the account (sign-up, or set here), else worked out from their orders and phone
+  const mkSel = h('select.input.input--sm', { id: `cm-${c.id}`, 'aria-label': 'Market', onchange: async (e) => {
+    try {
+      const out = await api(`/admin/customers/${c.id}`, { method: 'PATCH', body: { market: e.target.value } });
+      Object.assign(c, out.customer);
+      onChange?.(out.customer);
+      toast(`Market: ${MARKET_NAME[out.customer.market]}${out.customer.marketSet ? '' : ' (worked out)'}`, 'success');
+    } catch (ex) { toast(ex.message, 'error'); }
+  } }, [['', `Work it out (now ${MARKET_NAME[c.market] || 'Nepal'})`], ['np', 'Nepal'], ['intl', 'International']].map(([v, t]) => h('option', { value: v, selected: c.marketSet ? c.market === v : v === '' }, t)));
   const facts = [
     ['Name', c.name || '—'], ['Email', `${c.email}${c.emailVerified ? ' (confirmed)' : ' (not confirmed)'}`], ['Phone', c.phone || '—'],
+    ['Country', c.country ? `${countryName(c.country)} (from the phone)` : '—'],
+    ['Market', h('span.row', marketTag(c.market, c.country), mkSel)],
     ['Joined', c.createdAt ? fmtDate(c.createdAt) : '—'],
     ['Last sign-in', c.lastLoginAt ? `${fmtDate(c.lastLoginAt)} (${fmtRelative(c.lastLoginAt)})` : 'Never'],
     ['Sign-ins', String(c.loginCount || 0)], ['Orders', String(c.orders || 0)],
@@ -122,15 +136,17 @@ function linkDialog(ctx, c, invitations, current = null) {
 function newAccountDialog() {
   const email = h('input.input', { id: 'na-email', type: 'email', maxlength: 254, autocomplete: 'off', required: true });
   const name = h('input.input', { id: 'na-name', maxlength: 80, autocomplete: 'off', required: true });
-  const phone = h('input.input', { id: 'na-phone', type: 'tel', maxlength: 20, autocomplete: 'off' });
+  const phone = h('input.input', { id: 'na-phone', type: 'tel', maxlength: 20, autocomplete: 'off', placeholder: '+977 98… or +1 …' });
+  const market = h('select.input', { id: 'na-market' }, [['np', 'Nepal'], ['intl', 'International']].map(([v, t]) => h('option', { value: v }, t)));
   const pw = pwInput('na-pw', 'Password', 'Send it to them separately. They can change it after signing in.');
   return formDialog({
     title: 'New customer account', submitText: 'Create account',
     fields: [h('div.field', h('label.label', { for: 'na-email' }, 'Email'), email), h('div.field', h('label.label', { for: 'na-name' }, 'Name'), name),
-      h('div.field', h('label.label', { for: 'na-phone' }, 'Phone or WhatsApp (optional)'), phone), pw.el],
+      h('div.cu-two', h('div.field', h('label.label', { for: 'na-phone' }, 'Phone or WhatsApp (optional)'), phone),
+        h('div.field', h('label.label', { for: 'na-market' }, 'Market'), market, h('p.hint', 'International: dollars, English only.'))), pw.el],
     submit: async () => {
       if (pw.input.value.trim().length < 8) throw new Error('The password needs at least 8 characters.');
-      const out = await api('/admin/customers', { method: 'POST', body: { email: email.value, name: name.value, phone: phone.value, password: pw.input.value.trim() } })
+      const out = await api('/admin/customers', { method: 'POST', body: { email: email.value, name: name.value, phone: phone.value, market: market.value, password: pw.input.value.trim() } })
         .catch((ex) => { throw new Error(ex.body?.errors?.map((x) => `${x.path} ${x.message}`).join(', ') || ex.message); });
       return { customer: out.customer, password: pw.input.value.trim() };
     },
@@ -150,6 +166,7 @@ export function customersSection(ctx, loadInvitations) {
   let invitations = [];
   let pending = [];
   let q = '';
+  let mkt = ['np', 'intl'].includes(ctx.params?.get('m')) ? ctx.params.get('m') : '';
   const body = h('div.tablebox', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '44%' } }))));
   const count = h('span.sect__count');
   const waiting = h('div');
@@ -164,15 +181,18 @@ export function customersSection(ctx, loadInvitations) {
         h('p.task__title', p.account ? [h('b', p.account.name || p.account.email), ` (${p.account.email}) signed up: link `, h('span.mono', `/${p.slug}`), '?'] : ['Waiting for an account: ', h('span.mono', `/${p.slug}`), ` for ${p.email}`]),
         h('p.task__meta', p.account ? 'Link it only if this is your customer.' : 'When someone signs up with this email, you confirm the link here.')),
       h('div.task__acts', p.account ? pendingActs(p, load) : pendingActs(p, load).slice(1))))) : null);
-    const rows = items.filter((c) => !q || `${c.email} ${c.name} ${c.phone} ${(c.invitations || []).map((l) => l.slug).join(' ')}`.toLowerCase().includes(q));
+    const inMkt = items.filter((c) => !mkt || (c.market || 'np') === mkt);
+    count.textContent = mkt ? `${inMkt.length} of ${items.length}` : String(items.length);
+    const rows = inMkt.filter((c) => !q || `${c.email} ${c.name} ${c.phone} ${countryName(c.country)} ${(c.invitations || []).map((l) => l.slug).join(' ')}`.toLowerCase().includes(q));
     if (!items.length) { fill(body, h('div.qempty', h('span.qempty__icon', icon('key', 18)), h('div', h('p.qempty__title', 'No accounts yet'), h('p.qempty__text', 'Customers get one when they order on the website.')))); return; }
-    if (!rows.length) { fill(body, h('div.qempty', h('span.qempty__icon', icon('search', 18)), h('div', h('p.qempty__title', 'No accounts match')))); return; }
+    if (!rows.length) { fill(body, h('div.qempty', h('span.qempty__icon', icon('search', 18)), h('div', h('p.qempty__title', 'No accounts match'), mkt ? h('p.qempty__text', `Showing ${MARKET_NAME[mkt]} only.`) : null))); return; }
     const byslug = new Map(invitations.map((i) => [i.slug, i]));
     fill(body, h('table.dtable.dtable--cust',
       h('caption.sr-only', 'Customer accounts'),
-      h('thead', h('tr', ['Customer', 'Invitations', 'Orders', 'Status', 'Last sign-in'].map((t) => h('th', { scope: 'col' }, t)), h('th', { scope: 'col', class: 'cell-act' }, h('span.sr-only', 'Actions')))),
+      h('thead', h('tr', ['Customer', 'Market', 'Invitations', 'Orders', 'Status', 'Last sign-in'].map((t) => h('th', { scope: 'col' }, t)), h('th', { scope: 'col', class: 'cell-act' }, h('span.sr-only', 'Actions')))),
       h('tbody', rows.map((c) => h('tr', { class: c.disabled ? 'is-off' : '' },
-        h('td.cell-couple', h('button.cu-open', { type: 'button', title: 'See everything', onclick: () => detailsDialog(ctx, c) }, h('span.cell-main__t', h('b', c.name || '—'), h('small', c.email), c.phone ? h('small.mono', c.phone) : null))),
+        h('td.cell-couple', h('button.cu-open', { type: 'button', title: 'See everything', onclick: () => detailsDialog(ctx, c, replace) }, h('span.cell-main__t', h('b', c.name || '—'), h('small', c.email), c.phone ? h('small.mono', c.phone) : null))),
+        h('td', { 'data-label': 'Market' }, marketTag(c.market, c.country), c.country ? h('small.cu-country', countryName(c.country)) : null),
         h('td', { 'data-label': 'Invitations' }, h('div.cu-links',
           (c.invitations || []).map((l) => h('span.cu-link', { title: permsText(l) },
             h('button.link.link--quiet', { type: 'button', onclick: async () => { const n = await linkDialog(ctx, c, invitations, l); if (n) { replace(n); toast('Access saved', 'success'); } } }, byslug.get(l.slug) ? coupleOf(byslug.get(l.slug)) : `/${l.slug}`),
@@ -185,7 +205,7 @@ export function customersSection(ctx, loadInvitations) {
         h('td', { 'data-label': 'Status' }, c.disabled ? h('span.pill.pill--warn', 'Off') : h('span.pill.pill--ok', 'Active'), c.emailVerified ? h('span.pill.pill--muted', { title: 'Email confirmed' }, 'Email ✓') : null),
         h('td', { 'data-label': 'Last sign-in', title: c.lastLoginAt ? fmtDate(c.lastLoginAt) : '' }, c.lastLoginAt ? fmtRelative(c.lastLoginAt) : h('small', `Joined ${fmtDate(c.createdAt)}`)),
         h('td.cell-act', h('div.cell-act__in',
-          iconBtn('eye', 'See everything', () => detailsDialog(ctx, c), 'btn--ghost'),
+          iconBtn('eye', 'See everything', () => detailsDialog(ctx, c, replace), 'btn--ghost'),
           iconBtn('key', 'Reset password', async () => shownPassword(await resetDialog(c), 'Password reset'), 'btn--ghost'),
           !can('finance') ? null : iconBtn('gift', 'Give free access (a plan without payment)', async () => {
             const o = await customerFreeAccess(c);
@@ -202,9 +222,11 @@ export function customersSection(ctx, loadInvitations) {
     .catch((err) => fill(body, h('p.notice.notice--error', icon('alert', 16), h('span', err.message))));
   load();
   const search = h('label.search', icon('search', 15), h('input.input.input--sm', { type: 'search', placeholder: 'Search accounts', 'aria-label': 'Search accounts', oninput: debounce((e) => { q = e.target.value.trim().toLowerCase(); draw(); }, 120) }));
+  const mktSel = h('select.input.input--sm.mktsel', { 'aria-label': 'Market', onchange: (e) => { mkt = e.target.value; draw(); } },
+    MARKET_FILTER.map(([v, t]) => h('option', { value: v, selected: v === mkt }, t)));
   return h('section.sect.cu-admin', { 'aria-labelledby': 'cust-h' },
     h('header.sect__head', h('h2.sect__title#cust-h', 'Customer accounts', count),
-      h('div.row', search, h('button.btn.btn--sm', { type: 'button', onclick: async () => { const out = await newAccountDialog(); if (out) { items = [out.customer, ...items]; draw(); shownPassword(out, 'Account created'); } } }, icon('plus', 14), 'New account'))),
+      h('div.row', mktSel, search, h('button.btn.btn--sm', { type: 'button', onclick: async () => { const out = await newAccountDialog(); if (out) { items = [out.customer, ...items]; draw(); shownPassword(out, 'Account created'); } } }, icon('plus', 14), 'New account'))),
     h('p.hint', 'Customers sign in at /studio/ with their email and password. An invitation you make for their email (or from their order) appears in their dashboard. Forgot the password? They message you on WhatsApp and you reset it here.'),
     waiting, body);
 }

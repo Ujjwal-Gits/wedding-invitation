@@ -178,12 +178,15 @@ export function pendingOf(orders) {
   const out = { awaiting: { count: 0, noPrice: 0, NPR: 0, USD: 0 }, toCheck: { count: 0, noPrice: 0, NPR: 0, USD: 0 } };
   for (const o of orders) {
     if (o.status === 'archived' || (o.kind !== 'order' && !o.plan)) continue;
+    if ((o.kind === 'custom' || o.kind === 'enquiry') && !o.convertedAt) continue; // an enquiry has no price to pay yet
     if (paypalReceipt(o) || manualReceipt(o)) continue;
     const s = payStatusOf(o) || (o.kind === 'order' ? 'awaiting_payment' : null);
     const k = s === 'proof_submitted' ? 'toCheck' : s === 'awaiting_payment' || s === 'rejected' ? 'awaiting' : null;
     if (!k) continue;
     const proofCur = k === 'toCheck' ? (o.pay?.proofs || []).at(-1)?.currency : null;
-    const cur = proofCur === 'USD' || o.payment?.status === 'pending' ? 'USD' : proofCur === 'NPR' ? 'NPR' : o.amount?.npr != null ? 'NPR' : o.amount?.usd != null ? 'USD' : null;
+    // International orders are priced in dollars (docs/API.md "Markets")
+    const usdFirst = orderMarket(o) === 'intl' && o.amount?.usd != null;
+    const cur = proofCur === 'USD' || o.payment?.status === 'pending' ? 'USD' : proofCur === 'NPR' ? 'NPR' : usdFirst ? 'USD' : o.amount?.npr != null ? 'NPR' : o.amount?.usd != null ? 'USD' : null;
     const amt = cur ? minor((cur === 'USD' ? o.amount?.usd : o.amount?.npr) ?? NaN) : NaN;
     out[k].count += 1;
     if (Number.isFinite(amt)) out[k][cur] += amt; else out[k].noPrice += 1;

@@ -16,6 +16,7 @@ import { can, canAny, canSomething, roleName } from './perms.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
 import { coupleName } from './session.js';
+import { MARKET_NAME, MARKET_FILTER, marketOf, isIntl, marketTag, moneyIn, priceFor, shortPrice, THEME_MARKET_OPTS, STYLE_OPTS, fitsMarket } from './markets.js';
 
 const TZ = 'Asia/Kathmandu';
 const nameOf = (i) => coupleName(i.bride, i.groom);
@@ -295,12 +296,13 @@ function overview(ctx) {
   const load = async () => {
     // only what this admin may open (perms.js); the rest stays empty
     const none = (v) => Promise.resolve(v);
-    const [list, orders, site, stats, pending] = await Promise.all([
+    const [list, orders, site, stats, pending, markets] = await Promise.all([
       can('invitations') ? listInvitations().catch(() => null) : none([]),
       can('orders') ? api('/orders').then(ordersOf).catch(() => null) : none(null),
       canAny('website', 'themes', 'orders', 'finance') ? loadSite().catch(() => ({ plans: [] })) : none({ plans: [] }),
       canSomething() ? api('/admin/stats').catch(() => null) : none(null),
       can('customers') ? api('/admin/customers').then((r) => r.pending || []).catch(() => []) : none([]),
+      canAny('orders', 'finance') ? api('/admin/markets').catch(() => null) : none(null),
     ]);
     if (!alive) return;
     if (!list) {
@@ -311,9 +313,11 @@ function overview(ctx) {
     const rsvps = can('replies') ? await repliesFor(list) : new Map();
     if (!alive) return;
     const planName = (id) => site.plans?.find((p) => p.id === id)?.name || id;
-    const fresh = (orders || []).filter((o) => o.status === 'new');
+    const fresh = (orders || []).filter((o) => o.status === 'new' && !isEnquiry(o));
+    const enqNew = (orders || []).filter((o) => isEnquiry(o) && enquiryStage(o) === 'new');
+    drawMarkets(markets);
     const toCheck = (orders || []).filter((o) => o.status !== 'archived' && (o.payStatus || o.pay?.status) === 'proof_submitted');
-    const attention = new Set([...fresh, ...toCheck]).size;
+    const attention = new Set([...fresh, ...toCheck, ...enqNew]).size;
     ctx.shell.setBadge('orders', attention ? String(attention) : '');
 
     // Key figures
@@ -352,7 +356,7 @@ function overview(ctx) {
       const p = o.pay.proofs.at(-1);
       tasks.push({ ic: 'check', tone: 'accent', thumb: p?.thumb, href: `#/orders/${o.ref || o.id}`,
         title: ['Payment to check: ', h('b', o.name)],
-        meta: [o.ref, o.planName, p ? `${p.methodLabel || p.method} · says ${p.amountPaid}` : null, o.amount?.npr != null ? `expected Rs ${Number(o.amount.npr).toLocaleString('en-IN')}` : null, p ? fmtRelative(p.at) : null].filter(Boolean).join(' · '),
+        meta: [o.ref, o.planName, p ? `${p.methodLabel || p.method} · says ${p.amountPaid}` : null, shortPrice(o.amount, marketOf(o)) ? `expected ${shortPrice(o.amount, marketOf(o))}` : null, p ? fmtRelative(p.at) : null].filter(Boolean).join(' · '),
         acts: [h('a.btn.btn--sm.btn--primary', { href: `#/orders/${o.ref || o.id}` }, 'Check payment')] });
     }
     if (toCheck.length > 5) tasks.push({ ic: 'inbox', title: [`${toCheck.length - 5} more payments to check`], meta: 'Waiting in Orders & requests.', acts: [h('a.btn.btn--sm', { href: '#/orders?pay=check' }, 'Open')] });
@@ -361,14 +365,24 @@ function overview(ctx) {
         markBtn.disabled = true;
         try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'PATCH', body: { status: 'contacted' } }); toast(`${o.name} moved to Contacted`, 'success'); load(); } catch (err) { markBtn.disabled = false; toast(err.message, 'error'); }
       } }, icon('check', 15), 'Contacted');
-      tasks.push({ ic: o.kind === 'custom' ? 'wand' : 'call', title: [`Call back `, h('b', o.name)],
-        meta: [o.kind === 'custom' ? 'Custom design request' : 'Order', o.plan ? planName(o.plan) : null, o.weddingDate ? `wedding ${fmtDate(o.weddingDate)}` : null, fmtRelative(o.at)].filter(Boolean).join(' · '),
-        acts: [
-          h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}`, 'aria-label': `Call ${o.name}, ${o.phone}` }, icon('call', 15), h('span.tnum', o.phone)),
-          h('a.btn.btn--sm.btn--icon-sm', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ${o.name}`, title: 'WhatsApp' }, icon('chat', 15)),
-          markBtn] });
+      // International customers are reached by email first
+      const reach = isIntl(o) && o.email
+        ? [h('a.btn.btn--sm', { href: `mailto:${o.email}`, 'aria-label': `Email ${o.name}` }, icon('mail', 15), 'Email'),
+          h('a.btn.btn--sm.btn--icon-sm', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ${o.name}`, title: 'WhatsApp' }, icon('chat', 15))]
+        : [h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}`, 'aria-label': `Call ${o.name}, ${o.phone}` }, icon('call', 15), h('span.tnum', o.phone)),
+          h('a.btn.btn--sm.btn--icon-sm', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ${o.name}`, title: 'WhatsApp' }, icon('chat', 15))];
+      tasks.push({ ic: isIntl(o) ? 'globe' : 'call', title: [isIntl(o) ? 'Get back to ' : 'Call back ', h('b', o.name)],
+        meta: [isIntl(o) ? 'International order' : 'Order', o.plan ? planName(o.plan) : null, o.weddingDate ? `wedding ${fmtDate(o.weddingDate)}` : null, fmtRelative(o.at)].filter(Boolean).join(' · '),
+        acts: [...reach, markBtn] });
     }
     if (fresh.length > 5) tasks.push({ ic: 'inbox', title: [`${fresh.length - 5} more new orders`], meta: 'Waiting in Orders & requests.', acts: [h('a.btn.btn--sm', { href: '#/orders' }, 'Open orders')] });
+    // Enquiries (Custom design requests) waiting for a price
+    for (const o of enqNew.slice(0, 4)) {
+      tasks.push({ ic: 'wand', tone: 'accent', href: `#/orders/${o.ref || o.id}`, title: ['Enquiry from ', h('b', o.name), ': reply with a price'],
+        meta: [o.ref, MARKET_NAME[marketOf(o)], o.message ? `“${o.message.length > 70 ? `${o.message.slice(0, 68)}…` : o.message}”` : null, fmtRelative(o.at)].filter(Boolean).join(' · '),
+        acts: [h('a.btn.btn--sm.btn--primary', { href: `#/orders/${o.ref || o.id}` }, 'Set a price')] });
+    }
+    if (enqNew.length > 4) tasks.push({ ic: 'wand', title: [`${enqNew.length - 4} more enquiries waiting`], meta: 'In Orders & requests › Enquiries.', acts: [h('a.btn.btn--sm', { href: '#/orders?v=enquiries&f=new' }, 'Open enquiries')] });
     for (const i of list.filter((x) => x.changed)) {
       const pub = h('button.btn.btn--sm.btn--ink', { type: 'button' }, 'Publish');
       pub.addEventListener('click', () => publishNow(ctx, i, pub, load));
@@ -437,7 +451,7 @@ function overview(ctx) {
       const i = list.find((x) => x.slug === slug);
       for (const x of (r.replies || []).slice(0, 30)) ev.push({ at: x.at, ic: 'chat', text: [h('b', x.name), x.attending === 'yes' ? ` is coming${x.guests > 1 ? `, ${x.guests} guests` : ''}` : ' can’t come', h('span.act__ctx', ` · ${nameOf(i)}`)], href: `#/replies?i=${encodeURIComponent(slug)}` });
     }
-    for (const o of (orders || []).slice(0, 20)) ev.push({ at: o.at, ic: 'inbox', text: [o.kind === 'custom' ? 'Custom design request from ' : 'New order from ', h('b', o.name)], href: '#/orders' });
+    for (const o of (orders || []).slice(0, 20)) ev.push({ at: o.at, ic: isEnquiry(o) ? 'wand' : 'inbox', text: [isEnquiry(o) ? 'Enquiry from ' : 'New order from ', h('b', o.name), isIntl(o) ? h('span.act__ctx', ' · International') : null], href: `#/orders/${o.ref || o.id}` });
     for (const o of (orders || []).slice(0, 40)) for (const p of o.pay?.proofs || []) ev.push({ at: p.at, ic: 'check', text: ['Payment screenshot from ', h('b', o.name), ` (${p.methodLabel || p.method})`], href: '#/orders?pay=check' });
     ev.sort((a, b) => String(b.at).localeCompare(String(a.at)));
     const dayKey = (iso) => new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ });
@@ -458,6 +472,24 @@ function overview(ctx) {
         h('time.act__when', { datetime: e.at, title: whenText(e.at) }, timeOf(e.at))))))))
       : quietEmpty('history', 'Nothing yet', 'Replies, edits and orders show up here as they happen.'));
   };
+  // By market (GET /api/admin/markets): new orders, enquiries waiting, screenshots to check, money this month
+  const marketsBox = h('div', canAny('orders', 'finance') ? rowsSkel(3) : null);
+  function drawMarkets(m) {
+    if (!m) { fill(marketsBox); return; }
+    const M = m.markets;
+    const cellLink = (href, n, accent) => (n ? h('a.mkv__n', { href, class: accent ? 'is-accent' : '' }, String(n)) : h('span.mkv__zero', '0'));
+    const paid = (p) => [p.NPR ? moneyIn(p.NPR, 'NPR') : null, p.USD ? moneyIn(p.USD, 'USD') : null].filter(Boolean).join(' · ') || '—';
+    const rows = [
+      ['New orders', (k) => cellLink(`#/orders?f=new&m=${k}`, M[k].newOrders, M[k].newOrders > 0)],
+      ['Enquiries waiting', (k) => cellLink(`#/orders?v=enquiries&f=new&m=${k}`, M[k].enquiriesWaiting, M[k].enquiriesWaiting > 0)],
+      ['Payments to check', (k) => cellLink(`#/orders?f=check&m=${k}`, M[k].toCheck, M[k].toCheck > 0)],
+      ['Paid this month', (k) => h(can('finance') ? 'a.mkv__money' : 'span.mkv__money', can('finance') ? { href: `#/finance?m=${k}` } : {}, paid(M[k].paidThisMonth))],
+    ];
+    fill(marketsBox, h('table.dtable.mkv',
+      h('caption.sr-only', 'Figures by market'),
+      h('thead', h('tr', h('th', { scope: 'col' }, h('span.sr-only', 'Figure')), h('th.num', { scope: 'col' }, 'Nepal'), h('th.num', { scope: 'col' }, 'International'))),
+      h('tbody', rows.map(([label, cell]) => h('tr', h('th', { scope: 'row' }, label), h('td.num.tnum', cell('np')), h('td.num.tnum', cell('intl')))))));
+  }
   load();
 
   return h('div.ov',
@@ -465,6 +497,7 @@ function overview(ctx) {
       h('section.sect', { 'aria-labelledby': 'ov-needs' }, h('header.sect__head', h('h2.sect__title#ov-needs', 'Needs you', needsCount)), needs),
       can('invitations') ? h('section.sect', { 'aria-labelledby': 'ov-up' }, sectHead('Upcoming weddings', { id: 'ov-up', more: more('#/invitations', 'All invitations') }), upcoming) : null),
     h('aside.ov__side', { 'aria-labelledby': 'ov-act' },
+      canAny('orders', 'finance') ? h('section.sect', { 'aria-labelledby': 'ov-mkt' }, sectHead('By market', { id: 'ov-mkt', more: can('orders') ? more('#/orders', 'Orders') : null }), marketsBox) : null,
       h('section.sect', sectHead('Recent activity', { id: 'ov-act' }), feed)));
 }
 
@@ -620,9 +653,7 @@ const PAY_STATE = {
   comped: ['ok', 'Free access'], // given without payment (admin-finance.js); never counted as money
 };
 const payState = (o) => o.payStatus || o.pay?.status || null;
-const npr = (n) => `Rs ${Number(n).toLocaleString('en-IN')}`;
-const usd = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
-const priceLine = (a, from) => [a?.npr != null ? `${from ? 'from ' : ''}${npr(a.npr)}` : null, a?.usd != null ? usd(a.usd) : null].filter(Boolean).join(' · ');
+
 const ppMoney = (p) => (p?.amount ? `${p.currency || 'USD'} ${p.amount}` : '');
 const ppBase = (p) => (p?.env === 'live' ? 'https://www.paypal.com' : 'https://www.sandbox.paypal.com');
 
@@ -652,7 +683,7 @@ function proofDialog(o, p) {
     title: `${o.name} · screenshot ${p.n}`, wide: true, cls: 'proofview',
     body: [h('div.proofview__pic', img),
       h('dl.kv', h('div', h('dt', 'Paid with'), h('dd', p.methodLabel || p.method)), h('div', h('dt', 'They say they paid'), h('dd', p.amountPaid || '—')),
-        h('div', h('dt', 'Expected'), h('dd', priceLine(o.amount, o.planFrom) || '—')), h('div', h('dt', 'Sent'), h('dd', h('time', { datetime: p.at, title: whenText(p.at) }, fmtRelative(p.at)))),
+        h('div', h('dt', 'Expected'), h('dd', priceFor(o.amount, marketOf(o), o.planFrom) || '—')), h('div', h('dt', 'Sent'), h('dd', h('time', { datetime: p.at, title: whenText(p.at) }, fmtRelative(p.at)))),
         p.note ? h('div', h('dt', 'Their note'), h('dd', p.note)) : null)],
     actions: [h('a.btn', { href: p.url, target: '_blank', rel: 'noopener' }, icon('external', 15), 'Open full size')],
   });
@@ -690,12 +721,12 @@ function manualDialog(o, methods) {
     const err = h('p.form-error', { role: 'alert' });
     const priceIn = (c) => (c === 'USD' ? o.amount?.usd : o.amount?.npr);
     const setCur = (c) => { cur.value = c; cur.dispatchEvent(new Event('change')); amt.value = priceIn(c) ?? ''; };
-    setCur(o.amount?.npr == null && o.amount?.usd != null ? 'USD' : 'NPR');
+    setCur((isIntl(o) && o.amount?.usd != null) || (o.amount?.npr == null && o.amount?.usd != null) ? 'USD' : 'NPR');
     cur.addEventListener('change', () => { if (!amt.value || Number(amt.value) === Number(priceIn(cur.value === 'USD' ? 'NPR' : 'USD'))) amt.value = priceIn(cur.value) ?? ''; });
     sel.addEventListener('change', () => { const m = methods.find((x) => x.label === sel.value); if (m?.currency && m.currency !== cur.value) setCur(m.currency); });
     const d = openDialog({
       title: `Mark ${o.name}’s order as paid`,
-      body: [h('p.dialog__text', `For money you received another way. Expected: ${priceLine(o.amount, o.planFrom) || 'no price set'}.`),
+      body: [h('p.dialog__text', `For money you received another way. Expected: ${priceFor(o.amount, marketOf(o), o.planFrom) || 'no price set'}.`),
         h('div.field', h('label.label', { for: 'man-method' }, 'How they paid'), sel),
         h('div.cu-two', h('div.field', h('label.label', { for: 'man-cur' }, 'Currency'), cur), h('div.field', h('label.label', { for: 'man-amt' }, 'Amount received'), amt)),
         h('div.field', h('label.label', { for: 'man-note' }, 'Note (only you see it)'), note), err],
@@ -735,7 +766,7 @@ function payPanel(o, { patch, redraw, methods }) {
   const last = proofs.at(-1);
   const via = o.pay?.via === 'manual' ? `By hand${o.pay.manual?.method ? ` · ${o.pay.manual.method}` : ''}` : o.pay?.via === 'paypal' ? 'PayPal checkout' : last ? last.methodLabel || last.method : null;
   return h('section.paybox', { class: s ? `is-${s}` : '', 'aria-label': `Payment for ${o.name}` },
-    h('header.paybox__head', payBadge(o), h('span.paybox__amt.tnum', priceLine(o.amount, o.planFrom) || 'No price set'), o.ref ? h('span.paybox__ref.tnum', o.ref) : null),
+    h('header.paybox__head', payBadge(o), h('span.paybox__amt.tnum', priceFor(o.amount, marketOf(o), o.planFrom) || 'No price set'), o.ref ? h('span.paybox__ref.tnum', o.ref) : null),
     proofs.length ? h('ul.proofs', proofs.map((p) => h('li', h('button.proof', { type: 'button', onclick: () => proofDialog(o, p), 'aria-label': `Open screenshot ${p.n}` },
       h('img', { src: p.thumb, alt: '', loading: 'lazy', decoding: 'async' }),
       h('span.proof__cap', h('b', p.methodLabel || p.method), h('span.tnum', p.amountPaid || '—')))))) : null,
@@ -750,15 +781,24 @@ function payPanel(o, { patch, redraw, methods }) {
     h('div.paybox__acts', acts.filter(Boolean)));
 }
 
-// One filter bar (stage and payment in plain words), a thin table (one row per order), and a drawer with everything
-// about one order: #/orders/<ref> deep-links it, and Back closes it.
+/// One filter bar (stage and payment in plain words), a thin table (one row per order), and a drawer with everything
+// about one order: #/orders/<ref> deep-links it, and Back closes it. Two views: Orders (people who chose a plan) and
+// Enquiries (Custom design requests: price, quote sent, then an order; docs/API.md "Enquiries"), each filtered by
+// market (?m=np|intl) as well.
 const ORDER_FILTERS = [
   ['all', 'All'], ['new', 'New (to call)'], ['check', 'Payment to check'], ['waiting', 'Waiting for payment'],
   ['paid', 'Paid'], ['free', 'Free access'], ['done', 'Done'], ['archived', 'Archived'],
 ];
+const ENQ_FILTERS = [['all', 'All'], ['new', 'Waiting for a reply'], ['quoted', 'Price set'], ['sent', 'Quote sent'], ['converted', 'Now an order'], ['closed', 'Closed']];
+const ENQ_STAGE = { new: ['accent', 'Waiting for a reply'], quoted: ['muted', 'Price set'], sent: ['ok', 'Quote sent'], converted: ['ok', 'Now an order'], closed: ['muted', 'Closed'] };
 const LEGACY_PAY = { check: 'check', awaiting: 'waiting', paid: 'paid' }; // older links: #/orders?pay=…
 const SHORT_PAY = { awaiting_payment: ['muted', 'Waiting'], proof_submitted: ['accent', 'To check'], confirmed: ['ok', 'Paid'], rejected: ['warn', 'Rejected'], refunded: ['warn', 'Refunded'], comped: ['ok', 'Free'] };
 const STAGE_TONE = { new: 'accent', contacted: 'muted', done: 'ok', archived: 'muted' };
+/** A Custom design request (an enquiry), before or after it became an order. */
+export const isEnquiry = (o) => o.kind === 'custom' || o.kind === 'enquiry' || o.enquiry === true;
+export const enquiryStage = (o) => (o.convertedAt ? 'converted' : o.status === 'archived' ? 'closed' : o.quote?.sentAt ? 'sent' : o.quote ? 'quoted' : 'new');
+/** In the Orders view: orders, and enquiries once they became orders. */
+const inOrders = (o) => !isEnquiry(o) || Boolean(o.convertedAt);
 const orderMatches = (o, f) => {
   const s = payState(o);
   if (f === 'archived') return o.status === 'archived';
@@ -772,6 +812,7 @@ const orderMatches = (o, f) => {
   if (f === 'free') return s === 'comped';
   return true;
 };
+const enquiryMatches = (o, f) => f === 'all' || enquiryStage(o) === f;
 const orderKey = (o) => o.ref || o.id;
 const shortPay = (o) => {
   const s = payState(o);
@@ -780,8 +821,91 @@ const shortPay = (o) => {
   return h('span.pill', { class: `pill--${tone}` }, text);
 };
 const stageOf = (o) => st(STAGE_TONE[o.status] || 'muted', STAGES.find(([s]) => s === o.status)?.[1] || o.status);
+const enqPill = (o) => { const [tone, text] = ENQ_STAGE[enquiryStage(o)]; return h('span.pill', { class: `pill--${tone}` }, text); };
+const quoteText = (q) => (q ? moneyIn(q.amount, q.currency) : '');
 
-/** The drawer: one order in plain sections. Returns { el, close, redraw }. */
+/** The message a planner sends with a quote (email or WhatsApp), with the pay link once there is one. */
+function quoteMessage(o, link = '') {
+  const first = String(o.name || '').split(' ')[0];
+  const intl = isIntl(o);
+  return [
+    `${intl ? 'Hello' : 'Namaste'} ${first},`,
+    '',
+    `Thank you for your custom design enquiry (${o.ref}). The price for your invitation website is ${quoteText(o.quote)}.`,
+    o.quote?.note ? o.quote.note : null,
+    '',
+    link ? `You can pay here${intl ? ' with PayPal or a card' : ''}: ${link}` : 'Reply to this message to go ahead, and we will send you a link to pay.',
+    '',
+    'Nimtto',
+  ].filter((x) => x !== null).join('\n');
+}
+const mailtoQuote = (o, link) => `mailto:${encodeURIComponent(o.email || '')}?subject=${encodeURIComponent(`Your Nimtto quote · ${o.ref}`)}&body=${encodeURIComponent(quoteMessage(o, link))}`;
+const waQuote = (o, link) => `https://wa.me/${waNumber(o.phone)}?text=${encodeURIComponent(quoteMessage(o, link))}`;
+
+/** The pay link of a converted enquiry, shown once with Copy, Email and WhatsApp. */
+function payLinkDialog(o, link) {
+  openDialog({
+    title: `${o.ref} is now an order`,
+    body: h('div.stack',
+      h('p.dialog__text', `Send ${o.name} this link to pay ${quoteText(o.quote)}. It is shown only now; an older link for this request stops working.${o.customerId ? ' They can also pay from their dashboard.' : ''}`),
+      h('div.inputrow', h('input.input.linkfield', { type: 'text', readonly: true, value: link, 'aria-label': 'Pay link', onfocus: (e) => e.target.select() }),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => copyText(link, 'Pay link copied') }, icon('copy', 15), 'Copy')),
+      h('div.row', o.email ? h('a.btn.btn--sm', { href: mailtoQuote(o, link) }, icon('mail', 15), 'Email it') : null,
+        o.phone ? h('a.btn.btn--sm.btn--wa', { href: waQuote(o, link), target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp it') : null)),
+  });
+}
+
+/** An enquiry's price: amount and currency, a note, Save, Mark quote sent, and Turn into an order. */
+function quotePanel(o, { redraw }) {
+  const q = o.quote || null;
+  const intl = isIntl(o);
+  const cur = h('select.input', { id: 'q-cur', 'aria-label': 'Currency' }, [['USD', 'US dollars ($)'], ['NPR', 'Rupees (Rs)']].map(([v, t]) => h('option', { value: v, selected: (q?.currency || (intl ? 'USD' : 'NPR')) === v }, t)));
+  const amt = h('input.input', { id: 'q-amt', type: 'number', inputmode: 'decimal', min: '1', step: '0.01', value: q?.amount ?? '', placeholder: intl ? 'e.g. 349' : 'e.g. 15000' });
+  const note = h('textarea.input', { id: 'q-note', rows: 2, maxlength: 1000, placeholder: 'What is included, e.g. two rounds of changes' }, q?.note || '');
+  const err = h('p.form-error', { role: 'alert' });
+  const send = async (body, msg) => {
+    err.textContent = '';
+    try {
+      const out = await api(`/orders/${encodeURIComponent(o.id)}/quote`, { method: 'PATCH', body });
+      Object.assign(o, out.order);
+      if (!out.order.quote?.sentAt) delete o.quote.sentAt;
+      toast(msg, 'success');
+      redraw();
+    } catch (ex) { err.textContent = ex.message; }
+  };
+  const saveBtn = h('button.btn.btn--sm', { type: 'button', onclick: () => {
+    const n = Number(amt.value);
+    if (!(n > 0)) { err.textContent = 'Enter the price.'; amt.focus(); return; }
+    send({ amount: n, currency: cur.value, note: note.value }, 'Price saved');
+  } }, q ? 'Save price' : 'Set price');
+  const sentBtn = !q ? null : q.sentAt
+    ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => send({ sent: false }, 'Marked as not sent') }, 'Undo “sent”')
+    : h('button.btn.btn--sm', { type: 'button', onclick: () => send({ sent: true }, 'Quote marked as sent') }, icon('check', 15), 'Mark quote sent');
+  const convertBtn = !q ? null : h('button.btn.btn--sm', { type: 'button', class: q.sentAt ? 'btn--primary' : '', onclick: async () => {
+    if (!(await confirmDialog({ title: `Turn ${o.ref} into an order?`, message: `It becomes an order for ${quoteText(q)} on the Custom plan, waiting for payment. You get a pay link to send.`, confirm: 'Turn into an order' }))) return;
+    try {
+      const out = await api(`/orders/${encodeURIComponent(o.id)}/convert`, { method: 'POST', body: {} });
+      Object.assign(o, out.order);
+      redraw();
+      payLinkDialog(o, out.payUrl);
+    } catch (ex) { err.textContent = ex.message; }
+  } }, icon('right', 15), 'Turn into an order');
+  const stageLine = !q ? 'Set a price, send it to them, then turn the enquiry into an order with a pay link.'
+    : q.sentAt ? `Sent ${fmtRelative(q.sentAt)}. When they agree, turn it into an order.` : 'Not sent yet. Send it by email or WhatsApp, then mark it sent.';
+  return h('div.quote',
+    h('div.cu-two',
+      h('div.field', h('label.label', { for: 'q-amt' }, 'Price'), amt),
+      h('div.field', h('label.label', { for: 'q-cur' }, 'Currency'), cur)),
+    h('div.field', h('label.label', { for: 'q-note' }, 'Note for them (optional)'), note),
+    err,
+    h('p.hint', stageLine),
+    h('div.row', saveBtn,
+      q && o.email ? h('a.btn.btn--sm.btn--quiet', { href: mailtoQuote(o) }, icon('mail', 15), 'Email the quote') : null,
+      q && o.phone ? h('a.btn.btn--sm.btn--quiet', { href: waQuote(o), target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp') : null),
+    q ? h('div.row', sentBtn, convertBtn) : null);
+}
+
+/** The drawer: one order (or enquiry) in plain sections. Returns { el, close, redraw }. */
 function orderDrawer(ctx, o, { patch, methods, onChange, onDeleted, onClose }) {
   const body = h('div.odr');
   const notes = h('textarea.input', { id: 'odr-notes', rows: 4, maxlength: 2000, placeholder: 'What they want, when to call…', value: o.notes || '' });
@@ -794,35 +918,42 @@ function orderDrawer(ctx, o, { patch, methods, onChange, onDeleted, onClose }) {
   const draw = () => {
     const idx = STAGES.findIndex(([s]) => s === o.status);
     const couple = [o.bride, o.groom].filter(Boolean).join(' & ');
-    const pay = payPanel(o, { patch, redraw: () => { draw(); onChange(); }, methods });
+    const mk = marketOf(o);
+    const enquiry = isEnquiry(o) && !o.convertedAt;
+    const pay = enquiry ? null : payPanel(o, { patch, redraw: () => { draw(); onChange(); }, methods });
     const invBtn = !can('invitations') ? null : o.invitation
       ? h('a.btn.btn--sm', { href: `#/i/${o.invitation}/home` }, icon('edit', 14), 'Open the invitation')
       : (() => {
         const b = h('button.btn.btn--sm.btn--primary', { type: 'button', onclick: () => createFromOrder(ctx, o, b) }, icon('plus', 14), 'Create invitation');
         return b;
       })();
+    // International customers are reached by email first; Nepal by phone and WhatsApp
+    const callBtn = h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), 'Call ', h('span.tnum', o.phone));
+    const waBtn = h('a.btn.btn--sm.btn--wa', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp');
+    const mailBtn = o.email ? h('a.btn.btn--sm', { href: `mailto:${o.email}` }, icon('mail', 15), 'Email') : null;
     fill(body,
       sect('Customer',
-        h('p.odr__name', o.name, h('span.tag', { class: o.kind === 'custom' ? 'tag--accent' : '' }, o.kind === 'custom' ? 'Custom design' : 'Order')),
-        h('div.row',
-          h('a.btn.btn--sm', { href: `tel:${digits(o.phone)}` }, icon('call', 15), 'Call ', h('span.tnum', o.phone)),
-          h('a.btn.btn--sm.btn--wa', { href: `https://wa.me/${waNumber(o.phone)}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp')),
+        h('p.odr__name', o.name, h('span.tag', { class: isEnquiry(o) ? 'tag--accent' : '' }, enquiry ? 'Enquiry' : o.enquiry ? 'From enquiry' : 'Order'), marketTag(mk)),
+        h('div.row', ...(mk === 'intl' ? [mailBtn, waBtn, callBtn] : [callBtn, waBtn])),
         o.email ? facts([['Email', h('a', { href: `mailto:${o.email}` }, o.email)]]) : null),
-      sect('Order',
+      sect(enquiry ? 'Enquiry' : 'Order',
         facts([
-          ['Order no.', h('span.tnum', o.ref || '—')],
+          [enquiry ? 'Enquiry no.' : 'Order no.', h('span.tnum', o.ref || '—')],
           ['Received', h('time', { datetime: o.at, title: whenText(o.at) }, `${fmtDate(o.at)} · ${fmtRelative(o.at)}`)],
-          ['Plan', o.plan ? `${o.planName || o.plan}${o.amount?.npr != null ? ` · ${priceLine(o.amount, o.planFrom)}` : ''}` : '—'],
-          ['Design', o.theme ? themeOf(ctx, o.theme)?.name || o.theme : 'Not chosen'],
+          ['Market', MARKET_NAME[mk]],
+          enquiry ? null : ['Plan', o.plan ? `${o.planName || o.plan}${priceFor(o.amount, mk, o.planFrom) ? ` · ${priceFor(o.amount, mk, o.planFrom)}` : ''}` : '—'],
+          o.enquiry && o.quote ? ['Quote', `${quoteText(o.quote)} · turned into an order ${fmtRelative(o.convertedAt)}`] : null,
+          ['Design', o.theme ? themeOf(ctx, o.theme)?.name || o.theme : enquiry ? 'No preference' : 'Not chosen'],
           couple ? ['Couple', couple] : null,
           ['Wedding date', o.weddingDate ? fmtDate(o.weddingDate) : 'Not given yet'],
           o.venue ? ['Venue', o.venue] : null,
-          ['Message', o.message || 'No message.'],
+          [enquiry ? 'What they want' : 'Message', o.message || 'No message.'],
           ...paypalFacts(o.payment),
         ])),
+      enquiry ? sect('Price (quote)', quotePanel(o, { redraw: () => { draw(); onChange(); } })) : null,
       pay ? sect('Payment', pay) : null,
       sect('Next step',
-        o.kind === 'order' || o.customerId ? h('div.odr__next', invBtn,
+        !enquiry && (o.kind === 'order' || o.customerId) ? h('div.odr__next', invBtn,
           h('p.hint', o.invitation ? `Linked to ${o.email || 'the customer'}’s dashboard.` : o.email ? `Filled with this order’s details and added to ${o.email}’s dashboard.` : 'Filled with this order’s details.')) : null,
         h('div.stepper', { role: 'group', 'aria-label': 'Stage' }, STAGES.map(([s, t], k) => h('button.stepper__b', {
           type: 'button', class: k < idx ? 'is-past' : k === idx ? 'is-on' : '', 'aria-pressed': String(k === idx),
@@ -830,9 +961,9 @@ function orderDrawer(ctx, o, { patch, methods, onChange, onDeleted, onClose }) {
         }, s === 'archived' ? 'Archive' : t)))),
       sect('Private notes', h('div.field', h('label.sr-only', { for: 'odr-notes' }, 'Private notes'), notes, saved)),
       h('div.odr__danger', h('button.btn.btn--sm.btn--danger-ghost', { type: 'button', onclick: async () => {
-        if (!(await confirmDialog({ title: 'Delete this order?', message: `The request from ${o.name} and any payment screenshots are removed for good.`, confirm: 'Delete', danger: true }))) return;
-        try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'DELETE' }); toast('Order deleted', 'success'); onDeleted(); d.close(); } catch (err) { toast(err.message, 'error'); }
-      } }, icon('trash', 15), 'Delete order')));
+        if (!(await confirmDialog({ title: enquiry ? 'Delete this enquiry?' : 'Delete this order?', message: `The request from ${o.name} and any payment screenshots are removed for good.`, confirm: 'Delete', danger: true }))) return;
+        try { await api(`/orders/${encodeURIComponent(o.id)}`, { method: 'DELETE' }); toast(enquiry ? 'Enquiry deleted' : 'Order deleted', 'success'); onDeleted(); d.close(); } catch (err) { toast(err.message, 'error'); }
+      } }, icon('trash', 15), enquiry ? 'Delete enquiry' : 'Delete order')));
   };
   draw();
   const d = openDialog({ title: `${o.ref || 'Order'} · ${o.name}`, body, cls: 'dialog--drawer', onClose });
@@ -843,10 +974,27 @@ function orders(ctx) {
   let list = [];
   let methods = [];
   let q = '';
+  let view = ctx.params.get('v') === 'enquiries' ? 'enquiries' : 'orders';
+  let mkt = ['np', 'intl'].includes(ctx.params.get('m')) ? ctx.params.get('m') : '';
   const fromUrl = ctx.params.get('f') || LEGACY_PAY[ctx.params.get('pay')] || 'all';
-  let f = ORDER_FILTERS.some(([v]) => v === fromUrl) ? fromUrl : 'all';
+  const filtersOf = () => (view === 'enquiries' ? ENQ_FILTERS : ORDER_FILTERS);
+  let f = filtersOf().some(([v]) => v === fromUrl) ? fromUrl : 'all';
   let drawer = null; // { key, d, pushed }
-  const bar = ftabs(ORDER_FILTERS, f, (v) => { f = v; setUrl(v === 'all' ? '#/orders' : `#/orders?f=${v}`); draw(); }, 'Show');
+  const urlOf = () => {
+    const p = new URLSearchParams();
+    if (view === 'enquiries') p.set('v', 'enquiries');
+    if (f !== 'all') p.set('f', f);
+    if (mkt) p.set('m', mkt);
+    const s = p.toString();
+    return s ? `#/orders?${s}` : '#/orders';
+  };
+  let bar = null;
+  const makeBar = () => { bar = ftabs(filtersOf(), f, (v) => { f = v; setUrl(urlOf()); draw(); }, 'Show'); };
+  makeBar();
+  const barBox = h('div.otools__bar', bar.el);
+  const views = h('div.tabs.otabs', { role: 'tablist', 'aria-label': 'Orders or enquiries' });
+  const mktSel = h('select.input.input--sm.mktsel', { 'aria-label': 'Market', onchange: (e) => { mkt = e.target.value; setUrl(urlOf()); draw(); } },
+    MARKET_FILTER.map(([v, t]) => h('option', { value: v, selected: v === mkt }, t)));
   const search = searchBox('Search name, phone, order no., email', debounce((v) => { q = v.trim().toLowerCase(); draw(); }, 120));
   const body = h('div.tablebox', rowsSkel(5));
   const patch = async (o, b) => {
@@ -872,7 +1020,7 @@ function orders(ctx) {
         if (me.byRoute) return; // Back already left #/orders/<ref>
         if (current().startsWith(`#/orders/${key}`)) {
           if (me.pushed) history.back();
-          else setUrl('#/orders');
+          else setUrl(urlOf());
         }
       },
     });
@@ -884,45 +1032,88 @@ function orders(ctx) {
     if (drawer) { drawer.byRoute = true; drawer.d.close(); }
   });
 
+  const openRow = (o) => {
+    const go = () => navigate(`#/orders/${orderKey(o)}`);
+    return { tabindex: 0, 'aria-label': `${o.ref || 'Order'} from ${o.name}: open`, onclick: go, onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } } };
+  };
+  const whoCell = (o, extra) => h('td.ocell--who', h('b', o.name), extra, isIntl(o) ? h('span.tag.mkt-m', 'Intl') : null);
   const row = (o) => {
     const proofs = o.pay?.proofs?.length || 0;
-    const go = () => navigate(`#/orders/${orderKey(o)}`);
-    return h('tr.orow', { tabindex: 0, 'aria-label': `${o.ref || 'Order'} from ${o.name}: open`, onclick: go, onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } } },
+    const mk = marketOf(o);
+    const price = shortPrice(o.amount, mk);
+    return h('tr.orow', openRow(o),
       h('td.ocell--ref', h('span.tnum', o.ref || '—')),
-      h('td.ocell--who', h('b', o.name), o.kind === 'custom' ? h('span.tag.tag--accent', 'Custom') : null),
-      h('td.ocell--plan', o.plan ? h('span', o.planName || o.plan, o.amount?.npr != null ? h('small.tnum', ` · ${npr(o.amount.npr)}`) : null) : h('span.ocell__none', '—')),
+      whoCell(o, o.enquiry ? h('span.tag.tag--accent', { title: 'Turned into an order from an enquiry' }, 'Custom') : null),
+      h('td.ocell--mkt', marketTag(mk)),
+      h('td.ocell--plan', o.plan ? h('span', o.planName || o.plan, price ? h('small.tnum', ` · ${price}`) : null) : h('span.ocell__none', '—')),
       h('td.ocell--design', o.theme ? themeOf(ctx, o.theme)?.name || o.theme : h('span.ocell__none', '—')),
       h('td.ocell--pay', h('span.ocell__pay', shortPay(o), proofs ? h('span.ocell__proof', { title: `${plural(proofs, 'payment screenshot')}` }, icon('image', 14)) : null)),
       h('td.ocell--stage', stageOf(o)),
       h('td.ocell--when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))));
   };
+  const enqRow = (o) => h('tr.orow', openRow(o),
+    h('td.ocell--ref', h('span.tnum', o.ref || '—')),
+    whoCell(o),
+    h('td.ocell--mkt', marketTag(marketOf(o))),
+    h('td.ocell--plan.ocell--msg', o.message ? h('span', { title: o.message }, o.message.length > 60 ? `${o.message.slice(0, 58)}…` : o.message) : h('span.ocell__none', '—')),
+    h('td.ocell--pay', o.quote ? h('span.tnum.ocell__quote', quoteText(o.quote)) : h('span.ocell__none', 'No price yet')),
+    h('td.ocell--stage', enqPill(o)),
+    h('td.ocell--when', h('time', { datetime: o.at, title: whenText(o.at) }, fmtRelative(o.at))));
+
+  const EMPTY = {
+    all: ['No orders yet', 'Orders from the website arrive here. Custom design requests are under Enquiries.'], new: ['No new orders', 'New orders wait here until you call them back.'],
+    check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here.'], waiting: ['Nobody is waiting to pay', ''],
+    paid: ['No paid orders yet', ''], free: ['No free access given', 'Orders you give without payment (Give free access) show here.'], done: ['Nothing done yet', ''], archived: ['Nothing archived', ''],
+  };
+  const ENQ_EMPTY = {
+    all: ['No enquiries yet', 'Custom design requests from the website arrive here. Reply with a price, then turn it into an order.'],
+    new: ['Every enquiry has a reply', 'New custom design requests wait here until you set a price.'], quoted: ['No prices waiting to be sent', ''],
+    sent: ['No quotes waiting for an answer', ''], converted: ['None turned into orders yet', ''], closed: ['Nothing closed', ''],
+  };
 
   function draw() {
-    const counts = Object.fromEntries(ORDER_FILTERS.map(([v]) => [v, list.filter((o) => orderMatches(o, v)).length]));
-    const fresh = list.filter((o) => o.status === 'new' || payState(o) === 'proof_submitted').length;
+    const inMkt = list.filter((o) => !mkt || marketOf(o) === mkt);
+    const ords = inMkt.filter(inOrders);
+    const enqs = inMkt.filter(isEnquiry);
+    const waiting = enqs.filter((o) => ['new', 'quoted'].includes(enquiryStage(o))).length;
+    const fresh = list.filter((o) => (inOrders(o) && o.status === 'new') || payState(o) === 'proof_submitted' || (isEnquiry(o) && enquiryStage(o) === 'new')).length;
     ctx.shell.setBadge('orders', fresh ? String(fresh) : '');
+    fill(views, [['orders', 'Orders', ords.filter((o) => o.status !== 'archived').length], ['enquiries', 'Enquiries', waiting]].map(([v, t, n]) => h('button.tabs__btn', {
+      type: 'button', role: 'tab', 'aria-selected': String(view === v), onclick: () => {
+        if (view === v) return;
+        view = v; f = 'all'; makeBar(); fill(barBox, bar.el); setUrl(urlOf()); draw();
+      },
+    }, t, n ? h('span.seg__n', { class: v === 'enquiries' && n ? 'is-accent' : '' }, String(n)) : null)));
+    const pool = view === 'enquiries' ? enqs : ords;
+    const matches = view === 'enquiries' ? enquiryMatches : orderMatches;
+    const counts = Object.fromEntries(filtersOf().map(([v]) => [v, pool.filter((o) => matches(o, v)).length]));
     bar.draw(f, counts);
-    for (const b of bar.el.children) b.classList.toggle('has-accent', (b.textContent.startsWith('Payment to check') && counts.check > 0) || (b.textContent.startsWith('New') && counts.new > 0));
-    const rows = list.filter((o) => orderMatches(o, f) && (!q || `${o.name} ${o.phone} ${o.ref || ''} ${o.email || ''}`.toLowerCase().includes(q)));
-    const empty = {
-      all: ['No orders yet', 'Orders and custom design requests from the website arrive here.'], new: ['No new orders', 'New orders wait here until you call them back.'],
-      check: ['No payments to check', 'When a customer uploads a payment screenshot, it shows up here.'], waiting: ['Nobody is waiting to pay', ''],
-      paid: ['No paid orders yet', ''], free: ['No free access given', 'Orders you give without payment (Give free access) show here.'], done: ['Nothing done yet', ''], archived: ['Nothing archived', ''],
-    };
-    fill(body, rows.length ? h('table.otable',
-      h('caption.sr-only', 'Orders and requests'),
-      h('thead', h('tr', ['Order no.', 'Customer', 'Plan', 'Design', 'Payment', 'Stage', 'Received'].map((t, k) => h('th', { scope: 'col', class: ['ocell--ref', 'ocell--who', 'ocell--plan', 'ocell--design', 'ocell--pay', 'ocell--stage', 'ocell--when'][k] }, t)))),
-      h('tbody', rows.map(row)))
-      : q ? quietEmpty('search', 'No orders match', 'Try a name, a phone number or an order number.') : quietEmpty('inbox', ...empty[f]));
+    for (const b of bar.el.children) {
+      const t = b.textContent;
+      b.classList.toggle('has-accent', (t.startsWith('Payment to check') && counts.check > 0) || (t.startsWith('New') && counts.new > 0) || (t.startsWith('Waiting for a reply') && counts.new > 0));
+    }
+    const rows = pool.filter((o) => matches(o, f) && (!q || `${o.name} ${o.phone} ${o.ref || ''} ${o.email || ''}`.toLowerCase().includes(q)));
+    const empty = (view === 'enquiries' ? ENQ_EMPTY : EMPTY)[f] || ['Nothing here', ''];
+    const heads = view === 'enquiries'
+      ? [['No.', 'ocell--ref'], ['Customer', 'ocell--who'], ['Market', 'ocell--mkt'], ['What they want', 'ocell--plan ocell--msg'], ['Quote', 'ocell--pay'], ['Stage', 'ocell--stage'], ['Received', 'ocell--when']]
+      : [['Order no.', 'ocell--ref'], ['Customer', 'ocell--who'], ['Market', 'ocell--mkt'], ['Plan', 'ocell--plan'], ['Design', 'ocell--design'], ['Payment', 'ocell--pay'], ['Stage', 'ocell--stage'], ['Received', 'ocell--when']];
+    fill(body, rows.length ? h('table.otable', { class: view === 'enquiries' ? 'otable--enq' : '' },
+      h('caption.sr-only', view === 'enquiries' ? 'Enquiries' : 'Orders'),
+      h('thead', h('tr', heads.map(([t, cls]) => h('th', { scope: 'col', class: cls }, t)))),
+      h('tbody', rows.map(view === 'enquiries' ? enqRow : row)))
+      : q ? quietEmpty('search', 'Nothing matches', 'Try a name, a phone number or an order number.')
+        : quietEmpty(view === 'enquiries' ? 'wand' : 'inbox', empty[0], mkt ? `${empty[1] ? `${empty[1]} ` : ''}Showing ${MARKET_NAME[mkt]} only.` : empty[1]));
   }
   loadSite().then((site) => { methods = site.paymentMethods || []; }).catch(() => {});
   api('/orders').then((r) => {
     list = ordersOf(r);
+    // an old link to an enquiry's filter (#/orders?f=…) opens the right view
+    if (ctx.sub) { const o = list.find((x) => orderKey(x) === ctx.sub); if (o && isEnquiry(o) && !o.convertedAt && view !== 'enquiries') { view = 'enquiries'; f = 'all'; makeBar(); fill(barBox, bar.el); } }
     draw();
     if (ctx.sub) openOrder(ctx.sub, false); // opened from a link: closing goes to #/orders, not Back
   }).catch((err) => fill(body, quietEmpty('inbox', err.status === 404 ? 'Orders are not available yet' : 'Could not load orders', err.status === 404 ? 'They will appear here once the server supports them.' : err.message)));
   ctx.cleanup?.(() => { if (drawer) { drawer.byRoute = true; drawer.d.close(); } });
-  return [h('div.toolbar2.otools', bar.el, h('div.toolbar2__end', search)), body];
+  return [views, h('div.toolbar2.otools', barBox, h('div.toolbar2__end', mktSel, search)), body];
 }
 
 // ── Replies (all invitations or one) ──────────────────────────────────────
@@ -981,6 +1172,11 @@ const DEFAULT_SITE = () => ({
   hiddenThemes: [],
   featuredThemes: [],
   themeTiers: {},
+  intl: { hero: { title: '', subtitle: '' }, contact: { phone: '', whatsapp: '', email: '', address: '' }, lead: 'email' },
+  featuredThemesIntl: [],
+  themeMarkets: {},
+  themeStyles: {},
+  themeOrder: { np: [], intl: [] },
 });
 // Design tiers (docs/API.md "Design tiers"): the cheapest plan that includes a design.
 const TIER_OPTS = [['saral', 'Saral'], ['shubha', 'Shubha'], ['shahi', 'Shahi']];
@@ -996,11 +1192,17 @@ const setting = (title, help, ...children) => h('section.setrow',
   h('header.setrow__aside', h('h2.setrow__title', title), help ? h('p.setrow__help', help) : null),
   h('div.setrow__body', ...children));
 
+const THEME_MARKET_LABEL = { np: 'Nepal', intl: 'International', both: 'Nepal and International' };
+// Themes: every design with its market (Nepal, International or both), style and plan tier; which are on the
+// website; and, per market's website, which are featured and in what order (site settings: themeMarkets,
+// themeStyles, featuredThemes / featuredThemesIntl, themeOrder; docs/API.md "Markets").
 function themesAdmin(ctx) {
   const root = h('div', rowsSkel(4));
   const status = h('span.savechip', { 'data-state': 'saved', role: 'status', 'aria-live': 'polite' }, h('span.savechip__dot', { 'aria-hidden': 'true' }), h('span.savechip__t', 'Saved'));
-  ctx.shell.setPage({ title: 'Themes', sub: 'Choose which designs the website shows, which are featured, and the cheapest plan that includes each.', actions: [status] });
+  ctx.shell.setPage({ title: 'Themes', sub: 'Which designs each website shows, featured and in what order, their market and style, and the cheapest plan that includes each.', actions: [status] });
   let f = 'all';
+  let sm = ctx.params?.get('m') === 'intl' ? 'intl' : 'np'; // the website being arranged: featured and order
+  let style = '';
   loadSite().then((site) => {
     const setState = (s, t) => { status.dataset.state = s; status.lastChild.textContent = t; };
     const save = debounce(async () => {
@@ -1008,44 +1210,90 @@ function themesAdmin(ctx) {
       try { const out = await putSite(site); Object.assign(site, out); setState('saved', 'Saved'); ctx.refreshMeta?.(); } catch (err) { setState('error', err.status === 404 ? 'Not available yet' : 'Not saved'); toast(err.message, 'error'); }
     }, 500);
     const list = ctx.meta.themes;
-    const tabs = ftabs([['all', 'All'], ['shown', 'On the website'], ['hidden', 'Hidden'], ['featured', 'Featured'], ...TIER_OPTS], f, (v) => { f = v; draw(); }, 'Show');
     site.themeTiers = site.themeTiers || {};
+    site.themeMarkets = site.themeMarkets || {};
+    site.themeStyles = site.themeStyles || {};
+    site.themeOrder = { np: [], intl: [], ...(site.themeOrder || {}) };
+    site.featuredThemesIntl = site.featuredThemesIntl || [];
     const tierOf = (t) => site.themeTiers[t.slug] || t.tier || 'shubha';
+    const mOf = (t) => site.themeMarkets[t.slug] || t.market || 'np';
+    const sOf = (t) => site.themeStyles[t.slug] ?? t.style ?? '';
+    const featKey = () => (sm === 'intl' ? 'featuredThemesIntl' : 'featuredThemes');
+    /** This website's designs in its order: the saved order first, the rest as listed. */
+    const ordered = () => {
+      const fit = list.filter((t) => fitsMarket(mOf(t), sm)).map((t) => t.slug);
+      const at = new Map((site.themeOrder[sm] || []).map((s, i) => [s, i]));
+      return fit.map((s, i) => [s, i]).sort((a, b) => (at.has(a[0]) ? at.get(a[0]) : 1e6 + a[1]) - (at.has(b[0]) ? at.get(b[0]) : 1e6 + b[1])).map(([s]) => s);
+    };
+    const move = (slug, d) => {
+      const o = ordered();
+      const i = o.indexOf(slug);
+      const j = i + d;
+      if (i < 0 || j < 0 || j >= o.length) return;
+      [o[i], o[j]] = [o[j], o[i]];
+      site.themeOrder = { ...site.themeOrder, [sm]: o };
+      draw(); save();
+      grid.querySelector(`[data-slug="${slug}"] .tadmin__move button:not(.is-disabled)`)?.focus();
+    };
+    const siteTabs = h('div.seg.seg--sm', { role: 'group', 'aria-label': 'Website' });
+    const tabs = ftabs([['all', 'All'], ['shown', 'On this website'], ['hidden', 'Hidden'], ['featured', 'Featured'], ...TIER_OPTS], f, (v) => { f = v; draw(); }, 'Show');
+    const styleSel = h('select.input.input--sm.mktsel', { 'aria-label': 'Style', onchange: (e) => { style = e.target.value; draw(); } },
+      [['', 'Every style'], ...STYLE_OPTS.slice(1)].map(([v, t]) => h('option', { value: v }, t)));
     const grid = h('ul.tgrid.tgrid--admin');
     const note = h('p.toolbar2__note');
+    const sel = (label, value, opts, onChange, aria) => h('label.tadmin__tier', h('span', label),
+      h('select.input.input--sm', { 'aria-label': aria, onchange: (e) => onChange(e.target.value) }, opts.map(([v, l]) => h('option', { value: v, selected: value === v }, l))));
     const draw = () => {
+      fill(siteTabs, [['np', 'Nepal website'], ['intl', 'International website']].map(([v, t]) => h('button.seg__btn', { type: 'button', 'aria-pressed': String(sm === v), onclick: () => { sm = v; setUrl(v === 'intl' ? '#/themes?m=intl' : '#/themes'); draw(); } }, t)));
       const hidden = new Set(site.hiddenThemes || []);
-      const feat = new Set(site.featuredThemes || []);
-      note.textContent = `${list.length - hidden.size} of ${list.length} on the website${feat.size ? ` · ${feat.size} featured` : ''}`;
+      const feat = new Set(site[featKey()] || []);
+      const order = ordered();
+      const onSite = (t) => !hidden.has(t.slug) && fitsMarket(mOf(t), sm);
+      const shownN = list.filter(onSite).length;
+      note.textContent = `${shownN} on the ${MARKET_NAME[sm]} website${feat.size ? ` · ${feat.size} featured` : ''}`;
       const tiers = { saral: 0, shubha: 0, shahi: 0 };
       list.forEach((t) => { tiers[tierOf(t)] += 1; });
-      tabs.draw(f, { all: list.length, shown: list.length - hidden.size, hidden: hidden.size, featured: feat.size, ...tiers });
-      const rows = list.filter((t) => f === 'all' || (f === 'shown' && !hidden.has(t.slug)) || (f === 'hidden' && hidden.has(t.slug)) || (f === 'featured' && feat.has(t.slug)) || f === tierOf(t));
-      fill(grid, rows.length ? rows.map((t) => h('li.tadmin', { class: hidden.has(t.slug) ? 'is-hidden' : '' },
-        h('a.tcard', { href: `/${t.slug}/`, target: '_blank', rel: 'noopener', 'aria-label': `${t.name}: open the demo in a new tab` },
-          h('span.tcard__img', t.thumb ? h('img', { src: t.thumb, alt: '', loading: 'lazy' }) : h('span.thumb-ph', t.name),
-            feat.has(t.slug) ? h('span.tcard__on', icon('star', 12), 'Featured') : null,
-            h('span.tcard__view', icon('external', 13), 'Demo'),
-            t.ready === false ? h('span.tcard__soon', 'Not ready') : null),
-          h('span.tcard__name', t.name, h('span.tier', { class: `tier--${tierOf(t)}` }, TIER_LABEL[tierOf(t)])), t.concept ? h('span.tcard__concept', t.concept) : null),
-        h('div.tadmin__toggles',
-          h('label.tadmin__tier', h('span', 'Plan from'),
-            h('select.input.input--sm', { 'aria-label': `Cheapest plan that includes ${t.name}`, onchange: (e) => { site.themeTiers = { ...site.themeTiers, [t.slug]: e.target.value }; t.tier = e.target.value; draw(); save(); } },
-              TIER_OPTS.map(([v, l]) => h('option', { value: v, selected: tierOf(t) === v }, l)))),
-          toggle({ label: 'On the website', checked: !hidden.has(t.slug), onChange: (v) => {
-            site.hiddenThemes = v ? site.hiddenThemes.filter((x) => x !== t.slug) : [...new Set([...site.hiddenThemes, t.slug])];
-            if (!v) site.featuredThemes = site.featuredThemes.filter((x) => x !== t.slug); // a hidden design cannot be featured
-            draw(); save();
-          } }),
-          (() => {
-            const fe = toggle({ label: 'Featured', checked: feat.has(t.slug), onChange: (v) => { site.featuredThemes = v ? [...new Set([...site.featuredThemes, t.slug])] : site.featuredThemes.filter((x) => x !== t.slug); draw(); save(); } });
-            if (hidden.has(t.slug)) { fe.querySelector('input').disabled = true; fe.classList.add('is-disabled'); fe.title = 'Show it on the website first.'; }
-            return fe;
-          })())))
+      tabs.draw(f, { all: list.length, shown: shownN, hidden: hidden.size, featured: feat.size, ...tiers });
+      const pos = new Map(order.map((s, i) => [s, i]));
+      const rows = list
+        .filter((t) => (f === 'all' || (f === 'shown' && onSite(t)) || (f === 'hidden' && hidden.has(t.slug)) || (f === 'featured' && feat.has(t.slug)) || f === tierOf(t)) && (!style || sOf(t) === style))
+        .sort((a, b) => (pos.has(a.slug) ? pos.get(a.slug) : 1e6) - (pos.has(b.slug) ? pos.get(b.slug) : 1e6));
+      fill(grid, rows.length ? rows.map((t) => {
+        const fits = fitsMarket(mOf(t), sm);
+        const i = pos.get(t.slug);
+        return h('li.tadmin', { class: [hidden.has(t.slug) ? 'is-hidden' : '', fits ? '' : 'is-elsewhere'].join(' ').trim(), 'data-slug': t.slug },
+          h('a.tcard', { href: `/${t.slug}/`, target: '_blank', rel: 'noopener', 'aria-label': `${t.name}: open the demo in a new tab` },
+            h('span.tcard__img', t.thumb ? h('img', { src: t.thumb, alt: '', loading: 'lazy' }) : h('span.thumb-ph', t.name),
+              feat.has(t.slug) && fits ? h('span.tcard__on', icon('star', 12), 'Featured') : null,
+              h('span.tcard__view', icon('external', 13), 'Demo'),
+              t.ready === false ? h('span.tcard__soon', 'Not ready') : null),
+            h('span.tcard__name', t.name, h('span.tier', { class: `tier--${tierOf(t)}` }, TIER_LABEL[tierOf(t)])),
+            h('span.tcard__concept', `${THEME_MARKET_LABEL[mOf(t)]}${sOf(t) ? ` · ${STYLE_OPTS.find(([v]) => v === sOf(t))?.[1]}` : ''}`)),
+          h('div.tadmin__toggles',
+            h('div.tadmin__sels',
+              sel('Market', mOf(t), THEME_MARKET_OPTS, (v) => { site.themeMarkets = { ...site.themeMarkets, [t.slug]: v }; t.market = v; if (!fitsMarket(v, 'intl')) site.featuredThemesIntl = site.featuredThemesIntl.filter((x) => x !== t.slug); if (!fitsMarket(v, 'np')) site.featuredThemes = site.featuredThemes.filter((x) => x !== t.slug); draw(); save(); }, `Which website shows ${t.name}`),
+              sel('Style', sOf(t), STYLE_OPTS, (v) => { site.themeStyles = { ...site.themeStyles, [t.slug]: v }; t.style = v; draw(); save(); }, `Style of ${t.name}`),
+              sel('Plan from', tierOf(t), TIER_OPTS, (v) => { site.themeTiers = { ...site.themeTiers, [t.slug]: v }; t.tier = v; draw(); save(); }, `Cheapest plan that includes ${t.name}`)),
+            toggle({ label: 'On the website', checked: !hidden.has(t.slug), onChange: (v) => {
+              site.hiddenThemes = v ? site.hiddenThemes.filter((x) => x !== t.slug) : [...new Set([...site.hiddenThemes, t.slug])];
+              if (!v) { site.featuredThemes = site.featuredThemes.filter((x) => x !== t.slug); site.featuredThemesIntl = site.featuredThemesIntl.filter((x) => x !== t.slug); } // a hidden design cannot be featured
+              draw(); save();
+            } }),
+            (() => {
+              const k = featKey();
+              const fe = toggle({ label: `Featured on ${MARKET_NAME[sm]}`, checked: feat.has(t.slug) && fits, onChange: (v) => { site[k] = v ? [...new Set([...site[k], t.slug])] : site[k].filter((x) => x !== t.slug); draw(); save(); } });
+              if (hidden.has(t.slug) || !fits) { fe.querySelector('input').disabled = true; fe.classList.add('is-disabled'); fe.title = hidden.has(t.slug) ? 'Show it on the website first.' : `Set its market to ${MARKET_NAME[sm]} or Both first.`; }
+              return fe;
+            })(),
+            fits ? h('div.tadmin__move', h('span.tadmin__pos.tnum', `#${i + 1} on ${MARKET_NAME[sm]}`),
+              iconBtn('left', `Move ${t.name} earlier on the ${MARKET_NAME[sm]} website`, () => move(t.slug, -1), i === 0 ? 'is-disabled' : ''),
+              iconBtn('right', `Move ${t.name} later on the ${MARKET_NAME[sm]} website`, () => move(t.slug, 1), i === order.length - 1 ? 'is-disabled' : ''))
+              : h('p.hint.tadmin__else', `Not on the ${MARKET_NAME[sm]} website`)));
+      })
         : h('li.tgrid__empty', quietEmpty('palette', 'No designs here', 'Try another filter.')));
     };
     draw();
-    fill(root, h('div.toolbar2', tabs.el, h('div.toolbar2__end', note)), grid);
+    fill(root, h('div.toolbar2.tadmin__bar', siteTabs, tabs.el, h('div.toolbar2__end', styleSel, note)), grid);
   }).catch((err) => fill(root, quietEmpty('alert', 'Could not load the website settings', err.message)));
   return root;
 }
@@ -1070,7 +1318,7 @@ function website(ctx) {
     const beforeUnload = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', beforeUnload);
     ctx.cleanup(() => { window.removeEventListener('beforeunload', beforeUnload); if (dirty) toast('Your website changes were not saved.', 'error'); });
-    ctx.shell.setPage({ title: 'Website', sub: 'Pricing, payment methods, contact details and the headline on the public website.', actions: [h('a.btn', { href: '/', target: '_blank', rel: 'noopener' }, icon('external', 15), 'View site'), saveBtn] });
+    ctx.shell.setPage({ title: 'Website', sub: 'Pricing, payment methods, contact details and headlines for the Nepal and International websites.', actions: [h('a.btn', { href: '/', target: '_blank', rel: 'noopener' }, icon('external', 15), 'Nepal site'), h('a.btn', { href: '/international/', target: '_blank', rel: 'noopener' }, icon('external', 15), 'International site'), saveBtn] });
     const validate = () => {
       const ids = new Set();
       for (const p of site.plans) {
@@ -1117,7 +1365,18 @@ function website(ctx) {
         fieldIn(`pl-note-${i}`, 'Short note', p.note, (v) => { p.note = v; }, { max: 160, placeholder: 'e.g. Most couples choose this' }),
         fieldIn(`pl-feat-${i}`, 'Included (one per line)', (p.features || []).join('\n'), (v) => { p.features = v.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 20); }, { multiline: true, rows: 4 }),
         toggle({ label: 'Show as “from”', hint: 'For a price that can grow, like Custom.', checked: p.from === true, onChange: (v) => { p.from = v; touch(); } }),
-        toggle({ label: 'Recommended', hint: 'Highlighted on the website.', checked: p.highlight, onChange: (v) => { site.plans.forEach((x) => { x.highlight = false; }); p.highlight = v; touch(); draw(); } }));
+        toggle({ label: 'Recommended', hint: 'Highlighted on the website.', checked: p.highlight, onChange: (v) => { site.plans.forEach((x) => { x.highlight = false; }); p.highlight = v; touch(); draw(); } }),
+        // which websites offer the plan (docs/API.md "Markets"): both unless unticked; at least one
+        h('fieldset.plan__mk', h('legend.label', 'Offered on'),
+          h('div.plan__mk-row', [['np', 'Nepal website'], ['intl', 'International website']].map(([k, t]) => h('label.checkline', h('input', {
+            type: 'checkbox', checked: (p.markets || ['np', 'intl']).includes(k), onchange: (e) => {
+              const on = new Set(p.markets || ['np', 'intl']);
+              if (e.target.checked) on.add(k); else on.delete(k);
+              if (!on.size) { e.target.checked = true; toast('A plan needs at least one website.', 'error'); return; }
+              p.markets = ['np', 'intl'].filter((x) => on.has(x));
+              touch();
+            },
+          }), h('span', t))))));
     };
     // ── Payment methods: QR codes shown on the website and on each customer's pay page ──
     const KINDS = [['khalti', 'Khalti'], ['esewa', 'eSewa'], ['bank', 'Bank (Fonepay / NepalPay)'], ['paypal', 'PayPal'], ['other', 'Other']];
@@ -1187,26 +1446,48 @@ function website(ctx) {
             iconBtn('trash', `Remove ${m.label || 'this method'}`, async () => { if (await confirmDialog({ title: `Remove ${m.label || 'this payment method'}?`, message: 'Customers stop seeing it after you save. Orders already paid keep their record.', confirm: 'Remove', danger: true })) { site.paymentMethods.splice(i, 1); site.paymentMethods.forEach((x, k) => { x.order = k; }); touch(); draw(); } }))));
     };
 
+    // The International website (/international/, US first, dollars): what differs from Nepal's. Empty = Nepal's.
+    const intlSetting = () => {
+      site.intl = { hero: { title: '', subtitle: '' }, contact: { phone: '', whatsapp: '', email: '', address: '' }, lead: 'email', ...(site.intl || {}) };
+      const ii = site.intl;
+      const lead = h('select.input', { id: 'ic-lead', onchange: (e) => { ii.lead = e.target.value; touch(); } },
+        [['email', 'Email'], ['whatsapp', 'WhatsApp'], ['phone', 'Phone']].map(([v, t]) => h('option', { value: v, selected: (ii.lead || 'email') === v }, t)));
+      const offered = site.plans.filter((p) => (p.markets || ['np', 'intl']).includes('intl')).map((p) => p.name || 'Unnamed');
+      return setting('International website', 'What differs on the International website (/international/, US first, prices in dollars, PayPal or card). Empty fields use the Nepal details above.',
+        fieldIn('ih-title', 'Headline', ii.hero?.title, (v) => { ii.hero = { ...ii.hero, title: v }; }, { max: 120, placeholder: 'Leave empty for the built-in words' }),
+        fieldIn('ih-sub', 'Line under it', ii.hero?.subtitle, (v) => { ii.hero = { ...ii.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 }),
+        h('div.pair',
+          fieldIn('ic-email', 'Email', ii.contact?.email, (v) => { ii.contact = { ...ii.contact, email: v }; }, { type: 'email', max: 254, placeholder: site.contact.email || 'hello@…' }),
+          h('div.field', h('label.label', { for: 'ic-lead' }, 'Contact shown first'), lead, h('p.hint', 'International couples usually prefer email.'))),
+        h('div.pair',
+          fieldIn('ic-wa', 'WhatsApp', ii.contact?.whatsapp, (v) => { ii.contact = { ...ii.contact, whatsapp: v }; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: site.contact.whatsapp || '+1 …' }),
+          fieldIn('ic-phone', 'Phone', ii.contact?.phone, (v) => { ii.contact = { ...ii.contact, phone: v }; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: site.contact.phone || '+1 …' })),
+        h('dl.kv.kv--rows.intl-sum',
+          h('div', h('dt', 'Plans offered'), h('dd', offered.length ? offered.join(', ') : 'None yet', h('small.hint', ' · tick “Offered on” on each plan above'))),
+          h('div', h('dt', 'Featured designs'), h('dd', `${(site.featuredThemesIntl || []).length} on International · ${(site.featuredThemes || []).length} on Nepal`,
+            can('themes') ? [' · ', h('a', { href: '#/themes?m=intl' }, 'Arrange them in Themes')] : null))));
+    };
     const draw = () => {
       fill(root,
         site.missing ? h('div.banner', icon('info', 16), h('span', 'The website settings are not available on the server yet. You can prepare them; saving will work once it is.')) : null,
         setting('Pricing plans', 'Shown on the public website in this order. Leave a price empty to show “Ask for price”.',
           h('div.plans', site.plans.map(planCard)),
-          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, priceUsd: null, from: false, currency: 'NPR', note: '', features: [], highlight: false }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null),
+          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, priceUsd: null, from: false, currency: 'NPR', note: '', features: [], highlight: false, markets: ['np', 'intl'] }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null),
         setting('Payment methods', 'QR codes customers scan after ordering, in this order. Each order’s code has the amount and remark inside where the app allows it; otherwise the pay page tells them what to type.',
           h('ul.pms', site.paymentMethods.map(methodRow)),
           site.paymentMethods.length < 12 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.paymentMethods.push({ id: '', label: '', kind: 'other', currency: 'NPR', accountName: '', accountHint: '', qr: '', note: '', enabled: true, order: site.paymentMethods.length, autoAmount: false, paypalMe: '' }); touch(); draw(); root.querySelectorAll('.pm').item(site.paymentMethods.length - 1)?.querySelector('input[id^="pm-label-"]')?.focus(); } }, icon('plus', 16), 'Add a payment method') : null,
           fieldIn('pay-remark', 'Payment remark', site.payRemark, (v) => { site.payRemark = v; }, { max: 40, cls: 'field--narrow', hint: 'Put in each QR as the remark where the app allows, or shown for the customer to type, so you can match the payment to the order. Use {ref} (required), {plan}, {name}. Plain letters only; at most 25 characters once filled in.' })),
-        setting('Contact details', 'In the website footer and contact section. Customers message this WhatsApp number after ordering.',
+        setting('Contact details', 'Nepal website: in the footer and contact section. Customers message this WhatsApp number after ordering.',
           h('div.pair',
             fieldIn('ct-phone', 'Phone', site.contact.phone, (v) => { site.contact.phone = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' }),
             fieldIn('ct-wa', 'WhatsApp', site.contact.whatsapp, (v) => { site.contact.whatsapp = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' })),
           h('div.pair',
             fieldIn('ct-email', 'Email', site.contact.email, (v) => { site.contact.email = v; }, { type: 'email', max: 254 }),
             fieldIn('ct-addr', 'Address', site.contact.address, (v) => { site.contact.address = v; }, { max: 300 }))),
-        setting('Website headline', 'Optional. Leave empty to keep the built-in words.',
+        setting('Website headline', 'Nepal website. Optional: leave empty to keep the built-in words.',
           fieldIn('hero-title', 'Headline', site.hero?.title, (v) => { site.hero = { ...site.hero, title: v }; }, { max: 120 }),
           fieldIn('hero-sub', 'Line under it', site.hero?.subtitle, (v) => { site.hero = { ...site.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 })),
+        intlSetting(),
         bar);
       saveBtn.disabled = !dirty;
       bar.hidden = !dirty;
@@ -1271,11 +1552,11 @@ export const ADMIN_MODULES = [
   { id: 'customers', perm: 'customers', title: 'Customers', icon: 'users', group: 'main', render: (ctx) => customersSection(ctx, listInvitations), sub: 'Everyone with an account: their details, sign-ins, orders and invitations. Open one to see it all.' },
   { id: 'access', perm: 'invitations', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
   { id: 'replies', perm: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
-  { id: 'orders', perm: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'From the website order form. Check each payment screenshot, then move the order along.' },
+  { id: 'orders', perm: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'Orders from both websites, and enquiries for a custom design. Check each payment, reply to each enquiry with a price.' },
   { id: 'finance', perm: 'finance', title: 'Finance', icon: 'wallet', group: 'business', render: financePage, sub: 'Money you actually received, refunds and free access. Rupees and dollars are always kept apart.' },
-  { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Choose which designs the website shows, and which are featured.' },
+  { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Which designs each website shows, featured and in what order.' },
   { id: 'music', perm: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
-  { id: 'website', perm: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and the headline on the public website.' },
+  { id: 'website', perm: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and headlines for the Nepal and International websites.' },
   { id: 'team', perm: 'team', title: 'Team & access', short: 'Team', icon: 'shield', group: 'business', render: teamPage, sub: 'Who can sign in to the studio, and what each person can open.' },
   { id: 'audit', perm: 'audit', title: 'Audit log', short: 'Audit', icon: 'history', group: 'business', render: auditPage, sub: 'Every change made in the studio: who, what, when and from where.' },
   { id: 'settings', title: 'Settings & help', short: 'Settings', icon: 'settings', group: 'business', render: settings, sub: 'Your account and where things live.' },

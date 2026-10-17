@@ -30,13 +30,52 @@ They edit their own data (names, families, dates, events, photos, music, wording
   - `share: { title, description, image }` (existing): `image` is a photo ref (library slug or upload object).
 
 ### `data/orders.json`
-`[{ id, at, kind: 'order' | 'custom', name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status: 'new' | 'contacted' | 'done' | 'archived', notes? , payment? }]`
+`[{ id, at, kind: 'order' | 'custom', market?: 'np' | 'intl', name, phone, email?, weddingDate?, theme?, plan?, message, invitation?, status: 'new' | 'contacted' | 'done' | 'archived', notes? , payment?, quote?, enquiry?, convertedAt? }]` (Markets below)
 `payment` (lib/payments, PayPal): `{ provider: 'paypal', env, status: 'created'|'pending'|'paid'|'partially_refunded'|'refunded'|'denied'|'mismatch', plan, amount: '49.00', currency: 'USD', paypalOrderId, captureId?, payerEmail?, payerName?, paidAt?, refunded?, refunds?, problem?, events?, createdAt, updatedAt }`.
 
 ### `data/site.json`
 `{ plans: [{ id, name, price, currency: 'NPR', usdPrice?: number | null, note?, features: string[], highlight: boolean }], contact: { phone, whatsapp, email, address }, hero: { title, subtitle }, hiddenThemes: string[], featuredThemes: string[] }`
 Defaults (no file yet): three placeholder plans named "Classic", "Premium", "Custom" with `price: null`
 (the site shows "Ask for price" when null) and empty contact.
+
+## Markets: Nepal and International
+
+Two markets, one product, one studio. API details: docs/API.md "Markets".
+
+| | Nepal (`np`) | International (`intl`) |
+|---|---|---|
+| Website | `/` | `/international/` (US first) |
+| Money | rupees (QR wallets, bank), dollars possible | US dollars: PayPal or a card |
+| Contact first | WhatsApp | email (Website › International website › Contact shown first) |
+| Custom design | an enquiry: price (quote), quote sent, then an order | the same, quoted in dollars |
+
+**Data.** Orders have `market` (missing = Nepal). Customers may have `market` (saved at sign-up from the website they
+came from); otherwise it is worked out from their orders and phone country. Phones are stored in E.164. The site
+document keeps Nepal's `hero`, `contact`, `featuredThemes` where they always were and adds `intl`, `featuredThemesIntl`,
+`themeMarkets`, `themeStyles`, `themeOrder` and `plans[].markets` (both when missing). Designs have a catalog `market`
+(`np` | `intl` | `both`) and `style`; the Themes page overrides them per design.
+
+**Admin (studio).**
+- Overview: a "By market" table (new orders, enquiries waiting, payments to check, paid this month in Rs and $);
+  International orders are reached by email first; enquiries waiting for a price are tasks.
+- Orders & requests: two views, **Orders** and **Enquiries**, both with a market filter and a Market column; prices
+  show in the market's currency. An enquiry's drawer has Price (amount, currency, note), Email / WhatsApp the quote,
+  Mark quote sent, and Turn into an order (a pay link to copy or send). A converted enquiry shows in Orders as
+  "From enquiry".
+- Customers: Market column (with the phone's country) and filter; the details dialog can set the market.
+- Finance: Both markets / Nepal / International at the top (every figure and the transactions follow it), and a
+  "By market" table for the chosen period. Rupees and dollars are still never added together.
+- Themes: Nepal website / International website switch; per design its market, style and plan; featured and order
+  (arrows) per website.
+- Website: per plan "Offered on" (Nepal, International); an "International website" section (headline, contact,
+  which contact leads, summary of plans and featured designs).
+- Team: quotes, conversion and market figures are under `orders`; market finance under `finance`.
+
+**Customer (studio).** International customers (their account's market) see dollars and "Pay with PayPal or card",
+"Hello" instead of "Namaste" and no Nepali words under the menu items, the Bikram Sambat dates hidden unless they ask
+for them, International designs first in every design picker, and email first for help. Their new invitation starts
+in their likely time zone. Every customer can change their phone number in My dashboard (checked as E.164). Nepal
+customers see what they always saw.
 
 ## API (all JSON; non-GET needs `X-CSRF-Token` + Origin check exactly as today, except the two public POSTs which use Origin check + honeypot + rate limit)
 

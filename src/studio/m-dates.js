@@ -4,6 +4,7 @@ import { textField, biField, photoSlot } from './fields.js';
 import { colorsEditor, infoSection } from './sections.js';
 import { bsDateOf } from '../core/i18n.js';
 import { CEREMONY_PRESETS, religionOf } from '../core/faith.js';
+import { intlMe } from './markets.js';
 import { DEFAULT_TZ, COMMON_ZONES, allZones, zoneOf, zonedIso, wallOf, restamp, offsetMinutes, offsetText } from '../core/tz.js';
 
 const blank = () => ({ en: '', ne: '' });
@@ -15,6 +16,9 @@ const more = (title, ...children) => h('details.more', h('summary', h('span', ti
 // Times are typed as wall-clock times at the venue (`timeZone`, absent = Nepal) and stored with that zone's
 // offset on the day (DST-aware), so the countdown and the calendar file get the right moment (src/core/tz.js).
 let zone = DEFAULT_TZ;
+// International customers (docs/PLATFORM.md "Markets"): the Bikram Sambat (Nepali calendar) dates stay hidden unless
+// they ask for them or one was typed in.
+let showBs = true;
 const parts = (iso) => wallOf(iso, zone);
 const iso = (date, time) => zonedIso(date, time, zone);
 const nextDay = (d) => { const t = new Date(`${d}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
@@ -52,6 +56,7 @@ function whenField(m, p, idBase) {
     const auto = bsDateOf(start);
     const own = m.get([...p, 'dateBS']);
     const hasOwn = own && (own.en || own.ne);
+    if (!showBs && !hasOwn && !editing) return;
     if (editing || hasOwn) {
       append(bsBox, [
         biField(m, [...p, 'dateBS'], { label: 'Date in Bikram Sambat', max: 120, placeholderEn: auto.en, placeholderNe: auto.ne, hint: 'Only if your purohit’s patro shows a different date. Leave empty to use the date worked out for you (shown in grey).' }),
@@ -126,6 +131,10 @@ function weddingDay(ctx) {
     const auto = bsDateOf(iso);
     const own = m.get(['weddingDateBS']);
     const hasOwn = own && (own.en || own.ne);
+    if (!showBs && !hasOwn && !editing) {
+      bsBox.append(h('button.link.bs__show', { type: 'button', onclick: () => { showBs = true; drawBs(); } }, 'Also show the date in the Nepali calendar (Bikram Sambat)'));
+      return;
+    }
     if (editing || hasOwn) {
       append(bsBox, [
         biField(m, ['weddingDateBS'], { label: 'Date in Bikram Sambat', max: 120, placeholderEn: auto.en, placeholderNe: auto.ne, hint: 'Only if your purohit’s patro shows a different date. Leave empty to use the date worked out for you (shown in grey).' }),
@@ -144,7 +153,7 @@ function weddingDay(ctx) {
     h('div.when.when--2', h('div.field', h('label.label', { for: 'wd-date' }, 'Date'), date), h('div.field', h('label.label', { for: 'wd-time' }, 'Time'), time)),
     bsBox,
     zoneField(m),
-    biField(m, ['city'], { label: 'City', max: 120, placeholderEn: 'Kathmandu, Nepal', placeholderNe: 'काठमाडौं, नेपाल' }),
+    biField(m, ['city'], { label: 'City', max: 120, placeholderEn: showBs ? 'Kathmandu, Nepal' : 'Napa, California', placeholderNe: 'काठमाडौं, नेपाल' }),
   );
 }
 
@@ -202,7 +211,7 @@ function ceremonies(ctx) {
       const presets = (CEREMONY_PRESETS[religionOf(m.data)] || []).filter((p) => ![...have].some((k) => k.startsWith(`${p.id} `) || k.endsWith(` ${p.title.en.toLowerCase()}`)));
       if (presets.length) {
         root.append(h('div.cer-presets', h('span.cer-presets__k', 'Quick add'),
-          presets.map((p) => h('button.chip.cer-presets__b', { type: 'button', onclick: () => add(p) }, icon('plus', 14), h('span', p.title.en), h('small', { lang: 'ne' }, p.title.ne)))));
+          presets.map((p) => h('button.chip.cer-presets__b', { type: 'button', onclick: () => add(p) }, icon('plus', 14), h('span', p.title.en), showBs ? h('small', { lang: 'ne' }, p.title.ne) : null))));
       }
       root.append(h('button.btn.btn--add', { type: 'button', onclick: () => add(null) }, icon('plus', 16), 'Add a ceremony'));
     }
@@ -215,6 +224,7 @@ function ceremonies(ctx) {
 
 export function datesModule(ctx) {
   zone = zoneOf(ctx.m.data);
+  showBs = !intlMe(ctx.me);
   const info = infoSection(ctx);
   info.querySelector(':scope > .sec__head')?.remove();
   return [weddingDay(ctx), ceremonies(ctx),
