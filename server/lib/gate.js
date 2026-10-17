@@ -31,7 +31,7 @@ async function sendWithMeta(req, res, distDir, theme, inv, slug) {
 }
 
 // Pages under dist/ that are not designs.
-const OPEN_PAGES = new Set(['studio', 'credits', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
+const OPEN_PAGES = new Set(['studio', 'credits', 'intl-preview', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
 
 let distPages = null;
 /** Top-level dist folders with an index.html (every built page), read once: dist does not change at runtime. */

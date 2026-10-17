@@ -1,0 +1,88 @@
+/* The international site (/intl-preview/): the same design system as every Nimtto page, re-toned. The romantic
+   crimson and blush become one fresh sage accent on white with soft sage tints; champagne gold only for small
+   details. Everything is scoped to body.market-intl, so no other page changes. Contrast on white: accent 5.3:1,
+   ink-2 8.6:1, ink-3 5.6:1 (5.0:1 on sage-100). */
+.market-intl {
+  --blush-50: #F5F8F3;      /* soft sage sections */
+  --blush-100: #EAF1E7;     /* cards on white */
+  --blush-200: #D7E5D2;
+  --rose-300: #B4CBAE;      /* decoration only */
+  --rose-500: #C8A96A;      /* champagne gold, decoration only */
+  --accent: #4A7556;        /* the one accent: sage, 5.3:1 on white */
+  --accent-h: #3B6046;
+  --accent-p: #2F4D3A;
+  --accent-wash: rgba(74, 117, 86, 0.08);
+  --gold: #C8A96A;
+  --ink: #17201A;
+  --ink-2: #434F47;
+  --ink-3: #5C6961;
+  --line: #E3EBE0;
+  --line-2: #D0DDCB;
+  --field: #87968C;
+  --night: #2F4D3A;         /* the one deep surface: forest sage, never black */
+  --shadow: 0 1px 2px rgba(23, 32, 26, 0.04), 0 18px 40px -18px rgba(38, 72, 50, 0.24);
+}
+
+/* the phone frame: a deep green-graphite body instead of wine */
+.market-intl .phone { background: #1F2622; box-shadow: inset 0 0 0 1px #3D4A42, 0 1px 2px rgba(23, 32, 26, 0.08), 0 24px 48px -26px rgba(28, 58, 40, 0.45); }
+.market-intl .om-d .phone { box-shadow: inset 0 0 0 1.5px #34403A; }
+
+/* tiers: Standard, Pro, Pro Max */
+.market-intl .tier--shahi { background: var(--night); color: #EBD9AE; }
+
+/* ---------------- the market switch: International | Nepal ---------------- */
+.mkt { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--blush-50); border: 1px solid var(--line-2); font-size: 13px; font-weight: 500; }
+.mkt__a { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; color: var(--ink-2); text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
+.mkt__a:hover { color: var(--accent); }
+.mkt__a[aria-current='page'] { background: #fff; color: var(--accent); box-shadow: 0 1px 2px rgba(23, 32, 26, 0.08), inset 0 0 0 1px var(--line-2); }
+.mkt--bar { display: none; }
+.mkt--sheet { align-self: start; margin-bottom: 16px; font-size: 14px; }
+.mkt--sheet .mkt__a { min-height: 36px; padding: 0 16px; }
+.sheet__top { display: grid; }
+@media (min-width: 1080px) { .mkt--bar { display: inline-flex; margin-right: 4px; } }
+@media (min-width: 1080px) and (max-width: 1279px) { .market-intl .nav__links a { padding: 8px 10px; font-size: 14.5px; } .market-intl .nav__in { gap: 16px; } }
+
+/* ---------------- hero: the sage glow under the phones ---------------- */
+/* (the hero's radial background reads the blush tokens, now sage) */
+
+/* ---------------- THE WREATH: the lotus scene's olive version ---------------- */
+.lo--wreath .lo-rays line { stroke: var(--gold); stroke-width: 0.9; opacity: 0.7; }
+.lo--wreath .lo-c1 { fill: none; stroke: var(--gold); stroke-width: 1; opacity: 0.85; }
+.lo--wreath .lo-c2 { fill: none; stroke: var(--rose-300); stroke-width: 1.2; }
+.lo--wreath .lo-beads circle { fill: var(--accent); opacity: 0.55; }
+.lo--wreath .lo-p__v { stroke: rgba(255, 255, 255, 0.5); stroke-width: 0.9; fill: none; }
+.lo--wreath .lo-olive { fill: #5E7E3E; }
+.lo--wreath .lo-podc { fill: #fff; stroke: var(--blush-200); stroke-width: 1; }
+.lo--wreath .lo-rings circle { fill: none; stroke: var(--gold); stroke-width: 4.2; }
+.lo--wreath .lo-rings circle + circle { stroke: #B8995A; }
+.lo--wreath .lo-spark { fill: var(--gold); }
+.market-intl .lotus__kick { font: italic 400 clamp(26px, 3vw, 42px)/1.2 var(--f-display); letter-spacing: -0.01em; }
+
+/* ---------------- traditions: the occasion cards, with an English kicker ---------------- */
+.market-intl .occ__kick { font: italic 400 clamp(24px, 2.2vw, 32px)/1.2 var(--f-display); letter-spacing: -0.012em; color: var(--accent); }
+.market-intl .occ--lead .occ__kick { color: #fff; }
+.market-intl .occ--lead { background: var(--accent) !important; }
+.market-intl .occ__facts b { white-space: nowrap; }
+
+/* ---------------- features ---------------- */
+.market-intl .fx--dates .fx__day { font: 400 clamp(30px, 3vw, 44px)/1.15 var(--f-display); color: var(--accent); text-align: center; }
+.market-intl .fx--dates .fx__chip { margin-top: 6px; padding: 8px 16px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); font-size: 14px; font-weight: 500; color: var(--accent); }
+.market-intl .sec--blush .fx--dates .fx__chip { background: var(--blush-50); }
+.fx--details { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); justify-content: center; gap: 10px; }
+.fx--details span { display: grid; place-items: center; min-width: 128px; padding: 14px 18px; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(23, 32, 26, 0.05); font: 400 22px/1.1 var(--f-display); color: var(--ink); }
+.fx--details span:first-child { background: var(--accent); color: #fff; }
+
+/* ---------------- plans: the highlighted plan on forest sage, its flag in champagne ---------------- */
+.market-intl .plan__flag { background: var(--gold); color: #1E261F; }
+.market-intl .plan--hi .plan__btn { color: var(--accent-p); }
+.market-intl .plan__feats li::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.2 2.2 4.8-5' fill='none' stroke='%234A7556' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.market-intl .plan--hi .plan__feats li::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.2 2.2 4.8-5' fill='none' stroke='%23fff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+
+/* ---------------- closing and footer ---------------- */
+.market-intl .closing { background: radial-gradient(100% 120% at 50% 0%, #5F8C6A 0%, var(--accent) 45%, #2F4D3A 100%); }
+.market-intl .closing__kick { font: italic 400 clamp(28px, 3vw, 44px)/1.2 var(--f-display); color: #E6D7B0; }
+.foot__np { font-size: 15px; }
+.foot__np .link { gap: 6px; }
+.lo--wreath .lo-bloom ellipse { fill: #F2C4CC; stroke: #fff; stroke-width: 0.6; }
+.lo--wreath .lo-bloom circle { fill: var(--gold); }
+.market-intl .closing__p { text-wrap: balance; }
