@@ -15,6 +15,7 @@ import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme, listThemes } from './catalog.js';
 import { readSite, EMAIL_RE, e164, tierProblem } from './site.js';
 import { sendVerify } from './account-mail.js';
+import { activate } from './activation.js';
 import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
 import { staffByEmail } from './staff.js';
 import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
@@ -384,6 +385,7 @@ export async function update(req, res) {
       if (p.status !== 'refunded') historyAdd(pay, p.status, 'admin', p.status === 'rejected' ? pay.reason : note || (p.manual === true ? `marked paid by hand (${pay.manual.method})` : ''));
     }
     await saveOrder(o);
+    if (p?.status === 'confirmed') activate(o.id, 'payment'); // the plan switches on by itself (lib/activation.js)
     return o;
   });
   if (p !== undefined) console.info(`[admin] order ${order.ref || order.id} payment=${p.status}${p.manual === true ? ' (manual)' : ''}`);

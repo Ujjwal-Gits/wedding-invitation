@@ -277,16 +277,17 @@ export function statusView(info, ref, token, wa) {
   return el('div', { class: 'paydone' },
     stepsLine(done ? 4 : 3),
     closed || stuck ? null : el('p', { class: 'paydone__ne', lang: 'ne', text: 'धन्यवाद' }),
-    el('h3', { class: 'pay__title', text: free ? 'Nothing to pay. We are making your invitation.' : done ? 'Payment confirmed. We are making your invitation.'
+    el('h3', { class: 'pay__title', text: free ? 'Nothing to pay. Your plan is active.' : done ? 'Payment received. Your plan is active.'
       : closed ? 'This order was refunded.' : stuck ? 'We could not confirm your payment.' : 'Payment sent. We will confirm soon.' }),
     el('p', { class: 'paydone__text', text: free
-      ? 'This plan is on us. We will message you on WhatsApp to collect your photos and wedding details.'
-      : done ? 'Thank you. We will message you on WhatsApp to collect your photos and wedding details.'
+      ? 'This plan is on us. Your invitation is ready in your dashboard: add your names, dates, photos and music.'
+      : done ? 'Thank you. Your invitation is ready in your dashboard: add your names, dates, photos and music. We are here on WhatsApp if you need help.'
       : closed ? 'Your money was sent back. If you have a question, please message us on WhatsApp.'
         : stuck ? (info.reason || 'Please message us on WhatsApp and we will sort it out with you.')
           : 'We check every payment by hand. When it is confirmed, we will message you on WhatsApp and start your invitation.' }),
     el('dl', { class: 'paydone__facts' }, rows.map(([k, v]) => el('div', {}, el('dt', { text: k }), el('dd', { text: v })))),
     el('div', { class: 'pay__acts' },
+      done ? el('a', { class: 'btn btn--primary', href: '/studio/' }, el('span', { text: 'Open my dashboard' })) : null,
       wa ? el('a', { class: 'btn btn--wa', href: waLink(wa, done ? `Hi Nimtto, this is about order ${ref}.` : `Hi Nimtto, I paid for order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null,
       token ? copyButton('Copy link to this page', () => payLink(ref, token)) : null),
     token ? el('p', { class: 'paydone__fine' }, 'Keep this link to check your order later: ', el('a', { href: `/pay/${encodeURIComponent(ref)}?t=${encodeURIComponent(token)}`, text: `${location.host}/pay/${ref}` })) : null);

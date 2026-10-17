@@ -56,6 +56,7 @@ before(async () => {
   api.post('/orders', json, wrap(orders.submit));
   api.get('/orders', auth.requireAdmin, wrap(orders.list));
   api.post('/orders/:id/invitation', auth.requireAdmin, json, wrap(handover.createForOrder));
+  api.patch('/orders/:id', auth.requireAdmin, json, wrap(orders.update));
   api.get('/account', auth.requireCustomer, wrap(customers.account));
   api.patch('/account/orders/:ref', auth.requireCustomer, json, wrap(customers.patchOrder));
   api.get('/admin/customers', auth.requireAdmin, wrap(customers.adminList));
@@ -317,4 +318,25 @@ test('Create invitation from an order: one click, filled from the order, linked;
   const q = await c.req(`/api/account/orders/${o.body.ref}`, { method: 'PATCH', body: { bride: 'Someone Else' } });
   assert.deepEqual(q.body.filled, []);
   assert.equal((await c.req('/api/invitations/rita-kamal')).body.data.couple.bride.name.en, 'Rita');
+});
+
+test('a paid order switches its plan on by itself: invitation made and in the dashboard, once', async () => {
+  const c = browser();
+  const o = await c.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'shahi', name: 'Sita', email: 'sita@example.com', password: 'sita-pass-1', bride: 'Sita', groom: 'Ram' } });
+  assert.equal(o.status, 201, JSON.stringify(o.body));
+  const id = (await admin.req('/api/orders')).body.orders.find((x) => x.ref === o.body.ref).id;
+  assert.deepEqual((await c.req('/api/account')).body.invitations, [], 'nothing before payment');
+  // the planner confirms the QR payment: no further click needed
+  assert.equal((await admin.req(`/api/orders/${id}`, { method: 'PATCH', body: { payment: { status: 'confirmed' } } })).status, 200);
+  let invs = [];
+  for (let i = 0; i < 50 && !invs.length; i++) { await new Promise((r) => setTimeout(r, 20)); invs = (await c.req('/api/account')).body.invitations; }
+  assert.equal(invs.length, 1, 'the invitation appears in their dashboard');
+  assert.equal(invs[0].plan.id, 'shahi');
+  assert.equal((await c.req(`/api/invitations/${invs[0].slug}`)).status, 200, 'they can edit it');
+  const order = (await admin.req('/api/orders')).body.orders.find((x) => x.id === id);
+  assert.equal(order.invitation, invs[0].slug);
+  // confirming again does not make a second one
+  await admin.req(`/api/orders/${id}`, { method: 'PATCH', body: { payment: { status: 'confirmed' } } });
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal((await c.req('/api/account')).body.invitations.length, 1);
 });

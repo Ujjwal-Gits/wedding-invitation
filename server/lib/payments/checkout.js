@@ -11,6 +11,7 @@
 // once however it arrives.
 // status: created (checkout opened) · pending (PayPal is holding the capture) · paid · partially_refunded · refunded
 //         · denied · mismatch (PayPal reported an amount or currency we did not ask for; never treated as paid)
+import { activate } from '../activation.js';
 import { randomBytes } from 'node:crypto';
 import { withLock } from '../store.js';
 import { PayPalError, PAYPAL_ORDER_ID_RE } from './paypal.js';
@@ -161,6 +162,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       console.info(`[pay] paypal capture ref=${ref} paypal=${paypalOrderId} status=${pay.status}`);
       if (pay.status === 'mismatch') throw httpError(409, 'PayPal reported a different amount. We have stopped this payment; we will call you.');
       if (pay.status === 'denied') throw httpError(402, 'PayPal declined the payment. Please choose another way to pay.', { code: 'retry' });
+      if (pay.status === 'paid') activate(ref, 'paypal'); // the plan switches on by itself (lib/activation.js)
       return view(ref, pay, false);
     });
   }
@@ -276,6 +278,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       }
     }));
     console.info(`[pay] webhook ${type} event=${event.id} ref=${found.id} ${outcome}`);
+    if (type === 'PAYMENT.CAPTURE.COMPLETED' && outcome === 'applied') activate(found.id, 'paypal');
     return ok(type, outcome);
   }
   const ok = (type, outcome) => ({ status: 200, body: { ok: true, outcome } });

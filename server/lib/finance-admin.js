@@ -14,8 +14,8 @@ import { requireAdmin } from './auth.js';
 import { allOrders, getOrder, mutateOrder, adminView, addAdminOrder, recordRefund, historyAdd, amountOf, clean, ID_RE } from './orders.js';
 import { readSite, tierProblem } from './site.js';
 import { listThemes, isTheme } from './catalog.js';
-import { getCustomer, CUSTOMER_ID_RE, linkOf, linkInvitation } from './accounts.js';
-import { defaultPerms } from './handover.js';
+import { getCustomer, CUSTOMER_ID_RE } from './accounts.js';
+import { activate } from './activation.js';
 import { csvCell } from './rsvp.js';
 import { earnings, ledger, filterEntries, refundable, manualReceipt, paypalReceipt, dayKey, minor, CURRENCIES } from './finance.js';
 import { PayPalError } from './payments/paypal.js';
@@ -47,21 +47,6 @@ async function compInput(b) {
 }
 const themeName = (slug) => listThemes().find((t) => t.slug === slug)?.name || slug;
 const compOf = (plan, reason, value) => ({ at: new Date().toISOString(), plan: plan.id, planName: plan.name, reason, value, by: 'admin' });
-
-/** A higher plan opens more designs: the linked invitation's design list grows to what the plan includes (never shrinks). */
-async function widenAccess(order) {
-  if (!order.invitation || !order.customerId) return;
-  try {
-    const c = getCustomer(order.customerId);
-    const l = linkOf(c, order.invitation);
-    if (!l || l.themes === 'all') return;
-    const perms = await defaultPerms(order);
-    const themes = perms.themes === 'all' ? 'all' : [...new Set([...(Array.isArray(l.themes) ? l.themes : []), ...perms.themes])];
-    if (themes === 'all' || themes.length !== l.themes.length) await linkInvitation(c.id, order.invitation, { themes });
-  } catch (err) {
-    console.warn(`[finance] could not widen design access for ${order.ref || order.id}: ${err.message}`);
-  }
-}
 
 /** The router, mounted at /api/admin/finance. checkout: lib/payments/checkout.js (null when PayPal is off). */
 export function financeRouter({ checkout = null, paypal = { enabled: false, env: '' } } = {}) {
@@ -124,7 +109,7 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
       pay.comp = compOf(plan, reason, { npr: o.amount?.npr ?? null, usd: o.amount?.usd ?? null });
       historyAdd(pay, 'comped', 'admin', `free access (${plan.name}): ${reason}`);
     });
-    await widenAccess(order);
+    activate(order.id, 'free'); // the plan switches on: invitation made or designs widened (lib/activation.js)
     console.info(`[admin] free access order=${order.ref || id} plan=${plan.id}`);
     res.json({ order: adminView(order) });
   }));

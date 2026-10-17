@@ -9,7 +9,11 @@ import { createInvitationDoc, setOnCreated, docOut } from './invitations.js';
 import { customerByEmail, getCustomer, linkInvitation, addPending, linkOf, normEmail } from './accounts.js';
 import { readSite, tierOf, planIncludes, TIER_RANK } from './site.js';
 import { listThemes } from './catalog.js';
-import { withLock, getInvitation, saveInvitation, listOrders, getOrderById, saveOrder, SLUG_RE } from './store.js';
+import { withLock, getInvitation, saveInvitation, listOrders, getOrderById, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
+import { onActivate } from './activation.js';
+import { payStatusOf } from './finance.js';
+import { sendMail, MAIL_ON } from './mail.js';
+import { PUBLIC_ORIGINS } from './env.js';
 import { emptyOrDemo } from './demo.js';
 import { startingWords } from '../../src/core/faith.js';
 import { config as demo } from '../../src/config.js';
@@ -87,15 +91,85 @@ export async function createForOrder(req, res) {
   const order = await getOrderById(String(req.params.id || ''));
   if (!order) throw httpError(404, 'Order not found.');
   if (order.invitation && (await getInvitation(order.invitation))) throw httpError(409, 'This order already has an invitation.', { current: order.invitation });
-  const slug = typeof req.body?.slug === 'string' && SLUG_RE.test(req.body.slug) ? req.body.slug : await freeSlug(order);
+  const { doc, customer } = await invitationForOrder(order, typeof req.body?.slug === 'string' && SLUG_RE.test(req.body.slug) ? req.body.slug : '');
+  console.info(`[admin] invitation ${doc.slug} created from order ${order.ref || order.id}`);
+  res.status(201).json({ ...docOut(doc), ...(customer ? { customer } : {}) });
+}
+
+/** Makes the order's invitation (names, design, wedding details) and links it to the order's customer. */
+async function invitationForOrder(order, wanted = '') {
+  const slug = wanted || await freeSlug(order);
   const doc = await createInvitationDoc({
     slug, bride: order.bride || '', groom: order.groom || '', theme: order.theme,
     weddingDate: DATE_RE.test(order.weddingDate || '') ? order.weddingDate : '', venue: order.venue || '',
   });
   if (order.invitation) await withLock('orders', async () => { const o = await getOrderById(order.id); if (o) { delete o.invitation; await saveOrder(o); } });
   const customer = await afterCreate(doc, { order: order.id });
-  console.info(`[admin] invitation ${slug} created from order ${order.ref || order.id}`);
-  res.status(201).json({ ...docOut(doc), ...(customer ? { customer } : {}) });
+  return { doc, customer };
+}
+
+/** A higher plan opens more designs: the linked invitation's design list grows to what the plan includes (never shrinks). */
+export async function widenAccess(order) {
+  if (!order.invitation || !order.customerId) return;
+  try {
+    const c = getCustomer(order.customerId);
+    const l = linkOf(c, order.invitation);
+    if (!l || l.themes === 'all') return;
+    const perms = await defaultPerms(order);
+    const themes = perms.themes === 'all' ? 'all' : [...new Set([...(Array.isArray(l.themes) ? l.themes : []), ...perms.themes])];
+    if (themes === 'all' || themes.length !== l.themes.length) await linkInvitation(c.id, order.invitation, { themes });
+  } catch (err) {
+    console.warn(`[activate] could not widen design access for ${order.ref || order.id}: ${err.message}`);
+  }
+}
+
+const isOn = (o) => o.pay?.status === 'comped' || payStatusOf(o) === 'confirmed' || o.payment?.status === 'paid';
+
+/**
+ * Switches on a paid (or free) order's plan by itself: its invitation is made and linked to the account that ordered
+ * (or, when it already has one, its design list grows to the plan), and the customer gets one "it is ready" email.
+ * Orders without an account are left to the planner. Safe to call twice (capture and webhook both call it).
+ */
+async function activateOrder(key, why) {
+  return withLock(`activate:${key}`, async () => {
+    const order = (await getOrderById(key)) || (await getOrderByRef(key));
+    if (!order || !order.customerId || !isOn(order)) return;
+    const c = getCustomer(order.customerId);
+    if (!c || c.disabled === true) return;
+    let made = null;
+    if (order.invitation && (await getInvitation(order.invitation))) await widenAccess(order);
+    else made = (await invitationForOrder(order)).doc;
+    const first = !order.activatedAt;
+    await withLock('orders', async () => {
+      const o = await getOrderById(order.id);
+      if (!o) return;
+      if (!o.activatedAt) o.activatedAt = new Date().toISOString();
+      o.activatedBy = why;
+      await saveOrder(o);
+    });
+    console.info(`[activate] order ${order.ref || order.id} (${why}): ${made ? `invitation ${made.slug} made and linked` : 'plan applied'}`);
+    if (first && MAIL_ON) await sendMail({ to: c.email, name: c.name, tag: 'plan-active', ...activeEmail(c, order, why) }).catch(() => false);
+  });
+}
+onActivate(activateOrder);
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+/** "Your plan is active": one button to the dashboard. */
+function activeEmail(c, order, why) {
+  const url = `${PUBLIC_ORIGINS[0] || 'https://nimtto.com'}/studio/`;
+  const hi = c.name ? `Namaste ${c.name.split(' ')[0]},` : 'Namaste,';
+  const lead = why === 'free' ? 'Your plan is now active.' : 'We received your payment, thank you. Your plan is now active.';
+  const body = 'Your invitation is ready in your dashboard: change the names, dates, photos and music, then share one link.';
+  const text = `${hi}\n\n${lead} ${body}\n\nOpen your dashboard: ${url}\n\nOrder ${order.ref || ''}\nNimtto · nimtto.com`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Helvetica,Arial,sans-serif;color:#16181d">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fff;border-radius:16px;padding:32px">
+<tr><td style="font-size:20px;font-weight:600;color:#b3122f;padding-bottom:20px">Nimtto</td></tr>
+<tr><td style="font-size:16px;line-height:1.6">${esc(hi)}<br><br>${esc(lead)} ${esc(body)}</td></tr>
+<tr><td style="padding:24px 0"><a href="${esc(url)}" style="display:inline-block;background:#b3122f;color:#fff;text-decoration:none;font-weight:600;padding:14px 24px;border-radius:10px">Open my dashboard</a></td></tr>
+<tr><td style="font-size:13px;color:#5b606b">Order ${esc(order.ref || '')}</td></tr>
+</table><p style="font-size:12px;color:#8a8f99">Nimtto · Online invitations · nimtto.com</p></td></tr></table></body></html>`;
+  return { subject: why === 'free' ? 'Your Nimtto plan is active' : 'Payment received: your Nimtto plan is active', text, html };
 }
 
 /** Shifts an ISO date-time (with its offset) by whole days. */
