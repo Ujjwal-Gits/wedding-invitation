@@ -72,7 +72,7 @@ export const PAGES = {
     alt: 'Nimtto prices: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, paid once, beside an invitation on a phone',
   },
   faq: {
-    path: '/faq/', img: 'faq', type: 'FAQPage', ogType: 'website', speak: true,
+    path: '/faq/', img: 'faq', type: 'WebPage', ogType: 'website', speak: true,
     title: 'Digital Invitation FAQ for Nepal | Nimtto',
     desc: 'Answers on price, payment, timing, changes, RSVP and sharing for Nepali digital invitations, from eSewa and Khalti to guests abroad.',
     alt: 'Questions and answers about Nimtto digital invitations in Nepal',

@@ -88,7 +88,7 @@ export const INTL_PAGES = {
     lede: 'A Nimtto digital invitation costs {usd:saral}, {usd:shubha} or {usd:shahi}, paid once in US dollars by card or PayPal. There are no monthly fees, no subscriptions and no charge per guest. A design made just for your occasion starts at {usd:custom}.',
   },
   'intl/faq': {
-    path: `${INTL_BASE}faq/`, img: 'intl-faq', type: 'FAQPage', ogType: 'website', np: 'faq', speak: true,
+    path: `${INTL_BASE}faq/`, img: 'intl-faq', type: 'WebPage', ogType: 'website', np: 'faq', speak: true,
     title: 'Digital Invitation FAQ: RSVP, Cost and Timing | Nimtto',
     desc: 'Answers about digital invitations: how guests RSVP, what it costs, if it is a subscription, timing, refunds, privacy and the occasions we design.',
     alt: 'Questions and answers about Nimtto digital invitations',

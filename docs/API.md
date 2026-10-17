@@ -140,6 +140,10 @@ anything without a market (older data) is Nepal.
   `market` (`np` for older orders). `GET /orders?market=np|intl` lists one market.
 - **Phone numbers** are checked with libphonenumber-js and stored in E.164 (`+14155552671`). A number without a
   country code is read as Nepali for Nepal (`98XXXXXXXX` → `+97798XXXXXXXX`) and as US for International.
+  A phone is **required** for every new account (`POST /auth/signup`, `POST /admin/customers`) and every order:
+  missing or not a real number → `400 fields: ['phone']`, `error: 'Enter a valid phone number with country code.'`
+  (one check: `lib/market.js` `checkPhone`; the website's field is `src/ui/phone.js`). Older accounts without a phone
+  keep working; `PATCH /admin/customers/:id { phone: '' }` keeps one empty.
 - **A customer's market**: `customer.market` saved at sign-up (`POST /auth/signup { market }`, or `market` on an
   order that makes the account), else the newest order's market, else the phone's country (anything but Nepal is
   International), else Nepal. `GET /auth/me` and the customer's login answer carry `market`.
@@ -241,6 +245,11 @@ per-order `qr` from `GET /orders/:ref/pay`, which has the amount and remark fill
 Body (minimal order): `{ kind: 'order'|'custom', plan, name, phone, email, password, theme?, website: '' }`, plus optional
 `weddingDate?: 'YYYY-MM-DD', venue? ≤ 200, bride?, groom?, message?` (the customer can fill those in later from their dashboard).
 (`plan` is required for `kind: 'order'`; a `custom` request without a plan gets `plan: 'custom'`. `bride`/`groom` ≤ 80.)
+`market: 'np' | 'intl'` says which website sent it (the international site sends `'intl'`).
+A Custom design (`kind: 'custom'`, or a plan with `from`) is an **enquiry**: it is stored with `enquiry: true` and
+`amount: { npr: null, usd: null }`, and the answer has `enquiry: true` and no `payToken`/`payUrl` (the website shows
+"We'll reply within 1 business day with a price"). The planner sends a quote and converts it into an order with its
+own pay link (lib/enquiries.js); until then the customer's dashboard shows no pay link for it.
 
 **Account on order.** The website (src/site/order.js) signs the visitor up or in first (`POST /auth/signup` or
 `/auth/login` in its account step) and then orders as that customer, sending no email or password; signed in as the
