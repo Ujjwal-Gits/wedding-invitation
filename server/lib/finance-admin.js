@@ -1,7 +1,7 @@
 // The planner's money tools, all under /api/admin/finance (docs/API.md "Finance", docs/PAYMENTS.md "Earnings"):
-//   GET  /summary                         earnings (NPR and USD apart), pending money, free access
-//   GET  /transactions?type&currency&month&q&page&per
-//   GET  /transactions.csv?from&to&type&currency
+//   GET  /summary?market                  earnings (NPR and USD apart), pending money, free access; byMarket totals
+//   GET  /transactions?type&currency&month&q&market&page&per
+//   GET  /transactions.csv?from&to&type&currency&market
 //   POST /orders/:id/comp                 { plan, reason }        free access on an order
 //   POST /orders/:id/uncomp               { note? }               undo free access (back to awaiting payment)
 //   POST /orders/:id/refunds              { of?, amount, reason, date?, through: 'paypal'|'record' }
@@ -19,6 +19,7 @@ import { activate } from './activation.js';
 import { csvCell } from './rsvp.js';
 import { earnings, ledger, filterEntries, refundable, manualReceipt, paypalReceipt, dayKey, minor, CURRENCIES } from './finance.js';
 import { PayPalError } from './payments/paypal.js';
+import { isMarket, orderMarket } from './market.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -33,6 +34,12 @@ const realDay = (s) => {
 const isAmount = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= 10_000_000 && Number.isFinite(minor(v));
 const bodyOf = (req) => (req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {});
 const orderId = (req) => { if (!ID_RE.test(req.params.id || '')) throw httpError(404, 'Request not found.'); return req.params.id; };
+/** ?market=np|intl ('' = both); anything else is a 400. */
+const marketQuery = (q) => {
+  if (q.market === undefined || q.market === '') return '';
+  if (!isMarket(q.market)) throw httpError(400, "market must be 'np' or 'intl'.");
+  return q.market;
+};
 
 /** { plan, reason } of a free-access request, checked against the site's plans. */
 async function compInput(b) {
@@ -57,7 +64,11 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
   r.use((req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
 
   r.get('/summary', wrap(async (req, res) => {
-    res.json({ ...earnings(await allOrders()), paypal: { enabled: Boolean(paypal.enabled), env: paypal.env || '' } });
+    const market = marketQuery(req.query);
+    const all = await allOrders();
+    const mine = market ? all.filter((o) => orderMarket(o) === market) : all;
+    // byMarket always covers every order, so the page can show both markets side by side under any filter
+    res.json({ ...earnings(mine), byMarket: earnings(all).byMarket, market, paypal: { enabled: Boolean(paypal.enabled), env: paypal.env || '' } });
   }));
 
   r.get('/transactions', wrap(async (req, res) => {
@@ -68,7 +79,7 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
     const per = Math.min(200, Math.max(10, Number.parseInt(q.per, 10) || 50));
     const page = Math.min(10_000, Math.max(1, Number.parseInt(q.page, 10) || 1));
     const all = ledger(await allOrders());
-    const list = filterEntries(all, { type: q.type || '', currency: q.currency || '', month: q.month || '', q: typeof q.q === 'string' ? q.q.slice(0, 80) : '' });
+    const list = filterEntries(all, { type: q.type || '', currency: q.currency || '', month: q.month || '', q: typeof q.q === 'string' ? q.q.slice(0, 80) : '', market: marketQuery(q) });
     res.json({ items: list.slice((page - 1) * per, page * per), total: list.length, page, per, months: [...new Set(all.map((e) => e.month).filter(Boolean))].sort().reverse() });
   }));
 
@@ -77,13 +88,13 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
     if (!realDay(from) || !realDay(to) || from > to) throw httpError(400, 'Choose a start and an end date (the start first).');
     const type = TYPES.includes(req.query.type) ? req.query.type : '';
     const currency = CURRENCIES.includes(req.query.currency) ? req.query.currency : '';
-    const rows = filterEntries(ledger(await allOrders()), { from, to, type, currency }).reverse(); // oldest first
-    const header = ['Date', 'Type', 'Counted', 'Order', 'Customer', 'Email', 'Plan', 'Method', 'Currency', 'Amount', 'Signed amount', 'Free access value NPR', 'Free access value USD', 'Reason or note', 'PayPal id', 'Test money'];
+    const rows = filterEntries(ledger(await allOrders()), { from, to, type, currency, market: marketQuery(req.query) }).reverse(); // oldest first
+    const header = ['Date', 'Type', 'Counted', 'Order', 'Customer', 'Email', 'Plan', 'Method', 'Currency', 'Amount', 'Signed amount', 'Free access value NPR', 'Free access value USD', 'Reason or note', 'PayPal id', 'Test money', 'Market'];
     const num = (n) => (n == null ? '' : String(n)); // our own numbers: never a formula
     const lines = rows.map((e) => [
       csvCell(e.day), csvCell(e.type === 'comp' ? 'free access' : e.type), e.counted ? 'yes' : 'no', csvCell(e.ref || ''), csvCell(e.name), csvCell(e.email), csvCell(e.plan),
       csvCell(e.method), csvCell(e.currency || ''), num(e.amount), e.amount == null ? '' : num(e.type === 'refund' ? -e.amount : e.amount),
-      num(e.value?.npr), num(e.value?.usd), csvCell(e.voided ? `removed: ${e.reason}` : e.reason || e.note || ''), csvCell(e.paypalId || ''), e.test ? 'yes' : 'no',
+      num(e.value?.npr), num(e.value?.usd), csvCell(e.voided ? `removed: ${e.reason}` : e.reason || e.note || ''), csvCell(e.paypalId || ''), e.test ? 'yes' : 'no', e.market === 'intl' ? 'International' : 'Nepal',
     ].join(','));
     res.set('Content-Type', 'text/csv; charset=utf-8');
     res.set('Content-Disposition', `attachment; filename="nimtto-transactions-${from}-to-${to}.csv"`);

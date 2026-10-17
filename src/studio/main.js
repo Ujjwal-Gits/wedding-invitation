@@ -14,6 +14,7 @@ import { handlePick } from './pick.js';
 import { INV_MODULES } from './modules.js';
 import { ADMIN_MODULES } from './admin.js';
 import { CUSTOMER_MODULES, waLink, WA_DISPLAY } from './customer.js';
+import { intlMe } from './markets.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCache, clearCacheButton } from './cache.js';
 import { startNav, navigate, current, setUrl } from './nav.js'; // clean /studio/… paths (History API) // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
@@ -261,6 +262,8 @@ async function openInvitation(slug, modId) {
     const isCustomer = S.me.role === 'customer';
     // an admin without 'replies' does not see the invitation's Replies module (the server refuses it too)
     const mods = INV_MODULES.filter((m) => (!m.adminOnly || isAdmin) && !(isAdmin && m.id === 'replies' && !can('replies')));
+    // International customers: English only (no small Nepali words under the menu items)
+    const neOf = (m) => (intlMe(S.me) ? null : m.ne);
     const ctxBox = h('div.ctxbox',
       isAdmin ? h('a.ctxbox__back', { href: '#/invitations' }, icon('back', 15), 'All invitations') : null,
       isCustomer ? h('a.ctxbox__back', { href: '#/account' }, icon('back', 15), 'My dashboard') : null,
@@ -281,8 +284,8 @@ async function openInvitation(slug, modId) {
       brand: brand(),
       context: ctxBox,
       groups: [
-        { label: isAdmin ? 'Invitation' : null, items: mods.filter((m) => m.group === 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
-        { label: 'More', items: mods.filter((m) => m.group !== 'edit').map((m) => ({ id: m.id, label: m.title, ne: m.ne, icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
+        { label: isAdmin ? 'Invitation' : null, items: mods.filter((m) => m.group === 'edit').map((m) => ({ id: m.id, label: m.title, ne: neOf(m), icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
+        { label: 'More', items: mods.filter((m) => m.group !== 'edit').map((m) => ({ id: m.id, label: m.title, ne: neOf(m), icon: m.icon, href: `#/i/${slug}/${m.id}`, short: m.short })) },
       ],
       foot: isAdmin ? adminFoot() : isCustomer ? customerFoot() : h('div.userbox',
         h('span.userbox__avatar', { 'aria-hidden': 'true' }, icon('heart', 16)),
@@ -418,6 +421,19 @@ function loginPage() {
   email.focus();
 }
 
+/**
+ * The website a visitor signs up from: ?market=intl (or np) on the studio address, else International when they came
+ * from /international/. Saved on the account (docs/PLATFORM.md "Markets"); undefined lets the server work it out.
+ */
+function signupMarket() {
+  try {
+    const q = new URLSearchParams(location.search).get('market');
+    if (q === 'intl' || q === 'np') return q;
+    if (document.referrer && /^\/international(\/|$)/.test(new URL(document.referrer).pathname)) return 'intl';
+  } catch { /* no referrer */ }
+  return undefined;
+}
+
 /** "Create an account": name, email, phone (optional), password. Signed in at once; lands on My dashboard. */
 function signupPage() {
   teardown();
@@ -435,7 +451,7 @@ function signupPage() {
   const form = h('form.auth__form', { novalidate: true },
     h('div.field', h('label.label', { for: 'su-name' }, 'Your name'), name),
     h('div.field', h('label.label', { for: 'su-email' }, 'Email'), email),
-    h('div.field', h('label.label', { for: 'su-phone' }, 'WhatsApp number ', h('span.label__opt', '(optional)')), phone),
+    h('div.field', h('label.label', { for: 'su-phone' }, signupMarket() === 'intl' ? 'Phone number ' : 'WhatsApp number ', h('span.label__opt', '(optional)')), phone),
     pw.el, h('p.hint', 'At least 8 characters.'), err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -446,7 +462,7 @@ function signupPage() {
     btn.disabled = true;
     btn.textContent = 'Creating your account…';
     try {
-      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: phone.value, password: pw.input.value } });
+      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: phone.value, password: pw.input.value, market: signupMarket() } });
       coupleFlag(false);
       seenFlag(true);
       setMe(me);

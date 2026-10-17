@@ -4,6 +4,11 @@
 // GET /api/admin/site returns everything plus what each payment QR supports; PUT is the planner's, fully validated.
 // v2 (October 2026): the four plans Saral, Shubha, Shahi and Custom (NPR and USD) and QR payment methods. Older
 // documents are migrated on read (features kept where plan ids match) and stored as v2 on the next save.
+// Markets (docs/PLATFORM.md "Markets"): the top-level hero, contact and featuredThemes are the Nepal website's (as
+// before); `intl` holds what differs on the International website (hero, contact, which contact line leads), and
+// `featuredThemesIntl`, `themeMarkets`, `themeStyles`, `themeOrder` are the Themes page's per-market choices. Each plan
+// has `markets` (['np', 'intl'] when missing: offered on both). Every new key is optional: older documents read as
+// they did.
 import { resolve } from 'node:path';
 import { DATA_DIR } from './env.js';
 import { getDoc, putDoc } from './store.js'; // the 'site' document (SQLite, or data/site.json with STORE=json)
@@ -11,6 +16,7 @@ import { entity, sendEntity } from './http-cache.js';
 import { isTheme, listThemes, TIERS, defaultTier } from './catalog.js';
 import { loadManifest } from './slots.js';
 import { hasPerm } from './auth.js';
+import { MARKETS, THEME_MARKETS, STYLES, themeFits } from './market.js';
 
 export const SITE_FILE = resolve(DATA_DIR, 'site.json');
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -61,7 +67,39 @@ const DEFAULTS = {
   hiddenThemes: [],
   featuredThemes: [],
   themeTiers: {},
+  intl: { hero: { title: '', subtitle: '' }, contact: { phone: '', whatsapp: '', email: '', address: '' }, lead: 'email' },
+  featuredThemesIntl: [],
+  themeMarkets: {},
+  themeStyles: {},
+  themeOrder: { np: [], intl: [] },
 };
+export const CONTACT_LEADS = ['email', 'whatsapp', 'phone'];
+
+// ── Markets of designs and plans (docs/API.md "Markets") ──
+const catalogEntry = (slug) => listThemes().find((t) => t.slug === slug) || null;
+/** A design's market after the planner's override: 'np' | 'intl' | 'both' (else the catalog's, else Nepal). */
+export function themeMarketOf(slug, site, t = null) {
+  if (THEME_MARKETS.includes(site?.themeMarkets?.[slug])) return site.themeMarkets[slug];
+  const own = THEME_MARKETS.includes(t?.market) ? t.market : catalogEntry(slug)?.market;
+  return THEME_MARKETS.includes(own) ? own : 'np';
+}
+/** A design's style after the planner's override ('' when none). */
+export function themeStyleOf(slug, site, t = null) {
+  if (STYLES.includes(site?.themeStyles?.[slug])) return site.themeStyles[slug];
+  const own = STYLES.includes(t?.style) ? t.style : catalogEntry(slug)?.style;
+  return STYLES.includes(own) ? own : '';
+}
+/** The markets a plan is offered on (both when the plan does not say). */
+export const planMarkets = (plan) => (Array.isArray(plan?.markets) && plan.markets.some((m) => MARKETS.includes(m)) ? MARKETS.filter((m) => plan.markets.includes(m)) : [...MARKETS]);
+export const planOffered = (plan, market) => planMarkets(plan).includes(market === 'intl' ? 'intl' : 'np');
+/** The featured designs of one market's website. */
+export const featuredOf = (site, market) => (market === 'intl' ? site.featuredThemesIntl || [] : site.featuredThemes || []);
+/** Slugs in the planner's order for a market: the ones in themeOrder first (in that order), the rest as they came. */
+export function orderedFor(slugs, site, market) {
+  const at = new Map((site?.themeOrder?.[market === 'intl' ? 'intl' : 'np'] || []).map((s, i) => [s, i]));
+  const rank = ([s, i]) => (at.has(s) ? at.get(s) : 1e6 + i);
+  return slugs.map((s, i) => [s, i]).sort((a, b) => rank(a) - rank(b)).map(([s]) => s);
+}
 
 // ── Design tiers (docs/API.md "Design tiers"): a design's tier is the cheapest plan that includes it.
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
@@ -144,7 +182,13 @@ function sanitizeSite(input) {
     const feats = p.features == null ? [] : p.features;
     if (!Array.isArray(feats) || feats.length > 20) fail(`${path}.features`, 'must be a list of at most 20 lines');
     const features = (Array.isArray(feats) ? feats.slice(0, 20) : []).map((f, j) => text(f, `${path}.features[${j}]`, 120)).filter(Boolean);
-    return { id, name, nameNe, price, priceUsd, from: p.from === true, currency: 'NPR', note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true };
+    // the markets the plan is offered on: missing means both (older documents); an empty list is refused
+    let markets = [...MARKETS];
+    if (p.markets != null) {
+      if (!Array.isArray(p.markets) || !p.markets.length || !p.markets.every((m) => MARKETS.includes(m))) fail(`${path}.markets`, "must list 'np' and/or 'intl'");
+      else markets = MARKETS.filter((m) => p.markets.includes(m));
+    }
+    return { id, name, nameNe, price, priceUsd, from: p.from === true, currency: 'NPR', note: text(p.note, `${path}.note`, 160), features, highlight: p.highlight === true, markets };
   });
   const ids = plans.map((p) => p.id);
   if (new Set(ids).size !== ids.length) fail('plans', 'two plans have the same id');
@@ -198,8 +242,23 @@ function sanitizeSite(input) {
   if (wa && !whatsapp) fail('contact.whatsapp', 'must be a full WhatsApp number, e.g. +977 98…');
   const contact = { phone: phoneOf(c.phone, 'contact.phone'), whatsapp, email, address: text(c.address, 'contact.address', 300, true) };
 
-  const h = o(d.hero);
-  const hero = { title: text(h.title, 'hero.title', 120), subtitle: text(h.subtitle, 'hero.subtitle', 300, true) };
+  const heroOf = (v, path) => { const x = o(v); return { title: text(x.title, `${path}.title`, 120), subtitle: text(x.subtitle, `${path}.subtitle`, 300, true) }; };
+  const hero = heroOf(d.hero, 'hero');
+
+  // The International website: its own headline and contact lines; empty fields fall back to Nepal's (marketView).
+  const ii = o(d.intl);
+  const ic = o(ii.contact);
+  const iEmail = text(ic.email, 'intl.contact.email', 254);
+  if (iEmail && !EMAIL_RE.test(iEmail)) fail('intl.contact.email', 'must be an email address');
+  const iWa = phoneOf(ic.whatsapp, 'intl.contact.whatsapp');
+  const iWhatsapp = iWa ? e164(iWa) : '';
+  if (iWa && !iWhatsapp) fail('intl.contact.whatsapp', 'must be a full WhatsApp number with the country code, e.g. +1 …');
+  const lead = ii.lead == null || ii.lead === '' ? 'email' : CONTACT_LEADS.includes(ii.lead) ? ii.lead : (fail('intl.lead', `must be one of ${CONTACT_LEADS.join(', ')}`), 'email');
+  const intl = {
+    hero: heroOf(ii.hero, 'intl.hero'),
+    contact: { phone: phoneOf(ic.phone, 'intl.contact.phone'), whatsapp: iWhatsapp, email: iEmail, address: text(ic.address, 'intl.contact.address', 300, true) },
+    lead,
+  };
 
   const themeList = (v, path) => {
     if (v == null) return [];
@@ -219,7 +278,28 @@ function sanitizeSite(input) {
       }
     }
   }
-  const out = { v: SITE_V, plans, paymentMethods, payRemark, contact, hero, hiddenThemes: themeList(d.hiddenThemes, 'hiddenThemes'), featuredThemes: themeList(d.featuredThemes, 'featuredThemes'), themeTiers };
+  // Per-design market and style overrides: { slug: 'np'|'intl'|'both' }, { slug: style }; '' clears one (back to the
+  // catalog's); designs that no longer exist are dropped quietly.
+  const overrides = (key, allowed) => {
+    const res = {};
+    const v = d[key];
+    if (v == null) return res;
+    if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).length > 100) { fail(key, 'must be an object of theme slug: value'); return res; }
+    for (const [slug, x] of Object.entries(v)) {
+      if (!SLUG_LIKE.test(slug)) { fail(`${key}.${slug.slice(0, 40)}`, 'is not a theme slug'); continue; }
+      if (x === '' || x == null) continue;
+      if (!allowed.includes(x)) { fail(`${key}.${slug}`, `must be one of ${allowed.join(', ')}`); continue; }
+      if (isTheme(slug)) res[slug] = x;
+    }
+    return res;
+  };
+  const to = o(d.themeOrder);
+  const out = {
+    v: SITE_V, plans, paymentMethods, payRemark, contact, hero, hiddenThemes: themeList(d.hiddenThemes, 'hiddenThemes'), featuredThemes: themeList(d.featuredThemes, 'featuredThemes'), themeTiers,
+    intl, featuredThemesIntl: themeList(d.featuredThemesIntl, 'featuredThemesIntl'),
+    themeMarkets: overrides('themeMarkets', THEME_MARKETS), themeStyles: overrides('themeStyles', STYLES),
+    themeOrder: { np: themeList(to.np, 'themeOrder.np'), intl: themeList(to.intl, 'themeOrder.intl') },
+  };
   if (errors.length) throw httpError(400, 'Please check the website settings.', { errors: errors.slice(0, 50) });
   return out;
 }
@@ -235,7 +315,7 @@ function migratePlans(old) {
 }
 
 /** The parts of the site document the Themes page owns; everything else is the Website page's. */
-const THEME_KEYS = ['hiddenThemes', 'featuredThemes', 'themeTiers'];
+const THEME_KEYS = ['hiddenThemes', 'featuredThemes', 'themeTiers', 'featuredThemesIntl', 'themeMarkets', 'themeStyles', 'themeOrder'];
 
 /**
  * PUT /api/site sends the whole document. An admin with only one of the 'themes' / 'website' permissions changes only
@@ -259,14 +339,21 @@ export async function readSite() {
 }
 function merged(s) {
   const d = structuredClone(DEFAULTS);
+  for (const p of d.plans) p.markets = planMarkets(p);
   if (!s || typeof s !== 'object') return d;
   const out = { ...d, ...s };
   if (s.v !== SITE_V) { out.plans = migratePlans(s.plans); out.v = SITE_V; }
   else out.plans = (Array.isArray(s.plans) ? s.plans : []).map((p) => ({ ...p, nameNe: nameNeOf(p), priceUsd: p.priceUsd ?? p.usdPrice ?? null, from: p.from === true }));
-  for (const p of out.plans) delete p.usdPrice;
+  for (const p of out.plans) { delete p.usdPrice; p.markets = planMarkets(p); }
   if (!Array.isArray(s.paymentMethods)) out.paymentMethods = d.paymentMethods;
   if (typeof s.payRemark !== 'string' || !s.payRemark) out.payRemark = d.payRemark;
   if (!s.themeTiers || typeof s.themeTiers !== 'object' || Array.isArray(s.themeTiers)) out.themeTiers = {};
+  for (const k of ['themeMarkets', 'themeStyles']) if (!s[k] || typeof s[k] !== 'object' || Array.isArray(s[k])) out[k] = {};
+  if (!Array.isArray(s.featuredThemesIntl)) out.featuredThemesIntl = [];
+  const so = s.themeOrder && typeof s.themeOrder === 'object' ? s.themeOrder : {};
+  out.themeOrder = { np: Array.isArray(so.np) ? so.np : [], intl: Array.isArray(so.intl) ? so.intl : [] };
+  const si = s.intl && typeof s.intl === 'object' ? s.intl : {};
+  out.intl = { hero: { ...d.intl.hero, ...(si.hero || {}) }, contact: { ...d.intl.contact, ...(si.contact || {}) }, lead: CONTACT_LEADS.includes(si.lead) ? si.lead : 'email' };
   const c = s.contact && typeof s.contact === 'object' ? s.contact : {};
   // Nothing saved yet: the owner's official contact. Anything the admin saved is kept as it is.
   out.contact = !c.phone && !c.whatsapp && !c.email ? { ...DEFAULT_CONTACT, address: c.address || '' } : { ...d.contact, ...c };
@@ -277,12 +364,28 @@ function merged(s) {
 export function publicSite(s) {
   const named = renamer(s.plans);
   return {
-    plans: s.plans.map((p) => ({ id: p.id, name: p.name, nameNe: nameNeOf(p), price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: named(p.note || ''), features: (p.features || []).map(named), highlight: p.highlight === true, includes: planIncludes(p, s.plans) })),
+    plans: s.plans.map((p) => ({ id: p.id, name: p.name, nameNe: nameNeOf(p), price: p.price ?? null, priceUsd: p.priceUsd ?? null, from: p.from === true, currency: 'NPR', note: named(p.note || ''), features: (p.features || []).map(named), highlight: p.highlight === true, includes: planIncludes(p, s.plans), markets: planMarkets(p) })),
     paymentMethods: publicMethods(s),
     contact: s.contact,
     hero: s.hero,
     hiddenThemes: s.hiddenThemes,
     featuredThemes: s.featuredThemes,
+    // per market, ready to use (docs/API.md "Markets"); the International website's empty fields fall back to Nepal's
+    markets: { np: marketView(s, 'np'), intl: marketView(s, 'intl') },
+  };
+}
+/** One market's website settings: headline, contact (and which line leads), plans offered, featured designs, order. */
+export function marketView(s, market) {
+  const intl = market === 'intl';
+  const ic = s.intl?.contact || {};
+  return {
+    hero: intl ? { title: s.intl?.hero?.title || '', subtitle: s.intl?.hero?.subtitle || '' } : s.hero,
+    contact: intl ? { phone: ic.phone || s.contact.phone || '', whatsapp: ic.whatsapp || s.contact.whatsapp || '', email: ic.email || s.contact.email || '', address: ic.address || '' } : s.contact,
+    lead: intl ? s.intl?.lead || 'email' : 'whatsapp',
+    currency: intl ? 'USD' : 'NPR',
+    plans: s.plans.filter((p) => planOffered(p, market)).map((p) => p.id),
+    featuredThemes: featuredOf(s, market),
+    themeOrder: s.themeOrder?.[market] || [],
   };
 }
 /**
@@ -313,7 +416,7 @@ export function publicMethods(s) {
 // Public answers built once per settings revision (and, for the theme list, at most every 10 s, since manifests
 // can change on disk in development), served from memory with an ETag.
 let siteEntity = { rev: -1, e: null };
-let themesEntity = { rev: -1, at: 0, e: null };
+let themesEntity = { rev: -1, at: 0, e: {} }; // e: { all, np, intl } (?market=)
 
 /** GET /api/site (public) */
 export async function getSite(req, res) {
@@ -343,7 +446,7 @@ export async function putSite(req, res) {
   const clean = sanitizeSite(await scopedBody(req));
   await putDoc('site', clean);
   siteEntity = { rev: -1, e: null };
-  themesEntity = { rev: -1, at: 0, e: null };
+  themesEntity = { rev: -1, at: 0, e: {} };
   console.info('[admin] site settings saved');
   res.json(await adminView(clean));
 }
@@ -355,20 +458,32 @@ export async function putSite(req, res) {
 export async function publicThemes(req, res) {
   const d = await getDoc('site');
   const rev = d?.rev ?? 0;
-  if (themesEntity.e && themesEntity.rev === rev && Date.now() - themesEntity.at < 10_000) {
+  // ?market=np|intl: only that market's designs ('both' included), in the planner's order, each with `featured`
+  const market = req.query?.market === 'intl' || req.query?.market === 'np' ? req.query.market : '';
+  const key = market || 'all';
+  const fresh = themesEntity.rev === rev && Date.now() - themesEntity.at < 10_000;
+  if (fresh && themesEntity.e[key]) {
     res.set('Cache-Control', 'no-cache');
-    return sendEntity(req, res, themesEntity.e);
+    return sendEntity(req, res, themesEntity.e[key]);
   }
+  if (!fresh) themesEntity = { rev, at: Date.now(), e: {} };
   const s = merged(d?.value);
   const { hiddenThemes } = s;
   const hidden = new Set(hiddenThemes);
-  const out = [];
+  let out = [];
   for (const t of listThemes()) {
     if (!t.ready || hidden.has(t.slug)) continue;
+    const tm = themeMarketOf(t.slug, s, t);
+    if (market && !themeFits(tm, market)) continue;
     const m = await loadManifest(t.slug);
-    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s) });
+    out.push({ slug: t.slug, name: m?.name || t.name, concept: m?.description || t.concept, thumb: t.thumb, religions: m?.religions || ['hindu'], tier: tierOf(t.slug, s), market: tm, style: themeStyleOf(t.slug, s, t) });
   }
-  themesEntity = { rev, at: Date.now(), e: entity(JSON.stringify(out), 'application/json; charset=utf-8') };
+  if (market) {
+    const feat = new Set(featuredOf(s, market));
+    const by = new Map(out.map((x) => [x.slug, x]));
+    out = orderedFor(out.map((x) => x.slug), s, market).map((slug) => ({ ...by.get(slug), featured: feat.has(slug) }));
+  }
+  themesEntity.e[key] = entity(JSON.stringify(out), 'application/json; charset=utf-8');
   res.set('Cache-Control', 'no-cache');
-  return sendEntity(req, res, themesEntity.e);
+  return sendEntity(req, res, themesEntity.e[key]);
 }

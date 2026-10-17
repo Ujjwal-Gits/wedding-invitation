@@ -18,8 +18,8 @@ import { readSite, publicMethods, setMethodDescriber, QR_URL_RE } from '../site.
 import { readMultipart, receiving, withSlot, looksLikeHeic } from '../uploads.js';
 import {
   orderByRefAndToken, orderForCustomer, getOrder, mutateOrder, planView, whatsappFor, historyAdd, clean, PROOF_DIR, ID_RE,
-  marketOf,
 } from '../orders.js';
+import { orderMarket } from '../market.js';
 import { payments } from './routes.js';
 import { decodeQr, cleanQrImage, buildPayload, detectFormat, fillRemark, qrPng, REMARK_MAX, PRINTABLE_RE } from './qr.js';
 
@@ -121,7 +121,7 @@ export async function payInfo(req, res) {
   const proofs = (o.pay?.proofs || []).map((p) => ({ n: p.n, at: p.at, method: p.method, amountPaid: p.amountPaid }));
   res.json({
     ref: o.ref, status, reason: status === 'rejected' ? o.pay?.reason || null : null,
-    plan: planView(o), amount: o.amount || { npr: null, usd: null }, name: o.name, market: marketOf(o), ...(o.enquiry ? { enquiry: true } : {}),
+    plan: planView(o), amount: o.amount || { npr: null, usd: null }, name: o.name, market: orderMarket(o), ...(o.enquiry ? { enquiry: true } : {}),
     ...(o.weddingDate ? { weddingDate: o.weddingDate } : {}), createdAt: o.at,
     proofs, maxProofs: MAX_PROOFS,
     canUpload: !['confirmed', 'refunded', 'comped'].includes(status) && proofs.length < MAX_PROOFS, // comped: free access, nothing to pay

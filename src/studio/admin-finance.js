@@ -4,6 +4,8 @@
 // refund recorded by mistake. Routes: /api/admin/finance/* (docs/API.md "Finance").
 import { h, icon, toast, openDialog, fmtDate, fill, debounce, confirmDialog } from './dom.js';
 import { api } from './api.js';
+import { setUrl } from './nav.js';
+import { MARKET_NAME } from './markets.js';
 
 // ── Money in plain words ──────────────────────────────────────────────────
 
@@ -219,19 +221,20 @@ function tabs(items, cur, onPick, label) {
   return el;
 }
 
-function exportDialog() {
+function exportDialog(market = '') {
   const t = todayKey();
   const from = h('input.input', { id: 'csv-from', type: 'date', value: `${t.slice(0, 8)}01`, max: t });
   const to = h('input.input', { id: 'csv-to', type: 'date', value: t, max: t });
   const type = h('select.input', { id: 'csv-type' }, [['', 'Everything'], ['payment', 'Payments'], ['refund', 'Refunds'], ['comp', 'Free access']].map(([v, l]) => h('option', { value: v }, l)));
   const cur = h('select.input', { id: 'csv-cur' }, [['', 'Rupees and dollars'], ['NPR', 'Rupees only'], ['USD', 'Dollars only']].map(([v, l]) => h('option', { value: v }, l)));
+  const mkt = h('select.input', { id: 'csv-mkt' }, [['', 'Both markets'], ['np', 'Nepal only'], ['intl', 'International only']].map(([v, l]) => h('option', { value: v, selected: v === market }, l)));
   return formDialog({
     title: 'Export transactions (CSV)', submitText: 'Download CSV',
     intro: h('p.dialog__text', 'Opens in Excel or Google Sheets. Refunds have a minus sign in “Signed amount”; free access is listed but never counted.'),
-    fields: [h('div.cu-two', field('csv-from', 'From', from), field('csv-to', 'To', to)), h('div.cu-two', field('csv-type', 'What', type), field('csv-cur', 'Currency', cur))],
+    fields: [h('div.cu-two', field('csv-from', 'From', from), field('csv-to', 'To', to)), h('div.cu-two', field('csv-type', 'What', type), field('csv-cur', 'Currency', cur)), field('csv-mkt', 'Market', mkt)],
     submit: async () => {
       if (!from.value || !to.value || from.value > to.value) throw new Error('Choose a start and an end date (the start first).');
-      const q = new URLSearchParams({ from: from.value, to: to.value, ...(type.value ? { type: type.value } : {}), ...(cur.value ? { currency: cur.value } : {}) });
+      const q = new URLSearchParams({ from: from.value, to: to.value, ...(type.value ? { type: type.value } : {}), ...(cur.value ? { currency: cur.value } : {}), ...(mkt.value ? { market: mkt.value } : {}) });
       const a = h('a', { href: `/api/admin/finance/transactions.csv?${q}`, download: '' });
       document.body.append(a);
       a.click();
@@ -262,8 +265,8 @@ function txDrawer(e) {
   d = openDialog({ title: `${TYPE[e.type][1]} · ${e.ref || e.name}`, body, cls: 'dialog--drawer' });
 }
 
-/** The transactions list: filters, search, pages. */
-function transactions() {
+/** The transactions list: filters, search, pages. getMarket(): '' | 'np' | 'intl' (the page's market). */
+function transactions(getMarket = () => '') {
   const st = { type: '', currency: '', month: '', q: '', page: 1 };
   const body = h('div.tablebox', skel(5));
   const pager = h('div.fin-pager');
@@ -281,7 +284,7 @@ function transactions() {
     return h('tr.orow', { tabindex: 0, class: !e.counted && e.type !== 'comp' ? 'is-muted' : '', 'aria-label': `${TYPE[e.type][1]} ${e.ref || ''} ${e.name}: open`, onclick: open, onkeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(); } } },
       h('td.fin-c--day.tnum', dayText(e.day)),
       h('td', typePill(e), e.test ? h('span.pill.pill--muted.fin-sp', 'Test') : null, e.voided ? h('span.pill.pill--muted.fin-sp', 'Removed') : null),
-      h('td.ocell--who', h('b', e.name || '—'), e.ref ? h('small.tnum.fin-muted', e.ref) : null),
+      h('td.ocell--who', h('b', e.name || '—'), e.ref ? h('small.tnum.fin-muted', e.ref) : null, e.market === 'intl' ? h('span.mkt.mkt--intl.fin-sp', 'Intl') : null),
       h('td.fin-c--method', e.method),
       h('td.num.tnum', amt));
   };
@@ -289,6 +292,7 @@ function transactions() {
     const my = ++seq;
     const q = new URLSearchParams({ page: String(st.page), per: '50' });
     for (const k of ['type', 'currency', 'month', 'q']) if (st[k]) q.set(k, st[k]);
+    if (getMarket()) q.set('market', getMarket());
     try {
       const r = await api(`/admin/finance/transactions?${q}`);
       if (my !== seq) return;
@@ -314,17 +318,22 @@ function transactions() {
   }
   load();
   const typeTabs = tabs([['', 'All'], ['payment', 'Payments'], ['refund', 'Refunds'], ['comp', 'Free access']], '', (v) => { st.type = v; st.page = 1; load(); }, 'Type');
-  return h('section.sect', { 'aria-labelledby': 'fin-tx-h' },
-    h('header.sect__head', h('h2.sect__title#fin-tx-h', 'Transactions'), h('button.btn.btn--sm', { type: 'button', onclick: () => exportDialog() }, icon('download', 15), 'Export CSV')),
+  const el = h('section.sect', { 'aria-labelledby': 'fin-tx-h' },
+    h('header.sect__head', h('h2.sect__title#fin-tx-h', 'Transactions'), h('button.btn.btn--sm', { type: 'button', onclick: () => exportDialog(getMarket()) }, icon('download', 15), 'Export CSV')),
     h('div.toolbar2.fin-tools', typeTabs, h('div.toolbar2__end', curSel, monthSel, search)),
     body, pager);
+  el.reload = () => { st.page = 1; load(); };
+  return el;
 }
 
 /** The Finance module (Business group). */
 export function financePage(ctx) {
   let data = null;
   let period = PERIODS.some(([k]) => k === ctx.params?.get('p')) ? ctx.params.get('p') : 'thisMonth';
+  // the market (?m=np|intl): every figure and the transactions below follow it; "By market" always shows both
+  let market = ['np', 'intl'].includes(ctx.params?.get('m')) ? ctx.params.get('m') : '';
   const totals = h('div.fin-totals', skel(2));
+  const byMarket = h('div.fin-bymkt');
   const note = h('div');
   const pending = h('div', skel(2));
   const monthsBox = h('div.tablebox', skel(4));
@@ -341,7 +350,19 @@ export function financePage(ctx) {
   const drawTotals = () => {
     const p = data.periods[period];
     const label = period === 'thisMonth' ? monthName(data.keys.thisMonth, true) : period === 'lastMonth' ? monthName(data.keys.lastMonth, true) : period === 'thisYear' ? data.keys.year : 'Since the start';
-    fill(totals, h('p.fin-period', label), curRow('NPR', p.NPR), curRow('USD', p.USD));
+    fill(totals, h('p.fin-period', label, market ? h('span.fin-muted', ` · ${MARKET_NAME[market]} only`) : null), curRow('NPR', p.NPR), curRow('USD', p.USD));
+    const bm = data.byMarket;
+    fill(byMarket, bm ? h('table.dtable.fin-mkts',
+      h('caption', `By market · ${label}`),
+      h('thead', h('tr', h('th', { scope: 'col' }, 'Market'), h('th.num', { scope: 'col' }, 'Rs net'), h('th.num', { scope: 'col' }, '$ net'), h('th.num', { scope: 'col' }, 'Payments'))),
+      h('tbody', ['np', 'intl'].map((m) => {
+        const x = bm[m][period];
+        return h('tr', { class: market && market !== m ? 'is-muted' : '' },
+          h('th', { scope: 'row' }, h('button.link', { type: 'button', onclick: () => pickMarket(market === m ? '' : m), 'aria-pressed': String(market === m), title: market === m ? 'Show both markets' : `Show ${MARKET_NAME[m]} only` }, MARKET_NAME[m])),
+          h('td.num.tnum', { class: x.NPR.net ? '' : 'fin-zero' }, x.NPR.received || x.NPR.refunded ? money(x.NPR.net, 'NPR') : '—'),
+          h('td.num.tnum', { class: x.USD.net ? '' : 'fin-zero' }, x.USD.received || x.USD.refunded ? money(x.USD.net, 'USD') : '—'),
+          h('td.num.tnum', String(x.NPR.payments + x.USD.payments)));
+      }))) : null);
   };
   const pendRow = (title, text, href, b) => h('a.fin-pend', { href },
     h('span.fin-pend__n.tnum', String(b.count)),
@@ -382,23 +403,37 @@ export function financePage(ctx) {
     ] : quiet('star', 'No free access given', 'Give a plan without payment from an order or a customer. It is listed here, never counted.'));
   }
 
-  api('/admin/finance/summary').then((r) => { data = r; draw(); }).catch((err) => {
+  const loadSummary = () => api(`/admin/finance/summary${market ? `?market=${market}` : ''}`).then((r) => { data = r; draw(); }).catch((err) => {
     const q = quiet('alert', err.status === 404 ? 'Finance is not available on this server yet' : 'Could not load the money summary', err.status === 404 ? '' : err.message);
     fill(totals, q);
-    for (const box of [pending, monthsBox, methods, comps]) fill(box);
+    for (const box of [pending, monthsBox, methods, comps, byMarket]) fill(box);
   });
+  loadSummary();
+  const tx = transactions(() => market);
+  const marketTabs = h('div.seg.seg--sm', { role: 'group', 'aria-label': 'Market' });
+  const drawMarketTabs = () => fill(marketTabs, [['', 'Both markets'], ['np', 'Nepal'], ['intl', 'International']].map(([v, t]) => h('button.seg__btn', { type: 'button', 'aria-pressed': String(market === v), onclick: () => pickMarket(v) }, t)));
+  function pickMarket(v) {
+    if (v === market) return;
+    market = v;
+    setUrl(v ? `#/finance?m=${v}` : '#/finance');
+    drawMarketTabs();
+    loadSummary();
+    tx.reload();
+  }
+  drawMarketTabs();
 
   const periodTabs = tabs(PERIODS, period, (v) => { period = v; if (data) drawTotals(); }, 'Period');
   const sect = (id, title, ...kids) => h('section.sect', { 'aria-labelledby': id }, h('header.sect__head', h('h2.sect__title', { id }, title)), ...kids);
   return [
+    h('div.toolbar2.fin-mkt', marketTabs, h('p.toolbar2__note', 'Nepal: orders from nimtto.com. International: orders from /international/.')),
     h('section.sect.fin-top', { 'aria-labelledby': 'fin-sum-h' },
       h('header.sect__head', h('h2.sect__title#fin-sum-h', 'Money received'), periodTabs),
-      totals, note,
+      totals, byMarket, note,
       h('p.hint', icon('info', 14), 'Only money you actually received: payments you confirmed, PayPal payments and cash you marked paid, minus refunds in the month they happened. Rupees and dollars are never added together.')),
     sect('fin-pend-h', 'Not received yet', pending),
     h('div.fin-split',
       sect('fin-month-h', 'Month by month', monthsBox),
       h('div.fin-split__side', sect('fin-meth-h', 'By method (all time)', methods), sect('fin-comp-h', 'Free access', comps))),
-    transactions(),
+    tx,
   ];
 }

@@ -8,6 +8,7 @@ import { sectionOfSlot } from './preview-sync.js';
 import { bridge } from './preview.js';
 import { resolveDesign, cleanDesign } from '../core/mix-rules.js';
 import { faithCard, suitsFaith, pickDesignDialog } from './faith-ui.js';
+import { intlMe, fitsMarket } from './markets.js';
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const full = (hex) => (hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex).toLowerCase();
@@ -16,7 +17,9 @@ const full = (hex) => (hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}
 export function allowedThemes(ctx, { any = false } = {}) {
   const ready = ctx.meta.themes.filter((t) => t.ready !== false);
   const p = ctx.perms.themes;
-  const mine = p === 'all' || !Array.isArray(p) ? ready : ready.filter((t) => p.includes(t.slug) || t.slug === ctx.m.data.theme);
+  let mine = p === 'all' || !Array.isArray(p) ? ready : ready.filter((t) => p.includes(t.slug) || t.slug === ctx.m.data.theme);
+  // International customers see the International designs (market 'intl' or 'both') first, in the same order otherwise
+  if (intlMe(ctx.me)) mine = [...mine.filter((t) => fitsMarket(t.market, 'intl')), ...mine.filter((t) => !fitsMarket(t.market, 'intl'))];
   return any ? mine : mine.filter((t) => t.slug === ctx.m.data.theme || suitsFaith(ctx, t));
 }
 

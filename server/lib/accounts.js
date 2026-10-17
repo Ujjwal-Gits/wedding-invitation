@@ -1,9 +1,11 @@
 // Customer accounts (email + password), kept by the store (lib/store.js: the `customers` table, or data/customers.json).
 // A customer = { id, email (trimmed, NFC, lower case), name, phone, passwordHash (argon2id), createdAt, updatedAt,
-//   lastLoginAt?, disabled, invitations: [{ slug, themes, canChangeTheme, canChangeColors, linkedAt }] }.
+//   lastLoginAt?, disabled, invitations: [{ slug, themes, canChangeTheme, canChangeColors, linkedAt }],
+//   market? ('np' | 'intl': the website they signed up on; lib/market.js customerMarket reads it first) }.
 // Data helpers only: sign-in lives in lib/auth.js, the routes in lib/customers.js.
 import { randomBytes } from 'node:crypto';
 import { customerStore, withLock, getDoc, putDoc, peekInvitation } from './store.js';
+import { isMarket } from './market.js';
 
 export const CUSTOMER_ID_RE = /^[A-Za-z0-9_-]{12}$/;
 export const ACCOUNT_PASSWORD_MIN = 8;
@@ -23,11 +25,12 @@ export const listCustomers = () => customerStore.all();
 export const linkOf = (c, slug) => (Array.isArray(c?.invitations) ? c.invitations.find((l) => l.slug === slug) || null : null);
 
 /** Creates an account; 409 (code account_exists) when the email is taken. */
-export function createCustomer({ email, name, phone = '', passwordHash }) {
+export function createCustomer({ email, name, phone = '', passwordHash, market }) {
   return withLock('customers', async () => {
     if (customerStore.byEmail(email)) throw httpError(409, 'This email already has an account. Sign in, or enter that account’s password.', { code: 'account_exists' });
     const now = new Date().toISOString();
     const c = { id: randomBytes(9).toString('base64url'), email, name, phone, passwordHash, createdAt: now, updatedAt: now, disabled: false, invitations: [] };
+    if (isMarket(market)) c.market = market;
     await customerStore.put(c);
     return c;
   });
@@ -139,9 +142,10 @@ export function customersBySlug() {
   return out;
 }
 
-/** What the admin sees (never the hash). */
-export const adminCustomer = (c, orders = 0) => ({
+/** What the admin sees (never the hash). where: { market, country } (lib/market.js; from the account, orders, phone). */
+export const adminCustomer = (c, orders = 0, where = {}) => ({
   id: c.id, email: c.email, name: c.name || '', phone: c.phone || '', createdAt: c.createdAt, lastLoginAt: c.lastLoginAt || null,
+  market: where.market || (isMarket(c.market) ? c.market : 'np'), marketSet: isMarket(c.market), country: where.country || '',
   emailVerified: c.emailVerified === true,
   loginCount: Number(c.loginCount) || (c.lastLoginAt ? 1 : 0), logins: Array.isArray(c.logins) ? c.logins.slice(0, 20) : [],
   disabled: c.disabled === true, orders,

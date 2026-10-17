@@ -15,7 +15,10 @@ import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, si
 import { clientIp, originAllowed, rateLimiter } from './security.js';
 import { sendVerify, sendReset, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
 import { clean, planView, REF_RE } from './orders.js';
-import { toE164, PHONE_MSG } from './phone.js';
+import { checkPhone, countryOfPhone, customerMarket, likelyZone, isMarket, MARKET_NAME, PHONE_MSG } from './market.js';
+import { marketView } from './site.js';
+/** A required phone, as E.164 ('' when missing or not a real number); `market` picks the country for a number without a code. */
+const phoneOf = (v, market) => { const r = checkPhone(typeof v === 'string' ? v : '', market === 'intl' ? 'US' : 'NP'); return r.ok ? r.e164 : ''; };
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -37,6 +40,7 @@ export function customerOrderView(o) {
     payUrl: o.ref && !waitingForPrice(o) ? `/pay/${o.ref}` : null, market: o.market === 'intl' ? 'intl' : 'np',
   };
   if (o.enquiry) out.enquiry = true; // a custom design: no payment page until the planner gives it a price
+  if (o.quote?.sentAt) out.quote = { amount: o.quote.amount, currency: o.quote.currency, note: o.quote.note || '', sentAt: o.quote.sentAt };
   for (const k of ['theme', 'weddingDate', 'venue', 'bride', 'groom', 'invitation']) if (o[k]) out[k] = o[k];
   return out;
 }
@@ -57,8 +61,16 @@ export async function adminAccount(req, res) {
   res.json(await accountView(c));
 }
 
+/** Where the customer is (lib/market.js): { market, country, zone }. */
+export const whereOf = (c, orders) => {
+  const market = customerMarket(c, orders);
+  return { market, country: countryOfPhone(c.phone), zone: likelyZone({ market, phone: c.phone }) };
+};
+
 async function accountView(c) {
   const [orders, site] = await Promise.all([ordersOf(c.id), readSite()]);
+  const where = whereOf(c, orders);
+  const mv = marketView(site, where.market);
   const invitations = [];
   for (const l of c.invitations || []) {
     const doc = await peekInvitation(l.slug);
@@ -78,8 +90,28 @@ async function accountView(c) {
     customer: { name: c.name || '', email: c.email, phone: c.phone || '', emailVerified: c.emailVerified === true, mail: MAIL_ON },
     orders: orders.map(customerOrderView),
     invitations,
-    contact: { whatsapp: site.contact?.whatsapp || '', phone: site.contact?.phone || '' },
+    // where they are (lib/market.js): what the dashboard shows follows it (docs/PLATFORM.md "Markets")
+    market: where.market, marketName: MARKET_NAME[where.market], country: where.country, zone: where.zone,
+    // how to reach us, for their market: International leads with email (Website › International)
+    contact: { whatsapp: mv.contact.whatsapp || '', phone: mv.contact.phone || '', email: mv.contact.email || '', lead: mv.lead },
   };
+}
+
+/**
+ * PATCH /api/account (customer) { phone }: their phone number, checked and stored in E.164 (+14155552671). A number
+ * without a country code is read as their market's (Nepal: 98XXXXXXXX). '' removes it.
+ */
+export async function patchAccount(req, res) {
+  const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  if (b.phone === undefined) return res.status(400).json({ error: 'Nothing to change.', fields: [] });
+  if (typeof b.phone !== 'string') return res.status(400).json({ error: 'Please enter a phone number.', fields: ['phone'] });
+  const all = await listOrders();
+  const fallback = customerMarket(req.customer, all) === 'intl' ? 'US' : 'NP';
+  const r = checkPhone(b.phone, fallback);
+  if (!r.ok) return res.status(400).json({ error: 'Please enter the full number with the country code, for example +1 415 555 2671 or +977 98XXXXXXXX.', fields: ['phone'] });
+  const c = await mutateCustomer(req.customer.id, (x) => { if (x.phone === r.e164) return false; x.phone = r.e164; });
+  console.info(`[account] phone changed id=${c.id} country=${r.country || '-'}`);
+  res.json({ customer: { phone: c.phone || '', ...whereOf(c, all.filter((o) => o.customerId === c.id)) } });
 }
 
 /** PATCH /api/account/orders/:ref (customer): the details they could leave out when ordering. */
@@ -141,10 +173,10 @@ export async function changePassword(req, res) {
 
 // ── The planner ────────────────────────────────────────────────────────────
 
-const orderCounts = async () => {
-  const n = new Map();
-  for (const o of await listOrders()) if (o.customerId) n.set(o.customerId, (n.get(o.customerId) || 0) + 1);
-  return n;
+/** The account as the admin sees it, with its order count and market / country (all: every order, when at hand). */
+const adminOut = async (c, all = null) => {
+  const mine = (all || await listOrders()).filter((o) => o.customerId === c.id);
+  return adminCustomer(c, mine.length, whereOf(c, mine));
 };
 const idParam = (req) => {
   if (!CUSTOMER_ID_RE.test(req.params.id || '')) throw httpError(404, 'No account with that id.');
@@ -154,14 +186,22 @@ const nameOf = (v, max) => (typeof v === 'string' ? clean(v, max) : '');
 
 /** GET /api/admin/customers */
 export async function adminList(req, res) {
-  const counts = await orderCounts();
-  const list = listCustomers().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const all = await listOrders();
+  const m = req.query?.market;
+  if (m != null && m !== '' && !isMarket(m)) throw httpError(400, "market must be 'np' or 'intl'.");
+  let list = listCustomers().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const out = [];
+  for (const c of list) {
+    const v = await adminOut(c, all);
+    if (!m || v.market === m) out.push(v);
+  }
+  list = null;
   // invitations waiting for an email; `account` once an account with that email exists (the owner confirms the link)
   const pending = (await listPending()).map(({ email, slug, at }) => {
     const c = customerByEmail(email);
     return { email, slug, at, account: c ? { id: c.id, name: c.name || '', email: c.email, createdAt: c.createdAt, emailVerified: c.emailVerified === true } : null };
   });
-  res.json({ customers: list.map((c) => adminCustomer(c, counts.get(c.id) || 0)), pending });
+  res.json({ customers: out, pending });
 }
 
 const signupLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 5 }); // new accounts per IP per hour
@@ -176,7 +216,9 @@ export async function signup(req, res) {
   const b = req.body || {};
   const email = normEmail(b.email).slice(0, 254);
   const name = nameOf(b.name, 80);
-  const phone = toE164(b.phone);
+  // the website they came from ('intl' from /international/); missing: worked out later from orders and the phone
+  const market = isMarket(b.market) ? b.market : undefined;
+  const phone = phoneOf(b.phone, market); // required, with its country code (E.164)
   const fields = [];
   if (name.length < 2) fields.push('name');
   if (!email || !EMAIL_RE.test(email)) fields.push('email');
@@ -194,14 +236,14 @@ export async function signup(req, res) {
   // a team member's email signs in as the team member (lib/auth.js), so it cannot be a customer account too
   if (customerByEmail(email) || staffByEmail(email) || email === ADMIN_EMAIL) return res.status(409).json(exists);
   let c;
-  try { c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(String(b.password).normalize('NFC')) }); } catch (err) {
+  try { c = await createCustomer({ email, name, phone, market, passwordHash: await hashAccountPassword(String(b.password).normalize('NFC')) }); } catch (err) {
     if (err.code === 'account_exists') return res.status(409).json(exists);
     throw err;
   }
   console.info(`[account] signed up id=${c.id} ip=${clientIp(req)}`);
   const s = await signInCustomer(req, res, c);
   const mailed = await sendVerify(req, c).catch(() => false);
-  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf, verifySent: mailed });
+  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf, verifySent: mailed, market: customerMarket(c, []) });
 }
 
 const forgotIp = rateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
@@ -302,12 +344,13 @@ export async function confirmVerify(req, res) {
   res.json({ ok: true });
 }
 
-/** POST /api/admin/customers { email, name, phone, password }: an account for a couple who did not order online. */
+/** POST /api/admin/customers { email, name, phone, password, market? }: an account for a couple who did not order online.
+ *  The phone (with its country code) is required, stored as E.164. */
 export async function adminCreate(req, res) {
   const b = req.body || {};
   const email = normEmail(b.email);
   const name = nameOf(b.name, 80);
-  const phone = toE164(b.phone);
+  const phone = phoneOf(b.phone, isMarket(b.market) ? b.market : 'np');
   const errors = [];
   if (!email || email.length > 254 || !EMAIL_RE.test(email)) errors.push({ path: 'email', message: 'must be an email address' });
   if (name.length < 2) errors.push({ path: 'name', message: 'is required' });
@@ -316,35 +359,42 @@ export async function adminCreate(req, res) {
   if (errors.length) throw httpError(400, errors.length === 1 && errors[0].path === 'phone' ? PHONE_MSG : 'Please check the account details.', { errors });
   if (customerByEmail(email)) throw httpError(409, 'That email already has an account.');
   if (staffByEmail(email) || email === ADMIN_EMAIL) throw httpError(409, 'That email belongs to the team. Use another email.');
-  const c = await createCustomer({ email, name, phone, passwordHash: await hashAccountPassword(b.password) })
+  if (b.market != null && b.market !== '' && !isMarket(b.market)) throw httpError(400, 'Please check the account details.', { errors: [{ path: 'market', message: "must be 'np' or 'intl'" }] });
+  const market = isMarket(b.market) ? b.market : undefined;
+  const c = await createCustomer({ email, name, phone, market, passwordHash: await hashAccountPassword(b.password) })
     .catch((err) => { throw err.code === 'account_exists' ? httpError(409, 'That email already has an account.') : err; });
   console.info(`[admin] customer created id=${c.id}`);
-  res.status(201).json({ customer: adminCustomer(c) });
+  res.status(201).json({ customer: await adminOut(c) });
 }
 
-/** PATCH /api/admin/customers/:id { name?, phone?, password?, disabled? } */
+/** PATCH /api/admin/customers/:id { name?, phone?, password?, disabled?, market? ('np' | 'intl' | '' = work it out) } */
 export async function adminPatch(req, res) {
   const id = idParam(req);
   const b = req.body || {};
   const errors = [];
   if (b.name !== undefined && nameOf(b.name, 80).length < 2) errors.push({ path: 'name', message: 'is required' });
   // an older account may have no phone: '' keeps it empty, anything else must be a valid number (stored as E.164)
-  const phone = typeof b.phone === 'string' && b.phone.trim() ? toE164(b.phone) : '';
-  if (b.phone !== undefined && (typeof b.phone !== 'string' || (b.phone.trim() && !phone))) errors.push({ path: 'phone', message: 'must be a valid phone number with country code' });
+  if (b.phone !== undefined && (typeof b.phone !== 'string' || (b.phone.trim() && !checkPhone(b.phone, 'NP').ok && !checkPhone(b.phone, 'US').ok))) errors.push({ path: 'phone', message: 'must be a valid phone number with country code' });
   if (b.password !== undefined && !passwordOk(b.password)) errors.push({ path: 'password', message: `must be ${ACCOUNT_PASSWORD_MIN}-${ACCOUNT_PASSWORD_MAX} characters` });
   if (b.disabled !== undefined && typeof b.disabled !== 'boolean') errors.push({ path: 'disabled', message: 'must be true or false' });
+  if (b.market !== undefined && b.market !== '' && b.market !== null && !isMarket(b.market)) errors.push({ path: 'market', message: "must be 'np', 'intl' or empty" });
   if (errors.length) throw httpError(400, 'Please check the account details.', { errors });
   if (b.password !== undefined && req.admin?.role !== 'super') throw httpError(403, 'Only a super admin can reset a customer’s password.');
   const passwordHash = b.password !== undefined ? await hashAccountPassword(b.password) : null;
   const c = await mutateCustomer(id, (x) => {
     if (b.name !== undefined) x.name = nameOf(b.name, 80);
-    if (b.phone !== undefined) x.phone = phone;
+    if (b.market !== undefined) { if (isMarket(b.market)) x.market = b.market; else delete x.market; }
+    if (b.phone !== undefined) {
+      const r = checkPhone(b.phone, x.market === 'intl' ? 'US' : 'NP');
+      if (!r.ok) throw httpError(400, PHONE_MSG, { errors: [{ path: 'phone', message: 'must be a valid phone number with country code' }] });
+      x.phone = r.e164; // '' removes it
+    }
     if (passwordHash) x.passwordHash = passwordHash;
     if (b.disabled !== undefined) { x.disabled = b.disabled; if (b.disabled) x.disabledAt = new Date().toISOString(); else delete x.disabledAt; }
   });
   if (passwordHash || b.disabled === true) await revokeCustomerSessions(id);
   console.info(`[admin] customer changed id=${id}${passwordHash ? ' (password reset)' : ''}${b.disabled === true ? ' (turned off)' : b.disabled === false ? ' (turned on)' : ''}`);
-  res.json({ customer: adminCustomer(c, (await orderCounts()).get(id) || 0) });
+  res.json({ customer: await adminOut(c) });
 }
 
 /** PUT /api/admin/customers/:id/invitations/:slug { themes?, canChangeTheme?, canChangeColors? }: link it (or change the perms). */
@@ -377,7 +427,7 @@ export async function adminLink(req, res) {
   console.info(`[admin] customer ${id} linked to ${slug}`);
   // the names, date and venue the customer gave fill the invitation's still-empty fields
   const filled = await prefillFromCustomer(id, slug).catch((err) => { console.warn(`[admin] prefill failed: ${err.message}`); return []; });
-  res.json({ customer: adminCustomer(c, (await orderCounts()).get(id) || 0), filled });
+  res.json({ customer: await adminOut(c), filled });
 }
 
 /** DELETE /api/admin/customers/:id/invitations/:slug */
@@ -389,7 +439,7 @@ export async function adminUnlink(req, res) {
     x.invitations = x.invitations.filter((l) => l.slug !== slug);
   });
   console.info(`[admin] customer ${id} unlinked from ${slug}`);
-  res.json({ customer: adminCustomer(c, (await orderCounts()).get(id) || 0) });
+  res.json({ customer: await adminOut(c) });
 }
 
 
@@ -402,7 +452,7 @@ export async function adminConfirmPending(req, res) {
   const c = await confirmPending(email, slug, { unconfirmed: req.body?.unconfirmed === true });
   console.info(`[admin] pending invitation ${slug} linked to customer ${c.id}${c.emailVerified === true ? '' : ' (email not confirmed; planner chose to link)'}`);
   const filled = await prefillFromCustomer(c.id, slug).catch(() => []);
-  res.json({ customer: adminCustomer(c, (await orderCounts()).get(c.id) || 0), filled });
+  res.json({ customer: await adminOut(c), filled });
 }
 
 /** POST /api/admin/pending/dismiss { email, slug }: the owner drops a waiting invitation link. */

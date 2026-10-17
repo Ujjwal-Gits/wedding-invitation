@@ -5,7 +5,8 @@
 // not verified; lib/accounts.js). An order's own invitation links to the account the order was made from (safe).
 // The wedding details a customer gives (when ordering, or later in their dashboard) fill the invitation's fields that
 // are still empty (or still the demo's words): names, the date, the venue. Never a field the couple changed.
-import { createInvitationDoc, setOnCreated, docOut } from './invitations.js';
+import { createInvitationDoc, setOnCreated, setZoneFor, docOut } from './invitations.js';
+import { customerMarket, orderMarket, likelyZone } from './market.js';
 import { customerByEmail, getCustomer, linkInvitation, addPending, linkOf, normEmail } from './accounts.js';
 import { readSite, tierOf, planIncludes, TIER_RANK } from './site.js';
 import { listThemes } from './catalog.js';
@@ -70,6 +71,19 @@ async function afterCreate(doc, { customerEmail = '', order: orderId = '' } = {}
 }
 setOnCreated(afterCreate);
 
+/**
+ * The venue zone a new invitation starts with: an International customer's likely zone from their phone (the US by
+ * area code), '' (Nepal) otherwise. From the order it is made for, else the customer's email.
+ */
+async function zoneFor({ customerEmail = '', order: orderId = '' } = {}) {
+  const order = orderId ? (typeof orderId === 'object' ? orderId : await getOrderById(orderId)) : null;
+  const c = order?.customerId ? getCustomer(order.customerId) : customerEmail ? customerByEmail(normEmail(customerEmail)) : null;
+  const orders = c ? (await listOrders()).filter((o) => o.customerId === c.id) : [];
+  const market = c ? customerMarket(c, orders) : order ? orderMarket(order) : 'np';
+  return likelyZone({ market, phone: c?.phone || order?.phone || '' }); // the account's phone is the newest
+}
+setZoneFor(zoneFor);
+
 const slugify = (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 56);
 
 /** A free link name from the names (or the order reference). */
@@ -103,6 +117,7 @@ async function invitationForOrder(order, wanted = '') {
   const doc = await createInvitationDoc({
     slug, bride: order.bride || '', groom: order.groom || '', theme: order.theme,
     weddingDate: DATE_RE.test(order.weddingDate || '') ? order.weddingDate : '', venue: order.venue || '',
+    timeZone: await zoneFor({ order }),
   });
   if (order.invitation) await withLock('orders', async () => { const o = await getOrderById(order.id); if (o) { delete o.invitation; await saveOrder(o); } });
   const customer = await afterCreate(doc, { order: order.id });

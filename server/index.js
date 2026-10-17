@@ -33,6 +33,8 @@ import { stopDepth } from './lib/depth.js';
 import { payments } from './lib/payments/routes.js'; // PayPal (off until PAYPAL_* are set); see docs/PAYMENTS.md
 import * as manualPay from './lib/payments/manual.js'; // order -> pay by QR -> screenshot -> admin confirms (docs/PAYMENTS.md)
 import { financeRouter } from './lib/finance-admin.js'; // earnings, refunds, free access (docs/API.md "Finance")
+import * as enquiries from './lib/enquiries.js'; // Custom requests: quote, quote sent, turn into an order (docs/API.md "Enquiries")
+import { marketStats } from './lib/market-stats.js'; // Overview figures per market (docs/API.md "Markets")
 
 assertConfigured();
 openStore();
@@ -88,6 +90,7 @@ api.post('/orders', heavy, json('8kb'), wrap(orders.submit)); // may hash or che
 
 // The customer's own account (signed in with email + password)
 api.get('/account', requireCustomer, wrap(customers.account));
+api.patch('/account', requireCustomer, json('1kb'), wrap(customers.patchAccount)); // their phone (E.164, lib/market.js)
 api.patch('/account/orders/:ref', requireCustomer, json('4kb'), wrap(customers.patchOrder));
 api.post('/account/password', heavy, requireCustomer, json('2kb'), wrap(customers.changePassword));
 // The customer's own order, by its reference and pay token (lib/payments/manual.js)
@@ -106,6 +109,7 @@ const editor = requireEditor(peekInvitation); // an admin with 'invitations', or
 const replyEditor = requireEditor(peekInvitation, 'replies'); // an admin with 'replies', or the couple
 api.get('/meta', requireSession, wrap(inv.meta));
 api.get('/admin/stats', requireAnyPerm(...PERM_KEYS), heavy, wrap((req, res) => inv.stats(req, res, orders.newCount))); // counts only (Overview)
+api.get('/admin/markets', requireAnyPerm('orders', 'finance'), wrap(marketStats)); // Overview: new orders, enquiries, money per market
 api.put('/site', requireAnyPerm('website', 'themes'), json('32kb'), wrap(site.putSite)); // each changes only its part (lib/site.js)
 api.get('/admin/site', requireAnyPerm('website', 'themes', 'orders', 'finance'), wrap(site.getAdminSite)); // plans and payment methods
 api.post('/admin/pay/qr', requirePerm('website'), heavy, wrap(manualPay.uploadQr));
@@ -127,6 +131,8 @@ api.post('/admin/pending/link', requirePerm('customers', 'invitations'), json('1
 api.post('/admin/pending/dismiss', requirePerm('customers', 'invitations'), json('1kb'), wrap(customers.adminDismissPending));
 api.get('/admin/orders/:id/proof/:n', requirePerm('orders'), wrap(manualPay.adminProof));
 api.patch('/orders/:id', requirePerm('orders'), json('8kb'), wrap(orders.update));
+api.patch('/orders/:id/quote', requirePerm('orders'), json('4kb'), wrap(enquiries.setQuote)); // an enquiry's price
+api.post('/orders/:id/convert', requirePerm('orders'), json('1kb'), wrap(enquiries.convert)); // the enquiry becomes an order
 api.post('/orders/:id/invitation', requirePerm('orders', 'invitations'), json('1kb'), wrap(handover.createForOrder));
 api.delete('/orders/:id', requirePerm('orders'), wrap(orders.remove));
 // Team and audit log: super admins only (lib/team.js, lib/audit.js)

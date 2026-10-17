@@ -129,6 +129,78 @@ The admin overrides them with `Site.themeTiers: { [slug]: tier }` (`PUT /site`; 
 - `POST /orders` with a `theme` checks it: a plan below the design's tier → `400 { ok: false, error: 'The <Name> design needs the
   <Tier> plan or above.', fields: ['plan'], code: 'tier', needs: '<tier>' }`. Amounts always come from the server's plan prices.
 
+## Markets (Nepal and International)
+
+Two websites sell the same product: **Nepal** (`np`, nimtto.com `/`, rupees, QR wallets) and **International**
+(`intl`, `/international/`, US first, US dollars with PayPal or a card). `server/lib/market.js` has the shared rules;
+anything without a market (older data) is Nepal.
+
+- **Orders** carry `market: 'np' | 'intl'` (`POST /orders` takes it; default `np`; anything else is `400 fields:
+  ['market']`). An order's plan must be offered on its market (`400 fields: ['plan']`). The admin view always has
+  `market` (`np` for older orders). `GET /orders?market=np|intl` lists one market.
+- **Phone numbers** are checked with libphonenumber-js and stored in E.164 (`+14155552671`). A number without a
+  country code is read as Nepali for Nepal (`98XXXXXXXX` → `+97798XXXXXXXX`) and as US for International.
+- **A customer's market**: `customer.market` saved at sign-up (`POST /auth/signup { market }`, or `market` on an
+  order that makes the account), else the newest order's market, else the phone's country (anything but Nepal is
+  International), else Nepal. `GET /auth/me` and the customer's login answer carry `market`.
+- **Time zone**: a new invitation made for an International customer (from their order, activation, or New
+  invitation with their email) starts with `timeZone` = their likely zone from the phone (US and Canada by area code,
+  e.g. 415 → `America/Los_Angeles`; otherwise by country; `America/New_York` when unknown). Nepal stays on Nepal time.
+
+### Site settings per market (`GET /site`, `PUT /site`)
+
+New keys, all optional (older documents read as before; `hero`, `contact`, `featuredThemes` stay the Nepal website's):
+
+| Key | Owner (perm) | Meaning |
+|---|---|---|
+| `plans[].markets` | website | `['np','intl']` (default when missing), `['np']` or `['intl']`; an empty list is `400` |
+| `intl: { hero: { title, subtitle }, contact: { phone, whatsapp, email, address }, lead }` | website | the International website's headline and contact lines; `lead` = `'email'` (default) \| `'whatsapp'` \| `'phone'`: which contact it shows first. Empty fields fall back to Nepal's |
+| `featuredThemesIntl: slug[]` | themes | featured designs on the International website |
+| `themeMarkets: { slug: 'np'\|'intl'\|'both' }` | themes | overrides the catalog's `market`; `''` clears one |
+| `themeStyles: { slug: 'garden'\|'romantic'\|'classic'\|'modern'\|'destination' }` | themes | overrides the catalog's `style`; `''` clears one |
+| `themeOrder: { np: slug[], intl: slug[] }` | themes | design order per website; designs not listed follow in catalog order |
+
+The public `GET /site` also has `plans[].markets` and a ready-made `markets: { np: View, intl: View }` with
+`View = { hero, contact, lead, currency: 'NPR'|'USD', plans: planId[], featuredThemes: slug[], themeOrder: slug[] }`
+(International's empty fields already filled from Nepal's).
+
+`GET /themes` items carry `market` and `style` (after overrides). `GET /themes?market=np|intl` returns only that
+website's designs (`market` equal or `both`), in its `themeOrder`, each with `featured: boolean`. `GET /meta` themes
+carry `market` and `style` too.
+
+### Enquiries (Custom design requests; `server/lib/enquiries.js`, perm `orders`)
+
+A request with `kind: 'custom'` (or `'enquiry'`) is an **enquiry**: the planner replies with a price, then turns it into
+an order the customer pays like any other. Stages (derived): `new` → `quoted` (price set) → `sent` → `converted`
+(now an order); `closed` = archived without converting.
+
+| Route | Body | Response |
+|---|---|---|
+| `PATCH /orders/:id/quote` | `{ amount?, currency?: 'NPR'\|'USD', note?: string ≤ 1000, sent?: boolean }` | `{ order }` · `400` (rupees whole 1–10,000,000; dollars 1–10,000, ≤ 2 decimals) · `409` (not an enquiry, or already an order) |
+| `POST /orders/:id/convert` | `{}` | `{ order, payUrl }` (the pay link with a new token, shown once) · `409` (no price yet, already converted, paid or free) |
+
+`order.quote = { amount, currency, note, at, by, sentAt?, sentBy? }`. The currency defaults to the order's market
+(USD for International). `sent: true` sets `sentAt` (and moves a `new` request to `contacted`); a new amount or
+currency clears `sentAt` (it must be sent again). Converting sets `kind: 'order'`, `enquiry: true`, `convertedAt`,
+the Custom plan (when the site has one) and `amount = { npr, usd }` from the quote (the other currency `null`), and
+resets the payment to `awaiting_payment`. The customer's `GET /account` order shows `quote` once it is sent.
+
+### Figures per market
+
+| Route | Perm | Response |
+|---|---|---|
+| `GET /admin/markets` | `orders` or `finance` | `{ month, markets: { np, intl } }`, each `{ newOrders, enquiriesWaiting, quotesSent, toCheck, paidThisMonth: { NPR, USD, payments } }` |
+| `GET /admin/finance/summary?market=np\|intl` | `finance` | as before, for that market's orders, plus `market` and `byMarket: { np, intl }` (each the `periods` object, always both markets) |
+| `GET /admin/finance/transactions?market=…` · `transactions.csv?market=…` | `finance` | one market's lines; every line has `market`; the CSV has a `Market` column |
+| `GET /admin/customers?market=np\|intl` | `customers` | one market's accounts; every account has `market`, `marketSet` (saved on the account) and `country` (ISO code from the phone) |
+| `PATCH /admin/customers/:id { market }` | `customers` | `'np'`, `'intl'`, or `''` to work it out again |
+
+### The customer's phone
+
+`PATCH /account { phone }` (customer session, CSRF): `{ customer: { phone, market, country, zone } }` · `400 fields:
+['phone']` when it is not a real number. `''` removes it. `GET /account` also returns `market`, `marketName`,
+`country`, `zone` and `contact: { whatsapp, phone, email, lead }` for their market.
+
 ## Caching, limits and busy answers (every route)
 
 - `GET /site`, `GET /themes` and the guests' `GET /invitations/:slug/public` send an `ETag` with `Cache-Control: no-cache`
@@ -301,10 +373,10 @@ Roles: `super` (everything, manages the team, reads the audit log) or `admin` wi
 | `invitations` | `GET/POST /invitations` · `GET/PUT /invitations/:slug` · `version` · `publish` · `unpublish` · `seen` · `DELETE` · `client-link` · `access` · `uploads` |
 | `replies` | `GET /invitations/:slug/rsvps`, `rsvps.csv`, `DELETE …/rsvps/:id` · `GET /invitations` (couple link URLs left out) |
 | `customers` | `/admin/customers*`, `/admin/pending/*` · `GET /invitations` (couple link URLs left out) |
-| `orders` | `GET /orders`, `PATCH/DELETE /orders/:id`, `GET /admin/orders/:id/proof/:n` · `POST /orders/:id/invitation` needs `invitations` too |
+| `orders` | `GET /orders`, `PATCH/DELETE /orders/:id`, `PATCH /orders/:id/quote`, `POST /orders/:id/convert`, `GET /admin/orders/:id/proof/:n` · `POST /orders/:id/invitation` needs `invitations` too · `GET /admin/markets` (or `finance`) |
 | `finance` | everything under `/admin/finance` (marked as the finance area: `requireAdmin` there lets finance admins in) |
 | `website` | `PUT /site` (its part), `POST /admin/pay/qr`, `GET /pay/status` |
-| `themes` | `PUT /site` (only `hiddenThemes`, `featuredThemes`, `themeTiers`; the rest is kept as stored) |
+| `themes` | `PUT /site` (only `hiddenThemes`, `featuredThemes`, `featuredThemesIntl`, `themeTiers`, `themeMarkets`, `themeStyles`, `themeOrder`; the rest is kept as stored) |
 | `music` | `/admin/music*` |
 | `team`, `audit` | super admins only: `/admin/team*`, `/admin/audit` |
 

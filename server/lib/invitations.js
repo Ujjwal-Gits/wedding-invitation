@@ -11,11 +11,11 @@ import { onDepthReady, depthStatus } from './depth.js';
 import { slotInfo, loadManifest } from './slots.js';
 import { canEdit, isAdmin, hasPerm, hashToken, newClientToken, revokeClientSessions, hashLinkPassword, permsOf, permsFor, PASSWORD_MIN, PASSWORD_MAX } from './auth.js';
 import { customersBySlug, unlinkEverywhere } from './accounts.js';
-import { readSite, tierOf, EMAIL_RE } from './site.js';
+import { readSite, tierOf, EMAIL_RE, themeMarketOf, themeStyleOf } from './site.js';
 import { originAllowed } from './security.js';
 import { sealToken, openToken } from './linkkey.js';
 import { bsDateOf } from '../../src/core/i18n.js';
-import { zoneOf } from '../../src/core/tz.js';
+import { zoneOf, restamp, DEFAULT_TZ, isTimeZone } from '../../src/core/tz.js';
 import { isReligion, startingEvents, startingWords, suits } from '../../src/core/faith.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
@@ -208,12 +208,15 @@ export async function list(req, res) {
 /** After a new invitation is stored: link it to a customer account (lib/handover.js registers this). */
 let onCreated = null;
 export const setOnCreated = (fn) => { onCreated = fn; };
+// The venue zone a new invitation for a customer starts with (lib/handover.js: International customers by phone).
+let zoneFor = null;
+export const setZoneFor = (fn) => { zoneFor = fn; };
 
 /**
  * Stores a new invitation (starter data, never the demo). opts: { slug, bride, groom, theme, religion, colors,
  * weddingDate (YYYY-MM-DD), venue }. 409 when the link name is taken. Returns the stored doc.
  */
-export async function createInvitationDoc({ slug, bride = '', groom = '', theme, religion = 'hindu', colors = null, weddingDate = '', venue = '' }) {
+export async function createInvitationDoc({ slug, bride = '', groom = '', theme, religion = 'hindu', colors = null, weddingDate = '', venue = '', timeZone = '' }) {
   if (!SLUG_RE.test(slug)) throw httpError(400, 'The link name must be 3-64 lowercase letters, digits or hyphens.');
   return withLock(`inv:${slug}`, async () => {
     if (await getInvitation(slug)) throw httpError(409, 'That link name is already taken.');
@@ -223,6 +226,15 @@ export async function createInvitationDoc({ slug, bride = '', groom = '', theme,
     const ok = (t) => isTheme(t) && listThemes().find((x) => x.slug === t)?.ready && suits(slots.manifests[t], religion);
     const chosen = ok(theme) ? theme : (listThemes().find((t) => ok(t.slug))?.slug || theme);
     const start = starter({ bride, groom, theme: chosen, religion, colors, weddingDate, venue: nameText(venue, 200) });
+    // International customers: the venue's zone from their phone (lib/market.js likelyZone); every time keeps its wall
+    // clock (10:30 stays 10:30), the placeholder date moves with it
+    if (timeZone && timeZone !== DEFAULT_TZ && isTimeZone(timeZone)) {
+      const s = start.data;
+      s.timeZone = timeZone;
+      s.weddingDate = restamp(s.weddingDate, DEFAULT_TZ, timeZone);
+      for (const e of s.events) { if (e.start) e.start = restamp(e.start, DEFAULT_TZ, timeZone); if (e.end) e.end = restamp(e.end, DEFAULT_TZ, timeZone); }
+      if (start.placeholder) start.placeholder.weddingDate = s.weddingDate;
+    }
     const draft = sanitizeInvitation(start.data, slug, slots);
     const d = { slug, version: 1, status: 'draft', createdAt: now, updatedAt: now, publishedAt: null, draft, published: null };
     if (start.placeholder) d.placeholder = start.placeholder; // the wedding date nobody has set yet (lib/handover.js)
@@ -244,7 +256,7 @@ export async function create(req, res) {
   const weddingDate = typeof b.weddingDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.weddingDate) ? b.weddingDate : '';
   const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.normalize('NFC').trim().toLowerCase() : '';
   if (customerEmail && (customerEmail.length > 254 || !EMAIL_RE.test(customerEmail))) throw httpError(400, 'The customer email does not look right.', { errors: [{ path: 'customerEmail', message: 'must be an email address' }] });
-  const doc = await createInvitationDoc({ slug, bride, groom, theme: b.theme, religion, colors: b.colors, weddingDate, venue: b.venue });
+  const doc = await createInvitationDoc({ slug, bride, groom, theme: b.theme, religion, colors: b.colors, weddingDate, venue: b.venue, timeZone: zoneFor ? await zoneFor({ customerEmail, order: typeof b.order === 'string' ? b.order : '' }) : '' });
   console.info(`[admin] create slug=${slug} religion=${religion}`);
   const customer = onCreated ? await onCreated(doc, { customerEmail, order: typeof b.order === 'string' ? b.order : '' }) : null;
   res.status(201).json({ ...docOut(doc), ...(customer ? { customer } : {}) });
@@ -480,7 +492,8 @@ async function metaCatalog() {
 
 export async function meta(req, res) {
   const [{ themes: list, library }, site] = await Promise.all([metaCatalog(), readSite()]);
-  const themes = list.map((t) => ({ ...t, tier: tierOf(t.slug, site) }));
+  // market ('np' | 'intl' | 'both') and style after the planner's overrides (Themes page; docs/API.md "Markets")
+  const themes = list.map((t) => ({ ...t, tier: tierOf(t.slug, site), market: themeMarketOf(t.slug, site, t), style: themeStyleOf(t.slug, site, t) }));
   res.json({ themes, tracks: BUNDLED_TRACKS, library, depth: depthStatus(), publicOrigin: PUBLIC_ORIGINS[0] || '', shortLinks: IS_PROD });
 }
 

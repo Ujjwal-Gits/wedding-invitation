@@ -34,6 +34,8 @@ const LABELS = {
   'PATCH /orders/:id': 'Changed an order',
   'POST /orders/:id/invitation': 'Created an invitation from an order',
   'DELETE /orders/:id': 'Deleted an order',
+  'PATCH /orders/:id/quote': 'Set or sent a quote for an enquiry',
+  'POST /orders/:id/convert': 'Turned an enquiry into an order',
   'POST /invitations': 'Created an invitation',
   'PUT /invitations/:slug': 'Edited an invitation',
   'DELETE /invitations/:slug': 'Deleted an invitation',
