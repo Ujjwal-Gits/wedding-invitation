@@ -36,8 +36,9 @@
 .mkt__a:hover { color: var(--accent); }
 .mkt__a[aria-current='page'] { background: #fff; color: var(--accent); box-shadow: 0 1px 2px rgba(23, 32, 26, 0.08), inset 0 0 0 1px var(--line-2); }
 .mkt--bar { display: none; }
-.mkt--sheet { align-self: start; margin-bottom: 16px; font-size: 14px; }
-.mkt--sheet .mkt__a { min-height: 36px; padding: 0 16px; }
+.mkt--sheet { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: 16px; font-size: 15px; }
+.mkt--sheet .mkt__a { justify-content: center; min-height: 44px; padding: 0 12px; }
+.mkt--sheet .mkt__a[aria-current='page'] { background: var(--accent); color: #fff; box-shadow: none; }
 .sheet__top { display: grid; }
 @media (min-width: 1080px) { .mkt--bar { display: inline-flex; margin-right: 4px; } }
 @media (min-width: 1080px) and (max-width: 1279px) { .market-intl .nav__links a { padding: 8px 10px; font-size: 14.5px; } .market-intl .nav__in { gap: 16px; } }

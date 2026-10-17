@@ -137,7 +137,9 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 .nav__end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .nav__auth { display: none; padding: 8px 12px; border-radius: 999px; color: var(--ink); font-size: 15px; font-weight: 500; text-decoration: none; }
 .nav__auth:hover { color: var(--accent); }
-.nav__menu { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 999px; background: #fff; cursor: pointer; font-size: 14px; font-weight: 500; }
+.nav__menu { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--line-2); border-radius: 999px; background: #fff; cursor: pointer; }
+/* icon only on phones: the word stays for screen readers (Menu / Close) */
+.nav__menu-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .nav__menu-i { display: grid; gap: 5px; width: 16px; }
 .nav__menu-i i { display: block; height: 1.6px; background: currentColor; border-radius: 2px; transition: transform 0.3s var(--ease); }
 .nav.is-open .nav__menu-i i:first-child { transform: translateY(3.3px) rotate(45deg); }
