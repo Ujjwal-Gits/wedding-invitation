@@ -650,9 +650,54 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
   .auth__foot { flex-direction: column; align-items: flex-start; padding: var(--s5) var(--s4) var(--s6); border-top: 1px solid var(--line); }
 }
 @media (max-width: 360px) { .auth__site span { display: none; } }
+
+/* Wide screens: the form on white at the right, three of our designs on the website's blush at the left.
+   Blush, rose and wine are the public site's tokens (src/site/site.css), kept to this panel. */
+.auth__show { display: none; }
+@media (min-width: 960px) {
+  .auth { --blush-50: #fff6f7; --blush-100: #fdedf0; --wine: #22141a; --wine-2: #574550;
+    display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); grid-template-rows: auto 1fr auto;
+    grid-template-areas: 'show top' 'show body' 'show foot'; background: var(--surface); }
+  .auth__top { grid-area: top; padding: 0 var(--s7); }
+  .auth__body { grid-area: body; padding: var(--s4) var(--s7); }
+  .auth__foot { grid-area: foot; padding: var(--s5) var(--s7); }
+  .auth__card { width: min(380px, 100%); padding: 0; border: 0; border-radius: 0; animation: none; }
+  .auth__title { font-size: 28px; }
+
+  .auth__show { grid-area: show; display: flex; flex-direction: column; position: sticky; top: 12px; align-self: start;
+    height: calc(100dvh - 24px); min-height: 640px; margin: 12px 0 12px 12px; padding: clamp(40px, 4.4vw, 72px) clamp(40px, 4.4vw, 72px) 0;
+    border-radius: 24px; background: var(--blush-50); border: 1px solid #f6e7eb; overflow: hidden; }
+  .auth__pitch { display: grid; gap: 10px; justify-items: start; max-width: 460px; }
+  .auth__ne { font-size: 15px; color: var(--accent); line-height: 1.3; }
+  .auth__line { font: 600 clamp(28px, 2.5vw, 38px)/1.12 var(--font-ui); letter-spacing: -0.035em; color: var(--wine); text-wrap: balance; }
+  .auth__sub { font-size: 15px; line-height: 1.5; color: var(--wine-2); }
+  .auth__browse { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--accent); font-size: 14px; font-weight: 500; text-decoration: none; }
+  .auth__browse svg { transition: transform var(--t) var(--ease-out); }
+  .auth__browse:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .auth__browse:hover svg { transform: translateX(2px); }
+
+  /* three phones: the middle one in front, the outer two a little smaller and turned out; a calm blush disc behind */
+  .auth__stage { --pw: min(16.5vw, 31dvh, 300px); flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; padding-bottom: 24px; }
+  .auth__stage::before { content: ''; position: absolute; width: calc(var(--pw) * 2.3); aspect-ratio: 1; border-radius: 50%; background: var(--blush-100); }
+  .auth__phone { position: relative; flex: none; width: var(--pw); aspect-ratio: 1 / 2; margin: 0; border-radius: 15% / 7.5%; background: #241a1e;
+    box-shadow: inset 0 0 0 1px #4a3a41, 0 1px 2px rgba(34, 20, 26, 0.08), 0 28px 56px -28px rgba(90, 12, 38, 0.45); }
+  .auth__phone img { position: absolute; left: 2.4%; top: 1.2%; width: 95.2%; height: 97.6%; object-fit: cover; object-position: 50% 0; border-radius: 13% / 6.4%; background: var(--blush-100); }
+  .auth__phone--0, .auth__phone--2 { width: calc(var(--pw) * 0.86); }
+  .auth__phone--0 { margin-right: calc(var(--pw) * -0.2); --rot: -6deg; --x: -2%; }
+  .auth__phone--1 { z-index: 1; --rot: 0deg; --x: 0; }
+  .auth__phone--2 { margin-left: calc(var(--pw) * -0.2); --rot: 6deg; --x: 2%; }
+  .auth__phone { transform: translate(var(--x), 0) rotate(var(--rot)); animation: auth-phone 640ms var(--ease-out) both; }
+  .auth__phone--1 { animation-delay: 60ms; transform: translateY(-3%); }
+  .auth__phone--0, .auth__phone--2 { animation-delay: 160ms; }
+  @keyframes auth-phone { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+}
+@media (min-width: 960px) and (max-width: 1199px) {
+  .auth { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .auth__stage { --pw: min(19vw, 30dvh, 300px); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .auth__card { animation: none; }
-  .auth__site svg { transition: none; }
+  .auth__card, .auth__phone { animation: none; }
+  .auth__site svg, .auth__browse svg { transition: none; }
 }
 .fullmsg { min-height: 100dvh; display: grid; place-items: center; padding: var(--s5); }
 .fullmsg__card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s7); display: grid; justify-items: center; gap: var(--s3); text-align: center; max-width: 440px; }

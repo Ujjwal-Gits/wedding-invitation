@@ -332,6 +332,27 @@ async function signOut() {
 
 /** Sign-in pages: a quiet top bar (brand + the way back to the website), one centred card, a footer of site links. */
 const SITE_LINKS = [['Home', '/'], ['Designs', '/designs/'], ['Pricing', '/pricing/'], ['Contact', '/contact/']];
+/** Wide screens only (CSS hides it below 960px, and lazy images there are never fetched): three of our designs
+ *  in phone frames on the website's blush, one line and a link to all designs. Stills from /site/stills/. */
+const SHOWCASE = [['hariyo', 'Hariyo'], ['laali', 'Laali'], ['mala', 'Mala']];
+function authShowcase() {
+  const phone = ([slug, name], i) => h(`figure.auth__phone.auth__phone--${i}`,
+    h('img', {
+      src: `/site/stills/${slug}-480.webp`,
+      srcset: `/site/stills/${slug}-480.webp 480w, /site/stills/${slug}-800.webp 800w`,
+      sizes: '(min-width: 1800px) 300px, 17vw',
+      width: 480, height: 1039, loading: 'lazy', decoding: 'async',
+      alt: `The ${name} invitation design`,
+    }));
+  return h('aside.auth__show', { 'aria-label': 'Nimtto invitation designs' },
+    h('div.auth__pitch',
+      h('p.auth__ne', { lang: 'ne' }, 'हार्दिक निमन्त्रणा'),
+      h('p.auth__line', 'Invitations your guests remember.'),
+      h('p.auth__sub', 'Designs made for Nepali weddings, shared with one link.'),
+      h('a.auth__browse', { href: '/designs/' }, 'Browse all designs', icon('right', 15))),
+    h('div.auth__stage', ...SHOWCASE.map(phone)));
+}
+
 function authLayout(...panel) {
   const mark = brand();
   mark.href = '/'; // here the brand leads home to the public website
@@ -342,7 +363,8 @@ function authLayout(...panel) {
     h('main.auth__body', { id: 'main', tabindex: -1 }, h('div.auth__card', ...panel)),
     h('footer.auth__foot',
       h('nav.auth__links', { 'aria-label': 'Nimtto website' }, ...SITE_LINKS.map(([t, href]) => h('a', { href }, t))),
-      h('p.auth__copy', `© ${new Date().getFullYear()} Nimtto`)));
+      h('p.auth__copy', `© ${new Date().getFullYear()} Nimtto`)),
+    authShowcase()); // last in the DOM so keyboards and screen readers reach the form first
 }
 
 function passwordField(id, labelText, autocomplete) {
