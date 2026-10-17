@@ -24,7 +24,9 @@ test('every listed design carries a valid market, style and occasions', () => {
     assert.ok(Array.isArray(t.occasions) && t.occasions.length && t.occasions.every(isOccasion), `${t.slug} occasions`);
   }
   // the Nepal designs default to a Nepal wedding design
-  assert.deepEqual(catalogMeta('mala'), { market: 'np', style: '', occasions: ['wedding'] });
+  assert.deepEqual(catalogMeta('mala'), { market: 'np', style: '', faith: '', occasions: ['wedding'] });
+  assert.equal(catalogMeta('noor').faith, 'muslim');
+  assert.equal(catalogMeta('tuscany').faith, 'christian');
   const og = list.find((t) => t.slug === 'olive-grove');
   assert.ok(og, 'olive-grove is listed');
   assert.equal(og.market, 'intl');
@@ -34,18 +36,19 @@ test('every listed design carries a valid market, style and occasions', () => {
 
 test('a manifest overrides the catalog only with valid values', () => {
   assert.deepEqual(metaOf('mala', { market: 'both', style: 'classic', occasions: ['wedding', 'nope', 'birthday'] }),
-    { market: 'both', style: 'classic', occasions: ['wedding', 'birthday'] });
+    { market: 'both', style: 'classic', faith: '', occasions: ['wedding', 'birthday'] });
   assert.deepEqual(metaOf('mala', { market: 'mars', style: 'loud', occasions: ['nope'] }), catalogMeta('mala'));
   // catalogMeta hands out copies
   catalogMeta('olive-grove').occasions.push('x');
   assert.ok(!catalogMeta('olive-grove').occasions.includes('x'));
 });
 
-test('the olive-grove manifest declares its market and is faith-neutral', async () => {
+test('the olive-grove manifest declares its market and faith', async () => {
   const m = await loadManifest('olive-grove');
   assert.equal(m.market, 'intl');
   assert.equal(m.style, 'garden');
-  assert.deepEqual([...m.religions].sort(), ['christian', 'hindu', 'muslim', 'other']);
+  assert.equal(m.faith, 'christian');
+  assert.deepEqual([...m.religions].sort(), ['christian', 'other']);
   for (const id of ['hero.kicker', 'hero.line', 'rsvp.title', 'count.done']) assert.ok(m.texts[id], id);
 });
 

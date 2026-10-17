@@ -23,6 +23,7 @@ import { downloadIcs, share } from '../../core/calendar.js';
 import { openModal } from '../../core/modal.js';
 import { useSlots } from '../../core/slots.js';
 import { isCoupleOccasion } from '../../core/markets.js';
+import { VERSIONS, isReligion, symbolsFor, startFaithDom, emblemRef, inkFor } from '../../core/faith.js';
 import { photoUrl } from '../../photos.js';
 import { dateParts, timeText, spelled, sameDay } from './kit.js';
 import { intlDemo } from './demo.js';
@@ -40,6 +41,8 @@ const UI = {
   date: 'Date', place: 'Place', watch: 'Watch live',
 };
 const E = (en) => ({ en, ne: '' });
+/** The Bismillah, exact, fully voweled (never part of any artwork). */
+const BISMILLAH = 'بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
 const safeColor = (s) => (/^#[0-9a-f]{3,8}$/i.test(String(s)) ? s : null);
 const safeHref = (u) => (/^https:\/\//i.test(String(u || '')) ? String(u) : '');
@@ -60,11 +63,18 @@ export async function mountVow(T) {
     // ?debug&occasion=birthday: try the design with another occasion's words (one name unless the occasion is a couple's)
     const occ = params.has('debug') ? params.get('occasion') : null;
     const demo = occ ? { ...T.demo, occasion: occ, groom: isCoupleOccasion(occ) ? T.demo.groom : '', eventTitle: T.demo.eventTitle || 'The celebration' } : T.demo;
-    const next = intlDemo(demo, config);
+    const next = intlDemo({ faith: T.manifest.faith, ...demo }, config);
     for (const k of Object.keys(config)) delete config[k];
     Object.assign(config, next);
     setTimeZone(config.timeZone);
     document.title = `${config.share.title}`;
+    // the demo couple shares the design's faith; a guest-link ?v=neutral still turns the symbols off
+    const v = params.get('v');
+    const version = VERSIONS.includes(v) ? v : null;
+    const religion = isReligion(T.manifest.faith) ? T.manifest.faith : 'other';
+    config.religion = religion;
+    config.faith = { religion, symbols: symbolsFor(religion, version), version };
+    startFaithDom(config.faith);
   }
   // a real invitation still on the Nepal starter song gets this design's music instead
   const tracks = config.music?.tracks || [];
@@ -84,6 +94,29 @@ export async function mountVow(T) {
   const S = useSlots(manifest);
   const txt = S.txt;
   const on = (v) => filled(v);
+
+  // ───────── faith (src/core/faith.js): the design's community marks show only when the page's symbols are that
+  // community's (the couple's setting, or a guest link's ?v=) and the couple has not switched them off ─────────
+  const kind = T.manifest.faith || '';
+  const symbols = config.faith?.symbols || 'neutral';
+  const offWord = (v) => /^(off|no|hide|none|0)$/i.test(pair(v).en.trim());
+  const opt = (id) => (manifest.texts?.[id] ? txt(id) : E(''));
+  const faithOn = Boolean(kind) && symbols === kind && !offWord(opt('faith.show'));
+  const faith = { kind, symbols, on: faithOn, religion: config.faith?.religion || config.religion || 'other' };
+  /** the community's fine-line emblem (Christian: a cross over two rings; Muslim: crescent and star in an arch) */
+  const emblem = (cls = '', ink = T.manifest.faithInk) => {
+    if (!faithOn) return '';
+    const ref = emblemRef(kind, inkFor(T.manifest, config.themeColors, ink));
+    return `<img class="vw-emblem ${cls}" src="${esc(ref.lg)}" alt="${esc(ref.alt)}" width="50" height="60" decoding="async" />`;
+  };
+  /** the verse: a Bible verse (Christian) or the Bismillah in real Unicode + a Qur'an verse in English (Muslim) */
+  const verse = (cls = '') => {
+    if (!faithOn) return '';
+    const t = opt('verse.text'); const r = opt('verse.ref');
+    const ar = kind === 'muslim' && !offWord(opt('bismillah.show')) ? `<p class="vw-verse__ar faith-ar" lang="ar" dir="rtl">${BISMILLAH}</p>` : '';
+    if (!ar && !filled(t)) return '';
+    return `<figure class="vw-verse ${cls}">${ar}${filled(t) ? `<blockquote class="vw-verse__t">${bi(t)}</blockquote>${filled(r) ? `<figcaption class="vw-verse__r">${bi(r)}</figcaption>` : ''}` : ''}</figure>`;
+  };
 
   // ───────── photographs (never cropped by the engine; a design frames them) ─────────
   const portraitAlt = Object.fromEntries((c.portraits || []).filter((p) => p?.photo).map((p) => [keyOf(p.photo), p.alt || '']));
@@ -169,7 +202,7 @@ export async function mountVow(T) {
     countdown: (cls = '') => `<div class="vw-count ${cls}" data-countdown><ol class="vw-count__grid" aria-label="${esc(txt('count.title').en)}">${countCell('d', UI.days)}${countCell('h', UI.hours)}${countCell('m', UI.minutes)}${countCell('s', UI.seconds)}</ol><p class="vw-count__done" data-count-done hidden></p></div>`,
     photos, lead, ratio,
     photoBtn: (g, i, sizes = '(max-width: 700px) 46vw, 320px', cls = '') => `<button type="button" class="vw-ph ${cls}" data-lb-idx="${i}" aria-label="${esc(g.alt ? `Open photo: ${g.alt}` : 'Open photo')}">${imgTag(g.photo, g.alt, sizes)}</button>`,
-    families: isPair ? ['bride', 'groom'].map((k) => ({ key: k, person: c[k], photo: S.img(`families.${k}`) })) : [],
+    families: isPair ? ['bride', 'groom'].map((k) => ({ key: k, person: c[k], photo: manifest.images?.[`families.${k}`] ? S.img(`families.${k}`) : null })) : [],
     hosts: filled(config.hosts) ? config.hosts : null,
     events: evs, story, live, stays, contacts, hasInfo,
     travel: filled(info.travel) ? info.travel : null,
@@ -192,7 +225,7 @@ export async function mountVow(T) {
     madeWith,
   };
   const ctx = {
-    T, config, c, S, txt, bi, esc, pair, on, names, namesText, initials, isPair, occasion, D, span, venue, city, mainEv, lead, imgTag, photoUrl, reduced,
+    T, config, c, S, txt, bi, esc, pair, on, names, faith, emblem, verse, namesText, initials, isPair, occasion, D, span, venue, city, mainEv, lead, imgTag, photoUrl, reduced,
     parts: P, gsap, ScrollTrigger, closing: filled(config.closing) ? config.closing : null, hashtag: c.hashtag || '',
   };
 
@@ -215,6 +248,7 @@ export async function mountVow(T) {
   <div class="vw-modal" id="cardmodal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title" data-lenis-prevent>
     <div class="vw-modal__panel">
       <button class="vw-modal__x" type="button" data-close><span aria-hidden="true">×</span><span class="sr-only">${UI.close}</span></button>
+      ${emblem('vw-modal__emblem')}${verse('vw-modal__verse')}
       ${filled(inv.salutation) ? `<p class="vw-modal__kicker">${bi(inv.salutation)}</p>` : ''}
       <h2 class="vw-modal__title" id="cm-title">${names()}</h2>
       ${filled(inv.body) ? `<p class="vw-modal__p">${bi(inv.body)}</p>` : ''}

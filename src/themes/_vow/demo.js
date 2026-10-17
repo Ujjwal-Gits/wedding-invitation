@@ -30,12 +30,28 @@ function weddingEvents(o) {
   const { date, time = '16:00', tz, venue, mapQuery, dress = 'Garden formal', colors = ['#5F7A55', '#E8C9C1', '#F4EFE6'] } = o;
   const [hh, mm] = time.split(':').map(Number);
   const after = (h, m = 0) => { const t = Math.min(hh * 60 + mm + h * 60 + m, 23 * 60 + 59); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  if (o.faith === 'muslim') {
+    // Mehndi the evening before, the Nikah, then the Walima
+    return [
+      { id: 'mehndi', title: E('Mehndi'), blurb: E('Henna, music and both families together.'), start: at(day(date, -1), '18:00', tz), end: at(day(date, -1), '22:00', tz),
+        venue: E(o.welcomeVenue || 'The Garden Terrace'), mapQuery: o.welcomeMap || mapQuery, dress: { colors: ['#2F6B3A', '#E2B33C', '#C2414B'], text: E('Bright colors welcome') } },
+      { id: 'nikah', title: E('Nikah'), blurb: E('The marriage ceremony. Please be seated ten minutes early.'), start: at(date, time, tz), end: at(date, after(1, 0), tz),
+        venue: E(venue), mapQuery, dress: { colors, text: E(dress) } },
+      { id: 'walima', title: E('Walima'), blurb: E('The wedding feast, hosted by the groom’s family.'), start: at(date, after(2, 0), tz), end: at(date, '23:00', tz),
+        venue: E(o.walimaVenue || venue), mapQuery, dress: { colors, text: E(dress) },
+        rituals: [{ time: E(hm(after(2, 0))), title: E('Guests arrive') }, { time: E(hm(after(3, 0))), title: E('Dinner is served') }, { time: E(hm(after(4, 30))), title: E('Dessert and family photos') }] },
+    ];
+  }
+  const christian = o.faith === 'christian';
   return [
-    { id: 'welcome', title: E('Welcome drinks'), blurb: E('Come early and say hello. Drinks and small bites.'), start: at(day(date, -1), '18:30', tz), end: at(day(date, -1), '21:00', tz),
-      venue: E(o.welcomeVenue || 'The Garden Terrace'), mapQuery: o.welcomeMap || mapQuery, dress: { colors: [], text: E('Smart casual') } },
+    christian
+      ? { id: 'rehearsal', title: E('Rehearsal dinner'), blurb: E('Family and the wedding party, the evening before.'), start: at(day(date, -1), '19:00', tz), end: at(day(date, -1), '21:30', tz),
+        venue: E(o.welcomeVenue || 'The Garden Terrace'), mapQuery: o.welcomeMap || mapQuery, dress: { colors: [], text: E('Smart casual') } }
+      : { id: 'welcome', title: E('Welcome drinks'), blurb: E('Come early and say hello. Drinks and small bites.'), start: at(day(date, -1), '18:30', tz), end: at(day(date, -1), '21:00', tz),
+        venue: E(o.welcomeVenue || 'The Garden Terrace'), mapQuery: o.welcomeMap || mapQuery, dress: { colors: [], text: E('Smart casual') } },
     { id: 'ceremony', title: E('The ceremony'), blurb: E('Please be seated ten minutes early.'), start: at(date, time, tz), end: at(date, after(0, 45), tz),
       venue: E(venue), mapQuery, dress: { colors, text: E(dress) } },
-    { id: 'reception', title: E('Cocktails, dinner and dancing'), blurb: E('Cocktail hour on the lawn, then dinner under the lights.'), start: at(date, after(1, 15), tz), end: at(date, '23:00', tz),
+    { id: 'reception', title: E(christian ? 'Reception' : 'Cocktails, dinner and dancing'), blurb: E('Cocktail hour on the lawn, then dinner under the lights.'), start: at(date, after(1, 15), tz), end: at(date, '23:00', tz),
       venue: E(venue), mapQuery, dress: { colors, text: E(dress) },
       rituals: [{ time: E(hm(after(1, 15))), title: E('Cocktail hour') }, { time: E(hm(after(2, 30))), title: E('Dinner and toasts') }, { time: E(hm(after(4, 0))), title: E('First dance, then the party') }] },
     { id: 'brunch', title: E('Farewell brunch'), blurb: E('Coffee, pancakes and one last goodbye.'), start: at(day(date, 1), '10:00', tz), end: at(day(date, 1), '12:00', tz),
@@ -75,6 +91,7 @@ export function intlDemo(o, base) {
   return {
     ...structuredClone(base),
     occasion,
+    religion: o.faith === 'muslim' || o.faith === 'christian' ? o.faith : 'other',
     timeZone: tz,
     couple: {
       bride: person(o.bride, o.brideLast, single ? '' : (o.brideParents || `Mr. and Mrs. Robert ${o.brideLast}`), o.brideHome || ''),
@@ -88,10 +105,12 @@ export function intlDemo(o, base) {
     city: E(o.city || ''),
     invitation: {
       shloka: { sa: '', en: '' },
-      salutation: E(o.salutation || (single ? 'Dear friends,' : 'Together with their families')),
+      salutation: E(o.salutation || (single ? 'Dear friends,' : o.faith === 'muslim' ? 'With the blessings of Allah and their families' : 'Together with their families')),
       body: E(o.body || (single
         ? `Please join us for ${o.eventTitle ? o.eventTitle.toLowerCase() : 'a celebration'} in ${o.city}.`
-        : `${o.bride} ${o.brideLast} and ${o.groom} ${o.groomLast} request the pleasure of your company at their wedding in ${o.city}.`)),
+        : o.faith === 'muslim'
+          ? `${o.bride} ${o.brideLast} and ${o.groom} ${o.groomLast} request the honor of your presence at their Nikah and Walima in ${o.city}.`
+          : `${o.bride} ${o.brideLast} and ${o.groom} ${o.groomLast} request the pleasure of your company at their wedding in ${o.city}.`)),
       request: E(o.request || 'Dinner, dancing and the people we love most. We would be so happy to have you there.'),
       signoff: E(o.signoff || 'With love'),
     },
@@ -121,7 +140,7 @@ export function intlDemo(o, base) {
       { title: E('There Is Romance'), mood: E('Romantic'), src: '/audio/there-is-romance.mp3', credit: '' },
       { title: E('Gymnopédie No. 1'), mood: E('Piano'), src: '/audio/gymnopedie.mp3', credit: '' },
     ] },
-    closing: { en: o.closing || (single ? 'We can’t wait to celebrate with you.' : 'We can’t wait to celebrate with you.'), ne: '' },
+    closing: { en: o.closing || (o.faith === 'muslim' ? 'Your presence and your duas mean the world to us.' : 'We can’t wait to celebrate with you.'), ne: '' },
     themeContent: {},
     content: { images: {}, texts: {} },
     share: { title: `${who} · ${single ? 'You’re invited' : 'Wedding'}`, description: `You’re invited. ${main.start.slice(0, 10)}, ${o.city}.`, image: base?.share?.image || '', siteUrl: '' },

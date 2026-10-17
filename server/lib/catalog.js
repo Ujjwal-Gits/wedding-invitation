@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { ROOT_DIR, DIST_DIR } from './env.js';
 import { config as demo } from '../../src/config.js';
 import { BUILTIN_MUSIC } from '../../src/core/music-library.js';
-import { MARKETS, STYLES, isOccasion } from '../../src/core/markets.js';
+import { MARKETS, STYLES, FAITHS, isOccasion } from '../../src/core/markets.js';
 
 // Themes are discovered on disk: every src/themes/<slug>/slots.js (plus the original eight).
 // A theme is "ready" once its page exists (<slug>/index.html in dev, dist/<slug>/index.html built).
@@ -36,7 +36,7 @@ const KNOWN = {
   swayambar: { name: 'Swayambar', concept: 'Fresh garlands part on the jaimala; the bride’s and groom’s sides come together' },
   sindoor: { name: 'Sindoor', concept: 'Minimal red, white and black; the sindoor box opens and a red parting line runs through the story' },
   rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
-  // International (English, faith-neutral; src/themes/_vow engine)
+  // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
   'blush-roses': { name: 'Blush Roses', concept: 'A gold frame draws itself while blush garden roses bloom in the corners' },
@@ -47,35 +47,42 @@ const KNOWN = {
   letterpress: { name: 'Letterpress', concept: 'A deckled cotton card lifts off sage linen and turns over' },
   'wax-seal': { name: 'Wax Seal', concept: 'Break the sage wax seal and the letter rises out of the envelope' },
   tuscany: { name: 'Tuscany', concept: 'Golden hour over the vineyard hills; a wine-label invitation' },
-  confetti: { name: 'Confetti', concept: 'A bright, modern party invitation: a burst of paper confetti on the date' },
-  'sweet-pea': { name: 'Sweet Pea', concept: 'Soft watercolor sweet peas and a little cloud for a baby shower' },
+  noor: { name: 'Noor', concept: 'A sage mihrab arch with fresh roses; the arch glows open on the Bismillah and your names' },
+  jali: { name: 'Jali', concept: 'Carved emerald-and-gold lattice screens slide apart under hanging lanterns' },
+  andalus: { name: 'Andalus', concept: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees' },
 };
 // Market, style and occasions (src/core/markets.js). Absent = a Nepal wedding design. A manifest may override them.
 const INTL_WEDDING = ['wedding', 'engagement', 'anniversary', 'vow-renewal', 'rehearsal-dinner'];
+const C = 'christian'; const M = 'muslim';
+const NIKAH = ['wedding', 'engagement', 'anniversary'];
 const META = {
-  'olive-grove': { market: 'intl', style: 'garden', occasions: [...INTL_WEDDING, 'bridal-shower', 'dinner-party'] },
-  'rose-arch': { market: 'intl', style: 'romantic', occasions: INTL_WEDDING },
-  'blush-roses': { market: 'intl', style: 'classic', occasions: [...INTL_WEDDING, 'bridal-shower', 'baby-shower'] },
-  'gold-arch': { market: 'intl', style: 'modern', occasions: [...INTL_WEDDING, 'birthday', 'dinner-party'] },
-  amalfi: { market: 'intl', style: 'destination', occasions: [...INTL_WEDDING, 'birthday'] },
-  'garden-party': { market: 'intl', style: 'garden', occasions: [...INTL_WEDDING, 'bridal-shower', 'birthday', 'dinner-party'] },
-  wildflower: { market: 'intl', style: 'romantic', occasions: [...INTL_WEDDING, 'bridal-shower', 'baby-shower', 'birthday'] },
-  letterpress: { market: 'intl', style: 'classic', occasions: [...INTL_WEDDING, 'graduation', 'dinner-party'] },
-  'wax-seal': { market: 'intl', style: 'modern', occasions: [...INTL_WEDDING, 'birthday', 'graduation', 'housewarming'] },
-  tuscany: { market: 'intl', style: 'destination', occasions: [...INTL_WEDDING, 'dinner-party'] },
-  confetti: { market: 'intl', style: 'modern', occasions: ['birthday', 'graduation', 'housewarming', 'dinner-party', 'engagement'] },
-  'sweet-pea': { market: 'intl', style: 'romantic', occasions: ['baby-shower', 'bridal-shower', 'birthday'] },
+  // nine for Christian weddings
+  'olive-grove': { market: 'intl', style: 'garden', faith: C, occasions: [...INTL_WEDDING, 'bridal-shower', 'dinner-party'] },
+  'rose-arch': { market: 'intl', style: 'romantic', faith: C, occasions: INTL_WEDDING },
+  'blush-roses': { market: 'intl', style: 'classic', faith: C, occasions: [...INTL_WEDDING, 'bridal-shower', 'baby-shower'] },
+  letterpress: { market: 'intl', style: 'classic', faith: C, occasions: [...INTL_WEDDING, 'graduation', 'dinner-party'] },
+  'wax-seal': { market: 'intl', style: 'modern', faith: C, occasions: [...INTL_WEDDING, 'birthday', 'graduation', 'housewarming'] },
+  'garden-party': { market: 'intl', style: 'garden', faith: C, occasions: [...INTL_WEDDING, 'bridal-shower', 'birthday', 'dinner-party'] },
+  wildflower: { market: 'intl', style: 'romantic', faith: C, occasions: [...INTL_WEDDING, 'bridal-shower', 'baby-shower', 'birthday'] },
+  tuscany: { market: 'intl', style: 'destination', faith: C, occasions: [...INTL_WEDDING, 'dinner-party'] },
+  amalfi: { market: 'intl', style: 'destination', faith: C, occasions: [...INTL_WEDDING, 'birthday'] },
+  // four for Muslim weddings (Nikah, Walima, Mehndi)
+  'gold-arch': { market: 'intl', style: 'modern', faith: M, occasions: [...NIKAH, 'dinner-party'] },
+  noor: { market: 'intl', style: 'romantic', faith: M, occasions: NIKAH },
+  jali: { market: 'intl', style: 'classic', faith: M, occasions: NIKAH },
+  andalus: { market: 'intl', style: 'destination', faith: M, occasions: NIKAH },
 };
-const NP_META = { market: 'np', style: '', occasions: ['wedding'] };
-/** { market, style, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
+const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
+/** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
 export const catalogMeta = (slug) => { const m = { ...NP_META, ...(META[slug] || {}) }; return { ...m, occasions: [...m.occasions] }; };
 /** The catalog's metadata merged with a theme manifest's own `market`, `style` and `occasions` (when valid). */
 export function metaOf(slug, manifest) {
   const base = catalogMeta(slug);
   const market = MARKETS.includes(manifest?.market) ? manifest.market : base.market;
   const style = STYLES.includes(manifest?.style) ? manifest.style : base.style;
+  const faith = FAITHS.includes(manifest?.faith) ? manifest.faith : base.faith;
   const occ = Array.isArray(manifest?.occasions) ? manifest.occasions.filter(isOccasion) : [];
-  return { market, style, occasions: occ.length ? [...new Set(occ)] : [...base.occasions] };
+  return { market, style, faith, occasions: occ.length ? [...new Set(occ)] : [...base.occasions] };
 }
 const THEME_RE = /^[a-z][a-z0-9-]{1,30}$/;
 
@@ -90,9 +97,9 @@ const DEFAULT_TIERS = {
   // the simple, calm cards
   kham: 'saral', mala: 'saral', gurans: 'saral', sayapatri: 'saral', jhyal: 'saral', chitra: 'saral', dhaka: 'saral',
   // international: Standard / Pro / Pro Max
-  'blush-roses': 'saral', letterpress: 'saral', 'wax-seal': 'saral', confetti: 'saral',
-  'olive-grove': 'shubha', 'gold-arch': 'shubha', 'garden-party': 'shubha', wildflower: 'shubha', tuscany: 'shubha', 'sweet-pea': 'shubha',
-  'rose-arch': 'shahi', amalfi: 'shahi',
+  'blush-roses': 'saral', letterpress: 'saral', 'wax-seal': 'saral', jali: 'saral',
+  'olive-grove': 'shubha', 'gold-arch': 'shubha', 'garden-party': 'shubha', wildflower: 'shubha', tuscany: 'shubha',
+  'rose-arch': 'shahi', amalfi: 'shahi', noor: 'shahi', andalus: 'shahi',
 };
 /** A theme's tier before any override (an unknown theme: shubha). */
 export const defaultTier = (slug) => DEFAULT_TIERS[slug] || 'shubha';

@@ -135,6 +135,15 @@ body.is-open .vw-cue i { animation: vw-cue 2s cubic-bezier(0.45, 0, 0.3, 1) 4; }
 .vw-lb__prev { left: 10px; top: 50%; translate: 0 -50%; }
 .vw-lb__next { right: 10px; top: 50%; translate: 0 -50%; }
 
+/* ───────── faith (shown only when the page's symbols are the design's community) ───────── */
+.vw-emblem { display: block; width: 44px; height: auto; margin: 0 auto; }
+.vw-verse { margin: 0 auto; max-width: 40ch; text-align: center; }
+.vw-verse__ar { margin: 0 0 10px; font-size: 26px; line-height: 1.7; color: var(--vw-accent); white-space: normal; }
+.vw-verse__t { margin: 0; font: 400 italic 18px/1.6 var(--vw-f-display); color: var(--vw-ink-2); }
+.vw-verse__r { margin-top: 6px; font: 600 12px/1.4 var(--vw-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--vw-ink-2); }
+.vw-modal__emblem { margin-bottom: 10px; }
+.vw-modal__verse { margin-bottom: 22px; }
+
 @media (max-width: 699px) {
   .vw-row { grid-template-columns: 1fr; }
 }

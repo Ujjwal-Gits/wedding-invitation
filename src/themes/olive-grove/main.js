@@ -57,6 +57,7 @@ const SPEC = {
     const hero = `
     <section class="vw-hero og-hero" id="top" aria-label="${esc(ctx.namesText)}">
       <div class="og-hero__words">
+        ${ctx.emblem('og-emblem vw-in')}
         ${on(txt('hero.kicker')) ? `<p class="og-eyebrow vw-in">${bi(txt('hero.kicker'))}</p>` : ''}
         <h1 class="og-names vw-in">${names({ amp: '<em>&amp;</em>' })}</h1>
         ${on(txt('hero.line')) ? `<p class="og-hero__line vw-in">${bi(txt('hero.line'))}</p>` : ''}
@@ -112,6 +113,7 @@ const SPEC = {
 
     const hosts = `
     <section class="og-sec og-hosts" id="card" aria-label="${esc(txt('card.button').en)}">
+      ${ctx.verse('og-verse vw-rise')}
       <div class="og-hosts__in vw-rise">
         ${P.hosts || P.families.some((f) => on(f.person.parents)) ? `<p class="og-eyebrow">${bi(txt('families.title'))}</p>` : ''}
         ${P.hosts ? `<p class="og-hosts__names">${bi(P.hosts)}</p>` : ''}
@@ -153,6 +155,38 @@ const SPEC = {
     </footer>`;
 
     return hero + couple + date + programme + hosts + photos + info + rsvp + close;
+  },
+
+  // ───────── scroll: depth on big screens only (phones keep the calm .vw-rise fades; reduced motion: none) ─────────
+  scroll(ctx) {
+    const { gsap } = ctx;
+    if (ctx.reduced) return;
+    const mm = gsap.matchMedia();
+    mm.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
+      // the hero: a slow camera push-in on the wreath while the words drift ahead of it (two depths)
+      const st = { trigger: '.og-hero', start: 'top top', end: 'bottom top', scrub: 0.6 };
+      gsap.to('.og-hero__wreath', { scale: 1.08, yPercent: 6, ease: 'none', scrollTrigger: st });
+      gsap.to('.og-hero__words', { yPercent: -18, opacity: 0.2, ease: 'none', scrollTrigger: { ...st } });
+      // the portrait sits deeper than the story and comes forward as you read
+      if (document.querySelector('.og-portrait')) {
+        gsap.fromTo('.og-portrait', { z: -140, rotateY: 8, transformPerspective: 1400 }, { z: 0, rotateY: 0, ease: 'none',
+          scrollTrigger: { trigger: '.og-couple', start: 'top 85%', end: 'top 25%', scrub: 0.8 } });
+      }
+      // the schedule rows rise from the table toward you, one after another
+      const rows = gsap.utils.toArray('.og-ev');
+      rows.forEach((row) => {
+        row.classList.remove('vw-rise');
+        gsap.fromTo(row, { rotateX: 22, z: -90, y: 40, opacity: 0, transformPerspective: 1100, transformOrigin: '50% 100%' },
+          { rotateX: 0, z: 0, y: 0, opacity: 1, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: row, start: 'top 88%', once: true } });
+      });
+      // the album prints settle at different depths
+      gsap.utils.toArray('.og-album__it').forEach((it, i) => {
+        it.classList.remove('vw-rise');
+        gsap.fromTo(it, { z: -60 - (i % 3) * 50, y: 60, opacity: 0, transformPerspective: 1200 },
+          { z: 0, y: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: (i % 3) * 0.08, scrollTrigger: { trigger: it, start: 'top 92%', once: true } });
+      });
+      return () => { rows.forEach((r) => r.classList.add('vw-rise', 'is-in')); };
+    });
   },
 };
 

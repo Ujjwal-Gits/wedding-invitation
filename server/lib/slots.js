@@ -8,7 +8,7 @@ import { ROOT_DIR } from './env.js';
 import { listThemes, isTheme } from './catalog.js';
 import { normParts } from '../../src/core/mix-rules.js';
 import { themeReligions } from '../../src/core/faith.js';
-import { MARKETS, STYLES, isOccasion } from '../../src/core/markets.js';
+import { MARKETS, STYLES, FAITHS, isOccasion } from '../../src/core/markets.js';
 
 const cache = new Map(); // theme -> { mtime, manifest }
 let vocabCache = { mtime: -1, vocab: { images: {}, texts: {} } };
@@ -82,7 +82,8 @@ function clean(raw, theme) {
   const market = MARKETS.includes(m.market) ? m.market : '';
   const style = STYLES.includes(m.style) ? m.style : '';
   const occasions = Array.isArray(m.occasions) ? [...new Set(m.occasions.filter(isOccasion))] : [];
-  return { theme, name, description, images, texts, colors, religions, faithInk, rawParts, market, style, occasions };
+  const faith = FAITHS.includes(m.faith) ? m.faith : '';
+  return { theme, name, description, images, texts, colors, religions, faithInk, rawParts, market, style, occasions, faith };
 }
 
 /** The theme's `parts`, given only when its module file exists (src/themes/<slug>/gate.js, hero.js). */

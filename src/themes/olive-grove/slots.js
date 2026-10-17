@@ -8,7 +8,11 @@ export default {
   market: 'intl',
   style: 'garden',
   occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal', 'rehearsal-dinner', 'bridal-shower', 'dinner-party'],
-  religions: ['hindu', 'muslim', 'christian', 'other'], // faith-neutral: no symbols, no verses
+  // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
+  // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
+  faith: 'christian',
+  religions: ['christian', 'other'],
+  faithInk: '--vw-accent',
   images: {
     'hero.wreath': { label: 'Olive wreath (opening and first screen)', kind: 'detail', default: { lg: '/themes/olive-grove/art/wreath.webp', sm: '/themes/olive-grove/art/wreath-sm.webp', w: 1200, h: 1536, alt: '' }, note: 'A transparent watercolor wreath, open at the top. Leave as is unless you have your own art.' },
     'couple.lead': { label: 'Main photo', kind: 'couple', default: { portrait: 0 }, note: 'Shown whole beside your story. Portrait or landscape.' },
@@ -39,6 +43,9 @@ export default {
     'rsvp.yes': { label: 'RSVP: yes', default: { en: 'Joyfully accepts', ne: '' }, max: 28 },
     'rsvp.no': { label: 'RSVP: no', default: { en: 'Regretfully declines', ne: '' }, max: 28 },
     'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send RSVP', ne: '' }, max: 24 },
+    'faith.show': { label: 'Faith: show the small cross emblem and the verse (type off to hide)', default: { en: 'on', ne: '' }, max: 8 },
+    'verse.text': { label: 'Verse', default: { en: 'Love is patient, love is kind. It always protects, always trusts, always hopes, always perseveres.', ne: '' }, max: 220, multiline: true },
+    'verse.ref': { label: 'Verse: reference', default: { en: '1 Corinthians 13:4, 7', ne: '' }, max: 40 },
   },
   // Colours the client may change; applied inline on <body>.
   colors: {

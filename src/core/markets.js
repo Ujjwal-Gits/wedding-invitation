@@ -6,12 +6,15 @@
 //              'both' — listed on both
 //   style:     'garden' | 'romantic' | 'classic' | 'modern' | 'destination' (international filter chips; '' = none)
 //   occasions: ids from OCCASIONS below, the first is the main one
+//   faith:     'christian' | 'muslim' | '' (international designs made for a community; the symbols follow src/core/faith.js)
 //
 // A design's own manifest (src/themes/<slug>/slots.js) may declare `market`, `style` and `occasions`; the catalog
 // (server/lib/catalog.js) fills in the rest, and every design without any is a Nepal wedding design.
 
 export const MARKETS = ['np', 'intl', 'both'];
 export const STYLES = ['garden', 'romantic', 'classic', 'modern', 'destination'];
+/** The community a design is made for, so the admin can feature it per site (never shown to guests as a label). '' = none. */
+export const FAITHS = ['christian', 'muslim'];
 
 /** Every occasion an invitation can be for. `couple`: the page shows two names (bride and groom, or a pair). */
 export const OCCASIONS = {

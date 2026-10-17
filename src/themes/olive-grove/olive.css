@@ -114,6 +114,12 @@ body.vw-single .og-names { font-size: clamp(60px, 17vw, 128px); }
 .og-ev__dress { display: flex; align-items: center; gap: 2px; color: var(--vw-ink-2); }
 .og-ev .vw-order { margin-top: 8px; }
 
+/* faith (only for Christian invitations; the page is finished without them) */
+.og-emblem { width: 40px; margin: 0 0 4px; }
+@media (min-width: 900px) { .og-hero__words .og-emblem { margin: 0 0 6px; } }
+.og-verse { max-width: 36ch; margin: 0 auto 48px; }
+.og-verse .vw-verse__t { font-size: clamp(20px, 2vw, 24px); color: var(--vw-ink); }
+
 /* hosts and the full card */
 .og-hosts { padding-top: 0; }
 .og-hosts__in { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
