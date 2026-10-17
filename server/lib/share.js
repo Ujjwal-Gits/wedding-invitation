@@ -6,6 +6,7 @@ import { PUBLIC_ORIGINS } from './env.js';
 import { photoUrl } from './invitations.js';
 import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
 import { DEMO_PEOPLE_PHOTOS, DEMO_SHARE } from './demo.js';
+import { OCCASIONS, isOccasion } from '../../src/core/markets.js';
 
 const NEUTRAL_IMAGE = '/art/og.jpg'; // public/art/og.jpg: hands joined at a wedding (no names, no faces)
 
@@ -24,8 +25,10 @@ export function shareInfo(inv, req, slug) {
   const real = (s) => (typeof s === 'string' && s.trim() && !DEMO_SHARE.has(s.trim()) ? s.trim() : '');
   const nm = (p) => real(p?.name?.en) || real(p?.name?.ne);
   const names = [nm(inv.couple?.bride), nm(inv.couple?.groom)].filter(Boolean).join(' & ');
-  const title = real(inv.share?.title) || (names ? `${names} · ${TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : 'Wedding invitation · Nimtto');
-  const description = real(inv.share?.description) || 'You are warmly invited to our wedding.';
+  // another occasion (a birthday, a baby shower …; src/core/markets.js) never reads "wedding"
+  const occ = inv.occasion && inv.occasion !== 'wedding' && isOccasion(inv.occasion) ? OCCASIONS[inv.occasion].en : '';
+  const title = real(inv.share?.title) || (names ? `${names} · ${occ || TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : occ ? `${occ} invitation · Nimtto` : 'Wedding invitation · Nimtto');
+  const description = real(inv.share?.description) || (occ ? 'You’re warmly invited.' : 'You are warmly invited to our wedding.');
   const portrait = (inv.couple?.portraits || []).find((p) => p?.photo && !(typeof p.photo === 'string' && DEMO_PEOPLE_PHOTOS.has(p.photo)))?.photo;
   let img = photoUrl(inv.share?.image) || photoUrl(portrait);
   // No photo of their own yet: a neutral picture (joined hands), never the design's thumbnail (it shows the demo couple).

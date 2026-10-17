@@ -57,7 +57,10 @@ export async function mountVow(T) {
   await loadInvitation();
   // demo pages show this design's own American demo instead of the Nepali couple
   if (isDemoPage() && T.demo) {
-    const next = intlDemo(T.demo, config);
+    // ?debug&occasion=birthday: try the design with another occasion's words (one name unless the occasion is a couple's)
+    const occ = params.has('debug') ? params.get('occasion') : null;
+    const demo = occ ? { ...T.demo, occasion: occ, groom: isCoupleOccasion(occ) ? T.demo.groom : '', eventTitle: T.demo.eventTitle || 'The celebration' } : T.demo;
+    const next = intlDemo(demo, config);
     for (const k of Object.keys(config)) delete config[k];
     Object.assign(config, next);
     setTimeZone(config.timeZone);

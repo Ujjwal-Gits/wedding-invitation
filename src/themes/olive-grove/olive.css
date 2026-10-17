@@ -64,7 +64,7 @@ body.vw-single .og-names { font-size: clamp(60px, 17vw, 128px); }
   .og-names { justify-content: flex-start; font-size: clamp(76px, 7.6vw, 124px); flex-direction: column; align-items: flex-start; }
   .og-names em { margin-left: 0.5em; }
   .og-hero__line { max-width: 26ch; }
-  .og-hero__wreath { align-self: center; justify-self: start; width: min(600px, calc((100svh - 110px) * 0.78)); }
+  .og-hero__wreath { align-self: center; justify-self: start; width: min(600px, 100%, calc((100svh - 110px) * 0.78)); min-width: 0; }
   .og-hero__date { top: 14%; }
   .og-hero__day { font-size: clamp(64px, 6vw, 92px); }
 }

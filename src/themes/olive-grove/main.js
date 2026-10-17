@@ -111,9 +111,9 @@ const SPEC = {
     </section>` : '';
 
     const hosts = `
-    <section class="og-sec og-hosts" id="card" aria-labelledby="hosts-h">
+    <section class="og-sec og-hosts" id="card" aria-label="${esc(txt('card.button').en)}">
       <div class="og-hosts__in vw-rise">
-        <p class="og-eyebrow" id="hosts-h">${bi(txt('families.title'))}</p>
+        ${P.hosts || P.families.some((f) => on(f.person.parents)) ? `<p class="og-eyebrow">${bi(txt('families.title'))}</p>` : ''}
         ${P.hosts ? `<p class="og-hosts__names">${bi(P.hosts)}</p>` : ''}
         ${P.families.length ? `<p class="og-hosts__fam">${P.families.map((f) => (on(f.person.parents) ? `<span>${bi(f.person.parents)}</span>` : '')).filter(Boolean).join('<i aria-hidden="true">·</i>')}</p>` : ''}
         ${P.cardBtn('vw-btn--line')}
