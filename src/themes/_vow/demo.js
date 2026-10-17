@@ -105,10 +105,10 @@ export function intlDemo(o, base) {
     city: E(o.city || ''),
     invitation: {
       shloka: { sa: '', en: '' },
-      salutation: E(o.salutation || (single ? 'Dear friends,' : o.faith === 'muslim' ? 'With the blessings of Allah and their families' : 'Together with their families')),
+      salutation: E(o.salutation || (single ? 'Dear friends,' : o.faith === 'muslim' && o.symbolsOn !== false ? 'With the blessings of Allah and their families' : 'Together with their families')),
       body: E(o.body || (single
         ? `Please join us for ${o.eventTitle ? o.eventTitle.toLowerCase() : 'a celebration'} in ${o.city}.`
-        : o.faith === 'muslim'
+        : o.faith === 'muslim' && o.symbolsOn !== false
           ? `${o.bride} ${o.brideLast} and ${o.groom} ${o.groomLast} request the honor of your presence at their Nikah and Walima in ${o.city}.`
           : `${o.bride} ${o.brideLast} and ${o.groom} ${o.groomLast} request the pleasure of your company at their wedding in ${o.city}.`)),
       request: E(o.request || 'Dinner, dancing and the people we love most. We would be so happy to have you there.'),
@@ -140,7 +140,7 @@ export function intlDemo(o, base) {
       { title: E('There Is Romance'), mood: E('Romantic'), src: '/audio/there-is-romance.mp3', credit: '' },
       { title: E('Gymnopédie No. 1'), mood: E('Piano'), src: '/audio/gymnopedie.mp3', credit: '' },
     ] },
-    closing: { en: o.closing || (o.faith === 'muslim' ? 'Your presence and your duas mean the world to us.' : 'We can’t wait to celebrate with you.'), ne: '' },
+    closing: { en: o.closing || (o.faith === 'muslim' && o.symbolsOn !== false ? 'Your presence and your duas mean the world to us.' : 'We can’t wait to celebrate with you.'), ne: '' },
     themeContent: {},
     content: { images: {}, texts: {} },
     share: { title: `${who} · ${single ? 'You’re invited' : 'Wedding'}`, description: `You’re invited. ${main.start.slice(0, 10)}, ${o.city}.`, image: base?.share?.image || '', siteUrl: '' },

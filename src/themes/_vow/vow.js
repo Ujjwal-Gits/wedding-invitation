@@ -63,7 +63,9 @@ export async function mountVow(T) {
     // ?debug&occasion=birthday: try the design with another occasion's words (one name unless the occasion is a couple's)
     const occ = params.has('debug') ? params.get('occasion') : null;
     const demo = occ ? { ...T.demo, occasion: occ, groom: isCoupleOccasion(occ) ? T.demo.groom : '', eventTitle: T.demo.eventTitle || 'The celebration' } : T.demo;
-    const next = intlDemo({ faith: T.manifest.faith, ...demo }, config);
+    const want = params.get('v');
+    const symbolsOn = !(VERSIONS.includes(want) && want !== T.manifest.faith); // a guest link's ?v=neutral: plain words too
+    const next = intlDemo({ faith: T.manifest.faith, symbolsOn, ...demo }, config);
     for (const k of Object.keys(config)) delete config[k];
     Object.assign(config, next);
     setTimeZone(config.timeZone);
