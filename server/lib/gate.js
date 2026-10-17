@@ -12,13 +12,15 @@ import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-o
 import { listThemes } from './catalog.js';
 import { hasStudioSession, canEdit } from './auth.js';
 import { shareInfo, withShareMeta } from './share.js';
+import { publishedJson } from './invitations.js';
+import { publicMusic } from './music.js';
 
 const built = new Map(); // theme -> its built index.html (dist does not change while the server runs)
 /**
  * Serves the theme page with the invitation's own title and link-preview tags (the build carries neutral brand words,
  * never the demo couple's). Returns false when the page is not built (the static files answer as before).
  */
-async function sendWithMeta(req, res, distDir, theme, inv, slug) {
+async function sendWithMeta(req, res, distDir, theme, inv, slug, doc = null) {
   let html = built.get(theme);
   if (html === undefined) {
     const file = resolve(distDir, theme, 'index.html');
@@ -26,8 +28,25 @@ async function sendWithMeta(req, res, distDir, theme, inv, slug) {
     built.set(theme, html);
   }
   if (!html) return false;
-  res.type('html').send(withShareMeta(html, shareInfo(inv, req, slug)));
+  html = withShareMeta(html, shareInfo(inv, req, slug));
+  if (doc) html = await withPageData(html, doc, slug);
+  res.type('html').send(html);
   return true;
+}
+
+/** JSON for a <script type="application/json"> block: nothing in it can close the element or start a comment. */
+const jsonBlock = (id, json, attrs = '') => `<script type="application/json" id="${id}"${attrs}>${json.replace(/</g, '\\u003c')}</script>`;
+
+/**
+ * A guest's page carries its own data (the published invitation and the music list, exactly what the two API calls
+ * return), so the design renders as soon as its code has run instead of waiting for two more round trips
+ * (src/core/data.js reads them; the API stays the fallback). Data blocks are never executed, so the CSP is unchanged.
+ */
+export async function withPageData(html, doc, slug) {
+  let music = '';
+  try { music = JSON.stringify(await publicMusic()); } catch { /* the page fetches it */ }
+  const blocks = jsonBlock('nimtto-data', publishedJson(doc, slug), ` data-id="${slug}"`) + (music ? jsonBlock('nimtto-music', music) : '');
+  return html.includes('</body>') ? html.replace('</body>', () => `${blocks}\n</body>`) : html + blocks; // a function: "$" in the data stays as it is
 }
 
 // Pages under dist/ that are not designs.
@@ -134,7 +153,7 @@ export function themePageGate(distDir) {
         for (const [k, v] of Object.entries(req.query)) if (typeof v === 'string') q.set(k, v);
         return res.redirect(302, `/${encodeURIComponent(pub.theme)}/?${q}`);
       }
-      if (await sendWithMeta(req, res, distDir, theme, pub, id)) return undefined;
+      if (await sendWithMeta(req, res, distDir, theme, pub, id, doc)) return undefined;
       return next();
     } catch (err) { return next(err); }
   };

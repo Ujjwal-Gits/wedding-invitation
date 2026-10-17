@@ -515,11 +515,18 @@ export async function publicData(req, res) {
     return res.json(publicPayload(src, slug));
   }
   // Guests: built once per published revision, then served from memory with an ETag (304 when unchanged).
-  const rev = revOf(doc);
-  const e = publicCache.get(slug, rev) || publicCache.set(slug, rev, entity(JSON.stringify(publicPayload(src, slug)), 'application/json; charset=utf-8'));
   res.set('Cache-Control', 'no-cache');
-  return sendEntity(req, res, e);
+  return sendEntity(req, res, publishedEntity(doc, slug));
 }
+
+/** The guests' JSON for a published invitation, built once per revision (shared by the API and the page). */
+function publishedEntity(doc, slug) {
+  const rev = revOf(doc);
+  return publicCache.get(slug, rev) || publicCache.set(slug, rev, entity(JSON.stringify(publicPayload(doc.published, slug)), 'application/json; charset=utf-8'));
+}
+
+/** The same JSON as GET /api/invitations/:slug/public gives a guest, as text (lib/gate.js puts it in the page). */
+export const publishedJson = (doc, slug) => publishedEntity(doc, slug).buf.toString('utf8');
 
 /** The page's data from a draft or published snapshot (a new object; the stored one is never changed). */
 function publicPayload(src, slug) {
