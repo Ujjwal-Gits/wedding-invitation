@@ -163,6 +163,7 @@ const DESIGN_SEO = {
   vasant: ['Vasant Butterfly Garden Wedding Invitation Online', 'Butterflies lift off a marigold garland, then each ceremony’s own flower blooms as you scroll. RSVP, maps and BS dates. From {p}. See it bloom.'],
   zari: ['Zari Trousseau Trunk 3D Wedding Invitation', 'A velvet bridal trunk unlocks and its gold-thread trays lift out: the date, families, ceremonies, map and RSVP, with BS dates. From {p}. See it open.'],
   toran: ['Toran Doorway Animated Wedding Card, Seven Doors', 'Marigold strings part and you walk through seven dressed doorways to the mandap. RSVP, maps and Nepali dates. From {p}. See it.'],
+  sanjhi: ['Sanjhi Paper Pop-Up Book Wedding Invitation', 'A cut-paper pop-up book at dusk: peacocks, a lotus pond and a mandap rise page by page. RSVP, maps and BS dates. From {p}. Open it.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };
