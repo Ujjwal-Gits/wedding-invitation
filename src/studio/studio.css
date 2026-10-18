@@ -2048,10 +2048,10 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 @media (max-width: 1100px) { .cms-table .cms-c--n:nth-child(4) { display: none; } }
 @media (max-width: 760px) {
   .cms-grid2 { grid-template-columns: minmax(0, 1fr); }
-  .cms-table .orow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'page seo' 'page act'; }
+  .cms-table .orow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'page seo'; align-items: center; }
   .otable.cms-table td.cms-c--page { grid-area: page; max-width: none; padding: 0; }
   .cms-table .cms-c--seo { grid-area: seo; width: auto; justify-self: end; }
-  .cms-table .cms-c--act { grid-area: act; width: auto; justify-self: end; }
+  .cms-table .cms-c--act { display: none; }
   .cms-table .cms-c--n { display: none; }
   .cms-table .cms-grp th { display: block; padding-left: 0; }
   .cms-ver { display: none; }
