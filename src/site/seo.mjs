@@ -12,6 +12,7 @@ import { INTL_PAGES } from './intl-content.mjs';
 import { LANDINGS } from './landings.mjs';
 import { INTL_THEMES, INTL_BY_SLUG } from './intl-designs.js';
 import { intlPlans, usdText } from './intl-plans.js';
+import { TRUST_PAGES } from './seo-site.mjs';
 
 const N = THEMES.length;
 const rs = (n) => `Rs ${new Intl.NumberFormat('en-IN').format(n)}`;
@@ -187,9 +188,10 @@ export function pageMeta(id = 'home') {
   let m;
   if (id.startsWith('design/')) m = { ...designMeta(id.slice(7)), market: 'np' };
   else if (id.startsWith('intl-design/')) m = intlDesignMeta(id.slice(12));
-  else if (id.startsWith('intl/')) m = INTL_PAGES[id] && { ...INTL_PAGES[id], market: 'intl' };
+  else if (id.startsWith('intl/') && INTL_PAGES[id]) m = { ...INTL_PAGES[id], market: 'intl' };
   else if (id.startsWith('land/')) m = LANDINGS[id.slice(5)] && { type: 'WebPage', ogType: 'website', ...LANDINGS[id.slice(5)] };
   else if (LEGAL[id]) m = LEGAL[id];
+  else if (TRUST_PAGES[id]) m = TRUST_PAGES[id]; // the About pages (seo-site.mjs)
   else m = PAGES[id] && { ...PAGES[id], market: 'np' };
   if (!m) throw new Error(`seo: no page "${id}"`);
   return { ...m, title: titleCase(m.title), url: `${SITE_URL}${m.path}`, image: `${SITE_URL}/site/og/${m.img}.jpg` };
@@ -198,7 +200,7 @@ export function pageMeta(id = 'home') {
 /** Every public page id, for the sitemap, llms-full.txt and the length check. */
 export const ALL_PAGE_IDS = [
   ...Object.keys(PAGES), ...Object.keys(INTL_PAGES), ...Object.keys(LANDINGS).map((k) => `land/${k}`), ...Object.keys(LEGAL),
-  ...INTL_THEMES.map((d) => `intl-design/${d.slug}`),
+  ...INTL_THEMES.map((d) => `intl-design/${d.slug}`), ...Object.keys(TRUST_PAGES),
 ];
 
 /** Warnings for titles over 60 and descriptions over 155 characters, and for a primary title used twice. */

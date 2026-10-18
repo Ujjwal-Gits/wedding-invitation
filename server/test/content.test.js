@@ -152,7 +152,7 @@ test('site settings: contact lines, hours, footer, social (sameAs), trust lines,
   assert.equal(org.email, 'hello@nimtto.com');
   assert.equal(org.telephone, '+977-981-1111111');
   assert.deepEqual(org.sameAs, ['https://instagram.com/nimtto']);
-  assert.equal(org.contactPoint.email, 'hello@nimtto.com');
+  assert.ok([org.contactPoint].flat().every((x) => x.email === 'hello@nimtto.com' && x.telephone === '+977-981-1111111'), 'every contact point follows');
   assert.equal(org.address.streetAddress, 'Lalitpur, Nepal');
   // outside the dates: no bar
   assert.ok(!R.applyContent(home, C.viewFor(p, doc, site, '2026-11-01')).includes('class="announce"'));

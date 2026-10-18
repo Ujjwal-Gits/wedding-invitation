@@ -21,6 +21,8 @@ import { resolve } from 'node:path';
 import { getDoc, putDoc, withLock } from './store.js';
 import { readSite, marketView, saveContact } from './site.js';
 import { entity, sendEntity } from './http-cache.js';
+import { preloadLinks } from './static.js';
+import { notifyChanged } from './indexnow.js';
 import { normalizeText, inlineProblem, safeHref, cleanInline, inlineText, INLINE, HEADING } from './safe-html.js';
 import { readPage, readSiteBits, applyContent, announceHtml, footExtraHtml, trustHtml } from './content-render.js';
 
@@ -155,7 +157,7 @@ export function viewFor(page, doc, site, today = todayKey()) {
 
 /* ---------------- serving ---------------- */
 
-let cache = { key: '', pages: new Map() }; // path -> entity, or null when the built file is right as it is
+let cache = { key: '', pages: new Map() }; // path -> { e: entity, link } , or null when the built file is right as it is
 export const clearCache = () => { cache = { key: '', pages: new Map() }; };
 
 /** The key a request for a page path is cached under ('/faq/', '/'), or null when it is not a page path. */
@@ -170,6 +172,7 @@ function pagePath(reqPath) {
 export function contentPages(distDir) {
   return async (req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (res.locals.gatedPage) return next(); // never a design page (lib/gate.js); they carry no hooks either
     const path = pagePath(req.path);
     if (!path) return next();
     try {
@@ -184,12 +187,14 @@ export function contentPages(distDir) {
       if (e === undefined) {
         const html = await fs.readFile(page.file, 'utf8');
         const out = applyContent(html, viewFor(page, contentOf(c?.value), await readSite(), today));
-        e = out === html ? null : entity(out, 'text/html; charset=utf-8');
+        e = out === html ? null : { e: entity(out, 'text/html; charset=utf-8'), link: preloadLinks(out) };
         if (cache.key === key) cache.pages.set(path, e);
       }
       if (!e) return next();
+      // the same headers lib/static.js gives the built page: no-cache (always revalidate) and its preloads
       res.set('Cache-Control', 'no-cache');
-      return sendEntity(req, res, e);
+      if (e.link) res.set('Link', e.link);
+      return sendEntity(req, res, e.e);
     } catch (err) { return next(err); }
   };
 }
@@ -353,6 +358,7 @@ export function putPage(distDir) {
     res.locals.auditTarget = path;
     res.locals.auditFields = Object.keys(clean).length ? Object.keys(clean) : ['reset'];
     const doc = await mutate(req, (d) => { if (Object.keys(clean).length) d.pages[path] = clean; else delete d.pages[path]; });
+    notifyChanged([page.url || path]); // IndexNow: search engines recrawl the page (production only; never throws)
     res.json({ ver: doc.ver, page: pageEntry(page, doc, await readSite()) });
   };
 }
@@ -370,6 +376,8 @@ export function putSiteContent(distDir) {
       d.sites[market] = clean;
     });
     const [reg, site] = await Promise.all([builtPages(distDir), readSite()]);
+    // contact, footer and social lines are on every page of that site: let search engines know
+    notifyChanged([...reg.pages.values()].filter((p) => p.site === market || p.site === 'both').map((p) => p.url || p.path));
     res.json({ ver: doc.ver, site: siteEntry(market, doc, site, reg.bits) });
   };
 }

@@ -12,6 +12,8 @@ import { qrSvg } from '../studio/qr.js';
 import { INTL_PARTIALS } from './intl.mjs';
 import { LANDING_PARTIALS } from './landing.mjs';
 import { EVENTS } from './intl-content.mjs';
+import { NAP, SAME_AS, OWNER, FOUNDED, EQUIVALENTS, HTML_LANG } from './seo-site.mjs';
+import { TRUST_PARTIALS } from './trust.mjs';
 
 const here = import.meta.dirname;
 const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
@@ -69,16 +71,24 @@ const NAV = [
 /** title, description, canonical, robots, hreflang, Open Graph and Twitter tags for a page (src/site/seo.mjs).
  *  The Nepal site (en-NP) and the international site (en) are separate sites that cross-link, so each page names only
  *  its own language (no hreflang twins). Home and FAQ pages carry a SpeakableSpecification (the H1 and [data-speak]). */
+/** hreflang links for a page with a true equivalent on the other site (seo-site.mjs EQUIVALENTS), else none:
+ *  en-NP -> the Nepal page, en -> the international page, x-default -> the international page. */
+const INTL_EQ = Object.fromEntries(Object.entries(EQUIVALENTS).map(([np, intl]) => [intl, np]));
+export function hreflangLinks(id) {
+  const npId = EQUIVALENTS[id] ? id : INTL_EQ[id];
+  if (!npId) return '';
+  const np = pageMeta(npId).url, intl = pageMeta(EQUIVALENTS[npId]).url;
+  return `\n  <link rel="alternate" hreflang="en-NP" href="${np}" />\n  <link rel="alternate" hreflang="en" href="${intl}" />\n  <link rel="alternate" hreflang="x-default" href="${intl}" />`;
+}
 function meta(id = 'home') {
   const m = pageMeta(id);
   const t = esc(m.title), d = esc(m.desc), a = esc(m.alt);
   const np = m.market === 'np';
-  const lang = np ? 'en-NP' : 'en';
+  const lang = HTML_LANG[m.market] || 'en';
   return `<title>${t}</title>
   <meta name="description" content="${d}" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <link rel="canonical" href="${m.url}" />
-  <link rel="alternate" hreflang="${lang}" href="${m.url}" />
+  <link rel="canonical" href="${m.url}" />${hreflangLinks(id)}
   <meta property="og:type" content="${m.ogType}" />
   <meta property="og:site_name" content="Nimtto" />
   <meta property="og:locale" content="${np ? 'en_NP' : 'en_US'}" />${np ? '\n  <meta property="og:locale:alternate" content="ne_NP" />' : ''}
@@ -98,20 +108,31 @@ function meta(id = 'home') {
   ${jsonLd({ '@context': 'https://schema.org', '@type': m.type, '@id': `${m.url}#webpage`, url: m.url, name: m.title, description: m.desc, inLanguage: lang,
     isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` },
     primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 },
+    ...(m.type === 'AboutPage' ? { about: { '@id': `${SITE_URL}/#org` }, mainEntity: { '@id': `${SITE_URL}/#org` } } : {}),
     ...(m.speak ? { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } } : {}) }, ` data-cms="webpage" data-cms-id="${esc(id)}" data-cms-site="${esc(m.market)}"`)}`;
 }
-/** The organisation and the website, the same on every page of both sites (no LocalBusiness: there is no shop). */
+/** The organisation and the website, the same on every page of both sites (no LocalBusiness: there is no shop).
+ *  Name, contact and profiles come from seo-site.mjs (NAP, SAME_AS, OWNER, FOUNDED). */
 export const ORG_LD = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'Nimtto', alternateName: 'निम्तो', url: `${SITE_URL}/`,
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/site/brand/nimtto-logo.svg` }, image: `${SITE_URL}/site/og/home.jpg`, email: CONTACT.email, telephone: '+977-980-6393298',
+      '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: NAP.name, alternateName: NAP.nameNe, url: `${SITE_URL}/`,
+      logo: { '@type': 'ImageObject', '@id': `${SITE_URL}/#logo`, url: `${SITE_URL}/site/brand/nimtto-logo-512.png`, contentUrl: `${SITE_URL}/site/brand/nimtto-logo-512.png`, width: 512, height: 512, caption: 'Nimtto' },
+      image: `${SITE_URL}/site/og/home.jpg`, email: NAP.email, telephone: NAP.tel,
       description: 'Nimtto makes animated invitation websites with RSVP, set up with you by a real designer: for Nepali weddings and family ceremonies in Nepal (nimtto.com, in rupees) and for weddings and every celebration worldwide (nimtto.com/international, in US dollars).',
       areaServed: [{ '@type': 'Country', name: 'Nepal' }, { '@type': 'Country', name: 'United States' }, { '@type': 'Country', name: 'United Kingdom' }, { '@type': 'Country', name: 'Canada' }, { '@type': 'Country', name: 'Australia' }, { '@type': 'Country', name: 'United Arab Emirates' }],
       knowsLanguage: ['en', 'ne'],
-      address: { '@type': 'PostalAddress', addressCountry: 'NP' },
-      contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: CONTACT.email, telephone: '+977-980-6393298', availableLanguage: ['English', 'Nepali'] },
+      address: { '@type': 'PostalAddress', addressCountry: NAP.country },
+      contactPoint: [
+        { '@type': 'ContactPoint', contactType: 'customer support', email: NAP.email, telephone: NAP.tel, availableLanguage: NAP.languages, areaServed: ['NP', 'US', 'GB', 'CA', 'AU', 'AE'] },
+        { '@type': 'ContactPoint', contactType: 'sales', email: NAP.email, telephone: NAP.tel, availableLanguage: NAP.languages, url: `${SITE_URL}/contact/` },
+      ],
+      // digital invitations cannot be returned; refunds are case by case (/refunds/)
+      hasMerchantReturnPolicy: { '@type': 'MerchantReturnPolicy', applicableCountry: ['NP', 'US', 'GB', 'CA', 'AU', 'AE'], returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted', merchantReturnLink: `${SITE_URL}/refunds/` },
+      ...(SAME_AS.length ? { sameAs: SAME_AS } : {}),
+      ...(FOUNDED ? { foundingDate: FOUNDED } : {}),
+      ...(OWNER.name ? { founder: { '@id': `${SITE_URL}/about/#owner` } } : {}),
     },
     { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto International'], description: 'Animated invitation websites with RSVP: Nepali weddings and ceremonies in Nepal, and weddings and every celebration worldwide.', inLanguage: ['en', 'ne'], publisher: { '@id': `${SITE_URL}/#org` } },
   ],
@@ -167,7 +188,7 @@ function footer() {
           <p class="foot__ne" lang="ne">निम्तो, मायाले पठाइएको</p>${cmsSlot('foot-extra')}
         </div>
         ${col('Invitations', [['/wedding-invitation-nepal/', 'Wedding cards'], ['/designs/', 'All designs'], ['/occasions/', 'Occasions'], ['/occasions/bratabandha/', 'Bratabandha'], ['/occasions/pasni/', 'Pasni'], ['/occasions/gunyu-cholo/', 'Gunyu Cholo'], ['/nepali-abroad/', 'For families abroad']])}
-        ${col('Nimtto', [['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/faq/', 'FAQ'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
+        ${col('Nimtto', [['/about/', 'About us'], ['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/faq/', 'FAQ'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
@@ -483,9 +504,13 @@ function crumbs(arg = '') {
   return crumbsLd(pairs);
 }
 
-export const PARTIALS = { head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS };
+export const PARTIALS = { ...TRUST_PARTIALS, head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {
+  // <html lang> follows the page's site (seo-site.mjs HTML_LANG): en-NP for Nepal, en-US for the international site
+  const id = /<!--@(?:head|meta):([^>]*?)-->/.exec(html)?.[1];
+  const lang = id ? HTML_LANG[pageMeta(id).market] : null;
+  if (lang) html = html.replace(/<html lang="[^"]*"/, `<html lang="${lang}"`);
   return html.replace(/<!--@([a-z-]+)(?::([^>]*?))?-->/g, (m, name, arg) => (PARTIALS[name] ? PARTIALS[name](arg) : m));
 }

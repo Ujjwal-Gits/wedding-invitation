@@ -50,7 +50,8 @@ export async function withPageData(html, doc, slug) {
 }
 
 // Pages under dist/ that are not designs.
-const OPEN_PAGES = new Set(['studio', 'credits', 'international', 'terms', 'privacy', 'refunds', 'faq', 'wedding-invitation-nepal', 'nepali-abroad', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
+// about: the About page; blog: the blog (docs/SEO-AUDIT.md), listed ahead so it is public as soon as it is built.
+const OPEN_PAGES = new Set(['studio', 'credits', 'international', 'terms', 'privacy', 'refunds', 'faq', 'wedding-invitation-nepal', 'nepali-abroad', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art', 'about', 'blog']);
 
 let distPages = null;
 /** Top-level dist folders with an index.html (every built page), read once: dist does not change at runtime. */
@@ -132,6 +133,9 @@ export function themePageGate(distDir) {
       const theme = themeOfPath(req.path, gatedNames(distDir));
       if (!theme) return next();
       res.set('Cache-Control', 'private, no-store');
+      // A guest's invitation (names, dates, venues, photos) is never indexed, even when its link is posted publicly;
+      // the bare design page only redirects. The public, watermarked showcase sets the same (lib/showcase.js).
+      res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
       res.vary('Cookie');
       res.locals.gatedPage = true;
 

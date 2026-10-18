@@ -120,19 +120,29 @@ export function contactValues(c = {}) {
 }
 const telOf = (p) => String(p || '').trim().replace(/\s+/g, '-');
 
-/** The Organization node with the editable contact lines, address and social profiles (sameAs). */
+/**
+ * The Organization node (built from src/site/seo-site.mjs NAP / SAME_AS) with the studio's contact lines, address
+ * and social profiles in place of the built ones. Every existing ContactPoint keeps its shape; only its email and
+ * telephone follow the Nepal contact lines. A different International email or phone adds one more point. Social
+ * profiles, when any are set, replace sameAs. Nothing changes when the values are the built ones.
+ */
 function updateOrg(o, org) {
   const node = Array.isArray(o?.['@graph']) ? o['@graph'].find((x) => x?.['@type'] === 'Organization') : null;
   if (!node) return o;
   const { np = {}, intl = null, sameAs = [], address = '' } = org;
+  const tel = np.phone ? telOf(np.phone) : '';
   if (np.email) node.email = np.email;
-  if (np.phone) node.telephone = telOf(np.phone);
-  const point = (c, extra = {}) => ({ '@type': 'ContactPoint', contactType: 'customer support', ...(c.email ? { email: c.email } : {}), ...(c.phone ? { telephone: telOf(c.phone) } : {}), availableLanguage: ['English', 'Nepali'], ...extra });
-  const npPoint = point(np);
-  if (intl && (intl.email !== np.email || intl.phone !== np.phone)) {
-    node.contactPoint = [npPoint, point(intl, { availableLanguage: ['English'], areaServed: ['US', 'GB', 'CA', 'AU', 'AE'] })];
-  } else node.contactPoint = npPoint;
-  if (address) node.address = { '@type': 'PostalAddress', streetAddress: address, addressCountry: 'NP' };
+  if (tel) node.telephone = tel;
+  const points = node.contactPoint == null ? [] : Array.isArray(node.contactPoint) ? node.contactPoint : [node.contactPoint];
+  for (const p of points) {
+    if (np.email && p.email) p.email = np.email;
+    if (tel && p.telephone) p.telephone = tel;
+  }
+  if (intl && ((intl.email && intl.email !== np.email) || (intl.phone && intl.phone !== np.phone))) {
+    const extra = { '@type': 'ContactPoint', contactType: 'customer support', ...(intl.email ? { email: intl.email } : {}), ...(intl.phone ? { telephone: telOf(intl.phone) } : {}), availableLanguage: ['English'], areaServed: ['US', 'GB', 'CA', 'AU', 'AE'] };
+    node.contactPoint = [...points, extra];
+  }
+  if (address) node.address = { ...(node.address || {}), '@type': 'PostalAddress', streetAddress: address, addressCountry: node.address?.addressCountry || 'NP' };
   if (sameAs.length) node.sameAs = sameAs;
   return o;
 }

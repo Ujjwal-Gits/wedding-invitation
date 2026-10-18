@@ -84,7 +84,7 @@ function browser() {
 }
 const page = async (path, headers) => {
   const r = await fetch(base + path, { headers });
-  return { status: r.status, html: await r.text(), etag: r.headers.get('etag'), cc: r.headers.get('cache-control'), csp: r.headers.get('content-security-policy') };
+  return { status: r.status, html: await r.text(), etag: r.headers.get('etag'), cc: r.headers.get('cache-control'), csp: r.headers.get('content-security-policy'), link: r.headers.get('link') };
 };
 const titleOf = (html) => /<title[^>]*>([\s\S]*?)<\/title>/.exec(html)?.[1];
 
@@ -130,6 +130,8 @@ test('a saved page shows on the next request; stale editors get 409; reset goes 
   assert.equal(ld.length, 1);
   assert.deepEqual(ld[0].mainEntity.map((x) => x.name), items.map((x) => x.q));
   assert.equal(after1.cc, 'no-cache');
+  assert.equal(after1.link, before0.link, 'the same preload Link header as the built page');
+  assert.match(after1.link || '', /rel=preload/);
   assert.ok(after1.etag);
   assert.ok(after1.csp && after1.csp.includes("script-src 'self'"), 'the page CSP is unchanged');
   assert.equal((await page('/faq/', { 'If-None-Match': after1.etag })).status, 304);
