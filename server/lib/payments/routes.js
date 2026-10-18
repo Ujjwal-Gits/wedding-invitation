@@ -1,16 +1,18 @@
 // Payments API, mounted at /api/pay (server/index.js), plus the page headers the PayPal buttons need on /.
 //   GET  /api/pay/config           public: { paypal: { enabled, env, clientId?, currency } } (the client ID is public)
 //   GET  /api/pay/status           admin with 'website': configured or not, sandbox or live; never a secret
-//   POST /api/pay/paypal/order     public { ref, t, website }: Origin check, honeypot, rate limits
+//   POST /api/pay/paypal/order     public { ref, t, source?, website }: Origin check, honeypot, rate limits
 //   POST /api/pay/paypal/capture   public { ref, t, orderID, website }: same
-// `ref` is the order's public reference (NM-24817) with its pay token `t`; requests made before references existed
-// pass their 12-character id (itself unguessable) and no token.
+// `ref` is the order's public reference (NM-24817) with its pay token `t`, or no token and the signed-in customer
+// account that placed the order (the dashboard's payment section; then the session's CSRF token is required too).
+// Requests made before references existed pass their 12-character id (itself unguessable) and no token.
+// source 'card': a PayPal order for the card fields (payment_source card, 3-D Secure when the bank asks).
 //   POST /api/pay/paypal/webhook   PayPal: raw JSON, verified with PayPal's verify-webhook-signature API
 import express from 'express';
 import { IS_PROD, PUBLIC_ORIGINS } from '../env.js';
 import { rateLimiter, originAllowed, clientIp } from '../security.js';
-import { requirePerm } from '../auth.js';
-import { getOrder, findOrder, mutateOrder, orderByRefAndToken, ID_RE, REF_RE } from '../orders.js';
+import { requirePerm, csrfProblem } from '../auth.js';
+import { getOrder, findOrder, mutateOrder, orderByRefAndToken, orderForCustomer, ID_RE, REF_RE } from '../orders.js';
 import { readSite } from '../site.js';
 import { readConfig, createClient, PayPalError, PAYPAL_ORDER_ID_RE } from './paypal.js';
 import { createCheckout, CURRENCY } from './checkout.js';
@@ -63,7 +65,15 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
     if (!b || typeof b !== 'object' || Array.isArray(b)) { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; }
     if (b.website != null && b.website !== '') { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; } // honeypot
     if (typeof b.ref === 'string' && REF_RE.test(b.ref)) {
-      const o = await (deps.orderByRefAndToken || orderByRefAndToken)(b.ref, b.t);
+      // no token: the signed-in customer who placed the order (with the session's CSRF token)
+      const bySession = (b.t == null || b.t === '') && req.session?.role === 'customer' && req.customer;
+      if (bySession) {
+        const bad = csrfProblem(req);
+        if (bad) { res.status(403).json({ ok: false, error: bad }); return null; }
+      }
+      const o = bySession
+        ? await (deps.orderForCustomer || orderForCustomer)(b.ref, req.customer.id)
+        : await (deps.orderByRefAndToken || orderByRefAndToken)(b.ref, b.t);
       if (!o) { res.status(404).json({ ok: false, error: 'We could not find your order.' }); return null; }
       return { ...b, id: o.id };
     }
@@ -102,7 +112,7 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
   router.post('/paypal/order', json, wrap(async (req, res) => {
     const b = await guard(startLimit, req, res);
     if (!b) return;
-    try { res.status(201).json({ ok: true, ...(await checkout.start(b.id)) }); } catch (err) { fail(res, err, 'create order'); }
+    try { res.status(201).json({ ok: true, ...(await checkout.start(b.id, { card: b.source === 'card' })) }); } catch (err) { fail(res, err, 'create order'); }
   }));
 
   router.post('/paypal/capture', json, wrap(async (req, res) => {
@@ -127,9 +137,12 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
     }
   }));
 
-  /** App middleware (after securityHeaders): on the website's page only, let the PayPal SDK load and open its popup. */
+  /**
+   * App middleware (after securityHeaders): on the website's home, the /pay/ page and the studio (the customer's
+   * dashboard pays in place), let the PayPal SDK load and open its popup.
+   */
   const pageHeaders = (req, res, next) => {
-    if (config.enabled && (req.method === 'GET' || req.method === 'HEAD') && (req.path === '/' || req.path === '/index.html' || /^\/pay(?:\/|$)/.test(req.path))) {
+    if (config.enabled && (req.method === 'GET' || req.method === 'HEAD') && (req.path === '/' || req.path === '/index.html' || /^\/(?:pay|studio)(?:\/|$)/.test(req.path))) {
       const csp = res.getHeader('Content-Security-Policy');
       if (typeof csp === 'string') res.setHeader('Content-Security-Policy', withPayPalCsp(csp));
       // PayPal's checkout window talks back to the page that opened it (PayPal recommends this value)

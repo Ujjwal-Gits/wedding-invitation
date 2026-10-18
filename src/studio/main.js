@@ -102,8 +102,10 @@ async function doRoute() {
   const im = /^#\/i\/([a-z0-9-]{3,64})(?:\/([a-z-]+))?$/.exec(hash);
   if (S.me.role === 'customer') {
     if (im) return openInvitation(im[1], im[2] || 'home');
-    if (hash !== '#/account') return redirect('#/account');
-    return openCustomer();
+    // #/account?pay=<ref>: the dashboard with that order's payment section open (right after ordering)
+    const cu = /^#\/account(?:\?(.*))?$/.exec(hash);
+    if (!cu) return redirect('#/account');
+    return openCustomer(new URLSearchParams(cu[1] || ''));
   }
   if (S.me.role === 'client') {
     if (!im || im[1] !== S.me.slug) return redirect(`#/i/${S.me.slug}/home`);
@@ -214,7 +216,7 @@ function customerFoot() {
     h('button.btn.btn--icon.btn--ghost', { type: 'button', 'aria-label': 'Sign out', title: 'Sign out', 'data-action': 'signout', onclick: signOut }, icon('logout', 18)));
 }
 
-function openCustomer() {
+function openCustomer(params = new URLSearchParams()) {
   const mod = CUSTOMER_MODULES[0];
   if (S.ws?.kind !== 'customer') {
     teardown();
@@ -230,7 +232,7 @@ function openCustomer() {
     fill(app, shell.root);
     shell.attachPreview(null);
   }
-  mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, refreshMeta, onAccount: (acc) => { accountInvs = acc.invitations || []; } });
+  mount(S.ws, mod, { me: S.me, meta: S.meta, shell: S.ws.shell, go, params, refreshMeta, onAccount: (acc) => { accountInvs = acc.invitations || []; } });
 }
 
 async function refreshMeta() { try { S.meta = await api('/meta'); } catch { /* keep the old one */ } return S.meta; }

@@ -1,10 +1,13 @@
 // /pay/<ref>: pay for an order, send the payment screenshot, or see its status. The signed-in customer who owns
 // the order opens it with their session; /pay/<ref>?t=<token> (and /pay/?ref=<ref>&t=<token>) keeps working, and
 // the token from this tab's order is used as a backup. The token stays out of the Referer (meta referrer).
+// A signed-in customer opening their own order without a token in the link pays in their dashboard instead
+// (/studio/account?pay=<ref>, the "Pay for your order" section); links with ?t= keep working here.
 import './site.css';
 import './intl.css';
+import './pay.css';
 import { $, el, initHeader, initAuth, applyContact, setYear, waLink } from './common.js';
-import { loadSite, REF_RE } from './api.js';
+import { loadSite, getPayment, REF_RE } from './api.js';
 import { mountPayment } from './payment.js';
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{8,200}$/;
@@ -38,7 +41,13 @@ async function boot() {
     return;
   }
   document.title = `Order ${ref} · Nimtto`;
-  const info = await mountPayment(box, { ref, token, wa, focus: false });
+  const linkToken = TOKEN_RE.test(new URLSearchParams(location.search).get('t') || '');
+  if (me?.role === 'customer' && !linkToken) {
+    // their own order (the session opens it): the dashboard's payment section
+    const own = await getPayment(ref, '');
+    if (own.ok) { location.replace(`/studio/account?pay=${encodeURIComponent(ref)}`); return; }
+  }
+  const info = await mountPayment(box, { ref, token, csrf: me?.csrf || '', wa, focus: false });
   // an order from the international site: its sage palette, words and home link (intl.css is scoped to .market-intl)
   if (info?.market === 'intl') {
     document.body.classList.add('market-intl');

@@ -107,7 +107,7 @@ const safeEqual = (a, b) => {
 };
 
 /** CSRF token + same-site Origin on every state-changing request. Returns an error message or null. */
-function csrfProblem(req) {
+export function csrfProblem(req) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return null;
   const token = req.get('x-csrf-token');
   if (!token || !safeEqual(token, req.session.csrf)) return 'Your session token is out of date. Reload the page.';

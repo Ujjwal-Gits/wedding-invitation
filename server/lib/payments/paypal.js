@@ -112,8 +112,11 @@ export function createClient({ env, clientId, secret, fetch: fetchFn = globalThi
     env,
     accessToken,
     request, // for scripts/paypal-sandbox-check.js
-    /** POST /v2/checkout/orders. amount is a string with two decimals. */
-    createOrder({ ref, amount, currency, description, requestId }) {
+    /**
+     * POST /v2/checkout/orders. amount is a string with two decimals. card: an order for the JS SDK's card fields
+     * (the card is added by the SDK; 3-D Secure runs when the bank asks for it), otherwise the PayPal buttons'.
+     */
+    createOrder({ ref, amount, currency, description, requestId, card = false }) {
       return request('POST', '/v2/checkout/orders', {
         headers: { 'PayPal-Request-Id': requestId, Prefer: 'return=minimal' },
         body: {
@@ -125,9 +128,9 @@ export function createClient({ env, clientId, secret, fetch: fetchFn = globalThi
             soft_descriptor: 'NIMTTO',
             amount: { currency_code: currency, value: amount },
           }],
-          payment_source: {
-            paypal: { experience_context: { brand_name: 'Nimtto', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW' } },
-          },
+          payment_source: card
+            ? { card: { attributes: { verification: { method: 'SCA_WHEN_REQUIRED' } } } }
+            : { paypal: { experience_context: { brand_name: 'Nimtto', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW' } } },
         },
       });
     },

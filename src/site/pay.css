@@ -150,3 +150,9 @@
 .ppbox__safe svg { flex: none; width: 16px; height: 16px; margin-top: 2px; color: #1f7a4d; }
 .ppbox__legal { margin: 0; font-size: 13px; color: var(--ink-3, #7a6a70); }
 .ppbox__legal a { color: inherit; }
+/* PayPal's card fields (payment.js checkoutBox), when the PayPal account may use them */
+.ppcard { display: grid; gap: 8px; max-width: 420px; }
+.ppcard__or { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 13px; color: var(--ink-3, #7a6a70); }
+.ppcard__or::before, .ppcard__or::after { content: ''; flex: 1; height: 1px; background: var(--line, #eadfe2); }
+.ppcard__row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ppcard__f { min-height: 56px; }

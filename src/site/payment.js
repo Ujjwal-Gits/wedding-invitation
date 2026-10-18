@@ -1,8 +1,14 @@
-// The payment step: after an order is saved, the customer pays by QR (Khalti, eSewa, bank, or PayPal from abroad),
-// then sends a screenshot of the payment. Used on /pay/<ref> (the customer's session, or ?t=<token>).
+// The payment step: after an order is saved, the customer pays by PayPal or card (dollar orders: PayPal's buttons,
+// or PayPal's card fields where the account has them), or by QR (Khalti, eSewa, bank) and then sends a screenshot.
+// One mount function, two homes:
+//  - the customer's dashboard (src/studio/customer.js, skin 'studio'): "Pay for your order", in place
+//  - /pay/<ref> (src/site/pay-page.js, skin 'site'): old links and links with ?t=<token>
+// The styles live with each home (src/site/pay.css; src/studio/studio.css "Pay for your order").
 // Data: GET /api/orders/:ref/pay?t= (per-order QR images with the amount and remark filled in where the wallet
-// allows), POST /api/orders/:ref/proof?t= (multipart). Text from the API goes in with textContent only.
-import './pay.css';
+// allows), POST /api/orders/:ref/proof?t= (multipart). Without a token the signed-in customer's session opens their
+// own order; the PayPal calls then carry the session's CSRF token. Nothing here decides that a payment happened:
+// the server captures with PayPal and checks the amount, currency and order number. Text from the API goes in with
+// textContent only.
 import { el, icon, ICONS, money, copyButton, waLink, reduced } from './common.js';
 import { getPayment, sendProof, paypalCall, paypalConfig } from './api.js';
 
@@ -30,52 +36,76 @@ const isSent = (s) => s === 'proof_submitted';
 const isClosed = (s) => s === 'refunded';
 const amountOf = (m, info) => (m.amount != null ? m.amount : m.currency === 'USD' ? info.amount.usd : info.amount.npr);
 
+/** Class names of the shared parts (buttons, fields, messages) in each home's own components. */
+const SKINS = {
+  site: {
+    primary: 'btn btn--accent', submit: 'btn btn--accent btn--wide', line: 'btn btn--line', wa: 'btn btn--wa', chip: 'chipbtn', chipSm: 'chipbtn chipbtn--sm',
+    field: 'field', fieldSm: 'field field--sm', label: null, hint: 'field__hint', err: 'field__err', status: 'form__status', inDashboard: false,
+  },
+  studio: {
+    primary: 'btn btn--primary', submit: 'btn btn--primary btn--lg btn--block', line: 'btn', wa: 'btn btn--wa', chip: 'btn btn--sm', chipSm: 'btn btn--sm',
+    field: 'field', fieldSm: 'field', label: 'label', hint: 'hint', err: 'form-error', status: 'notice notice--error', inDashboard: true,
+  },
+};
+
 /**
- * Mounts the payment step into `box`. Options: ref, token, wa (WhatsApp number), info (already fetched pay data),
- * onFocus (called with the heading to focus after each render).
+ * Mounts the payment step into `box` and returns the order's pay data (null when it could not load). Options:
+ *  ref, token (the pay token; empty: the signed-in customer's session), csrf (that session's token, for PayPal),
+ *  wa (WhatsApp number), info (already fetched pay data), skin ('site' | 'studio'),
+ *  focus (focus and scroll to the heading on the first render), refocus (the same after a payment; default: focus),
+ *  onChange(data) (called after a payment or screenshot changed the order, with its fresh pay data).
+ * Mounting again into the same box replaces what was there (the PayPal SDK itself loads once per page).
  */
-export async function mountPayment(box, { ref, token, wa = '', info = null, focus = true }) {
+export async function mountPayment(box, { ref, token = '', csrf = '', wa = '', info = null, skin = 'site', focus = true, refocus = focus, onChange = null }) {
+  const c = { ref, token, csrf, wa, S: SKINS[skin] || SKINS.site };
+  const run = (box.payRun = (box.payRun || 0) + 1); // a newer mount into this box wins
   box.setAttribute('aria-busy', 'true');
   box.replaceChildren(el('p', { class: 'pay__loading', text: 'Loading your payment details…' }));
   let r = info ? { ok: true, data: info } : await getPayment(ref, token);
+  if (run !== box.payRun) return null;
   if (!r.ok) {
     box.removeAttribute('aria-busy');
-    box.replaceChildren(errorView(r.status, ref, wa));
+    box.replaceChildren(errorView(r.status, c));
     return null;
   }
   const data = r.data;
-  const render = (d) => {
+  const render = (d, again) => {
+    if (run !== box.payRun) return;
     box.removeAttribute('aria-busy');
-    if (isDone(d.status) || isSent(d.status) || isClosed(d.status) || !d.canUpload || d.paypal?.status === 'pending') box.replaceChildren(statusView(d, ref, token, wa));
-    else box.replaceChildren(payView(d, ref, token, wa, async () => {
+    if (isDone(d.status) || isSent(d.status) || isClosed(d.status) || !d.canUpload || d.paypal?.status === 'pending') box.replaceChildren(statusView(d, c));
+    else box.replaceChildren(payView(d, c, async () => {
       r = await getPayment(ref, token);
-      render(r.ok ? r.data : { ...d, status: 'proof_submitted', proof: { method: '' } });
+      const next = r.ok ? r.data : { ...d, status: 'proof_submitted', proof: { method: '' } };
+      render(next, true);
+      onChange?.(next);
     }));
     const h = box.querySelector('h2, h3');
-    if (focus && h) {
+    if ((again ? refocus : focus) && h) {
       h.setAttribute('tabindex', '-1');
       h.focus({ preventScroll: true });
       box.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
     }
   };
-  render(data);
+  render(data, false);
   return data;
 }
 
-function errorView(status, ref, wa) {
-  const text = status === 404 || status === 403 || status === 400
-    ? 'Please check that you opened the full link from your order. It ends with a long code.'
+function errorView(status, { ref, wa, S }) {
+  const missing = status === 404 || status === 403 || status === 400;
+  const text = missing
+    ? (S.inDashboard ? 'This order is not on your account. Please message us and we will sort it out.' : 'Please check that you opened the full link from your order. It ends with a long code.')
     : 'We could not load your payment details just now. Please check your connection and try again.';
   return el('div', { class: 'pay__error', role: 'alert' },
-    el('h3', { class: 'pay__title pay__title--sm', text: status === 404 || status === 403 || status === 400 ? 'We could not find this order' : 'Something went wrong' }),
+    el('h3', { class: 'pay__title pay__title--sm', text: missing ? 'We could not find this order' : 'Something went wrong' }),
     el('p', { text }),
     el('p', { class: 'pay__acts' },
-      el('button', { class: 'btn btn--line', type: 'button', text: 'Try again', onclick: () => location.reload() }),
-      wa ? el('a', { class: 'btn btn--wa', href: waLink(wa, `Hi Nimtto, I need help with order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null));
+      el('button', { class: S.line, type: 'button', text: 'Try again', onclick: () => location.reload() }),
+      wa ? el('a', { class: S.wa, href: waLink(wa, `Hi Nimtto, I need help with order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null));
 }
 
 /* ---------------- step 2 and 3: pay by QR, then send the screenshot ---------------- */
-function payView(info, ref, token, wa, onSent) {
+function payView(info, c, onSent) {
+  const { ref, token, wa, S } = c;
   // PayPal checkout (cards too) replaces a PayPal QR when it is on: one way to pay from abroad. An order from the
   // international site shows "Card or PayPal" first and in dollars; the QR methods come second.
   const intl = info.market === 'intl';
@@ -87,7 +117,7 @@ function payView(info, ref, token, wa, onSent) {
   const usdFirst = intl && info.amount.usd != null;
   const priced = info.amount.npr != null;
   const head = el('header', { class: 'pay__head' },
-    el('p', { class: 'pay__saved' }, icon(ICONS.check), el('span', {}, 'Order ', el('b', { text: ref }), ' is saved')),
+    el('p', { class: 'pay__saved' }, icon(ICONS.check), el('span', {}, 'Order ', el('b', { text: ref }), S.inDashboard ? ' is saved, waiting for payment' : ' is saved')),
     el('h3', { class: 'pay__title', text: usdFirst ? `Pay $${info.amount.usd}` : priced ? `Pay ${money(info.amount.npr)}` : 'Pay for your order' }),
     el('p', { class: 'pay__plan', text: usdFirst
       ? [info.plan?.name ? `${info.plan.name} plan` : '', 'paid once, by card or PayPal'].filter(Boolean).join(' · ')
@@ -96,7 +126,7 @@ function payView(info, ref, token, wa, onSent) {
   if (!methods.length) {
     return el('div', { class: 'pay' }, stepsLine(1), head,
       el('p', { class: 'pay__note', text: 'Payment by QR is not ready yet. Please message us on WhatsApp and we will help you pay.' }),
-      wa ? el('a', { class: 'btn btn--wa', href: waLink(wa, `Hi Nimtto, I want to pay for order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null);
+      wa ? el('a', { class: S.wa, href: waLink(wa, `Hi Nimtto, I want to pay for order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null);
   }
 
   const state = { m: methods[0], remark: info.remark || methods[0].remark || `Nimtto ${ref}` };
@@ -117,11 +147,11 @@ function payView(info, ref, token, wa, onSent) {
   const dl = el('dl', { class: 'qr__facts' });
   const remarkIn = el('input', { id: `remark-${ref}`, class: 'input', type: 'text', maxlength: methods[0].remarkMax || 25, autocomplete: 'off', spellcheck: 'false' });
   remarkIn.value = state.remark;
-  const remarkField = el('div', { class: 'field field--sm' },
-    el('label', { for: `remark-${ref}`, text: 'Remark' }),
-    el('div', { class: 'remark' }, remarkIn, copyButton('Copy', () => state.remark, 'chipbtn')),
-    el('p', { class: 'field__hint', text: 'Keep your order number in the remark so we can find your payment.' }));
-  const save = el('a', { class: 'chipbtn', download: '' }, icon(ICONS.down), el('span', { text: 'Save QR image' }));
+  const remarkField = el('div', { class: S.fieldSm },
+    el('label', { for: `remark-${ref}`, class: S.label, text: 'Remark' }),
+    el('div', { class: 'remark' }, remarkIn, copyButton('Copy', () => state.remark, S.chip)),
+    el('p', { class: S.hint, text: 'Keep your order number in the remark so we can find your payment.' }));
+  const save = el('a', { class: S.chip, download: '' }, icon(ICONS.down), el('span', { text: 'Save QR image' }));
   const saveHint = el('p', { class: 'qr__tip' });
   const qrBox = el('section', { class: 'qrbox', 'aria-labelledby': `qr-h-${ref}` },
     el('h4', { class: 'pay__label', id: `qr-h-${ref}`, text: '2. Scan the QR and pay' }),
@@ -156,7 +186,7 @@ function payView(info, ref, token, wa, onSent) {
       auto.append(el('span', {}, 'Scan, then enter amount ', el('b', { text: amtText || 'as agreed' }), ' and remark ', el('b', { text: state.remark }), '.'));
     }
     dl.replaceChildren(...[
-      amt != null ? row('Amount', amtText, copyButton('Copy', () => String(amt), 'chipbtn chipbtn--sm')) : null,
+      amt != null ? row('Amount', amtText, copyButton('Copy', () => String(amt), S.chipSm)) : null,
       m.accountName ? row('Account name', m.accountName) : null,
       m.accountHint ? row('Account', m.accountHint) : null,
       m.note ? row('Note', m.note) : null,
@@ -188,12 +218,12 @@ function payView(info, ref, token, wa, onSent) {
   preview.addEventListener('error', () => { preview.hidden = true; }); // iPhone HEIC: no preview in some browsers, the upload still works
   const dropText = el('span', { class: 'drop__t' }, el('b', { text: 'Choose a screenshot or photo' }), el('span', { text: `From your gallery or camera. JPG or PNG, up to ${MAX_MB} MB.` }));
   const drop = el('label', { class: 'drop', for: `proof-${ref}` }, file, preview, dropText);
-  const fileErr = el('p', { class: 'field__err', id: `proof-err-${ref}`, hidden: true });
+  const fileErr = el('p', { class: S.err, id: `proof-err-${ref}`, hidden: true });
   const amountIn = el('input', { id: `paid-${ref}`, class: 'input', name: 'amountPaid', type: 'text', inputmode: 'decimal', maxlength: 12, autocomplete: 'off' });
   const amountCur = el('span', { class: 'input-pre', 'aria-hidden': 'true', text: 'Rs' });
   const noteIn = el('input', { id: `note-${ref}`, class: 'input', name: 'note', type: 'text', maxlength: 300, autocomplete: 'off' });
-  const status = el('p', { class: 'form__status', role: 'alert', hidden: true });
-  const submit = el('button', { class: 'btn btn--accent btn--wide', type: 'submit', text: 'Send screenshot' });
+  const status = el('p', { class: S.status, role: 'alert', hidden: true });
+  const submit = el('button', { class: S.submit, type: 'submit', text: 'Send screenshot' });
   let url = '';
   file.addEventListener('change', () => {
     fileErr.hidden = true;
@@ -224,8 +254,8 @@ function payView(info, ref, token, wa, onSent) {
     el('h4', { class: 'pay__label', id: `proof-h-${ref}`, text: '3. Send us the payment screenshot' }),
     drop, fileErr,
     el('div', { class: 'grid2' },
-      el('div', { class: 'field' }, el('label', { for: `paid-${ref}`, text: 'Amount you paid' }), el('div', { class: 'input-wrap' }, amountCur, amountIn)),
-      el('div', { class: 'field' }, el('label', { for: `note-${ref}` }, 'Note ', el('span', { class: 'opt', text: 'optional' })), noteIn)),
+      el('div', { class: S.field }, el('label', { for: `paid-${ref}`, class: S.label, text: 'Amount you paid' }), el('div', { class: 'input-wrap' }, amountCur, amountIn)),
+      el('div', { class: S.field }, el('label', { for: `note-${ref}`, class: S.label }, 'Note ', el('span', { class: 'opt', text: 'optional' })), noteIn)),
     submit, status);
   proof.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -253,16 +283,17 @@ function payView(info, ref, token, wa, onSent) {
     status.hidden = false;
   });
 
-  const later = el('div', { class: 'pay__later' },
+  // the dashboard is where they come back to: no "keep this link" there
+  const later = S.inDashboard ? null : el('div', { class: 'pay__later' },
     el('p', { text: 'Want to pay later? Sign in with your email any time, or keep this link. Both bring you back to this page.' }),
     el('div', { class: 'pay__acts' },
-      copyButton('Copy payment link', () => payLink(ref, token)),
-      wa ? el('a', { class: 'chipbtn', href: waLink(wa, `Hi Nimtto, I have a question about order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Ask on WhatsApp' })) : null));
+      copyButton('Copy payment link', () => payLink(ref, token), S.chip),
+      wa ? el('a', { class: S.chip, href: waLink(wa, `Hi Nimtto, I have a question about order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Ask on WhatsApp' })) : null));
 
   const rejected = info.status === 'rejected'
-    ? el('p', { class: 'form__status', role: 'alert' }, el('b', { text: 'We could not confirm your last payment. ' }), document.createTextNode(info.reason || 'Please check the amount and send a new screenshot, or message us on WhatsApp.'))
+    ? el('p', { class: S.status, role: 'alert' }, el('b', { text: 'We could not confirm your last payment. ' }), document.createTextNode(info.reason || 'Please check the amount and send a new screenshot, or message us on WhatsApp.'))
     : null;
-  const ppBox = checkout ? checkoutBox(info, ref, token, onSent) : null;
+  const ppBox = checkout ? checkoutBox(info, c, onSent) : null;
   const view = el('div', { class: 'pay' }, stepsLine(1), head, rejected, methodsBox, qrBox, ppBox?.el, proof, later);
   // the checkout method hides the QR and the screenshot form (PayPal confirms by itself)
   const swap = () => {
@@ -279,40 +310,90 @@ function payView(info, ref, token, wa, onSent) {
 
 /*
  * PayPal checkout, the way big shops show it: PayPal's own buttons ("PayPal" and "Debit or Credit Card"), the amount
- * in dollars, and a line on safety. The price and the PayPal order are made by our server; after the customer
- * approves, our server captures it with PayPal and checks the amount, currency and order number before anything
- * counts as paid. The page never decides that a payment happened.
+ * in dollars, and a line on safety. Where the PayPal account has advanced card payments, PayPal's card fields
+ * (paypal.CardFields, each field a PayPal frame) sit right in the section instead of the card button. The price and
+ * the PayPal order are made by our server; after the customer approves, our server captures it with PayPal and
+ * checks the amount, currency and order number before anything counts as paid. The page never decides that a
+ * payment happened.
  */
 let sdkLoad = null;
+/** The PayPal JS SDK, loaded once per page (every later mount, and every re-render, reuses it). */
 function loadSdk(cfg) {
   sdkLoad ||= new Promise((resolve, reject) => {
+    if (window.paypalNimtto) { resolve(window.paypalNimtto); return; }
     const s = document.createElement('script');
-    const q = new URLSearchParams({ 'client-id': cfg.clientId, currency: cfg.currency || 'USD', intent: 'capture', components: 'buttons', 'enable-funding': 'card', 'disable-funding': 'venmo,paylater' });
+    const q = new URLSearchParams({ 'client-id': cfg.clientId, currency: cfg.currency || 'USD', intent: 'capture', components: 'buttons,card-fields', 'enable-funding': 'card', 'disable-funding': 'venmo,paylater' });
     s.src = `https://www.paypal.com/sdk/js?${q}`;
     s.async = true;
     s.dataset.namespace = 'paypalNimtto';
     s.onload = () => (window.paypalNimtto ? resolve(window.paypalNimtto) : reject(new Error('PayPal did not load')));
-    s.onerror = () => { sdkLoad = null; reject(new Error('PayPal did not load')); };
+    s.onerror = () => { sdkLoad = null; s.remove(); reject(new Error('PayPal did not load')); };
     document.head.append(s);
   });
   return sdkLoad;
 }
 
-function checkoutBox(info, ref, token, onPaid) {
+/** PayPal's card fields when this account may use them (CardFields().isEligible()), else null: the card button. */
+function cardFieldsFor(pp, opts) {
+  try {
+    if (typeof pp.CardFields !== 'function') return null;
+    const cf = pp.CardFields(opts);
+    return cf.isEligible() ? cf : null;
+  } catch { return null; }
+}
+
+const CARD_STYLE = {
+  input: { 'font-size': '16px', padding: '12px', color: '#111318' },
+  '.invalid': { color: '#c02626' },
+};
+
+function checkoutBox(info, c, onPaid) {
+  const { ref, token, csrf, S } = c;
   const buttons = el('div', { class: 'ppbox__buttons', id: `pp-${ref}` });
   const msg = el('p', { class: 'ppbox__msg', role: 'status', hidden: true });
   const testChip = el('span', { class: 'ppbox__test', hidden: true, text: 'Test mode: no real money' });
   const say = (text, bad = false) => { msg.textContent = text; msg.hidden = !text; msg.classList.toggle('is-bad', bad); };
+  const f = (name) => el('div', { class: `ppcard__f ppcard__f--${name}` });
+  const fName = f('name');
+  const fNumber = f('number');
+  const fExpiry = f('expiry');
+  const fCvv = f('cvv');
+  const cardPay = el('button', { class: S.submit, type: 'button', text: `Pay ${money(info.amount.usd, 'USD')} by card` });
+  const card = el('div', { class: 'ppcard', hidden: true },
+    el('p', { class: 'ppcard__or' }, el('span', { text: 'or pay by debit or credit card' })),
+    fName, fNumber, el('div', { class: 'ppcard__row' }, fExpiry, fCvv), cardPay);
   const box = el('section', { class: 'ppbox', 'aria-labelledby': `pp-h-${ref}`, hidden: true },
     el('div', { class: 'ppbox__head' },
       el('h4', { class: 'pay__label', id: `pp-h-${ref}`, text: '2. Pay with PayPal or a card' }), testChip),
     el('p', { class: 'ppbox__amt' }, el('b', { text: money(info.amount.usd, 'USD') }), el('span', { text: ` ${info.plan?.name ? `· ${info.plan.name} plan` : ''}` })),
-    buttons, msg,
+    buttons, card, msg,
     el('p', { class: 'ppbox__safe' }, icon(ICONS.check), el('span', { text: 'Secure checkout by PayPal. We never see your card number or PayPal password. Your plan switches on as soon as the payment goes through.' })),
     // the policies, next to the buttons (Terms, Privacy, Refunds)
     el('p', { class: 'ppbox__legal' }, document.createTextNode('By paying you agree to our '), el('a', { href: '/terms/', target: '_blank', rel: 'noopener', text: 'Terms' }),
       document.createTextNode(' and '), el('a', { href: '/refunds/', target: '_blank', rel: 'noopener', text: 'Refund policy' }), document.createTextNode('. '),
       el('a', { href: '/privacy/', target: '_blank', rel: 'noopener', text: 'Privacy' }), document.createTextNode('.')));
+
+  // our server makes the PayPal order (priced from the plan) and captures it; `t` empty: the customer's session
+  const startOrder = async (source) => {
+    say('');
+    const r = await paypalCall('order', { ref, t: token, ...(source ? { source } : {}) }, csrf);
+    if (!r.ok) {
+      if (r.data?.code === 'already_paid') { onPaid(); throw new Error('paid'); }
+      say(r.data?.error || 'PayPal could not start just now. Please try again.', true);
+      throw new Error('start failed');
+    }
+    return r.data.id;
+  };
+  const capture = async (orderID) => {
+    say('Confirming your payment with PayPal…');
+    const r = await paypalCall('capture', { ref, t: token, orderID }, csrf);
+    if (r.data?.code === 'retry') { say(r.data.error || 'Please choose another way to pay.', true); return 'retry'; }
+    if (!r.ok) { say(r.data?.error || 'We could not confirm the payment. If money left your account, message us on WhatsApp with your order number.', true); return 'failed'; }
+    say('Payment received. Thank you!');
+    onPaid();
+    return 'paid';
+  };
+
   let shown = false;
   const show = async () => {
     if (shown) return;
@@ -323,31 +404,39 @@ function checkoutBox(info, ref, token, onPaid) {
       if (!cfg) throw new Error('off');
       testChip.hidden = cfg.env === 'live';
       const pp = await loadSdk(cfg);
+      if (!buttons.isConnected) { shown = false; return; } // re-rendered meanwhile: the new view loads its own
       say('');
+      const cf = cardFieldsFor(pp, {
+        createOrder: () => startOrder('card'),
+        onApprove: async (data) => { if ((await capture(data.orderID)) !== 'paid') cardPay.disabled = false; },
+        onError: () => { cardPay.disabled = false; say('Your card could not be used. Please check the details, or pay with PayPal.', true); },
+        style: CARD_STYLE,
+      });
       await pp.Buttons({
+        // with the card fields here, the PayPal button alone (no second card button)
+        ...(cf ? { fundingSource: pp.FUNDING.PAYPAL } : {}),
         style: { layout: 'vertical', shape: 'pill', color: 'gold', label: 'pay', height: 48, tagline: false },
-        createOrder: async () => {
-          say('');
-          const r = await paypalCall('order', { ref, t: token });
-          if (!r.ok) {
-            if (r.data?.code === 'already_paid') { onPaid(); throw new Error('paid'); }
-            say(r.data?.error || 'PayPal could not start just now. Please try again.', true);
-            throw new Error('start failed');
-          }
-          return r.data.id;
-        },
-        onApprove: async (data, actions) => {
-          say('Confirming your payment with PayPal…');
-          const r = await paypalCall('capture', { ref, t: token, orderID: data.orderID });
-          if (r.data?.code === 'retry') { say(r.data.error || 'Please choose another way to pay.', true); return actions.restart(); }
-          if (!r.ok) { say(r.data?.error || 'We could not confirm the payment. If money left your account, message us on WhatsApp with your order number.', true); return undefined; }
-          say('Payment received. Thank you!');
-          onPaid();
-          return undefined;
-        },
+        createOrder: () => startOrder(),
+        onApprove: async (data, actions) => ((await capture(data.orderID)) === 'retry' ? actions.restart() : undefined),
         onCancel: () => say('You closed PayPal. Nothing was paid. You can try again any time.'),
         onError: (err) => { if (String(err?.message) !== 'paid') say('PayPal had a problem. Please try again, or pay by QR.', true); },
       }).render(buttons);
+      if (cf && card.isConnected) {
+        try {
+          await Promise.all([
+            cf.NameField({ placeholder: 'Name on card' }).render(fName),
+            cf.NumberField({ placeholder: 'Card number' }).render(fNumber),
+            cf.ExpiryField({ placeholder: 'MM / YY' }).render(fExpiry),
+            cf.CVVField({ placeholder: 'CVV' }).render(fCvv),
+          ]);
+          card.hidden = false;
+          cardPay.addEventListener('click', () => {
+            cardPay.disabled = true;
+            say('Paying…');
+            cf.submit().catch(() => { cardPay.disabled = false; say('Please check the card details (number, expiry date and CVV) and try again.', true); });
+          });
+        } catch { card.hidden = true; } // the PayPal button above still takes cards through PayPal's guest checkout
+      }
     } catch {
       shown = false;
       say('PayPal could not load. Check your connection, or pay by QR, or message us on WhatsApp.', true);
@@ -361,7 +450,7 @@ function row(k, v, extra = null) {
 }
 
 /* ---------------- step 4: sent, or confirmed ---------------- */
-export function statusView(info, ref, token, wa) {
+export function statusView(info, { ref, token, wa, S = SKINS.site }) {
   const done = isDone(info.status);
   const free = isFree(info.status);
   const closed = isClosed(info.status);
@@ -378,19 +467,20 @@ export function statusView(info, ref, token, wa) {
   ].filter(Boolean);
   return el('div', { class: 'paydone' },
     stepsLine(done ? 4 : 3),
-    closed || stuck ? null : el('p', { class: 'paydone__ne', lang: 'ne', text: 'धन्यवाद' }),
+    closed || stuck || S.inDashboard ? null : el('p', { class: 'paydone__ne', lang: 'ne', text: 'धन्यवाद' }),
     el('h3', { class: 'pay__title', text: info.paypal?.status === 'pending' && !done ? 'PayPal is checking your payment.' : free ? 'Nothing to pay. Your plan is active.' : done ? 'Payment received. Your plan is active.'
       : closed ? 'This order was refunded.' : stuck ? 'We could not confirm your payment.' : 'Payment sent. We will confirm soon.' }),
     el('p', { class: 'paydone__text', text: free
       ? 'This plan is on us. Your invitation is ready in your dashboard: add your names, dates, photos and music.'
+      : done && S.inDashboard ? 'Thank you. Your invitation appears on this page as soon as it is ready: then add your names, dates, photos and music.'
       : done ? 'Thank you. Your invitation is ready in your dashboard: add your names, dates, photos and music. We are here on WhatsApp if you need help.'
       : closed ? 'Your money was sent back. If you have a question, please message us on WhatsApp.'
         : stuck ? (info.reason || 'Please message us on WhatsApp and we will sort it out with you.')
           : 'We check every payment by hand. When it is confirmed, we will message you on WhatsApp and start your invitation.' }),
     el('dl', { class: 'paydone__facts' }, rows.map(([k, v]) => el('div', {}, el('dt', { text: k }), el('dd', { text: v })))),
     el('div', { class: 'pay__acts' },
-      done ? el('a', { class: 'btn btn--accent', href: '/studio/' }, el('span', { text: 'Open my dashboard' })) : null,
-      wa ? el('a', { class: 'btn btn--wa', href: waLink(wa, done ? `Hi Nimtto, this is about order ${ref}.` : `Hi Nimtto, I paid for order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null,
-      token ? copyButton('Copy link to this page', () => payLink(ref, token)) : null),
+      done && !S.inDashboard ? el('a', { class: S.primary, href: '/studio/' }, el('span', { text: 'Open my dashboard' })) : null,
+      wa ? el('a', { class: S.wa, href: waLink(wa, done ? `Hi Nimtto, this is about order ${ref}.` : `Hi Nimtto, I paid for order ${ref}.`), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null,
+      token ? copyButton('Copy link to this page', () => payLink(ref, token), S.chip) : null),
     token ? el('p', { class: 'paydone__fine' }, 'Keep this link to check your order later: ', el('a', { href: `/pay/${encodeURIComponent(ref)}?t=${encodeURIComponent(token)}`, text: `${location.host}/pay/${ref}` })) : null);
 }

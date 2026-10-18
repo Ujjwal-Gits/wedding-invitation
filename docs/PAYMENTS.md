@@ -128,6 +128,15 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
      capture sets the order's payment status to `confirmed`; a full refund sets it to `refunded`.
   5. The visitor sees a receipt with the reference, the amount and the PayPal transaction ID. If they cancel or
      something fails, they see a calm message, and "Pay later instead" stays available.
+- **In the dashboard:** after ordering, the customer lands on `/studio/account?pay=<ref>`: "Pay for your order" in
+  their dashboard mounts the same payment step (`mountPayment` in `src/site/payment.js`, skin `studio`). There is no
+  pay token; the session opens their own order, and the two PayPal calls send `t: ''` with the session's
+  `X-CSRF-Token` (checked server-side, as for every signed-in change). `/pay/<ref>` without `?t=` sends a signed-in
+  owner there; links with `?t=` keep working. The studio's pages get the same PayPal CSP additions as `/pay/`.
+- **Card fields:** the SDK loads `buttons,card-fields`. When `CardFields().isEligible()` (advanced card payments on
+  the PayPal account), name, number, expiry and CVV fields show under the PayPal button, and their order is created
+  with `source: 'card'` (payment source card, 3-D Secure when the bank asks); otherwise the "Debit or Credit Card"
+  button does it. The capture and its checks are the same either way.
 - **Webhook:** `POST /api/pay/paypal/webhook`.
   - Every event is checked with PayPal's `verify-webhook-signature`, using the exact received bytes.
   - Event IDs are remembered, so replays do nothing.

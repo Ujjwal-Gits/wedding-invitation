@@ -2,8 +2,12 @@
 // the invitation(s) the owner made for them, the wedding details they can add later, their phone and their password.
 // International customers (acc.market 'intl', docs/PLATFORM.md "Markets") see dollars, PayPal or card wording,
 // English only, and email first for help; Nepal customers see what they always saw.
+// "Pay for your order": an order waiting for payment is paid right here (PayPal buttons or card for dollar orders,
+// QR + screenshot for rupee orders), with the payment step of src/site/payment.js mounted in place (skin 'studio').
+// /studio/account?pay=<ref> opens it on that order (the order form sends customers here after ordering).
 import { h, icon, toast, openDialog, fmtDate, fill } from './dom.js';
 import { api } from './api.js';
+import { setUrl } from './nav.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCacheCard } from './cache.js';
 import { priceFor, countryName } from './markets.js';
@@ -58,10 +62,14 @@ function detailsDialog(o, onSaved) {
   enhance(form);
 }
 
-function orderCard(o, meta, redraw, ro = false) {
+const REF_RE = /^[A-Za-z0-9_-]{3,40}$/;
+/** Waiting for payment, with a price (a Custom request waiting for our quote has no payUrl yet). */
+const payable = (o) => ['awaiting_payment', 'rejected'].includes(o.payStatus) && Boolean(o.payUrl);
+
+function orderCard(o, meta, redraw, ro = false, onPay = () => {}) {
   const [tone, text] = PAY[o.payStatus] || ['muted', o.payStatus];
   const design = o.theme ? meta?.themes?.find((t) => t.slug === o.theme) : null;
-  const canPay = ['awaiting_payment', 'rejected'].includes(o.payStatus) && o.payUrl;
+  const canPay = payable(o);
   const facts = [
     ['Plan', o.plan ? `${o.plan.name}${money(o.amount, o.plan.from) ? ` · ${money(o.amount, o.plan.from)}` : ''}` : (o.kind === 'custom' ? 'Custom design request' : '—')],
     o.quote && o.kind === 'custom' ? ['Our price', `${quoteMoney(o.quote)}${o.quote.note ? ` · ${o.quote.note}` : ''}`] : null,
@@ -78,13 +86,13 @@ function orderCard(o, meta, redraw, ro = false) {
     h('dl.cu-facts', facts.filter(Boolean).map(([k, v]) => h('div', h('dt', k), h('dd', v)))),
     o.quote && o.kind === 'custom' ? h('p.cu-order__note', 'Happy with the price? Reply to our message and we will send you a link to pay.') : null,
     ro ? null : h('div.cu-order__acts',
-      canPay ? h('a.btn.btn--primary', { href: o.payUrl }, icon('right', 16), o.payStatus === 'rejected' ? 'Pay again' : market === 'intl' ? 'Pay with PayPal or card' : 'Pay now') : null,
-      o.payStatus === 'proof_submitted' && o.payUrl ? h('a.btn', { href: o.payUrl }, 'See payment') : null,
+      canPay ? h('button.btn.btn--primary', { type: 'button', onclick: () => onPay(o.ref) }, icon('wallet', 16), o.payStatus === 'rejected' ? 'Pay again' : market === 'intl' ? 'Pay with PayPal or card' : 'Pay now') : null,
+      o.payStatus === 'proof_submitted' && o.payUrl ? h('button.btn', { type: 'button', onclick: () => onPay(o.ref) }, 'See payment') : null,
       h('button.btn.btn--quiet', { type: 'button', onclick: () => detailsDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('edit', 15), o.weddingDate || o.venue ? 'Edit details' : 'Add wedding details')));
 }
 
 /** "Your invitation: Ujjwal & Binisha · Shahi", with Edit, Preview, Share link and the payment status. */
-function invitationCard(i, meta, ro = false) {
+function invitationCard(i, meta, ro = false, onPay = () => {}) {
   const design = meta?.themes?.find((t) => t.slug === i.theme);
   const live = i.status === 'published';
   const [tone, payText] = i.payStatus ? (PAY[i.payStatus] || ['muted', i.payStatus]) : [null, null];
@@ -101,7 +109,7 @@ function invitationCard(i, meta, ro = false) {
         h('a.btn.btn--primary.btn--sm', { href: `#/i/${i.slug}/home`, onclick: ro ? () => document.querySelector('dialog[open]')?.close() : null }, icon('edit', 15), 'Edit'),
         h('a.btn.btn--sm', { href: i.previewUrl || `/${i.theme}/?id=${i.slug}`, target: '_blank', rel: 'noopener' }, icon('eye', 15), 'Preview'),
         h('button.btn.btn--sm', { type: 'button', disabled: !share, title: share ? share : 'The share link works once your invitation is published.', onclick: () => navigator.clipboard?.writeText(share).then(() => toast('Share link copied', 'success'), () => toast(share)) }, icon('share', 15), share ? 'Copy share link' : 'Share link after publishing'),
-        !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl ? h('a.btn.btn--sm.btn--quiet', { href: i.payUrl }, icon('right', 15), 'Pay now') : null)));
+        !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl && i.orderRef ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => onPay(i.orderRef) }, icon('wallet', 15), 'Pay now') : null)));
 }
 
 /** Their phone, with its country, and Change (checked on the server and saved as +1 415 555 2671, E.164). */
@@ -202,23 +210,80 @@ function verifyNotice(email) {
 export function customerHome(ctx) {
   const ro = Boolean(ctx.viewAs);
   const root = h('div.cu', h('div.rows-skel', { 'aria-hidden': 'true' }, h('div.rows-skel__row', h('span.skel__line', { style: { width: '50%' } }))));
+  // Three parts (display: contents): the pay section between them is never moved or redrawn by a refresh, so the
+  // PayPal frames inside it stay alive and a confirmation stays on screen while the rest catches up.
+  const top = h('div.cu-part');
+  const payHost = h('section.sect.cu-pay#pay', { 'aria-labelledby': 'cu-pay-h', hidden: true });
+  const rest = h('div.cu-part');
+  let built = false;
+  const asked = ctx.params?.get('pay') || '';
+  let payRef = !ro && REF_RE.test(asked) ? asked : ''; // the order the section shows
+  let explicit = Boolean(payRef); // opened on purpose (?pay=, a Pay button): focus it
+  let closed = false; // the customer closed the section: no automatic one until they press Pay
+  let mounted = '';
+  let wa = WA_NUMBER;
+
+  const reload = () => api('/account').then(draw).catch(() => { /* keep what is on screen */ });
+  const showPay = () => {
+    if (!payRef) { payHost.hidden = true; fill(payHost); mounted = ''; return; }
+    payHost.hidden = false;
+    if (mounted === payRef) { if (explicit) payHost.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    mounted = payRef;
+    const box = h('div.cu-pay__box', { 'aria-live': 'polite' });
+    fill(payHost,
+      h('header.sect__head', h('h2.sect__title#cu-pay-h', 'Pay for your order'),
+        h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { closed = true; payRef = ''; setUrl('#/account'); showPay(); } }, icon('close', 15), 'Close')),
+      h('div.card.cu-pay__card', box));
+    const ref = payRef;
+    const focus = explicit;
+    // loaded when first needed: the dashboard stays light for customers with nothing to pay
+    import('../site/payment.js').then(({ mountPayment }) => {
+      if (mounted !== ref) return;
+      mountPayment(box, {
+        ref, csrf: ctx.me?.csrf || '', wa, skin: 'studio', focus, refocus: true,
+        // paid or screenshot sent: the order, the plan and the invitation below catch up; the confirmation stays
+        onChange: () => reload(),
+      });
+    }, () => fill(box, h('p.notice.notice--error', icon('alert', 16), h('span', 'The payment could not load. Reload the page to try again.'))));
+  };
+  const openPay = (ref) => {
+    if (!REF_RE.test(ref || '')) return;
+    closed = false;
+    explicit = true;
+    payRef = ref;
+    setUrl(`#/account?pay=${encodeURIComponent(ref)}`);
+    showPay();
+  };
+
   const draw = (acc) => {
     if (!ro) ctx.onAccount?.(acc);
     market = acc.market === 'intl' ? 'intl' : 'np';
     const intl = market === 'intl';
     const orders = acc.orders || [];
     const invs = acc.invitations || [];
+    if (acc.contact?.whatsapp) wa = String(acc.contact.whatsapp).replace(/\D/g, '') || WA_NUMBER;
     const ordersEl = h('ul.cu-orders');
-    const redraw = () => fill(ordersEl, orders.map((o) => orderCard(o, ctx.meta, redraw, ro)));
+    const redraw = () => fill(ordersEl, orders.map((o) => orderCard(o, ctx.meta, redraw, ro, openPay)));
     redraw();
-    const due = orders.filter((o) => ['awaiting_payment', 'rejected'].includes(o.payStatus)).length;
-    fill(root,
+    const dueOrders = orders.filter(payable);
+    const due = dueOrders.length;
+    // which order the section shows: the one asked for (if it is theirs), else the first one waiting for payment
+    if (!ro) {
+      if (payRef && !orders.some((o) => o.ref === payRef)) { payRef = ''; explicit = false; }
+      if (!payRef && !closed && dueOrders[0]) payRef = dueOrders[0].ref;
+    }
+    if (!built) { fill(root, top, payHost, rest); built = true; }
+    showPay();
+    explicit = false;
+    fill(top,
       ro ? h('p.notice.notice--row', icon('eye', 16), h('span', h('b', 'Read-only view. '), `This is what ${acc.customer.email} sees when they sign in.`)) : null,
       !ro && acc.customer.mail && !acc.customer.emailVerified ? verifyNotice(acc.customer.email) : null,
       h('p.cu-hello', `${intl ? 'Hello' : 'Namaste'}${acc.customer.name ? `, ${acc.customer.name.split(' ')[0]}` : ''}.`, intl ? null : h('span.cu-hello__ne', { lang: 'ne' }, ' नमस्ते')),
-      due ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, intl ? ' Pay with PayPal or a card; we start on your invitation once it is confirmed.' : ' We start on your invitation once it is confirmed.')) : null,
+      // the section shows one order; more than one waiting: say so (each has its own Pay button below)
+      due > 1 || (due && (ro || !payRef)) ? h('p.notice.notice--row', icon('info', 16), h('span', due === 1 ? 'One order is waiting for payment.' : `${due} orders are waiting for payment.`, intl ? ' Pay with PayPal or a card; we start on your invitation once it is confirmed.' : ' We start on your invitation once it is confirmed.')) : null);
+    fill(rest,
       h('section.sect', h('header.sect__head', h('h2.sect__title', 'Your invitation', invs.length ? h('span.sect__count', String(invs.length)) : null)),
-        invs.length ? h('ul.cu-invs', invs.map((i) => invitationCard(i, ctx.meta, ro)))
+        invs.length ? h('ul.cu-invs', invs.map((i) => invitationCard(i, ctx.meta, ro, openPay)))
           : h('div.qempty', h('span.qempty__icon', icon('heart', 18)), h('div',
             h('p.qempty__title', 'We are preparing your invitation'),
             h('p.qempty__text', 'Once it is ready it appears here, and you can change the names, dates, photos and music yourself.')))),

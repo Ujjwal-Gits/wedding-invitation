@@ -224,9 +224,13 @@ export function normPay(d, ref) {
   };
 }
 
-/** POST /api/pay/paypal/{order,capture} (public, Origin-checked): { ok, id | status, ... } */
-export function paypalCall(step, body) {
-  return send(`/api/pay/paypal/${step}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, website: '' }) });
+/**
+ * POST /api/pay/paypal/{order,capture} (public, Origin-checked): { ok, id | status, ... }. With no pay token the
+ * signed-in customer's session opens their own order, and `csrf` (the session's token) goes with it.
+ */
+export function paypalCall(step, body, csrf = '') {
+  const headers = { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) };
+  return send(`/api/pay/paypal/${step}`, { method: 'POST', headers, body: JSON.stringify({ ...body, website: '' }) });
 }
 
 /** GET /api/pay/config → { enabled, env, clientId, currency } (the client ID is public). */

@@ -10,8 +10,9 @@
 // international names and US dollar prices, only the plans offered there are shown, and the order is sent with
 // market: 'intl'. A Custom design is an enquiry on both sites: no payment page, "We'll reply within 1 business day
 // with a price" (the planner sends a quote, server/lib/enquiries.js).
-// Tier-aware: a design above the chosen plan gets a one-tap upgrade. On success the browser goes to the separate
-// payment page /pay/<ref>; the session cookie opens it, and the pay token is kept for this tab as a backup.
+// Tier-aware: a design above the chosen plan gets a one-tap upgrade. On success the browser goes to the customer's
+// dashboard, its payment section open on the order (/studio/account?pay=<ref>); the pay token is kept for this tab
+// as a backup for /pay/<ref>.
 // POST /api/orders contract: docs/API.md. API text is written with textContent only.
 import { $, $$, el, money, SLUG_RE, MARKET, waLink, markSignedIn } from './common.js';
 import { createOrder, REF_RE, plansFor } from './api.js';
@@ -255,8 +256,9 @@ async function submit(e) {
     if (!ref) { showError(INTL ? 'Thank you. We have your request and will email you.' : 'Thank you. We have your request and will message you on WhatsApp.', false); return; }
     try { if (token) sessionStorage.setItem(`nimtto-pay-${ref}`, token); } catch { /* private mode: the session cookie still opens it */ }
     btn.disabled = true;
-    btn.textContent = 'Opening the payment page…';
-    location.assign(`/pay/${encodeURIComponent(ref)}`);
+    btn.textContent = 'Opening your payment…';
+    // pay in the customer's dashboard: its "Pay for your order" section opens on this order (src/studio/customer.js)
+    location.assign(`/studio/account?pay=${encodeURIComponent(ref)}`);
     return;
   }
   const d = r.data || {};

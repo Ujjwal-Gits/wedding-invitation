@@ -1768,6 +1768,110 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
   .cu-inv > .btn { grid-column: 1 / -1; justify-content: center; }
 }
 
+/* ── Pay for your order: the payment step in the dashboard (src/site/payment.js, skin 'studio') ── */
+.cu-part { display: contents; }
+.cu-pay__card { padding: var(--s5); }
+.cu-pay .ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cu-pay .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cu-pay .pay, .cu-pay .paydone, .cu-pay .pay__error { display: grid; gap: var(--s5); min-width: 0; }
+.cu-pay .pay__loading { color: var(--ink-3); font-size: 14px; padding: var(--s3) 0; }
+.cu-pay .paysteps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); }
+.cu-pay .paysteps__i { display: grid; gap: 6px; align-content: start; padding-top: var(--s2); border-top: 2px solid var(--line); color: var(--ink-3); font-size: 12.5px; line-height: 1.3; }
+.cu-pay .paysteps__i.is-done, .cu-pay .paysteps__i.is-now { border-top-color: var(--accent); color: var(--ink); }
+.cu-pay .paysteps__i.is-now { font-weight: 600; }
+.cu-pay .paysteps__n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); color: var(--ink-3); font-size: 11.5px; font-weight: 600; }
+.cu-pay .paysteps__n .ico { width: 13px; height: 13px; stroke-width: 2.2; }
+.cu-pay .paysteps__i.is-done .paysteps__n { background: var(--accent); color: var(--accent-ink); }
+.cu-pay .paysteps__i.is-now .paysteps__n { background: var(--accent-soft); color: var(--accent); }
+.cu-pay .pay__head { display: grid; gap: 6px; }
+.cu-pay .pay__saved { display: inline-flex; align-items: center; gap: 6px; justify-self: start; padding: 3px 10px 3px 8px; border-radius: 99px; background: var(--ok-soft); color: var(--ok); font-size: 13px; }
+.cu-pay .pay__saved b { font-weight: 600; }
+.cu-pay .pay__title { font: 600 24px/1.2 var(--font-display); letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
+.cu-pay .pay__title--sm { font-size: 18px; }
+.cu-pay .pay__plan, .cu-pay .pay__note, .cu-pay .pay__error p:not(.pay__acts) { color: var(--ink-3); font-size: 14px; }
+.cu-pay .pay__acts { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.cu-pay .pay__label { font: 600 14px/1.35 var(--font-ui); color: var(--ink); }
+.cu-pay .methods { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s3); min-width: 0; }
+.cu-pay .methods legend { padding: 0; margin-bottom: var(--s3); }
+.cu-pay .methods__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--s2); }
+.cu-pay .method { position: relative; display: block; cursor: pointer; }
+.cu-pay .method input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.cu-pay .method__box { display: flex; align-items: center; gap: var(--s3); height: 100%; min-height: 56px; padding: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+.cu-pay .method:hover .method__box { border-color: var(--ink-4); }
+.cu-pay .method input:checked + .method__box { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cu-pay .method input:focus-visible + .method__box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cu-pay .method__t { display: grid; min-width: 0; }
+.cu-pay .method__name { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.cu-pay .method__sub { color: var(--ink-3); font-size: 12px; line-height: 1.35; }
+.cu-pay .method__logo { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink-2); font-size: 13px; font-weight: 600; text-transform: uppercase; }
+.cu-pay .method__logo--khalti { background: #5c2d91; color: #fff; }
+.cu-pay .method__logo--esewa { background: #60bb46; color: #fff; }
+.cu-pay .method__logo--paypal { background: #003087; color: #fff; }
+.cu-pay .qrbox { display: grid; gap: var(--s3); }
+.cu-pay .qrbox__in { display: grid; gap: var(--s5); padding: var(--s4); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-2); }
+.cu-pay .qrbox__code { display: grid; gap: var(--s3); justify-items: center; }
+.cu-pay .qr { position: relative; width: min(100%, 280px); aspect-ratio: 1; margin: 0; padding: var(--s3); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.cu-pay .qr__img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: opacity var(--t) var(--ease); }
+.cu-pay .qr.is-loading .qr__img { opacity: 0.35; }
+.cu-pay .qr.is-missing .qr__img { opacity: 0; }
+.cu-pay .qr.is-missing::after { content: 'The QR code is not ready. Please message us on WhatsApp to pay.'; position: absolute; inset: var(--s5); display: grid; place-items: center; text-align: center; color: var(--ink-3); font-size: 13.5px; line-height: 1.5; }
+.cu-pay .qrbox__info { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
+.cu-pay .qr__how { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cu-pay .qr__auto { display: flex; gap: var(--s2); align-items: flex-start; padding: 10px 12px; border-radius: var(--r); background: var(--ok-soft); color: var(--ok); font-size: 14px; line-height: 1.45; }
+.cu-pay .qr__auto .ico { margin-top: 2px; stroke-width: 2.2; }
+.cu-pay .qr__auto--manual { background: var(--warn-soft); color: var(--warn); }
+.cu-pay .qr__auto b { font-weight: 600; white-space: nowrap; }
+.cu-pay .qr__facts { display: grid; margin: 0; border-top: 1px solid var(--line); }
+.cu-pay .qr__row { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: var(--s3); align-items: center; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.cu-pay .qr__row dt { color: var(--ink-3); font-size: 13px; }
+.cu-pay .qr__row dd { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.cu-pay .remark { display: flex; gap: var(--s2); align-items: center; }
+.cu-pay .remark .input { flex: 1; min-width: 0; }
+.cu-pay .qr__tip { color: var(--ink-3); font-size: 13px; line-height: 1.5; }
+@media (min-width: 720px) { .cu-pay .qrbox__in { grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); align-items: start; padding: var(--s5); } }
+.cu-pay .proof { display: grid; gap: var(--s4); }
+.cu-pay .drop { position: relative; display: flex; align-items: center; gap: var(--s3); min-height: 80px; padding: var(--s3) var(--s4); border: 1.5px dashed var(--line-2); border-radius: var(--r-lg); background: var(--surface); cursor: pointer; transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
+.cu-pay .drop:hover { border-color: var(--ink-4); background: var(--surface-2); }
+.cu-pay .drop.has-file { border-style: solid; border-color: var(--accent); }
+.cu-pay .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cu-pay .drop__input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.cu-pay .drop__img { flex: none; width: 56px; height: 56px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--line); }
+.cu-pay .drop__t { display: grid; gap: 2px; font-size: 13px; color: var(--ink-3); line-height: 1.45; min-width: 0; overflow-wrap: anywhere; }
+.cu-pay .drop__t b { color: var(--ink); font-size: 14.5px; font-weight: 600; }
+.cu-pay .drop:not(.has-file)::before { content: ''; flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6470' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4M7 9l5-5 5 5M5 20h14'/%3E%3C/svg%3E") center / 20px no-repeat; }
+.cu-pay .grid2 { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.cu-pay .input-wrap { position: relative; }
+.cu-pay .input-pre { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 14px; pointer-events: none; }
+.cu-pay .input-wrap .input { padding-left: 44px; }
+.cu-pay .opt { color: var(--ink-3); font-weight: 400; }
+.cu-pay .ppbox { display: grid; gap: var(--s3); padding: var(--s4) var(--s5); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.cu-pay .ppbox__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; }
+.cu-pay .ppbox__test { font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warn-soft); border-radius: 99px; padding: 3px 10px; }
+.cu-pay .ppbox__amt { font-size: 14px; color: var(--ink-3); }
+.cu-pay .ppbox__amt b { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); margin-right: 4px; }
+.cu-pay .ppbox__buttons { min-height: 110px; max-width: 420px; width: 100%; }
+.cu-pay .ppbox__msg { font-size: 13.5px; color: var(--ink-2); }
+.cu-pay .ppbox__msg.is-bad { color: var(--danger); }
+.cu-pay .ppbox__safe { display: flex; gap: var(--s2); align-items: flex-start; font-size: 13px; color: var(--ink-3); }
+.cu-pay .ppbox__safe .ico { margin-top: 2px; color: var(--ok); }
+.cu-pay .ppbox__legal { font-size: 12.5px; color: var(--ink-3); }
+.cu-pay .ppbox__legal a { color: inherit; }
+.cu-pay .ppcard { display: grid; gap: var(--s2); max-width: 420px; }
+.cu-pay .ppcard__or { display: flex; align-items: center; gap: var(--s3); color: var(--ink-3); font-size: 12.5px; }
+.cu-pay .ppcard__or::before, .cu-pay .ppcard__or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.cu-pay .ppcard__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.cu-pay .ppcard__f { min-height: 56px; }
+.cu-pay .paydone__text { color: var(--ink-2); font-size: 14.5px; max-width: 60ch; }
+.cu-pay .paydone__facts { display: grid; margin: 0; border-top: 1px solid var(--line); }
+.cu-pay .paydone__facts div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--s3); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.cu-pay .paydone__facts dt { color: var(--ink-3); }
+.cu-pay .paydone__facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+@media (max-width: 520px) {
+  .cu-pay__card { padding: var(--s4); }
+  .cu-pay .paysteps__t { font-size: 11.5px; }
+  .cu-pay .paydone__facts div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+
 /* ── Orders: one filter bar, a thin table, a drawer (admin.js orders) ── */
 .otools { flex-wrap: wrap; row-gap: var(--s2); }
 .otools .search { min-width: min(100%, 300px); }

@@ -331,6 +331,7 @@ test('routes: Origin check, honeypot, validation, disabled state, page headers',
   app.use('/off', off.router);
   app.get('/', (req, res) => res.send('page'));
   app.get('/studio/', (req, res) => res.send('studio'));
+  app.get('/about/', (req, res) => res.send('about'));
   const server = app.listen(0);
   const base = `http://localhost:${server.address().port}`;
   const post = (path, body, origin = base) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin }, body: JSON.stringify(body) });
@@ -349,9 +350,12 @@ test('routes: Origin check, honeypot, validation, disabled state, page headers',
     const page = await fetch(`${base}/`);
     assert.match(page.headers.get('content-security-policy'), /paypal/);
     assert.equal(page.headers.get('cross-origin-opener-policy'), 'same-origin-allow-popups');
+    // the customer's dashboard pays in place: the studio may load the SDK too
     const studio = await fetch(`${base}/studio/`);
-    assert.doesNotMatch(studio.headers.get('content-security-policy'), /paypal/);
-    assert.equal(studio.headers.get('cross-origin-opener-policy'), 'same-origin');
+    assert.match(studio.headers.get('content-security-policy'), /frame-src 'self' https:\/\/\*\.paypal\.com/);
+    assert.equal(studio.headers.get('cross-origin-opener-policy'), 'same-origin-allow-popups');
+    const other = await fetch(`${base}/about/`);
+    assert.doesNotMatch(other.headers.get('content-security-policy'), /paypal/);
     const hook = await fetch(`${base}/on/paypal/webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...hookHeaders }, body: event('WH-Z', 'PAYMENT.SALE.COMPLETED', {}) });
     assert.equal(hook.status, 200);
   } finally {
@@ -393,4 +397,42 @@ test('orders: the public POST returns the reference, and the store helpers find 
   assert.equal(saved.payment.status, 'paid');
   assert.equal((await orders.findOrder((o) => o.payment?.captureId === 'CAPTEST123')).id, found.id);
   assert.equal(await orders.getOrder('not-an-id'), null);
+});
+
+test('routes: the signed-in customer pays their own order without a token (CSRF checked); card fields order', async () => {
+  const express = (await import('express')).default;
+  const pp = fakePayPal();
+  const NM = 'NM-24817';
+  const store = memoryOrders([{ id: REF, ref: NM, customerId: 'cu1', kind: 'order', plan: 'premium', name: 'Sita', phone: '9800000000', status: 'new' }]);
+  const deps = {
+    ...store, readSite: async () => SITE,
+    orderByRefAndToken: async () => null, // no token matches
+    orderForCustomer: async (ref, id) => (ref === NM && id === 'cu1' ? store.getOrder(REF) : null),
+  };
+  const on = createPayments({ config: CONFIG, fetch: pp.fetch, deps });
+  const app = express();
+  app.use((req, res, next) => {
+    const who = req.get('x-test-customer');
+    req.session = who ? { role: 'customer', csrf: 'csrf-token-1' } : null;
+    req.customer = who ? { id: who } : null;
+    next();
+  });
+  app.use('/on', on.router);
+  const server = app.listen(0);
+  const base = `http://localhost:${server.address().port}`;
+  const post = (body, headers = {}) => fetch(`${base}/on/paypal/order`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base, ...headers }, body: JSON.stringify(body) });
+  try {
+    assert.equal((await post({ ref: NM })).status, 404); // not signed in, no token
+    assert.equal((await post({ ref: NM }, { 'x-test-customer': 'cu1' })).status, 403); // signed in, no CSRF token
+    assert.equal((await post({ ref: NM }, { 'x-test-customer': 'cu2', 'x-csrf-token': 'csrf-token-1' })).status, 404); // someone else's order
+    assert.equal((await post({ ref: NM }, { 'x-test-customer': 'cu1', 'x-csrf-token': 'csrf-token-1' })).status, 201);
+    assert.ok(pp.creates.at(-1).body.payment_source.paypal);
+    assert.equal((await post({ ref: NM, source: 'card' }, { 'x-test-customer': 'cu1', 'x-csrf-token': 'csrf-token-1' })).status, 201);
+    const card = pp.creates.at(-1).body;
+    assert.equal(card.payment_source.card.attributes.verification.method, 'SCA_WHEN_REQUIRED');
+    assert.equal(card.payment_source.paypal, undefined);
+    assert.equal(card.purchase_units[0].amount.value, '49.00'); // priced by the server, as always
+  } finally {
+    server.close();
+  }
 });

@@ -88,8 +88,8 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     return { plan, amount: fromCents(cents) };
   }
 
-  /** POST /api/pay/paypal/order: a PayPal order for the request `ref`, priced from site.json. */
-  async function start(ref) {
+  /** POST /api/pay/paypal/order: a PayPal order for the request `ref`, priced from site.json (card: for the card fields). */
+  async function start(ref, { card = false } = {}) {
     return lock(ref, async () => {
       const order = await getOrder(ref);
       if (!order) throw httpError(404, 'We could not find your request. Please send the form again.');
@@ -100,7 +100,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       if (order.pay?.status === 'comped') throw httpError(409, 'There is nothing to pay for this order.', { code: 'already_paid' });
       const { plan, amount } = await priceFor(order);
       const created = await client.createOrder({
-        ref, amount, currency: CURRENCY, description: `Nimtto invitation website, ${plan.name} plan`,
+        ref, amount, currency: CURRENCY, description: `Nimtto invitation website, ${plan.name} plan`, card: card === true,
         requestId: `nimtto-${ref}-${randomBytes(6).toString('hex')}`,
       });
       if (!created || !PAYPAL_ORDER_ID_RE.test(String(created.id))) throw new PayPalError('PayPal returned no order id.', { status: 502 });
