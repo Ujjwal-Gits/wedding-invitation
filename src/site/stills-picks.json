@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "zari": {
+    "kind": "hero",
+    "why": "The red odhni lifted out of the open velvet trunk, the names worked in gold: the trunk and the names in one frame."
   }
 }

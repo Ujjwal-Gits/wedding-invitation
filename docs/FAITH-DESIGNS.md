@@ -78,6 +78,7 @@ default text.
 | gold-arch | Muslim | Mihrab-shaped gold arch; Bismillah calligraphy |
 | jali | Muslim | Emerald jali lattice under lanterns |
 | noor | Muslim | Pointed (mihrab) arch with roses |
+| zari | Hindu, Buddhist, Kirat, Other | Velvet trousseau trunk, red odhni, bangles, roses: no deity and no invocation by default (the couple may add one); on both websites |
 
 ## Counts on the Nepal site (40 designs)
 
