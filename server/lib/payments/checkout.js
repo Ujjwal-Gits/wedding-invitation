@@ -11,14 +11,20 @@
 // once however it arrives.
 // status: created (checkout opened) · pending (PayPal is holding the capture) · paid · partially_refunded · refunded
 //         · denied · mismatch (PayPal reported an amount or currency we did not ask for; never treated as paid)
+//         · cancelled (the order's price or plan changed before the capture: a new checkout is needed)
+// In production a sandbox payment never confirms an order or switches a plan on (paypal.js paypalCounts).
+// A reversal (dispute, chargeback) or a refund of everything suspends the order's access (lib/suspend.js).
 import { activate } from '../activation.js';
 import { randomBytes } from 'node:crypto';
 import { withLock } from '../store.js';
-import { PayPalError, PAYPAL_ORDER_ID_RE } from './paypal.js';
+import { PayPalError, PAYPAL_ORDER_ID_RE, paypalCounts } from './paypal.js';
+import { suspendOrder } from '../suspend.js';
 
 export const CURRENCY = 'USD';
 const SETTLED = new Set(['paid', 'partially_refunded', 'refunded']);
-const MAX_EVENTS = 40;
+const MAX_EVENTS = 500; // webhook event ids kept per order (a replay is refused by its id)
+const MAX_EVENT_AGE = 3 * 24 * 60 * 60 * 1000; // PayPal retries for up to three days; an older delivery is a replay
+const PRICE_CHANGED = 'The price of this order changed. Please start the payment again.';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const REFUND_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
@@ -33,10 +39,12 @@ export function toCents(v) {
 const fromCents = (c) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
 
 /**
- * deps: { client (paypal.js), config, getOrder, findOrder, mutateOrder (lib/orders.js), readSite (lib/site.js), now? }
+ * deps: { client (paypal.js), config, getOrder, findOrder, mutateOrder (lib/orders.js), readSite (lib/site.js), now?,
+ *   env? (process.env: NODE_ENV, PAYPAL_ALLOW_SANDBOX), suspend? (lib/suspend.js suspendOrder) }
  */
-export function createCheckout({ client, config, getOrder, findOrder, mutateOrder, readSite, now = () => new Date() }) {
+export function createCheckout({ client, config, getOrder, findOrder, mutateOrder, readSite, now = () => new Date(), env = process.env, suspend = suspendOrder }) {
   const stamp = () => now().toISOString();
+  const counts = (p) => paypalCounts(p, env);
   const lock = (ref, fn) => withLock(`pay:${ref}`, fn);
   /**
    * The manual flow's payment status (order.pay, lib/payments/manual.js) follows PayPal: a PayPal payment confirms
@@ -46,7 +54,7 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     const st = o.payment?.status;
     const pay = o.pay;
     if (!pay) return;
-    const next = st === 'paid' ? 'confirmed' : st === 'refunded' ? 'refunded' : null;
+    const next = st === 'paid' && counts(o.payment) ? 'confirmed' : st === 'refunded' ? 'refunded' : null;
     if (!next || pay.status === next || (next === 'confirmed' && pay.status === 'refunded')) return;
     pay.status = next;
     if (next === 'confirmed') { pay.confirmedAt = stamp(); pay.via = 'paypal'; pay.reason = null; } else pay.refundedAt = stamp();
@@ -145,6 +153,14 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       const p = order.payment;
       if (!p || p.provider !== 'paypal' || p.paypalOrderId !== paypalOrderId) throw httpError(400, 'This payment does not belong to your request. Please start again.');
       if (SETTLED.has(p.status) || p.status === 'pending') return view(ref, p, true);
+      // the price is checked again: the planner may have changed the amount or plan since this checkout opened
+      if (p.status === 'cancelled') throw httpError(409, PRICE_CHANGED, { code: 'price_changed' });
+      let price = null;
+      try { price = await priceFor(order); } catch (err) { if (!err.expose) throw err; }
+      if (!price || price.amount !== p.amount || price.plan.id !== p.plan) {
+        console.warn(`[pay] capture refused ref=${ref} paypal=${paypalOrderId}: the price changed (${p.plan} ${p.amount} -> ${price ? `${price.plan.id} ${price.amount}` : 'none'})`);
+        throw httpError(409, PRICE_CHANGED, { code: 'price_changed' });
+      }
       let result;
       try {
         result = await client.captureOrder(paypalOrderId, `nimtto-capture-${paypalOrderId}`);
@@ -166,7 +182,8 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
       console.info(`[pay] paypal capture ref=${ref} paypal=${paypalOrderId} status=${pay.status}`);
       if (pay.status === 'mismatch') throw httpError(409, 'PayPal reported a different amount. We have stopped this payment; we will call you.');
       if (pay.status === 'denied') throw httpError(402, 'PayPal declined the payment. Please choose another way to pay.', { code: 'retry' });
-      if (pay.status === 'paid') activate(ref, 'paypal'); // the plan switches on by itself (lib/activation.js)
+      if (pay.status === 'paid' && counts(pay)) activate(ref, 'paypal'); // the plan switches on by itself (lib/activation.js)
+      else if (pay.status === 'paid') console.warn(`[pay] ref=${ref}: a ${pay.env} payment in production; the plan is not switched on`);
       return view(ref, pay, false);
     });
   }
@@ -194,6 +211,12 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     if (!event || typeof event !== 'object' || typeof event.id !== 'string' || !/^[A-Za-z0-9-]{3,128}$/.test(event.id)
       || typeof event.event_type !== 'string' || !event.resource || typeof event.resource !== 'object') {
       return { status: 400, body: { error: 'Bad request.' } };
+    }
+    // a delivery older than PayPal's three days of retries is a replay (its id may have left the order long ago)
+    const sent = Date.parse(String(headers['paypal-transmission-time'] || ''));
+    if (!Number.isFinite(sent) || now().getTime() - sent > MAX_EVENT_AGE) {
+      console.warn(`[pay] webhook refused event=${event.id}: transmission time missing or older than three days`);
+      return { status: 400, body: { error: 'Event too old.' } };
     }
     const verified = await client.verifyWebhook({ headers, rawBody, webhookId: config.webhookId });
     if (!verified) {
@@ -229,11 +252,13 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
     if (!found) { console.warn(`[pay] webhook ${type} event=${event.id}: no matching request`); return ok(type, 'no matching request'); }
 
     let outcome = 'applied';
-    await lock(found.id, () => mutate(found.id, (o) => {
+    const saved = await lock(found.id, () => mutate(found.id, (o) => {
       const p = o.payment;
       if (!p || p.provider !== 'paypal') { outcome = 'no payment'; return false; }
       if ((p.events || []).includes(event.id)) { outcome = 'duplicate'; return false; }
       if (p.captureId && captureId && p.captureId !== captureId) { outcome = 'other capture'; return false; }
+      // a completed capture must name the PayPal order opened for this request
+      if (type === 'PAYMENT.CAPTURE.COMPLETED' && r.supplementary_data?.related_ids?.order_id !== p.paypalOrderId) { outcome = 'other order'; return false; }
       remember(p, event.id);
       p.updatedAt = stamp();
       if (type === 'PAYMENT.CAPTURE.COMPLETED') {
@@ -281,11 +306,20 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
         outcome = 'ignored';
       }
     }));
-    console.info(`[pay] webhook ${type} event=${event.id} ref=${found.id} ${outcome}`);
-    if (type === 'PAYMENT.CAPTURE.COMPLETED' && outcome === 'applied') activate(found.id, 'paypal');
+    if (outcome === 'other order') console.warn(`[pay] webhook ${type} event=${event.id} ref=${found.id}: the capture names another PayPal order; ignored`);
+    else console.info(`[pay] webhook ${type} event=${event.id} ref=${found.id} ${outcome}`);
+    if (type === 'PAYMENT.CAPTURE.COMPLETED' && outcome === 'applied' && saved.payment?.status === 'paid' && counts(saved.payment)) activate(found.id, 'paypal');
+    if (refund && outcome === 'applied') {
+      const reversed = type === 'PAYMENT.CAPTURE.REVERSED';
+      if (reversed || saved.payment?.status === 'refunded') await suspendSafely(found.id, reversed ? 'reversed' : 'refunded');
+    }
     return ok(type, outcome);
   }
   const ok = (type, outcome) => ({ status: 200, body: { ok: true, outcome } });
+  /** The money went back: the order's access is suspended (lib/suspend.js). Never fails the caller; logged. */
+  const suspendSafely = (id, kind) => Promise.resolve()
+    .then(() => suspend(id, kind === 'reversed' ? 'Payment reversed by PayPal (a dispute or chargeback)' : 'Payment refunded in full', { kind }))
+    .catch((err) => console.error(`[pay] could not suspend ${id} after the payment was ${kind}: ${err.message}`));
 
   /**
    * The planner refunds (part of) the PayPal capture through PayPal's API. amount: '10.00' in the capture's
@@ -318,6 +352,10 @@ export function createCheckout({ client, config, getOrder, findOrder, mutateOrde
         recordRefund(o, { refundId, cents, status, at: stamp(), reason, by: 'admin' });
       });
       console.info(`[pay] paypal refund ref=${order.ref || id} refund=${refundId} amount=${fromCents(cents)} ${p.currency} status=${status}${repeat ? ' (repeat)' : ''}`);
+      if (!repeat && saved.payment?.status === 'refunded') {
+        await suspendSafely(id, 'refunded'); // everything went back: so does the access
+        return { order: (await getOrder(id)) || saved, refundId, status, repeat };
+      }
       return { order: saved, refundId, status, repeat };
     });
   }

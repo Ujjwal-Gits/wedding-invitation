@@ -137,7 +137,7 @@ pp.fetch = async (url, init) => {
 const checkout = createCheckout({ client: createClient({ ...CONFIG, fetch: pp.fetch }), config: CONFIG, getOrder: orders.getOrder, findOrder: orders.findOrder, mutateOrder: orders.mutateOrder, readSite: site.readSite });
 const hookHeaders = {
   'paypal-auth-algo': 'SHA256withRSA', 'paypal-cert-url': 'https://api.sandbox.paypal.com/v1/notifications/certs/CERT-1',
-  'paypal-transmission-id': 'tid-1', 'paypal-transmission-sig': 'sig==', 'paypal-transmission-time': '2026-10-16T10:00:00Z',
+  'paypal-transmission-id': 'tid-1', 'paypal-transmission-sig': 'sig==', 'paypal-transmission-time': new Date().toISOString(),
 };
 
 let server;

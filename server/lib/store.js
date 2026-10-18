@@ -108,6 +108,12 @@ export async function peekInvitation(slug) {
   return cached(slug, await backend.invitationRev(slug));
 }
 
+/**
+ * Whether guests may see this invitation: published, and not suspended (its payment was reversed or refunded,
+ * lib/suspend.js). A suspended invitation gets the same "not available" answer as an unpublished one.
+ */
+export const isLive = (doc) => Boolean(doc && doc.status === 'published' && doc.published && !doc.suspended);
+
 /** The revision a doc from peekInvitation/getInvitation was read at (a cache key for derived data). */
 export const revOf = (doc) => revs.get(doc) ?? 0;
 

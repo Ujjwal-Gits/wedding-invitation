@@ -13,6 +13,7 @@ import { listThemes } from './catalog.js';
 import { withLock, getInvitation, saveInvitation, listOrders, getOrderById, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
 import { onActivate } from './activation.js';
 import { payStatusOf } from './finance.js';
+import { paypalCounts } from './payments/paypal.js';
 import { sendMail, MAIL_ON } from './mail.js';
 import { PUBLIC_ORIGINS } from './env.js';
 import { emptyOrDemo } from './demo.js';
@@ -139,7 +140,18 @@ export async function widenAccess(order) {
   }
 }
 
-const isOn = (o) => o.pay?.status === 'comped' || payStatusOf(o) === 'confirmed' || o.payment?.status === 'paid';
+/**
+ * Whether an order's plan is on: free access, a confirmed manual payment, or a PayPal payment that counts (in
+ * production only live money, lib/payments/paypal.js paypalCounts). Never while its access is suspended (lib/suspend.js).
+ */
+const isOn = (o) => {
+  if (o.access === 'suspended') return false;
+  if (o.pay?.status === 'comped') return true;
+  if (o.pay?.status === 'confirmed' && o.pay.via !== 'paypal') return true; // QR, cash, transfer: confirmed by the planner
+  const p = o.payment;
+  if (p?.provider === 'paypal' && !paypalCounts(p)) return false;
+  return payStatusOf(o) === 'confirmed' || p?.status === 'paid';
+};
 
 /**
  * Switches on a paid (or free) order's plan by itself: its invitation is made and linked to the account that ordered
@@ -222,7 +234,7 @@ export async function fillDetails(slug, details = {}) {
   if (!bride && !groom && !venue && !day) return [];
   return withLock(`inv:${slug}`, async () => {
     const doc = await getInvitation(slug);
-    if (!doc) return [];
+    if (!doc || doc.suspended) return []; // suspended (lib/suspend.js): the customer's details wait
     const d = doc.draft;
     const changed = [];
     if (bride && emptyOrDemo(d.couple.bride.name, 'name')) { d.couple.bride.name = { en: bride, ne: '' }; changed.push('couple.bride.name'); }

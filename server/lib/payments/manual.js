@@ -159,23 +159,47 @@ export async function payQr(req, res) {
   res.send(png);
 }
 
+/**
+ * The pixel count an iPhone HEIC declares (the largest 'ispe' image-size box in its header), or 0 when none is found.
+ * Read before decoding: heic-convert decodes the whole image in memory, so a huge declared size is refused first.
+ */
+export function heicPixels(buffer) {
+  let max = 0;
+  const head = buffer.subarray(0, Math.min(buffer.length, 1024 * 1024)); // the meta box sits at the start
+  for (let i = head.indexOf('ispe', 4, 'latin1'); i >= 4 && i + 16 <= head.length; i = head.indexOf('ispe', i + 4, 'latin1')) {
+    const w = head.readUInt32BE(i + 8);
+    const h = head.readUInt32BE(i + 12);
+    if (w > 0 && h > 0) max = Math.max(max, w * h);
+  }
+  return max;
+}
+const HEIC_BAD = 'That iPhone photo could not be read. Please send a screenshot (PNG or JPEG) instead.';
+
 /** Decodes and re-encodes an uploaded image (by its bytes, not its name) into a metadata-free JPEG. */
-async function proofImage(buffer) {
-  let input = buffer;
-  if (looksLikeHeic(buffer)) {
-    try {
-      const { default: convert } = await import('heic-convert');
-      input = Buffer.from(await convert({ buffer, format: 'JPEG', quality: 0.9 }));
-    } catch {
-      throw httpError(415, 'That iPhone photo could not be read. Please send a screenshot (PNG or JPEG) instead.');
-    }
+export async function proofImage(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length > PROOF_MAX_BYTES) throw httpError(413, 'That file is larger than 8 MB.');
+  const heic = looksLikeHeic(buffer);
+  if (heic) {
+    const px = heicPixels(buffer);
+    if (!px) throw httpError(415, HEIC_BAD);
+    if (px > MAX_PIXELS) throw httpError(413, 'That photo has too many pixels. Please send a screenshot instead.');
   }
-  let meta;
-  try { meta = await sharp(input, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).metadata(); } catch { meta = null; }
-  if (!meta || !['jpeg', 'png', 'webp'].includes(meta.format) || !meta.width || !meta.height) {
-    throw httpError(415, 'Please upload a screenshot or photo (JPEG, PNG, WebP or iPhone HEIC).');
-  }
+  // one image slot for the whole job, the HEIC conversion included (it is the heaviest part)
   return withSlot(async () => {
+    let input = buffer;
+    if (heic) {
+      try {
+        const { default: convert } = await import('heic-convert');
+        input = Buffer.from(await convert({ buffer, format: 'JPEG', quality: 0.9 }));
+      } catch {
+        throw httpError(415, HEIC_BAD);
+      }
+    }
+    let meta;
+    try { meta = await sharp(input, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).metadata(); } catch { meta = null; }
+    if (!meta || !['jpeg', 'png', 'webp'].includes(meta.format) || !meta.width || !meta.height) {
+      throw httpError(415, 'Please upload a screenshot or photo (JPEG, PNG, WebP or iPhone HEIC).');
+    }
     const base = sharp(input, { limitInputPixels: MAX_PIXELS, failOn: 'error' }).rotate().flatten({ background: '#ffffff' }).toColourspace('srgb');
     // .jpeg() without withMetadata(): no EXIF, GPS, XMP or ICC profile is written
     const [full, thumb] = await Promise.all([

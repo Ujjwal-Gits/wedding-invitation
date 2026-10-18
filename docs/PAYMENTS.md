@@ -108,10 +108,17 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
 
 ## 5. How the PayPal integration works
 
-- **Off until four values are set:** `PAYPAL_ENV` (`sandbox` or `live`; unset means sandbox), `PAYPAL_CLIENT_ID`,
+- **Off until four values are set:** `PAYPAL_ENV` (`sandbox` or `live`; unset means sandbox, outside production only), `PAYPAL_CLIENT_ID`,
   `PAYPAL_CLIENT_SECRET` and `PAYPAL_WEBHOOK_ID`. They go in the server environment only. `server/.env.example`
   lists them with empty values. With any value missing, `/api/pay/config` says off: the website shows nothing new,
   and the pay routes answer 503 (the webhook answers 404).
+- **Sandbox never counts in production:** with `NODE_ENV=production`, PayPal stays off unless `PAYPAL_ENV=live`
+  (an unset `PAYPAL_ENV` is a problem there, not sandbox), and the server logs a warning at start. A staging server
+  that should take sandbox money sets `PAYPAL_ALLOW_SANDBOX=1`. Even then, a recorded PayPal payment confirms an
+  order and switches its plan on only when it is `live` (or sandbox is allowed); old sandbox payments never do.
+- **The price is checked again at capture:** if the order's amount or plan changed after the checkout opened, the
+  capture answers 409 `price_changed` and the customer starts a new checkout. Changing an order's amount (or giving
+  free access) cancels an open checkout (`payment.status: 'cancelled'`).
 - **Website / pay page:** PayPal Checkout is an extra choice next to the QR codes, shown only when PayPal is on
   (`paypalCheckout.enabled` in `GET /api/orders/:ref/pay`) and the order has a USD amount. It confirms the order by itself.
   1. The order is saved first (`POST /api/orders`), which returns `ref` (`NM-24817`) and the pay token `t`.
@@ -139,17 +146,32 @@ a sandbox, and its API is shaped like the PayPal code here, so a `server/lib/pay
   button does it. The capture and its checks are the same either way.
 - **Webhook:** `POST /api/pay/paypal/webhook`.
   - Every event is checked with PayPal's `verify-webhook-signature`, using the exact received bytes.
-  - Event IDs are remembered, so replays do nothing.
-  - COMPLETED sets `paid`, and checks the amount again.
+  - Event IDs are remembered (the newest 500 per order), so replays do nothing. An event whose
+    `paypal-transmission-time` is older than three days (PayPal's retry window) is refused with 400.
+  - COMPLETED sets `paid`, and checks the amount again. It must name the PayPal order we opened for this request
+    (`supplementary_data.related_ids.order_id`); one naming another order is ignored and logged.
   - DENIED or DECLINED sets `denied`, but only if the payment wasn't paid yet.
   - REFUNDED or REVERSED sets `refunded` or `partially_refunded`. Duplicate refund IDs are ignored, and a late
     COMPLETED never flips a refund back.
+  - **Access is suspended** on REVERSED (a dispute or chargeback), and whenever refunds reach the whole payment (the
+    webhook, a refund from Finance, or "Mark refunded"): `order.access = 'suspended'` with `suspension { at, why,
+    kind }`, the linked invitation shows guests the same "not available" page as an unpublished one, the customer can
+    no longer change it (staff still can), and the admin (`ADMIN_EMAIL`) gets "Payment reversed/refunded for
+    NM-xxxx". A partial refund never suspends, nor does an order with free access. Staff with **Finance** lift it with
+    `PATCH /api/orders/:id { access: 'active' }` (or set `'suspended'`); the audit log records it (`lib/suspend.js`).
   - PENDING sets `pending`.
   - CHECKOUT.ORDER.APPROVED: if the buyer approved and closed the tab, the server captures by itself.
 - **Security:**
   - The public POSTs use the same Origin check as `/api/orders`, plus a honeypot, input validation and rate limits:
     20 creates and 30 captures per IP per 10 minutes. The webhook allows 120 per minute.
   - Logs never contain the secret, tokens or payer emails.
+  - `PATCH /api/orders/:id` with `payment`, `amount` or `access` needs the **Finance** permission as well as Orders
+    (403 otherwise); staff with Orders only can still change the status and notes.
+  - The bare 12-character order id (no pay token) is accepted only for orders made before pay tokens existed, or
+    for the signed-in customer's own order (with the session's CSRF token).
+  - **One instance only:** the locks that make a capture, a webhook and a refund apply once (`withLock` in
+    `lib/store.js`) live in the process's memory. Run the app as a single instance (one container, one Node process);
+    two instances could record the same payment twice or race a refund.
   - Only on `/` and only when PayPal is on, the CSP adds `https://*.paypal.com https://*.paypalobjects.com` to
     `script-src`, `connect-src`, `frame-src`, `img-src` and `style-src`. COOP becomes `same-origin-allow-popups`,
     which PayPal requires for its popup. The studio and the themes keep the strict policy.

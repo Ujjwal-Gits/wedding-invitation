@@ -194,12 +194,16 @@ export function requireEditor(getInvitation, perm = 'invitations') {
     try {
       if (!req.session) return res.status(401).json({ error: 'Please sign in.' });
       if (isAdmin(req) ? !hasPerm(req, perm) : !canEdit(req, req.params.slug)) return res.status(403).json({ error: 'You do not have access to this invitation.' });
+      const doc = isAdmin(req) ? null : await getInvitation(req.params.slug);
       if (req.session.role === 'client') {
-        const doc = await getInvitation(req.params.slug);
         if (!linkActive(doc, req.session)) {
           await deleteSession(req.sessionKey);
           return res.status(401).json({ error: 'This link is no longer active. Please ask your planner for a new one.' });
         }
+      }
+      // its payment was reversed or refunded (lib/suspend.js): the couple may look, not change; staff still can
+      if (doc?.suspended && !['GET', 'HEAD'].includes(req.method)) {
+        return res.status(403).json({ error: 'This invitation is paused because its payment was refunded or reversed. Please contact us.', code: 'suspended' });
       }
       const bad = csrfProblem(req);
       if (bad) return res.status(403).json({ error: bad });

@@ -11,7 +11,8 @@
 // from the orders on every request by lib/finance.js; nothing here keeps a second copy of any amount.
 import express from 'express';
 import { requireAdmin } from './auth.js';
-import { allOrders, getOrder, mutateOrder, adminView, addAdminOrder, recordRefund, historyAdd, amountOf, clean, ID_RE } from './orders.js';
+import { allOrders, getOrder, mutateOrder, adminView, addAdminOrder, recordRefund, historyAdd, amountOf, clean, dropOpenCheckout, ID_RE } from './orders.js';
+import { suspendOrder } from './suspend.js';
 import { readSite, tierProblem } from './site.js';
 import { listThemes, isTheme } from './catalog.js';
 import { getCustomer, CUSTOMER_ID_RE } from './accounts.js';
@@ -113,6 +114,7 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
       if (o.payment?.status === 'pending') throw httpError(409, 'PayPal is still holding a payment for this order. Wait until it is settled.');
       if (o.theme) { const tp = tierProblem(site, plan, o.theme, themeName(o.theme)); if (tp) throw httpError(400, tp.error, { errors: [{ path: 'plan', message: tp.error }] }); }
       if (o.plan !== plan.id) Object.assign(o, { plan: plan.id, planName: plan.name, planFrom: plan.from === true, amount: amountOf(plan) });
+      dropOpenCheckout(o, 'free access was given'); // nothing to pay: an open PayPal checkout can no longer be captured
       const pay = o.pay || (o.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [] });
       pay.status = 'comped';
       pay.reason = null;
@@ -213,6 +215,10 @@ export function financeRouter({ checkout = null, paypal = { enabled: false, env:
       recordRefund(o, { of, amount: b.amount, currency: opt.currency, date, reason });
     });
     console.info(`[admin] refund recorded order=${order.ref || id} ${b.amount} (${of})`);
+    // everything went back: the order's access is suspended (lib/suspend.js; a partial refund keeps it)
+    if (refundable(order).find((x) => x.of === of)?.left === 0 && (await suspendOrder(id, 'Payment refunded in full', { kind: 'refunded', by: req.admin?.email || 'admin' }))) {
+      return res.status(201).json({ order: adminView(await getOrder(id)) });
+    }
     res.status(201).json({ order: adminView(order) });
   }));
 

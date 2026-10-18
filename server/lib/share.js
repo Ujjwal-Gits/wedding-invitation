@@ -1,7 +1,7 @@
 // GET /i/<slug>: a tiny link-preview page (Open Graph + Twitter card) that forwards guests to the theme page.
 // No JS. Only published invitations. Every value is HTML-escaped; the forward URL is built from the stored
 // theme slug and validated query values only, so this is not an open redirect.
-import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
+import { SLUG_RE, isLive, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { PUBLIC_ORIGINS } from './env.js';
 import { photoUrl } from './invitations.js';
 import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
@@ -55,7 +55,7 @@ export async function sharePage(req, res) {
   const { slug } = req.params;
   if (!SLUG_RE.test(slug)) return res.status(404).type('text/plain').send('Not found');
   const doc = await getInvitation(slug);
-  if (!doc || doc.status !== 'published' || !doc.published) return res.status(404).type('text/plain').send('Not found');
+  if (!isLive(doc)) return res.status(404).type('text/plain').send('Not found');
   const inv = doc.published;
 
   const q = new URLSearchParams({ id: slug });

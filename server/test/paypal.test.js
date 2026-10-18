@@ -95,7 +95,7 @@ function setup({ order = {}, site = SITE } = {}) {
 }
 const hookHeaders = {
   'paypal-auth-algo': 'SHA256withRSA', 'paypal-cert-url': 'https://api.sandbox.paypal.com/v1/notifications/certs/CERT-1',
-  'paypal-transmission-id': 'tid-1', 'paypal-transmission-sig': 'sig==', 'paypal-transmission-time': '2026-10-16T10:00:00Z',
+  'paypal-transmission-id': 'tid-1', 'paypal-transmission-sig': 'sig==', 'paypal-transmission-time': new Date().toISOString(),
 };
 const event = (id, type, resource) => JSON.stringify({ id, event_type: type, resource });
 

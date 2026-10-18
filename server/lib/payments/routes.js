@@ -78,7 +78,15 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
       return { ...b, id: o.id };
     }
     if (typeof b.ref !== 'string' || !ID_RE.test(b.ref)) { res.status(400).json({ ok: false, error: 'Bad request.' }); return null; }
-    return { ...b, id: b.ref };
+    // the bare id: only an order from before pay tokens existed, or the signed-in customer's own order
+    const legacy = await (deps.getOrder || getOrder)(b.ref);
+    const owner = Boolean(legacy?.customerId) && req.session?.role === 'customer' && req.customer?.id === legacy.customerId;
+    if (owner) {
+      const bad = csrfProblem(req);
+      if (bad) { res.status(403).json({ ok: false, error: bad }); return null; }
+    }
+    if (!legacy || (legacy.payTokenHash && !owner)) { res.status(404).json({ ok: false, error: 'We could not find your order.' }); return null; }
+    return { ...b, id: legacy.id };
   };
   /** PayPal failures: the visitor sees a calm message; the log gets PayPal's debug id (never credentials). */
   const fail = (res, err, what) => {
@@ -156,3 +164,4 @@ export function createPayments({ config = readConfig(), fetch: fetchFn, deps = {
 
 export const payments = createPayments();
 if (payments.config.enabled) console.info(`[pay] PayPal on (${payments.config.env})`);
+else if (payments.config.sandboxBlocked) console.warn(`[pay] WARNING: PayPal is OFF: ${payments.config.problems.join('; ')}. Sandbox payments never switch plans on in production.`);

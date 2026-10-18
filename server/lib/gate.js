@@ -8,7 +8,7 @@
 // Static files (/assets, /themes art, thumbs, fonts) stay public: invitations need them.
 import { existsSync, readdirSync, readFileSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
-import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
+import { SLUG_RE, isLive, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { listThemes } from './catalog.js';
 import { hasStudioSession, canEdit } from './auth.js';
 import { shareInfo, withShareMeta } from './share.js';
@@ -161,7 +161,7 @@ export function themePageGate(distDir) {
       const id = typeof req.query.id === 'string' ? req.query.id : '';
       if (await hasStudioSession(req)) { // (b) planner, (c) couple: any design, drafts included
         const doc = id && SLUG_RE.test(id) ? await getInvitation(id) : null;
-        const inv = doc ? (canEdit(req, id) ? doc.draft : doc.status === 'published' ? doc.published : null) : null;
+        const inv = doc ? (canEdit(req, id) ? doc.draft : isLive(doc) ? doc.published : null) : null;
         if (inv && (await sendWithMeta(req, res, distDir, theme, inv, id))) return undefined;
         return next();
       }
@@ -171,7 +171,7 @@ export function themePageGate(distDir) {
       // planner who signs in later from being sent there by a cached redirect.
       if (!id) return res.redirect(301, designPageOf(distDir, theme));
       const doc = SLUG_RE.test(id) ? await getInvitation(id) : null;
-      const pub = doc?.status === 'published' ? doc.published : null;
+      const pub = isLive(doc) ? doc.published : null; // unpublished or suspended: the same answer
       if (!pub) return res.status(404).type('html').send(NOT_AVAILABLE);
       // (a) a published invitation, shown only in its own design: a guest link cannot be used to try others.
       if (pub.theme !== theme) {

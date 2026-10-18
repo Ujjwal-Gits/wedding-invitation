@@ -3,7 +3,7 @@
 //   access? { tokenHash, passwordHash, createdAt, themes, canChangeTheme, canChangeColors }, lastEdit? {at, by, type}, activity? [{at, by, type, sections}], adminSeenAt? }
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { SLUG_RE, withLock, getInvitation, peekInvitation, revOf, listInvitations, createInvitation, saveInvitation, trashInvitation, uploadDir, replyStats } from './store.js';
+import { SLUG_RE, withLock, getInvitation, peekInvitation, isLive, revOf, listInvitations, createInvitation, saveInvitation, trashInvitation, uploadDir, replyStats } from './store.js';
 import { entity, entityCache, sendEntity } from './http-cache.js';
 import { sanitizeInvitation, publishProblems, designOf } from './validate.js';
 import { demoConfig, BUNDLED_TRACKS, isTheme, listThemes, librarySlugs, metaOf } from './catalog.js';
@@ -71,6 +71,7 @@ function summary(doc, rsvpCount = 0, customers = []) {
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
     publishedAt: doc.publishedAt,
+    suspended: doc.suspended || null, // the payment was reversed or refunded (lib/suspend.js): guests see "not available"
     rsvpCount,
     hero,
     lastEdit: doc.lastEdit || null,
@@ -86,6 +87,7 @@ export const docOut = (doc, admin = true) => ({
   version: doc.version,
   status: doc.status,
   changed: doc.status === 'published' && !same(doc.draft, doc.published),
+  suspended: doc.suspended ? (admin ? doc.suspended : true) : null,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
   publishedAt: doc.publishedAt,
@@ -519,7 +521,7 @@ export async function publicData(req, res) {
   const { slug } = req.params;
   const doc = await peekInvitation(slug);
   const preview = Boolean(doc) && canEdit(req, slug); // planner, or the couple for their own invitation
-  const src = preview ? doc.draft : doc?.status === 'published' ? doc.published : null;
+  const src = preview ? doc.draft : isLive(doc) ? doc.published : null;
   if (!src) throw httpError(404, 'Not found.');
   res.vary('Cookie');
   if (preview) {

@@ -24,7 +24,26 @@ export function readConfig(env = process.env) {
   if (!webhookId) problems.push('PAYPAL_WEBHOOK_ID is not set');
   else if (!WEBHOOK_ID_RE.test(webhookId)) problems.push('PAYPAL_WEBHOOK_ID does not look like a webhook ID');
   const envName = mode === 'live' ? 'live' : 'sandbox'; // unset means sandbox: never live by accident
-  return { env: envName, clientId, secret, webhookId, enabled: problems.length === 0, problems };
+  // In production, sandbox (test) money must never switch a plan on: PayPal stays off there unless PAYPAL_ENV is
+  // 'live', or sandbox is allowed on purpose (PAYPAL_ALLOW_SANDBOX=1, a staging server). Unset is never assumed.
+  const prod = env.NODE_ENV === 'production';
+  const allowSandbox = env.PAYPAL_ALLOW_SANDBOX === '1';
+  let sandboxBlocked = false;
+  if (prod && !mode) { problems.push("PAYPAL_ENV is not set; in production set it to 'live'"); sandboxBlocked = true; }
+  else if (prod && mode === 'sandbox' && !allowSandbox) {
+    problems.push("PAYPAL_ENV is 'sandbox' in production; set it to 'live' (or PAYPAL_ALLOW_SANDBOX=1 on a test server)");
+    sandboxBlocked = true;
+  }
+  return { env: envName, clientId, secret, webhookId, enabled: problems.length === 0, problems, sandboxBlocked };
+}
+
+/**
+ * Whether a recorded PayPal payment may count as money received (confirm the order, switch the plan on). In
+ * production only live payments count, unless PAYPAL_ALLOW_SANDBOX=1; elsewhere every payment does (testing).
+ */
+export function paypalCounts(p, env = process.env) {
+  if (env.NODE_ENV !== 'production') return true;
+  return p?.env === 'live' || env.PAYPAL_ALLOW_SANDBOX === '1';
 }
 
 export class PayPalError extends Error {

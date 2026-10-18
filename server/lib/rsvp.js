@@ -1,7 +1,7 @@
 // Guest replies. Public POST (text/plain JSON, Origin-checked, rate limited, honeypot),
 // admin list with totals, CSV export that neutralises spreadsheet formulas, delete.
 import { randomBytes } from 'node:crypto';
-import { peekInvitation, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
+import { peekInvitation, isLive, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { rsvpOptions, partyOf, mealLabel, mealTotals, guestName, LIMITS } from '../../src/core/rsvp-rules.js';
 
@@ -40,7 +40,7 @@ export async function submit(req, res) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ ok: false, error: 'Bad request.' });
 
   const doc = await peekInvitation(slug);
-  if (!doc || doc.status !== 'published' || !doc.published) return res.status(404).json({ ok: false, error: 'Not found.' });
+  if (!isLive(doc)) return res.status(404).json({ ok: false, error: 'Not found.' });
   const inv = doc.published;
   if (inv.rsvp.enabled === false) return res.status(403).json({ ok: false, error: 'Replies are closed for this invitation.' });
 

@@ -4,7 +4,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { EMAIL_RE, readSite } from './site.js';
 import { staffByEmail } from './staff.js';
 import { isTheme } from './catalog.js';
-import { peekInvitation, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
+import { peekInvitation, isLive, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
 import {
   customerByEmail, getCustomer, createCustomer, mutateCustomer, listCustomers, adminCustomer, linkOf, normEmail, listPending, confirmPending, dropPending,
   CUSTOMER_ID_RE, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX,
@@ -78,10 +78,10 @@ async function accountView(c) {
     const d = doc.draft;
     // the order this invitation belongs to (its own, else the newest), for the plan and the payment on its card
     const o = orders.find((x) => x.invitation === doc.slug) || orders[0] || null;
-    const live = doc.status === 'published';
+    const live = isLive(doc); // a suspended invitation (payment reversed or refunded) has no share link
     invitations.push({
       slug: doc.slug, bride: d.couple?.bride?.name || null, groom: d.couple?.groom?.name || null, theme: d.theme,
-      status: doc.status, weddingDate: d.weddingDate || null, updatedAt: doc.updatedAt, perms: permsOf(l),
+      status: doc.status, suspended: Boolean(doc.suspended), weddingDate: d.weddingDate || null, updatedAt: doc.updatedAt, perms: permsOf(l),
       plan: o ? planView(o) : null, payStatus: o ? payStatusOf(o) : null, payUrl: o?.ref ? `/pay/${o.ref}` : null, orderRef: o?.ref || null,
       previewUrl: `/${d.theme}/?id=${doc.slug}`, shareUrl: live ? `${PUBLIC_ORIGINS[0] || ''}/i/${doc.slug}` : null,
     });

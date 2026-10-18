@@ -16,6 +16,8 @@ import { isTheme, listThemes } from './catalog.js';
 import { readSite, EMAIL_RE, e164, tierProblem, planOffered } from './site.js';
 import { activate } from './activation.js';
 import { normEmail } from './accounts.js';
+import { hasPerm } from './auth.js';
+import { suspendOrder, liftOn, suspendOn, releaseInvitation, holdInvitation } from './suspend.js';
 import { refundable, refundState, payStatusOf, dayKey, minor, major, CURRENCIES } from './finance.js';
 import { orderMarket, asMarket, isMarket, checkPhone, PHONE_MSG } from './market.js';
 
@@ -112,6 +114,19 @@ export function whatsappFor(order, site) {
   ].filter(Boolean).join('\n');
   const num = e164(site?.contact?.whatsapp || site?.contact?.phone).replace(/^\+/, '');
   return { text, link: num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : null };
+}
+
+/**
+ * The order's price or plan changed: a PayPal checkout opened at the old price (not captured yet) is cancelled, so it
+ * can never be captured (lib/payments/checkout.js refuses it with price_changed and the customer starts again).
+ */
+export function dropOpenCheckout(o, why = 'the price changed') {
+  const p = o.payment;
+  if (p?.provider !== 'paypal' || p.status !== 'created') return false;
+  p.status = 'cancelled';
+  p.problem = `Checkout cancelled: ${why}. The customer needs to start the payment again.`;
+  p.updatedAt = new Date().toISOString();
+  return true;
 }
 
 const historyAdd = (pay, status, by, note) => {
@@ -317,9 +332,12 @@ const isMoney = (v, max) => v === null || (typeof v === 'number' && Number.isFin
 
 /**
  * PATCH /api/orders/:id (admin)
- * { status?, notes?, amount?: { npr, usd }, payment?: { status, reason?, note?, manual?: true, method? } }
+ * { status?, notes?, amount?: { npr, usd }, payment?: { status, reason?, note?, manual?: true, method? },
+ *   access?: 'active' | 'suspended' }
  * payment.status 'rejected' needs a reason (the customer sees it); 'refunded' only after a confirmed payment;
  * manual: true records "marked paid by hand" (cash, or a transfer seen elsewhere) with the method.
+ * amount, payment and access are money: they need the 'finance' permission as well as 'orders' (403 otherwise).
+ * access 'active' lifts a suspension (a reversed or fully refunded payment, lib/suspend.js); 'suspended' sets one.
  */
 export async function update(req, res) {
   const { id } = req.params;
@@ -330,6 +348,10 @@ export async function update(req, res) {
   if (b.amount !== undefined && (!b.amount || typeof b.amount !== 'object' || !isMoney(b.amount.npr ?? null, 10_000_000) || !isMoney(b.amount.usd ?? null, 10_000))) {
     throw httpError(400, 'amount must be { npr, usd } (numbers, or null).');
   }
+  if ((b.amount !== undefined || b.payment !== undefined || b.access !== undefined) && !hasPerm(req, 'finance')) {
+    throw Object.assign(httpError(403, 'Changing the price, the payment or the access needs the Finance permission.'), { code: 'no_access' });
+  }
+  if (b.access !== undefined && b.access !== 'active' && b.access !== 'suspended') throw httpError(400, "access must be 'active' or 'suspended'.");
   const p = b.payment;
   if (p !== undefined) {
     if (!p || typeof p !== 'object' || !PAY_STATUSES.includes(p.status)) throw httpError(400, `payment.status must be one of ${PAY_STATUSES.join(', ')}.`);
@@ -341,6 +363,8 @@ export async function update(req, res) {
     if (p.currency != null && !CURRENCIES.includes(p.currency)) throw httpError(400, 'payment.currency must be NPR or USD.');
     if (p.amount != null && (!isMoney(p.amount, 10_000_000) || p.amount <= 0)) throw httpError(400, 'payment.amount must be a positive amount with at most 2 decimals.');
   }
+  const who = req.admin?.email || 'admin';
+  let accessChange = '';
   const order = await withLock('orders', async () => {
     const o = await getOrderById(id);
     if (!o) throw httpError(404, 'Request not found.');
@@ -350,7 +374,13 @@ export async function update(req, res) {
     }
     if (b.status !== undefined) o.status = b.status;
     if (b.notes !== undefined) o.notes = clean(b.notes, 2000, true);
-    if (b.amount !== undefined) o.amount = { npr: b.amount.npr ?? null, usd: b.amount.usd ?? null };
+    if (b.amount !== undefined) {
+      const amount = { npr: b.amount.npr ?? null, usd: b.amount.usd ?? null };
+      if (amount.npr !== (o.amount?.npr ?? null) || amount.usd !== (o.amount?.usd ?? null)) dropOpenCheckout(o, 'the planner changed the price');
+      o.amount = amount;
+    }
+    if (b.access === 'active') accessChange = liftOn(o, who) ? 'lifted' : '';
+    else if (b.access === 'suspended') accessChange = suspendOn(o, who, 'Suspended by staff') ? 'suspended' : '';
     if (p !== undefined) {
       const pay = o.pay || (o.pay = { status: 'awaiting_payment', reason: null, proofs: [], history: [] });
       const paidBefore = pay.status === 'confirmed' || o.payment?.status === 'paid';
@@ -383,6 +413,14 @@ export async function update(req, res) {
     return o;
   });
   if (p !== undefined) console.info(`[admin] order ${order.ref || order.id} payment=${p.status}${p.manual === true ? ' (manual)' : ''}`);
+  // the invitation follows the order's access (the audit log records this PATCH and its fields, lib/audit.js)
+  if (accessChange === 'lifted') await releaseInvitation(order);
+  if (accessChange === 'suspended') await holdInvitation(order);
+  if (accessChange) console.info(`[access] order ${order.ref || order.id} access ${accessChange} by ${who}`);
+  // "Mark refunded" gave everything back: the access goes too (never for free access)
+  if (p?.status === 'refunded' && !accessChange) {
+    if (await suspendOrder(order.id, 'Payment marked refunded', { kind: 'refunded', by: who })) return res.json({ order: adminView(await getOrderById(order.id)) });
+  }
   res.json({ order: adminView(order) });
 }
 
