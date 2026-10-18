@@ -336,7 +336,7 @@ const GATE = (ctx) => `
     <div class="kp-g__frame"></div>
     <span class="kp-g__glow"></span>
     <span class="kp-root kp-root--gate">${fan('kp-fan--gate', '(max-width: 760px) 90px, 110px')}</span>
-    <div class="kp-g__ground"><img src="${A}ground-sm.webp" srcset="${A}ground-sm.webp 1000w, ${A}ground.webp 1920w" sizes="100vw" alt="" decoding="async" /></div>
+    <div class="kp-g__ground"><span class="kp-g__ledge"></span><span class="kp-g__floor"><img src="${A}floor-sm.webp" srcset="${A}floor-sm.webp 1000w, ${A}floor.webp 1800w" sizes="100vw" alt="" decoding="async" />${lamp('diyo', { cls: 'kp-g__diyo kp-g__diyo--l', sizes: '60px' })}${lamp('diyo', { cls: 'kp-g__diyo kp-g__diyo--r', sizes: '60px' })}</span></div>
     <span class="kp-bird"><span class="kp-bird__in"><img src="${A}peacock.webp" alt="" decoding="async" /></span></span>
     <p class="kp-g__tap">${ctx.bi({ en: 'Tap the peacock', ne: 'मयूरलाई छुनुहोस्' })}</p>
     <div class="kp-gnames"><p class="su-names kp-names">${ctx.names('&amp;')}</p></div>

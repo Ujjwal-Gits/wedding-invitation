@@ -45,6 +45,8 @@ cloth (lightbox); the reply on an ivory cloth cartouche over a lotus spray; the 
 - `feather`, `peacock` (seen from behind, train folded), `lotus`: cut-outs with transparency.
 - `ev-haldi|mehendi|janti|wedding|reception.webp`: one pichwai miniature per kind of ceremony (`kindOf()` in main.js; any
   other ceremony shows the palace in the rain).
-- `hero-portrait.webp` (phone first screen) and `ground(-sm).webp` (the parapet under the gate's peacock): crops of pano-1.
+- `hero-portrait.webp` (phone first screen): a crop of pano-1. `ledge.webp` (a seamless three-swag tile of a marble ledge with
+  marigold garlands) and `floor(-sm).webp` (the dark terrace floor with two brass diyas, its reflection settled into shadow):
+  one Canva painting, the ground the gate's peacock stands on, painted down to the foot of the screen.
 - Drawn in code: the brocade hems and seams (SVG masks), the cusped arch, the moon, the feather-eye scratch cover.
 - `public/themes/kalapi/thumb.jpg` (1200x900, the fan open), `gate.jpg`, `hero.jpg` (480x720).
