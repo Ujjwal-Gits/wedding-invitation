@@ -8,17 +8,14 @@
 import { randomBytes, randomInt, createHash, timingSafeEqual } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
-import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS, ADMIN_EMAIL } from './env.js';
+import { DATA_DIR, IS_PROD, PUBLIC_ORIGINS } from './env.js';
 // Stored by lib/store.js. addOrder/deleteOrder take the 'orders' lock themselves; saveOrder is called under it.
 import { withLock, listOrders as storedOrders, getOrderById, getOrderByRef, addOrder, saveOrder, deleteOrder, countNewOrders } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { isTheme, listThemes } from './catalog.js';
 import { readSite, EMAIL_RE, e164, tierProblem, planOffered } from './site.js';
-import { sendVerify } from './account-mail.js';
 import { activate } from './activation.js';
-import { normEmail, customerByEmail, createCustomer, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX } from './accounts.js';
-import { staffByEmail } from './staff.js';
-import { checkCustomer, signInCustomer, hashAccountPassword, loginThrottle } from './auth.js';
+import { normEmail } from './accounts.js';
 import { refundable, refundState, payStatusOf, dayKey, minor, major, CURRENCIES } from './finance.js';
 import { orderMarket, asMarket, isMarket, checkPhone, PHONE_MSG } from './market.js';
 
@@ -189,6 +186,14 @@ export async function submit(req, res) {
     const fake = b.kind === 'custom' || plan?.from === true ? { enquiry: true, amount: { npr: null, usd: null } } : { payToken, payUrl: payUrl(ref, payToken), amount: amountOf(plan) };
     return res.status(201).json({ ok: true, ref, market: b.market === 'intl' ? 'intl' : 'np', plan: plan ? { id: plan.id, name: plan.name, from: plan.from === true } : null, whatsapp: { text: '', link: null }, ...fake });
   }
+  // The customer's account (docs/API.md "Account on order"): an order needs a signed-in customer. The website signs
+  // in or signs up first (sign-up = an emailed code, lib/customers.js); an order never makes or opens an account.
+  // A custom-design enquiry without credentials may still come from a guest.
+  const signedIn = req.session?.role === 'customer' && req.customer ? req.customer : null;
+  const credentials = b.password != null && b.password !== '';
+  if (!signedIn && (b.kind === 'order' || credentials)) {
+    return res.status(401).json({ ok: false, code: 'sign_in_required', error: 'Please sign in or make an account first, then place your order.' });
+  }
 
   const fields = [];
   const capped = (key, max, { required = false, multiline = false } = {}) => {
@@ -206,14 +211,8 @@ export async function submit(req, res) {
   const pr = checkPhone(typeof b.phone === 'string' ? b.phone : '', b.market === 'intl' ? 'US' : 'NP');
   const phone = pr.ok ? pr.e164 : '';
   if (!phone) fields.push('phone');
-  // The customer's account (docs/API.md "Account on order"): needed for an order unless this browser is signed in.
-  const signedIn = req.session?.role === 'customer' && req.customer ? req.customer : null;
-  const rawPassword = typeof b.password === 'string' ? b.password : '';
-  const wantsAccount = !signedIn && (kind === 'order' || rawPassword !== '');
   const email = signedIn && !b.email ? signedIn.email : normEmail(capped('email', 254));
-  if ((email && !EMAIL_RE.test(email)) || (wantsAccount && !email)) fields.push('email');
-  if (b.password != null && typeof b.password !== 'string') fields.push('password');
-  else if (wantsAccount && (rawPassword.length < ACCOUNT_PASSWORD_MIN || rawPassword.length > ACCOUNT_PASSWORD_MAX)) fields.push('password');
+  if (email && !EMAIL_RE.test(email)) fields.push('email');
   const bride = capped('bride', 80);
   const groom = capped('groom', 80);
   const weddingDate = capped('weddingDate', 10);
@@ -234,7 +233,7 @@ export async function submit(req, res) {
   if (plan && kind === 'order' && !planOffered(plan, market)) fields.push('plan');
   if (fields.length) {
     const f = [...new Set(fields)];
-    const error = f.length === 1 && f[0] === 'password' ? `Please choose a password of at least ${ACCOUNT_PASSWORD_MIN} characters.` : f.length === 1 && f[0] === 'phone' ? PHONE_MSG : 'Please check the form.';
+    const error = f.length === 1 && f[0] === 'phone' ? PHONE_MSG : 'Please check the form.';
     return res.status(400).json({ ok: false, error, fields: f });
   }
   // Design tiers: the plan must include the design (amounts always come from the server's plan prices).
@@ -243,34 +242,7 @@ export async function submit(req, res) {
     if (tp) return res.status(400).json({ ok: false, error: tp.error, fields: ['plan'], code: 'tier', needs: tp.needs });
   }
 
-  // The account: a new one, or an existing one with its right password (counted against the sign-in limits).
-  let customer = signedIn;
-  let created = false;
-  if (wantsAccount) {
-    const wait = loginThrottle(ip, `c:${email}`);
-    if (wait) {
-      res.set('Retry-After', String(wait));
-      return res.status(429).json({ ok: false, error: 'Too many attempts. Please wait a few minutes and try again.' });
-    }
-    const exists = { ok: false, code: 'account_exists', error: 'This email already has an account. Sign in, or enter that account\u2019s password.', fields: ['password'] };
-    if (staffByEmail(email) || email === ADMIN_EMAIL) return res.status(409).json(exists); // a team email cannot also be a customer account
-    if (customerByEmail(email)) {
-      const r = await checkCustomer(ip, email, rawPassword);
-      if (!r.ok) return res.status(409).json(exists);
-      if (r.customer.disabled === true) return res.status(403).json({ ok: false, error: 'This account is turned off. Please contact us on WhatsApp.' });
-      customer = r.customer;
-    } else {
-      const passwordHash = await hashAccountPassword(rawPassword);
-      try {
-        customer = await createCustomer({ email, name, phone, passwordHash, market });
-        created = true;
-        sendVerify(req, customer).catch(() => {}); // "Confirm your email" (Brevo; nothing when mail is off)
-      } catch (err) {
-        if (err.code === 'account_exists') return res.status(409).json(exists);
-        throw err;
-      }
-    }
-  }
+  const customer = signedIn; // the signed-in customer (a guest enquiry has none)
 
   const payToken = randomBytes(32).toString('base64url'); // 256 bits; only the hash is stored
   const now = new Date().toISOString();
@@ -303,14 +275,12 @@ export async function submit(req, res) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
-  // A new account, or the right password for an existing one: this browser is now signed in as that customer.
-  if (customer && !signedIn) await signInCustomer(req, res, customer);
-  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'} market=${market}${enquiry ? ' (enquiry)' : ''}${customer ? ` customer=${customer.id}${created ? ' (new)' : ''}` : ''}`);
+  console.info(`[orders] new kind=${kind} ref=${order.ref} plan=${order.plan || '-'} market=${market}${enquiry ? ' (enquiry)' : ''}${customer ? ` customer=${customer.id}` : ''}`);
   res.status(201).json({
     ok: true, ref: order.ref, market, amount: order.amount, plan: planView(order), whatsapp: whatsappFor(order, site),
     // an enquiry has no payment page yet
     ...(enquiry ? { enquiry: true } : { payToken, payUrl: payUrl(order.ref, payToken) }),
-    ...(customer ? { account: { email: customer.email, name: customer.name || '', created } } : {}),
+    ...(customer ? { account: { email: customer.email, name: customer.name || '', created: false } } : {}),
   });
 }
 

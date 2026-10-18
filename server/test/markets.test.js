@@ -76,6 +76,21 @@ function browser() {
   return b;
 }
 
+/**
+ * POST /api/orders as `b`. An order needs a signed-in customer (lib/orders.js): for a body with email + password and
+ * a browser not signed in, the planner makes that account first (this server runs in its own process) and `b` signs in.
+ */
+async function orderBy(b, body) {
+  const { email, password, ...rest } = body;
+  if (email && password && !b.cookie) {
+    const market = rest.market === 'intl' || rest.market === 'np' ? rest.market : undefined;
+    const made = await owner.req('/api/admin/customers', { method: 'POST', body: { email, name: rest.name, phone: rest.phone, password, market } });
+    assert.ok([201, 409].includes(made.status), JSON.stringify(made.body));
+    await b.login(email, password);
+  }
+  return b.req('/api/orders', { method: 'POST', body: rest });
+}
+
 const staff = async (email, perms) => {
   const r = await owner.req('/api/admin/team', { method: 'POST', body: { email, name: email.split('@')[0], password: 'staff-password-1', role: 'admin', perms } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
@@ -123,18 +138,18 @@ test('plans per market: both by default, saved per plan, refused when empty; ord
   assert.equal(pub.markets.intl.contact.whatsapp, pub.contact.whatsapp, 'empty International fields fall back to Nepal');
   assert.deepEqual(pub.plans.find((p) => p.id === 'saral').markets, ['np']);
   // an International order cannot take a Nepal-only plan
-  const bad = await browser().req('/api/orders', { method: 'POST', body: { ...INTL, plan: 'saral', email: 'emma0@example.com', password: 'emma-pass-1' } });
+  const bad = await orderBy(browser(), { ...INTL, plan: 'saral', email: 'emma0@example.com', password: 'emma-pass-1' });
   assert.equal(bad.status, 400);
   assert.ok(bad.body.fields.includes('plan'));
-  assert.equal((await browser().req('/api/orders', { method: 'POST', body: { ...INTL, market: 'mars', email: 'emma0@example.com', password: 'emma-pass-1' } })).body.fields.includes('market'), true);
+  assert.equal((await orderBy(browser(), { ...INTL, market: 'mars', email: 'emma0@example.com', password: 'emma-pass-1' })).body.fields.includes('market'), true);
   assert.equal((await owner.req('/api/site', { method: 'PUT', body: cur })).status, 200);
 });
 
 test('orders carry their market: list filter, account market, phone edit and the venue zone', async () => {
   const c = browser();
-  const r = await c.req('/api/orders', { method: 'POST', body: { ...INTL, email: 'emma@example.com', password: 'emma-pass-1', bride: 'Emma', groom: 'Liam' } });
+  const r = await orderBy(c, { ...INTL, email: 'emma@example.com', password: 'emma-pass-1', bride: 'Emma', groom: 'Liam' });
   assert.equal(r.status, 201, JSON.stringify(r.body));
-  const np = await browser().req('/api/orders', { method: 'POST', body: { kind: 'order', plan: 'shubha', name: 'Gita Thapa', phone: '9800000001', email: 'gita@example.com', password: 'gita-pass-1', website: '' } });
+  const np = await orderBy(browser(), { kind: 'order', plan: 'shubha', name: 'Gita Thapa', phone: '9800000001', email: 'gita@example.com', password: 'gita-pass-1', website: '' });
   assert.equal(np.status, 201);
   const all = (await owner.req('/api/orders')).body.orders;
   assert.equal(all.find((o) => o.ref === r.body.ref).market, 'intl');
@@ -184,7 +199,7 @@ test('orders carry their market: list filter, account market, phone edit and the
 
 test('enquiries: quote, quote sent, then an order with a pay link', async () => {
   const c = browser();
-  const r = await c.req('/api/orders', { method: 'POST', body: { kind: 'custom', name: 'Olivia Reed', phone: '+1 646 555 0199', email: 'olivia@example.com', password: 'olivia-pass-1', message: 'A garden design in sage and ivory, please.', market: 'intl', website: '' } });
+  const r = await orderBy(c, { kind: 'custom', name: 'Olivia Reed', phone: '+1 646 555 0199', email: 'olivia@example.com', password: 'olivia-pass-1', message: 'A garden design in sage and ivory, please.', market: 'intl', website: '' });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   const o = (await owner.req('/api/orders?market=intl')).body.orders.find((x) => x.ref === r.body.ref);
   assert.equal(o.kind, 'custom');
@@ -216,7 +231,7 @@ test('enquiries: quote, quote sent, then an order with a pay link', async () => 
   assert.equal((await owner.req(`/api/orders/${o.id}/convert`, { method: 'POST', body: {} })).status, 409, 'only once');
   assert.equal((await owner.req(`/api/orders/${o.id}/quote`, { method: 'PATCH', body: { amount: 1 } })).status, 409);
   // a Nepal enquiry is quoted in rupees, whole numbers
-  const n = await browser().req('/api/orders', { method: 'POST', body: { kind: 'custom', name: 'Sita Rai', phone: '9800000002', message: 'Our own design', website: '' } });
+  const n = await orderBy(browser(), { kind: 'custom', name: 'Sita Rai', phone: '9800000002', message: 'Our own design', website: '' });
   const no = (await owner.req('/api/orders?market=np')).body.orders.find((x) => x.ref === n.body.ref);
   assert.equal((await owner.req(`/api/orders/${no.id}/quote`, { method: 'PATCH', body: { amount: 15000.5 } })).status, 400);
   assert.equal((await owner.req(`/api/orders/${no.id}/quote`, { method: 'PATCH', body: { amount: 15000 } })).body.order.quote.currency, 'NPR');

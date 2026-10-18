@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash as argonHash } from '@node-rs/argon2';
+import { signUpFor } from './_order-as.js';
 
 const DATA_ROOT = mkdtempSync(join(tmpdir(), 'nimtto-demo-'));
 process.env.DATA_ROOT = DATA_ROOT;
@@ -105,6 +106,9 @@ function browser() {
   return b;
 }
 const ORDER = { kind: 'order', plan: 'shubha', phone: '9800000001', website: '' };
+// an order needs a signed-in customer: these accounts are made first, unconfirmed (older accounts, or made by the
+// planner), since the hand-over rules below are about accounts that never confirmed their email
+const OLD = { verified: false };
 
 test('a new invitation starts with the names entered and nothing of the demo couple', async () => {
   const r = await admin.req('/api/invitations', { method: 'POST', body: { slug: 'sita-ram', bride: 'Sita', groom: 'Ram', theme: 'mangal', sample: true } });
@@ -225,9 +229,9 @@ test('POST /api/clear-cache answers Clear-Site-Data "cache" and keeps the sessio
 
 test('an invitation made for a customer email appears in their dashboard; another customer cannot see it', async () => {
   const a = browser();
-  assert.equal((await a.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', name: 'Asha', email: 'asha@example.com', password: 'asha-pass-1' } })).status, 201);
+  assert.equal((await a.req('/api/orders', { method: 'POST', body: await signUpFor(a, { ...ORDER, plan: 'saral', name: 'Asha', email: 'asha@example.com', password: 'asha-pass-1' }, OLD) })).status, 201);
   const other = browser();
-  assert.equal((await other.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Bina', email: 'bina@example.com', password: 'bina-pass-1' } })).status, 201);
+  assert.equal((await other.req('/api/orders', { method: 'POST', body: await signUpFor(other, { ...ORDER, name: 'Bina', email: 'bina@example.com', password: 'bina-pass-1' }, OLD) })).status, 201);
   // an account that has not confirmed its email only gets a pending link (anyone can sign up with any email)
   const early = await admin.req('/api/invitations', { method: 'POST', body: { slug: 'asha-early', bride: 'Asha', groom: 'Hari', customerEmail: 'asha@example.com' } });
   assert.deepEqual(early.body.customer, { email: 'asha@example.com', linked: false, pending: true });
@@ -262,9 +266,9 @@ test('an email with no account gets a pending link: never claimed on signup, lin
   assert.deepEqual(pending.map((p) => [p.email, p.slug, p.account]), [['maya@example.com', 'maya-dev', null]]);
   // the owner cannot link it before an account exists
   assert.equal((await admin.req('/api/admin/pending/link', { method: 'POST', body: { email: 'maya@example.com', slug: 'maya-dev' } })).status, 404);
-  // someone registers that email (emails are not verified): nothing is handed over by itself
+  // an account with that email that never confirmed it: nothing is handed over by itself
   const m = browser();
-  assert.equal((await m.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Maya', email: 'maya@example.com', password: 'maya-pass-1' } })).status, 201);
+  assert.equal((await m.req('/api/orders', { method: 'POST', body: await signUpFor(m, { ...ORDER, name: 'Maya', email: 'maya@example.com', password: 'maya-pass-1' }, OLD) })).status, 201);
   assert.deepEqual((await m.req('/api/account')).body.invitations, [], 'no auto-claim on signup');
   assert.equal((await m.req('/api/invitations/maya-dev')).status, 403);
   await m.req('/api/auth/me');
@@ -293,7 +297,7 @@ test('an email with no account gets a pending link: never claimed on signup, lin
 
 test('Create invitation from an order: one click, filled from the order, linked; later details fill empty fields', async () => {
   const c = browser();
-  const o = await c.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Kamal', email: 'kamal@example.com', password: 'kamal-pass-1', theme: 'mangal', bride: 'Rita', groom: 'Kamal' } });
+  const o = await c.req('/api/orders', { method: 'POST', body: await signUpFor(c, { ...ORDER, name: 'Kamal', email: 'kamal@example.com', password: 'kamal-pass-1', theme: 'mangal', bride: 'Rita', groom: 'Kamal' }, OLD) });
   assert.equal(o.status, 201, JSON.stringify(o.body));
   await c.req('/api/auth/me'); // the CSRF token for this browser's session
   const order = (await admin.req('/api/orders')).body.orders.find((x) => x.ref === o.body.ref);
@@ -322,7 +326,7 @@ test('Create invitation from an order: one click, filled from the order, linked;
 
 test('a paid order switches its plan on by itself: invitation made and in the dashboard, once', async () => {
   const c = browser();
-  const o = await c.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'shahi', name: 'Sita', email: 'sita@example.com', password: 'sita-pass-1', bride: 'Sita', groom: 'Ram' } });
+  const o = await c.req('/api/orders', { method: 'POST', body: await signUpFor(c, { ...ORDER, plan: 'shahi', name: 'Sita', email: 'sita@example.com', password: 'sita-pass-1', bride: 'Sita', groom: 'Ram' }, OLD) });
   assert.equal(o.status, 201, JSON.stringify(o.body));
   const id = (await admin.req('/api/orders')).body.orders.find((x) => x.ref === o.body.ref).id;
   assert.deepEqual((await c.req('/api/account')).body.invitations, [], 'nothing before payment');

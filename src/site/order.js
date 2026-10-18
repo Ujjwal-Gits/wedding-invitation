@@ -260,8 +260,8 @@ async function submit(e) {
     return;
   }
   const d = r.data || {};
-  // the server asked for an email and password: this browser is no longer signed in
-  if (r.status === 400 && Array.isArray(d.fields) && d.fields.some((f) => f === 'email' || f === 'password')) { signInAgain(); return; }
+  // the server needs a signed-in customer (401 sign_in_required): this browser is no longer signed in
+  if ((r.status === 401 && d.code === 'sign_in_required') || (r.status === 400 && Array.isArray(d.fields) && d.fields.includes('email'))) { signInAgain(); return; }
   if (r.status === 400 && d.code === 'tier') {
     const needs = TIER_RANK[d.needs] ? d.needs : (t?.tier || 'shubha');
     const up = upgradeTo(needs);

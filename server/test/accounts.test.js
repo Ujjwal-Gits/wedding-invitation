@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash as argonHash } from '@node-rs/argon2';
+import { makeCustomer } from './_order-as.js';
 
 const DATA_ROOT = mkdtempSync(join(tmpdir(), 'nimtto-accounts-'));
 process.env.DATA_ROOT = DATA_ROOT;
@@ -96,28 +97,63 @@ function browser() {
   b.login = async (email, password) => {
     const r = await b.req('/api/auth/login', { method: 'POST', body: { email, password } });
     assert.equal(r.status, 200, `login ${email}: ${JSON.stringify(r.body)}`);
+    b.last = r;
     return b;
+  };
+  /** The account as a confirmed sign-up makes it (lib/customers.js signup), then this browser signs in. */
+  b.signup = async (email, password, { name = 'Gita Thapa', phone = '9800000001', market } = {}) => {
+    await makeCustomer({ email, password, name, phone, market });
+    return b.login(email, password);
   };
   return b;
 }
 
 const ORDER = { kind: 'order', plan: 'shubha', name: 'Gita Thapa', phone: '9800000001', website: '' };
 
-test('a minimal order creates the account, signs the browser in, and /auth/me says so', async () => {
+test('an order without a customer session is refused (401 sign_in_required): it never makes or opens an account', async () => {
+  const b = browser();
+  const want = { ok: false, code: 'sign_in_required', error: 'Please sign in or make an account first, then place your order.' };
+  // email + password of a new email: no account is made
+  let r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'new.person@example.com', password: 'new-pass-12' } });
+  assert.equal(r.status, 401);
+  assert.deepEqual(r.body, want);
+  assert.ok(!store.customerStore.byEmail('new.person@example.com'), 'no account from an order');
+  // no credentials at all: the same
+  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER } });
+  assert.equal(r.status, 401);
+  assert.equal(r.body.code, 'sign_in_required');
+  // the right password of an existing account: still refused, and this browser is not signed in
+  await makeCustomer({ email: 'has.account@example.com', password: 'has-pass-12', name: 'Has Account', phone: '9800000009' });
+  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'has.account@example.com', password: 'has-pass-12' } });
+  assert.equal(r.status, 401);
+  assert.deepEqual(r.body, want);
+  assert.equal(b.cookie, '');
+  assert.equal(r.headers.get('set-cookie'), null);
+  // a custom-design enquiry with a password is refused too; without one a guest may still send it
+  r = await b.req('/api/orders', { method: 'POST', body: { kind: 'custom', name: 'Hari Bahadur', phone: '9800000002', message: 'Temple design', email: 'hari@example.com', password: 'hari-pass-12', website: '' } });
+  assert.equal(r.status, 401);
+  assert.ok(!store.customerStore.byEmail('hari@example.com'));
+  // the honeypot still answers like a success and stores nothing
+  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, website: 'bot.example' } });
+  assert.equal(r.status, 201);
+});
+
+test('a signed-in customer orders without email or password: the order goes to their account', async () => {
   const b = browser();
   const soft = await b.req('/api/auth/me?soft=1');
   assert.equal(soft.status, 200);
   assert.deepEqual(soft.body, { role: null });
   assert.equal((await b.req('/api/auth/me')).status, 401);
 
+  await b.signup('gita.thapa@example.com', 'gita-pass-1');
+  assert.ok(b.cookie, 'session cookie set');
+  const setCookie = b.last.headers.get('set-cookie');
   // no wedding date, venue or message: still a good order
-  const r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: '  Gita.Thapa@Example.COM ', password: 'gita-pass-1' } });
+  const r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.match(r.body.ref, /^NM-\d{5,6}$/);
   assert.equal(r.body.amount.npr, 4999); // the server's price
-  assert.deepEqual(r.body.account, { email: 'gita.thapa@example.com', name: 'Gita Thapa', created: true });
-  assert.ok(b.cookie, 'session cookie set');
-  const setCookie = r.headers.get('set-cookie');
+  assert.deepEqual(r.body.account, { email: 'gita.thapa@example.com', name: 'Gita Thapa', created: false });
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /SameSite=Lax/);
   const me = await b.req('/api/auth/me');
@@ -139,34 +175,27 @@ test('a minimal order creates the account, signs the browser in, and /auth/me sa
   assert.equal(o.customerId, c.id);
 });
 
-test('an order needs an email and a password of 8+ characters (unless signed in)', async () => {
+test('a guest may still send a custom enquiry; a signed-in order still checks its details', async () => {
   const b = browser();
-  let r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER } });
-  assert.equal(r.status, 400);
-  assert.deepEqual(r.body.fields.sort(), ['email', 'password']);
-  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'short@example.com', password: 'short' } });
-  assert.equal(r.status, 400);
-  assert.deepEqual(r.body.fields, ['password']);
-  assert.match(r.body.error, /8 characters/);
-  assert.equal(b.cookie, '');
   // a custom request still works without an account
-  r = await b.req('/api/orders', { method: 'POST', body: { kind: 'custom', name: 'Hari Bahadur', phone: '9800000002', message: 'A design with our village temple', website: '' } });
+  let r = await b.req('/api/orders', { method: 'POST', body: { kind: 'custom', name: 'Hari Bahadur', phone: '9800000002', message: 'A design with our village temple', website: '' } });
   assert.equal(r.status, 201);
   assert.equal(r.body.account, undefined);
+  assert.equal(b.cookie, '');
   // optional details are still checked when sent
-  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'x1@example.com', password: 'long-enough', weddingDate: '2026-02-30', venue: 'v'.repeat(201) } });
+  await b.signup('x1@example.com', 'long-enough');
+  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, weddingDate: '2026-02-30', venue: 'v'.repeat(201) } });
+  assert.equal(r.status, 400);
   assert.deepEqual(r.body.fields.sort(), ['venue', 'weddingDate']);
 });
 
-test('an existing email: the right password signs in and adds the order, a wrong one is refused without detail', async () => {
+test('an existing account: the order form signs in first, then orders go to it; a wrong password is refused there', async () => {
   const b = browser();
-  const wrong = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'gita.thapa@example.com', password: 'not-her-password' } });
-  assert.equal(wrong.status, 409);
-  assert.equal(wrong.body.code, 'account_exists');
-  assert.deepEqual(wrong.body.fields, ['password']);
-  assert.equal(Object.keys(wrong.body).sort().join(), 'code,error,fields,ok');
+  const wrong = await b.req('/api/auth/login', { method: 'POST', body: { email: 'gita.thapa@example.com', password: 'not-her-password' } });
+  assert.equal(wrong.status, 401);
   assert.equal(b.cookie, '');
-  const right = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', email: 'GITA.thapa@example.com', password: 'gita-pass-1', venue: 'Hotel Annapurna' } });
+  await b.login('GITA.thapa@example.com', 'gita-pass-1');
+  const right = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', venue: 'Hotel Annapurna' } });
   assert.equal(right.status, 201);
   assert.equal(right.body.account.created, false);
   const acc = await b.req('/api/account');
@@ -202,7 +231,7 @@ test('sign-in: wrong password and unknown email get the same answer; email is no
 test('the dashboard: orders with payment status and a pay link the session opens; details filled in later; CSRF', async () => {
   const b = await browser().login('gita.thapa@example.com', 'gita-pass-1');
   const acc = (await b.req('/api/account')).body;
-  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '+9779800000001', emailVerified: false, mail: false });
+  assert.deepEqual(acc.customer, { name: 'Gita Thapa', email: 'gita.thapa@example.com', phone: '+9779800000001', emailVerified: true, mail: false });
   const o = acc.orders.at(-1);
   assert.equal(o.payStatus, 'awaiting_payment');
   assert.equal(o.reason, null);
@@ -230,25 +259,24 @@ test('the dashboard: orders with payment status and a pay link the session opens
   assert.equal((await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { weddingDate: '2027-13-01' } })).status, 400);
   // another customer cannot touch it
   const c2 = browser();
-  await c2.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Sunita Rai', email: 'sunita@example.com', password: 'sunita-pass' } });
-  await c2.req('/api/auth/me'); // the order answer sets the cookie; the CSRF token comes from /auth/me
+  await c2.signup('sunita@example.com', 'sunita-pass', { name: 'Sunita Rai' });
+  await c2.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Sunita Rai' } });
   assert.equal((await c2.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { venue: 'mine' } })).status, 404);
   assert.equal((await c2.req('/api/account')).body.orders.length, 1);
 });
 
 test('tiers: defaults, the plan must include the design, admin overrides, exposed in /themes, /meta and /site', async () => {
   const ready = new Set(listThemes().filter((t) => t.ready).map((t) => t.slug));
-  const b = browser();
+  const b = await browser().signup('tier1@example.com', 'tier-pass-1');
   // mahal is a Shahi design: a Saral order is refused, a Shahi one is fine
-  let r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', theme: 'mahal', email: 'tier1@example.com', password: 'tier-pass-1' } });
+  let r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', theme: 'mahal' } });
   assert.equal(r.status, 400);
   assert.equal(r.body.code, 'tier');
   assert.equal(r.body.needs, 'shahi');
   assert.deepEqual(r.body.fields, ['plan']);
   assert.match(r.body.error, /needs the Pro Max plan/);
-  assert.equal(b.cookie, '', 'no account made for a refused order');
-  assert.equal(store.customerStore.byEmail('tier1@example.com'), null);
-  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'shahi', theme: 'mahal', email: 'tier1@example.com', password: 'tier-pass-1' } });
+  assert.equal((await b.req('/api/account')).body.orders.length, 0, 'nothing stored for a refused order');
+  r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'shahi', theme: 'mahal' } });
   assert.equal(r.status, 201);
   // saral design on the saral plan; shubha design on shubha; custom covers everything
   for (const [plan, theme, want] of [['saral', 'kham', 201], ['saral', 'dhoka', 400], ['shubha', 'dhoka', 201], ['shubha', 'agni', 400], ['custom', 'agni', 201]]) {
@@ -301,7 +329,8 @@ test('plan names: the planner renames plans and their Nepali names; older docume
   // feature lines written with the first names follow the rename on the website ("Shubha Bibaha" is left alone)
   assert.ok(s.plans.find((p) => p.id === 'shahi').features.includes('Everything in Pro'));
   // the tier error names the plan as the planner calls it
-  const r = await b.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', theme: 'dhoka', email: 'names1@example.com', password: 'names-pass-1' } });
+  const nb = await browser().signup('names1@example.com', 'names-pass-1');
+  const r = await nb.req('/api/orders', { method: 'POST', body: { ...ORDER, plan: 'saral', theme: 'dhoka' } });
   assert.equal(r.status, 400);
   assert.match(r.body.error, /needs the Pro plan/);
   assert.equal((await admin.req('/api/site', { method: 'PUT', body: cur })).status, 200);
@@ -352,8 +381,8 @@ test('the admin links an invitation: the customer edits it within the link perms
 });
 
 test('password reset by the admin and turning an account off end its sessions; same sign-in answer when off', async () => {
-  const s1 = browser();
-  await s1.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Kamala KC', email: 'kamala@example.com', password: 'kamala-pass' } });
+  const s1 = await browser().signup('kamala@example.com', 'kamala-pass', { name: 'Kamala KC' });
+  assert.equal((await s1.req('/api/orders', { method: 'POST', body: { ...ORDER, name: 'Kamala KC' } })).status, 201);
   const s2 = await browser().login('kamala@example.com', 'kamala-pass');
   assert.equal((await s1.req('/api/auth/me')).status, 200);
   const cid = store.customerStore.byEmail('kamala@example.com').id;
@@ -374,11 +403,13 @@ test('password reset by the admin and turning an account off end its sessions; s
   const off = await admin.req(`/api/admin/customers/${cid}`, { method: 'PATCH', body: { disabled: true } });
   assert.equal(off.body.customer.disabled, true);
   assert.equal((await s3.req('/api/auth/me')).status, 401);
+  assert.equal((await s3.req('/api/orders', { method: 'POST', body: { ...ORDER } })).status, 401, 'the ended session cannot order');
   const login = await browser().req('/api/auth/login', { method: 'POST', body: { email: 'kamala@example.com', password: 'kamala-third' } });
   assert.equal(login.status, 401);
   assert.equal(login.body.error, 'That email and password do not match.');
   const order = await browser().req('/api/orders', { method: 'POST', body: { ...ORDER, email: 'kamala@example.com', password: 'kamala-third' } });
-  assert.equal(order.status, 403);
+  assert.equal(order.status, 401);
+  assert.equal(order.body.code, 'sign_in_required');
   await admin.req(`/api/admin/customers/${cid}`, { method: 'PATCH', body: { disabled: false } });
   await browser().login('kamala@example.com', 'kamala-third');
 });

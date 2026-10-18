@@ -253,19 +253,15 @@ own pay link (lib/enquiries.js); until then the customer's dashboard shows no pa
 
 **Account on order.** The website (src/site/order.js) signs the visitor up or in first (`POST /auth/signup/start`, then `POST /auth/signup` with the emailed code, or
 `/auth/login` in its account step) and then orders as that customer, sending no email or password; signed in as the
-planner, its form only points to the studio. The older body below still works. For `kind: 'order'` from a browser not signed in as a customer, `email` and `password` (8-128) are required:
-the order creates the account (`name`, `phone` from the form) and signs the browser in (customer session cookie on the `201`).
-Already signed in as a customer: the order goes to that account; `email`/`password` are not needed. When the email already has an
-account: the right password signs in and adds the order to it; a wrong one → `409 { ok: false, code: 'account_exists',
-error: 'This email already has an account. Sign in, or enter that account's password.', fields: ['password'] }` (counted against
-the sign-in limits; nothing else is revealed). A turned-off account with the right password → `403`. For `kind: 'custom'` the
-account fields are optional (sent → the same rules). The `201` also has `account: { email, name, created: boolean }` when an
-account was used.
+planner, its form only points to the studio. An order needs a signed-in customer session and never makes or opens an
+account: `kind: 'order'` without a customer session, or any body with a `password` and no session, gets
+`401 { ok: false, code: 'sign_in_required', error }` (nothing stored, no cookie set). A guest may still send
+`kind: 'custom'` without credentials. The `201` has `account: { email, name, created: false }` when the order went to
+an account.
 
 `201 { ok: true, ref: 'NM-24817', payToken: '<43-char base64url secret>', amount: { npr: 4999, usd: 99 }, plan: { id, name, from },
        payUrl: '/pay/NM-24817?t=<payToken>', whatsapp: { text, link: 'https://wa.me/977…?text=…' | null }, account?: { email, name, created } }`
-(+ `Set-Cookie`: the customer session)
-· `400 { ok: false, error, fields }` · `403` cross-site · `429`. Store `ref` + `payToken` (e.g. in the URL / localStorage)
+· `400 { ok: false, error, fields }` · `401 sign_in_required` · `403` cross-site · `429`. Store `ref` + `payToken` (e.g. in the URL / localStorage)
 so the customer can come back; the token is shown once and only its hash is stored. A honeypot hit gets the same shape
 with a ref/token that leads nowhere. `amount.npr`/`amount.usd` can be `null` when the plan has no price.
 
