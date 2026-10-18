@@ -7,9 +7,11 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { LANDINGS } from './landings.mjs';
+import './partials.mjs'; // first: partials.mjs and landing.mjs import each other, and partials must be the one that starts
+import { landingText } from './landing.mjs';
 import { pageMeta, checkLengths, PAGES, LEGAL } from './seo.mjs';
 import { INTL_PAGES, FAQ_SETS, faqList, fillUsd, EVENTS } from './intl-content.mjs';
-import { faqItems, fillPlans, OCCASIONS, SITE_URL } from './content.mjs';
+import { faqItems, OCCASIONS, SITE_URL } from './content.mjs';
 import { THEMES, FALLBACK_SITE, TIER_LABEL } from './themes.js';
 import { phoneStill } from './stills.js';
 import { intlPlans, usdText } from './intl-plans.js';
@@ -164,10 +166,10 @@ for (const id of Object.keys(INTL_PAGES)) {
   const keys = Array.isArray(set?.[0]) ? set.flatMap(([, k]) => k) : set || [];
   sections.push(`## ${m.title}\nURL: ${m.url}\n${strip(p.h1)}. ${fillUsd(p.lede)}\n\n${qa(faqList(keys))}`);
 }
-for (const [id, l] of Object.entries(LANDINGS)) {
+for (const id of Object.keys(LANDINGS)) {
   const m = pageMeta(`land/${id}`);
-  const f = (s) => strip(l.market === 'intl' ? fillUsd(s) : fillPlans(fillUsd(s)));
-  sections.push(`## ${m.title}\nURL: ${m.url}\n${strip(l.h1)}. ${f(l.lede)}\n\n${l.includesTitle}:\n${(l.includes || []).map(([t, d]) => `- ${t}: ${f(d)}`).join('\n')}\n\n${(l.answers || []).map(([q, a]) => `### ${q}\n${f(a)}\n`).join('\n')}\n${(l.faq || []).map(([q, a]) => `### ${q}\n${f(a)}\n`).join('\n')}`);
+  // the page's own words, with its guide sections one level down (## -> ###)
+  sections.push(`## ${m.title}\nURL: ${m.url}\n${m.desc}\n\n${landingText(id).replace(/^### /gm, '#### ').replace(/^## /gm, '### ')}\n`);
 }
 const designsText = `## Designs
 Nepal site (${THEMES.length} wedding designs; the lowest plan that includes each):

@@ -110,6 +110,7 @@ function meta(id = 'home') {
     isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` },
     primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 },
     ...(m.type === 'AboutPage' ? { about: { '@id': `${SITE_URL}/#org` }, mainEntity: { '@id': `${SITE_URL}/#org` } } : {}),
+    ...(m.updated ? { dateModified: m.updated } : {}), // landing pages: the day their facts were checked (landings.mjs)
     ...(m.speak ? { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } } : {}) }, ` data-cms="webpage" data-cms-id="${esc(id)}" data-cms-site="${esc(m.market)}"`)}`;
 }
 /** The organisation and the website, the same on every page of both sites (no LocalBusiness: there is no shop).

@@ -36,7 +36,7 @@ export const INTL_PAGES = {
   'intl/home': {
     path: INTL_BASE, img: 'intl-home', type: 'WebPage', ogType: 'website', np: 'home', speak: true,
     title: 'Animated Wedding Invitation Website With RSVP | Nimtto',
-    desc: 'One link for your animated invitation, event site and RSVP, made with a real designer. Pay once from $49. US, UK, Canada, Australia, UAE.',
+    desc: 'One link for your animated invitation, event website and RSVP, made with a real designer. Pay once from $49. For the USA, UK, Canada, Australia and UAE.',
     alt: 'Nimtto animated wedding invitation website: the Olive Grove invitation on a phone among other designs',
     eyebrow: 'Weddings and every celebration',
     h1: 'Your invitation, event website and RSVP, <em>in one link.</em>',
@@ -44,7 +44,7 @@ export const INTL_PAGES = {
   },
   'intl/designs': {
     path: `${INTL_BASE}designs/`, img: 'intl-designs', type: 'CollectionPage', ogType: 'website', np: 'designs',
-    title: 'Animated Wedding Invitation Designs | Nimtto',
+    title: 'Animated Wedding Invitation Designs With RSVP | Nimtto',
     desc: 'Browse animated wedding invitation designs in five styles: garden, romantic, classic, modern and destination. Each with RSVP and a website. From $49.',
     alt: 'Nimtto animated wedding invitation designs on phones: an olive wreath, a rose arch and a wax seal',
     eyebrow: 'Designs',
@@ -71,7 +71,7 @@ export const INTL_PAGES = {
   },
   'intl/how': {
     path: `${INTL_BASE}how-it-works/`, img: 'intl-how', type: 'WebPage', ogType: 'article', np: 'how-it-works',
-    title: 'How to Make a Digital Wedding Invitation | Nimtto',
+    title: 'How to Make a Digital Wedding Invitation in 4 Steps | Nimtto',
     desc: 'How to make a digital wedding invitation: pick a design, pay once by card or PayPal, a real designer sets it up, then send one link by text or email.',
     alt: 'The four Nimtto steps beside a digital wedding invitation on a phone',
     eyebrow: 'How it works',
@@ -81,7 +81,7 @@ export const INTL_PAGES = {
   'intl/pricing': {
     path: `${INTL_BASE}pricing/`, img: 'intl-pricing', type: 'WebPage', ogType: 'website', np: 'pricing',
     title: 'Digital Wedding Invitation Cost: $49 to $199 | Nimtto',
-    desc: 'Transparent one-time pricing: $49, $99, $149, custom from $199. No subscription. Card or PayPal.',
+    desc: 'One-time pricing for digital invitations: $49, $99 or $149, custom designs from $199. No subscription and no fee per guest. Pay by card or PayPal.',
     alt: 'Nimtto prices: three plans at $49, $99 and $149, paid once',
     eyebrow: 'Pricing',
     h1: 'One price. <em>Paid once.</em>',
@@ -98,7 +98,7 @@ export const INTL_PAGES = {
   },
   'intl/contact': {
     path: `${INTL_BASE}contact/`, img: 'intl-contact', type: 'ContactPage', ogType: 'website', np: 'contact',
-    title: 'Contact Nimtto: Talk to an Invitation Designer',
+    title: 'Contact Nimtto: Talk to a Real Invitation Designer',
     desc: 'Email nimttoz@gmail.com or WhatsApp +977 980-6393298 about a design, a custom invitation or a payment. A real designer replies within one business day.',
     alt: 'Contact Nimtto by email at nimttoz@gmail.com',
     eyebrow: 'Contact',
@@ -145,23 +145,29 @@ const Q = {
   multi: ['Can I add multiple events?', 'Yes. One link can hold the whole weekend: welcome drinks, the ceremony, the reception and a farewell brunch, each with its own time, place and map. Guests reply to each event, so you know the numbers for every part of the day.'],
   contact: ['How do I reach Nimtto?', 'Email us at nimttoz@gmail.com, or message us on WhatsApp at +977 980-6393298. A real person replies, usually within one business day. Our team is based in Nepal and works with couples and hosts around the world.'],
   etiquette: ['Are digital wedding invitations acceptable?', 'Yes. Many couples now send digital wedding invitations, and guests like having the details, maps and RSVP on their phone. Send them six to eight weeks before the wedding. For a few older relatives, you can also print a card or ask family to help them open the link.'],
+  when: ['When should I send digital wedding invitations?', 'Send the invitation six to eight weeks before the wedding, with RSVPs due three to four weeks before. For a destination or multi-day wedding, send it ten to twelve weeks ahead, after a save the date eight to twelve months out. You can share the same link early as a save the date.'],
+  guests: ['Is there a limit on guests?', 'No. You pay once for your plan and can send the link to as many guests as you like. There is no charge per guest, per reply or per reminder, which makes a difference for large weddings with several events.'],
+  paper: ['Can I still mail some paper invitations?', 'Yes. Many couples send the digital invitation to everyone and mail a few printed cards to grandparents or anyone who would treasure one. You keep one guest list and one set of replies, because everyone replies on the same link.'],
+  personal: ['Can each guest get a personal link?', 'Yes, on the Pro Max plan. Each guest gets a link that opens with their name and only the events they are invited to, which helps when the mehendi or the rehearsal dinner has a smaller guest list than the wedding.'],
+  wording: ['How should I word a digital wedding invitation?', 'Word it as you would a printed one: the hosts, a request line, both names, the date, the time and the place, then the reception and how to reply. The wedding website section carries the rest: travel, hotels, dress code and the registry. Our wedding page has wording examples in several tones.'],
 };
 
 /** Which questions each page shows (FAQPage JSON-LD follows the same list). */
 export const FAQ_SETS = {
-  home: ['site', 'cost', 'subscription', 'rsvp-app', 'multi', 'occasions', 'diy', 'time'],
-  designs: ['occasions', 'custom', 'change', 'rsvp-app', 'cost'],
+  home: ['site', 'cost', 'subscription', 'rsvp-app', 'multi', 'etiquette', 'occasions', 'diy', 'time', 'when'],
+  designs: ['occasions', 'custom', 'change', 'rsvp-app', 'paper', 'cost'],
   design: ['change', 'rsvp-app', 'multi', 'timezones', 'time', 'cost'], // a design's own page
-  occasions: ['occasions', 'custom', 'multi', 'time', 'cost'],
-  features: ['rsvp-app', 'change', 'multi', 'timezones', 'privacy', 'online'],
-  how: ['time', 'pay', 'diy', 'change', 'send', 'etiquette'],
-  pricing: ['cost', 'subscription', 'pay', 'custom', 'refund', 'online'],
+  occasions: ['occasions', 'custom', 'multi', 'time', 'cost', 'guests'],
+  features: ['rsvp-app', 'change', 'multi', 'personal', 'timezones', 'privacy', 'online'],
+  how: ['time', 'pay', 'diy', 'change', 'send', 'when', 'wording', 'etiquette'],
+  pricing: ['cost', 'subscription', 'guests', 'pay', 'custom', 'personal', 'refund', 'online'],
   contact: ['contact', 'time', 'pay', 'refund'],
   // the FAQ page: every general question, in groups
   faq: [
     ['About Nimtto', ['what', 'site', 'occasions', 'diy', 'custom']],
-    ['For your guests', ['rsvp-app', 'send', 'multi', 'timezones', 'etiquette']],
-    ['Prices and payment', ['cost', 'subscription', 'pay', 'refund']],
+    ['For your guests', ['rsvp-app', 'send', 'multi', 'personal', 'timezones']],
+    ['Etiquette and timing', ['etiquette', 'when', 'wording', 'paper']],
+    ['Prices and payment', ['cost', 'subscription', 'guests', 'pay', 'refund']],
     ['Timing and changes', ['time', 'change', 'online']],
     ['Privacy and help', ['privacy', 'contact']],
   ],
