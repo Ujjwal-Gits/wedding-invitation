@@ -40,6 +40,12 @@ const art = (name, sizes, { cls = '', alt = '', eager = false } = {}) => {
 // ───────── the page ─────────
 function page(ctx) {
   const { bi, esc, txt, on, AD, BS, mainEv, placeLine, config, c, imgTag, parts: P, neNum } = ctx;
+  // fresh flowers laid at the tray edges, never under words (trousseau styling)
+  const deco = (cls, file) => `<img class="zr-deco ${cls}" src="${A}${file}.webp" alt="" loading="lazy" decoding="async" draggable="false" aria-hidden="true" />`;
+  const DECO = {
+    events: deco('zr-deco--posy1', 'roses-sm') + deco('zr-deco--posy2', 'roses-sm') + deco('zr-deco--pet1', 'petals-a') + deco('zr-deco--pet2', 'petals-b'),
+    families: deco('zr-deco--pet3', 'petals-a') + deco('zr-deco--pet4', 'petals-b'),
+  };
   const tray = (key, id, n, total, body, label) => `
     <article class="zr-tray zr-tray--${key}" id="${id}" data-tray="${key}" aria-labelledby="${id}-h">
       <i class="zr-tray__edge" aria-hidden="true"></i>
@@ -48,6 +54,7 @@ function page(ctx) {
         ${label ? `<h2 class="zr-h" id="${id}-h">${bi(label)}</h2>` : ''}
         ${body}
       </div></div>
+      ${DECO[key] || ''}
     </article>`;
   const bsShort = BS.full.short?.en ? (/B\.S\./.test(BS.full.short.en) ? BS.full.short.en : `${BS.full.short.en} B.S.`) : BS.full.en;
   const time = mainEv ? { en: AD.time, ne: ctx.timeLabel(mainEv).ne } : null;
@@ -69,6 +76,7 @@ function page(ctx) {
   const coin = `
     <p class="zr-k">${bi(txt('date.kicker'))}</p>
     <div class="zr-coin">
+      <img class="zr-coin__garland" src="${A}garland.webp" alt="" loading="lazy" decoding="async" draggable="false" aria-hidden="true" />
       ${art('coin', '(max-width: 700px) 70vw, 340px', { cls: 'zr-coin__img' })}
       <div class="zr-coin__face"><div class="zr-fitin">
         <span class="zr-coin__wd">${bi(AD.wd)}</span>
@@ -185,6 +193,8 @@ function page(ctx) {
     <div class="zr-stage" id="zstage">
       <div class="zr-world" id="zworld">
         <i class="zr-ground" aria-hidden="true"></i>
+        <img class="zr-gfl zr-gfl--petals" src="${A}petals.webp" alt="" decoding="async" draggable="false" aria-hidden="true" />
+        <img class="zr-gfl zr-gfl--gajra" src="${A}gajra.webp" alt="" decoding="async" draggable="false" aria-hidden="true" />
         <i class="zr-wall zr-wall--back" aria-hidden="true"></i><i class="zr-wall zr-wall--l" aria-hidden="true"></i><i class="zr-wall zr-wall--r" aria-hidden="true"></i><i class="zr-floor" aria-hidden="true"></i>
         ${odhni}
         <div class="zr-trays" id="ztrays">${trays}</div>
@@ -265,8 +275,11 @@ function measure() {
   const kr = Math.min(1, (vh * 0.84) / (bot - top), (vw * 0.94) / W);
   const read = { th, k: kr, y: vh * 0.04 - (kr * (top + bot)) / 2 };
   const persp = P / (P - D / 2); // the front stands half a depth nearer the guest
-  const kg = Math.min(1, (vh * 0.42) / ((Hl + Hb) * persp), (vw * 0.88) / (W * persp));
-  const gate = { th: port ? 7 : 6, k: kg, y: vh * (port ? 0.03 : 0.04) - (kg * (Hb - Hl)) / 2 };
+  const kg = Math.min(1, (vh * (port ? 0.42 : 0.34)) / ((Hl + Hb) * persp), (vw * 0.88) / (W * persp));
+  const gate = { th: port ? 9 : 8, k: kg, y: vh * (port ? -0.01 : -0.02) - (kg * (Hb - Hl)) / 2 };
+  // the names sit just above the closed lid (screen px from the top)
+  const gTop = vh / 2 + gate.y - kg * persp * (Hl + Math.sin(rad(gate.th)) * D * 0.5);
+  document.body.style.setProperty('--zr-gtop', `${Math.round(gTop)}px`);
   Object.assign(G, { vw, vh, port, W, D, Hl, Hb, Win, Din, Tw, Td, Ow, Oh, P, read, gate, cz: 220, rim: Math.round(Math.min(Tw, Td) * 0.07) });
 }
 /** a camera-space point (px from the screen centre; z toward the guest) → the trunk's own coordinates for a world pose */
@@ -468,6 +481,7 @@ const T = {
     tl.to(S.lid, { a: 104, duration: 0.4, ease: 'sine.out', onUpdate: rLid }, 2.77);
     tl.to('.zr-room__warm', { opacity: 1, duration: 1.2, ease: 'power1.out' }, 1.9);
     tl.to('.zr-roses', { opacity: 1, duration: 0.6 }, 2.4);
+    tl.to('.zr-gfl', { opacity: 0, duration: 0.7, ease: 'power1.out' }, 2.05);
     // the camera looks into the trunk
     tl.to(S.world, { th: G.read.th, k: G.read.k, y: G.read.y, duration: 1.45, ease: 'power2.inOut', onUpdate: rWorld }, 2.05);
     // the odhni lifts out and turns to us; the names are worked in gold
@@ -492,6 +506,7 @@ const T = {
     rWorld(); rLid();
     for (const el of [E.odhni, ...E.trays]) { el.style.transform = ''; el.style.opacity = ''; el.style.visibility = ''; el.classList.add('is-up'); }
     gsap.set('.zr-roses, .zr-room__warm', { opacity: 1 });
+    gsap.set('.zr-gfl', { opacity: 0 });
     gsap.set('.zr-o-fade, .zr-rev, .zr-rev__in', { clearProps: 'all' });
     fitAll();
   },
@@ -564,6 +579,7 @@ function buildScroll(ctx, keep) {
   tl.fromTo(S.lid, { a: 104 }, { a: 0, duration: 1, ease: 'power2.inOut', onUpdate: rLid }, t);
   tl.fromTo(S.world, { th: G.read.th, k: G.read.k, y: G.read.y }, { th: G.gate.th, k: G.gate.k, y: G.gate.y, duration: 1.1, ease: 'power2.inOut', onUpdate: rWorld }, t + 0.15);
   tl.to('.zr-roses', { opacity: 0, duration: 0.4 }, t);
+  tl.fromTo('.zr-gfl', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power1.in' }, t + 0.7);
   t += 1.45;
   tl.addLabel('end', t);
   tl.to({}, { duration: 0.25 }, t);
