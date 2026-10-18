@@ -15,6 +15,9 @@ import { THEMES, FALLBACK_SITE, TIER_LABEL } from './themes.js';
 import { phoneStill } from './stills.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { artSrc, STYLE_LABEL, INTL_THEMES, INTL_BY_SLUG } from './intl-designs.js';
+import { TRUST_PAGES } from './seo-site.mjs';
+import { renderPartials } from './partials.mjs';
+import { lastmodOf, saveLastmods, sourceOf, writeSitemap, writeSitemapIndex } from './sitemaps.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const stills = JSON.parse(readFileSync(resolve(import.meta.dirname, 'stills.json'), 'utf8'));
@@ -69,22 +72,37 @@ for (const p of before) {
 }
 writeFileSync(MANIFEST, `${JSON.stringify(written, null, 1)}\n`);
 
-/* ---------------- sitemap.xml ---------------- */
+/* ---------------- the sitemaps (src/site/sitemaps.mjs): an index and one file per group ---------------- */
+// <lastmod> is the date each page's own content last changed (lastmod.json); private pages (/studio/, /pay/ ...) and
+// the gated design pages (/<theme>/) are never listed. The blog adds sitemap-blog.xml itself.
 const today = new Date().toISOString().slice(0, 10);
-const PRIORITY = { home: '1.0', 'intl/home': '1.0', designs: '0.9', 'intl/designs': '0.9', pricing: '0.9', 'intl/pricing': '0.9', 'land/np-wedding': '0.9', occasions: '0.8', 'intl/occasions': '0.8' };
-const urls = [];
-const add = (path, pr, imgs = []) => urls.push({ path, pr, imgs: imgs.filter(Boolean) });
-for (const id of Object.keys(PAGES)) add(PAGES[id].path, PRIORITY[id] || (id === 'credits' ? '0.2' : '0.7'), id === 'designs' ? THEMES.slice(0, 12).map((t) => still(t.slug).src) : []);
-for (const id of Object.keys(INTL_PAGES)) add(INTL_PAGES[id].path, PRIORITY[id] || '0.7', id === 'intl/designs' || id === 'intl/home' ? INTL_THEMES.map((d) => still(d.slug).src) : []);
-for (const [id, l] of Object.entries(LANDINGS)) add(l.path, PRIORITY[`land/${id}`] || '0.8', [heroImg(l), ...(Array.isArray(l.designs?.list) ? l.designs.list.map((s) => still(s).src) : [])]);
-for (const s of designPages.np) add(`/designs/${s}/`, '0.7', [still(s).src]);
-for (const s of designPages.intl) add(`/international/designs/${s}/`, '0.7', [still(s).src]);
-for (const id of Object.keys(LEGAL)) add(LEGAL[id].path, '0.3');
-writeFileSync(resolve(ROOT, 'public', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${urls.map((u) => `  <url><loc>${SITE_URL}${u.path}</loc><lastmod>${today}</lastmod><priority>${u.pr}</priority>${u.imgs.map((i) => `\n    <image:image><image:loc>${SITE_URL}${i}</image:loc></image:image>`).join('')}</url>`).join('\n')}
-</urlset>
-`);
+const groups = { 'sitemap-pages-np.xml': [], 'sitemap-pages-intl.xml': [], 'sitemap-designs.xml': [] };
+const images = [];
+const keep = new Set();
+const add = (file, path, imgs = [], sources = []) => {
+  if (keep.has(path)) return;
+  const shell = existsSync(sourceOf(path)) ? readFileSync(sourceOf(path), 'utf8') : '';
+  if (/<meta name="robots" content="[^"]*noindex/i.test(shell)) return; // never list a noindex page
+  keep.add(path);
+  const lastmod = lastmodOf(path, renderPartials, { sources });
+  groups[file].push({ path, lastmod });
+  const list = imgs.filter(Boolean);
+  if (list.length) images.push({ path, lastmod, imgs: list });
+};
+const NP = 'sitemap-pages-np.xml', INTL = 'sitemap-pages-intl.xml', DESIGNS = 'sitemap-designs.xml';
+for (const id of Object.keys(PAGES)) add(NP, PAGES[id].path, id === 'designs' ? THEMES.slice(0, 12).map((t) => still(t.slug).src) : [], ['src/site/content.mjs']);
+for (const [id, m] of Object.entries(TRUST_PAGES)) add(m.market === 'intl' ? INTL : NP, m.path, [], ['src/site/trust.mjs']);
+for (const [id, l] of Object.entries(LANDINGS)) if (l.market !== 'intl') add(NP, l.path, [heroImg(l), ...(Array.isArray(l.designs?.list) ? l.designs.list.map((s) => still(s).src) : [])], ['src/site/landings.mjs']);
+for (const id of Object.keys(LEGAL)) add(NP, LEGAL[id].path);
+for (const id of Object.keys(INTL_PAGES)) add(INTL, INTL_PAGES[id].path, id === 'intl/designs' || id === 'intl/home' ? INTL_THEMES.map((d) => still(d.slug).src) : [], ['src/site/intl-content.mjs']);
+for (const [id, l] of Object.entries(LANDINGS)) if (l.market === 'intl') add(INTL, l.path, [heroImg(l), ...(Array.isArray(l.designs?.list) ? l.designs.list.map((s) => still(s).src) : [])], ['src/site/landings.mjs']);
+for (const s of designPages.np) add(DESIGNS, `/designs/${s}/`, [still(s).src]);
+for (const s of designPages.intl) add(DESIGNS, `/international/designs/${s}/`, [still(s).src]);
+for (const [file, entries] of Object.entries(groups)) writeSitemap(file, entries);
+writeSitemap('sitemap-images.xml', images, { images: true });
+saveLastmods(keep);
+const indexed = writeSitemapIndex();
+const urls = [...keep];
 
 /* ---------------- llms.txt and llms-full.txt ---------------- */
 const strip = (s) => String(s).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
@@ -92,8 +110,8 @@ const npPlans = FALLBACK_SITE.plans;
 const iPlans = intlPlans(FALLBACK_SITE.plans);
 const rs = (n) => `Rs ${new Intl.NumberFormat('en-IN').format(n)}`;
 const line = (id) => { const m = pageMeta(id); return `- [${m.title.replace(/ \| Nimtto$/, '')}](${m.url}): ${m.desc}`; };
-const npIds = [...Object.keys(PAGES).filter((k) => k !== 'credits'), ...Object.keys(LANDINGS).filter((k) => LANDINGS[k].market === 'np').map((k) => `land/${k}`)];
-const iIds = [...Object.keys(INTL_PAGES), ...Object.keys(LANDINGS).filter((k) => LANDINGS[k].market === 'intl').map((k) => `land/${k}`)];
+const npIds = [...Object.keys(PAGES).filter((k) => k !== 'credits'), 'about', ...Object.keys(LANDINGS).filter((k) => LANDINGS[k].market === 'np').map((k) => `land/${k}`)];
+const iIds = [...Object.keys(INTL_PAGES), 'intl/about', ...Object.keys(LANDINGS).filter((k) => LANDINGS[k].market === 'intl').map((k) => `land/${k}`)];
 const facts = `## Key facts
 - Website: ${SITE_URL} (Nepal, prices in rupees) and ${SITE_URL}/international/ (worldwide, prices in US dollars)
 - What it is: an animated invitation that opens like a real card, with an event website (schedule, maps, travel notes, story, photos, music) and RSVP, shared as one link. A real designer sets it up with the customer; guests need no app or account.
@@ -161,4 +179,4 @@ Occasions designed on the Custom plan: Nepal: ${OCCASIONS.filter((o) => !o.desig
 `;
 writeFileSync(resolve(ROOT, 'public', 'llms-full.txt'), `# Nimtto: the full text\n\n> Every public page of nimtto.com (Nepal) and nimtto.com/international/ (worldwide), in plain text for AI engines. Updated ${today}.\n\n${facts}\n${designsText}\n${sections.join('\n')}`);
 
-console.log(`landing pages: ${written.length}; sitemap: ${urls.length} urls; llms.txt and llms-full.txt written`);
+console.log(`landing pages: ${written.length}; sitemaps: ${urls.length} urls in ${indexed.join(', ')}; llms.txt and llms-full.txt written`);

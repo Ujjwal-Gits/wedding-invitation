@@ -1,66 +1,52 @@
-# Nimtto: online invitations for Nepali weddings and every occasion
+# Nimtto: online invitations for Nepali weddings and every occasion.
+# Public pages, CSS, JS and images are open to search engines and AI search. Private areas are closed to every
+# agent: the studio and dashboards, the API, payment pages, guests' invitation links and previews.
+# (Private responses also send X-Robots-Tag: noindex, so a link found elsewhere is never indexed either.)
+
 User-agent: *
-Allow: /
 Disallow: /api/
 Disallow: /studio/
 Disallow: /pay/
 Disallow: /clients/
 Disallow: /i/
 Disallow: /preview/
+Disallow: /go$
+Allow: /
 
-# Answer engines and AI search are welcome to read and cite the public pages
+# Answer engines and AI search: welcome to read and cite the public pages, under the same rules.
 User-agent: GPTBot
-Allow: /
-Disallow: /api/
-Disallow: /studio/
-Disallow: /pay/
-Disallow: /clients/
-Disallow: /i/
-Disallow: /preview/
-
 User-agent: OAI-SearchBot
-Allow: /
-Disallow: /api/
-Disallow: /studio/
-Disallow: /pay/
-Disallow: /clients/
-Disallow: /i/
-Disallow: /preview/
-
 User-agent: ChatGPT-User
-Allow: /
-Disallow: /api/
-Disallow: /studio/
-Disallow: /pay/
-Disallow: /clients/
-Disallow: /i/
-Disallow: /preview/
-
 User-agent: ClaudeBot
-Allow: /
-Disallow: /api/
-Disallow: /studio/
-Disallow: /pay/
-Disallow: /clients/
-Disallow: /i/
-Disallow: /preview/
-
+User-agent: Claude-SearchBot
+User-agent: Claude-User
 User-agent: PerplexityBot
-Allow: /
-Disallow: /api/
-Disallow: /studio/
-Disallow: /pay/
-Disallow: /clients/
-Disallow: /i/
-Disallow: /preview/
-
+User-agent: Perplexity-User
 User-agent: Google-Extended
-Allow: /
+User-agent: Applebot-Extended
 Disallow: /api/
 Disallow: /studio/
 Disallow: /pay/
 Disallow: /clients/
 Disallow: /i/
 Disallow: /preview/
+Disallow: /go$
+Allow: /
+
+# Link previews in chat apps and social posts (they never index pages): they may read a guest link's preview card
+# (/i/<link>), which carries its own noindex, so shared invitations show a picture and a title.
+User-agent: Twitterbot
+User-agent: facebookexternalhit
+User-agent: LinkedInBot
+User-agent: Slackbot
+User-agent: Discordbot
+User-agent: TelegramBot
+User-agent: WhatsApp
+Disallow: /api/
+Disallow: /studio/
+Disallow: /pay/
+Disallow: /clients/
+Disallow: /preview/
+Allow: /
 
 Sitemap: https://nimtto.com/sitemap.xml
