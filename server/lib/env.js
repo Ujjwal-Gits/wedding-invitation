@@ -37,7 +37,8 @@ export const INV_DIR = resolve(DATA_DIR, 'invitations');
 export const RSVP_DIR = resolve(DATA_DIR, 'rsvps');
 export const TRASH_DIR = resolve(DATA_DIR, 'trash');
 export const UPLOAD_DIR = resolve(DATA_ROOT, 'uploads');
-export const DIST_DIR = resolve(ROOT_DIR, 'dist');
+// DIST_DIR (optional): another built site to serve (tests use a small fixture; production uses ../dist).
+export const DIST_DIR = env.DIST_DIR ? resolve(env.DIST_DIR) : resolve(ROOT_DIR, 'dist');
 // Studio sessions (hashed ids, CSRF tokens). Lives in data/, which is never served and is gitignored.
 export const SESSIONS_FILE = resolve(DATA_DIR, 'sessions.json');
 

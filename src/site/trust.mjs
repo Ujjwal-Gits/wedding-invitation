@@ -58,8 +58,8 @@ function about(market = 'np') {
   const c = COPY[market === 'intl' ? 'intl' : 'np'];
   return `<header class="wrap pagehead">
       <p class="eyebrow">${c.eyebrow}</p>
-      <h1 class="display">${c.h1}</h1>
-      <p class="lede" data-speak>${c.lede}</p>
+      <h1 class="display" data-cms="h1">${c.h1}</h1>
+      <p class="lede" data-speak data-cms="lede">${c.lede}</p>
     </header>
 
     <section class="wrap about-split" aria-labelledby="what-h">

@@ -415,6 +415,23 @@ at most once per person and invitation per 10 minutes. Kept in SQLite (`audit`, 
 |---|---|---|
 | `GET /admin/audit` (super admins) | `actor=owner\|staff:<id>`, `q=<text>` (what, label, target, email, IP), `page` | `{ total, page, pageSize: 50, rows, actors: [{ actor, email }] }`, newest first |
 
+## Content (permission `content`)
+
+The website's words without a rebuild (server/lib/content.js; the studio's Content page). The built pages are the
+defaults: the server reads each page's title, description, H1 (`data-cms="h1"`), intro (`data-cms="lede"`) and FAQ
+(`<!--cms:faq-->` region) from dist/, and the `content` document stores only what changed. In production the server
+writes the edits into each page at request time (cached per page and revision; untouched pages are served as built).
+Text is escaped; answers, intros and footer lines allow only `<b> <strong> <i> <em> <a href>` (https, mailto, tel or
+`/path`), headings only `<em>`. FAQ HTML and its FAQPage JSON-LD are always rendered from the same list.
+
+| Route | Body | Response |
+|---|---|---|
+| `GET /admin/content` | | `{ ver, updatedAt, updatedBy, built, today, pages: [{ path, url, id, site, group, label, defaults, base, override }], sites: { np, intl }, limits, social, groups }` |
+| `PUT /admin/content/page` | `{ ver, path, title, desc, h1, lede, faq: [{ q, a, group? }] \| null }`; empty, null or built words = default | `{ ver, page }`; 404 unknown path, 400 `errors`, 409 `code: 'conflict'` when `ver` is stale |
+| `PUT /admin/content/site/:market` (`np`, `intl`) | `{ ver, contact: { email, phone, whatsapp, address }, hours, social: { facebook, instagram, tiktok, youtube, x, linkedin, pinterest }, footer: { blurb, payLine }, trust: { line, policy }, announce: { on, text, link, linkText, from, to } }` | `{ ver, site }`; the contact lines are saved in the site settings (validated as `PUT /site`) |
+
+Dates are Kathmandu days, both ends included. Saves are audited and pinged to IndexNow (lib/indexnow.js).
+
 ## Admin only
 
 Each route below needs an area from "Team and permissions".
