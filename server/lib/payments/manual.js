@@ -14,7 +14,7 @@ import sharp from 'sharp';
 import { IS_PROD, DIST_DIR, ROOT_DIR, UPLOAD_DIR } from '../env.js';
 import { getDoc, putDoc } from '../store.js';
 import { rateLimiter, originAllowed, clientIp } from '../security.js';
-import { readSite, publicMethods, setMethodDescriber, QR_URL_RE } from '../site.js';
+import { readSite, publicMethods, setMethodDescriber, marketView, QR_URL_RE } from '../site.js';
 import { readMultipart, receiving, withSlot, looksLikeHeic } from '../uploads.js';
 import {
   orderByRefAndToken, orderForCustomer, getOrder, mutateOrder, planView, whatsappFor, historyAdd, clean, PROOF_DIR, ID_RE,
@@ -93,6 +93,12 @@ setMethodDescriber(async (methods) => Promise.all(methods.map(async (m) => ({ ..
 const amountIn = (order, currency) => (currency === 'USD' ? order.amount?.usd : order.amount?.npr) ?? null;
 const remarkOf = (order, site) => fillRemark(site.payRemark, { ref: order.ref, plan: order.planName, name: order.name });
 const statusOf = (o) => o.pay?.status || (o.payment?.status === 'paid' ? 'confirmed' : 'awaiting_payment');
+/**
+ * A dollar order (the international site, or an order priced only in dollars) is paid online by card or PayPal,
+ * never by the Nepal QR codes and a screenshot. While PayPal is off, the customer is asked to message us instead.
+ */
+export const isUsdOrder = (o) => (orderMarket(o) === 'intl' ? o.amount?.usd != null : o.amount?.npr == null && o.amount?.usd != null);
+const USD_NO_QR = 'This order is paid by card or PayPal. Please message us on WhatsApp or email and we will help you pay.';
 
 /** The PayPal payment as the customer's receipt: status, transaction number, amount, when, test or real. */
 function paypalReceipt(o) {
@@ -109,7 +115,8 @@ export async function payInfo(req, res) {
   const site = await readSite();
   const remark = remarkOf(o, site);
   const tq = `?t=${typeof req.query.t === 'string' ? encodeURIComponent(req.query.t) : ''}`; // empty t: the customer's session
-  const paymentMethods = await Promise.all(publicMethods(site).map(async (pm) => {
+  const usd = isUsdOrder(o);
+  const paymentMethods = usd ? [] : await Promise.all(publicMethods(site).map(async (pm) => {
     const m = site.paymentMethods.find((x) => x.id === pm.id);
     const amount = amountIn(o, m.currency);
     const base = await payloadFor(m.qr);
@@ -119,14 +126,18 @@ export async function payInfo(req, res) {
   }));
   const status = statusOf(o);
   const proofs = (o.pay?.proofs || []).map((p) => ({ n: p.n, at: p.at, method: p.method, amountPaid: p.amountPaid }));
+  const contact = marketView(site, orderMarket(o)).contact;
   res.json({
     ref: o.ref, status, reason: status === 'rejected' ? o.pay?.reason || null : null,
     plan: planView(o), amount: o.amount || { npr: null, usd: null }, name: o.name, market: orderMarket(o), ...(o.enquiry ? { enquiry: true } : {}),
     ...(o.weddingDate ? { weddingDate: o.weddingDate } : {}), createdAt: o.at,
     proofs, maxProofs: MAX_PROOFS,
-    canUpload: !['confirmed', 'refunded', 'comped'].includes(status) && proofs.length < MAX_PROOFS, // comped: free access, nothing to pay
+    // comped: free access, nothing to pay; a dollar order never sends a screenshot (card or PayPal only)
+    canUpload: !usd && !['confirmed', 'refunded', 'comped'].includes(status) && proofs.length < MAX_PROOFS,
+    currency: usd ? 'USD' : 'NPR',
     remark, paymentMethods,
     paypalCheckout: { enabled: Boolean(payments.config.enabled && o.kind === 'order' && o.amount?.usd && status !== 'comped') },
+    contact: { email: contact?.email || '', whatsapp: String(contact?.whatsapp || contact?.phone || '').replace(/\D/g, '') },
     paypal: paypalReceipt(o),
     whatsapp: whatsappFor(o, site),
   });
@@ -223,6 +234,7 @@ export async function submitProof(req, res) {
   const status = statusOf(o);
   if (status === 'confirmed' || status === 'refunded') return res.status(409).json({ error: 'This order is already paid. Thank you!' });
   if (status === 'comped') return res.status(409).json({ error: 'There is nothing to pay for this order.' });
+  if (isUsdOrder(o)) return res.status(409).json({ error: USD_NO_QR, code: 'pay_online' });
   if ((o.pay?.proofs || []).length >= MAX_PROOFS) return res.status(409).json({ error: 'We already have 3 screenshots for this order. Please message us on WhatsApp.' });
 
   let parsed;

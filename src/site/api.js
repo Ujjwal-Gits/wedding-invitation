@@ -215,7 +215,12 @@ export function normPay(d, ref) {
     remark: str(d.remark ?? order.remark, 60),
     methods,
     proof: proof ? { method: str(proof.method, 32), at: str(proof.at, 40), amountPaid: str(String(proof.amountPaid ?? ''), 20) } : null,
-    contact: isObj(d.contact) ? d.contact : null,
+    // 'USD': paid by card or PayPal only, never by QR and a screenshot (an international or dollar-only order)
+    currency: d.currency === 'USD' ? 'USD' : 'NPR',
+    contact: isObj(d.contact) ? {
+      email: /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}$/.test(String(d.contact.email || '')) ? d.contact.email : '',
+      whatsapp: /^\d{6,15}$/.test(String(d.contact.whatsapp || '')) ? d.contact.whatsapp : '',
+    } : null,
     paypalCheckout: d.paypalCheckout?.enabled === true,
     paypal: isObj(d.paypal) ? {
       status: str(d.paypal.status, 30), transactionId: /^[A-Z0-9]{8,30}$/.test(String(d.paypal.transactionId || '')) ? d.paypal.transactionId : '',
