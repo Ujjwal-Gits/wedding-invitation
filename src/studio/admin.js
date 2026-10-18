@@ -14,6 +14,8 @@ import { financePage, giveFreeAccess, undoFreeAccess, refundDialog, refundsBlock
 import { teamPage } from './admin-team.js';
 import { auditPage } from './admin-audit.js';
 import { contentPage } from './admin-content.js';
+import { setBrandLogo } from './brand.js';
+import { tileUrl, logoDataUrl, OP_DEFAULT } from '../core/showcase-tile.js';
 import { can, canAny, canSomething, roleName } from './perms.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
@@ -1184,6 +1186,7 @@ const DEFAULT_SITE = () => ({
   themeMarkets: {},
   themeStyles: {},
   themeOrder: { np: [], intl: [] },
+  branding: { wmOpacity: OP_DEFAULT, logos: { watermark: '', site: '', intl: '' } },
 });
 // Design tiers (docs/API.md "Design tiers"): the cheapest plan that includes a design.
 const TIER_OPTS = [['saral', 'Saral'], ['shubha', 'Shubha'], ['shahi', 'Shahi']];
@@ -1314,7 +1317,7 @@ function website(ctx) {
       if (err) { toast(err, 'error'); [...root.querySelectorAll('input[id^="pl-name-"]')].find((x) => !x.value.trim())?.focus(); return; }
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
-      try { const out = await putSite(site); Object.assign(site, out); dirty = false; toast('Website updated', 'success'); draw(); } catch (ex) { toast(ex.status === 404 ? 'Saving is not available yet.' : ex.message, 'error'); saveBtn.disabled = false; }
+      try { const out = await putSite(site); Object.assign(site, out); dirty = false; setBrandLogo(site.branding?.logos?.site); toast('Website updated', 'success'); draw(); } catch (ex) { toast(ex.status === 404 ? 'Saving is not available yet.' : ex.message, 'error'); saveBtn.disabled = false; }
       saveBtn.textContent = 'Save changes';
     } }, 'Save changes');
     const bar = h('div.savebar', { hidden: true, role: 'region', 'aria-label': 'Unsaved changes' },
@@ -1474,6 +1477,61 @@ function website(ctx) {
           h('div', h('dt', 'Featured designs'), h('dd', `${(site.featuredThemesIntl || []).length} on International · ${(site.featuredThemes || []).length} on Nepal`,
             can('themes') ? [' · ', h('a', { href: '#/themes?m=intl' }, 'Arrange them in Themes')] : null))));
     };
+    // Branding: the preview watermark's strength (with a live sample) and the logos (lib/branding.js). A logo is
+    // uploaded at once and used after Save, like the QR codes above.
+    const LOGO_SLOTS = [
+      ['site', 'Website logo', 'Header and footer of both websites, the studio and the preview badge.', '/site/brand/nimtto-logo.svg'],
+      ['intl', 'International logo', 'Optional. The International website’s header and footer; empty uses the website logo (or the sage Nimtto logo).', '/site/brand/nimtto-logo-intl.svg'],
+      ['watermark', 'Watermark logo', 'Tiled over every design preview. Empty uses the traced Nimtto logo.', ''],
+    ];
+    const brandingSetting = () => {
+      site.branding = { wmOpacity: OP_DEFAULT, ...(site.branding || {}), logos: { watermark: '', site: '', intl: '', ...(site.branding?.logos || {}) } };
+      const b = site.branding;
+      let wmImg = '';
+      const sample = h('div.bwm__layer', { 'aria-hidden': 'true' });
+      const paint = () => {
+        const u = tileUrl({ op: b.wmOpacity, img: wmImg });
+        sample.style.backgroundImage = `${u}, ${u}`;
+      };
+      if (b.logos.watermark) logoDataUrl(b.logos.watermark).then((d) => { wmImg = d; paint(); }).catch(() => {});
+      paint();
+      const out = h('output.bwm__val', { for: 'wm-op' }, `${b.wmOpacity}%`);
+      const range = h('input.bwm__range', { id: 'wm-op', type: 'range', min: 0, max: 100, step: 1, value: b.wmOpacity,
+        oninput: (e) => { b.wmOpacity = Number(e.target.value); out.textContent = `${b.wmOpacity}%`; paint(); touch(); } });
+      const logoRow = ([k, label, help, fallback]) => {
+        const cur = b.logos[k];
+        const input = h('input', { type: 'file', accept: 'image/svg+xml,image/png,image/webp', hidden: true, onchange: async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          if (f.size > 1024 * 1024) { toast('That logo is larger than 1 MB.', 'error'); return; }
+          btn.disabled = true;
+          btn.classList.add('is-busy');
+          try {
+            const fd = new FormData();
+            fd.append('file', f);
+            const res = await postForm('/admin/brand/logo', fd);
+            b.logos[k] = res.url;
+            touch(); draw();
+            toast(res.note ? `Logo uploaded. ${res.note} Save to use it.` : 'Logo uploaded. Save to use it.', 'success');
+          } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.classList.remove('is-busy'); }
+        } });
+        const shown = cur || fallback;
+        const btn = h('button.btn.btn--sm', { type: 'button', onclick: () => input.click() }, icon('upload', 15), cur ? 'Replace' : 'Upload');
+        return h('li.blogo',
+          h('div.blogo__img', shown ? h('img', { src: shown, alt: '', loading: 'lazy', decoding: 'async' }) : h('span.hint', 'Traced logo')),
+          h('div.blogo__main', h('p.blogo__t', label, cur ? null : h('small.hint', ' · default')), h('p.hint', help)),
+          h('div.blogo__acts', btn, input,
+            cur ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => { b.logos[k] = ''; touch(); draw(); } }, 'Use default') : null));
+      };
+      return setting('Branding', 'The logos on the websites and in the studio, and how strong the watermark is on the public design previews. SVG, PNG or WebP, up to 1 MB; SVG files are cleaned of anything but drawing.',
+        h('div.field',
+          h('div.bwm__head', h('label.label', { for: 'wm-op' }, 'Watermark opacity'), out),
+          range,
+          h('p.hint', `${OP_DEFAULT}% is the standard look. Lower is easier to see the design through; higher is harder to copy.`),
+          h('div.bwm', h('div.bwm__light', h('span', 'Light design')), h('div.bwm__dark', h('span', 'Dark design')), sample)),
+        h('ul.blogos', LOGO_SLOTS.map(logoRow)));
+    };
     const draw = () => {
       fill(root,
         site.missing ? h('div.banner', icon('info', 16), h('span', 'The website settings are not available on the server yet. You can prepare them; saving will work once it is.')) : null,
@@ -1495,6 +1553,7 @@ function website(ctx) {
           fieldIn('hero-title', 'Headline', site.hero?.title, (v) => { site.hero = { ...site.hero, title: v }; }, { max: 120 }),
           fieldIn('hero-sub', 'Line under it', site.hero?.subtitle, (v) => { site.hero = { ...site.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 })),
         intlSetting(),
+        brandingSetting(),
         bar);
       saveBtn.disabled = !dirty;
       bar.hidden = !dirty;

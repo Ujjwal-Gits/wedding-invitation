@@ -20,6 +20,7 @@ import { promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { getDoc, putDoc, withLock } from './store.js';
 import { readSite, marketView, saveContact } from './site.js';
+import { publicBranding } from './branding.js';
 import { entity, sendEntity } from './http-cache.js';
 import { preloadLinks } from './static.js';
 import { notifyChanged } from './indexnow.js';
@@ -152,6 +153,8 @@ export function viewFor(page, doc, site, today = todayKey()) {
     trust: trustHtml(cs.trust),
     announce: announceActive(cs.announce, today) ? announceHtml(cs.announce) : '',
     org: { np, intl, sameAs, address: np.address || '' },
+    // Website → Branding: the header and footer logo ('' keeps the built one: crimson on Nepal, sage on International)
+    logo: publicBranding(site.branding).logos[market === 'intl' ? 'intl' : 'site'],
   };
 }
 

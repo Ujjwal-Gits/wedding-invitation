@@ -59,7 +59,7 @@ function stage(l) {
   if (h.design) {
     const t = BY_SLUG[h.design];
     return `<div class="dp__stage" style="--tint:${CATEGORIES[t.cat].tint}">${phone(h.design, { sizes: '(max-width: 899px) 58vw, 300px', alt: `The ${t.name} design on a phone: ${t.alt}`, eager: true, cls: 'dp__phone' })}
-        <a class="dp__peek btn btn--ghost btn--sm" href="/${h.design}/?showcase=1" data-preview="${h.design}">${ICON.eye}See it move</a></div>`;
+        <a class="dp__peek btn btn--ghost btn--sm" href="/${h.design}/?showcase=1${l.market === 'intl' ? '&amp;m=intl' : ''}" data-preview="${h.design}">${ICON.eye}See it move</a></div>`;
   }
   if (h.art) {
     const d = ARTWORK.find((x) => x.id === h.art);

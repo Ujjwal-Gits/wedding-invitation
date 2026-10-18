@@ -5,11 +5,15 @@
 //   <!--cms:faq-->...<!--/cms:faq-->  the questions AND their FAQPage JSON-LD, always re-rendered together
 //   data-contact="wa|phone|email"     contact links (href) and their *-text spans, as src/site/common.js applyContact
 //   data-cms="hours" | "foot-blurb" | "foot-pay", slots announce / foot-extra / trust, the Organization JSON-LD (org)
+//   <img src="/site/brand/nimtto-logo(-intl).svg">  the header and footer logo (Website → Branding)
 // Everything written here is escaped text or the safe subset from lib/safe-html.js. No inline script or style is
 // added (JSON-LD blocks are data, never executed), so the CSP is unchanged.
 import { escText, escAttr, cleanInline, inlineText, htmlToModel, decodeEntities, INLINE, HEADING, safeHref } from './safe-html.js';
 
 const NONE = new Set();
+// the built header and footer logos, and what may replace them (an upload: lib/branding.js BRAND_URL_RE)
+const LOGO_IMG_RE = /(<img\b[^>]*?\bsrc=")\/site\/brand\/nimtto-logo(?:-intl)?\.svg("[^>]*>)/g;
+const LOGO_URL_RE = /^\/uploads\/_site\/brand\/[A-Za-z0-9_-]{24}\.(?:svg|png|webp)$/;
 export const jsonLd = (o, attrs = '') => `<script type="application/ld+json"${attrs}>${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
 
 const slotRe = (name) => new RegExp(`(<!--cms:${name}-->)([\\s\\S]*?)(<!--/cms:${name}-->)`);
@@ -175,6 +179,7 @@ export function trustHtml({ line = '', policy = '' } = {}) {
  *   footBlurb, footPay the editor's text (inline subset)
  *   footExtra, trust, announce  ready HTML from the helpers above ('' empties the slot)
  *   org                { np, intl, sameAs, address } for the Organization JSON-LD
+ *   logo               an uploaded logo's URL (lib/branding.js BRAND_URL_RE) for the header and footer images
  */
 export function applyContent(html, v = {}) {
   let out = html;
@@ -204,5 +209,6 @@ export function applyContent(html, v = {}) {
   if (v.trust != null) out = setSlot(out, 'trust', v.trust);
   if (v.announce != null) out = setSlot(out, 'announce', v.announce);
   if (v.org) out = setLd(out, 'org', (o) => updateOrg(o, v.org));
+  if (v.logo && LOGO_URL_RE.test(v.logo)) out = out.replace(LOGO_IMG_RE, (m, a, b) => `${a}${escAttr(v.logo)}${b.replace(/^"/, '" data-brand="custom"')}`);
   return out;
 }

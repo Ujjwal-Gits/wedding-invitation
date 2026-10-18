@@ -47,7 +47,7 @@ function header(arg = '') {
   return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
     <div class="wrap nav__in">
-      <a class="nav__logo" href="${INTL_BASE}"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto International home" /></a>
+      <a class="nav__logo" href="${INTL_BASE}"><img src="/site/brand/nimtto-logo-intl.svg" width="146" height="34" alt="Nimtto International home" /></a>
       <nav class="nav__links" aria-label="Main">${links}</nav>
       <div class="nav__end">
         ${market('mkt--bar', nepal)}
@@ -76,7 +76,7 @@ function footer() {
     <div class="wrap">
       <div class="foot__top">
         <div class="foot__brand">
-          <img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
+          <img src="/site/brand/nimtto-logo-intl.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
           <p data-cms="foot-blurb">Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>${cmsSlot('foot-extra')}
         </div>
         ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'All designs'], [INTL_PAGES['intl/occasions'].path, 'All occasions'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
@@ -143,7 +143,7 @@ export function designCard(d, i = 0) {
       <p class="dcard__desc">${esc(d.line)}</p>
       <div class="dcard__acts">
         <a class="btn btn--accent btn--sm" href="${INTL_BASE}pricing/?design=${esc(d.slug)}#plans" data-order data-design="${esc(d.slug)}" aria-label="Order ${esc(d.name)}">Order</a>
-        <a class="btn btn--ghost btn--sm" href="/${esc(d.slug)}/?showcase=1" data-preview="${esc(d.slug)}" aria-label="Preview ${esc(d.name)}">${ICON_EYE}Preview</a>
+        <a class="btn btn--ghost btn--sm" href="/${esc(d.slug)}/?showcase=1&amp;m=intl" data-preview="${esc(d.slug)}" aria-label="Preview ${esc(d.name)}">${ICON_EYE}Preview</a>
       </div>
     </div>
   </li>`;

@@ -3,30 +3,38 @@
 // Dev (Vite): ?showcase alone turns it on. data.js imports this module first, so it runs before any theme code:
 // it drops every query key except showcase and lang (no ?id, no studio ?preview), so only the bundled demo shows.
 //
+// ?m=intl (the International website's preview links): sage colours, its logo and its order and close links.
+// Branding (Studio → Website → Branding): the server writes data-sc-op (watermark opacity, 0-100), data-sc-wm (an
+// uploaded watermark logo) and data-sc-logo (the badge logo) on <html>; dev reads the same from GET /api/site.
+//
 // Honest limits: the web cannot stop screenshots or screen recording. The tiled watermark, copy blocking and the
 // blank card on focus loss, PrintScreen and print are deterrents only.
 
-import TILE_SVG from './showcase-tile.svg?raw';
+import { tileUrl, opOf, logoDataUrl, BRAND_URL } from './showcase-tile.js';
 
 const root = document.documentElement;
 const params = new URLSearchParams(location.search);
 export const SHOWCASE = root.dataset.showcase === '1' || params.has('showcase');
 
 const SLUG_RE = /^[a-z][a-z0-9-]{1,30}$/;
+const realFetch = window.fetch.bind(window); // kept before section 7 wraps it
 const MSG = 'This is a preview. Order this design to get your own invitation.';
 const MSG_NE = 'यो नमुना मात्र हो। आफ्नै निम्तोका लागि यो डिजाइन अर्डर गर्नुहोस्।';
+const INTL = params.get('m') === 'intl' || params.get('market') === 'intl' || root.dataset.scM === 'intl'; // market=intl: the blog's design cards
 
 if (SHOWCASE) start();
 
 function start() {
   // 1) demo data only: rewrite the URL before data.js (and the theme) read it
   const lang = params.get('lang');
-  const q = `?showcase=1${lang === 'ne' || lang === 'en' ? `&lang=${lang}` : ''}`;
+  const q = `?showcase=1${lang === 'ne' || lang === 'en' ? `&lang=${lang}` : ''}${INTL ? '&m=intl' : ''}`;
   if (location.search !== q) history.replaceState(history.state, '', `${location.pathname}${q}${location.hash}`);
 
   const theme = SLUG_RE.test(location.pathname.split('/')[1] || '') ? location.pathname.split('/')[1] : '';
   const inFrame = (() => { try { return window.parent !== window; } catch { return true; } })();
-  const orderUrl = `/?design=${encodeURIComponent(theme)}#order`;
+  const orderUrl = INTL ? `/international/pricing/?design=${encodeURIComponent(theme)}#plans` : `/?design=${encodeURIComponent(theme)}#order`;
+  const BUNDLED_LOGO = INTL ? '/site/brand/nimtto-logo-intl.svg' : '/site/brand/nimtto-logo.svg';
+  const logoUrl = () => (BRAND_URL.test(root.dataset.scLogo || '') ? root.dataset.scLogo : BUNDLED_LOGO);
 
   // 2) the stylesheet and the mark (the server adds both in production; dev adds them here)
   const ensureSheet = () => {
@@ -34,16 +42,19 @@ function start() {
       document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: '/showcase.css' }));
     }
     if (root.dataset.showcase !== '1') root.dataset.showcase = '1';
+    if (INTL && root.dataset.scM !== 'intl') root.dataset.scM = 'intl';
   };
   ensureSheet();
 
   // 3) the watermark: the Nimtto logo (the owner's artwork, traced) tiled diagonally above everything, the gate
-  //    included, never catching a tap. White with a thin plum outline, so it reads on light and dark designs alike.
-  const TILE_URL = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(TILE_SVG)}")`;
+  //    included, never catching a tap. White with a thin plum outline (deep sage on International), so it reads on
+  //    light and dark designs alike. Its strength is the Branding opacity (60 % = the original look); an uploaded
+  //    watermark logo takes the traced logo's place.
+  const tileOf = (op, img = '') => { const u = tileUrl({ op, img, intl: INTL }); return `${u}, ${u}`; };
   const WM_STYLE = {
     position: 'fixed', inset: '0', 'z-index': '2147483646', 'pointer-events': 'none', display: 'block',
-    visibility: 'visible', opacity: '1', 'background-image': `${TILE_URL}, ${TILE_URL}`, 'background-repeat': 'repeat',
-    'background-size': '420px 260px', 'background-position': '0 0, 210px 130px', filter: 'drop-shadow(0 1px 2px rgba(42,26,29,0.25))', transform: 'none',
+    visibility: 'visible', opacity: '1', 'background-image': tileOf(root.dataset.scOp), 'background-repeat': 'repeat',
+    'background-size': '420px 260px', 'background-position': '0 0, 210px 130px', filter: `drop-shadow(0 1px 2px ${INTL ? 'rgba(31,58,42,0.25)' : 'rgba(42,26,29,0.25)'})`, transform: 'none',
     'clip-path': 'none', margin: '0', padding: '0', border: '0', width: 'auto', height: 'auto',
   };
   const makeWm = () => {
@@ -55,7 +66,7 @@ function start() {
     return n;
   };
   let wm = makeWm();
-  const WM_CSS = wm.style.cssText; // as the browser normalised it
+  let WM_CSS = wm.style.cssText; // as the browser normalised it
   const wmOk = (n) => {
     if (!n.isConnected || n.hidden || n.childNodes.length || n.style.cssText !== WM_CSS) return false;
     const cs = getComputedStyle(n);
@@ -67,13 +78,13 @@ function start() {
   badge.className = 'nimtto-sc-badge';
   badge.setAttribute('role', 'complementary');
   badge.setAttribute('aria-label', 'Nimtto preview');
-  const mark = Object.assign(document.createElement('img'), { className: 'nimtto-sc-badge__mark', src: '/site/brand/nimtto-logo.svg', alt: 'Nimtto', width: 81, height: 19, draggable: false });
+  const mark = Object.assign(document.createElement('img'), { className: 'nimtto-sc-badge__mark', src: logoUrl(), alt: 'Nimtto', width: 81, height: 19, draggable: false });
   const tag = Object.assign(document.createElement('span'), { className: 'nimtto-sc-badge__tag', textContent: 'Preview' });
   const order = Object.assign(document.createElement('a'), { className: 'nimtto-sc-badge__order', href: orderUrl, target: '_top', textContent: 'Order this design' });
   // in the website's phone frame the page around it has the order button: the badge is only the mark there
   if (inFrame) { badge.classList.add('nimtto-sc-badge--framed'); badge.append(mark, tag); } else badge.append(mark, tag, order);
   if (!inFrame) {
-    const close = Object.assign(document.createElement('a'), { className: 'nimtto-sc-badge__close', href: '/#designs', target: '_top' });
+    const close = Object.assign(document.createElement('a'), { className: 'nimtto-sc-badge__close', href: INTL ? '/international/designs/' : '/#designs', target: '_top' });
     close.setAttribute('aria-label', 'Close the preview');
     close.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     close.addEventListener('click', (e) => {
@@ -100,9 +111,10 @@ function start() {
   const veil = document.createElement('div');
   veil.className = 'nimtto-sc-veil';
   veil.setAttribute('aria-hidden', 'true');
-  veil.innerHTML = '<div class="nimtto-sc-veil__card"><img class="nimtto-sc-veil__mark" src="/site/brand/nimtto-logo.svg" alt="Nimtto" width="162" height="38" draggable="false">'
+  veil.innerHTML = '<div class="nimtto-sc-veil__card"><img class="nimtto-sc-veil__mark" alt="Nimtto" width="162" height="38" draggable="false">'
     + '<p class="nimtto-sc-veil__ne" lang="ne">निम्तो</p><p class="nimtto-sc-veil__t">Preview paused</p>'
     + '<p class="nimtto-sc-veil__s">Tap to continue · nimtto.com</p></div>';
+  veil.querySelector('img').src = logoUrl();
   let veilTimer = 0;
   const showVeil = (ms = 0) => {
     veil.style.setProperty('display', 'grid', 'important');
@@ -138,6 +150,31 @@ function start() {
   const watched = (t) => t === root || t === document.head || t.tagName === 'DIALOG' || t.tagName === 'LINK' || isMine(t);
   ensure();
   for (const img of document.images) shrink(img);
+
+  // Branding: an uploaded watermark logo is read once and drawn into the tile (an SVG background cannot load a URL);
+  // dev has no server-written attributes, so it asks GET /api/site for the same values
+  const retile = (op, img) => {
+    WM_STYLE['background-image'] = tileOf(op, img);
+    const n = makeWm();
+    WM_CSS = n.style.cssText;
+    wm.remove();
+    wm = n;
+    ensure();
+  };
+  const brand = (op, wmLogo) => {
+    if (!BRAND_URL.test(wmLogo || '')) { if (opOf(op) !== opOf(root.dataset.scOp)) retile(op); return; }
+    logoDataUrl(wmLogo, realFetch).then((img) => retile(op, img)).catch(() => { /* the traced logo stays */ });
+  };
+  if (root.dataset.scOp != null) brand(root.dataset.scOp, root.dataset.scWm);
+  else {
+    realFetch('/api/site', { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).then((s) => {
+      const b = s?.branding;
+      if (!b) return;
+      const logo = INTL ? b.logos?.intl : b.logos?.site;
+      if (BRAND_URL.test(logo || '')) { mark.src = logo; veil.querySelector('img').src = logo; }
+      brand(b.wmOpacity, b.logos?.watermark);
+    }).catch(() => { /* the defaults stay */ });
+  }
   // cheap per record: themes animate inline styles every frame, so only our own nodes, <html>, <head> and dialogs count
   new MutationObserver((records) => {
     let need = false;
@@ -169,7 +206,6 @@ function start() {
     const t = e.target instanceof Element ? e.target.closest(ACTION) : null;
     if (t) { stop(e); e.stopImmediatePropagation(); say(); }
   }, true);
-  const realFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
     const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
     if (method !== 'GET' && method !== 'HEAD') {

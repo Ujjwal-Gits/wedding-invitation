@@ -129,7 +129,7 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 .nav.is-open { -webkit-backdrop-filter: none; backdrop-filter: none; background: #fff; }
 .nav__in { height: 100%; display: flex; align-items: center; gap: 24px; }
 .nav__logo { flex: none; display: block; border-radius: 6px; }
-.nav__logo img { width: 128px; height: auto; }
+.nav__logo img { width: 128px; height: auto; max-height: 44px; object-fit: contain; object-position: left center; }
 .nav__links { display: none; gap: 4px; margin-inline: auto; }
 .nav__links a { padding: 8px 14px; border-radius: 999px; color: var(--ink-2); font-size: 15px; text-decoration: none; transition: color 0.2s var(--ease), background-color 0.2s var(--ease); }
 .nav__links a:hover { color: var(--ink); background: var(--blush-50); }
@@ -190,7 +190,7 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 .foot { background: var(--blush-50); padding: clamp(64px, 7vw, 112px) 0 32px; font-size: 15px; color: var(--ink-2); }
 .foot__top { display: grid; gap: 40px; grid-template-columns: 1fr 1fr; }
 .foot__brand { grid-column: 1 / -1; display: grid; gap: 16px; max-width: 360px; }
-.foot__brand img { width: 146px; }
+.foot__brand img { width: 146px; height: auto; max-height: 56px; object-fit: contain; object-position: left center; }
 .foot__ne { font-size: 20px; color: var(--accent); }
 .foot__h { font-weight: 600; color: var(--ink); margin-bottom: 12px; }
 .foot__col ul { display: grid; gap: 8px; }
