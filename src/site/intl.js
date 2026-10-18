@@ -92,7 +92,7 @@ async function liveCatalog() {
       <p class="dcard__meta"><span class="tier tier--${esc(d.tier)}">${esc(INTL_NAME[d.tier] || '')}</span><span class="dcard__price" data-usd-from="${esc(d.tier)}"></span></p>
       <p class="dcard__desc">${esc(d.line)}</p>
       <div class="dcard__acts"><a class="btn btn--accent btn--sm" href="/international/pricing/?design=${esc(d.slug)}#plans" data-order data-design="${esc(d.slug)}">Order</a>
-      <a class="btn btn--ghost btn--sm" href="/${esc(d.slug)}/?showcase=1" data-preview="${esc(d.slug)}">Preview</a></div></div>`;
+      <a class="btn btn--ghost btn--sm" href="/${esc(d.slug)}/?showcase=1&amp;m=intl" data-preview="${esc(d.slug)}">Preview</a></div></div>`;
     return li;
   };
   grid.replaceChildren(...list.map(card), ...(custom ? [custom] : []));

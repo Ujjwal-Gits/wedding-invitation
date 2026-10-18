@@ -25,6 +25,7 @@ import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
 import * as site from './lib/site.js';
+import * as branding from './lib/branding.js'; // logos and the preview watermark (Website → Branding)
 import * as content from './lib/content.js'; // the Content page: page words, FAQ, contact, footer (docs/API.md "Content")
 import * as music from './lib/music.js'; // the site-wide music library (docs/API.md "Music library")
 import { sharePage } from './lib/share.js';
@@ -123,6 +124,7 @@ api.get('/admin/markets', requireAnyPerm('orders', 'finance'), wrap(marketStats)
 api.put('/site', requireAnyPerm('website', 'themes'), json('32kb'), wrap(site.putSite)); // each changes only its part (lib/site.js)
 api.get('/admin/site', requireAnyPerm('website', 'themes', 'orders', 'finance'), wrap(site.getAdminSite)); // plans and payment methods
 api.post('/admin/pay/qr', requirePerm('website'), heavy, wrap(manualPay.uploadQr));
+api.post('/admin/brand/logo', requirePerm('website'), heavy, wrap(branding.uploadLogo)); // then saved by PUT /api/site branding.logos
 api.post('/admin/seo/indexnow', requirePerm('website'), json('64kb'), wrap(indexnow.adminSubmit)); // { urls } or { all: true }
 // The website's words without a rebuild (lib/content.js; docs/API.md "Content"): pages, FAQ, contact, footer, announcement
 api.get('/admin/content', requirePerm('content'), wrap(content.adminContent(DIST_DIR)));
@@ -241,6 +243,8 @@ app.get(/^\/uploads\/_site\/music\/([A-Za-z0-9_-]{24}\.mp3)$/, (req, res, next) 
     else if (err) next(err);
   });
 });
+// Logos uploaded on Website → Branding (lib/branding.js): random names (the name is the version), SVG rebuilt safe.
+app.get(/^\/uploads\/_site\/brand\/([A-Za-z0-9_-]{24}\.(?:svg|png|webp))$/, branding.serveLogo);
 app.get(/^\/uploads\/_site\/blog\//, blog.blogUpload); // blog cover photos (lib/blog.js): random names only
 app.use('/uploads', (req, res) => res.status(404).end());
 

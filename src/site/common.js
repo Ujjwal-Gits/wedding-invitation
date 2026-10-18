@@ -175,7 +175,8 @@ export function applyContact(contact = {}) {
 }
 
 /* ---------------- preview: the live design, demo couple only, watermarked (src/core/showcase.js) ---------------- */
-export const showcaseUrl = (slug) => `/${encodeURIComponent(slug)}/?showcase=1`;
+// from the International website: its sage colours and its order links (src/core/showcase.js ?m=intl)
+export const showcaseUrl = (slug) => `/${encodeURIComponent(slug)}/?showcase=1${location.pathname.startsWith('/international/') ? '&m=intl' : ''}`;
 // phone-sized screens and touch-first devices open the showcase full screen (it has its own close)
 const framed = matchMedia('(min-width: 900px) and (min-height: 600px) and (hover: hover) and (pointer: fine)');
 

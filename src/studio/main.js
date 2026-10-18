@@ -19,6 +19,7 @@ import { enhance } from '../ui/enhance.js';
 import { clearCache, clearCacheButton } from './cache.js';
 import { startNav, navigate, current, setUrl } from './nav.js'; // clean /studio/… paths (History API) // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
 import { setAdmin, can, roleName } from './perms.js';
+import { brandMark } from './brand.js';
 
 const app = document.getElementById('app');
 enhance(document);
@@ -68,7 +69,7 @@ const onShellAction = (a) => { if (a === 'signout') signOut(); else if (a === 'c
 
 const brand = (lg = false) => h('a.brand', { href: '#/', class: lg ? 'brand--lg' : '' },
   // the real logo (public/site/brand/); the mark alone where the nav is collapsed to icons
-  h('img.brand__mark', { src: '/site/brand/nimtto-mark.svg', alt: '', 'aria-hidden': 'true', width: 31, height: 28 }),
+  brandMark(), // Website → Branding's site logo when one is uploaded (src/studio/brand.js)
   h('span.brand__logo', 'Nimtto'),
   h('span.brand__sub', 'Studio'));
 

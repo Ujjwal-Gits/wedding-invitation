@@ -2,6 +2,7 @@
 // middle, and an optional live preview on the right (a full-screen sheet on smaller screens).
 import { h, icon, clear, fill } from './dom.js';
 import { hrefOf } from './nav.js';
+import { brandMark } from './brand.js';
 
 const WIDE = matchMedia('(min-width: 1180px)');
 const PHONE = matchMedia('(max-width: 760px)');
@@ -61,7 +62,7 @@ export function createShell(opts) {
     mPv = h('button.mbar__pv', { type: 'button', hidden: true, onclick: () => openSheet() }, icon('eye', 17), h('span', 'Preview'));
     mMore = h('button.mbar__more', { type: 'button', 'aria-label': 'All sections', title: 'All sections', 'aria-haspopup': 'dialog', onclick: () => openMore() }, icon('menu', 20));
     mbar = h('header.mbar',
-      h('a.mbar__home', { href: hrefOf(mob.home), title: 'Home' }, h('img.brand__mark', { src: '/site/brand/nimtto-mark.svg', alt: '', 'aria-hidden': 'true', width: 31, height: 28 }), h('span.mbar__text', mNames, h('span.mbar__sub', 'Home'))),
+      h('a.mbar__home', { href: hrefOf(mob.home), title: 'Home' }, brandMark(), h('span.mbar__text', mNames, h('span.mbar__sub', 'Home'))),
       h('div.mbar__right', mob.save || null, mPv, mMore));
   }
 

@@ -1,5 +1,5 @@
 // Public website settings: the 'site' document = { v, plans, paymentMethods, payRemark, contact, hero, hiddenThemes,
-// featuredThemes }. Prices live only here: orders and payments read them on the server, never from the browser.
+// featuredThemes, branding }. `branding` (lib/branding.js): the logos and the preview watermark's opacity. Prices live only here: orders and payments read them on the server, never from the browser.
 // GET /api/site is public and returns a projection (enabled payment methods, no admin-only fields);
 // GET /api/admin/site returns everything plus what each payment QR supports; PUT is the planner's, fully validated.
 // v2 (October 2026): the four plans Saral, Shubha, Shahi and Custom (NPR and USD) and QR payment methods. Older
@@ -17,6 +17,7 @@ import { isTheme, listThemes, TIERS, defaultTier, metaOf } from './catalog.js';
 import { loadManifest } from './slots.js';
 import { hasPerm } from './auth.js';
 import { MARKETS, THEME_MARKETS, STYLES, themeFits } from './market.js';
+import { defaultBranding, cleanBranding, brandingOf, publicBranding } from './branding.js'; // logos + watermark opacity
 
 export const SITE_FILE = resolve(DATA_DIR, 'site.json');
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -72,6 +73,7 @@ const DEFAULTS = {
   themeMarkets: {},
   themeStyles: {},
   themeOrder: { np: [], intl: [] },
+  branding: defaultBranding(),
 };
 export const CONTACT_LEADS = ['email', 'whatsapp', 'phone'];
 
@@ -299,6 +301,7 @@ function sanitizeSite(input) {
     intl, featuredThemesIntl: themeList(d.featuredThemesIntl, 'featuredThemesIntl'),
     themeMarkets: overrides('themeMarkets', THEME_MARKETS), themeStyles: overrides('themeStyles', STYLES),
     themeOrder: { np: themeList(to.np, 'themeOrder.np'), intl: themeList(to.intl, 'themeOrder.intl') },
+    branding: cleanBranding(d.branding, fail),
   };
   if (errors.length) throw httpError(400, 'Please check the website settings.', { errors: errors.slice(0, 50) });
   return out;
@@ -354,6 +357,7 @@ function merged(s) {
   out.themeOrder = { np: Array.isArray(so.np) ? so.np : [], intl: Array.isArray(so.intl) ? so.intl : [] };
   const si = s.intl && typeof s.intl === 'object' ? s.intl : {};
   out.intl = { hero: { ...d.intl.hero, ...(si.hero || {}) }, contact: { ...d.intl.contact, ...(si.contact || {}) }, lead: CONTACT_LEADS.includes(si.lead) ? si.lead : 'email' };
+  out.branding = brandingOf(s.branding);
   const c = s.contact && typeof s.contact === 'object' ? s.contact : {};
   // Nothing saved yet: the owner's official contact. Anything the admin saved is kept as it is.
   out.contact = !c.phone && !c.whatsapp && !c.email ? { ...DEFAULT_CONTACT, address: c.address || '' } : { ...d.contact, ...c };
@@ -372,6 +376,7 @@ export function publicSite(s) {
     featuredThemes: s.featuredThemes,
     // per market, ready to use (docs/API.md "Markets"); the International website's empty fields fall back to Nepal's
     markets: { np: marketView(s, 'np'), intl: marketView(s, 'intl') },
+    branding: publicBranding(s.branding), // logos ('' = the bundled ones) and the preview watermark's opacity
   };
 }
 /** One market's website settings: headline, contact (and which line leads), plans offered, featured designs, order. */
