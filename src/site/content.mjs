@@ -15,7 +15,7 @@ export const OCCASIONS = [
   { id: 'bratabandha', en: 'Bratabandha', ne: 'ब्रतबन्ध', line: 'The sacred thread day, with the full programme and the feast.', key: 'bratabandha invitation card', page: '/occasions/bratabandha/' },
   { id: 'gunyu-cholo', en: 'Gunyu Cholo', ne: 'गुन्यू चोलो', line: 'A daughter’s first gunyu cholo, shared with the whole family.', key: 'gunyu cholo invitation', page: '/occasions/gunyu-cholo/' },
   { id: 'pasni', en: 'Pasni', ne: 'पास्नी', alt: 'अन्नप्राशन', line: 'Baby’s first rice, with photos and the time of the feast.', key: 'pasni invitation card', page: '/occasions/pasni/' },
-  { id: 'nwaran', en: 'Nwaran', ne: 'न्वारान', line: 'The naming day. The new name appears as guests open it.', key: 'nwaran invitation card', page: '/occasions/nwaran/' },
+  { id: 'nwaran', en: 'Nwaran', ne: 'न्वारन', line: 'The naming day. The new name appears as guests open it.', key: 'nwaran invitation card', page: '/occasions/nwaran/' },
   { id: 'birthday', en: 'Birthday', ne: 'जन्मदिन', line: 'Any age, from a first birthday to a chaurasi and beyond, in English and Nepali.', key: 'birthday invitation card', page: '/occasions/birthday/' },
   { id: 'janku', en: 'Janku', ne: 'जंकु', line: 'The Newar old-age rites that honour an elder, from Bhimratha on.', key: 'janku invitation card', page: '/occasions/janku/' },
   { id: 'bhoj', en: 'Bhoj and reception', ne: 'भोज', line: 'A reception or family feast, with a map and replies for numbers.', key: 'reception invitation card', page: '/occasions/reception-bhoj/' },

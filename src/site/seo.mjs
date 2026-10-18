@@ -188,7 +188,7 @@ export function pageMeta(id = 'home') {
   if (id.startsWith('design/')) m = { ...designMeta(id.slice(7)), market: 'np' };
   else if (id.startsWith('intl-design/')) m = intlDesignMeta(id.slice(12));
   else if (id.startsWith('intl/')) m = INTL_PAGES[id] && { ...INTL_PAGES[id], market: 'intl' };
-  else if (id.startsWith('land/')) m = LANDINGS[id.slice(5)] && { type: 'WebPage', ogType: 'website', ...LANDINGS[id.slice(5)] };
+  else if (id.startsWith('land/')) m = LANDINGS[id.slice(5)] && { type: 'WebPage', ogType: 'website', speak: true, ...LANDINGS[id.slice(5)] };
   else if (LEGAL[id]) m = LEGAL[id];
   else m = PAGES[id] && { ...PAGES[id], market: 'np' };
   if (!m) throw new Error(`seo: no page "${id}"`);

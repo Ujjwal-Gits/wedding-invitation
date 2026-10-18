@@ -18,6 +18,17 @@ import { INTL_THEMES, designPage } from './intl-designs.js';
 const NP_PLANS = FALLBACK_SITE.plans;
 const I_PLANS = intlPlans(FALLBACK_SITE.plans);
 const fill = (l, s, html = true) => (l.market === 'intl' ? fillUsd(s, html) : fillPlans(fillUsd(s, false), html));
+/** guide text (our own data, escaped first) with three marks: [words](/path/) a link (or a cited source, https://...),
+ *  **words** bold, {ne:शब्द} Nepali */
+const LINK = /\[([^\]]+)\]\(((?:\/|https:\/\/)[^)\s]*)\)/g;
+const inline = (l, s) => fill(l, String(s), true)
+  .replace(LINK, (m, t, href) => `<a class="lp-a" href="${href}"${href.startsWith('https://') ? ' rel="noopener" target="_blank"' : ''}>${t}</a>`)
+  .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  .replace(/\{ne:([^}]+)\}/g, '<span lang="ne">$1</span>');
+/** the same words as plain text (JSON-LD, llms-full.txt, word counts) */
+const plain = (l, s) => fill(l, String(s), false).replace(LINK, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\{ne:([^}]+)\}/g, '$1');
+const DATE_FMT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const DATE_FMT_US = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const pageName = (id) => (id === 'intl/occasions' ? 'Occasions' : id === 'occasions' ? 'Occasions' : '');
 const parentPath = (id) => (id?.startsWith('intl/') ? INTL_PAGES[id]?.path : PAGES[id]?.path);
 
@@ -108,6 +119,102 @@ function designRow(l) {
     </section>`;
 }
 
+/* ---------------- the guide: long-form sections from the data (l.guide) ----------------
+   Each section: { id, h (the H2), toc? (a shorter label), eyebrow?, lead?, p: [..], list: [..], ol: [..], check: [..],
+   sub: [{ h (an H3), p, list, ol }], table: { cap, head: [..], rows: [[..]] }, wording: [{ label, ne?, en? }],
+   fig: { design: <Nepal slug> } | { art: <international artwork id> } with alt and cap, note } */
+function table(l, t, id) {
+  const head = (t.head || []).map((h) => `<th scope="col">${inline(l, h)}</th>`).join('');
+  const rows = (t.rows || []).map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row">${inline(l, c)}</th>` : `<td>${inline(l, c)}</td>`)).join('')}</tr>`).join('');
+  return `<div class="lp-tbl" role="region" aria-labelledby="${id}-cap" tabindex="0"><table>
+          <caption id="${id}-cap">${inline(l, t.cap || '')}</caption>
+          ${head ? `<thead><tr>${head}</tr></thead>` : ''}<tbody>${rows}</tbody></table></div>`;
+}
+function wording(l, items) {
+  return `<div class="lp-w">${items.map((w) => `<figure class="lp-w__i">
+          <figcaption class="lp-w__l">${inline(l, w.label)}</figcaption>
+          ${w.ne ? `<blockquote class="lp-w__t lp-w__t--ne" lang="ne"><p>${esc(w.ne)}</p></blockquote>` : ''}
+          ${w.en ? `<blockquote class="lp-w__t"><p>${esc(fill(l, w.en, false))}</p></blockquote>` : ''}
+        </figure>`).join('')}</div>`;
+}
+function figure(l, f) {
+  if (f.design && BY_SLUG[f.design]) {
+    const t = BY_SLUG[f.design];
+    return `<figure class="lp-fig"><a class="lp-fig__pic" href="${l.market === 'intl' ? designPage(f.design) : `/designs/${f.design}/`}" style="--tint:${CATEGORIES[t.cat].tint}">${phone(f.design, { sizes: '(max-width: 899px) 60vw, 280px', alt: f.alt || `The ${t.name} design on a phone: ${t.alt}` })}</a>${f.cap ? `<figcaption class="lp-fig__cap">${inline(l, f.cap)}</figcaption>` : ''}</figure>`;
+  }
+  if (f.art) {
+    return `<figure class="lp-fig"><span class="lp-fig__pic" style="--tint:#EAF1E7"><span class="phone"><img src="${artSrc(f.art, 800)}" srcset="${artSrc(f.art, 480)} 480w, ${artSrc(f.art, 800)} 800w" sizes="(max-width: 899px) 60vw, 280px" width="390" height="844" alt="${esc(f.alt || '')}" loading="lazy" decoding="async" /></span></span>${f.cap ? `<figcaption class="lp-fig__cap">${inline(l, f.cap)}</figcaption>` : ''}</figure>`;
+  }
+  return '';
+}
+const paras = (l, ps, cls = '') => (ps || []).map((p) => `<p${cls ? ` class="${cls}"` : ''}>${inline(l, p)}</p>`).join('');
+const ulist = (l, xs, cls) => (xs?.length ? `<ul class="${cls}">${xs.map((x) => `<li>${inline(l, x)}</li>`).join('')}</ul>` : '');
+const olist = (l, xs) => (xs?.length ? `<ol class="lp-g__ol">${xs.map((x) => `<li>${inline(l, x)}</li>`).join('')}</ol>` : '');
+function guideSec(l, s, i) {
+  const fig = s.fig ? figure(l, s.fig) : '';
+  const wide = Boolean(s.table || s.wording);
+  const text = `${s.lead ? `<p class="lp-g__lead">${inline(l, s.lead)}</p>` : ''}${paras(l, s.p)}${ulist(l, s.list, 'lp-g__ul')}${olist(l, s.ol)}${ulist(l, s.check, 'lp-check')}
+          ${(s.sub || []).map((x) => `<h3 class="lp-g__h3">${inline(l, x.h)}</h3>${paras(l, x.p)}${ulist(l, x.list, 'lp-g__ul')}${olist(l, x.ol)}`).join('')}`;
+  const extra = `${s.table ? table(l, s.table, s.id) : ''}${s.wording ? wording(l, s.wording) : ''}${s.note ? `<p class="lp-g__note">${inline(l, s.note)}</p>` : ''}`;
+  const kind = fig ? 'lp-g--fig' : wide ? 'lp-g--wide' : 'lp-g--side';
+  return `<section class="sec lp-g ${kind}${i % 2 ? ' sec--blush' : ''}" id="${s.id}" aria-labelledby="${s.id}-h">
+      <div class="wrap lp-g__in">
+        <header class="lp-g__head">${s.eyebrow ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}<h2 class="h2 lp-g__h" id="${s.id}-h">${inline(l, s.h)}</h2></header>
+        <div class="lp-g__body">${text}${wide ? '' : extra}</div>
+        ${fig}${wide ? `<div class="lp-g__wide">${extra}</div>` : ''}
+      </div>
+    </section>`;
+}
+/** "On this page": the guide's sections and the fixed ones below them */
+function toc(l) {
+  const items = [...(l.guide || []).map((s) => [s.id, s.toc || plain(l, s.h)]), ...(l.designs ? [['lp-designs', 'Designs']] : []), ['lp-how', 'How Nimtto makes it'], ['lp-price', 'Price'], ['faq', 'Questions']];
+  const when = l.updated ? `<time datetime="${l.updated}">${(l.market === 'intl' ? DATE_FMT_US : DATE_FMT).format(new Date(l.updated))}</time>` : '';
+  return `<nav class="wrap lp-toc" aria-labelledby="lp-toc-h">
+      <div class="lp-toc__in">
+        <p class="lp-toc__h" id="lp-toc-h">On this page</p>
+        <ol class="lp-toc__list">${items.map(([id, t]) => `<li><a href="#${id}">${esc(t)}</a></li>`).join('')}</ol>
+        <p class="lp-toc__by">By the Nimtto team${when ? ` · Updated ${when}` : ''}</p>
+      </div>
+    </nav>`;
+}
+/** the price, in the page's currency: the ready-made plans, or the Custom plan for occasions designed for you */
+function priceSec(l) {
+  const intl = l.market === 'intl';
+  const custom = l.offer === 'custom';
+  const pricing = intl ? `${INTL_BASE}pricing/` : '/pricing/';
+  const plans = intl ? I_PLANS : NP_PLANS;
+  const list = custom ? plans.filter((p) => p.id === 'custom') : plans.filter((p) => p.id !== 'custom');
+  const price = (p) => (intl ? `<span data-usd-from="${p.id}">${usdText(p.usd)}</span>` : `<span data-plan-price="${p.id}">${rs(p.price)}</span>`);
+  const name = (p) => (intl ? esc(p.name) : `<span data-plan-name="${p.id}">${esc(p.name)}</span>`);
+  const feats = (p) => p.features.map((f) => esc(f)).join(' · ');
+  const rows = list.map((p) => `<tr><th scope="row">${name(p)}</th><td class="lp-price__p">${p.from || custom ? 'from ' : ''}${price(p)}</td><td>${feats(p)}</td></tr>`).join('');
+  const lead = l.priceLead ? inline(l, l.priceLead) : custom
+    ? (intl ? 'Every invitation for this occasion is designed for you on the Custom plan. Tell us your idea and we reply within one business day with a fixed price. You pay once, by card or PayPal, and only when you are happy with the price.'
+      : 'Every card for this occasion is designed for your family on the Custom plan. Tell us your idea and we reply within one business day with a fixed price. You pay once, by Khalti, eSewa, bank QR or PayPal, only when you are happy with it.')
+    : (intl ? 'Pick the plan that fits your design. You pay once, in US dollars, by card or PayPal. There is no subscription and no charge per guest.'
+      : 'Pick the plan that fits your design. You pay once, by Khalti, eSewa, bank QR, or PayPal from abroad. There is no monthly fee and no charge per guest.');
+  return `<section class="sec" id="lp-price" aria-labelledby="lp-price-h">
+      <div class="wrap lp-price">
+        <header class="lp-price__head"><p class="eyebrow">Price</p><h2 class="h2" id="lp-price-h">${esc(l.priceTitle || (custom ? 'What it costs' : 'Plans, paid once'))}</h2><p class="lede">${lead}</p>
+          <p><a class="link" href="${pricing}">${intl ? 'See full pricing' : 'See every plan and price'} ${ICON.arrow}</a></p></header>
+        <div class="lp-tbl" role="region" aria-labelledby="lp-price-cap" tabindex="0"><table>
+          <caption id="lp-price-cap">${intl ? 'Nimtto plans in US dollars, paid once' : 'Nimtto plans in Nepali rupees, paid once'}</caption>
+          <thead><tr><th scope="col">Plan</th><th scope="col">Price</th><th scope="col">What you get</th></tr></thead><tbody>${rows}</tbody></table></div>
+      </div>
+    </section>`;
+}
+/** guides from the blog (engineer B fills l.relatedPosts with [title, path] pairs); nothing shows until there are some */
+function posts(l) {
+  const list = l.relatedPosts || [];
+  if (!list.length) return '';
+  return `<section class="sec sec--tight" aria-labelledby="lp-posts-h">
+      <div class="wrap">
+        <h2 class="h3" id="lp-posts-h">${l.market === 'intl' ? 'Guides and ideas' : 'Guides from Nimtto'}</h2>
+        <ul class="lp-links lp-links--cols">${list.map(([t, p]) => `<li><a class="link" href="${p}">${esc(t)} ${ICON.arrow}</a></li>`).join('')}</ul>
+      </div>
+    </section>`;
+}
+
 /* ---------------- the body ---------------- */
 function body(id) {
   const l = LANDINGS[id];
@@ -118,7 +225,12 @@ function body(id) {
   const steps = (l.steps || []).map((s, i) => `<li class="step"><span class="step__n">${String(i + 1).padStart(2, '0')}</span><h3 class="step__t">${esc(s.t)}</h3><p class="step__d">${esc(s.d)}</p></li>`).join('');
   const faqItems = (l.faq || []).map(([q, a]) => ({ q, a: fill(l, a, false), aHtml: fill(l, a, true) }));
   const related = (l.related || []).map((r) => LANDINGS[r]).filter(Boolean);
-  const links = [...(l.links || []), ...related.map((r) => [r.eyebrow, r.path])];
+  // every page links to its hub, its related pages, the designs and the prices (each path once)
+  const hub = l.parent ? [[intl ? 'Every occasion' : 'Every Nepali occasion', parentPath(l.parent)]] : [];
+  const base = intl ? [['Wedding invitation designs', INTL_PAGES['intl/designs'].path], ['Pricing in US dollars', `${INTL_BASE}pricing/`]]
+    : [['Nepali wedding card designs', '/designs/'], ['Prices in rupees', '/pricing/']];
+  const seen = new Set([l.path]);
+  const links = [...(l.links || []), ...related.map((r) => [r.eyebrow, r.path]), ...hub, ...base].filter(([, p]) => p && !seen.has(p) && seen.add(p));
   return `<div class="wrap">
       <nav class="crumbs dp-crumbs" aria-label="Breadcrumb"><ol>${crumbHtml}</ol></nav>
     </div>
@@ -135,6 +247,8 @@ function body(id) {
       </div>
     </section>
 
+    ${l.guide?.length ? toc(l) : ''}
+
     <section class="sec sec--blush" aria-labelledby="lp-inc-h">
       <div class="wrap">
         <header class="shead" data-rv><p class="eyebrow">What’s included</p><h2 class="h2" id="lp-inc-h">${esc(l.includesTitle)}</h2></header>
@@ -142,33 +256,39 @@ function body(id) {
       </div>
     </section>
 
+    ${(l.guide || []).map((s, i) => guideSec(l, s, i)).join('\n    ')}
+
     ${designRow(l)}
 
-    <section class="sec" aria-label="Good to know">
+    <section class="sec" aria-label="Quick answers">
       <div class="wrap lp-ans">
         ${(l.answers || []).map(([q, a]) => `<article class="lp-ans__i"><h2 class="h3 lp-ans__q">${esc(q)}</h2><p class="lp-ans__a">${fill(l, a)}</p></article>`).join('')}
         <aside class="lp-ideas" aria-labelledby="lp-ideas-h"><h2 class="lp-ideas__h" id="lp-ideas-h">${esc(l.ideasTitle)}</h2><ul class="lp-ideas__list">${(l.ideas || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></aside>
       </div>
     </section>
 
-    <section class="sec sec--blush" aria-labelledby="lp-how-h">
+    <section class="sec sec--blush" id="lp-how" aria-labelledby="lp-how-h">
       <div class="wrap">
-        <header class="shead shead--split" data-rv><div><p class="eyebrow">How it works</p><h2 class="h2" id="lp-how-h">Four steps. <em>No app.</em></h2></div><p class="lede">${intl ? 'A real designer sets it up with you, and you check every change before guests see it.' : 'We make it with you on WhatsApp, in English or Nepali. You see every change first.'}</p></header>
+        <header class="shead shead--split" data-rv><div><p class="eyebrow">How it works</p><h2 class="h2" id="lp-how-h">${l.howTitle || 'Four steps. <em>No app.</em>'}</h2></div><p class="lede">${intl ? 'A real designer sets it up with you, and you check every change before guests see it.' : 'We make it with you on WhatsApp, in English or Nepali. You see every change first.'}</p></header>
         <ol class="steps">${steps}</ol>
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="faq-h">
+    ${priceSec(l)}
+
+    <section class="sec sec--blush" id="faq" aria-labelledby="faq-h">
       <div class="wrap faq">
-        <header class="shead"><p class="eyebrow">Questions</p><h2 class="h2" id="faq-h">Good to <em>know.</em></h2></header>
+        <header class="shead"><p class="eyebrow">Questions</p><h2 class="h2" id="faq-h">${l.faqTitle || 'Good to <em>know.</em>'}</h2></header>
         ${faqBlock(faqItems)}
       </div>
     </section>
 
-    ${links.length ? `<section class="sec sec--blush sec--tight" aria-labelledby="lp-more-h">
+    ${posts(l)}
+
+    ${links.length ? `<section class="sec sec--tight" aria-labelledby="lp-more-h">
       <div class="wrap">
         <h2 class="h3" id="lp-more-h">${intl ? 'More invitations' : 'More from Nimtto'}</h2>
-        <ul class="lp-links">${links.map(([t, p]) => `<li><a class="link" href="${p}">${esc(t)} ${ICON.arrow}</a></li>`).join('')}</ul>
+        <ul class="lp-links lp-links--cols">${links.map(([t, p]) => `<li><a class="link" href="${p}">${esc(t)} ${ICON.arrow}</a></li>`).join('')}</ul>
       </div>
     </section>` : ''}
 
@@ -201,7 +321,17 @@ function ld(id) {
     description: l.desc, areaServed: intl ? ['United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates'].map((name) => ({ '@type': 'Country', name })) : { '@type': 'Country', name: 'Nepal' },
     offers,
   };
+  const url = `${SITE_URL}${l.path}`;
   const out = [crumbsLd(trail(l)), jsonLd(service)];
+  // the same WebPage node as the head's (one @id): when it was last checked, and what it is about
+  if (l.updated) out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'WebPage', '@id': `${url}#webpage`, dateModified: l.updated, ...(l.about ? { about: l.about.map((name) => ({ '@type': 'Thing', name })) } : {}) }));
+  // the visible four steps, as a HowTo
+  if (l.steps?.length) {
+    const from = offers[0];
+    out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'HowTo', name: plain(l, l.howName || `How to order ${/^[aeiou]/i.test(l.name) ? 'an' : 'a'} ${l.name.toLowerCase()} invitation online`),
+      ...(from ? { estimatedCost: { '@type': 'MonetaryAmount', currency: cur, value: from.price } } : {}),
+      step: l.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.t, text: s.d, url: `${url}#lp-how` })) }));
+  }
   if (l.designs) {
     const list = l.designs.list === 'art' ? INTL_THEMES : l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean);
     out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'ItemList', name: l.designs.title, numberOfItems: list.length,
@@ -244,6 +374,25 @@ function legalFooter() {
       <p>© <span data-year>2026</span> Nimtto</p>
     </div>
   </footer>`;
+}
+
+/** A landing page's words as plain text, section by section (llms-full.txt and the word counts in docs/SEO-KEYWORDS.md). */
+export function landingText(id) {
+  const l = LANDINGS[id];
+  const f = (s) => plain(l, s);
+  const strip = (s) => String(s).replace(/<[^>]+>/g, '');
+  const out = [`${strip(l.h1)}. ${f(l.lede)}`, `${l.includesTitle}:\n${(l.includes || []).map(([t, d]) => `- ${t}: ${f(d)}`).join('\n')}`];
+  for (const s of l.guide || []) {
+    const sub = (s.sub || []).map((x) => [`### ${f(x.h)}`, ...(x.p || []).map(f), ...(x.list || []).map((y) => `- ${f(y)}`), ...(x.ol || []).map((y, i) => `${i + 1}. ${f(y)}`)].join('\n'));
+    const tbl = s.table ? [f(s.table.cap || ''), ...(s.table.head ? [s.table.head.map(f).join(' | ')] : []), ...s.table.rows.map((r) => r.map(f).join(' | '))].join('\n') : '';
+    const words = (s.wording || []).map((w) => [`${f(w.label)}:`, w.ne, w.en && f(w.en)].filter(Boolean).join('\n'));
+    out.push([`## ${f(s.h)}`, s.lead && f(s.lead), ...(s.p || []).map(f), ...(s.list || []).map((y) => `- ${f(y)}`), ...(s.ol || []).map((y, i) => `${i + 1}. ${f(y)}`), ...(s.check || []).map((y) => `- ${f(y)}`), ...sub, tbl, ...words, s.note && f(s.note)].filter(Boolean).join('\n'));
+  }
+  out.push(...(l.answers || []).map(([q, a]) => `### ${q}\n${f(a)}`));
+  if (l.ideas?.length) out.push(`${l.ideasTitle}: ${l.ideas.join(', ')}.`);
+  if (l.steps?.length) out.push(`How it works:\n${l.steps.map((s, i) => `${i + 1}. ${s.t}: ${s.d}`).join('\n')}`);
+  out.push(...(l.faq || []).map(([q, a]) => `### ${q}\n${f(a)}`));
+  return out.join('\n\n');
 }
 
 export const LANDING_PARTIALS = { landing: body, 'land-ld': ld, crossband, 'legal-header': legalHeader, 'legal-footer': legalFooter };
