@@ -1,7 +1,10 @@
 // Writes one static page per design: designs/<slug>/index.html, from src/site/design-template.html and the list in
-// src/site/themes.js (names, Nepali names, descriptions, categories, tiers, communities from each theme's slots.js).
+// src/site/themes.js (names, Nepali names, descriptions, categories, tiers, communities from each theme's slots.js),
+// and one per international design: international/designs/<slug>/index.html, from src/site/intl-design-template.html
+// and INTL_THEMES in src/site/intl-designs.js (US English, US dollars, the international header and footer, no
+// religion labels).
 // The shared header, footer, dialogs and FAQ are filled in by the Vite partials plugin (src/site/partials.mjs).
-// Also writes public/sitemap.xml (every public page). designs/index.html (the Designs page) is not touched.
+// designs/index.html and international/designs/index.html (the Designs pages) are not touched.
 // Run after adding a theme or changing the template:  node src/site/make-thumbs.mjs && node src/site/make-design-pages.mjs
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -9,6 +12,9 @@ import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForT
 import { phoneStill, STILL_SIZES } from './stills.js';
 import { esc, phone, rs, SIZES } from './partials.mjs';
 import { pageMeta } from './seo.mjs';
+import { INTL_THEMES, STYLE_LABEL } from './intl-designs.js';
+import { planOf, railCard } from './intl.mjs';
+import { usdText } from './intl-plans.js';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = resolve(ROOT, 'designs');
@@ -104,8 +110,74 @@ for (const t of THEMES) {
   writeFileSync(resolve(OUT, t.slug, 'index.html'), html);
   done.push(t.slug);
 }
-writeFileSync(resolve(import.meta.dirname, 'design-pages.json'), `${JSON.stringify(done)}\n`);
+
+/* ---------------- the international designs: international/designs/<slug>/ ---------------- */
+const OUT_I = resolve(ROOT, 'international', 'designs');
+const tplI = readFileSync(resolve(import.meta.dirname, 'intl-design-template.html'), 'utf8');
+// remove the pages this script wrote before (a renamed design leaves no stale page); the Designs page stays
+if (existsSync(OUT_I)) {
+  for (const d of readdirSync(OUT_I, { withFileTypes: true })) {
+    const f = resolve(OUT_I, d.name, 'index.html');
+    if (d.isDirectory() && existsSync(f) && readFileSync(f, 'utf8').includes('make-design-pages.mjs')) rmSync(resolve(OUT_I, d.name), { recursive: true });
+  }
+}
+const PLURAL = { wedding: 'weddings', engagement: 'engagement parties', anniversary: 'anniversaries', 'vow-renewal': 'vow renewals', 'rehearsal-dinner': 'rehearsal dinners', 'bridal-shower': 'bridal showers', 'baby-shower': 'baby showers', birthday: 'birthdays', graduation: 'graduations', housewarming: 'housewarmings', 'dinner-party': 'dinner parties' };
+const goodFor = (occ) => {
+  const n = occ.map((o) => PLURAL[o]).filter(Boolean);
+  const s = n.length > 1 ? `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}` : n[0] || 'weddings';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+function relatedIntl(d) {
+  const i = INTL_THEMES.findIndex((x) => x.slug === d.slug);
+  const rot = [...INTL_THEMES.slice(i + 1), ...INTL_THEMES.slice(0, i)];
+  return [...rot.filter((x) => x.style === d.style), ...rot.filter((x) => x.style !== d.style)].slice(0, 4);
+}
+const doneI = [];
+for (const d of INTL_THEMES) {
+  const plan = planOf(d.tier);
+  const seo = pageMeta(`intl-design/${d.slug}`);
+  const url = `${SITE}/international/designs/${d.slug}/`;
+  const ld = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Product', '@id': `${url}#product`, name: seo.name, image: [seo.image, `${SITE}${phonePic(d.slug).src}`], description: seo.desc,
+        brand: { '@type': 'Brand', name: 'Nimtto' }, category: 'Digital wedding invitation', url,
+        ...(plan ? { offers: { '@type': 'Offer', price: String(plan.usd), priceCurrency: 'USD', availability: 'https://schema.org/InStock', url, seller: { '@id': `${SITE}/#org` } } } : {}),
+      },
+      { '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Nimtto International', item: `${SITE}/international/` },
+        { '@type': 'ListItem', position: 2, name: 'Designs', item: `${SITE}/international/designs/` },
+        { '@type': 'ListItem', position: 3, name: d.name, item: url },
+      ] },
+    ],
+  };
+  const pic = phonePic(d.slug);
+  const vals = {
+    SLUG: d.slug,
+    NAME: esc(d.name),
+    DESC: esc(d.line),
+    STYLE: d.style,
+    STYLE_LABEL: esc(STYLE_LABEL[d.style] || 'Classic'),
+    TINT: '#EAF1E7',
+    TIER: d.tier,
+    TIER_LABEL: esc(plan?.name || ''),
+    TIER_PRICE: plan ? usdText(plan.usd) : '',
+    OPEN_SRC: pic.src,
+    OPEN_SRCSET: srcsetAttr(pic, GALLERY),
+    OPEN_PRELOAD: pic.srcset ? ` imagesrcset="${pic.srcset}" imagesizes="${GALLERY}"` : '',
+    OPEN_ALT: `${firstView(d.slug)} ${esc(d.name)} design: ${esc(d.alt)}`,
+    SUITS: esc(goodFor(d.occasions)),
+    RELATED: relatedIntl(d).map((x, i) => railCard(x, i, SIZES.rail)).join(''),
+    JSONLD: jsonLd(ld),
+  };
+  const html = tplI.replace(/%([A-Z_]+)%/g, (m, k) => (k in vals ? vals[k] : m));
+  mkdirSync(resolve(OUT_I, d.slug), { recursive: true });
+  writeFileSync(resolve(OUT_I, d.slug, 'index.html'), html);
+  doneI.push(d.slug);
+}
+writeFileSync(resolve(import.meta.dirname, 'design-pages.json'), `${JSON.stringify({ np: done, intl: doneI })}\n`);
 
 // the sitemap and llms files (every public page of both sites) are written by make-landing-pages.mjs, from
 // design-pages.json above: run it next.
-console.log(`design pages: ${done.length} written to designs/<slug>/index.html; now run node src/site/make-landing-pages.mjs`);
+console.log(`design pages: ${done.length} in designs/<slug>/, ${doneI.length} in international/designs/<slug>/; now run node src/site/make-landing-pages.mjs`);

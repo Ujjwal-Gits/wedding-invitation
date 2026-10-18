@@ -1,6 +1,6 @@
 # Nimtto: the full text
 
-> Every public page of nimtto.com (Nepal) and nimtto.com/international/ (worldwide), in plain text for AI engines. Updated 2026-10-17.
+> Every public page of nimtto.com (Nepal) and nimtto.com/international/ (worldwide), in plain text for AI engines. Updated 2026-10-18.
 
 ## Key facts
 - Website: https://nimtto.com (Nepal, prices in rupees) and https://nimtto.com/international/ (worldwide, prices in US dollars)
@@ -22,17 +22,20 @@ Nepal site (27 wedding designs; the lowest plan that includes each):
 - Standard: Kham (खाम): A paper envelope with a red wax seal. It opens into a clear card with all your events.; Mala (माला): A wedding mandap with red silk, marigold strings and brass kalash full of flowers.; Phoolbari (फूलबारी): A gate of fresh roses and marigold strings opens to show शुभ विवाह. Then a calm, soft invitation.; Dhaka (ढाका): Break the seal and slide off the Dhaka band. Your names rise out of the envelope among flowers.; Sayapatri (सयपत्री): A doorway hung with marigold strings. The strings lift to open a calm ivory invitation.; Chitra (चित्र): A picture book in Mithila art: the janti, the garlands, the seven rounds and the dance.; Jhyal (झ्याल): A carved Newari window. The wooden shutters open on शुभ विवाह.
 - Pro: Dhoka (ढोका): A clean white card. The golden door of Patan opens in 3D to show your names.; Durbar (दरबार): A 3D morning walk through Bhaktapur Durbar Square, under flower arches.; Himal (हिमाल): Sunrise over the Himalaya, then a quiet photo story of the two of you.; Mandap (मण्डप): A 3D mandap on a bright morning. The couple exchange garlands and walk the seven rounds.; Bagaicha (बगैंचा): A 3D garden wedding: through a rose arch, around the sacred fire, on to the reception.; Ghar (घर): A warm evening walk through a Newar house, room by room, like a film.; Mangal (मंगल): A red temple door with garlands and bells. The doors swing open on शुभ विवाह.; Nimantrana (निमन्त्रणा): A traditional red and gold card that unfolds in 3D: Ganesh, the couple, then the programme.
 - Pro Max: Mahal (महल): A golden palace gate tied with a satin bow. It opens onto a palace balcony at night.; Laali (लाली): Blush pink and gold. Lanterns drop in as an arched card draws itself.; Mehendi (मेहन्दी): Henna on ivory. A henna pattern draws itself, then two hennaed hands come together.; Hariyo (हरियो): A soft green garden in watercolour. The leaves part to show a white pavilion and two peacocks.; Shree (श्री): Deep plum and gold. A gold lotus opens on Ganesh as two diyas come down.; Pardaa (पर्दा): Red velvet curtains open on a mandap with a living fire. Each event has its own colours.; Rajdwar (राजद्वार): A painted gold palace gate with a satin bow. Untie it and walk through to a red and gold card.; Agni (अग्नि): The sacred fire at night. Tap to light it, then the couple walk the seven rounds.; Janti (जन्ती): Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door.; Swayambar (स्वयम्बर): Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.; Sindoor (सिन्दूर): Red, white and black. The sindoor box opens and a red line carries your story.; Rangoli (रंगोली): A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.
-International site (animated wedding designs, by style):
-- Olive Grove (Garden, from $99): A watercolor olive wreath and soft sweet peas around your names.
-- Rose Arch (Romantic, from $149): Guests step through a stone arch of climbing garden roses.
-- Blush Roses (Classic, from $49): Peach and blush roses inside a thin gold frame.
-- Gold Arch (Modern, from $99): A clean gold arch with a single blush rose.
-- Amalfi (Destination, from $149): Lemon branches above the sea, for a wedding far from home.
-- Garden Party (Garden, from $99): A rose arbor and white chairs on a summer lawn.
-- Wildflower (Romantic, from $99): A summer meadow of pink and peach wildflowers.
-- Letterpress (Classic, from $49): A deckled cotton card on sage linen, simple and timeless.
-- Wax Seal (Modern, from $49): Guests break a sage wax seal to open the envelope.
-- Tuscany (Destination, from $99): Vineyard hills at golden hour.
+International site (animated wedding designs, by style; each has its own page):
+- Olive Grove (Garden, from $99): A folded linen card opens and a watercolor olive wreath grows around your names. https://nimtto.com/international/designs/olive-grove/
+- Rose Arch (Romantic, from $149): Guests walk through a stone arch of climbing garden roses into the green garden beyond. https://nimtto.com/international/designs/rose-arch/
+- Blush Roses (Classic, from $49): A thin gold frame draws itself while blush garden roses bloom in the corners. https://nimtto.com/international/designs/blush-roses/
+- Gold Arch (Modern, from $99): A fine gold arch draws itself under an eight-point star, on a clean and modern page. https://nimtto.com/international/designs/gold-arch/
+- Amalfi (Destination, from $149): A lemon-branch postcard from the Amalfi Coast turns over for a weekend by the sea. https://nimtto.com/international/designs/amalfi/
+- Garden Party (Garden, from $99): A garden ceremony under a rose arbor. The invitation slides out of its paper band. https://nimtto.com/international/designs/garden-party/
+- Wildflower (Romantic, from $99): A summer meadow of pink and peach wildflowers grows up the page, with butterflies. https://nimtto.com/international/designs/wildflower/
+- Letterpress (Classic, from $49): A deckled cotton card lifts off sage linen and turns over. Simple and timeless. https://nimtto.com/international/designs/letterpress/
+- Wax Seal (Modern, from $49): Guests break a sage wax seal and the letter rises out of the envelope. https://nimtto.com/international/designs/wax-seal/
+- Tuscany (Destination, from $99): Golden hour over the vineyard hills, with an invitation dressed like a wine label. https://nimtto.com/international/designs/tuscany/
+- Noor (Romantic, from $149): A sage arch hung with fresh roses glows open on your names. https://nimtto.com/international/designs/noor/
+- Jali (Classic, from $49): Carved emerald and gold lattice screens slide apart under hanging lanterns. https://nimtto.com/international/designs/jali/
+- Andalus (Destination, from $149): Through a horseshoe arch into a tiled courtyard with a fountain and orange trees. https://nimtto.com/international/designs/andalus/
 Occasions designed on the Custom plan: Nepal: Engagement, Bratabandha, Gunyu Cholo, Pasni, Nwaran, Birthday, Janku, Bhoj and reception, Your own occasion. International: Birthdays, Baby showers, Bridal showers, Engagement parties, Anniversaries, Graduations, Housewarmings, Dinner parties, Company and community events, Rehearsal dinners, Your own celebration.
 
 ## Digital Wedding Invitation Nepal | Nimtto

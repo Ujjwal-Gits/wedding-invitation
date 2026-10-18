@@ -13,12 +13,13 @@ import { faqItems, fillPlans, OCCASIONS, SITE_URL } from './content.mjs';
 import { THEMES, FALLBACK_SITE, TIER_LABEL } from './themes.js';
 import { phoneStill } from './stills.js';
 import { intlPlans, usdText } from './intl-plans.js';
-import { ARTWORK, artSrc, STYLE_LABEL } from './intl-designs.js';
+import { artSrc, STYLE_LABEL, INTL_THEMES, INTL_BY_SLUG } from './intl-designs.js';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const stills = JSON.parse(readFileSync(resolve(import.meta.dirname, 'stills.json'), 'utf8'));
 const thumbs = new Set(JSON.parse(readFileSync(resolve(import.meta.dirname, 'thumbs.json'), 'utf8')));
 const still = (slug) => phoneStill(stills, slug, thumbs.has(slug) ? `/site/thumbs/${slug}-480.webp` : `/themes/${slug}/thumb.jpg`);
+// { np: [slug], intl: [slug] }: the design pages make-design-pages.mjs wrote (/designs/<slug>/, /international/designs/<slug>/)
 const designPages = JSON.parse(readFileSync(resolve(import.meta.dirname, 'design-pages.json'), 'utf8'));
 
 const warn = checkLengths();
@@ -73,9 +74,10 @@ const PRIORITY = { home: '1.0', 'intl/home': '1.0', designs: '0.9', 'intl/design
 const urls = [];
 const add = (path, pr, imgs = []) => urls.push({ path, pr, imgs: imgs.filter(Boolean) });
 for (const id of Object.keys(PAGES)) add(PAGES[id].path, PRIORITY[id] || (id === 'credits' ? '0.2' : '0.7'), id === 'designs' ? THEMES.slice(0, 12).map((t) => still(t.slug).src) : []);
-for (const id of Object.keys(INTL_PAGES)) add(INTL_PAGES[id].path, PRIORITY[id] || '0.7', id === 'intl/designs' || id === 'intl/home' ? ARTWORK.map((d) => artSrc(d.id, 800)) : []);
+for (const id of Object.keys(INTL_PAGES)) add(INTL_PAGES[id].path, PRIORITY[id] || '0.7', id === 'intl/designs' || id === 'intl/home' ? INTL_THEMES.map((d) => still(d.slug).src) : []);
 for (const [id, l] of Object.entries(LANDINGS)) add(l.path, PRIORITY[`land/${id}`] || '0.8', [heroImg(l), ...(Array.isArray(l.designs?.list) ? l.designs.list.map((s) => still(s).src) : [])]);
-for (const s of designPages) add(`/designs/${s}/`, '0.7', [still(s).src]);
+for (const s of designPages.np) add(`/designs/${s}/`, '0.7', [still(s).src]);
+for (const s of designPages.intl) add(`/international/designs/${s}/`, '0.7', [still(s).src]);
 for (const id of Object.keys(LEGAL)) add(LEGAL[id].path, '0.3');
 writeFileSync(resolve(ROOT, 'public', 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
@@ -117,6 +119,9 @@ ${npIds.map(line).join('\n')}
 ## International site
 ${iIds.map(line).join('\n')}
 
+## International designs
+${designPages.intl.map((s) => line(`intl-design/${s}`)).join('\n')}
+
 ## Policies
 ${Object.keys(LEGAL).map(line).join('\n')}
 
@@ -149,8 +154,8 @@ for (const [id, l] of Object.entries(LANDINGS)) {
 const designsText = `## Designs
 Nepal site (${THEMES.length} wedding designs; the lowest plan that includes each):
 ${['saral', 'shubha', 'shahi'].map((t) => `- ${TIER_LABEL[t]}: ${THEMES.filter((x) => x.tier === t).map((x) => `${x.name} (${x.ne}): ${x.concept}`).join('; ')}`).join('\n')}
-International site (animated wedding designs, by style):
-${ARTWORK.map((d) => `- ${d.name} (${STYLE_LABEL[d.style]}, from ${usdText(iPlans.find((p) => p.id === d.tier)?.usd ?? 49)}): ${d.line}`).join('\n')}
+International site (animated wedding designs, by style; each has its own page):
+${designPages.intl.map((s) => INTL_BY_SLUG[s]).filter(Boolean).map((d) => `- ${d.name} (${STYLE_LABEL[d.style]}, from ${usdText(iPlans.find((p) => p.id === d.tier)?.usd ?? 49)}): ${d.line} ${SITE_URL}/international/designs/${d.slug}/`).join('\n')}
 Occasions designed on the Custom plan: Nepal: ${OCCASIONS.filter((o) => !o.designs).map((o) => o.en).join(', ')}. International: ${EVENTS.filter((o) => !o.lead).map((o) => o.en).join(', ')}.
 `;
 writeFileSync(resolve(ROOT, 'public', 'llms-full.txt'), `# Nimtto: the full text\n\n> Every public page of nimtto.com (Nepal) and nimtto.com/international/ (worldwide), in plain text for AI engines. Updated ${today}.\n\n${facts}\n${designsText}\n${sections.join('\n')}`);

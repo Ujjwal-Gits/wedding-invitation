@@ -151,6 +151,7 @@ const Q = {
 export const FAQ_SETS = {
   home: ['site', 'cost', 'subscription', 'rsvp-app', 'multi', 'occasions', 'diy', 'time'],
   designs: ['occasions', 'custom', 'change', 'rsvp-app', 'cost'],
+  design: ['change', 'rsvp-app', 'multi', 'timezones', 'time', 'cost'], // a design's own page
   occasions: ['occasions', 'custom', 'multi', 'time', 'cost'],
   features: ['rsvp-app', 'change', 'multi', 'timezones', 'privacy', 'online'],
   how: ['time', 'pay', 'diy', 'change', 'send', 'etiquette'],

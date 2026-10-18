@@ -1,6 +1,6 @@
 // Search and share meta for every public page of both sites: <title>, description, canonical, robots, hreflang,
 // Open Graph, Twitter card and a WebPage JSON-LD node. The `head` partial (src/site/partials.mjs) renders it from
-// <!--@head:<id>-->: a Nepal page id, design/<slug>, intl/<page> (src/site/intl-content.mjs), land/<id> (the landing
+// <!--@head:<id>-->: a Nepal page id, design/<slug>, intl-design/<slug>, intl/<page> (src/site/intl-content.mjs), land/<id> (the landing
 // pages in src/site/landings.mjs) or a legal page. Share images live in public/site/og/ (1200x630 JPG).
 // Titles: Title Case, primary keyword first, at most 60 characters; descriptions at most 155 (checkLengths warns).
 // The two sites (nimtto.com for Nepal, /international/) never target the same primary keyword: they are separate
@@ -10,6 +10,8 @@ import { THEMES, BY_SLUG, FALLBACK_SITE, planForTier } from './themes.js';
 import { SITE_URL } from './content.mjs';
 import { INTL_PAGES } from './intl-content.mjs';
 import { LANDINGS } from './landings.mjs';
+import { INTL_THEMES, INTL_BY_SLUG } from './intl-designs.js';
+import { intlPlans, usdText } from './intl-plans.js';
 
 const N = THEMES.length;
 const rs = (n) => `Rs ${new Intl.NumberFormat('en-IN').format(n)}`;
@@ -160,11 +162,31 @@ export function designMeta(slug) {
   };
 }
 
+/** An international design's page (/international/designs/<slug>/): the style in the title, the US dollar price in
+ *  the description. Its share image is public/site/og/intl-design-<slug>.jpg (scripts/og-list.mjs). */
+const STYLE_WORD = { garden: 'Garden', romantic: 'Romantic', classic: 'Classic', modern: 'Modern', destination: 'Destination' };
+export function intlDesignMeta(slug) {
+  const d = INTL_BY_SLUG[slug];
+  if (!d) throw new Error(`seo: no international design ${slug}`);
+  const p = intlPlans(FALLBACK_SITE.plans).find((x) => x.id === d.tier);
+  const from = p ? usdText(p.usd) : '$49';
+  const kind = `${STYLE_WORD[d.style] || 'Animated'} Wedding Invitation`;
+  const title = [`${d.name}: Animated ${kind} | Nimtto`, `${d.name}: ${kind} | Nimtto`].find((x) => x.length <= 60);
+  const desc = [`${d.name} animated wedding invitation: ${d.line} With an event website and RSVP, from ${from}, paid once.`,
+    `${d.name} wedding invitation: ${d.line} With RSVP, from ${from}.`, `${d.name} animated wedding invitation with RSVP, from ${from}, paid once.`].find((x) => x.length <= 155);
+  return {
+    path: `/international/designs/${slug}/`, img: `intl-design-${slug}`, type: 'ItemPage', ogType: 'product', market: 'intl',
+    title, name: `${d.name} Wedding Invitation Design`, desc, eyebrow: `${STYLE_WORD[d.style] || 'Wedding'} design`,
+    alt: `The ${d.name} animated wedding invitation by Nimtto on a phone: ${d.alt}`,
+  };
+}
+
 /** The meta for a partial argument: a Nepal page id, design/<slug>, intl/<page>, land/<id> or a legal page.
  *  Adds market ('np' | 'intl' | 'both'), url, image and the Title Case title. */
 export function pageMeta(id = 'home') {
   let m;
   if (id.startsWith('design/')) m = { ...designMeta(id.slice(7)), market: 'np' };
+  else if (id.startsWith('intl-design/')) m = intlDesignMeta(id.slice(12));
   else if (id.startsWith('intl/')) m = INTL_PAGES[id] && { ...INTL_PAGES[id], market: 'intl' };
   else if (id.startsWith('land/')) m = LANDINGS[id.slice(5)] && { type: 'WebPage', ogType: 'website', ...LANDINGS[id.slice(5)] };
   else if (LEGAL[id]) m = LEGAL[id];
@@ -176,6 +198,7 @@ export function pageMeta(id = 'home') {
 /** Every public page id, for the sitemap, llms-full.txt and the length check. */
 export const ALL_PAGE_IDS = [
   ...Object.keys(PAGES), ...Object.keys(INTL_PAGES), ...Object.keys(LANDINGS).map((k) => `land/${k}`), ...Object.keys(LEGAL),
+  ...INTL_THEMES.map((d) => `intl-design/${d.slug}`),
 ];
 
 /** Warnings for titles over 60 and descriptions over 155 characters, and for a primary title used twice. */

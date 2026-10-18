@@ -4,13 +4,13 @@
 // designs in src/site/intl-designs.js, the landing pages in src/site/landings.mjs. Every claim is something the
 // product does today. No religion labels on this site.
 // Rendered by the same `site-partials` Vite plugin. Plain module: Node runs it at build, never the browser.
-import { FALLBACK_SITE, TIER_LABEL } from './themes.js';
+import { FALLBACK_SITE, TIER_LABEL, BY_SLUG } from './themes.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { INTL_PAGES, EVENTS, FAQ_SETS, faqList, fillUsd, STEPS, INTL_BASE } from './intl-content.mjs';
-import { STYLES, STYLE_LABEL, ARTWORK, V, artSrc, artSrcset } from './intl-designs.js';
+import { STYLES, STYLE_LABEL, V, artSrc, artSrcset, INTL_THEMES, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
 import { LANDINGS } from './landings.mjs';
 import { PAGES } from './seo.mjs';
-import { jsonLd, faqBlock, faqLd, LEGAL_LINKS } from './partials.mjs';
+import { jsonLd, faqBlock, faqLd, LEGAL_LINKS, phone, pic } from './partials.mjs';
 import { SITE_URL } from './content.mjs';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -113,38 +113,47 @@ function heroCopy() {
 function styleChips() {
   return `<button class="chip" type="button" data-style="all" aria-pressed="true">All designs</button>${STYLES.map(([id, t]) => `<button class="chip" type="button" data-style="${id}" aria-pressed="false">${t}</button>`).join('')}`;
 }
-const designHref = (d) => `${INTL_PAGES['intl/designs'].path}#d-${d.id}`;
-/** the home page's rail: the design cards, with the style beside the name */
-function gallery() {
-  return ARTWORK.map((d, i) => {
-    const p = planOf(d.tier);
-    return `<li class="rcard" data-style="${d.style}" data-slug="${d.id}">
-    <a class="rcard__pic" href="${designHref(d)}" style="--tint:${TINTS[i % TINTS.length]}">${iphone(d.id, { sizes: '(max-width: 599px) 56vw, 260px', alt: `The ${d.name} design: ${d.alt}` })}</a>
-    <p class="rcard__name"><a href="${designHref(d)}">${esc(d.name)}</a> <span>${STYLE_LABEL[d.style]}</span></p>
-    <p class="rcard__meta"><span class="tier tier--${d.tier}">${esc(p?.name || '')}</span><span class="dcard__price" data-usd-from="${d.tier}">${fromPrice(d.tier)}</span></p>
+/** a Nepal design as an international card ({ slug, name, style: 'nepali', tier, line, alt }) */
+export const npAsIntl = (slug) => { const t = BY_SLUG[slug]; return t && { slug, id: slug, name: t.name, style: 'nepali', tier: t.tier, line: t.concept, alt: t.alt }; };
+/** the cards the build shows: the international designs, then the Nepal ones this site offers (`np` of them) */
+export const intlList = (np = NP_DESIGNS_INTL.length) => [...INTL_THEMES, ...NP_DESIGNS_INTL.slice(0, np).map(npAsIntl).filter(Boolean)];
+const ICON_EYE = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+/** the plan badge and "from $X" of a card (src/site/intl.js keeps the price live) */
+export const tierRow = (tier, cls = 'rcard__meta') => `<p class="${cls}"><span class="tier tier--${tier}">${esc(planOf(tier)?.name || '')}</span><span class="dcard__price" data-usd-from="${tier}">${fromPrice(tier)}</span></p>`;
+/** a rail card (home page, landing pages, related designs): picture and name open the design's own page; the
+ *  style sits on its own line under the name, then the plan and price */
+export function railCard(d, i = 0, sizes = '(max-width: 599px) 56vw, 260px') {
+  const href = designPage(d.slug);
+  return `<li class="rcard" data-style="${d.style}" data-slug="${esc(d.slug)}">
+    <a class="rcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}">${phone(d.slug, { sizes, alt: `The ${d.name} design: ${d.alt}` })}</a>
+    <p class="rcard__name"><a href="${href}">${esc(d.name)}</a> <span>${STYLE_LABEL[d.style] || ''}</span></p>
+    ${tierRow(d.tier)}
   </li>`;
-  }).join('');
 }
+/** the home page's rail: every international design and a few Nepal ones (the "Nepali" chip) */
+function gallery() { return intlList(4).map((d, i) => railCard(d, i)).join(''); }
 /** one card on the designs page (src/site/intl.js builds the same card for designs from the catalog API) */
 export function designCard(d, i = 0) {
-  const p = planOf(d.tier);
-  return `<li class="dcard" id="d-${esc(d.id)}" data-slug="${esc(d.id)}" data-style="${d.style}" data-tier="${d.tier}">
-    <div class="dcard__pic" style="--tint:${TINTS[i % TINTS.length]}">${iphone(d.id, { sizes: '(max-width: 599px) 40vw, (max-width: 1023px) 26vw, 220px', alt: `The ${d.name} invitation design: ${d.alt}` })}</div>
+  const href = designPage(d.slug);
+  return `<li class="dcard" id="d-${esc(d.slug)}" data-slug="${esc(d.slug)}" data-style="${d.style}" data-tier="${d.tier}">
+    <a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true">${phone(d.slug)}</a>
     <div class="dcard__body">
-      <h3 class="dcard__name">${esc(d.name)} <span class="dcard__ne">${STYLE_LABEL[d.style]}</span></h3>
-      <p class="dcard__meta"><span class="tier tier--${d.tier}">${esc(p?.name || '')}</span><span class="dcard__price" data-usd-from="${d.tier}">${fromPrice(d.tier)}</span></p>
+      <h3 class="dcard__name"><a href="${href}">${esc(d.name)}</a> <span class="dcard__ne">${STYLE_LABEL[d.style] || ''}</span></h3>
+      ${tierRow(d.tier, 'dcard__meta')}
       <p class="dcard__desc">${esc(d.line)}</p>
       <div class="dcard__acts">
-        <a class="btn btn--accent btn--sm" href="${INTL_BASE}pricing/?design=${d.id}#plans" data-order data-design="${d.id}" aria-label="Order ${esc(d.name)}">Order</a>
+        <a class="btn btn--accent btn--sm" href="${INTL_BASE}pricing/?design=${esc(d.slug)}#plans" data-order data-design="${esc(d.slug)}" aria-label="Order ${esc(d.name)}">Order</a>
+        <a class="btn btn--ghost btn--sm" href="/${esc(d.slug)}/?showcase=1" data-preview="${esc(d.slug)}" aria-label="Preview ${esc(d.name)}">${ICON_EYE}Preview</a>
       </div>
     </div>
   </li>`;
 }
-function grid() { return ARTWORK.map(designCard).join(''); }
+function grid() { return intlList().map(designCard).join(''); }
 function designsLd() {
+  const list = intlList();
   return jsonLd({
-    '@context': 'https://schema.org', '@type': 'ItemList', name: 'Animated wedding invitation designs', numberOfItems: ARTWORK.length,
-    itemListElement: ARTWORK.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designHref(d)}`, name: `${d.name} invitation design`, image: `${SITE_URL}${artSrc(d.id, 800)}` })),
+    '@context': 'https://schema.org', '@type': 'ItemList', name: 'Animated wedding invitation designs', numberOfItems: list.length,
+    itemListElement: list.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(d.slug)}`, name: `${d.name} invitation design`, image: `${SITE_URL}${pic(d.slug).src}` })),
   });
 }
 
@@ -257,7 +266,7 @@ function events(variant = 'home') {
         : `<a class="occ__cta" href="${INTL_BASE}pricing/?plan=custom#plans" data-order data-plan="custom" data-occasion="${o.id}">${o.id === 'custom' ? 'Tell us your idea' : 'Ask us about it'} ${ARROW}</a>`;
     const art = o.lead ? `<span class="occ__phones" aria-hidden="true">${iphone('olive', { sizes: '140px' })}${iphone('rosearch', { sizes: '140px' })}${iphone('wildflower', { sizes: '140px' })}</span>` : '';
     const more = o.lead ? `<ul class="occ__chips">${['Welcome drinks', 'Ceremony', 'Cocktail hour', 'Dinner and dancing', 'Farewell brunch'].map((t) => `<li>${t}</li>`).join('')}</ul>
-      <ul class="occ__facts"><li><b>${ARTWORK.length}</b><span>designs</span></li><li><b data-usd-from="saral">${std ? usdText(std.usd) : ''}</b><span>starting price</span></li><li><b>RSVP</b><span>built in</span></li></ul>` : '';
+      <ul class="occ__facts"><li><b>${INTL_THEMES.length}</b><span>designs</span></li><li><b data-usd-from="saral">${std ? usdText(std.usd) : ''}</b><span>starting price</span></li><li><b>RSVP</b><span>built in</span></li></ul>` : '';
     return `<li class="occ occ--${o.id}${o.lead ? ' occ--lead' : ''}${o.id === 'custom' ? ' occ--custom' : ''}" id="ev-${o.id}">
       <h3 class="occ__en">${page ? `<a href="${page}">${esc(o.en)}</a>` : esc(o.en)}</h3>
       <p class="occ__line">${esc(o.line)}</p>

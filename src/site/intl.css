@@ -56,7 +56,8 @@
 
 /* ---------------- the designs rail (the home page's rail, with style chips in its head) ---------------- */
 .rail--designs .rail__head > .gal-chips { grid-column: 1 / -1; }
-.rail--designs .rcard__name span { font-family: var(--f-sans); font-size: 14px; }
+/* the style under a design's name: small, muted, in the sans (every card on this site) */
+.market-intl .rcard__name span, .market-intl .dcard__ne { font-family: var(--f-sans); font-size: 14px; letter-spacing: 0.01em; }
 .market-intl .chip[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media (max-width: 699px) { .gal-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); } .gal-chips::-webkit-scrollbar { display: none; } .gal-chips .chip { flex: none; } }
 #gal > li.is-in { animation: gal-in 0.36s var(--ease); }

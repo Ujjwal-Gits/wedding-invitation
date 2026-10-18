@@ -8,11 +8,12 @@ import { LANDINGS } from './landings.mjs';
 import { BY_SLUG, CATEGORIES, FALLBACK_SITE, planForTier, TIER_LABEL } from './themes.js';
 import { fillPlans, SITE_URL } from './content.mjs';
 import { fillUsd, INTL_PAGES, INTL_BASE } from './intl-content.mjs';
-import { ARTWORK, artSrc, STYLE_LABEL } from './intl-designs.js';
+import { ARTWORK, artSrc } from './intl-designs.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { PAGES } from './seo.mjs';
 import { esc, jsonLd, phone, faqBlock, crumbsLd, rs, ICON, LEGAL_LINKS } from './partials.mjs';
-import { iphone, planOf as intlPlan } from './intl.mjs';
+import { railCard, npAsIntl } from './intl.mjs';
+import { INTL_THEMES, designPage } from './intl-designs.js';
 
 const NP_PLANS = FALLBACK_SITE.plans;
 const I_PLANS = intlPlans(FALLBACK_SITE.plans);
@@ -83,29 +84,24 @@ function buttons(l) {
 function designRow(l) {
   if (!l.designs) return '';
   const intl = l.market === 'intl';
+  const SZ = '(max-width: 599px) 56vw, 236px';
   let cards;
-  if (l.designs.list === 'art') {
-    cards = ARTWORK.map((d) => `<li class="rcard" data-slug="${d.id}">
-      <a class="rcard__pic" href="${INTL_PAGES['intl/designs'].path}#d-${d.id}" style="--tint:#EAF1E7">${iphone(d.id, { sizes: '(max-width: 599px) 56vw, 236px', alt: `The ${d.name} design: ${d.alt}` })}</a>
-      <p class="rcard__name"><a href="${INTL_PAGES['intl/designs'].path}#d-${d.id}">${esc(d.name)}</a> <span>${STYLE_LABEL[d.style]}</span></p>
-      <p class="rcard__meta"><span class="tier tier--${d.tier}">${esc(intlPlan(d.tier)?.name || '')}</span><span class="dcard__price" data-usd-from="${d.tier}">from ${usdText(intlPlan(d.tier)?.usd ?? 49)}</span></p></li>`).join('');
+  if (intl) {
+    // every card opens the design's own page: the international designs, or the Nepal ones (their /designs/ page)
+    const list = l.designs.list === 'art' ? INTL_THEMES : l.designs.list.map(npAsIntl).filter(Boolean);
+    cards = list.map((d, i) => railCard(d, i, SZ)).join('');
   } else {
-    cards = l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean).map((t) => {
-      const href = intl ? `/${t.slug}/?showcase=1` : `/designs/${t.slug}/`;
-      const price = intl ? `<span class="dcard__price" data-usd-from="${t.tier}">from ${usdText(intlPlan(t.tier)?.usd ?? 49)}</span>` : `<span class="dcard__price" data-tier-price="${t.tier}">from ${rs(planForTier(NP_PLANS, t.tier)?.price ?? 2999)}</span>`;
-      const tier = intl ? esc(intlPlan(t.tier)?.name || '') : `<span data-tier-name="${t.tier}">${esc(TIER_LABEL[t.tier])}</span>`;
-      return `<li class="rcard" data-slug="${t.slug}">
-      <a class="rcard__pic" href="${href}"${intl ? ` data-preview="${t.slug}"` : ''} style="--tint:${CATEGORIES[t.cat].tint}">${phone(t.slug, { sizes: '(max-width: 599px) 56vw, 236px', alt: `The ${t.name} design: ${t.alt}` })}</a>
-      <p class="rcard__name"><a href="${href}"${intl ? ` data-preview="${t.slug}"` : ''}>${esc(t.name)}</a>${intl ? '' : ` <span lang="ne">${esc(t.ne)}</span>`}</p>
-      <p class="rcard__meta"><span class="tier tier--${t.tier}">${tier}</span>${price}</p></li>`;
-    }).join('');
+    cards = l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean).map((t) => `<li class="rcard" data-slug="${t.slug}">
+      <a class="rcard__pic" href="/designs/${t.slug}/" style="--tint:${CATEGORIES[t.cat].tint}">${phone(t.slug, { sizes: SZ, alt: `The ${t.name} design: ${t.alt}` })}</a>
+      <p class="rcard__name"><a href="/designs/${t.slug}/">${esc(t.name)}</a> <span lang="ne">${esc(t.ne)}</span></p>
+      <p class="rcard__meta"><span class="tier tier--${t.tier}"><span data-tier-name="${t.tier}">${esc(TIER_LABEL[t.tier])}</span></span><span class="dcard__price" data-tier-price="${t.tier}">from ${rs(planForTier(NP_PLANS, t.tier)?.price ?? 2999)}</span></p></li>`).join('');
   }
   const all = intl ? (l.catalog === 'np' ? '' : `<a class="btn btn--ghost" href="${INTL_PAGES['intl/designs'].path}">See all designs</a>`) : '<a class="btn btn--ghost" href="/designs/">See all designs</a>';
   return `<section class="sec" id="lp-designs" aria-labelledby="lp-d-h">
       <div class="wrap">
         <header class="shead shead--split" data-rv>
           <div><p class="eyebrow">Designs</p><h2 class="h2" id="lp-d-h">${esc(l.designs.title)}</h2></div>
-          <div class="rail__side"><p class="lede">${intl && l.catalog === 'np' ? 'Tap a design to see it move, with sample names. Each one works in English and Nepali.' : 'Each design opens like a real card and comes with every detail and an RSVP.'}</p>${all}</div>
+          <div class="rail__side"><p class="lede">${intl && l.catalog === 'np' ? 'Tap a design to see it up close. Each one works in English and Nepali.' : 'Each design opens like a real card and comes with every detail and an RSVP.'}</p>${all}</div>
         </header>
       </div>
       <div class="rail__view"><ul class="rail__track lp__rail">${cards}</ul></div>
@@ -206,10 +202,10 @@ function ld(id) {
     offers,
   };
   const out = [crumbsLd(trail(l)), jsonLd(service)];
-  if (l.designs && l.designs.list !== 'art') {
-    const list = l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean);
+  if (l.designs) {
+    const list = l.designs.list === 'art' ? INTL_THEMES : l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean);
     out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'ItemList', name: l.designs.title, numberOfItems: list.length,
-      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: intl ? `${SITE_URL}/${t.slug}/?showcase=1` : `${SITE_URL}/designs/${t.slug}/` })) }));
+      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug)}` })) }));
   }
   return out.join('\n  ');
 }

@@ -6,7 +6,7 @@ import './intl.css';
 import { $, $$, reduced, money } from './common.js';
 import { loadSite, getJson } from './api.js';
 import { intlPlans, usdText, INTL_NAME } from './intl-plans.js';
-import { intlCatalog, STYLE_LABEL } from './intl-designs.js';
+import { intlCatalog, STYLE_LABEL, designPage } from './intl-designs.js';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -71,22 +71,24 @@ function initStyles() {
   apply(STYLE_LABEL[q] ? q : 'all', false);
 }
 
-/** The designs page: once themes made for the international site come from GET /api/themes?market=intl, they
- *  replace the artwork cards (same markup, plus a preview of the real design). */
+/** The designs page: the live list from GET /api/themes?market=intl (the planner's order, hidden designs gone)
+ *  replaces the built cards (same markup). */
 async function liveCatalog() {
   const grid = $('#dgrid[data-intl-grid]');
   if (!grid) return;
   const raw = await getJson('/api/themes?market=intl', 4000);
+  if (!Array.isArray(raw) || !raw.length) return; // no live list: the built cards are right
   const list = intlCatalog(raw);
-  if (!list.length || list[0].art) return; // still the artwork designs: the built cards are right
   const custom = grid.querySelector('.dcard--custom');
-  const card = (d) => {
+  const TINTS = ['#EAF1E7', '#F1F5EF', '#E6EFE3', '#EEF2EA']; // as the built cards (src/site/intl.mjs)
+  const card = (d, i) => {
     const li = document.createElement('li');
     li.className = 'dcard';
     li.id = `d-${d.slug}`;
     Object.assign(li.dataset, { slug: d.slug, style: d.style, tier: d.tier });
-    li.innerHTML = `<a class="dcard__pic" href="/${esc(d.slug)}/?showcase=1" data-preview="${esc(d.slug)}" tabindex="-1" aria-hidden="true"><span class="phone"><img src="${esc(d.mini)}" width="390" height="844" alt="" loading="lazy" decoding="async" /></span></a>
-      <div class="dcard__body"><h3 class="dcard__name">${esc(d.name)} <span class="dcard__ne">${esc(STYLE_LABEL[d.style])}</span></h3>
+    const href = designPage(d.slug); // the design's own page (Nepal designs: their /designs/ page)
+    li.innerHTML = `<a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true"><span class="phone"><img src="${esc(d.mini)}" width="390" height="844" alt="" loading="lazy" decoding="async" /></span></a>
+      <div class="dcard__body"><h3 class="dcard__name"><a href="${href}">${esc(d.name)}</a> <span class="dcard__ne">${esc(STYLE_LABEL[d.style])}</span></h3>
       <p class="dcard__meta"><span class="tier tier--${esc(d.tier)}">${esc(INTL_NAME[d.tier] || '')}</span><span class="dcard__price" data-usd-from="${esc(d.tier)}"></span></p>
       <p class="dcard__desc">${esc(d.line)}</p>
       <div class="dcard__acts"><a class="btn btn--accent btn--sm" href="/international/pricing/?design=${esc(d.slug)}#plans" data-order data-design="${esc(d.slug)}">Order</a>

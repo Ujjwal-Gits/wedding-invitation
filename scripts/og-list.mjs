@@ -19,12 +19,13 @@ for (const id of ALL_PAGE_IDS) {
   const p = INTL_PAGES[id];
   const market = m.market === 'intl' ? 'intl' : 'np';
   let phone = null;
-  if (l?.hero?.design) phone = { src: `/site/stills/${l.hero.design}-800.webp` };
+  if (id.startsWith('intl-design/')) phone = { src: `/site/stills/${id.slice(12)}-800.webp` };
+  else if (l?.hero?.design) phone = { src: `/site/stills/${l.hero.design}-800.webp` };
   else if (l?.hero?.art) phone = { src: `/site/intl/${l.hero.art}-v3-800.webp` };
   else if (l?.hero?.mock) phone = { mock: l.hero.mock };
   else if (ART[id]) phone = { src: `/site/intl/${ART[id]}-v3-800.webp` };
   else phone = { src: '/site/stills/laali-800.webp' };
-  const h1 = l ? l.h1 : p ? p.h1 : m.title.replace(/ \| Nimtto$/, '');
-  out.push({ img: m.img, market, eyebrow: l?.eyebrow || p?.eyebrow || 'Nimtto', ne: l?.ne || '', h1: em(h1), sub: market === 'intl' ? 'Paid once, from $49 · card or PayPal' : 'Paid once, from Rs 2,999 · Khalti, eSewa, QR', foot: market === 'intl' ? 'Animated invitations with RSVP, made with a real designer' : 'Digital invitations for Nepal, made with a real designer', phone, custom: l?.offer === 'custom' });
+  const h1 = l ? l.h1 : p ? p.h1 : id.startsWith('intl-design/') ? `${m.name.replace(/ Wedding Invitation Design$/, '')} <em>wedding invitation</em>` : m.title.replace(/ \| Nimtto$/, '');
+  out.push({ img: m.img, market, eyebrow: l?.eyebrow || p?.eyebrow || m.eyebrow || 'Nimtto', ne: l?.ne || '', h1: em(h1), sub: market === 'intl' ? `Paid once, from ${(id.startsWith('intl-design/') && /from (\$\d+(?:,\d{3})*)/.exec(m.desc)?.[1]) || '$49'} · card or PayPal` : 'Paid once, from Rs 2,999 · Khalti, eSewa, QR', foot: market === 'intl' ? 'Animated invitations with RSVP, made with a real designer' : 'Digital invitations for Nepal, made with a real designer', phone, custom: l?.offer === 'custom' });
 }
 console.log(JSON.stringify(out));
