@@ -18,7 +18,7 @@ import { intlMe } from './markets.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCache, clearCacheButton } from './cache.js';
 import { startNav, navigate, current, setUrl } from './nav.js'; // clean /studio/… paths (History API) // Nimtto dropdowns, date and time pickers (imports ../ui/ui.css)
-import { setAdmin, can, roleName } from './perms.js';
+import { setAdmin, can, canAny, roleName } from './perms.js';
 import { brandMark } from './brand.js';
 
 const app = document.getElementById('app');
@@ -27,7 +27,7 @@ const S = { me: null, meta: null, ws: null };
 /** The signed-in user (or null); an admin's areas go to perms.js, which hides what they cannot open. */
 const setMe = (me) => { S.me = me; setAdmin(me); };
 /** An admin module this admin may open (its `perm`, admin.js ADMIN_MODULES). */
-const allowed = (m) => !m.perm || can(m.perm);
+const allowed = (m) => (m.anyPerm ? canAny(...m.anyPerm) : !m.perm || can(m.perm)); // anyPerm: any one of these areas
 
 whenSignedOut(() => {
   const wasCouple = S.me?.role === 'client';
@@ -195,6 +195,7 @@ function openAdmin(mod, params, sub = null) {
     fill(app, shell.root);
     shell.attachPreview(null);
     if (can('orders')) api('/orders').then((list) => { const n = (Array.isArray(list) ? list : list.orders || []).filter((o) => o.status === 'new').length; shell.setBadge('orders', n ? String(n) : ''); }).catch(() => {});
+    if (canAny('orders', 'invitations')) api('/admin/change-requests').then((r) => shell.setBadge('requests', r.open ? String(r.open) : '')).catch(() => {});
   }
   S.ws.modId = mod.id;
   S.ws.onRoute = null;

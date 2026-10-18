@@ -13,6 +13,7 @@ import { blogAdmin } from './admin-blog.js';
 import { financePage, giveFreeAccess, undoFreeAccess, refundDialog, refundsBlock, compFacts } from './admin-finance.js';
 import { teamPage } from './admin-team.js';
 import { auditPage } from './admin-audit.js';
+import { changeRequestsPage } from './admin-requests.js';
 import { contentPage } from './admin-content.js';
 import { setBrandLogo } from './brand.js';
 import { tileUrl, logoDataUrl, OP_DEFAULT } from '../core/showcase-tile.js';
@@ -1624,6 +1625,7 @@ export const ADMIN_MODULES = [
   { id: 'customers', perm: 'customers', title: 'Customers', icon: 'users', group: 'main', render: (ctx) => customersSection(ctx, listInvitations), sub: 'Everyone with an account: their details, sign-ins, orders and invitations. Open one to see it all.' },
   { id: 'access', perm: 'invitations', title: 'Clients & access', short: 'Access', icon: 'key', group: 'main', render: access, sub: 'Customer accounts first: invitations you make for their email appear in their dashboard. A separate link with a password is optional.' },
   { id: 'replies', perm: 'replies', title: 'Replies', icon: 'chat', group: 'main', render: replies, sub: 'Guest replies across all invitations, or one at a time.' },
+  { id: 'requests', anyPerm: ['orders', 'invitations'], title: 'Change requests', short: 'Changes', icon: 'lock', group: 'main', render: changeRequestsPage, sub: 'Couples asking to change a locked name or wedding date. Approve to change it on their invitation, or decline with a note.' },
   { id: 'orders', perm: 'orders', title: 'Orders & requests', short: 'Orders', icon: 'inbox', group: 'business', render: orders, sub: 'Orders from both websites, and enquiries for a custom design. Check each payment, reply to each enquiry with a price.' },
   { id: 'finance', perm: 'finance', title: 'Finance', icon: 'wallet', group: 'business', render: financePage, sub: 'Money you actually received, refunds and free access. Rupees and dollars are always kept apart.' },
   { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Which designs each website shows, featured and in what order.' },

@@ -41,6 +41,7 @@ import * as enquiries from './lib/enquiries.js'; // Custom requests: quote, quot
 import { marketStats } from './lib/market-stats.js'; // Overview figures per market (docs/API.md "Markets")
 import * as blog from './lib/blog.js'; // the blog of both websites: server-rendered pages + the studio's Blog module
 import * as indexnow from './lib/indexnow.js'; // tells Bing & co. that public pages changed (docs/SEO-SETUP.md)
+import * as changeReq from './lib/change-requests.js'; // "Request a change" for a locked name or date (event lock)
 
 assertConfigured();
 openStore();
@@ -185,6 +186,14 @@ api.post('/invitations/:slug/guest-links', editor, json('4kb'), wrap(guestLinks.
 api.patch('/invitations/:slug/guest-links/:linkId', editor, json('4kb'), wrap(guestLinks.patch));
 api.delete('/invitations/:slug/guest-links/:linkId', editor, wrap(guestLinks.remove));
 api.put('/invitations/:slug/guest-links/main', editor, json('4kb'), wrap(guestLinks.putMain)); // what the plain link shows
+// Event lock (src/core/event-lock.js): staff reset it; the couple asks for a change to a locked name or the date
+api.delete('/invitations/:slug/lock', requirePerm('invitations'), wrap(inv.resetLock));
+api.get('/invitations/:slug/change-requests', editor, wrap(changeReq.listForInvitation));
+api.post('/invitations/:slug/change-requests', editor, json('4kb'), wrap(changeReq.create));
+api.param('reqId', (req, res, next, id) => (changeReq.REQUEST_ID_RE.test(id) ? next() : res.status(404).json({ error: 'No such request.' })));
+api.get('/admin/change-requests', requireAnyPerm('orders', 'invitations'), wrap(changeReq.adminList));
+api.post('/admin/change-requests/:reqId/approve', requireAnyPerm('orders', 'invitations'), wrap(changeReq.approve));
+api.post('/admin/change-requests/:reqId/decline', requireAnyPerm('orders', 'invitations'), json('2kb'), wrap(changeReq.decline));
 // Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
 // cannot fill the disk.
 const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });

@@ -2,6 +2,7 @@
 import { h, icon, iconBtn, clear, confirmDialog, card, append } from './dom.js';
 import { textField, biField, photoSlot } from './fields.js';
 import { colorsEditor, infoSection } from './sections.js';
+import { lockNote } from './lock-ui.js';
 import { bsDateOf } from '../core/i18n.js';
 import { CEREMONY_PRESETS, religionOf } from '../core/faith.js';
 import { intlMe } from './markets.js';
@@ -150,7 +151,7 @@ function weddingDay(ctx) {
   time.addEventListener('change', write);
   drawBs();
   return card('The wedding day', 'The day and auspicious time of the main ceremony. Guests see a countdown to it.',
-    h('div.when.when--2', h('div.field', h('label.label', { for: 'wd-date' }, 'Date'), date), h('div.field', h('label.label', { for: 'wd-time' }, 'Time'), time)),
+    lockNote(ctx, h('div.when.when--2', h('div.field', h('label.label', { for: 'wd-date' }, 'Date'), date), h('div.field', h('label.label', { for: 'wd-time' }, 'Time'), time)), ['weddingDate']),
     bsBox,
     zoneField(m),
     biField(m, ['city'], { label: 'City', max: 120, placeholderEn: showBs ? 'Kathmandu, Nepal' : 'Napa, California', placeholderNe: 'काठमाडौं, नेपाल' }),

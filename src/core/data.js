@@ -321,7 +321,7 @@ export async function loadInvitation() {
         const res = await fetch(`/api/invitations/${id}/public${q}`, { headers: { Accept: 'application/json' } });
         if (res.ok) {
           const data = await res.json();
-          if (isPlain(data) && isPlain(data.couple)) { replaceConfig(normalisePreview(data, id)); problem = null; }
+          if (isPlain(data) && isPlain(data.couple)) { replaceConfig(normalisePreview(data, id)); problem = null; if (data.previewMark === true) previewMark(); }
         } else if (res.status === 410) problem = 'inactive';
         else if (res.status >= 500 || res.status === 429) problem = 'offline';
       } catch (err) {
@@ -341,6 +341,20 @@ export async function loadInvitation() {
     live?.then((m) => { m.setPicking(firstPick); return m.start({ target: firstTarget }); }).catch(() => document.documentElement.classList.remove('nimtto-hold'));
   }
   return config;
+}
+
+/**
+ * Event lock (src/core/event-lock.js): a draft whose names or date are past what the lock allows is only ever shown
+ * under a large diagonal PREVIEW watermark (the server marks it), so it cannot pass for a clean invitation.
+ */
+function previewMark() {
+  const el = document.createElement('div');
+  el.setAttribute('aria-hidden', 'true');
+  el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;overflow:hidden;pointer-events:none;'
+    + 'background:repeating-linear-gradient(-35deg,transparent 0 120px,rgba(179,18,47,.07) 120px 122px)';
+  el.innerHTML = '<span style="transform:rotate(-35deg);font:800 clamp(56px,18vw,180px)/1 Geist,Arial,sans-serif;letter-spacing:.08em;color:rgba(179,18,47,.34);border:.06em solid rgba(179,18,47,.34);border-radius:.15em;padding:.06em .25em;user-select:none">PREVIEW</span>';
+  const show = () => document.body.append(el);
+  if (document.body) show(); else addEventListener('DOMContentLoaded', show, { once: true });
 }
 
 const BRAND_TITLE = 'Wedding invitation · Nimtto';

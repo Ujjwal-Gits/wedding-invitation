@@ -20,6 +20,7 @@ import { isReligion, startingEvents, startingWords, suits } from '../../src/core
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
 import { activeLink, guestView, linkParam, narrowPayload } from './guest-links.js';
+import { makeLock, rebase, checkLock, blockedMessage, fixesLeft, isNameKey, DATE_KEY, valueAt, setAt, dayOf } from '../../src/core/event-lock.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -54,6 +55,79 @@ const linkOut = (a, slug) => {
   const token = openToken(slug, a);
   return { createdAt: a.createdAt, hasPassword: Boolean(a.passwordHash), url: token ? `${PUBLIC_ORIGINS[0] || ''}/studio/#/c/${token}` : null, ...permsOf(a) };
 };
+
+// ── Event lock (src/core/event-lock.js; docs/PLATFORM.md "Event lock") ─────────────
+// doc.lock = { names, date, fixesUsed, lockedAt }: set on the first publish. doc.lockOpen: staff reset the lock, so
+// the names and the date are free until the next publish locks them again.
+
+/** What the studio gets of the lock (the couple's own names and day; never anything else). */
+export const lockOut = (doc) => (doc.lock ? { names: { ...doc.lock.names }, date: doc.lock.date, fixesUsed: Number(doc.lock.fixesUsed) || 0, fixesLeft: fixesLeft(doc.lock), lockedAt: doc.lock.lockedAt || null } : null);
+
+/** An invitation that went live before the lock existed gets one from its current draft (once, on its next change). */
+function ensureLock(cur) {
+  if (!cur.lock && !cur.lockOpen && cur.status === 'published') cur.lock = makeLock(cur.draft);
+}
+
+/**
+ * The lock rules for one save (staff: the lock follows what they saved, never blocked). Throws 409 code 'locked' when a
+ * couple's change is not allowed; otherwise updates cur.lock (a spelling fix used, a name added).
+ */
+function applyLock(req, cur, draft) {
+  ensureLock(cur);
+  if (!cur.lock) return;
+  if (isAdmin(req)) { cur.lock = rebase(cur.lock, draft); return; }
+  const r = checkLock(cur.lock, draft);
+  if (r.blocked.length) {
+    throw httpError(409, blockedMessage(r.blocked), {
+      code: 'locked', lock: lockOut(cur),
+      errors: r.blocked.map((b) => ({ path: b.key, message: b.reason === 'date' ? 'is locked to this wedding' : b.reason === 'nofixes' ? 'no spelling fixes left' : 'more than a spelling fix' })),
+    });
+  }
+  cur.lock = r.next;
+}
+
+/**
+ * Applies an approved change request (lib/change-requests.js): one locked name or the wedding day, on the draft, on
+ * the published snapshot when there is one, and on the lock. No spelling fix is used. Returns the saved doc.
+ */
+export async function applyLockedChange(slug, field, value, by = 'admin') {
+  return withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    ensureLock(cur);
+    const put = (data) => {
+      if (!data) return;
+      if (field === DATE_KEY) data.weddingDate = `${value}${dayOf(data.weddingDate) ? String(data.weddingDate).slice(10) : 'T10:30:00+05:45'}`;
+      else if (isNameKey(field)) setAt(data, field, value);
+    };
+    const before = structuredClone(cur.draft);
+    put(cur.draft);
+    if (cur.status === 'published') put(cur.published);
+    if (cur.lock) {
+      if (field === DATE_KEY) cur.lock.date = value;
+      else if (value) cur.lock.names[field] = valueAt(cur.draft, field);
+      else delete cur.lock.names[field];
+    }
+    cur.version += 1;
+    cur.updatedAt = new Date().toISOString();
+    const sections = changedAreas(before, cur.draft);
+    logActivity(cur, { at: cur.updatedAt, by, type: 'edit', sections: sections.length ? sections : ['other'] });
+    await saveInvitation(cur);
+    return cur;
+  });
+}
+
+/** DELETE /api/invitations/:slug/lock (staff): the names and the date are free again until the next publish. */
+export async function resetLock(req, res) {
+  const { slug } = req.params;
+  await withLock(`inv:${slug}`, async () => {
+    const cur = await load(slug);
+    delete cur.lock;
+    cur.lockOpen = true;
+    await saveInvitation(cur);
+  });
+  console.info(`[admin] event lock reset slug=${slug}`);
+  res.json({ ok: true, lock: null });
+}
 
 const nameText = (v, max = 60) => (typeof v === 'string' ? v.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max) : '');
 
@@ -94,6 +168,7 @@ export const docOut = (doc, admin = true) => ({
   publishedAt: doc.publishedAt,
   lastEdit: doc.lastEdit || null,
   ...(admin ? { activity: doc.activity || [] } : {}),
+  lock: lockOut(doc),
   data: doc.draft,
 });
 
@@ -280,6 +355,7 @@ export async function update(req, res) {
     if (!isAdmin(req)) clientLimits(cur, draft, slots.manifests, permsFor(req, cur));
     attachDepth(slug, draft);
     if (same(cur.draft, draft)) return cur; // nothing changed: no new version, nothing to log
+    applyLock(req, cur, draft); // the names and the date after the first publish (409 'locked' when not allowed)
     const sections = changedAreas(cur.draft, draft);
     cur.draft = draft;
     cur.version += 1;
@@ -288,7 +364,7 @@ export async function update(req, res) {
     await saveInvitation(cur);
     return cur;
   });
-  res.json({ version: doc.version, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null, changed: doc.status === 'published' && !same(doc.draft, doc.published), data: doc.draft });
+  res.json({ version: doc.version, updatedAt: doc.updatedAt, lastEdit: doc.lastEdit || null, changed: doc.status === 'published' && !same(doc.draft, doc.published), lock: lockOut(doc), data: doc.draft });
 }
 
 /** What a couple may not change without the planner's permission (PLATFORM.md: access). */
@@ -332,6 +408,9 @@ export async function publish(req, res) {
     const cur = await load(slug);
     const problems = publishProblems(cur.draft);
     if (problems.length) throw httpError(422, 'A few things are missing before this can go live.', { problems });
+    // the first publish locks the names and the date to this wedding; a later one is checked against the lock
+    if (cur.lock) applyLock(req, cur, cur.draft);
+    else { cur.lock = makeLock(cur.draft); delete cur.lockOpen; }
     cur.published = structuredClone(cur.draft);
     cur.status = 'published';
     cur.publishedAt = new Date().toISOString();
@@ -534,6 +613,8 @@ export async function publicData(req, res) {
     res.set('X-Invitation-Preview', 'draft');
     res.set('Cache-Control', 'no-store');
     const out = publicPayload(src, slug);
+    // a draft whose names or date differ from the lock more than allowed: shown with a PREVIEW watermark (data.js)
+    if (doc.lock && checkLock(doc.lock, src).blocked.length) out.previewMark = true;
     return res.json(link ? narrowPayload(out, link) : out);
   }
   // Guests: built once per published revision, then served from memory with an ETag (304 when unchanged).

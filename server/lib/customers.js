@@ -17,6 +17,8 @@ import { sendVerify, sendReset, sendSignupCode, useCode, CODE_RE, MAIL_ON } from
 import { clean, planView, REF_RE, amountOf, dropOpenCheckout } from './orders.js';
 import { orderMarket, checkPhone, countryOfPhone, customerMarket, likelyZone, isMarket, MARKET_NAME, PHONE_MSG } from './market.js';
 import { marketView } from './site.js';
+import { requestsFor } from './change-requests.js'; // "Request a change" for a locked name or date
+import { lockOut } from './invitations.js';
 /** A required phone, as E.164 ('' when missing or not a real number); `market` picks the country for a number without a code. */
 const phoneOf = (v, market) => { const r = checkPhone(typeof v === 'string' ? v : '', market === 'intl' ? 'US' : 'NP'); return r.ok ? r.e164 : ''; };
 
@@ -84,6 +86,8 @@ async function accountView(c) {
       status: doc.status, suspended: Boolean(doc.suspended), weddingDate: d.weddingDate || null, updatedAt: doc.updatedAt, perms: permsOf(l),
       plan: o ? planView(o) : null, payStatus: o ? payStatusOf(o) : null, payUrl: o?.ref ? `/pay/${o.ref}` : null, orderRef: o?.ref || null,
       previewUrl: `/${d.theme}/?id=${doc.slug}`, shareUrl: live ? `${PUBLIC_ORIGINS[0] || ''}/i/${doc.slug}` : null,
+      // the event lock (names and date after the first publish) and the couple's change requests
+      lock: lockOut(doc), requests: await requestsFor(doc.slug),
     });
   }
   return {

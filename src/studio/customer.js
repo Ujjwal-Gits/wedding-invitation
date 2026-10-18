@@ -11,6 +11,7 @@ import { setUrl } from './nav.js';
 import { enhance } from '../ui/enhance.js';
 import { clearCacheCard } from './cache.js';
 import { priceFor, countryName } from './markets.js';
+import { requestChangeDialog, requestPill } from './lock-ui.js';
 
 const WA_DISPLAY = '+977 980-6393298';
 const WA_NUMBER = '9779806393298';
@@ -132,7 +133,15 @@ function invitationCard(i, meta, ro = false, onPay = () => {}) {
   const [tone, payText] = i.payStatus ? (PAY[i.payStatus] || ['muted', i.payStatus]) : [null, null];
   const named = names(i);
   const share = i.shareUrl ? new URL(i.shareUrl, location.origin).href : '';
-  return h('li.cu-inv',
+  // the event lock (src/core/event-lock.js): names and date after the first publish, and "Request a change"
+  const ask = () => requestChangeDialog({ slug: i.slug, lock: i.lock, onDone: (r) => { i.requests = [r, ...(i.requests || [])]; li.replaceWith(invitationCard(i, meta, ro, onPay)); } });
+  const lockLine = i.lock ? h('p.cu-lock', icon('lock', 14),
+    h('span', `Names and date locked to this wedding · ${i.lock.fixesLeft} of 3 spelling fixes left`),
+    ro ? null : h('button.link', { type: 'button', onclick: ask }, 'Request a change')) : null;
+  const reqs = (i.requests || []).slice(0, 5);
+  const reqList = reqs.length ? h('ul.cu-reqs', { 'aria-label': 'Your change requests' }, reqs.map((r) => h('li', requestPill(r),
+    h('span', `${r.label}: ${r.old || '(empty)'} → ${r.value}`), r.note ? h('small', `Note from us: ${r.note}`) : null))) : null;
+  const li = h('li.cu-inv',
     h('span.cu-inv__img', design?.thumb ? h('img', { src: design.thumb, alt: '', loading: 'lazy' }) : icon('heart', 18)),
     h('div.cu-inv__body',
       h('p.cu-inv__names', named === 'Your invitation' ? 'Your invitation' : `Your invitation: ${named}`, i.plan?.name ? h('span.cu-inv__plan', ` · ${i.plan.name}`) : null),
@@ -143,7 +152,9 @@ function invitationCard(i, meta, ro = false, onPay = () => {}) {
         h('a.btn.btn--primary.btn--sm', { href: `#/i/${i.slug}/home`, onclick: ro ? () => document.querySelector('dialog[open]')?.close() : null }, icon('edit', 15), 'Edit'),
         h('a.btn.btn--sm', { href: i.previewUrl || `/${i.theme}/?id=${i.slug}`, target: '_blank', rel: 'noopener' }, icon('eye', 15), 'Preview'),
         h('button.btn.btn--sm', { type: 'button', disabled: !share, title: share ? share : 'The share link works once your invitation is published.', onclick: () => navigator.clipboard?.writeText(share).then(() => toast('Share link copied', 'success'), () => toast(share)) }, icon('share', 15), share ? 'Copy share link' : 'Share link after publishing'),
-        !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl && i.orderRef ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => onPay(i.orderRef) }, icon('wallet', 15), 'Pay now') : null)));
+        !ro && ['awaiting_payment', 'rejected'].includes(i.payStatus) && i.payUrl && i.orderRef ? h('button.btn.btn--sm.btn--quiet', { type: 'button', onclick: () => onPay(i.orderRef) }, icon('wallet', 15), 'Pay now') : null),
+      lockLine, reqList));
+  return li;
 }
 
 /** Their phone, with its country, and Change (checked on the server and saved as +1 415 555 2671, E.164). */

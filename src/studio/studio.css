@@ -2202,3 +2202,27 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .blogo__acts { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 640px) { .blogo { grid-template-columns: 96px 1fr; } .blogo__acts { grid-column: 1 / -1; justify-content: flex-start; } }
 [tabindex="-1"]:focus:not(:focus-visible) { outline: none; } /* a heading focused for screen readers (e.g. "Payment received") needs no ring */
+
+/* ── Event lock (lock-ui.js): the lock note on name and date fields, the publish check, the PREVIEW watermark ── */
+.locknote { display: flex; gap: 6px; align-items: flex-start; margin: var(--s2) 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); }
+.locknote svg { flex: none; margin-top: 2px; color: var(--accent); }
+.locknote .link { font-size: inherit; }
+.page__content input[readonly][data-path] { background: var(--surface-2); color: var(--ink-3); cursor: not-allowed; }
+.lockpub__names { margin: var(--s3) 0; }
+.lockpub__names > div { grid-template-columns: 130px minmax(0, 1fr); }
+.lockpub__names dd { color: var(--ink); font-weight: 600; }
+.lockpub__check { display: flex; gap: 10px; align-items: center; margin-top: var(--s3); font-weight: 600; cursor: pointer; }
+.lockpub__check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.pv__lockmark { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; overflow: hidden; pointer-events: none;
+  background: repeating-linear-gradient(-35deg, transparent 0 120px, rgba(179, 18, 47, 0.06) 120px 122px); }
+.pv__lockmark[hidden] { display: none; }
+.pv__lockmark span { transform: rotate(-35deg); font: 800 112px/1 Geist, 'Segoe UI', sans-serif; letter-spacing: 0.08em;
+  color: rgba(179, 18, 47, 0.32); border: 6px solid rgba(179, 18, 47, 0.32); border-radius: 18px; padding: 8px 28px; user-select: none; }
+.cu-lock { margin: var(--s2) 0 0; font-size: 13px; color: var(--ink-3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cu-lock svg { color: var(--accent); }
+.cu-reqs { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.cu-reqs li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--ink-2); }
+.cu-reqs small { color: var(--ink-3); }
+.crq__row { display: grid; gap: 4px; }
+.crq__change { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.crq__acts { display: flex; gap: var(--s2); flex-wrap: wrap; }

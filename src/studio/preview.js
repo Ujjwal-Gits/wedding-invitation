@@ -79,7 +79,11 @@ export function createPreview(session, { onPick } = {}) {
   const quiet = () => performance.now() < quietUntil;    // the client pointed somewhere since the page on screen was rendered
 
   const veil = h('div.pv__veil', { 'aria-hidden': 'true' }, h('span.pv__spin'));
-  const screen = h('div.pv__screen', veil);
+  // Event lock: a name or the date typed past what the lock allows shows under a large PREVIEW watermark, so the
+  // preview never reads as a clean invitation for someone else (src/core/event-lock.js; it is never saved either).
+  const lockMark = h('div.pv__lockmark', { hidden: true, 'aria-hidden': 'true' }, h('span', 'PREVIEW'));
+  const screen = h('div.pv__screen', veil, lockMark);
+  const drawLockMark = () => { lockMark.hidden = !session.lockBlocked?.(); };
   const deviceEl = h('div.pv__device', { 'data-device': device }, screen);
   const stage = h('div.pv__stage', deviceEl);
 
@@ -342,7 +346,10 @@ export function createPreview(session, { onPick } = {}) {
     }
     if (next) next.focus = landing();
     syncNow();
+    drawLockMark();
   });
+  session.on('saved', drawLockMark);
+  session.on('lock', drawLockMark);
 
   // ── The opening ─────────────────────────────────────────────────────────
   function setPicking(v) {

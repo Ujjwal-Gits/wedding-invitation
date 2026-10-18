@@ -2,13 +2,18 @@
 import { h, icon, card } from './dom.js';
 import { textField, biField, photoSlot } from './fields.js';
 import { storySection, wordingSection } from './sections.js';
+import { lockNote, adminLockBar } from './lock-ui.js';
+
+/** The event-lock keys of some name fields (src/core/event-lock.js): 'couple.bride.name.en', ... */
+const keysOf = (who, ...fields) => fields.flatMap((f) => ['en', 'ne'].map((l) => `couple.${who}.${f}.${l}`));
 
 function person(ctx, who, title, short) {
   const m = ctx.m;
   return h('div.person',
     h('h3.person__title', title),
-    biField(m, ['couple', who, 'name'], { label: 'First name', max: 60, placeholderEn: who === 'bride' ? 'Binisha' : 'Ujjwal', placeholderNe: who === 'bride' ? 'बिनिशा' : 'उज्ज्वल' }),
-    biField(m, ['couple', who, 'fullName'], { label: 'Full name on the card', hint: 'Optional. With titles, as the printed card says it.', max: 120, placeholderNe: who === 'bride' ? 'सौ.का. …' : 'चि. …' }),
+    lockNote(ctx, h('div.stack',
+      biField(m, ['couple', who, 'name'], { label: 'First name', max: 60, placeholderEn: who === 'bride' ? 'Binisha' : 'Ujjwal', placeholderNe: who === 'bride' ? 'बिनिशा' : 'उज्ज्वल' }),
+      biField(m, ['couple', who, 'fullName'], { label: 'Full name on the card', hint: 'Optional. With titles, as the printed card says it.', max: 120, placeholderNe: who === 'bride' ? 'सौ.का. …' : 'चि. …' })), keysOf(who, 'name', 'fullName')),
     photoSlot(m, ['couple', who, 'photo'], ctx, { label: `${short}’s photo`, hint: 'Optional. An upright photo works best.', shape: 'port' }));
 }
 
@@ -21,11 +26,12 @@ const strip = (node) => { node.querySelector(':scope > .sec__head')?.remove(); r
 export function peopleModule(ctx) {
   const m = ctx.m;
   return [
+    adminLockBar(ctx),
     card('The couple', null, h('div.pair', person(ctx, 'bride', 'Bride · दुलही', 'Bride'), person(ctx, 'groom', 'Groom · दुलाहा', 'Groom'))),
     card('Families', 'Shown under each name, and who signs the invitation.',
       h('div.pair',
-        h('div.stack', biField(m, ['couple', 'bride', 'parents'], { label: 'Bride’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' }), biField(m, ['couple', 'bride', 'home'], { label: 'Bride’s family home', max: 160 })),
-        h('div.stack', biField(m, ['couple', 'groom', 'parents'], { label: 'Groom’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' }), biField(m, ['couple', 'groom', 'home'], { label: 'Groom’s family home', max: 160 }))),
+        h('div.stack', lockNote(ctx, h('div', biField(m, ['couple', 'bride', 'parents'], { label: 'Bride’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' })), keysOf('bride', 'parents')), biField(m, ['couple', 'bride', 'home'], { label: 'Bride’s family home', max: 160 })),
+        h('div.stack', lockNote(ctx, h('div', biField(m, ['couple', 'groom', 'parents'], { label: 'Groom’s parents', max: 240, placeholderEn: 'Mr. … & Mrs. …' })), keysOf('groom', 'parents')), biField(m, ['couple', 'groom', 'home'], { label: 'Groom’s family home', max: 160 }))),
       biField(m, ['hosts'], { label: 'Who is inviting', max: 200, placeholderEn: 'The Katwal & Dahal families', placeholderNe: 'कटवाल तथा दाहाल परिवार' }),
       textField(m, ['couple', 'hashtag'], { label: 'Wedding hashtag (optional)', max: 60, placeholder: '#BinishaWedsUjjwal', class: 'field--narrow' })),
     fold('Your story', 'A few short moments, one sentence each', strip(storySection(ctx))),
