@@ -23,15 +23,17 @@ body.theme-shagun {
   --su-f-body: 'Mukta', sans-serif;
   --su-radius: 3px;
   --sg-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --sg-tex: url('/themes/shagun/art/floor.webp');
+  --sg-tex: url('/themes/shagun/art/floor-land.webp');
   --sg-paper: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .2  0 0 0 .07 0'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>");
-  background: var(--sg-floor);
+  background: transparent; /* the clay floor photograph is the fixed ::before layer; <html> carries its colour */
   color: var(--su-ink);
 }
 /* the clay floor: one fixed layer (composited; nothing repaints as the page scrolls) */
-body.theme-shagun::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--sg-floor) var(--sg-tex) 0 0 / 640px repeat; pointer-events: none; }
+body.theme-shagun::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--sg-floor) var(--sg-tex) 50% 50% / cover no-repeat; pointer-events: none; }
 body.theme-shagun::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(120% 90% at 50% 40%, rgba(255, 190, 140, 0.10), rgba(40, 8, 0, 0.32)); }
+  background: radial-gradient(130% 100% at 50% 45%, rgba(255, 196, 150, 0.06), rgba(40, 8, 0, 0.22)); }
+html:has(body.theme-shagun) { background: #9A4A2F; }
+@media (orientation: portrait) { body.theme-shagun { --sg-tex: url('/themes/shagun/art/floor-port.webp'); } }
 .theme-shagun .l-ne { font-family: var(--su-f-body); }
 .theme-shagun :focus-visible { outline: 2px solid var(--sg-on-floor); outline-offset: 3px; box-shadow: 0 0 0 5px rgba(42, 26, 18, 0.55); }
 .theme-shagun .sg-card :focus-visible { outline-color: var(--su-accent); box-shadow: none; }
@@ -68,11 +70,20 @@ html[data-lang='ne'] .sg-lede { font-size: 19px; line-height: 1.85; }
 .sg-stagewrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .sg-stage { position: sticky; top: 0; height: 100vh; height: 100svh; }
 .sg-track { position: relative; z-index: 1; }
-.sg-band { position: absolute; inset: 0; opacity: 0; background: radial-gradient(120% 90% at 50% 40%, rgba(255, 190, 140, 0.10), rgba(40, 8, 0, 0.32)), var(--sg-floor) var(--sg-tex) 0 0 / 640px repeat;
+.sg-band { position: absolute; inset: 0; opacity: 0; background: radial-gradient(130% 100% at 50% 45%, rgba(255, 196, 150, 0.06), rgba(40, 8, 0, 0.22)), var(--sg-floor) var(--sg-tex) 50% 50% / cover no-repeat;
   -webkit-mask-image: linear-gradient(to top, #000 0, #000 calc(var(--sg-pd) * 0.4 + 20px), transparent calc(var(--sg-pd) * 0.4 + 96px));
   mask-image: linear-gradient(to top, #000 0, #000 calc(var(--sg-pd) * 0.4 + 20px), transparent calc(var(--sg-pd) * 0.4 + 96px)); }
 
 .sg-plate { position: absolute; left: var(--sg-px); top: var(--sg-py); width: var(--sg-pd); aspect-ratio: 1; margin: calc(var(--sg-pd) / -2) 0 0 calc(var(--sg-pd) / -2); }
+.sg-plate__pool { position: absolute; left: 50%; top: 50%; width: 230%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 214, 168, 0.34), rgba(255, 196, 140, 0.14) 45%, rgba(255, 190, 140, 0) 100%); }
+.sg-aripan { position: absolute; left: 50%; top: 50%; width: 142%; height: auto; translate: -50% -50%; overflow: visible; opacity: 0.36; }
+.sg-aripan circle, .sg-aripan path { fill: #FFF7EA; }
+.sg-aripan .sg-aripan__line { fill: none; stroke: #FFF7EA; stroke-width: 0.7; stroke-dasharray: 0.1 2.2; stroke-linecap: round; }
+.sg-aripan__petal path { fill: none; stroke: #FFF7EA; stroke-width: 0.75; stroke-linecap: round; }
+.sg-petals { position: absolute; width: 62%; height: auto; max-width: none; pointer-events: none; filter: drop-shadow(0 3px 3px rgba(40, 8, 0, 0.3)); }
+.sg-petals--bl { left: -38%; bottom: -30%; rotate: -24deg; }
+.sg-petals--tr { right: -40%; top: -26%; rotate: 158deg; }
 .sg-plate__leaf { position: absolute; left: 50%; top: 50%; width: 178%; max-width: none; height: auto; translate: -50% -50%; rotate: -36deg;
   filter: drop-shadow(0 18px 18px rgba(40, 8, 0, 0.35)); }
 .sg-plate__ring { position: absolute; left: 50%; top: 50%; width: 121%; max-width: none; height: auto; translate: -50% -50%; filter: drop-shadow(0 6px 8px rgba(40, 8, 0, 0.35)); }
@@ -97,7 +108,7 @@ html[data-lang='ne'] .sg-lede { font-size: 19px; line-height: 1.85; }
 
 /* ───────── the gate: the covered thali (the page's own plate shows through) ───────── */
 .theme-shagun .su-gate { background: transparent; }
-.sg-silk { position: absolute; left: var(--sg-px); top: var(--sg-py); width: calc(var(--sg-pd) * 1.04); height: auto; max-width: none; translate: -50% -50%;
+.sg-silk { position: absolute; left: var(--sg-px); top: var(--sg-py); width: calc(var(--sg-pd) * 1.1); height: auto; max-width: none; translate: -50% -50%;
   filter: drop-shadow(0 14px 18px rgba(40, 8, 0, 0.5)); will-change: transform; }
 .sg-gwords { position: absolute; left: 50%; top: max(96px, 17svh); translate: -50% 0; width: min(calc(100% - 40px), 520px); text-align: center; color: var(--sg-on-floor);
   text-shadow: 0 1px 2px rgba(40, 8, 0, 0.45); }
@@ -205,23 +216,43 @@ body.su-locked.is-opening .sg-hcard { visibility: visible; }
 .sg-row__b { width: 48px; height: 48px; border: 1px solid rgba(251, 243, 228, 0.6); border-radius: 50%; background: rgba(42, 12, 4, 0.25); color: var(--sg-on-floor); font-size: 20px; cursor: pointer; transition: transform 200ms var(--sg-ease); }
 .sg-row__b:hover { transform: translateY(-1px); }
 
-.sg-lid { width: min(340px, calc(100vw - 48px)); margin: 0 auto; }
-.sg-lid .su-scratch__foil { height: auto; aspect-ratio: 1; border-radius: 50%; }
-.sg-lid__face { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1; padding: 14%; border-radius: 50%; text-align: center;
-  background: radial-gradient(circle at 50% 42%, #FFFDF8 0 58%, #F3E9D6 70%, #E2CFA9 100%); box-shadow: inset 0 0 0 3px var(--sg-brass), inset 0 0 0 7px #FFFDF8, inset 0 0 0 8px rgba(184, 138, 47, 0.6), 0 24px 40px -22px rgba(30, 6, 0, 0.8); }
-.sg-lid__wd { margin: 6px 0 0; font: 600 13px/1.3 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--su-ink-2); }
+.theme-shagun .sg-box { padding: clamp(48px, 7vh, 80px) 0 clamp(20px, 3vh, 40px); overflow: hidden; }
+.sg-box .sg-floorh { margin-bottom: 10px; }
+/* phone: a square stage, the garland fills it; desktop: the open box sits to the left of the garland */
+.sg-boxstage { --hole: 55%; position: relative; width: min(96vw, 440px); aspect-ratio: 1 / 1.22; margin: 0 auto 8px; }
+.sg-boxstage__ring { position: absolute; left: 0; top: 0; width: 100%; height: auto; z-index: 2; filter: drop-shadow(0 8px 10px rgba(40, 8, 0, 0.4)); pointer-events: none; }
+.sg-boxstage__box { position: absolute; left: 0; top: 78%; width: 26%; height: auto; z-index: 1; rotate: -8deg; filter: drop-shadow(0 10px 12px rgba(40, 8, 0, 0.45)); }
+.sg-boxstage__petals { right: -16%; top: 70%; width: 50%; rotate: 12deg; z-index: 0; }
+.sg-boxstage__hole { position: absolute; left: 22.5%; top: 18.44%; width: var(--hole); aspect-ratio: 1; z-index: 3; container-type: inline-size; }
+.sg-boxstage__hole .su-scratch { position: static; display: block; }
+.sg-boxstage__hole .su-scratch__foil { height: auto; aspect-ratio: 1; border-radius: 50%; }
+.sg-boxstage__hole .su-scratch__btn { position: absolute; left: 50%; top: calc(141% + 10px); translate: -50% 0; white-space: nowrap; }
+.sg-boxstage__lid { position: absolute; left: 22.5%; top: 18.44%; width: var(--hole); z-index: 4; opacity: 0; pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(40, 8, 0, 0.5)); transform-origin: 50% 50%; }
+.sg-boxstage.is-open .sg-boxstage__lid { opacity: 1; transform: translate(56%, 98%) rotate(-20deg) scale(0.42); transition: transform 820ms var(--sg-ease) 40ms; }
+.sg-lid__face { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1; padding: 12%; border-radius: 50%; text-align: center;
+  background: radial-gradient(circle at 50% 42%, #FFFDF8 0 58%, #F3E9D6 70%, #E2CFA9 100%); box-shadow: inset 0 0 0 3px var(--sg-brass), inset 0 0 0 7px #FFFDF8, inset 0 0 0 8px rgba(184, 138, 47, 0.6), 0 10px 20px -10px rgba(30, 6, 0, 0.7); }
+.sg-lid__face .sg-label { font-size: max(10.5px, 4.4cqw); letter-spacing: 0.16em; }
+.sg-lid__face { min-height: 0; overflow: hidden; }
+.sg-lid__face p { max-width: 100%; }
+html[data-lang='ne'] .sg-lid__face { padding: 9%; }
+html[data-lang='ne'] .sg-lid__face .l-ne { line-height: 1.45; }
+html[data-lang='ne'] .sg-lid__alt { font-size: max(10.5px, 4.1cqw); }
+html[data-lang='ne'] .sg-lid__face { padding-top: 7%; }
+.sg-lid__face .sg-label .l-ne { font-size: max(12.5px, 5.4cqw); letter-spacing: 0; }
+.sg-lid__wd { margin: 4px 0 0; font: 600 max(11px, 4.6cqw)/1.3 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--su-ink-2); }
 .sg-lid__wd .l-ne { font-size: 15px; letter-spacing: 0; }
-.sg-lid__day { margin: 0; font: 500 64px/1.25 var(--su-f-display); color: var(--su-accent); }
-.sg-lid__day .l-ne { font-family: var(--su-f-deva); font-size: 54px; }
-.sg-lid__my { margin: 0; font: 500 17px/1.4 var(--su-f-display); }
+.sg-lid__day { margin: 0; font: 500 23cqw/1.2 var(--su-f-display); color: var(--su-accent); }
+.sg-lid__day .l-ne { font-family: var(--su-f-deva); font-size: 19cqw; }
+.sg-lid__my { margin: 0; font: 500 max(14px, 6.2cqw)/1.35 var(--su-f-display); }
 .sg-lid__my .l-ne { font-family: var(--su-f-deva); }
-.sg-lid__t { margin: 4px 0 0; font-weight: 600; }
-.sg-lid__alt { margin: 4px 0 0; font-size: 14px; color: var(--su-ink-2); }
+.sg-lid__t { margin: 2px 0 0; font-weight: 600; font-size: max(14px, 5.6cqw); }
+.sg-lid__alt { margin: 2px 0 0; font-size: max(12px, 4.8cqw); line-height: 1.35; color: var(--su-ink-2); }
 .theme-shagun .su-scratch__btn { background: var(--sg-curd); color: var(--su-accent); border-color: var(--sg-curd); }
 
-.sg-close { position: relative; padding: clamp(70px, 10vh, 110px) 16px 30px; text-align: center; overflow: hidden; }
+.sg-close { position: relative; padding: clamp(56px, 7vh, 80px) 16px 30px; text-align: center; overflow: hidden; }
 .sg-close__card { max-width: 560px; margin: 0 auto; padding-top: clamp(76px, 9vw, 96px); }
-.sg-close__fl { position: absolute; top: calc(clamp(70px, 10vh, 110px) - 40px); width: min(180px, 32vw); z-index: 1; }
+.sg-close__fl { position: absolute; top: calc(clamp(56px, 7vh, 80px) - 40px); width: min(180px, 32vw); z-index: 1; }
 .sg-close__fl--l { left: calc(50% - min(316px, 50vw - 4px)); }
 .sg-close__fl--r { right: calc(50% - min(316px, 50vw - 4px)); }
 .sg-close__ne { margin: 0; font: 500 22px/1.75 var(--su-f-deva); color: var(--su-ink); }
@@ -238,6 +269,14 @@ html[data-lang='ne'] .sg-close__en { display: none; }
 /* ───────── wide screens: the card column on the left, the plate on the right ───────── */
 @media (min-width: 900px) {
   .sg-plate__leaf { width: 150%; }
+  .sg-boxstage { --hole: 39.1%; width: 760px; aspect-ratio: 760 / 560; margin-bottom: 40px; }
+  .sg-boxstage__ring { left: 28.9%; top: 1.8%; right: auto; bottom: auto; width: 71.1%; height: auto; }
+  .sg-boxstage__hole, .sg-boxstage__lid { left: 44.9%; top: 23.4%; }
+  .sg-boxstage__hole .su-scratch__foil { width: 100%; }
+  .sg-boxstage__box { left: 2%; top: 38%; width: 32%; }
+  .sg-boxstage__petals { right: -6%; bottom: -4%; width: 34%; }
+  .sg-boxstage.is-open .sg-boxstage__lid { transform: translate(-118%, -40%) rotate(-22deg) scale(0.6); }
+  .sg-boxstage__hole .su-scratch__btn { top: calc(144% + 6px); }
   .sg-track { width: min(42vw, 580px); margin-left: max(5vw, calc(50vw - 660px)); padding-bottom: 8svh; }
   .theme-shagun .sg-hero { align-items: center; padding: 70px 0 40px; }
   .sg-gwords { left: calc(max(5vw, calc(50vw - 660px)) + min(21vw, 290px)); top: 26svh; width: min(42vw, 560px); }
@@ -247,6 +286,12 @@ html[data-lang='ne'] .sg-close__en { display: none; }
 }
 /* phones and tablets: the plate is held at the foot of the screen, the cards scroll above it */
 @media (max-width: 899px) {
+  /* the flower sprays hang above the card's corners; the words start below them */
+  .sg-close { padding-top: 120px; }
+  .sg-close__fl { top: 20px; width: 30vw; }
+  .sg-close__card { padding-top: 112px; }
+  .sg-aripan { -webkit-mask-image: linear-gradient(to bottom, transparent 46%, #000 60%); mask-image: linear-gradient(to bottom, transparent 46%, #000 60%); }
+  .sg-petals--tr { display: none; }
   .sg-stagewrap { z-index: 2; bottom: calc(var(--sg-pd) * 0.66); }
   .sg-track { padding: 0 16px calc(var(--sg-pd) * 1.02 + 40px); }
   .sg-stop { align-items: flex-start; min-height: 80svh; padding: 9svh 0 calc(var(--sg-pd) * 0.4 + 70px); }
@@ -290,5 +335,5 @@ html[data-lang='ne'] .sg-close__en { display: none; }
   .sg-still .sg-hero { justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sg-item__in, .sg-item__in::before { transition: none; }
+  .sg-item__in, .sg-item__in::before, .sg-boxstage.is-open .sg-boxstage__lid { transition: none; }
 }

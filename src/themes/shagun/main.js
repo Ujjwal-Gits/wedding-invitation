@@ -29,12 +29,33 @@ const STEP = 360 / ITEMS.length;
 const angleOf = (stop) => (stop <= 0 ? STEP / 2 : -(stop - 1) * STEP); // the hero rests half a step turned
 const pic = (k, cls, sizes, lazy = true) => `<img class="${cls}" src="${A}${k}-sm.webp" srcset="${A}${k}-sm.webp 240w, ${A}${k}.webp 440w" sizes="${sizes}" alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} />`;
 
+/** a faint white aripan drawn in rice paste on the clay round the thali: two dotted rings, a lotus-petal band */
+function aripan() {
+  const petals = Array.from({ length: 24 }, (_, i) => {
+    const a = (i / 24) * Math.PI * 2;
+    const p = (r) => `${(100 + Math.cos(a) * r).toFixed(1)} ${(100 + Math.sin(a) * r).toFixed(1)}`;
+    const side = (r, d) => `${(100 + Math.cos(a + d) * r).toFixed(1)} ${(100 + Math.sin(a + d) * r).toFixed(1)}`;
+    return `<path d="M${p(80)} Q${side(89, 0.13)} ${p(96)} Q${side(89, -0.13)} ${p(80)}Z" />`;
+  }).join('');
+  const dots = Array.from({ length: 72 }, (_, i) => {
+    const a = (i / 72) * Math.PI * 2;
+    return `<circle cx="${(100 + Math.cos(a) * 99).toFixed(1)}" cy="${(100 + Math.sin(a) * 99).toFixed(1)}" r="0.9" />`;
+  }).join('');
+  return `<svg class="sg-aripan" viewBox="-2 -2 204 204" focusable="false"><defs><filter id="sg-chalk" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="4" /><feDisplacementMap in="SourceGraphic" scale="1.4" /></filter></defs>
+      <g filter="url(#sg-chalk)"><circle cx="100" cy="100" r="78.5" class="sg-aripan__line" /><g class="sg-aripan__petal">${petals}</g>${dots}</g></svg>`;
+}
+
 /** the thali on its banana leaf, inside its makhamali garland; `turn` rotates, the leaf and garland stay */
 function thali({ eager = false } = {}) {
   const items = ITEMS.map((it, i) => `<span class="sg-item sg-item--${it.k}" data-item="${i + 1}" style="--a:${(i * STEP).toFixed(1)}deg">
       <span class="sg-item__in">${pic(it.k, 'sg-item__img', '(min-width: 900px) 130px, 80px', !eager)}
         ${it.wick ? `<span class="sg-wick" style="left:${it.wick[0] * 100}%;top:${it.wick[1] * 100}%">${flame('sg-flame')}</span>` : ''}</span></span>`).join('');
   return `<div class="sg-plate" aria-hidden="true">
+      <i class="sg-plate__pool"></i>
+      ${aripan()}
+      <img class="sg-petals sg-petals--bl" src="${A}petals.webp" alt="" decoding="async" loading="lazy" />
+      <img class="sg-petals sg-petals--tr" src="${A}petals.webp" alt="" decoding="async" loading="lazy" />
       <img class="sg-plate__leaf" src="${A}leaf-sm.webp" srcset="${A}leaf-sm.webp 800w, ${A}leaf.webp 1500w" sizes="(min-width: 900px) 64vw, 140vw" alt="" decoding="async" />
       <img class="sg-plate__ring" src="${A}garland-sm.webp" srcset="${A}garland-sm.webp 760w, ${A}garland.webp 1400w" sizes="(min-width: 900px) 52vw, 112vw" alt="" decoding="async" />
       <div class="sg-plate__turn">
@@ -107,7 +128,7 @@ function page(ctx) {
     </section>`;
   const rule = '<i class="sg-rule" aria-hidden="true"></i>';
   const bsShort = (b) => (b.full.short?.en ? (/B\.S\./.test(b.full.short.en) ? b.full.short.en : `${b.full.short.en} B.S.`) : b.full.en);
-  const time = mainEv ? { en: AD.time, ne: ctx.timeLabel(mainEv).ne } : null;
+  const time = mainEv ? { en: AD.time, ne: String(ctx.timeLabel(mainEv).ne || '').split(/\s[–-]\s/)[0] } : null; // the start only: the auspicious hour
   const dayLine = { en: `${AD.wd.en}, ${AD.day} ${AD.month.en} ${AD.year}`, ne: BS.day && BS.month && BS.year ? `${AD.wd.ne}, ${BS.month} ${BS.day}, ${BS.year}` : (BS.full.ne || AD.full.ne) };
   const inv = txt('hero.invocation');
   const lead = P.lead;
@@ -220,7 +241,13 @@ function page(ctx) {
 
   <section class="sg-sec sg-box" id="sindoor" aria-labelledby="box-title">
     <h2 class="sg-floorh su-rise" id="box-title">${bi(txt('scratch.title'))}</h2>
-    <div class="sg-lid su-rise">${P.scratch(lidFace, 'sg-lid__scratch')}</div>
+    <div class="sg-boxstage su-rise" id="boxstage">
+      <img class="sg-petals sg-boxstage__petals" src="${A}petals.webp" alt="" decoding="async" loading="lazy" />
+      <img class="sg-boxstage__box" src="${A}box.webp" alt="" decoding="async" loading="lazy" />
+      <img class="sg-boxstage__ring" src="${A}garland-sm.webp" srcset="${A}garland-sm.webp 760w, ${A}garland.webp 1400w" sizes="(min-width: 900px) 540px, 96vw" alt="" decoding="async" loading="lazy" />
+      <div class="sg-boxstage__hole">${P.scratch(lidFace, 'sg-lid__scratch')}</div>
+      <img class="sg-boxstage__lid" src="${A}lid.webp" alt="" decoding="async" loading="lazy" />
+    </div>
   </section>
 
   <footer class="sg-close" aria-label="Blessing">
@@ -245,7 +272,7 @@ function layout() {
   if (wide()) {
     d = Math.min(vh * 0.8, vw * 0.4, 780); x = vw * 0.73; y = vh * 0.52; shift = 0;
   } else {
-    d = Math.min(vw * 0.94, vh * 0.5, 520); x = vw / 2;
+    d = Math.min(vw * 0.98, vh * 0.52, 540); x = vw / 2;
     // the plate sits just under the card (its garland clear of the words), never higher than a third sunk
     const card = document.querySelector('.sg-hcard');
     const cb = card ? card.getBoundingClientRect().bottom + window.scrollY : 0;
@@ -372,7 +399,8 @@ const T = {
     window.addEventListener('load', () => { ctx.ScrollTrigger.refresh(); d.measure(); d.aim(); });
   },
 
-  scratch: { paint: paintLid },
+  // rubbed open: the painted lid lifts off the date and is set down tilted beside the open box
+  scratch: { paint: paintLid, onReveal: () => document.getElementById('boxstage')?.classList.add('is-open') },
 };
 
 mountSuite(T);
