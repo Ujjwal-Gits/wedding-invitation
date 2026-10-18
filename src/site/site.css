@@ -330,3 +330,13 @@ dialog { color: var(--ink); }
 /* "Sign in" / "My dashboard": hidden until common.js knows which (no flash of the wrong word); always shown without JS */
 [data-auth]:not([data-auth-ready]) { visibility: hidden; }
 @media (scripting: none) { [data-auth] { visibility: visible; } }
+
+/* ---------------- Content slots (server/lib/content-render.js): the announcement bar, footer extras ---------------- */
+.announce { position: relative; z-index: 41; background: var(--night); color: #fff; font-size: 14px; line-height: 1.45; }
+.announce__in { margin: 0 auto; padding-top: 10px; padding-bottom: 10px; text-align: center; }
+.announce__a { color: #fff; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.announce__a:hover { color: var(--blush-200); }
+.announce__a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 2px; }
+.foot__social { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+.foot__addr { margin: 0; font-size: 14px; color: var(--ink-3); }
+.foot__trust, .foot__policy { margin: 0; }
