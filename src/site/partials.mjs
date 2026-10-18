@@ -20,7 +20,12 @@ const stills = JSON.parse(readFileSync(resolve(here, 'stills.json'), 'utf8'));
 const thumbs = new Set(JSON.parse(readFileSync(resolve(here, 'thumbs.json'), 'utf8')));
 
 export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-export const jsonLd = (o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
+/** `attrs`: extra attributes for the tag, e.g. the data-cms hooks the server fills from the studio's Content page */
+export const jsonLd = (o, attrs = '') => `<script type="application/ld+json"${attrs}>${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
+/** Content hooks (server/lib/content-render.js): the server writes the studio's Content edits into the built HTML at
+ *  request time. `data-cms="..."` marks an element whose inner HTML it may replace; a `<!--cms:name-->...<!--/cms:name-->`
+ *  pair marks a region (the FAQ with its JSON-LD) or an empty slot (announcement bar, social links). Markup stays the same. */
+export const cmsSlot = (name, inner = '') => `<!--cms:${name}-->${inner}<!--/cms:${name}-->`;
 const npr = new Intl.NumberFormat('en-IN');
 export const rs = (n) => `Rs ${npr.format(n)}`;
 const PLANS = FALLBACK_SITE.plans;
@@ -104,7 +109,7 @@ function meta(id = 'home') {
     isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` },
     primaryImageOfPage: { '@type': 'ImageObject', url: m.image, width: 1200, height: 630 },
     ...(m.type === 'AboutPage' ? { about: { '@id': `${SITE_URL}/#org` }, mainEntity: { '@id': `${SITE_URL}/#org` } } : {}),
-    ...(m.speak ? { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } } : {}) })}`;
+    ...(m.speak ? { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } } : {}) }, ` data-cms="webpage" data-cms-id="${esc(id)}" data-cms-site="${esc(m.market)}"`)}`;
 }
 /** The organisation and the website, the same on every page of both sites (no LocalBusiness: there is no shop).
  *  Name, contact and profiles come from seo-site.mjs (NAP, SAME_AS, OWNER, FOUNDED). */
@@ -141,7 +146,7 @@ function head(id = 'home') {
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preload" href="/site/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/site/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
-  ${jsonLd(org)}`;
+  ${jsonLd(org, ' data-cms="org"')}`;
 }
 
 /* ---------------- header and footer ---------------- */
@@ -149,7 +154,7 @@ function head(id = 'home') {
 export const LEGAL_LINKS = '<p class="foot__legal"><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a></p>';
 function header(active = '') {
   const links = NAV.map(([k, href, t]) => `<a href="${href}"${k === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
-  return `<a class="skip" href="#main">Skip to content</a>
+  return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
     <div class="wrap nav__in">
       <a class="nav__logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto home" /></a>
@@ -179,8 +184,8 @@ function footer() {
       <div class="foot__top">
         <div class="foot__brand">
           <img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
-          <p>Online invitations for Nepali weddings and every family occasion. Made in Nepal, in English and Nepali.</p>
-          <p class="foot__ne" lang="ne">निम्तो, मायाले पठाइएको</p>
+          <p data-cms="foot-blurb">Online invitations for Nepali weddings and every family occasion. Made in Nepal, in English and Nepali.</p>
+          <p class="foot__ne" lang="ne">निम्तो, मायाले पठाइएको</p>${cmsSlot('foot-extra')}
         </div>
         ${col('Invitations', [['/wedding-invitation-nepal/', 'Wedding cards'], ['/designs/', 'All designs'], ['/occasions/', 'Occasions'], ['/occasions/bratabandha/', 'Bratabandha'], ['/occasions/pasni/', 'Pasni'], ['/occasions/gunyu-cholo/', 'Gunyu Cholo'], ['/nepali-abroad/', 'For families abroad']])}
         ${col('Nimtto', [['/about/', 'About us'], ['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/faq/', 'FAQ'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
@@ -190,7 +195,7 @@ function footer() {
           <li><a href="/studio/" data-auth>Sign in</a></li>
         </ul></div>
       </div>
-      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto · Made in Nepal</p>${LEGAL_LINKS}<p>Pay by Khalti, eSewa, bank QR or PayPal</p></div>
+      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto · Made in Nepal</p>${LEGAL_LINKS}<p data-cms="foot-pay">Pay by Khalti, eSewa, bank QR or PayPal</p>${cmsSlot('trust')}</div>
     </div>
   </footer>`;
 }
@@ -468,15 +473,15 @@ export function faqBlock(items, { ld = true, openFirst = true } = {}) {
   return `<div class="faq__list">${html}</div>${ld ? faqLd(items) : ''}`;
 }
 export const faqLd = (items) => jsonLd({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) });
-/** `faq:<set>`; the FAQ page's grouped set renders a heading per group and one FAQPage for all of them */
+/** Grouped questions ([[heading, items]]): a heading per group and one FAQPage for all of them (the FAQ pages). */
+export const faqGroups = (all) => all.map(([h, items], g) => `<section class="faq__group" aria-labelledby="fg-${g}"><h2 class="h3 faq__gh" id="fg-${g}">${esc(h)}</h2>${faqBlock(items, { ld: false, openFirst: g === 0 })}</section>`).join('')
+  + faqLd(all.flatMap(([, items]) => items));
+/** `faq:<set>`; the FAQ page's grouped set renders a heading per group and one FAQPage for all of them. The whole
+ *  block (HTML and JSON-LD) is the `faq` content region: an edited FAQ replaces both together (server/lib/content-render.js). */
 function faq(set = 'home') {
   const groups = FAQ[set];
-  if (Array.isArray(groups?.[0])) {
-    const all = groups.map(([h, keys]) => [h, faqItemsOf(keys)]);
-    return all.map(([h, items], g) => `<section class="faq__group" aria-labelledby="fg-${g}"><h2 class="h3 faq__gh" id="fg-${g}">${esc(h)}</h2>${faqBlock(items, { ld: false, openFirst: g === 0 })}</section>`).join('')
-      + faqLd(all.flatMap(([, items]) => items));
-  }
-  return faqBlock(faqItems(set));
+  if (Array.isArray(groups?.[0])) return cmsSlot('faq', faqGroups(groups.map(([h, keys]) => [h, faqItemsOf(keys)])));
+  return cmsSlot('faq', faqBlock(faqItems(set)));
 }
 
 /** A real, scannable QR code as inline SVG (src/studio/qr.js): `qr:https://nimtto.com/go`. Only our own URLs. */

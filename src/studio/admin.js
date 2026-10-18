@@ -12,6 +12,7 @@ import { musicLibrary } from './admin-music.js';
 import { financePage, giveFreeAccess, undoFreeAccess, refundDialog, refundsBlock, compFacts } from './admin-finance.js';
 import { teamPage } from './admin-team.js';
 import { auditPage } from './admin-audit.js';
+import { contentPage } from './admin-content.js';
 import { can, canAny, canSomething, roleName } from './perms.js';
 import { repliesView, when } from './m-replies.js';
 import { shareUrl } from './m-send.js';
@@ -1454,7 +1455,7 @@ function website(ctx) {
       const lead = h('select.input', { id: 'ic-lead', onchange: (e) => { ii.lead = e.target.value; touch(); } },
         [['email', 'Email'], ['whatsapp', 'WhatsApp'], ['phone', 'Phone']].map(([v, t]) => h('option', { value: v, selected: (ii.lead || 'email') === v }, t)));
       const offered = site.plans.filter((p) => (p.markets || ['np', 'intl']).includes('intl')).map((p) => p.name || 'Unnamed');
-      return setting('International website', 'What differs on the International website (/international/, US first, prices in dollars, PayPal or card). Empty fields use the Nepal details above.',
+      return setting('International website', 'What differs on the International website (/international/, US first, prices in dollars, PayPal or card). The headline is the International home page’s heading. Empty fields use the Nepal details above.',
         fieldIn('ih-title', 'Headline', ii.hero?.title, (v) => { ii.hero = { ...ii.hero, title: v }; }, { max: 120, placeholder: 'Leave empty for the built-in words' }),
         fieldIn('ih-sub', 'Line under it', ii.hero?.subtitle, (v) => { ii.hero = { ...ii.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 }),
         h('div.pair',
@@ -1485,7 +1486,7 @@ function website(ctx) {
           h('div.pair',
             fieldIn('ct-email', 'Email', site.contact.email, (v) => { site.contact.email = v; }, { type: 'email', max: 254 }),
             fieldIn('ct-addr', 'Address', site.contact.address, (v) => { site.contact.address = v; }, { max: 300 }))),
-        setting('Website headline', 'Nepal website. Optional: leave empty to keep the built-in words.',
+        setting('Website headline', 'Nepal website home page. Optional: leave empty to keep the built-in words. Content → Pages can set other words for the home page, and every other page’s heading.',
           fieldIn('hero-title', 'Headline', site.hero?.title, (v) => { site.hero = { ...site.hero, title: v }; }, { max: 120 }),
           fieldIn('hero-sub', 'Line under it', site.hero?.subtitle, (v) => { site.hero = { ...site.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 })),
         intlSetting(),
@@ -1558,6 +1559,7 @@ export const ADMIN_MODULES = [
   { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Which designs each website shows, featured and in what order.' },
   { id: 'music', perm: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
   { id: 'website', perm: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and headlines for the Nepal and International websites.' },
+  { id: 'content', perm: 'content', title: 'Content', icon: 'edit', group: 'business', render: contentPage, sub: 'Words on both websites: titles, descriptions, headings, FAQ, contact, footer and the announcement bar.' },
   { id: 'team', perm: 'team', title: 'Team & access', short: 'Team', icon: 'shield', group: 'business', render: teamPage, sub: 'Who can sign in to the studio, and what each person can open.' },
   { id: 'audit', perm: 'audit', title: 'Audit log', short: 'Audit', icon: 'history', group: 'business', render: auditPage, sub: 'Every change made in the studio: who, what, when and from where.' },
   { id: 'settings', title: 'Settings & help', short: 'Settings', icon: 'settings', group: 'business', render: settings, sub: 'Your account and where things live.' },

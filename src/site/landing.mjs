@@ -11,7 +11,7 @@ import { fillUsd, INTL_PAGES, INTL_BASE } from './intl-content.mjs';
 import { ARTWORK, artSrc } from './intl-designs.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { PAGES } from './seo.mjs';
-import { esc, jsonLd, phone, faqBlock, crumbsLd, rs, ICON, LEGAL_LINKS } from './partials.mjs';
+import { esc, jsonLd, phone, faqBlock, cmsSlot, crumbsLd, rs, ICON, LEGAL_LINKS } from './partials.mjs';
 import { railCard, npAsIntl } from './intl.mjs';
 import { INTL_THEMES, designPage } from './intl-designs.js';
 
@@ -239,8 +239,8 @@ function body(id) {
       ${stage(l)}
       <div class="dp__info">
         <p class="eyebrow">${esc(l.eyebrow)}${l.ne ? ` <span class="lp__ne" lang="ne">${esc(l.ne)}</span>` : ''}</p>
-        <h1 class="display dp__name lp__h" id="lp-h">${l.h1}</h1>
-        <p class="dp__desc lp__lede" data-speak>${fill(l, l.lede)}</p>
+        <h1 class="display dp__name lp__h" id="lp-h" data-cms="h1">${l.h1}</h1>
+        <p class="dp__desc lp__lede" data-speak data-cms="lede">${fill(l, l.lede)}</p>
         ${priceLine(l)}
         <div class="dp__btns">${buttons(l)}</div>
         <ul class="dp__notes">${(l.notes || []).map((n) => `<li>${fill(l, n)}</li>`).join('')}</ul>
@@ -279,7 +279,7 @@ function body(id) {
     <section class="sec sec--blush" id="faq" aria-labelledby="faq-h">
       <div class="wrap faq">
         <header class="shead"><p class="eyebrow">Questions</p><h2 class="h2" id="faq-h">${l.faqTitle || 'Good to <em>know.</em>'}</h2></header>
-        ${faqBlock(faqItems)}
+        ${cmsSlot('faq', faqBlock(faqItems))}
       </div>
     </section>
 
@@ -354,7 +354,7 @@ function crossband(kind = 'np') {
 
 /* ---------------- the legal pages' neutral header and footer ---------------- */
 function legalHeader() {
-  return `<a class="skip" href="#main">Skip to content</a>
+  return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
     <div class="wrap nav__in">
       <a class="nav__logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto home" /></a>

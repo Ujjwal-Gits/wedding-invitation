@@ -10,7 +10,7 @@ import { INTL_PAGES, EVENTS, FAQ_SETS, faqList, fillUsd, STEPS, INTL_BASE } from
 import { STYLES, STYLE_LABEL, V, artSrc, artSrcset, INTL_THEMES, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
 import { LANDINGS } from './landings.mjs';
 import { PAGES } from './seo.mjs';
-import { jsonLd, faqBlock, faqLd, LEGAL_LINKS, phone, pic } from './partials.mjs';
+import { jsonLd, faqBlock, faqGroups, cmsSlot, LEGAL_LINKS, phone, pic } from './partials.mjs';
 import { SITE_URL } from './content.mjs';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -44,7 +44,7 @@ function header(arg = '') {
   const active = arg.startsWith('land/') ? pg?.parent || '' : arg;
   const nepal = (pg?.np === 'about' ? '/about/' : pg?.np && PAGES[pg.np]?.path) || '/';
   const links = NAV.map(([id, t]) => `<a href="${INTL_PAGES[id].path}"${id === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
-  return `<a class="skip" href="#main">Skip to content</a>
+  return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
     <div class="wrap nav__in">
       <a class="nav__logo" href="${INTL_BASE}"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto International home" /></a>
@@ -77,7 +77,7 @@ function footer() {
       <div class="foot__top">
         <div class="foot__brand">
           <img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
-          <p>Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>
+          <p data-cms="foot-blurb">Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>${cmsSlot('foot-extra')}
         </div>
         ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'All designs'], [INTL_PAGES['intl/occasions'].path, 'All occasions'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
         ${col('Nimtto', [['/international/about/', 'About us'], [INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
@@ -87,7 +87,7 @@ function footer() {
           <li><a href="/studio/" data-auth>Sign in</a></li>
         </ul></div>
       </div>
-      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto</p>${LEGAL_LINKS}<p>Pay by card or PayPal, in US dollars</p></div>
+      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto</p>${LEGAL_LINKS}<p data-cms="foot-pay">Pay by card or PayPal, in US dollars</p>${cmsSlot('trust')}</div>
     </div>
   </footer>`;
 }
@@ -97,16 +97,16 @@ function pagehead(id) {
   const p = INTL_PAGES[id];
   return `<header class="wrap pagehead">
       <p class="eyebrow">${esc(p.eyebrow)}</p>
-      <h1 class="display">${p.h1}</h1>
-      <p class="lede" data-speak>${fillUsd(p.lede, true)}</p>
+      <h1 class="display" data-cms="h1">${p.h1}</h1>
+      <p class="lede" data-speak data-cms="lede">${fillUsd(p.lede, true)}</p>
     </header>`;
 }
 /** the home page's hero words */
 function heroCopy() {
   const p = INTL_PAGES['intl/home'];
   return `<p class="eyebrow">${esc(p.eyebrow)}</p>
-          <h1 class="display hero__h" id="hero-h">${p.h1}</h1>
-          <p class="lede hero__lede" data-speak>${fillUsd(p.lede, true)}</p>`;
+          <h1 class="display hero__h" id="hero-h" data-cms="h1">${p.h1}</h1>
+          <p class="lede hero__lede" data-speak data-cms="lede">${fillUsd(p.lede, true)}</p>`;
 }
 
 /* ---------------- designs ---------------- */
@@ -312,12 +312,9 @@ export function offersLd() {
 /* ---------------- FAQ, in plain words ---------------- */
 function faq(set = 'home') {
   const s = FAQ_SETS[set];
-  if (Array.isArray(s?.[0])) {
-    const all = s.map(([h, keys]) => [h, faqList(keys)]);
-    return all.map(([h, items], g) => `<section class="faq__group" aria-labelledby="fg-${g}"><h2 class="h3 faq__gh" id="fg-${g}">${esc(h)}</h2>${faqBlock(items, { ld: false, openFirst: g === 0 })}</section>`).join('')
-      + faqLd(all.flatMap(([, items]) => items));
-  }
-  return faqBlock(faqList(s || []));
+  // the `faq` content region (HTML and JSON-LD together; src/site/partials.mjs cmsSlot)
+  if (Array.isArray(s?.[0])) return cmsSlot('faq', faqGroups(s.map(([h, keys]) => [h, faqList(keys)])));
+  return cmsSlot('faq', faqBlock(faqList(s || [])));
 }
 
 export const INTL_PARTIALS = {
