@@ -17,6 +17,7 @@ import { getDoc, putDoc, withLock } from './store.js';
 import { ROOT_DIR, UPLOAD_DIR } from './env.js';
 import { readMultipart, receiving, withSlot, MAX_BYTES } from './uploads.js';
 import { plainText } from './blog-md.js';
+import { notifyChanged } from './indexnow.js';
 import { THEMES } from '../../src/site/themes.js';
 import { INTL_THEMES, NP_DESIGNS_INTL } from '../../src/site/intl-designs.js';
 import {
@@ -244,6 +245,9 @@ export function blogPages({ distDir }) {
           return post ? renderPost({ post, others: posts, shell: shellFor(distDir, site) }) : null;
         });
         if (html) return send(req, res, 'html', html);
+        const { doc } = await readBlog();
+        const moved = live(doc, site).find((x) => (x.redirects || []).includes(sm[1]));
+        if (moved) return res.redirect(301, postPath(moved));
       }
       res.set('X-Robots-Tag', 'noindex');
       return send(req, res, 'html', renderNotFound({ site, shell: shellFor(distDir, site) }), 404);
@@ -313,24 +317,32 @@ export function adminRouter({ json, heavy, distDir }) {
       doc.posts.push(post);
       return post;
     });
+    if (out.status === 'published') notifyChanged([postPath(out), SITES[out.site].base]);
     res.locals.auditLabel = 'Created a blog post';
     res.locals.auditTarget = out.title;
     res.status(201).json({ post: out, stamp: stampOf(out) });
   }));
   r.put('/:id', json('256kb'), wrap(async (req, res) => {
+    let before = null;
     const out = await mutate((doc) => {
       const i = doc.posts.findIndex((x) => x.id === req.params.id);
       if (i < 0) throw httpError(404, 'No such post.');
       const prev = doc.posts[i];
+      before = prev;
       // someone else saved since this editor opened it: never overwrite their words silently
       if (typeof req.body?.baseStamp === 'string' && req.body.baseStamp !== stampOf(prev)) {
         throw httpError(409, 'This post was changed somewhere else since you opened it. Reload it to see the latest version.', { code: 'stale' });
       }
       const post = cleanPost(req.body, prev);
+      // a renamed link keeps working: the old link names redirect to the new one (301)
+      const olds = [...(prev.redirects || []), ...(prev.slug !== post.slug && prev.status === 'published' ? [prev.slug] : [])].filter((s) => s !== post.slug);
+      if (olds.length) post.redirects = [...new Set(olds)].slice(-10);
       if (taken(doc, post)) throw httpError(409, 'Another post on this website already uses that link name.', { errors: { slug: 'Already used on this website.' } });
       doc.posts[i] = post;
       return post;
     });
+    // search engines that take IndexNow hear about it (lib/indexnow.js: production only, batched, never throws)
+    if (out.status === 'published' || before?.status === 'published') notifyChanged([postPath(out), ...(before && before.slug !== out.slug ? [postPath(before)] : []), SITES[out.site].base]);
     res.locals.auditLabel = out.status === 'published' ? 'Saved a published blog post' : 'Saved a blog draft';
     res.locals.auditTarget = out.title;
     res.json({ post: out, stamp: stampOf(out) });
@@ -341,6 +353,7 @@ export function adminRouter({ json, heavy, distDir }) {
       if (i < 0) throw httpError(404, 'No such post.');
       return doc.posts.splice(i, 1)[0];
     });
+    if (gone.status === 'published') notifyChanged([postPath(gone), SITES[gone.site].base]);
     res.locals.auditLabel = 'Deleted a blog post';
     res.locals.auditTarget = gone.title;
     res.json({ ok: true });

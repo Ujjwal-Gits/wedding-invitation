@@ -58,9 +58,9 @@
   "updatedAt": "2026-10-18",
   "cover": {
     "type": "design",
-    "design": "laali",
-    "alt": "The Laali invitation design on a phone: a blush pink arched card with gold lanterns and peonies",
-    "caption": "Laali, a Nimtto design. Blush pink and gold. Lanterns drop in as an arched card draws itself."
+    "design": "jali",
+    "alt": "The Jali invitation design on a phone: carved emerald and gold lattice screens under lanterns",
+    "caption": "Jali, a Nimtto design. Carved emerald and gold lattice screens slide apart under hanging lanterns."
   },
   "og": "/site/og/blog-nepali-south-asian-weddings-usa.jpg"
 }

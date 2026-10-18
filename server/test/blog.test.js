@@ -129,6 +129,8 @@ test('a post page carries its title, meta, canonical, Open Graph and JSON-LD', a
   assert.ok(post, 'BlogPosting');
   for (const k of ['headline', 'image', 'datePublished', 'dateModified', 'author', 'publisher', 'mainEntityOfPage', 'wordCount', 'articleSection', 'inLanguage', 'speakable']) assert.ok(post[k], k);
   assert.equal(post.author.name, 'Nimtto Team');
+  assert.equal(post.author['@id'], 'https://nimtto.com/about/#team');
+  assert.match(t, /<html lang="en-NP"/);
   assert.ok(post.publisher.logo.url);
   assert.equal(post.inLanguage, 'en-NP');
   const faq = ld.find((x) => x['@type'] === 'FAQPage');
@@ -136,7 +138,9 @@ test('a post page carries its title, meta, canonical, Open Graph and JSON-LD', a
   assert.equal(ld.find((x) => x['@type'] === 'BreadcrumbList').itemListElement.length, 3);
   // the international post is in American English for the US audience
   const i = await page('/international/blog/how-to-collect-rsvps-online/');
-  assert.equal(ldOf(i.text).find((x) => x['@type'] === 'BlogPosting').inLanguage, 'en');
+  assert.equal(ldOf(i.text).find((x) => x['@type'] === 'BlogPosting').inLanguage, 'en-US');
+  assert.match(i.text, /<html lang="en-US"/);
+  assert.equal(ldOf(i.text).find((x) => x['@type'] === 'BlogPosting').author.url, 'https://nimtto.com/international/about/#team');
   assert.equal((await page('/blog/how-to-collect-rsvps-online/')).status, 404); // each site has its own posts
   assert.equal((await page('/blog/pasni-invitation-guide')).status, 301);
 });
@@ -194,6 +198,12 @@ test('create, publish, edit, conflict and delete a post; drafts stay private', a
   assert.match(live.text, /<title>Gunyu Cholo Invitation Wording \| Nimtto<\/title>/);
   assert.ok((await page('/blog/rss.xml')).text.includes('/blog/gunyu-cholo-wording/'));
   assert.ok((await page('/sitemap-blog.xml')).text.includes('/blog/gunyu-cholo-wording/'));
+  // a renamed published post: the old link redirects
+  const renamed = await owner.req(`/api/admin/blog/${id}`, { method: 'PUT', body: { ...pub.body.post, slug: 'gunyu-cholo-card-wording' } });
+  assert.equal(renamed.status, 200);
+  const old = await page('/blog/gunyu-cholo-wording/');
+  assert.equal(old.status, 301);
+  assert.equal(old.headers.get('location'), '/blog/gunyu-cholo-card-wording/');
   // a stale editor cannot overwrite a newer save
   const stale = await owner.req(`/api/admin/blog/${id}`, { method: 'PUT', body: { ...got.body.post, title: 'Old', baseStamp: got.body.stamp } });
   assert.equal(stale.status, 409);
@@ -203,7 +213,7 @@ test('create, publish, edit, conflict and delete a post; drafts stay private', a
   assert.ok(bad.body.errors.slug);
   // delete
   assert.equal((await owner.req(`/api/admin/blog/${id}`, { method: 'DELETE' })).status, 200);
-  assert.equal((await page('/blog/gunyu-cholo-wording/')).status, 404);
+  assert.equal((await page('/blog/gunyu-cholo-card-wording/')).status, 404);
   assert.equal((await owner.req(`/api/admin/blog/${id}`)).status, 404);
 });
 

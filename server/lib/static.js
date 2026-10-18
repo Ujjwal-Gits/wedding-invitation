@@ -4,7 +4,7 @@
 //   - one caching policy (cacheControlFor), shared with docs/OPERATIONS.md's Cloudflare rules.
 // Gated theme pages keep the gate's `private, no-store` (lib/gate.js sets res.locals.gatedPage).
 import express from 'express';
-import { readdirSync, existsSync, statSync } from 'node:fs';
+import { readdirSync, existsSync, statSync, readFileSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 import { acceptedEncodings } from './http-cache.js';
 
@@ -14,9 +14,14 @@ const YEAR = 'public, max-age=31536000, immutable';
 const ART = 'public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400';
 const SMALL = 'public, max-age=86400, stale-while-revalidate=604800';
 
+// robots.txt, the sitemaps, llms.txt and the IndexNow key: an hour, so crawlers see a deploy's new pages the same day
+const CRAWL = 'public, max-age=3600';
+const CRAWL_FILE = /^(?:robots\.txt|sitemap[\w-]*\.xml|llms(?:-full)?\.txt|[0-9a-f]{32}\.txt)$/;
+
 /** Cache-Control for a file under dist/ (path relative to dist, forward slashes). */
 export function cacheControlFor(rel) {
   if (rel.startsWith('assets/')) return YEAR; // Vite's hashed bundles
+  if (CRAWL_FILE.test(rel)) return CRAWL;
   if (/\.html?$/i.test(rel) || /\.(?:css|js|mjs)$/i.test(rel)) return 'no-cache'; // pages and unhashed code: always revalidate
   if (/^(?:themes|photos|audio|art|site\/fonts)\//.test(rel)) return ART;
   if (/\.(?:svg|ico|png|jpe?g|webp|avif|woff2?)$/i.test(rel)) return SMALL;
@@ -44,9 +49,49 @@ function scanVariants(dir, base = '', out = new Map()) {
   return out;
 }
 
+/**
+ * A `Link` header from a page's own <link rel="preload"> tags (the hero picture, the two text fonts), so the browser,
+ * and Cloudflare's Early Hints (103) when it is on, start them before the HTML has arrived. '' when there are none.
+ */
+export function preloadLinks(html) {
+  const head = /<head\b[\s\S]*?<\/head>/i.exec(html)?.[0] || '';
+  const out = [];
+  for (const [tag] of head.matchAll(/<link\b[^>]*\brel=["']?preload\b[^>]*>/gi)) {
+    const a = (n) => new RegExp(`\\s${n}=("([^"]*)"|'([^']*)')`, 'i').exec(tag)?.slice(2).find((x) => x != null);
+    const href = a('href');
+    const as = a('as');
+    if (!href || !as || !href.startsWith('/') || href.startsWith('//') || /[<>\s]/.test(href)) continue;
+    const parts = [`<${href}>`, 'rel=preload', `as=${as}`];
+    const type = a('type');
+    if (type) parts.push(`type="${type}"`);
+    if (/\scrossorigin\b/i.test(tag)) parts.push('crossorigin');
+    const set = a('imagesrcset');
+    if (set) parts.push(`imagesrcset="${set.replace(/"/g, '')}"`);
+    const sizes = a('imagesizes');
+    if (sizes) parts.push(`imagesizes="${sizes.replace(/"/g, '')}"`);
+    if (a('fetchpriority')) parts.push(`fetchpriority=${a('fetchpriority')}`);
+    out.push(parts.join('; '));
+  }
+  return out.join(', ');
+}
+
 export function staticFiles(distDir) {
   const variants = scanVariants(distDir);
   if (variants.size) console.info(`[static] ${variants.size} precompressed file(s) in dist/`);
+  const links = new Map(); // rel -> Link header ('' = none); dist does not change while the server runs
+  const linkFor = (rel) => {
+    if (!links.has(rel)) {
+      let v = '';
+      try { v = preloadLinks(readFileSync(resolve(distDir, rel), 'utf8')); } catch { /* no file: no header */ }
+      links.set(rel, v);
+    }
+    return links.get(rel);
+  };
+  /** Headers that depend on the file: Link preloads on pages, noindex on the sitemaps (they are for crawlers only). */
+  const extra = (res, rel) => {
+    if (/\.html$/.test(rel)) { const l = linkFor(rel); if (l) res.setHeader('Link', l); }
+    else if (/^sitemap[\w-]*\.xml$/.test(rel)) res.setHeader('X-Robots-Tag', 'noindex');
+  };
   const serve = express.static(distDir, {
     index: 'index.html',
     redirect: true,
@@ -55,6 +100,7 @@ export function staticFiles(distDir) {
       if (res.locals.gatedPage) return; // the gate already set private, no-store
       const rel = path.slice(distDir.length + 1).replace(/\\/g, '/');
       res.set('Cache-Control', cacheControlFor(rel));
+      extra(res, rel);
       if (variants.has(rel)) res.vary('Accept-Encoding');
     },
   });
@@ -75,7 +121,7 @@ export function staticFiles(distDir) {
     res.type(extname(rel) || 'html'); // the original's type, not the .br/.gz file's
     res.setHeader('Content-Encoding', enc);
     res.setHeader('ETag', enc === 'br' ? v.br : v.gz); // send() answers If-None-Match against it (304)
-    if (!res.locals.gatedPage) res.setHeader('Cache-Control', cacheControlFor(rel));
+    if (!res.locals.gatedPage) { res.setHeader('Cache-Control', cacheControlFor(rel)); extra(res, rel); }
     const file = resolve(distDir, `${rel}.${enc === 'br' ? 'br' : 'gz'}`);
     return res.sendFile(file, { dotfiles: 'deny', acceptRanges: false, cacheControl: false, etag: true, lastModified: true }, (err) => {
       if (!err) return;

@@ -36,13 +36,13 @@ const NAV = [
   ['intl/features', 'Features'], ['intl/pricing', 'Pricing'], ['intl/contact', 'Contact'],
 ];
 /** the page a partial argument names: an INTL_PAGES id or land/<id> */
-const pageOf = (arg) => (arg?.startsWith('land/') ? LANDINGS[arg.slice(5)] : INTL_PAGES[arg]) || null;
+const pageOf = (arg) => (arg?.startsWith('land/') ? LANDINGS[arg.slice(5)] : arg === 'intl/about' ? { np: 'about' } : INTL_PAGES[arg]) || null;
 /** International | Nepal. Nepal opens the Nepal site's page for the same thing (else its home). */
 const market = (cls, nepal) => `<nav class="mkt ${cls}" aria-label="Choose your site"><a class="mkt__a" href="${INTL_BASE}" aria-current="page">International</a><a class="mkt__a" href="${nepal}" hreflang="en-NP">Nepal</a></nav>`;
 function header(arg = '') {
   const pg = pageOf(arg);
   const active = arg.startsWith('land/') ? pg?.parent || '' : arg;
-  const nepal = (pg?.np && PAGES[pg.np]?.path) || '/';
+  const nepal = (pg?.np === 'about' ? '/about/' : pg?.np && PAGES[pg.np]?.path) || '/';
   const links = NAV.map(([id, t]) => `<a href="${INTL_PAGES[id].path}"${id === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>
   <header class="nav" id="nav">
@@ -80,7 +80,7 @@ function footer() {
           <p>Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>
         </div>
         ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'All designs'], [INTL_PAGES['intl/occasions'].path, 'All occasions'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
-        ${col('Nimtto', [[INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], ['/international/blog/', 'Blog'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
+        ${col('Nimtto', [['/international/about/', 'About us'], [INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], ['/international/blog/', 'Blog'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>

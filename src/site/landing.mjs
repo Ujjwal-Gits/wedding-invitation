@@ -4,6 +4,7 @@
 //   <!--@crossband:np|intl-->  "Living abroad?" on Nepal pages, "Getting married in Nepal?" on international pages
 //   <!--@legal-header-->, <!--@legal-footer-->      the neutral header and footer of the legal pages
 // Plain module: Node runs it at build, never the browser.
+import { guideLinks } from './blog-links.mjs';
 import { LANDINGS } from './landings.mjs';
 import { BY_SLUG, CATEGORIES, FALLBACK_SITE, planForTier, TIER_LABEL } from './themes.js';
 import { fillPlans, SITE_URL } from './content.mjs';
@@ -118,7 +119,7 @@ function body(id) {
   const steps = (l.steps || []).map((s, i) => `<li class="step"><span class="step__n">${String(i + 1).padStart(2, '0')}</span><h3 class="step__t">${esc(s.t)}</h3><p class="step__d">${esc(s.d)}</p></li>`).join('');
   const faqItems = (l.faq || []).map(([q, a]) => ({ q, a: fill(l, a, false), aHtml: fill(l, a, true) }));
   const related = (l.related || []).map((r) => LANDINGS[r]).filter(Boolean);
-  const links = [...(l.links || []), ...related.map((r) => [r.eyebrow, r.path])];
+  const links = [...(l.links || []), ...related.map((r) => [r.eyebrow, r.path]), ...guideLinks(id)]; // + the blog's guides (blog-links.mjs)
   return `<div class="wrap">
       <nav class="crumbs dp-crumbs" aria-label="Breadcrumb"><ol>${crumbHtml}</ol></nav>
     </div>

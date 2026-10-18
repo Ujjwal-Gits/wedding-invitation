@@ -11,6 +11,7 @@ import { renderMarkdown, renderInline } from './blog-md.js';
 import { BY_SLUG, CATEGORIES } from '../../src/site/themes.js';
 import { INTL_BY_SLUG } from '../../src/site/intl-designs.js';
 import { phoneStill } from '../../src/site/stills.js';
+import { AUTHOR_LD, TEAM_URL, TEAM_URL_INTL } from '../../src/site/seo-site.mjs';
 
 export const SITE_URL = 'https://nimtto.com';
 export const SITES = {
@@ -21,17 +22,17 @@ export const SITES = {
     desc: 'Wording in Nepali and English, bratabandha and pasni customs, timelines and etiquette for invitations in Nepal, from the Nimtto team.',
     eyebrow: 'The Nimtto blog', h1: 'Guides for Nepali <em>invitations.</em>',
     lede: 'Wording in Nepali and English, ceremony customs, timelines and etiquette. Written by the team that makes Nimtto invitations, with every fact linked to its source.',
-    og: '/site/og/blog.jpg', ogFallback: '/site/og/home.jpg', pricing: '/pricing/', designs: '/designs/', about: '/about/',
+    og: '/site/og/blog.jpg', ogFallback: '/site/og/home.jpg', pricing: '/pricing/', designs: '/designs/', about: '/about/#team', team: TEAM_URL,
     tints: ['#FDEDF0', '#F6E9E7', '#F3E2E2', '#FFF1EC'],
   },
   intl: {
-    base: '/international/blog/', home: '/international/', homeName: 'Home', lang: 'en', locale: 'en_US', dateLocale: 'en-US', currencyNote: 'US dollars',
+    base: '/international/blog/', home: '/international/', homeName: 'Home', lang: 'en-US', locale: 'en_US', dateLocale: 'en-US', currencyNote: 'US dollars',
     name: 'Nimtto International Blog', feedTitle: 'Nimtto Blog: Wedding Invitation Wording, Etiquette and RSVP',
     title: 'Wedding Invitation Guides: Wording and RSVP | Nimtto Blog',
     desc: 'Wedding invitation wording examples, timelines, online invitation etiquette and RSVP tips for couples and hosts, from the Nimtto team.',
     eyebrow: 'The Nimtto blog', h1: 'Wedding invitation <em>guides.</em>',
     lede: 'Wording examples, timelines, online etiquette and RSVP tips for couples and hosts. Written by the team that makes Nimtto invitations, with every fact linked to its source.',
-    og: '/site/og/intl-blog.jpg', ogFallback: '/site/og/intl-home.jpg', pricing: '/international/pricing/', designs: '/international/designs/', about: '/about/',
+    og: '/site/og/intl-blog.jpg', ogFallback: '/site/og/intl-home.jpg', pricing: '/international/pricing/', designs: '/international/designs/', about: '/international/about/#team', team: TEAM_URL_INTL,
     tints: ['#EAF1E7', '#F1F5EF', '#E6EFE3', '#EEF2EA'],
   },
 };
@@ -188,7 +189,8 @@ function headTags({ title, desc, url, image, imageAlt, site, type = 'website', n
   <meta name="twitter:image:alt" content="${esc(imageAlt)}" />
   ${ld.join('\n  ')}`;
 }
-const fill = (shell, head, main) => shell.replace('<!--blog:head-->', () => head).replace('<!--blog:main-->', () => main);
+/** the shell with its two holes filled, and <html lang> set for the site (en-NP, en-US) */
+const fill = (shell, head, main, site) => shell.replace(/<html lang="[^"]*"/, `<html lang="${SITES[site].lang}"`).replace('<!--blog:head-->', () => head).replace('<!--blog:main-->', () => main);
 
 /* ---------------- the index ---------------- */
 /** posts: this site's published posts, newest first, each with its compiled `c` */
@@ -236,7 +238,7 @@ export function renderIndex({ site, posts, shell }) {
     isPartOf: { '@id': `${SITE_URL}/#web` }, publisher: { '@id': `${SITE_URL}/#org` }, mainEntity: { '@id': `${url}#blog` },
     speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '[data-speak]'] } };
   const head = headTags({ title: s.title, desc: s.desc, url, image: abs(s.og), imageAlt: `${s.name}: invitation guides on a phone`, site, ld: [jsonLd(page), jsonLd(blogLd), crumbsLd(trail)] });
-  return fill(shell, head, main);
+  return fill(shell, head, main, site);
 }
 
 /* ---------------- a post ---------------- */
@@ -349,7 +351,7 @@ export function renderPost({ post, others = [], shell, preview = false }) {
     ${closing(site)}
     ${crossband(site)}`;
 
-  const author = { '@type': 'Organization', '@id': `${SITE_URL}/about/#team`, name: AUTHOR.name, url: `${SITE_URL}${s.about}`, description: AUTHOR.bio, parentOrganization: { '@id': `${SITE_URL}/#org` } };
+  const author = { ...AUTHOR_LD, url: s.team, description: AUTHOR.bio };
   const images = [og, coverUrl(post) && abs(coverUrl(post))].filter(Boolean);
   const article = {
     '@context': 'https://schema.org', '@type': 'BlogPosting', '@id': `${url}#article`, url,
@@ -369,10 +371,10 @@ export function renderPost({ post, others = [], shell, preview = false }) {
   <meta property="article:published_time" content="${published}" />
   <meta property="article:modified_time" content="${updated}" />
   <meta property="article:section" content="${esc(post.category)}" />
-  <meta property="article:author" content="${SITE_URL}${s.about}" />`;
+  <meta property="article:author" content="${s.team}" />`;
   const title = titleCase(post.seoTitle || `${post.title} | Nimtto`);
   const head = headTags({ title, desc: post.seoDesc || post.excerpt, url, image: og, imageAlt: post.cover?.alt || post.title, site, type: 'article', noindex: preview || post.status !== 'published', extra, ld });
-  return fill(shell, head, main);
+  return fill(shell, head, main, site);
 }
 
 export function renderNotFound({ site, shell }) {
@@ -382,7 +384,7 @@ export function renderNotFound({ site, shell }) {
     <header class="wrap pagehead"><p class="eyebrow">404</p><h1 class="display">This guide <em>isn’t here.</em></h1>
       <p class="lede">It may have moved, or the link is mistyped. The rest of the guides are one tap away.</p>
       <p class="bl-404"><a class="btn btn--accent btn--lg" href="${s.base}">See all guides</a></p></header>`;
-  return fill(shell, head, main);
+  return fill(shell, head, main, site);
 }
 
 /* ---------------- feeds, sitemap, llms ---------------- */
@@ -446,7 +448,7 @@ export function llmsBlock(bySite, full = false) {
 
 /* ---------------- the shells ---------------- */
 const FALLBACK_SHELL = (site) => `<!doctype html>
-<html lang="en">
+<html lang="${site === 'intl' ? 'en-US' : 'en-NP'}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
