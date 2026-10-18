@@ -11,7 +11,7 @@
 // their order form (no religious images on the international site).
 import { BY_SLUG } from './themes.js';
 
-export const NP_DESIGNS_INTL = ['laali', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'gurans', 'sindoor', 'rangoli'];
+export const NP_DESIGNS_INTL = ['laali', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'gurans', 'sindoor', 'rangoli', 'mohar'];
 
 export const STYLES = [['garden', 'Garden'], ['romantic', 'Romantic'], ['classic', 'Classic'], ['modern', 'Modern'], ['destination', 'Destination'], ['nepali', 'Nepali']];
 export const STYLE_LABEL = Object.fromEntries(STYLES);

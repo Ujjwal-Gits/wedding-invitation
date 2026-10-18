@@ -1,6 +1,6 @@
 {
  "/": {
-  "h": "cb5d2d8f55e822a2",
+  "h": "686ce6fc3904a68d",
   "d": "2026-10-18"
  },
  "/about/": {
@@ -16,7 +16,7 @@
   "d": "2026-10-18"
  },
  "/designs/": {
-  "h": "fc7e0bb15513d7c0",
+  "h": "8f56b30debc60ab2",
   "d": "2026-10-18"
  },
  "/designs/agni/": {
@@ -92,7 +92,11 @@
   "d": "2026-10-18"
  },
  "/designs/mehendi/": {
-  "h": "c1284224d95c6136",
+  "h": "66d4f9700b0e491d",
+  "d": "2026-10-18"
+ },
+ "/designs/mohar/": {
+  "h": "a83bcd26a839a802",
   "d": "2026-10-18"
  },
  "/designs/nimantrana/": {
@@ -116,11 +120,11 @@
   "d": "2026-10-18"
  },
  "/designs/shree/": {
-  "h": "7145eb09228cebe1",
+  "h": "48499f668b7a4008",
   "d": "2026-10-18"
  },
  "/designs/sindoor/": {
-  "h": "09dbad6e8923da20",
+  "h": "bbfd8203494fbb62",
   "d": "2026-10-18"
  },
  "/designs/swayambar/": {
@@ -140,7 +144,7 @@
   "d": "2026-10-18"
  },
  "/international/": {
-  "h": "97ef5fc72e64a4e9",
+  "h": "776b8a4d0f75a37c",
   "d": "2026-10-18"
  },
  "/international/about/": {
@@ -152,7 +156,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/": {
-  "h": "dacecc300d0630d9",
+  "h": "645103549ba72346",
   "d": "2026-10-18"
  },
  "/international/designs/amalfi/": {
@@ -300,7 +304,7 @@
   "d": "2026-10-18"
  },
  "/occasions/": {
-  "h": "61d711f6bf163fe2",
+  "h": "3cf7190447d3ec9f",
   "d": "2026-10-18"
  },
  "/occasions/birthday/": {
@@ -336,7 +340,7 @@
   "d": "2026-10-18"
  },
  "/pricing/": {
-  "h": "4663d8bc4673f462",
+  "h": "cbc848240bced241",
   "d": "2026-10-18"
  },
  "/privacy/": {

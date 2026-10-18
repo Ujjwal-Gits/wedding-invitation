@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "mohar": {
+    "kind": "gate",
+    "why": "The sealed farman on the indigo cloth: brass seal, red silk and petals; the opening is the design."
   }
 }
