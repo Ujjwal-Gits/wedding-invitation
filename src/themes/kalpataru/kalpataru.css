@@ -146,6 +146,8 @@ html[data-lang='ne'] .kt-hero__date { font-size: 18px; }
     mask-composite: intersect; }
 }
 .kt-deco { position: absolute; display: block; pointer-events: none; }
+.kt-deco--phone { display: none; }
+@media (max-width: 899px) { .kt-deco--desk { display: none; } .kt-deco--phone { display: block; } }
 .kt-deco--strand, .kt-deco--diya { filter: drop-shadow(0 8px 6px rgba(40, 25, 10, 0.28)); }
 .kt-side { display: none; }
 @media (min-width: 900px) {

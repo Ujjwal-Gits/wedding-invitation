@@ -26,9 +26,10 @@ const PANELS = [
 const DECOR = [
   ['roots', 0.5, 0.79, 0.96, 'petals'],
   ['roots', 0.1, 0.04, 0.052, 'strand'], ['roots', 0.9, 0.08, 0.05, 'strand'],
-  ['trunk', 0.52, 0.12, 0.66, 'toran'],
+  ['trunk', 0.52, 0.12, 0.66, 'toran', false, 'desk'],
   ['trunk', 0.08, 0.3, 0.05, 'strand'], ['trunk', 0.93, 0.26, 0.05, 'strand'],
-  ['fork', 0.47, 0.64, 0.5, 'toran'],
+  ['fork', 0.47, 0.64, 0.5, 'toran', false, 'desk'],
+  ['fork', 0.53, 0.212, 0.6, 'toran', false, 'phone'], // strung between the two boughs, just above the families' boards
   ['fork', 0.3, 0.2, 0.06, 'diya', true],
   ['branches', 0.14, 0.5, 0.055, 'strand'], ['branches', 0.86, 0.44, 0.055, 'strand'], ['branches', 0.32, 0.16, 0.05, 'strand'],
   ['branches', 0.72, 0.24, 0.06, 'diya', true], ['branches', 0.22, 0.74, 0.06, 'diya', true],
@@ -36,10 +37,10 @@ const DECOR = [
 ];
 const DECOR_AR = { strand: 5.844, diya: 3.352, petals: 0.456, toran: 0.347 };
 const decoImg = (d, i) => {
-  const [, , , , kind, hindu] = d;
+  const [, , , , kind, hindu, only] = d;
   const set = { toran: '/themes/_nepali/toran-sm.webp 900w, /themes/_nepali/toran.webp 1800w', petals: `${ART}petals-sm.webp 520w, ${ART}petals.webp 900w` }[kind];
   const src = kind === 'toran' ? '/themes/_nepali/toran-sm.webp' : `${ART}${kind}${kind === 'petals' ? '-sm' : ''}.webp`;
-  return `<img class="kt-deco kt-deco--${kind}" data-i="${i}" src="${src}"${set ? ` srcset="${set}" sizes="(min-width: 900px) 900px, 100vw"` : ''} alt="" decoding="async"${hindu ? ' data-hindu' : ''} />`;
+  return `<img class="kt-deco kt-deco--${kind}${only ? ` kt-deco--${only}` : ''}" data-i="${i}" src="${src}"${set ? ` srcset="${set}" sizes="(min-width: 900px) 900px, 100vw"` : ''} alt="" decoding="async"${hindu ? ' data-hindu' : ''} />`;
 };
 const pic = (name, { cls = '', sizes = '100vw', alt = '', lazy = true, w = [640, 1152] } = {}) => `<img class="${cls}" src="${ART}${name}-sm.webp" srcset="${ART}${name}-sm.webp ${w[0]}w, ${ART}${name}.webp ${w[1]}w" sizes="${sizes}" alt="${alt}" decoding="async"${lazy ? ' loading="lazy"' : ''} />`;
 const one = (name, { cls = '', alt = '', lazy = true } = {}) => `<img class="${cls}" src="${ART}${name}.webp" alt="${alt}" decoding="async"${lazy ? ' loading="lazy"' : ''} />`;
@@ -319,7 +320,13 @@ function climb(ctx) {
     const Hc = flow.offsetHeight;
     D = Math.max(1, Hc - vh);
     // key frames: when each station is centred, the tree shows its own part of the tree behind it
-    const camAt = (n) => vw / 2 - geo[n].c;
+    // the camera follows the trunk, but never shows the edge of a painting (phone: the fork sits flush right, so its
+    // painted garlands hang whole)
+    const camAt = (n) => {
+      const g = geo[n]; const lo = vw - (g.left + g.w); const hi = -g.left;
+      const want = !wide && n === 'fork' ? lo : vw / 2 - g.c;
+      return lo <= hi ? Math.min(hi, Math.max(lo, want)) : vw / 2 - g.c;
+    };
     centres = sts.map((s) => s.offsetTop + s.offsetHeight / 2);
     const k = [{ p: 0, y: -(Ht - vh), x: camAt('roots') }];
     sts.forEach((s, i) => {
