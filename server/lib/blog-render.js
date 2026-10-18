@@ -8,8 +8,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ROOT_DIR } from './env.js';
 import { renderMarkdown, renderInline } from './blog-md.js';
-import { BY_SLUG, CATEGORIES } from '../../src/site/themes.js';
-import { INTL_BY_SLUG } from '../../src/site/intl-designs.js';
+import { BY_SLUG, CATEGORIES, THEMES, FALLBACK_SITE, planForTier, tierName as planTierName } from '../../src/site/themes.js';
+import { INTL_BY_SLUG, INTL_THEMES, NP_DESIGNS_INTL } from '../../src/site/intl-designs.js';
+import { intlPlans, usdText, INTL_NAME } from '../../src/site/intl-plans.js';
+import { tierOf as siteTierOf, themeMarketOf, featuredOf, orderedFor } from './site.js';
 import { phoneStill } from '../../src/site/stills.js';
 import { AUTHOR_LD, TEAM_URL, TEAM_URL_INTL } from '../../src/site/seo-site.mjs';
 
@@ -286,8 +288,84 @@ function share(post, url, where = 'end') {
       <a class="bp-share__a" href="mailto:?subject=${t}&amp;body=${encodeURIComponent(`${post.title}\n${url}`)}">${ico('mail')}<span>Email</span></a>
     </div><p class="bp-share__ok" role="status" aria-live="polite"></p></div>`;
 }
-function designsBlock(post) {
-  const list = (post.designs || []).map((s) => [s, designOf(post.site, s)]).filter(([, d]) => d).slice(0, 4);
+/* ---------------- designs in and under a post ---------------- */
+const npr = new Intl.NumberFormat('en-IN');
+/** a design of either catalog, with its page: { slug, name, ne, line, alt, cat, intl, page } */
+function anyDesign(slug) {
+  const t = BY_SLUG[slug];
+  if (t) return { slug, name: t.name, ne: t.ne, line: t.concept, alt: t.alt, cat: t.cat, words: `${(t.religions || []).join(' ')} ${t.cat}`, intl: false, page: `/designs/${slug}/` };
+  const d = INTL_BY_SLUG[slug];
+  if (d) return { slug, name: d.name, ne: '', line: d.line, alt: d.alt, cat: d.cat, words: `${d.faith || ''} ${d.style || ''} ${d.cat || ''}`, intl: true, page: `/international/designs/${slug}/` };
+  return null;
+}
+/**
+ * A design a post on this website may show, or null: known to the catalog, not hidden by the planner (Themes page),
+ * and on the international website one it offers (its own, the Nepal ones it carries, or any the planner opened to it).
+ */
+export function designFor(site, slug, siteDoc = null) {
+  const d = anyDesign(slug);
+  if (!d || (siteDoc?.hiddenThemes || []).includes(slug)) return null;
+  if (site === 'intl' && !d.intl && !NP_DESIGNS_INTL.includes(slug) && !['intl', 'both'].includes(themeMarketOf(slug, siteDoc))) return null;
+  return d;
+}
+/** a design's plan badge and "from" price: the build-time text, which the site's script sets in the visitor's currency */
+function priceBits(site, slug, siteDoc) {
+  const plans = siteDoc?.plans?.length ? siteDoc.plans : FALLBACK_SITE.plans;
+  const tier = siteTierOf(slug, siteDoc);
+  if (site === 'intl') {
+    const p = intlPlans(plans).find((x) => x.id === tier);
+    return `<span class="tier tier--${tier}">${esc(INTL_NAME[tier] || '')}</span><span class="dcard__price bdc__price" data-usd-from="${tier}">${p ? `from ${usdText(p.usd)}` : ''}</span>`;
+  }
+  const p = planForTier(plans, tier);
+  return `<span class="tier tier--${tier}" data-tier-tag="${tier}">${esc(planTierName(plans, tier))}</span><span class="dcard__price bdc__price" data-tier-price="${tier}">${p ? `from Rs ${npr.format(p.price)}` : ''}</span>`;
+}
+/** The in-body design card (a ```design block): 1 to 3 designs, each with Preview and Order; '' when none can show. */
+export function designCardsHtml(slugs, post, siteDoc = null) {
+  const list = slugs.map((s) => designFor(post.site, s, siteDoc)).filter(Boolean).slice(0, 3);
+  if (!list.length) return '';
+  const intl = post.site === 'intl';
+  const pricing = intl ? '/international/pricing/' : '/pricing/';
+  return `<aside class="bdc bdc--n${list.length}" aria-label="${list.length > 1 ? 'Designs' : 'A design'} for this guide">
+  <p class="bdc__kick">${list.length > 1 ? 'Designs to try' : 'A design to try'}</p>
+  <ul class="bdc__list">${list.map((d, i) => `<li class="bdc__item">
+    <a class="bdc__pic" href="${d.page}" style="--tint:${!d.intl && CATEGORIES[d.cat] ? CATEGORIES[d.cat].tint : tintOf(post.site, i)}" tabindex="-1" aria-hidden="true">${phoneImg(d.slug, { sizes: '(max-width: 599px) 30vw, 150px', alt: '' })}</a>
+    <div class="bdc__body">
+      <p class="bdc__name"><a href="${d.page}">${esc(d.name)}</a>${!intl && d.ne ? ` <span lang="ne">${esc(d.ne)}</span>` : ''}</p>
+      <p class="bdc__meta">${priceBits(post.site, d.slug, siteDoc)}</p>
+      <p class="bdc__line">${esc(d.line || '')}</p>
+      <div class="bdc__acts"><a class="btn btn--accent btn--sm" href="${pricing}?design=${d.slug}#plans" data-order data-design="${d.slug}" aria-label="Order the ${esc(d.name)} design">Order this design</a><a class="btn btn--ghost btn--sm" href="/${d.slug}/?showcase=1${intl ? '&amp;market=intl' : ''}" data-preview="${d.slug}" aria-label="Preview ${esc(d.name)}">Preview</a></div>
+    </div></li>`).join('')}</ul>
+</aside>`;
+}
+/** the body with every design slot (lib/blog-md.js) filled for this website */
+export const fillDesignSlots = (html, post, siteDoc = null) => html.replace(/<aside class="bdc-slot" data-designs="([a-z0-9,-]*)"><\/aside>\n?/g, (m, list) => designCardsHtml(list.split(','), post, siteDoc));
+
+const MATCH_SKIP = new Set(['wedding', 'weddings', 'invitation', 'invitations', 'invite', 'invites', 'guide', 'guides', 'card', 'cards', 'design', 'designs', 'digital', 'online', 'with', 'your', 'from', 'what', 'when', 'that', 'this', 'how', 'for', 'and', 'the', 'nimtto', 'wording', 'examples', 'planning', 'etiquette', 'send']);
+/**
+ * The designs under a post, never empty: the writer's picks, then designs whose words match the post (title,
+ * keywords, category), then the website's featured designs, then the rest in the website's order. Designs already
+ * in the post's design cards come last. Up to n.
+ */
+export function relatedDesigns(post, siteDoc = null, { exclude = [], n = 4 } = {}) {
+  const site = post.site;
+  const out = [];
+  const add = (s, inBody = false) => { if (out.length < n && !out.includes(s) && (inBody || !exclude.includes(s)) && designFor(site, s, siteDoc)) out.push(s); };
+  for (const s of post.designs || []) add(s, true);
+  const pool = orderedFor(site === 'intl' ? [...INTL_THEMES.map((d) => d.slug), ...NP_DESIGNS_INTL] : [...THEMES.map((t) => t.slug), ...INTL_THEMES.map((d) => d.slug)], siteDoc, site);
+  const words = [...new Set(`${post.title} ${post.keyword || ''} ${(post.secondary || []).join(' ')} ${post.category}`.toLowerCase().match(/[a-zऀ-ॿ]{4,}/g) || [])].filter((w) => !MATCH_SKIP.has(w));
+  if (words.length) {
+    // a word in the design's name counts most (a "mehendi" post -> the Mehendi design), then its line and alt text
+    pool.map((s, i) => { const d = anyDesign(s); const n = d.name.toLowerCase(); const t = `${d.line} ${d.alt || ''} ${d.words}`.toLowerCase(); return [s, words.reduce((sum, w) => sum + (n.includes(w) ? 3 : 0) + (t.includes(w) ? 1 : 0), 0), i]; })
+      .filter(([, score]) => score > 0).sort((a, b) => b[1] - a[1] || a[2] - b[2]).forEach(([s]) => add(s));
+  }
+  featuredOf(siteDoc || {}, site).forEach((s) => add(s));
+  pool.forEach((s) => add(s));
+  pool.forEach((s) => add(s, true));
+  return out;
+}
+
+function designsBlock(post, siteDoc, inBody = []) {
+  const list = relatedDesigns(post, siteDoc, { exclude: inBody }).map((s) => [s, designFor(post.site, s, siteDoc)]);
   if (!list.length) return '';
   const all = SITES[post.site].designs;
   return `<section class="sec sec--blush bp-designs" aria-labelledby="bp-d-h">
@@ -313,7 +391,7 @@ export function relatedPosts(post, all, n = 3) {
 }
 
 /** post: the post with `c` (compiled); others: this site's published posts (with c) for "related"; preview: noindex */
-export function renderPost({ post, others = [], shell, preview = false }) {
+export function renderPost({ post, others = [], shell, preview = false, siteDoc = null }) {
   const site = post.site;
   const s = SITES[site];
   const c = post.c || compilePost(post);
@@ -348,7 +426,7 @@ export function renderPost({ post, others = [], shell, preview = false }) {
       <div class="wrap bp-w bp-layout">
         ${toc(c)}
         <div class="bp-main">
-          <div class="bp-body">${c.html}</div>
+          <div class="bp-body">${fillDesignSlots(c.html, post, siteDoc)}</div>
           ${faqHtml}
           <aside class="bp-author" aria-label="About the author">
             <img class="bp-author__mark" src="/favicon.svg" width="56" height="56" alt="" />
@@ -358,7 +436,7 @@ export function renderPost({ post, others = [], shell, preview = false }) {
         </div>
       </div>
     </article>
-    ${designsBlock(post)}
+    ${designsBlock(post, siteDoc, c.designs || [])}
     ${rel.length ? `<section class="sec bp-rel" aria-labelledby="bp-rel-h"><div class="wrap">
         <header class="shead"><p class="eyebrow">Keep reading</p><h2 class="h2" id="bp-rel-h">Related <em>guides.</em></h2></header>
         <ul class="bl-grid">${rel.map((p, i) => card(p, p.c || compilePost(p), i)).join('')}</ul>

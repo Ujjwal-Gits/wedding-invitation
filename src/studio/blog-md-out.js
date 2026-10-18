@@ -5,6 +5,9 @@
 // House blocks: callout -> "> [!TIP]", copyBlock -> "```copy Title", figure -> ![alt](src "caption"), tables -> pipes.
 
 const CALLOUT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING'];
+const DESIGN_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+){0,6}$/;
+/** the designs of a design card (server/lib/blog-md.js designSlugs): valid slugs, no repeats, at most 3 */
+export const designSlugs = (text) => [...new Set(String(text || '').split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter((x) => DESIGN_SLUG.test(x) && x.length <= 40))].slice(0, 3);
 
 /** links the server keeps (server/lib/blog-md.js safeHref): https/http, mailto, tel, a path on this site, an anchor */
 export function safeHref(url) {
@@ -165,6 +168,10 @@ export function block(node) {
       const alt = String(node.attrs?.alt || '').replace(/[\\[\]]/g, '\\$&').replace(/\s+/g, ' ').trim();
       const cap = String(node.attrs?.caption || '').replace(/\s+/g, ' ').trim().replace(/["\\]/g, '\\$&');
       return `![${alt}](${src.replace(/[()\s]/g, (c) => encodeURIComponent(c))}${cap ? ` "${cap}"` : ''})`;
+    }
+    case 'designCard': {
+      const slugs = designSlugs(node.attrs?.slugs);
+      return slugs.length ? `\`\`\`design\n${slugs.join(', ')}\n\`\`\`` : '';
     }
     case 'horizontalRule': return '---';
     case 'table': return table(node);

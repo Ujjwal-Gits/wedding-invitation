@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderMarkdown } from '../lib/blog-md.js';
 import { cleanPost, loadSeeds } from '../lib/blog.js';
-import { postSchema, schemaChecks, compilePost } from '../lib/blog-render.js';
+import { postSchema, schemaChecks, compilePost, fillDesignSlots, relatedDesigns, renderPost } from '../lib/blog-render.js';
 import { toMarkdown } from '../../src/studio/blog-md-out.js';
 
 const t = (text, marks) => ({ type: 'text', text, ...(marks ? { marks: marks.map((m) => (typeof m === 'string' ? { type: m } : m)) } : {}) });
@@ -140,4 +140,50 @@ test('schema: BlogPosting by default, Article or a HowTo guide on request, speak
   assert.equal(cleanPost({ ...base, schemaType: '<script>' }).schemaType, 'BlogPosting');
   const missing = schemaChecks(postSchema(cleanPost({ ...base, keyword: '' })).ld);
   assert.ok(missing.some((c) => !c.ok && /Keywords/.test(c.text)));
+});
+
+test('design cards: a ```design block becomes a safe slot, filled per website; unknown and hidden designs are skipped', () => {
+  const md = '## Pick one\n\n```design\nkham, olive-grove, no-such-design, kham, bad slug!, mahal\n```\n\nAfter.\n';
+  const r = renderMarkdown(md);
+  assert.match(r.html, /<aside class="bdc-slot" data-designs="kham,olive-grove,no-such-design"><\/aside>/);
+  assert.deepEqual(r.designs, ['kham', 'olive-grove', 'no-such-design']);
+  assert.equal(r.words, renderMarkdown('## Pick one\n\nAfter.\n').words, 'slugs are not words');
+  // nothing else can ride on the slot: attributes and classes are checked again by the sanitiser
+  const evil = renderMarkdown('```design\nkham" onmouseover="alert(1)\n```');
+  assert.ok(!/onmouseover|alert/.test(evil.html), evil.html);
+  const np = fillDesignSlots(r.html, { site: 'np' }, { hiddenThemes: ['olive-grove'], plans: [] });
+  assert.equal((np.match(/class="bdc__item"/g) || []).length, 1, 'kham only: olive-grove hidden, the unknown one skipped');
+  assert.match(np, /href="\/pricing\/\?design=kham#plans" data-order data-design="kham"/);
+  assert.match(np, /href="\/kham\/\?showcase=1" data-preview="kham"/);
+  assert.match(np, /data-tier-price="[a-z]+">from Rs [\d,]+</);
+  const intl = fillDesignSlots(r.html, { site: 'intl' }, null);
+  assert.equal((intl.match(/class="bdc__item"/g) || []).length, 2, 'kham (a Nepal design the international site offers) and olive-grove');
+  assert.match(intl, /href="\/international\/pricing\/\?design=olive-grove#plans"/);
+  assert.match(intl, /showcase=1&amp;market=intl/);
+  assert.match(intl, /data-usd-from="[a-z]+">from \$\d/);
+  assert.equal(fillDesignSlots(renderMarkdown('```design\nno-such-design\n```').html, { site: 'np' }), '', 'an empty card disappears');
+});
+
+test('the design card round-trips through the editor', { skip: !parse && 'root packages not installed' }, () => {
+  const md = toMarkdown(parse(renderMarkdown('Text.\n\n```design\nkham, mahal\n```\n').html));
+  assert.match(md, /```design\nkham, mahal\n```/);
+  assert.equal(toMarkdown(doc({ type: 'designCard', attrs: { slugs: 'kham,<b>,mahal,laali,agni' } })), '```design\nkham, mahal, laali\n```\n');
+});
+
+test('under every post: designs and guides fill in when the writer picked none', () => {
+  const post = cleanPost({ site: 'np', title: 'Mehendi night invitation ideas', slug: 'mehendi-night', category: 'Ceremonies', body: 'x', keyword: 'mehendi' });
+  const auto = relatedDesigns(post, null);
+  assert.equal(auto.length, 4);
+  assert.equal(auto[0], 'mehendi', 'a design whose words match the post comes first');
+  assert.equal(new Set(auto).size, 4);
+  assert.ok(!relatedDesigns(post, null, { exclude: ['mehendi'] }).includes('mehendi'), 'designs already in the post’s cards are not repeated');
+  assert.deepEqual(relatedDesigns({ ...post, designs: ['kham'] }, null)[0], 'kham', 'the writer’s picks first');
+  const featured = relatedDesigns({ ...post, title: 'Zzz', keyword: '', category: 'Zzz' }, { featuredThemes: ['laali', 'gurans'], hiddenThemes: ['kham'] });
+  assert.deepEqual(featured.slice(0, 2), ['laali', 'gurans']);
+  assert.ok(!featured.includes('kham'), 'hidden designs never show');
+  // the page: designs section and "Keep reading" are there with no picks
+  const other = { ...cleanPost({ site: 'np', title: 'Another guide', slug: 'another-guide', category: 'Planning', body: 'y', status: 'published' }), id: 'other1234' };
+  const html = renderPost({ post: { ...post, id: 'post12345' }, others: [{ ...other, c: compilePost(other) }], shell: '<!--blog:head--><!--blog:main-->' });
+  assert.match(html, /class="sec sec--blush bp-designs"/);
+  assert.match(html, /Related <em>guides/);
 });

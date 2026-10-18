@@ -8,8 +8,9 @@ import { Editor, Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table';
 import { Placeholder } from '@tiptap/extensions';
-import { h, toast, openDialog, debounce } from './dom.js';
-import { toMarkdown, safeHref } from './blog-md-out.js';
+import { h, fill, toast, openDialog, debounce } from './dom.js';
+import { toMarkdown, safeHref, designSlugs } from './blog-md-out.js';
+import { slashMenu } from './blog-slash.js';
 
 /** the pictures a post may show (server/lib/blog-md.js IMG_RE): our own files only */
 export const IMG_RE = /^\/(?:site|photos|art|themes|uploads\/_site\/blog)\/[A-Za-z0-9/_.-]{1,200}\.(?:webp|jpe?g|png|avif|svg)$/;
@@ -34,6 +35,12 @@ const SVG = {
   hr: '<path d="M4 12h16M8 7h8M8 17h8" opacity=".9"/>',
   md: '<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M6 15V9l2.5 3L11 9v6M15.5 9v6M13.5 13l2 2 2-2"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  design: '<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M10 18.5h4M9.5 7.5h5M9.5 10.5h5"/>',
+  faq: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.6M12 16.8h.01"/>',
+  page: '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5M10 15.5h5"/>',
+  p: '<path d="M10 20V4h5a4 4 0 0 1 0 8h-5"/>',
+  h2: '<path d="M4 6v12M12 6v12M4 12h8M15.5 10a2.2 2.2 0 1 1 3.9 1.4L15.5 18H20"/>',
+  h3: '<path d="M4 6v12M12 6v12M4 12h8M15.5 8.5h4l-2.2 3a2.4 2.4 0 1 1-2 3.8"/>',
 };
 function svg(name, size = 18) {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -178,13 +185,57 @@ const makeFigure = (pickImage) => Node.create({
   },
 });
 
+/**
+ * factory: a design card (a ```design block): 1 to 3 designs from the catalog, shown in the post as a promo card with
+ * price, Preview and Order (lib/blog-render.js). pickDesigns(slugs) opens the picker; designName(slug) names a design.
+ */
+const makeDesignCard = (pickDesigns, designName) => Node.create({
+  name: 'designCard',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  selectable: true,
+  addAttributes() { return { slugs: { default: '' } }; },
+  parseHTML() {
+    return [{ tag: 'aside.bdc-slot', getAttrs: (el) => { const v = designSlugs(el.getAttribute('data-designs')); return v.length ? { slugs: v.join(',') } : false; } }];
+  },
+  renderHTML({ node }) { return ['aside', { class: 'bdc-slot', 'data-designs': node.attrs.slugs }]; },
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      let cur = node;
+      const tiles = h('div.bxe-dc__tiles');
+      const draw = () => fill(tiles, designSlugs(cur.attrs.slugs).map((s) => h('figure.bxe-dc__tile', h('img', { src: `/site/thumbs/${s}-480.webp`, alt: '', loading: 'lazy' }), h('figcaption', designName(s)))));
+      const change = h('button.btn.btn--sm', { type: 'button', 'data-own': '', onclick: async () => {
+        const got = await pickDesigns(designSlugs(cur.attrs.slugs));
+        if (got?.length) setAttrs(editor, getPos, { slugs: got.join(',') });
+      } }, 'Change designs');
+      const remove = h('button.btn.btn--sm.btn--ghost', { type: 'button', 'data-own': '', onclick: () => {
+        const p = getPos();
+        if (typeof p === 'number') editor.chain().focus().deleteRange({ from: p, to: p + cur.nodeSize }).run();
+      } }, 'Remove');
+      const dom = h('div.bxe-dc', { contenteditable: 'false' },
+        h('div.bxe-dc__head', { 'data-drag-handle': '' }, h('span.bxe-dc__tag', svg('design', 14), 'Design card'), h('span.bxe-dc__hint', 'Shown with price, Preview and Order this design')),
+        tiles, h('div.bxe-fig__acts', { 'data-own': '' }, change, remove));
+      draw();
+      return {
+        dom,
+        update: (n) => { if (n.type.name !== 'designCard') return false; cur = n; draw(); return true; },
+        selectNode: () => dom.classList.add('is-sel'),
+        deselectNode: () => dom.classList.remove('is-sel'),
+        stopEvent: ownEvent,
+        ignoreMutation: () => true,
+      };
+    };
+  },
+});
+
 // a column's alignment (from "| :--- |" in Markdown) survives a round trip
 const align = { align: { default: null, parseHTML: (el) => (['left', 'right', 'center'].includes(el.style.textAlign) ? el.style.textAlign : null), renderHTML: (a) => (a.align ? { style: `text-align: ${a.align}` } : {}) } };
 const Cell = TableCell.extend({ addAttributes() { return { ...this.parent?.(), ...align }; } });
 const Header = TableHeader.extend({ addAttributes() { return { ...this.parent?.(), ...align }; } });
 
 /** The editor's schema: StarterKit, tables and the house blocks (the server tests parse posts with the same list). */
-export function bodyExtensions({ pickImage = async () => null } = {}) {
+export function bodyExtensions({ pickImage = async () => null, pickDesigns = async () => null, designName = (s) => s } = {}) {
   return [
     StarterKit.configure({
       heading: { levels: [2, 3, 4] },
@@ -193,7 +244,7 @@ export function bodyExtensions({ pickImage = async () => null } = {}) {
       link: { openOnClick: false, autolink: true, linkOnPaste: true, defaultProtocol: 'https', HTMLAttributes: { rel: null, target: null }, isAllowedUri: (url) => safeHref(url) },
     }),
     Table.configure({ resizable: false, HTMLAttributes: { class: 'bxe-table' } }), TableRow, Header, Cell,
-    Callout, CopyBlock, makeFigure(pickImage),
+    Callout, CopyBlock, makeFigure(pickImage), makeDesignCard(pickDesigns, designName),
     Placeholder.configure({ placeholder: ({ node }) => (node.type.name === 'heading' ? 'Heading' : 'Write here, or use the toolbar to add a heading, table, callout or picture.') }),
   ];
 }
@@ -204,13 +255,16 @@ export function bodyExtensions({ pickImage = async () => null } = {}) {
  *   pickImage({ alt, caption }) -> Promise<{ src, alt, caption } | null>   (the media gallery)
  *   renderMarkdown(md) -> Promise<html>                                    (the server's renderer, for the Markdown view)
  *   linkTargets() -> [{ path, title }]                                     (suggestions in the link dialog)
+ *   pickDesigns(slugs) -> Promise<[slug] | null>                           (the design picker, 1 to 3)
+ *   designName(slug) -> string;  designTargets() -> [{ path, title }];  onFaq() adds a question in the FAQ panel
  */
-export function createBodyEditor({ html, onChange = () => {}, pickImage, renderMarkdown, linkTargets = () => [] }) {
+export function createBodyEditor({ html, onChange = () => {}, pickImage, renderMarkdown, linkTargets = () => [], pickDesigns = async () => null, designName = (s) => s, designTargets = () => [], onFaq = () => {} }) {
+  let slashItems = () => []; // filled below, once the tools exist
   const content = h('div.bxe-doc');
   const editor = new Editor({
     element: content,
     content: html || '<p></p>',
-    extensions: bodyExtensions({ pickImage }),
+    extensions: [...bodyExtensions({ pickImage, pickDesigns, designName }), slashMenu(() => slashItems())],
     editorProps: { attributes: { class: 'bxe-prose', 'aria-label': 'Post text', 'aria-multiline': 'true', role: 'textbox', spellcheck: 'true' } },
   });
   const md = h('textarea.input.bxe-md', { 'aria-label': 'Post text as Markdown', spellcheck: 'true', hidden: true });
@@ -237,6 +291,15 @@ export function createBodyEditor({ html, onChange = () => {}, pickImage, renderM
     const got = await pickImage({});
     if (got) chain().insertContent({ type: 'figure', attrs: got }).run();
   };
+  const insertDesigns = async () => {
+    const got = await pickDesigns([]);
+    if (got?.length) chain().insertContent({ type: 'designCard', attrs: { slugs: got.join(',') } }).run();
+  };
+  /** a link to one of `targets` at the caret (the picker below), then a plain space */
+  const insertLinkTo = async (title, targets) => {
+    const t = await pickTarget(title, targets);
+    if (t) chain().insertContent([{ type: 'text', text: t.title, marks: [{ type: 'link', attrs: { href: t.path } }] }, { type: 'text', text: ' ' }]).run();
+  };
   const tools = [
     btn('', 'Paragraph', () => chain().setParagraph().run(), { text: 'P', isOn: () => editor.isActive('paragraph') && !editor.isActive('callout') && !editor.isActive('listItem') }),
     btn('', 'Heading 2 (a section in the table of contents)', () => chain().toggleHeading({ level: 2 }).run(), { text: 'H2', isOn: () => editor.isActive('heading', { level: 2 }) }),
@@ -256,6 +319,7 @@ export function createBodyEditor({ html, onChange = () => {}, pickImage, renderM
     sep(),
     btn('table', 'Insert a table', () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(), { isOn: () => editor.isActive('table') }),
     btn('image', 'Insert a picture from the media gallery', () => insertImage()),
+    btn('design', 'Design card: 1 to 3 designs with price, Preview and Order', () => insertDesigns()),
     btn('hr', 'Divider line', () => chain().setHorizontalRule().run()),
   ];
   const undoRedo = [
@@ -316,6 +380,47 @@ export function createBodyEditor({ html, onChange = () => {}, pickImage, renderM
     setTimeout(() => url.focus(), 30);
   }
   editor.view.dom.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); linkDialog(); } });
+
+  /* the "/" menu: every quick tool (blog-slash.js) */
+  const mod = /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl';
+  const SLASH = [
+    { id: 'p', title: 'Paragraph', hint: 'Plain text', icon: svg('p'), keys: `${mod}+Alt+0`, aliases: ['text'], run: () => chain().setParagraph().run() },
+    { id: 'h2', title: 'Heading 2', hint: 'A section in the table of contents', icon: svg('h2'), keys: `${mod}+Alt+2`, aliases: ['h2', 'title', 'section'], run: () => chain().setHeading({ level: 2 }).run() },
+    { id: 'h3', title: 'Heading 3', hint: 'A smaller section', icon: svg('h3'), keys: `${mod}+Alt+3`, aliases: ['h3', 'subheading'], run: () => chain().setHeading({ level: 3 }).run() },
+    { id: 'ul', title: 'Bullet list', hint: 'Or type "- " on a new line', icon: svg('ul'), keys: `${mod}+Shift+8`, aliases: ['ul', 'unordered'], run: () => chain().toggleBulletList().run() },
+    { id: 'ol', title: 'Numbered list', hint: 'Or type "1. " on a new line', icon: svg('ol'), keys: `${mod}+Shift+7`, aliases: ['ol', 'ordered'], run: () => chain().toggleOrderedList().run() },
+    { id: 'quote', title: 'Quote', hint: 'A quotation, set apart', icon: svg('quote'), keys: `${mod}+Shift+B`, aliases: ['blockquote'], run: () => chain().toggleBlockquote().run() },
+    { id: 'tip', title: 'Tip box', hint: 'Advice that stands out', icon: svg('tip'), aliases: ['callout'], run: () => insertCallout('TIP') },
+    { id: 'note', title: 'Note box', hint: 'Good to know', icon: svg('note'), aliases: ['callout', 'info'], run: () => insertCallout('NOTE') },
+    { id: 'copy', title: 'Copy block', hint: 'Wording people can copy', icon: svg('copy'), aliases: ['wording', 'code'], run: () => insertCopy() },
+    { id: 'table', title: 'Table', hint: '3 x 3 with a header row', icon: svg('table'), aliases: ['grid'], run: () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+    { id: 'image', title: 'Image', hint: 'From the media gallery, with alt text', icon: svg('image'), aliases: ['picture', 'photo'], run: () => insertImage() },
+    { id: 'design', title: 'Design card', hint: '1 to 3 designs with price and Order', icon: svg('design'), aliases: ['promo', 'ad', 'card'], run: () => insertDesigns() },
+    { id: 'hr', title: 'Divider', hint: 'A line between parts', icon: svg('hr'), aliases: ['hr', 'line', 'rule', 'separator'], run: () => chain().setHorizontalRule().run() },
+    { id: 'faq', title: 'FAQ item', hint: 'Adds a question in the FAQ section', icon: svg('faq'), aliases: ['question', 'faq'], run: () => onFaq() },
+    { id: 'ldesign', title: 'Link to a design', hint: 'Its page on this website', icon: svg('link'), aliases: ['link'], run: () => insertLinkTo('Link to a design', designTargets()) },
+    { id: 'lpage', title: 'Link to a guide or page', hint: 'Another post, pricing, designs', icon: svg('page'), keys: `${mod}+K`, aliases: ['link', 'post', 'guide', 'page'], run: () => insertLinkTo('Link to a guide or page', linkTargets()) },
+  ];
+  slashItems = () => SLASH;
+
+  /** a searchable list of link targets; resolves { path, title } or null */
+  function pickTarget(title, targets) {
+    return new Promise((resolve) => {
+      let out = null;
+      const q = h('input.input', { type: 'search', placeholder: 'Search', 'aria-label': 'Search' });
+      const box = h('div.bxe-pick', { role: 'listbox', 'aria-label': title });
+      const draw = () => {
+        const s = q.value.trim().toLowerCase();
+        const list = targets.filter((t) => !s || t.title.toLowerCase().includes(s) || t.path.includes(s)).slice(0, 80);
+        fill(box, list.length ? list.map((t) => h('button.bxe-pick__i', { type: 'button', role: 'option', onclick: () => { out = t; d.close(); } }, h('span', t.title), h('small', t.path))) : h('p.bx-empty', 'Nothing matches.'));
+      };
+      q.addEventListener('input', draw);
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector('button')?.click(); } });
+      const d = openDialog({ title, body: h('div.stack', q, box), actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel')], onClose: () => { resolve(out); editor.commands.focus(); } });
+      draw();
+      setTimeout(() => q.focus(), 30);
+    });
+  }
 
   /* the Markdown view */
   async function toggleMd() {

@@ -176,6 +176,10 @@ export function blogAdmin(ctx) {
       pickImage: (cur) => gallery({ mode: 'body', ...cur }),
       renderMarkdown: async (md) => (await api('/admin/blog/render', { method: 'POST', body: { body: md } })).html,
       linkTargets,
+      pickDesigns: (cur) => pickDesigns(cur),
+      designName: (slug) => catalog().find((d) => d.slug === slug)?.name || slug,
+      designTargets: () => catalog().filter((d) => onSite(d)).map((d) => ({ path: designPath(d), title: `${d.name} design` })),
+      onFaq: () => addFaq(),
     });
     const stats = h('span.bx-stats');
     const outline = h('span.bx-outline');
@@ -198,7 +202,65 @@ export function blogAdmin(ctx) {
               h('button.btn.btn--ghost.btn--icon', { type: 'button', 'aria-label': 'Move down', title: 'Move down', disabled: i === n - 1, onclick: () => move(1) }, icon('down', 16)),
               iconBtn('trash', 'Delete this question', () => { post.faq.splice(i, 1); drawFaq(); touch(); }, 'btn--ghost'))),
           q, a);
-      }), n < 12 ? h('button.btn.btn--sm', { type: 'button', onclick: () => { post.faq.push({ q: '', a: '' }); drawFaq(); touch(); faqBox.querySelectorAll('.bx-qa input')[post.faq.length - 1]?.focus(); } }, icon('plus', 15), 'Add a question') : null);
+      }), n < 12 ? h('button.btn.btn--sm', { type: 'button', onclick: () => addFaq() }, icon('plus', 15), 'Add a question') : null);
+    }
+
+    function addFaq() {
+      if (post.faq.length >= 12) { toast('Up to 12 questions.', 'error'); return; }
+      post.faq.push({ q: '', a: '' });
+      drawFaq();
+      touch();
+      const q = faqBox.querySelectorAll('.bx-qa input')[post.faq.length - 1];
+      q?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(() => q?.focus({ preventScroll: true }), 300);
+    }
+
+    /* ---- the design catalog (both websites) and the design card picker ---- */
+    function catalog() {
+      const seen = new Map();
+      for (const site of ['np', 'intl']) {
+        for (const d of meta.designs[site] || []) if (!seen.has(d.slug)) seen.set(d.slug, { slug: d.slug, name: d.name.replace(/ \(Nepali\)$/, ''), home: site === 'intl' && !/\(Nepali\)$/.test(d.name) ? 'intl' : 'np' });
+      }
+      return [...seen.values()];
+    }
+    const onSite = (d) => post.site === 'np' || (meta.designs.intl || []).some((x) => x.slug === d.slug);
+    const designPath = (d) => (d.home === 'intl' ? `/international/designs/${d.slug}/` : `/designs/${d.slug}/`);
+    function pickDesigns(cur = []) {
+      return new Promise((resolve) => {
+        let chosen = cur.filter((s) => catalog().some((d) => d.slug === s));
+        let out = null;
+        const q = h('input.input.input--sm', { type: 'search', placeholder: 'Find a design', 'aria-label': 'Find a design' });
+        const grid = h('div.bx-grid', { role: 'listbox', 'aria-label': 'Designs', 'aria-multiselectable': 'true' });
+        const picked = h('p.bx-dpick__sel');
+        const ok = h('button.btn.btn--primary', { type: 'button', onclick: () => { out = chosen.slice(); d.close(); } });
+        const drawSel = () => {
+          picked.textContent = chosen.length ? `Chosen: ${chosen.map((s) => catalog().find((d) => d.slug === s)?.name || s).join(', ')}` : 'Choose 1 to 3 designs. They show in a row, in the order you pick them.';
+          ok.textContent = cur.length ? 'Update the card' : 'Insert design card';
+          ok.disabled = !chosen.length;
+        };
+        const draw = () => {
+          const s = q.value.trim().toLowerCase();
+          const list = catalog().filter((d) => !s || d.name.toLowerCase().includes(s) || d.slug.includes(s));
+          fill(grid, list.map((dsn) => {
+            const avail = onSite(dsn);
+            const i = chosen.indexOf(dsn.slug);
+            return h('button.bx-tile.is-phone', { type: 'button', role: 'option', 'aria-selected': String(i >= 0), disabled: !avail && i < 0,
+              title: avail ? dsn.name : 'Not offered on this website', onclick: () => {
+                if (i >= 0) chosen.splice(i, 1);
+                else if (chosen.length >= 3) { toast('Up to 3 designs in one card.', 'error'); return; } else chosen.push(dsn.slug);
+                draw(); drawSel();
+              } },
+            h('img', { src: `/site/thumbs/${dsn.slug}-480.webp`, alt: '', loading: 'lazy' }),
+            h('span.bx-tile__n', i >= 0 ? `${i + 1}. ${dsn.name}` : dsn.name, h('small', dsn.home === 'intl' ? ' · International' : ' · Nepal')));
+          }));
+        };
+        q.addEventListener('input', draw);
+        const d = openDialog({ title: 'Design card', wide: true, cls: 'bx-gal-dlg',
+          body: h('div.bx-gal', h('div.bx-gal__bar', q, picked), h('p.hint', 'In the post it shows each design with its picture, plan, price in the reader’s currency, Preview and Order this design.'), grid),
+          actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), ok], onClose: () => resolve(out) });
+        draw(); drawSel();
+        setTimeout(() => q.focus(), 30);
+      });
     }
 
     /* ---- SEO ---- */
@@ -602,8 +664,8 @@ export function blogAdmin(ctx) {
       box('Feature image', coverBox, field('Alt text', coverAlt), field('Caption', coverCap)),
       box('Category', catSel, errBox('category'), h('button.bx-link', { type: 'button', onclick: () => { newCatRow.hidden = !newCatRow.hidden; if (!newCatRow.hidden) newCat.focus(); } }, '+ Add a new category'), newCatRow),
       box('Excerpt', excerpt, h('div.bx-fieldfoot', h('span.hint', 'Under the title and on the blog cards.'), exCount)),
-      h('section.bx-box', h('h2.bx-box__h', 'Related designs', designsN), h('div.bx-box__in', h('p.hint', 'Shown under the post (up to 4).'), designFilter, designsBox)),
-      box('Related guides', h('p.hint', 'Picked first in “Keep reading”; others fill in by category.'), relatedBox));
+      h('section.bx-box', h('h2.bx-box__h', 'Related designs', designsN), h('div.bx-box__in', h('p.hint', 'Shown under the post (up to 4). If you pick none, we show matching or latest designs.'), designFilter, designsBox)),
+      box('Related guides', h('p.hint', 'Picked first in “Keep reading”. If you pick none, we show matching or latest guides.'), relatedBox));
 
     drawFaq(); drawUrl(); drawSite(); drawPublish(); drawSaveState(); drawCover(); drawCategories(); drawDesigns(); drawRelated(); placeholders(); pageHead();
     fill(root, h('div.bx', main, side));

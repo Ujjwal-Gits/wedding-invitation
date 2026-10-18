@@ -253,8 +253,9 @@ async function cachedPage(key, type, make, distDir) {
   let e = pageCache.pages.get(key);
   if (e === undefined) {
     let siteDoc = null;
-    const shell = async (site) => siteShell(distDir, site, c?.value, siteDoc ??= await readSite(), day);
-    const body = await make(doc, shell);
+    const siteOf = async () => (siteDoc ??= await readSite());
+    const shell = async (site) => siteShell(distDir, site, c?.value, await siteOf(), day);
+    const body = await make(doc, shell, siteOf);
     e = body == null ? null : { e: entity(body, type), link: type.startsWith('text/html') ? preloadLinks(body) : '' };
     if (pageCache.rev === stamp) pageCache.pages.set(key, e);
   }
@@ -308,10 +309,10 @@ export function blogPages({ distDir }) {
           const q = req.originalUrl.indexOf('?');
           return res.redirect(301, `${base}${sm[1]}/${q >= 0 ? req.originalUrl.slice(q) : ''}`);
         }
-        const e = await cached(`${site}:post:${sm[1]}`, HTML, async (doc, shell) => {
+        const e = await cached(`${site}:post:${sm[1]}`, HTML, async (doc, shell, siteOf) => {
           const posts = live(doc, site);
           const post = posts.find((x) => x.slug === sm[1]);
-          return post ? renderPost({ post, others: posts, shell: await shell(site) }) : null;
+          return post ? renderPost({ post, others: posts, shell: await shell(site), siteDoc: await siteOf() }) : null;
         });
         if (e) return send(req, res, e);
         const { doc } = await readBlog();
@@ -437,7 +438,7 @@ export function adminRouter({ json, heavy, distDir }) {
     const { doc } = await readBlog();
     const others = live(doc, post.site).filter((p) => p.id !== req.body?.id);
     const c = compilePost(post);
-    const html = renderPost({ post: { ...post, id: req.body?.id || post.id, c }, others, shell: shellFor(distDir, post.site), preview: true });
+    const html = renderPost({ post: { ...post, id: req.body?.id || post.id, c }, others, shell: shellFor(distDir, post.site), preview: true, siteDoc: await readSite() });
     res.json({ html, words: c.words, url: `/studio/blog-preview/${keepPreview(html, req.sessionKey)}` });
   }));
   // Markdown -> the HTML the visual editor opens (switching back from the editor's Markdown view)

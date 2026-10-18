@@ -245,3 +245,41 @@ body[data-page='blog'] main > .sec:has(.closing) { padding-block: clamp(32px, 4v
   .bp-body .tbl table { min-width: 480px; font-size: 14.5px; }
   .bp-body .tbl th, .bp-body .tbl td { padding: 10px 12px; }
 }
+
+/* ===== Design cards in a post (a ```design block, lib/blog-render.js designCardsHtml) ============================
+   A quiet promo: the design on a phone, its plan and price (set in the reader's currency by the site's script), one
+   line, Order and Preview. One design reads as a wide card; two or three sit in a row and stack on a phone. */
+.bp-body .bdc { margin-top: 1.8em !important; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--blush-50); }
+.bp-body .bdc__kick { margin: 0 0 12px; font: 500 12.5px/1.4 var(--f-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.bp-body .bdc__list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.bp-body .bdc__item { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; margin: 0; padding: 12px; border-radius: calc(var(--r-lg) - 6px); background: #fff; }
+.bp-body .bdc__item::before { content: none; }
+.bp-body .bdc__pic { display: grid; place-items: center; padding: 10px 0; border-radius: 14px; background: var(--tint, var(--blush-100)); text-decoration: none; }
+.bp-body .bdc__pic .phone { width: 74px; }
+.bp-body .bdc__body { display: grid; gap: 6px; min-width: 0; }
+.bp-body .bdc__name { margin: 0; font: 400 26px/1.05 var(--f-display); letter-spacing: -0.01em; }
+.bp-body .bdc__name a { color: var(--ink); text-decoration: none; }
+.bp-body .bdc__name a:hover { color: var(--accent); }
+.bp-body .bdc__name [lang='ne'] { margin-left: 4px; font: 400 16px/1 var(--f-ne, inherit); color: var(--ink-3); }
+.bp-body .bdc__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; font-size: 13.5px; }
+.bp-body .bdc__price { color: var(--ink-2); font-weight: 500; }
+.bp-body .bdc__line { margin: 0; max-width: 52ch; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+.bp-body .bdc__acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.bp-body .bdc__acts a { text-decoration: none; }
+.bp-body .bdc__acts a.btn--accent, .bp-body .bdc__acts a.btn--accent:hover { color: #fff; }
+/* the card sizes itself by its own width (the reading column), not the window */
+.bp-body .bdc { container-type: inline-size; }
+.bp-body .bdc--n3 .bdc__list { --n: 3; }
+@container (min-width: 600px) {
+  .bdc--n2 .bdc__list, .bdc--n3 .bdc__list { grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); }
+  .bdc--n2 .bdc__item, .bdc--n3 .bdc__item { grid-template-columns: 1fr; align-content: start; }
+  .bdc--n3 .bdc__line { display: none; }
+  .bdc--n1 .bdc__item { grid-template-columns: 150px minmax(0, 1fr); }
+  .bdc--n1 .bdc__pic .phone { width: 96px; }
+}
+@container (max-width: 420px) {
+  .bdc__item { grid-template-columns: 88px minmax(0, 1fr); gap: 12px; }
+  .bdc__pic .phone { width: 60px; }
+  .bdc__name { font-size: 22px; }
+}
+@media (max-width: 599px) { .bp-body .bdc { padding: 12px; } }

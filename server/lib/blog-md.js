@@ -16,6 +16,9 @@ const STILL_RE = /^\/site\/stills\/([a-z0-9-]{2,40})-(?:480|800|1170)\.webp$/;
 /** where an image may come from: our own files (art, stills, the blog's uploads) */
 const IMG_RE = /^\/(?:site|photos|art|themes|uploads\/_site\/blog)\/[A-Za-z0-9/_.-]{1,200}\.(?:webp|jpe?g|png|avif|svg)$/;
 
+const DESIGN_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+){0,6}$/;
+/** the designs of a ```design block: valid slugs, no repeats, at most 3 */
+export const designSlugs = (text) => [...new Set(String(text || '').split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter((x) => DESIGN_SLUG.test(x) && x.length <= 40))].slice(0, 3);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const markNe = (escaped) => escaped.replace(DEVA_RUN, (m) => `<span lang="ne">${m}</span>`);
 
@@ -103,10 +106,17 @@ function makeMd() {
   };
   md.renderer.rules.blockquote_close = (tokens, i, opts, env, self) => (tokens[i].meta?.callout ? '</aside>\n' : self.renderToken(tokens, i, opts));
 
-  md.renderer.rules.fence = (tokens, i) => {
+  md.renderer.rules.fence = (tokens, i, opts, env) => {
     const t = tokens[i];
     const info = t.info.trim();
     const body = t.content.replace(/\n$/, '');
+    // ```design + "kham, mahal": a design card (1 to 3 designs). Only a slot here: lib/blog-render.js fills it from the
+    // catalog for the post's website (unknown or hidden designs are skipped, an empty slot disappears).
+    if (/^design$/i.test(info)) {
+      const slugs = designSlugs(body);
+      if (slugs.length) { env.designs = [...(env.designs || []), ...slugs]; return `<aside class="bdc-slot" data-designs="${slugs.join(',')}"></aside>\n`; }
+      return '';
+    }
     if (/^copy(?:\s|$)/i.test(info)) {
       const title = info.slice(4).trim().slice(0, 120);
       const ne = DEVA.test(body) ? ' lang="ne"' : '';
@@ -147,7 +157,7 @@ function makeMd() {
 const md = makeMd();
 
 const CLASSES = {
-  aside: ['callout', 'callout--note', 'callout--tip', 'callout--important', 'callout--warning'],
+  aside: ['callout', 'callout--note', 'callout--tip', 'callout--important', 'callout--warning', 'bdc-slot'],
   p: ['callout__label'],
   figure: ['copy', 'fig', 'fig--phone'],
   figcaption: ['copy__t'],
@@ -162,7 +172,7 @@ const SANITIZE = {
     h2: ['id'], h3: ['id'], h4: ['id'],
     a: ['href', 'rel', 'title'],
     img: ['src', 'srcset', 'sizes', 'alt', 'width', 'height', 'loading', 'decoding'],
-    span: ['lang', 'class'], pre: ['lang', 'class'], aside: ['class', 'role'], figure: ['class'], figcaption: ['class'], p: ['class'],
+    span: ['lang', 'class'], pre: ['lang', 'class'], aside: ['class', 'role', 'data-designs'], figure: ['class'], figcaption: ['class'], p: ['class'],
     div: ['class', 'role', 'aria-label', 'tabindex'], ol: ['start'], th: ['style'], td: ['style'],
   },
   allowedClasses: CLASSES,
@@ -175,6 +185,11 @@ const SANITIZE = {
   exclusiveFilter: (frame) => (frame.tag === 'img' && !IMG_RE.test(frame.attribs.src || '')),
   transformTags: {
     a: (tag, attribs) => (safeHref(attribs.href) ? { tagName: 'a', attribs } : { tagName: 'span', attribs: {} }),
+    aside: (tag, attribs) => {
+      const out = { ...attribs };
+      if ('data-designs' in out) { const v = designSlugs(out['data-designs']).join(','); if (v && out.class === 'bdc-slot') out['data-designs'] = v; else delete out['data-designs']; }
+      return { tagName: 'aside', attribs: out };
+    },
     span: (tag, attribs) => ({ tagName: 'span', attribs: attribs.lang && attribs.lang !== 'ne' ? { ...attribs, lang: 'ne' } : attribs }),
   },
 };
@@ -187,7 +202,7 @@ export function plainText(markdown) {
   const out = [];
   for (const t of tokens) {
     if (t.type === 'inline') out.push(t.children.filter((c) => c.type === 'text' || c.type === 'code_inline').map((c) => c.content).join(''));
-    else if (t.type === 'fence' || t.type === 'code_block') out.push(t.content);
+    else if ((t.type === 'fence' && !/^design$/i.test(t.info.trim())) || t.type === 'code_block') out.push(t.content);
   }
   return out.join('\n').replace(/\[![A-Z]+\]\s*/g, '').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -198,7 +213,7 @@ export function renderMarkdown(markdown) {
   const env = {};
   const raw = md.render(String(markdown || ''), env);
   const words = wordCount(plainText(markdown));
-  return { html: sanitize(raw), toc: env.toc || [], words, images: env.images || [] };
+  return { html: sanitize(raw), toc: env.toc || [], words, images: env.images || [], designs: [...new Set(env.designs || [])] };
 }
 
 /** One line of inline Markdown (an FAQ answer): safe HTML, and its plain text for JSON-LD. */
