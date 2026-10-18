@@ -51,7 +51,9 @@
     <image:image><image:loc>https://nimtto.com/site/stills/tuscany-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/noor-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/jali-480.webp</image:loc></image:image>
-    <image:image><image:loc>https://nimtto.com/site/stills/andalus-480.webp</image:loc></image:image></url>
+    <image:image><image:loc>https://nimtto.com/site/stills/andalus-480.webp</image:loc></image:image>
+    <image:image><image:loc>https://nimtto.com/site/stills/kalpataru-480.webp</image:loc></image:image>
+    <image:image><image:loc>https://nimtto.com/site/stills/sandesh-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/international/designs/</loc><lastmod>2026-10-18</lastmod>
     <image:image><image:loc>https://nimtto.com/site/stills/olive-grove-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/rose-arch-480.webp</image:loc></image:image>
@@ -65,7 +67,9 @@
     <image:image><image:loc>https://nimtto.com/site/stills/tuscany-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/noor-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/jali-480.webp</image:loc></image:image>
-    <image:image><image:loc>https://nimtto.com/site/stills/andalus-480.webp</image:loc></image:image></url>
+    <image:image><image:loc>https://nimtto.com/site/stills/andalus-480.webp</image:loc></image:image>
+    <image:image><image:loc>https://nimtto.com/site/stills/kalpataru-480.webp</image:loc></image:image>
+    <image:image><image:loc>https://nimtto.com/site/stills/sandesh-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/international/nepali-wedding-invitations/</loc><lastmod>2026-10-18</lastmod>
     <image:image><image:loc>https://nimtto.com/site/stills/swayambar-480.webp</image:loc></image:image>
     <image:image><image:loc>https://nimtto.com/site/stills/laali-480.webp</image:loc></image:image>
@@ -148,6 +152,22 @@
     <image:image><image:loc>https://nimtto.com/site/stills/rangoli-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/designs/sarovar/</loc><lastmod>2026-10-18</lastmod>
     <image:image><image:loc>https://nimtto.com/site/stills/sarovar-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/mohar/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/mohar-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/kalpataru/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/kalpataru-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/shagun/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/shagun-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/sandesh/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/sandesh-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/vasant/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/vasant-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/zari/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/zari-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/toran/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/toran-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/designs/sanjhi/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/sanjhi-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/international/designs/olive-grove/</loc><lastmod>2026-10-18</lastmod>
     <image:image><image:loc>https://nimtto.com/site/stills/olive-grove-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/international/designs/rose-arch/</loc><lastmod>2026-10-18</lastmod>
@@ -174,4 +194,8 @@
     <image:image><image:loc>https://nimtto.com/site/stills/jali-480.webp</image:loc></image:image></url>
   <url><loc>https://nimtto.com/international/designs/andalus/</loc><lastmod>2026-10-18</lastmod>
     <image:image><image:loc>https://nimtto.com/site/stills/andalus-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/international/designs/kalpataru/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/kalpataru-480.webp</image:loc></image:image></url>
+  <url><loc>https://nimtto.com/international/designs/sandesh/</loc><lastmod>2026-10-18</lastmod>
+    <image:image><image:loc>https://nimtto.com/site/stills/sandesh-480.webp</image:loc></image:image></url>
 </urlset>

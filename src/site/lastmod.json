@@ -1,6 +1,6 @@
 {
  "/": {
-  "h": "686ce6fc3904a68d",
+  "h": "be03c5987aa4e4d7",
   "d": "2026-10-18"
  },
  "/about/": {
@@ -16,11 +16,11 @@
   "d": "2026-10-18"
  },
  "/designs/": {
-  "h": "0c5b3b91ed198a59",
+  "h": "8adddeb5eaf8d169",
   "d": "2026-10-18"
  },
  "/designs/agni/": {
-  "h": "c9285a37989dfa04",
+  "h": "7445d1923c7dd66e",
   "d": "2026-10-18"
  },
  "/designs/bagaicha/": {
@@ -44,7 +44,7 @@
   "d": "2026-10-18"
  },
  "/designs/ghar/": {
-  "h": "5478ddb877afa375",
+  "h": "f1206d3bf5b2d4b4",
   "d": "2026-10-18"
  },
  "/designs/gurans/": {
@@ -52,7 +52,7 @@
   "d": "2026-10-18"
  },
  "/designs/hariyo/": {
-  "h": "650e6248d160c2e4",
+  "h": "14b6d2434f660148",
   "d": "2026-10-18"
  },
  "/designs/himal/": {
@@ -60,11 +60,19 @@
   "d": "2026-10-18"
  },
  "/designs/janti/": {
-  "h": "a568df3a89eec71c",
+  "h": "2ada0b24d3adc904",
   "d": "2026-10-18"
  },
  "/designs/jhyal/": {
-  "h": "1acd509818ec2389",
+  "h": "5f367182642b2ac5",
+  "d": "2026-10-18"
+ },
+ "/designs/kalapi/": {
+  "h": "e3bf6b1843c3957e",
+  "d": "2026-10-18"
+ },
+ "/designs/kalpataru/": {
+  "h": "98a68e5b86bf6b33",
   "d": "2026-10-18"
  },
  "/designs/kham/": {
@@ -72,11 +80,11 @@
   "d": "2026-10-18"
  },
  "/designs/laali/": {
-  "h": "3e2a9a34c15b3381",
+  "h": "dedf948b674b1887",
   "d": "2026-10-18"
  },
  "/designs/mahal/": {
-  "h": "ed8a3de00efd3c84",
+  "h": "dd3e191d3e51bbc5",
   "d": "2026-10-18"
  },
  "/designs/mala/": {
@@ -92,43 +100,71 @@
   "d": "2026-10-18"
  },
  "/designs/mehendi/": {
-  "h": "c1284224d95c6136",
+  "h": "4618c425981eed98",
+  "d": "2026-10-18"
+ },
+ "/designs/mohar/": {
+  "h": "59fcf522caa30308",
   "d": "2026-10-18"
  },
  "/designs/nimantrana/": {
-  "h": "c795035b04dc4679",
+  "h": "a64196c9bfedce48",
   "d": "2026-10-18"
  },
  "/designs/pardaa/": {
-  "h": "d2bdc4a75e2cc2d2",
+  "h": "537b04653e7759ef",
   "d": "2026-10-18"
  },
  "/designs/rajdwar/": {
-  "h": "8471e573f87c4bab",
+  "h": "823b2f7f3e1a9c0d",
   "d": "2026-10-18"
  },
  "/designs/rangoli/": {
-  "h": "0edd2e4e89397c18",
+  "h": "bcdf320b3f5aaf6a",
+  "d": "2026-10-18"
+ },
+ "/designs/sandesh/": {
+  "h": "465c1345396ad0c3",
+  "d": "2026-10-18"
+ },
+ "/designs/sanjhi/": {
+  "h": "28e6cc95f125f514",
   "d": "2026-10-18"
  },
  "/designs/sarovar/": {
-  "h": "743e7dc0d32659b6",
+  "h": "1cab9389f1c261ac",
   "d": "2026-10-18"
  },
  "/designs/sayapatri/": {
   "h": "398020b07e0bd46a",
   "d": "2026-10-18"
  },
+ "/designs/shagun/": {
+  "h": "f29669ed2c655474",
+  "d": "2026-10-18"
+ },
  "/designs/shree/": {
-  "h": "7145eb09228cebe1",
+  "h": "e8474565276d99e6",
   "d": "2026-10-18"
  },
  "/designs/sindoor/": {
-  "h": "09dbad6e8923da20",
+  "h": "cf26c0f0fd38516a",
   "d": "2026-10-18"
  },
  "/designs/swayambar/": {
-  "h": "249801c9eb1e8d5c",
+  "h": "140f429b6cb7b8be",
+  "d": "2026-10-18"
+ },
+ "/designs/toran/": {
+  "h": "bb1fd3151ce4b792",
+  "d": "2026-10-18"
+ },
+ "/designs/vasant/": {
+  "h": "14e38840a4c58131",
+  "d": "2026-10-18"
+ },
+ "/designs/zari/": {
+  "h": "618db5a909e18d4a",
   "d": "2026-10-18"
  },
  "/faq/": {
@@ -144,7 +180,7 @@
   "d": "2026-10-18"
  },
  "/international/": {
-  "h": "481b17b4c2983b8d",
+  "h": "4051611a74416f3a",
   "d": "2026-10-18"
  },
  "/international/about/": {
@@ -156,7 +192,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/": {
-  "h": "f33f9c786959d0fb",
+  "h": "e65fbf59f4b6761b",
   "d": "2026-10-18"
  },
  "/international/designs/amalfi/": {
@@ -164,7 +200,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/andalus/": {
-  "h": "00cc1bfaf364af0a",
+  "h": "15da1498b1666647",
   "d": "2026-10-18"
  },
  "/international/designs/blush-roses/": {
@@ -172,7 +208,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/garden-party/": {
-  "h": "ec7d2cb358181930",
+  "h": "bb3b4855e0fa489d",
   "d": "2026-10-18"
  },
  "/international/designs/gold-arch/": {
@@ -180,7 +216,11 @@
   "d": "2026-10-18"
  },
  "/international/designs/jali/": {
-  "h": "d653b5aa34e9b0a2",
+  "h": "8ce613b2bdb8ea21",
+  "d": "2026-10-18"
+ },
+ "/international/designs/kalpataru/": {
+  "h": "04720cc5b9aaaf49",
   "d": "2026-10-18"
  },
  "/international/designs/letterpress/": {
@@ -188,15 +228,19 @@
   "d": "2026-10-18"
  },
  "/international/designs/noor/": {
-  "h": "cd3e25b8d07cdb1b",
+  "h": "253bb9760f678e82",
   "d": "2026-10-18"
  },
  "/international/designs/olive-grove/": {
-  "h": "7b37991cc7dd9ff5",
+  "h": "16a1a8ca51b2469d",
   "d": "2026-10-18"
  },
  "/international/designs/rose-arch/": {
-  "h": "2b896fab8c552e0e",
+  "h": "80ed679e91c7efd5",
+  "d": "2026-10-18"
+ },
+ "/international/designs/sandesh/": {
+  "h": "51a9bbf207f6fa1c",
   "d": "2026-10-18"
  },
  "/international/designs/tuscany/": {
@@ -208,7 +252,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/wildflower/": {
-  "h": "9d7ac73b7a49795a",
+  "h": "a5b9b594bba4b90e",
   "d": "2026-10-18"
  },
  "/international/faq/": {
@@ -228,7 +272,7 @@
   "d": "2026-10-18"
  },
  "/international/occasions/": {
-  "h": "5c87804be9b0a796",
+  "h": "25d5413a958ef3b2",
   "d": "2026-10-18"
  },
  "/international/occasions/anniversary/": {
@@ -268,7 +312,7 @@
   "d": "2026-10-18"
  },
  "/international/occasions/wedding/": {
-  "h": "12053027289d26b2",
+  "h": "65b32fbbcd2293e6",
   "d": "2026-10-18"
  },
  "/international/pricing/": {
@@ -292,11 +336,11 @@
   "d": "2026-10-18"
  },
  "/international/usa/": {
-  "h": "26f1550e9b3f74b8",
+  "h": "d2772d1dd927362c",
   "d": "2026-10-18"
  },
  "/international/wedding-invitation-with-rsvp/": {
-  "h": "231019f078470fc2",
+  "h": "cfe5c0e93daf46aa",
   "d": "2026-10-18"
  },
  "/nepali-abroad/": {
@@ -304,7 +348,7 @@
   "d": "2026-10-18"
  },
  "/occasions/": {
-  "h": "3cf7190447d3ec9f",
+  "h": "4ccbd71421bbd965",
   "d": "2026-10-18"
  },
  "/occasions/birthday/": {
@@ -340,7 +384,7 @@
   "d": "2026-10-18"
  },
  "/pricing/": {
-  "h": "024f7cd24e4703a3",
+  "h": "3e8c61bf6f8c467d",
   "d": "2026-10-18"
  },
  "/privacy/": {
@@ -361,46 +405,6 @@
  },
  "/wedding-invitation-video-nepal/": {
   "h": "e7dbdddc57c93f81",
-  "d": "2026-10-18"
- },
- "/designs/mohar/": {
-  "h": "a83bcd26a839a802",
-  "d": "2026-10-18"
- },
- "/designs/kalapi/": {
-  "h": "e0b257467db9c873",
-  "d": "2026-10-18"
- },
- "/designs/kalpataru/": {
-  "h": "4b5b4f1aeeed1528",
-  "d": "2026-10-18"
- },
- "/international/designs/kalpataru/": {
-  "h": "acb92b8dce19a9dd",
-  "d": "2026-10-18"
- },
- "/designs/shagun/": {
-  "h": "329f6432633f0f7f",
-  "d": "2026-10-18"
- },
- "/designs/sandesh/": {
-  "h": "94e5ced7432452db",
-  "d": "2026-10-18"
- },
- "/international/designs/sandesh/": {
-  "h": "51a9bbf207f6fa1c",
-  "d": "2026-10-18"
- },
- "/designs/vasant/": {
-  "h": "0e885ead6458ac6c",
-  "d": "2026-10-18"
- },
- "/designs/zari/": {
-  "h": "2e82b486580a01d1",
-  "d": "2026-10-18"
- },
- "/designs/toran/": {
-  "h": "44ff8fdece2a6072",
   "d": "2026-10-18"
  }
 }
