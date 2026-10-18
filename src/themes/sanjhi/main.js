@@ -17,12 +17,14 @@ const PHONE = '(max-width: 760px)';
 // `hang` layers (the toran) hang from the top edge and drop down instead of standing up.
 const SPREADS = {
   grove: [
-    ['grove-kadamba', { w: 84, b: 16 }, { w: 112, b: 30 }],
-    ['grove-mango', { w: 118, b: 5 }, { w: 104, b: 11 }],
+    ['grove-kadamba', { w: 84, b: 16 }, { w: 112, b: 27 }],
+    ['grove-mango', { w: 118, b: 5 }, { w: 104, b: 8.5 }],
     ['grove-cows', { w: 100, b: -1 }, { w: 150, b: 0 }],
-    ['toran-band', { w: 101, t: -0.5, hang: true }, { w: 104, t: -0.5, hang: true }],
+    ['toran-band', { w: 101, t: -0.5, hang: true }, { w: 104, t: 5.5, hang: true }],
     ['toran-l', { w: 17, t: 1.5, l: 9, hang: true }, null],
     ['toran-r', { w: 17, t: 1.5, l: 91, hang: true }, null],
+    ['ladi-rose', { w: 4.2, t: 7, l: 2.6, hang: true }, null, true],
+    ['ladi-marigold', { w: 4.8, t: 7, l: 97.3, hang: true }, null, true],
   ],
   homes: [
     ['village', { w: 86, b: 24 }, { w: 124, b: 36 }],
@@ -46,13 +48,29 @@ const SPREADS = {
   ],
 };
 
+// The fresh flowers on every spread after page one, in paper: a marigold-and-rose garland (its two outer halves in the
+// corners of a wide page, its centre across a phone's), and hanging strings of marigolds and of roses ending in a lotus.
+// They hang below the corner buttons and beside the words, never behind them. `same`: one file for both widths.
+const GARNISH = (flip) => [
+  ['garland-l', { w: 26, t: 0, l: 13, hang: true }, null],
+  ['garland-r', { w: 26, t: 0, l: 87, hang: true }, null],
+  ['garland', null, { w: 98, t: 4.5, hang: true }, false, 'garland-m'],
+  [flip ? 'ladi-rose' : 'ladi-marigold', { w: 4.2, t: 21, l: 2.6, hang: true }, { w: 11, t: 15, l: 7, hang: true }, true],
+  [flip ? 'ladi-marigold' : 'ladi-rose', { w: 4.2, t: 21, l: 97.4, hang: true }, { w: 11, t: 15, l: 93, hang: true }, true],
+];
+['homes', 'pond', 'river', 'mandap'].forEach((k, i) => SPREADS[k].push(...GARNISH(i % 2 === 1)));
+
 /** one cut-paper layer: a <picture> with the phone composition, standing on (or hanging from) the page.
- *  A layer without a phone spec is for wide pages only (the toran's corner swags). */
-function layer([file, wide, ph], i, eager) {
+ *  A layer without a phone spec is for wide pages only, one without a wide spec for phones only; `same` uses one file
+ *  for both, `phoneFile` names the phone-only file. */
+function layer([file, wide, ph, same, phoneFile], i, eager) {
   const pos = (o, s) => (o.hang ? `--t${s}:${o.t}%;` : `--b${s}:${o.b}%;`) + `--w${s}:${o.w}%;` + (o.l != null ? `--l${s}:${o.l}%;` : '');
-  return `<picture class="sj-l${wide.hang ? ' sj-l--hang' : ''}${ph ? '' : ' sj-l--wide'}" style="${pos(wide, '')}${ph ? pos(ph, 'm') : ''}--z:${i}">
-      ${ph ? `<source media="${PHONE}" srcset="${ART}${file}-m.webp" />` : ''}
-      <img src="${ART}${file}.webp" alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" draggable="false" />
+  const any = wide || ph;
+  const cls = `sj-l${any.hang ? ' sj-l--hang' : ''}${ph ? '' : ' sj-l--wide'}${wide ? '' : ' sj-l--phone'}`;
+  const src = wide ? `${ART}${file}.webp` : `${ART}${phoneFile || `${file}-m`}.webp`;
+  return `<picture class="${cls}" style="${wide ? pos(wide, '') : ''}${ph ? pos(ph, 'm') : ''}--z:${i}">
+      ${wide && ph && !same ? `<source media="${PHONE}" srcset="${ART}${file}-m.webp" />` : ''}
+      <img src="${src}" alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" draggable="false" />
     </picture>`;
 }
 
@@ -75,6 +93,10 @@ const plate = () => ['warm', 'peacock', 'leaf'].map((k) => `<img src="${ART}powd
 /** the leaf that turns at the top of a spread: the chapter page in front, the back of the paper behind */
 const leaf = (n, kicker, bi) => `<div class="sj-leaf" aria-hidden="true">
     <div class="sj-leaf__face sj-leaf__front">
+      <picture class="sj-leaf__garland"><source media="${PHONE}" srcset="${ART}garland-m.webp" /><img src="${ART}garland.webp" alt="" loading="lazy" decoding="async" /></picture>
+      <img class="sj-leaf__ladi sj-leaf__ladi--l" src="${ART}ladi-marigold.webp" alt="" loading="lazy" decoding="async" />
+      <img class="sj-leaf__ladi sj-leaf__ladi--r" src="${ART}ladi-rose.webp" alt="" loading="lazy" decoding="async" />
+      <div class="sj-leaf__pond"><picture><source media="${PHONE}" srcset="${ART}lotus-m.webp" /><img src="${ART}lotus.webp" alt="" loading="lazy" decoding="async" /></picture><picture><source media="${PHONE}" srcset="${ART}pond-front-m.webp" /><img src="${ART}pond-front.webp" alt="" loading="lazy" decoding="async" /></picture></div>
       <div class="sj-leaf__plate">${plate()}</div>
       <p class="sj-leaf__no">${bi({ en: `Page ${n}`, ne: `पाना ${'०१२३४५६७८९'[n]}` })}</p>
       <p class="sj-leaf__title">${bi(kicker)}</p>
@@ -122,6 +144,7 @@ function gate(ctx) {
       </div>
       <p class="sj-cover__names">${ctx.names('&amp;')}</p>
       <p class="sj-cover__date">${bi({ en: `${ctx.AD.day} ${ctx.AD.month.en} ${ctx.AD.year}`, ne: ctx.BS.day ? `${ctx.BS.month} ${ctx.BS.day}, ${ctx.BS.year}` : ctx.AD.full.ne })}</p>
+      <div class="sj-cover__pond"><img class="sj-cover__lotus" src="${ART}lotus-m.webp" alt="" decoding="async" /><img class="sj-cover__leaves" src="${ART}pond-front-m.webp" alt="" decoding="async" /></div>
       </div>
     </div>
   </div>`;
@@ -303,7 +326,7 @@ const LIE = 88; // a layer lying flat on the page, before it stands up
 
 /** the layers of a stage stand up out of the fold, back first (tl positions in seconds or timeline units) */
 function rise(gsap, tl, st, at, span = 1.1) {
-  const ls = [...st.querySelectorAll('.sj-l')].filter((l) => l.offsetParent !== null || !l.classList.contains('sj-l--wide'));
+  const ls = [...st.querySelectorAll('.sj-l')].filter((l) => l.offsetParent !== null);
   ls.forEach((l, i) => {
     const hang = l.classList.contains('sj-l--hang');
     const t = at + i * (span * 0.22);

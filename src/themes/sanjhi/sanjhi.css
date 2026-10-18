@@ -1,6 +1,7 @@
 /* Sanjhi (साँझी) — a hand-cut paper pop-up book at dusk. Tokens on body.theme-sanjhi; layout and motion states below.
    Dusk indigo #2B2A49 · cream paper #FBF2E2 · saffron paper #E7882A (the one accent) · rose #E5A2B2 · leaf #5C8A48 ·
-   kohl #161414. Type: Sarpanch (names and headings, 32px and up only) and Mukta (everything else). */
+   kohl #161414. Type: Cormorant Garamond (names in italic, headings), Tiro Devanagari Hindi (Devanagari names and headings, never
+   digits) and Mukta (everything else, every digit in Nepali). */
 body.theme-sanjhi {
   --sj-dusk: #2B2A49;
   --sj-night: #17162C;
@@ -13,7 +14,8 @@ body.theme-sanjhi {
   --sj-ink: #261F22;
   --sj-ink-2: #5B4B4E;
   --sj-plum: #8E3F5F; /* small labels on cream (6.4:1) */
-  --sj-f-display: 'Sarpanch', 'Mukta', sans-serif;
+  --sj-f-display: 'Cormorant Garamond', Georgia, serif;
+  --sj-f-deva: 'Tiro Devanagari Hindi', 'Mukta', serif;
   --su-bg: var(--sj-night);
   --su-paper: #FFF9EE;
   --su-ink: var(--sj-ink);
@@ -58,30 +60,37 @@ body.su-locked .sj-after { visibility: hidden; }
 .sj-cover__cloth::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 5%, transparent 95%, rgba(0, 0, 0, 0.25)); }
 .sj-cover__rule { position: absolute; inset: 14px; border: 1px solid color-mix(in srgb, var(--sj-gold) 80%, transparent); border-radius: 2px; pointer-events: none; }
 .sj-cover__rule::after { content: ''; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--sj-gold) 45%, transparent); }
-.sj-cover__title { position: absolute; left: 0; right: 0; top: max(56px, 9.5svh); margin: 0; text-align: center; color: var(--sj-gold);
+.sj-cover__pond { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 16%; overflow: hidden; pointer-events: none; }
+.sj-cover__pond img { position: absolute; bottom: 0; height: auto; }
+.sj-cover__lotus { left: 22%; width: 56%; bottom: 8% !important; }
+.sj-cover__leaves { left: -10%; width: 120%; }
+.sj-cover__title { position: absolute; left: 0; right: 0; top: max(58px, 8svh); margin: 0; text-align: center; color: var(--sj-gold);
   font: 500 15px/1.2 'Mukta', sans-serif; letter-spacing: 0.36em; text-transform: uppercase; }
-.sj-cover__title .l-ne { font: 600 26px/1.3 var(--sj-f-display); letter-spacing: 0; text-transform: none; }
-.sj-cover__names { position: absolute; left: 0; right: 0; top: calc(max(104px, 16.5svh) + min(78vw, 46svh) + 24px); margin: 0; text-align: center;
-  color: var(--sj-cream); font: 600 34px/1.05 var(--sj-f-display); text-shadow: 0 2px 0 rgba(10, 8, 20, 0.6); }
-.sj-cover__date { position: absolute; left: 0; right: 0; top: calc(max(104px, 16.5svh) + min(78vw, 46svh) + 76px); margin: 0; text-align: center;
+.sj-cover__title .l-ne { font: 400 28px/1.3 var(--sj-f-deva); letter-spacing: 0; text-transform: none; }
+.sj-cover__names { position: absolute; left: 0; right: 0; top: calc(max(100px, 14svh) + min(86vw, 50svh) + 20px); margin: 0; text-align: center;
+  color: var(--sj-cream); font: italic 600 40px/1.05 var(--sj-f-display); text-shadow: 0 2px 10px rgba(10, 8, 20, 0.5); }
+.sj-cover__names .l-ne { font: 400 0.8em/1.3 var(--sj-f-deva); }
+.sj-cover__date { position: absolute; left: 0; right: 0; top: calc(max(100px, 14svh) + min(86vw, 50svh) + 72px); margin: 0; text-align: center;
   color: var(--sj-gold); font: 500 13px/1.4 'Mukta', sans-serif; letter-spacing: 0.3em; text-transform: uppercase; }
 .sj-cover__date .l-ne { font-size: 16px; letter-spacing: 0.04em; }
 .sj-cover__date::before, .sj-cover__date::after { content: ''; display: inline-block; width: 6px; height: 6px; margin: 0 14px; rotate: 45deg; vertical-align: 2px; background: var(--sj-saffron); }
 .sj-cover__names .su-n, .sj-cover__names .su-amp { display: inline; }
 .sj-cover__names .su-amp { margin: 0 0.3em; color: var(--sj-gold); font-size: 0.7em; }
 .sj-cover__names .l-ne { font-size: 0.86em; }
-.sj-plate { position: absolute; left: 50%; top: max(104px, 16.5svh); width: min(78vw, 46svh); aspect-ratio: 1; translate: -50% 0; }
+.sj-plate { position: absolute; left: 50%; top: max(100px, 14svh); width: min(86vw, 50svh); aspect-ratio: 1; translate: -50% 0; }
 .sj-plate__paper { position: absolute; inset: 0; background: var(--sj-fibre), var(--sj-grain), var(--sj-cream); border-radius: 2px;
   box-shadow: 0 0 0 1px rgba(217, 178, 106, 0.6), 0 2px 0 1px rgba(10, 8, 20, 0.35), 0 18px 30px -16px rgba(0, 0, 0, 0.7); }
 .sj-powder, .sj-stencil { position: absolute; inset: 4%; width: 92%; height: 92%; }
 .sj-stencil img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 1.5px 1px rgba(10, 8, 20, 0.45)); user-select: none; }
 .sj-powder { opacity: 0; }
 .sj-plate__ini { position: absolute; left: 50%; top: 50%; translate: -50% -50%; margin: 0; color: var(--sj-kohl); opacity: 0;
-  font: 600 clamp(30px, 9vw, 54px)/1 var(--sj-f-display); letter-spacing: 0.04em; white-space: nowrap; }
+  font: italic 600 clamp(36px, 11vw, 64px)/1 var(--sj-f-display); letter-spacing: 0.02em; white-space: nowrap; }
+.sj-plate__ini .l-ne { font: 400 0.8em/1.2 var(--sj-f-deva); }
 .sj-dust { position: absolute; inset: 4%; pointer-events: none; }
 .sj-dust i { position: absolute; width: 9px; height: 9px; margin: -4px; border-radius: 50%; opacity: 0; scale: var(--s);
   background: radial-gradient(circle, var(--c) 0 40%, color-mix(in srgb, var(--c) 40%, transparent) 60%, transparent 72%); }
 body.theme-sanjhi .su-gate__ui { color: var(--sj-cream); }
+@media (max-width: 760px) { body.theme-sanjhi .su-gate__ui { bottom: 18.5svh; gap: 8px; } }
 .theme-sanjhi .su-gate__line { font: 500 17px/1.4 'Mukta', sans-serif; letter-spacing: 0.02em; color: var(--sj-cream); }
 .theme-sanjhi .su-gate__line .l-ne { font: 500 18px/1.5 'Mukta', sans-serif; }
 .theme-sanjhi .su-quiet { color: color-mix(in srgb, var(--sj-cream) 88%, transparent); }
@@ -92,11 +101,12 @@ body.sj-moving .sj-stencil, body.sj-moving .sj-cover, body.sj-moving .sj-l { wil
   .sj-cover::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 22px; z-index: 1; border-radius: 4px 0 0 4px;
     background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.06) 70%, rgba(0, 0, 0, 0.2)); }
   .sj-cover__rule { inset: 18px 18px 18px 34px; }
-  .sj-plate { top: 15%; width: 64%; left: calc(50% + 8px); }
+  .sj-plate { top: 10.5%; width: 52%; left: calc(50% + 8px); }
+  .sj-cover__pond { left: 34px; right: 18px; bottom: 18px; height: 18%; }
   .sj-cover__title { top: 6.5%; }
-  .sj-cover__names { top: calc(15% + 64% * 0.76 + 3.5%); font-size: 40px; }
-  .sj-cover__date { top: calc(15% + 64% * 0.76 + 10.5%); }
-  .theme-sanjhi .su-gate__ui { bottom: max(46px, 6svh); }
+  .sj-cover__names { top: calc(10.5% + 52% * 0.76 + 1.5%); font-size: 46px; }
+  .sj-cover__date { top: calc(10.5% + 52% * 0.76 + 8.5%); }
+  .theme-sanjhi .su-gate__ui { bottom: calc((100svh - min(100svh - 56px, 900px)) / 2 + min(100svh - 56px, 900px) * 0.2); }
 }
 
 /* ───────── the book ───────── */
@@ -116,8 +126,8 @@ body.sj-moving .sj-stencil, body.sj-moving .sj-cover, body.sj-moving .sj-l { wil
 }
 /* wide: the spine is on the left */
 @media (min-width: 761px) {
-  body.theme-sanjhi { --bw: min(94vw, calc((100svh - 40px) * 1.7), 1440px); }
-  .sj-book { height: calc(100svh - 40px); border-radius: 6px 6px 0 0; }
+  body.theme-sanjhi { --bw: min(94vw, calc((100svh - 68px) * 1.7), 1440px); }
+  .sj-book { height: calc(100svh - 68px); border-radius: 6px 6px 0 0; }
   .sj-book__spine { left: 0; top: 0; bottom: 0; width: 20px; border-radius: 6px 0 0 0; background: linear-gradient(90deg, #15142A, #3A3866 55%, #1E1D38); }
   .sj-book__spine::after { content: ''; position: absolute; top: 14px; bottom: 0; left: 10px; border-left: 1px dashed rgba(217, 178, 106, 0.5); }
   .sj-book__page { left: 20px; right: 10px; top: 10px; bottom: 0; border-radius: 2px 2px 0 0; }
@@ -125,7 +135,7 @@ body.sj-moving .sj-stencil, body.sj-moving .sj-cover, body.sj-moving .sj-l { wil
 }
 .sj-hero { display: block; min-height: 100svh; background: var(--sj-night); }
 .sj-hero .sj-book { margin-top: 0; }
-@media (min-width: 761px) { .sj-hero { padding-top: 40px; } }
+@media (min-width: 761px) { .sj-hero { padding-top: 68px; } }
 .sj-hero .su-cue { z-index: 25; bottom: 12px; padding: 6px 14px 5px; border-radius: 2px; color: var(--sj-kohl); background: var(--sj-cream); box-shadow: 0 2px 0 rgba(22, 20, 20, 0.8); }
 
 /* ───────── a page of the pop-up book (stage) ───────── */
@@ -145,6 +155,7 @@ body.sj-moving .sj-stencil, body.sj-moving .sj-cover, body.sj-moving .sj-l { wil
 .sj-layers { position: absolute; inset: 0; perspective: 1100px; perspective-origin: 50% 18%; pointer-events: none; }
 .sj-l { position: absolute; display: block; left: calc(var(--l, 50%) - var(--w) / 2); width: var(--w); bottom: var(--b); transform-origin: 50% 100%; z-index: calc(var(--z) + 1); }
 .sj-l--hang { bottom: auto; top: var(--t); transform-origin: 50% 0%; }
+@media (min-width: 761px) { .sj-l--phone { display: none; } }
 .sj-l img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
 @media (max-width: 760px) {
   .sj-l { width: var(--wm); bottom: var(--bm); left: calc(var(--lm, 50%) - var(--wm) / 2); }
@@ -152,37 +163,38 @@ body.sj-moving .sj-stencil, body.sj-moving .sj-cover, body.sj-moving .sj-l { wil
   .sj-l--wide { display: none; }
 }
 /* the words on the sky (never on the paper flowers) */
-.sj-words { position: absolute; z-index: 20; left: 50%; top: 12%; translate: -50% 0; width: min(88%, 620px); text-align: center; color: var(--sj-cream); }
-.sj-hero .sj-words { top: 11%; }
+.sj-words { position: absolute; z-index: 20; left: 50%; top: 26.5%; translate: -50% 0; width: min(66%, 620px); text-align: center; color: var(--sj-cream); }
+.sj-hero .sj-words { top: 15.5%; width: min(90%, 620px); }
 .sj-inv { margin: 0 0 6px; font: 500 14px/1.5 'Mukta', sans-serif; color: color-mix(in srgb, var(--sj-cream) 80%, transparent); }
 .sj-inv .l-en, .sj-inv .l-ne { font: inherit; }
 .sj-hero__title, .sj-kick { margin: 0; font: 600 12.5px/1.4 'Mukta', sans-serif; letter-spacing: 0.32em; text-transform: uppercase; color: #F6C27E; }
 .sj-hero__title .l-ne, .sj-kick .l-ne { font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
 .sj-hero__line { margin: 10px auto 0; max-width: 34ch; font: 400 15.5px/1.55 'Mukta', sans-serif; color: color-mix(in srgb, var(--sj-cream) 88%, transparent); text-wrap: balance; }
 /* the names, cut from cream paper: a hard paper shadow under every letter */
-.sj-names { margin: 14px 0 0; font: 600 clamp(44px, 12vw, 84px)/0.98 var(--sj-f-display); color: var(--sj-cream); text-shadow: 0 2px 0 rgba(16, 14, 30, 0.55), 0 6px 14px rgba(16, 14, 30, 0.35); }
+.sj-names { margin: 10px 0 0; font: italic 600 clamp(50px, 13.5vw, 96px)/0.95 var(--sj-f-display); color: var(--sj-cream); text-shadow: 0 2px 14px rgba(16, 14, 30, 0.45); }
 .sj-names .su-n { display: block; }
 .sj-names .su-amp { display: block; margin: 4px 0; font-size: 0.42em; color: #F6C27E; }
-.sj-names .l-ne { font-family: var(--sj-f-display); font-size: 0.86em; line-height: 1.2; }
+.sj-names .l-ne { font: 400 0.72em/1.35 var(--sj-f-deva); }
 .sj-hero__date { margin: 16px 0 0; font: 500 13px/1.4 'Mukta', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sj-cream); }
 .sj-hero__date .l-ne { font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
 .sj-hero__bs { margin: 4px 0 0; font: 500 16px/1.4 'Mukta', sans-serif; color: #F6C27E; }
 html[data-lang='ne'] .sj-hero__bs { display: none; }
-.sj-h2 { margin: 0; font: 600 clamp(32px, 6vw, 50px)/1.08 var(--sj-f-display); color: var(--sj-dusk); text-wrap: balance; }
-.sj-h2 .l-ne { font-family: var(--sj-f-display); font-size: 0.92em; line-height: 1.3; }
+.sj-h2 { margin: 0; font: 600 clamp(36px, 7vw, 58px)/1.05 var(--sj-f-display); color: var(--sj-dusk); text-wrap: balance; }
+.sj-h2 .l-ne { font: 400 0.78em/1.4 var(--sj-f-deva); }
 .sj-h2--sky { margin-top: 10px; color: var(--sj-cream); text-shadow: 0 2px 0 rgba(16, 14, 30, 0.55); }
 .sj-h2--small { font-size: clamp(32px, 4.4vw, 40px); }
 @media (min-width: 761px) {
-  .sj-words { top: 9%; }
-  .sj-hero .sj-words { top: 8.5%; width: min(38%, 540px); }
-  .sj-names { font-size: clamp(54px, 5.6vw, 84px); }
+  .sj-words { top: 15%; width: min(44%, 600px); }
+  .sj-stage--river .sj-moon { top: 31%; right: 9%; width: 96px; }
+  .sj-hero .sj-words { top: 9%; width: min(38%, 540px); }
+  .sj-names { font-size: clamp(64px, 6.4vw, 100px); }
   .sj-inv { font-size: 15px; }
   .sj-hero__title, .sj-kick { font-size: 13.5px; }
   .sj-hero__line { font-size: 17px; }
   .sj-hero__date { font-size: 14px; }
   .sj-back__plate { width: 176px; }
   .sj-back__in { max-width: 640px; }
-  .sj-back__names { font-size: clamp(48px, 5vw, 66px); }
+  .sj-back__names { font-size: clamp(54px, 5.6vw, 76px); }
   .sj-back__ne { font-size: 25px; }
   .sj-back__en { font-size: 20px; }
   .sj-home__name { font-size: 34px; }
@@ -198,16 +210,16 @@ html[data-lang='ne'] .sj-hero__bs { display: none; }
   radial-gradient(1.2px 1.2px at 41% 22%, #FBF2E2 50%, transparent 51%), radial-gradient(1px 1px at 58% 6%, #FBF2E2 50%, transparent 51%),
   radial-gradient(1.5px 1.5px at 66% 30%, #FBF2E2 50%, transparent 51%), radial-gradient(1px 1px at 84% 44%, #FBF2E2 50%, transparent 51%),
   radial-gradient(1.2px 1.2px at 7% 40%, #FBF2E2 50%, transparent 51%), radial-gradient(1px 1px at 33% 48%, #FBF2E2 50%, transparent 51%); }
-.sj-stage--river .sj-words { top: 20%; }
+.sj-stage--river .sj-words { top: 21%; }
 .sj-count { margin-top: 6px; }
 .sj-cd { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 420px; margin: 18px auto 0; padding: 0; list-style: none; }
 .sj-cd__cell { display: flex; flex-direction: column; align-items: center; padding: 10px 0 8px; border-top: 1px solid rgba(251, 242, 226, 0.4); border-bottom: 1px solid rgba(251, 242, 226, 0.4); }
-.sj-cd__n { display: block; font: 600 clamp(32px, 9vw, 46px)/1 var(--sj-f-display); color: var(--sj-cream); font-variant-numeric: tabular-nums; }
+.sj-cd__n { display: block; font: 600 clamp(38px, 10vw, 54px)/1 var(--sj-f-display); color: var(--sj-cream); font-variant-numeric: lining-nums tabular-nums; }
 .sj-cd__n .l-ne { font-family: 'Mukta', sans-serif; font-weight: 600; }
 .sj-cd__l { margin-top: 6px; font: 600 10.5px/1.2 'Mukta', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: #F6C27E; }
 .sj-cd__l .l-ne { font-size: 13px; letter-spacing: 0; text-transform: none; }
-.sj-cd__done { font: 600 26px/1.3 var(--sj-f-display); color: var(--sj-cream); }
-@media (max-width: 760px) { .sj-stage--river .sj-words { top: 17%; } .sj-moon { right: 7%; top: 4.5%; } }
+.sj-cd__done { font: italic 600 30px/1.3 var(--sj-f-display); color: var(--sj-cream); }
+@media (max-width: 760px) { .sj-stage--river .sj-words { top: 31%; width: 74%; } .sj-moon { right: 18%; top: 24%; width: 46px; } }
 
 /* ───────── the turning leaf (a chapter page) ───────── */
 .sj-leaf { position: absolute; z-index: 10; transform-style: preserve-3d; pointer-events: none; }
@@ -215,12 +227,36 @@ html[data-lang='ne'] .sj-hero__bs { display: none; }
   background: var(--sj-fibre), var(--sj-grain), var(--sj-cream); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .sj-leaf__back { background: var(--sj-fibre), var(--sj-grain), #F1E5CF; }
 .sj-leaf__shade { position: absolute; inset: 0; opacity: 0; background: linear-gradient(90deg, rgba(43, 42, 73, 0.0), rgba(43, 42, 73, 0.55)); }
-.sj-leaf__plate { position: relative; width: min(46vw, 34svh, 300px); aspect-ratio: 1; }
+.sj-leaf__plate { position: relative; z-index: 1; width: min(52vw, 30svh, 300px); aspect-ratio: 1; margin-top: 8%; box-shadow: 0 0 0 1px rgba(217, 178, 106, 0.6), 0 14px 26px -16px rgba(43, 42, 73, 0.7); background: var(--sj-cream); }
+.sj-leaf__no, .sj-leaf__title { position: relative; z-index: 1; }
+.sj-leaf__garland { position: absolute; left: -3%; right: -3%; top: 0; }
+.sj-leaf__garland img { display: block; width: 100%; height: auto; }
+.sj-leaf__ladi { position: absolute; top: 8%; width: 4.6%; height: auto; }
+.sj-leaf__ladi--l { left: 1.6%; }
+.sj-leaf__ladi--r { right: 1.6%; }
+.sj-leaf__pond { position: absolute; left: -4%; right: -4%; bottom: 0; height: 30%; }
+.sj-leaf__pond picture { position: absolute; left: 0; right: 0; bottom: 0; }
+.sj-leaf__pond picture:first-child { left: 10%; right: 10%; bottom: 6%; }
+.sj-leaf__pond img { display: block; width: 100%; height: auto; }
+@media (max-width: 760px) {
+  .sj-leaf__ladi { width: 12%; top: 13%; }
+  .sj-leaf__pond { height: 26%; }
+}
+@media (min-width: 761px) {
+  .sj-leaf__face.sj-leaf__front { justify-content: flex-start; padding-top: 21%; }
+  .sj-leaf__garland { left: 16%; right: 16%; }
+  .sj-leaf__ladi { top: 5%; width: 4.2%; }
+  .sj-leaf__pond { height: 24%; }
+  .sj-leaf__pond picture { left: 14%; right: 14%; }
+  .sj-leaf__pond picture:first-child { left: 30%; right: 30%; bottom: 7%; }
+  .sj-leaf__plate { margin-top: 0; width: min(28svh, 240px); }
+  .sj-leaf__no { margin-top: 18px; }
+}
 .sj-leaf__plate img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sj-leaf__no { margin: 26px 0 0; font: 600 12px/1.3 'Mukta', sans-serif; letter-spacing: 0.32em; text-transform: uppercase; color: var(--sj-plum); }
 .sj-leaf__no .l-ne { font-size: 15px; letter-spacing: 0.04em; text-transform: none; }
-.sj-leaf__title { margin: 10px 24px 0; font: 600 clamp(32px, 6vw, 48px)/1.1 var(--sj-f-display); color: var(--sj-dusk); }
-.sj-leaf__title .l-ne { font-family: var(--sj-f-display); }
+.sj-leaf__title { margin: 10px 24px 0; font: italic 600 clamp(40px, 7vw, 64px)/1.05 var(--sj-f-display); color: var(--sj-dusk); }
+.sj-leaf__title .l-ne { font: 400 0.74em/1.4 var(--sj-f-deva); }
 @media (max-width: 760px) {
   .sj-leaf { left: 6px; right: 6px; top: 14px; bottom: 0; transform-origin: 50% 0%; }
   .sj-leaf__back { transform: rotateX(180deg); }
@@ -269,7 +305,7 @@ html[data-lang='ne'] .sj-hero__bs { display: none; }
   background: var(--sj-fibre), #FFF8EB; box-shadow: inset 0 0 0 1px rgba(22, 20, 20, 0.85), inset 0 0 0 7px #FFF8EB, inset 0 0 0 8px rgba(231, 136, 42, 0.8); }
 .sj-df__wd, .sj-df__my { font: 600 13px/1.3 'Mukta', sans-serif; letter-spacing: 0.24em; text-transform: uppercase; color: var(--sj-plum); }
 .sj-df__wd .l-ne, .sj-df__my .l-ne { font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
-.sj-df__day { font: 600 clamp(84px, 24vw, 112px)/1 var(--sj-f-display); color: var(--sj-dusk); }
+.sj-df__day { font: 600 clamp(92px, 26vw, 124px)/1 var(--sj-f-display); color: var(--sj-dusk); font-variant-numeric: lining-nums; }
 .sj-df__day .l-ne { font-family: 'Mukta', sans-serif; font-weight: 600; }
 .sj-df__alt { margin-top: 8px; font-size: 15px; color: var(--sj-ink-2); }
 .sj-df__time { margin-top: 4px; font-weight: 600; color: var(--sj-ink); }
@@ -351,10 +387,10 @@ html[data-lang='ne'] .sj-hero__bs { display: none; }
 .sj-back__ne { margin: 0; font: 500 22px/1.6 'Mukta', sans-serif; }
 .sj-back__en { margin: 6px 0 0; font: 400 18px/1.55 'Mukta', sans-serif; color: color-mix(in srgb, var(--sj-cream) 82%, transparent); }
 html[data-lang='ne'] .sj-back__en { display: none; }
-.sj-back__names { margin: 22px 0 0; font: 600 clamp(36px, 5.4vw, 52px)/1.1 var(--sj-f-display); color: var(--sj-cream); text-shadow: 0 2px 0 rgba(10, 8, 20, 0.6); }
+.sj-back__names { margin: 22px 0 0; font: italic 600 clamp(44px, 6vw, 60px)/1.1 var(--sj-f-display); color: var(--sj-cream); text-shadow: 0 2px 12px rgba(10, 8, 20, 0.5); }
 .sj-back__names .su-n, .sj-back__names .su-amp { display: inline; }
 .sj-back__names .su-amp { margin: 0 0.25em; color: #F6C27E; font-size: 0.6em; }
-.sj-back__names .l-ne { font-family: var(--sj-f-display); font-size: 0.86em; }
+.sj-back__names .l-ne { font: 400 0.72em/1.4 var(--sj-f-deva); }
 .sj-back__tag { margin: 10px 0 0; letter-spacing: 0.08em; color: color-mix(in srgb, var(--sj-cream) 80%, transparent); }
 .sj-back__music { margin: 22px 0 0; font-size: 13px; letter-spacing: 0.06em; color: color-mix(in srgb, var(--sj-cream) 66%, transparent); }
 .theme-sanjhi .madewith { margin: 22px 0 0; color: color-mix(in srgb, var(--sj-cream) 70%, transparent); }
@@ -362,8 +398,8 @@ html[data-lang='ne'] .sj-back__en { display: none; }
 
 /* ───────── dialogs ───────── */
 .theme-sanjhi .su-modal__panel { border-radius: 2px; background: var(--sj-fibre), var(--sj-cream); box-shadow: inset 0 0 0 1px var(--sj-kohl), inset 0 0 0 7px var(--sj-cream), inset 0 0 0 8px var(--sj-saffron); }
-.theme-sanjhi .su-modal__title { font: 600 34px/1.2 var(--sj-f-display); color: var(--sj-dusk); }
-.theme-sanjhi .su-modal__title .l-ne { font-family: var(--sj-f-display); }
+.theme-sanjhi .su-modal__title { font: italic 600 40px/1.2 var(--sj-f-display); color: var(--sj-dusk); }
+.theme-sanjhi .su-modal__title .l-ne { font: 400 0.8em/1.4 var(--sj-f-deva); }
 .theme-sanjhi .su-modal__when dt { color: var(--sj-plum); }
 
 @media (prefers-reduced-motion: reduce) {

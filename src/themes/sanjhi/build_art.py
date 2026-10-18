@@ -169,6 +169,56 @@ def toran():
     save(paper(a[:, w - cut:], col), 'toran-r', 520)
 
 
+def multicolour(a, colmap):
+    """paper() for a piece cut from several colours of paper: colmap is an RGB array the size of `a`"""
+    out = paper(a, '#FFFFFF', shadow=0.4)
+    out[..., :3] *= colmap
+    return out
+
+
+def garlands():
+    """the fresh flowers: hanging marigold strings (saffron and gold, mango leaves on top, rose tassels), rose strings
+    ending in a pink lotus, and a marigold-and-rose garland band backed with rose paper"""
+    for name in ('ladi-marigold', 'ladi-rose'):
+        if not (RAW / f'{name}.png').exists():
+            continue
+        a = load_alpha(name)
+        ys, xs = np.nonzero(a > 0.5)
+        a = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        h, w = a.shape
+        cm = np.ones((h, w, 3), np.float32)
+        yy, xx = np.mgrid[0:h, 0:w]
+        lab, n = nd.label(a > 0.5)
+        if name == 'ladi-marigold':
+            band = np.clip((xx / w * 3).astype(int), 0, 2)
+            cols = [hexrgb('#E7882A'), hexrgb('#F2B33D'), hexrgb('#E26A1F')]
+            for i in range(3):
+                cm[band == i] = cols[i]
+            cm[yy < h * 0.10] = hexrgb('#4F8A45')  # mango leaves
+            cm[yy < h * 0.022] = hexrgb('#8A5A2B')  # the bar
+            cm[yy > h * 0.93] = hexrgb('#C9405F')  # tassels
+        else:
+            cm[:] = hexrgb('#C9304F')
+            cm[yy > h * 0.885] = hexrgb('#EE9AB4')  # the lotus at the end
+            cm[yy < h * 0.02] = hexrgb('#8A5A2B')
+        save(multicolour(a, cm), name, 420)
+    if (RAW / 'garland.png').exists():
+        a = load_alpha('garland')
+        rows = np.nonzero((a > 0.5).sum(1) > 4)[0]
+        a = a[rows[0]:rows[-1] + 3]
+        back = shift(a, 7, 7)
+        both = np.maximum(a, back)
+        cm = np.ones(a.shape + (3,), np.float32) * hexrgb('#D94A6A')
+        cm[a > 0.5] = hexrgb('#E7882A')
+        w = a.shape[1]
+        save(multicolour(both, cm), 'garland', 1600)
+        x0 = int(w * 0.19)  # the phone band: the centre of the garland
+        save(multicolour(both[:, x0:w - x0], cm[:, x0:w - x0]), 'garland-m', 1100)
+        cut = int(w * 0.46)  # a wide page: the two outer halves, hung in the corners
+        save(multicolour(both[:, :cut], cm[:, :cut]), 'garland-l', 800)
+        save(multicolour(both[:, w - cut:], cm[:, w - cut:]), 'garland-r', 800)
+
+
 def stencil():
     a = load_alpha('stencil')
     ys, xs = np.nonzero(a > 0.5)
@@ -228,6 +278,8 @@ def stencil():
     print('stencil box', w, h)
 
 
+if not only or 'garlands' in only:
+    garlands()
 if not only or 'toran' in only:
     toran()
 if not only or 'stencil' in only:

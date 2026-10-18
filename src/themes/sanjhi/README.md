@@ -34,6 +34,11 @@ rebuilds the timelines.
 4. Moon over the river (countdown on the night sky, then the photographs tipped in): the ghats, a boat and a kadamba
    swing, reeds and ducks, a paper moon.
 5. Under the mandap (card wording and RSVP): banana and mango garden, a cream paper mandap, brass kalash and lamps.
+Every spread after page one also carries fresh flowers in paper, beside the words and never behind them: a
+marigold-and-rose garland backed with rose paper (its outer halves in the corners of a wide page, its centre across a
+phone's) and hanging strings of marigolds and of roses ending in a pink lotus. The chapter page that turns carries the
+garland, the strings, the coloured plate and a paper lotus pond. The corner buttons keep a clear zone: on a wide
+screen the book starts below them, on a phone the toran and garlands hang below them.
 The book closes on the back cover: the plate, a line, the blessing, the names, the hashtag and the music.
 Text is set only on the sky or on paper, never on the paper flowers.
 
@@ -45,8 +50,8 @@ Text is set only on the sky or on paper, never on the paper flowers.
 Dusk indigo `#2B2A49` (`--sj-dusk`), night `#17162C`, cream paper `#FBF2E2` (`--sj-cream`), saffron paper `#E7882A`
 (`--sj-saffron`, the one accent: buttons with kohl text, the toran, kalash), rose `#E5A2B2`, leaf `#5C8A48`, kohl `#161414`,
 gold rule `#D9B26A`, plum `#8E3F5F` (small labels on cream). Studio colour tokens: `--sj-dusk`, `--sj-cream`,
-`--sj-saffron`, `--sj-rose`. Type: **Sarpanch** (names and headings, 32px and up, Latin and Devanagari) and **Mukta**
-(everything else, all digits). Devanagari is never tracked or uppercased; `locl` stays off (base.css).
+`--sj-saffron`, `--sj-rose`. Type: **Cormorant Garamond** (names in italic, headings), **Tiro Devanagari Hindi**
+(Devanagari names and headings, never digits) and **Mukta** (everything else, all Nepali digits). Devanagari is never tracked or uppercased; `locl` stays off (base.css).
 
 ## Art (`public/themes/sanjhi/art/`)
 All art is Canva AI (generate-image), generated as solid black papercut silhouettes on white in one session with the
