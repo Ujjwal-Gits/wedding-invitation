@@ -267,18 +267,16 @@ html[data-lang='ne'] .va-close__en { display: none; }
 /* ───────── phone ───────── */
 @media (max-width: 899px) {
   .va-bloom__grid { display: block; }
-  .va-win { top: 0; z-index: 3; height: 50svh; margin: 0 -20px; padding: 60px 20px 10px; background-color: var(--va-paper); background-image: var(--va-noise); }
+  .va-win { top: 0; z-index: 3; height: 40svh; margin: 0 -20px; padding: 58px 20px 8px; background-color: var(--va-paper); background-image: var(--va-noise); }
   .va-win::after { content: ''; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px; background: linear-gradient(var(--va-paper), rgba(255, 247, 230, 0)); pointer-events: none; }
   .va-win__in { flex-direction: row; gap: 14px; height: 100%; width: 100%; justify-content: center; }
-  .va-win__frame { height: calc(50svh - 84px); box-shadow: 0 0 0 6px var(--va-sheet), 0 0 0 7px rgba(42, 36, 21, 0.14), 0 22px 40px -26px rgba(70, 52, 14, 0.5); }
+  .va-win__frame { height: calc(40svh - 78px); box-shadow: 0 0 0 6px var(--va-sheet), 0 0 0 7px rgba(42, 36, 21, 0.14), 0 22px 40px -26px rgba(70, 52, 14, 0.5); }
   .va-win__caps { width: 92px; }
   .va-win__cap { align-items: flex-start; text-align: left; }
   .va-win__fl { font-size: 18px; }
   .va-evs { padding: 0; }
   .va-ev { justify-content: flex-start; min-height: 0; padding-top: 4svh; }
   .va-ev__card { max-width: none; }
-  /* the ceremony's name stays readable just under the bloom band while its card scrolls */
-  .va-ev__head { position: sticky; top: calc(50svh + 2px); z-index: 2; margin: -6px -8px 0; padding: 6px 8px 8px; background-color: var(--va-sheet); background-image: var(--va-noise); }
   .va-strand { display: none; }
 }
 @media (max-width: 719px) {

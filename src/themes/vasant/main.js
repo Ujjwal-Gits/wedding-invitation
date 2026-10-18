@@ -387,7 +387,7 @@ function bloomWindow(ctx) {
     ScrollTrigger.create({
       trigger: card,
       start: () => (isPhone() ? 'top 96%' : 'top 82%'),
-      end: () => (isPhone() ? 'top 54%' : 'center 52%'),
+      end: () => (isPhone() ? 'top 46%' : 'center 52%'),
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         bloom(i, Math.min(1, self.progress / 0.86));
@@ -398,8 +398,8 @@ function bloomWindow(ctx) {
     // the window shows the plate of the card that holds the middle of the screen
     ScrollTrigger.create({
       trigger: card,
-      start: () => (isPhone() ? 'top 70%' : 'top 58%'),
-      end: () => (isPhone() ? 'bottom 70%' : 'bottom 58%'),
+      start: () => (isPhone() ? 'top 64%' : 'top 58%'),
+      end: () => (isPhone() ? 'bottom 64%' : 'bottom 58%'),
       invalidateOnRefresh: true,
       onToggle: (self) => { if (self.isActive) setActive(i); },
     });
