@@ -486,3 +486,8 @@ a.ctab:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .om-done__acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .ppbox__legal { margin: 0; font-size: 13px; color: var(--ink-3, #7a6a70); }
 .ppbox__legal a { color: inherit; }
+
+/* the plan badge sits inside the picture's top corner, so the price has its row to itself */
+.rcard, .dcard { position: relative; }
+.rcard__meta .tier, .dcard__meta .tier { position: absolute; top: 12px; left: 12px; z-index: 1; box-shadow: 0 1px 2px rgba(30, 20, 25, 0.12); }
+.rcard__meta, .dcard__meta { min-height: 22px; }
