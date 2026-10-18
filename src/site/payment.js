@@ -72,7 +72,9 @@ export async function mountPayment(box, { ref, token = '', csrf = '', wa = '', i
   const render = (d, again) => {
     if (run !== box.payRun) return;
     box.removeAttribute('aria-busy');
-    if (isDone(d.status) || isSent(d.status) || isClosed(d.status) || !d.canUpload || d.paypal?.status === 'pending') box.replaceChildren(statusView(d, c));
+    // a dollar order never uploads a screenshot (canUpload false): it pays by card or PayPal, or asks us for help
+    const waiting = d.canUpload || (d.currency === 'USD' && d.status === 'awaiting_payment');
+    if (isDone(d.status) || isSent(d.status) || isClosed(d.status) || !waiting || d.paypal?.status === 'pending') box.replaceChildren(statusView(d, c));
     else box.replaceChildren(payView(d, c, async () => {
       r = await getPayment(ref, token);
       const next = r.ok ? r.data : { ...d, status: 'proof_submitted', proof: { method: '' } };
@@ -108,13 +110,16 @@ function payView(info, c, onSent) {
   const { ref, token, wa, S } = c;
   // PayPal checkout (cards too) replaces a PayPal QR when it is on: one way to pay from abroad. An order from the
   // international site shows "Card or PayPal" first and in dollars; the QR methods come second.
+  // A dollar order (info.currency 'USD') is paid by card or PayPal only: it never falls back to the Nepal QR codes and
+  // a screenshot. While PayPal is off it shows "opening very soon" with WhatsApp and email instead.
   const intl = info.market === 'intl';
+  const usdOrder = info.currency === 'USD';
   const checkout = info.paypalCheckout && info.amount.usd != null;
-  const card = checkout ? [{ id: 'paypal-checkout', label: intl ? 'Card or PayPal' : 'PayPal or card', kind: 'checkout', currency: 'USD' }] : [];
-  const qrs = info.methods.filter((m) => m.qr && !(checkout && m.kind === 'paypal'));
+  const card = checkout ? [{ id: 'paypal-checkout', label: intl || usdOrder ? 'Card or PayPal' : 'PayPal or card', kind: 'checkout', currency: 'USD' }] : [];
+  const qrs = usdOrder ? [] : info.methods.filter((m) => m.qr && !(checkout && m.kind === 'paypal'));
   // international: card or PayPal first, then any dollar method (a PayPal QR), the Nepal wallets last
   const methods = intl ? [...card, ...qrs.filter((m) => m.currency === 'USD'), ...qrs.filter((m) => m.currency !== 'USD')] : [...qrs, ...card];
-  const usdFirst = intl && info.amount.usd != null;
+  const usdFirst = usdOrder || (intl && info.amount.usd != null);
   const priced = info.amount.npr != null;
   const head = el('header', { class: 'pay__head' },
     el('p', { class: 'pay__saved' }, icon(ICONS.check), el('span', {}, 'Order ', el('b', { text: ref }), S.inDashboard ? ' is saved, waiting for payment' : ' is saved')),
@@ -123,6 +128,7 @@ function payView(info, c, onSent) {
       ? [info.plan?.name ? `${info.plan.name} plan` : '', 'paid once, by card or PayPal'].filter(Boolean).join(' · ')
       : [info.plan?.name ? `${info.plan.name} plan` : '', info.amount.usd != null ? `or ${money(info.amount.usd, 'USD')} by PayPal from abroad` : ''].filter(Boolean).join(' · ') }));
 
+  if (usdOrder && !checkout) return soonView(c, info, head);
   if (!methods.length) {
     return el('div', { class: 'pay' }, stepsLine(1), head,
       el('p', { class: 'pay__note', text: 'Payment by QR is not ready yet. Please message us on WhatsApp and we will help you pay.' }),
@@ -136,7 +142,8 @@ function payView(info, c, onSent) {
       el('span', { class: `method__logo method__logo--${m.id}`, 'aria-hidden': 'true', text: m.label.slice(0, 1) }),
       el('span', { class: 'method__t' }, el('span', { class: 'method__name', text: m.label }),
         el('span', { class: 'method__sub', text: m.kind === 'checkout' ? `${intl ? 'Visa, Mastercard or PayPal' : 'From abroad: PayPal, Visa, Mastercard'} · ${money(info.amount.usd, 'USD')}` : m.currency === 'USD' ? 'From abroad, in US dollars' : m.kind === 'bank' ? `${intl ? 'In Nepal: ' : ''}Any mobile banking app` : `${intl ? 'In Nepal: ' : ''}Wallet app` }))))));
-  const methodsBox = el('fieldset', { class: 'methods' }, el('legend', { class: 'pay__label', text: '1. Choose how to pay' }), radios);
+  // one way to pay (a dollar order: card or PayPal): no choice to show
+  const methodsBox = el('fieldset', { class: 'methods', hidden: methods.length === 1 && methods[0].kind === 'checkout' }, el('legend', { class: 'pay__label', text: '1. Choose how to pay' }), radios);
 
   const qrImg = el('img', { class: 'qr__img', width: 320, height: 320, alt: '', decoding: 'async' });
   const qrFig = el('figure', { class: 'qr' }, qrImg);
@@ -250,7 +257,7 @@ function payView(info, c, onSent) {
     file.setAttribute('aria-invalid', 'true');
     file.setAttribute('aria-describedby', fileErr.id);
   }
-  const proof = el('form', { class: 'proof', novalidate: true, 'aria-labelledby': `proof-h-${ref}` },
+  const proof = el('form', { class: 'payproof', novalidate: true, 'aria-labelledby': `proof-h-${ref}` },
     el('h4', { class: 'pay__label', id: `proof-h-${ref}`, text: '3. Send us the payment screenshot' }),
     drop, fileErr,
     el('div', { class: 'grid2' },
@@ -293,7 +300,7 @@ function payView(info, c, onSent) {
   const rejected = info.status === 'rejected'
     ? el('p', { class: S.status, role: 'alert' }, el('b', { text: 'We could not confirm your last payment. ' }), document.createTextNode(info.reason || 'Please check the amount and send a new screenshot, or message us on WhatsApp.'))
     : null;
-  const ppBox = checkout ? checkoutBox(info, c, onSent) : null;
+  const ppBox = checkout ? checkoutBox(info, { ...c, solo: methods.length === 1 }, onSent) : null;
   const view = el('div', { class: 'pay' }, stepsLine(1), head, rejected, methodsBox, qrBox, ppBox?.el, proof, later);
   // the checkout method hides the QR and the screenshot form (PayPal confirms by itself)
   const swap = () => {
@@ -348,7 +355,8 @@ const CARD_STYLE = {
 };
 
 function checkoutBox(info, c, onPaid) {
-  const { ref, token, csrf, S } = c;
+  const { ref, token, csrf, S, solo } = c;
+  const orElse = solo ? 'or message us on WhatsApp or email' : 'or pay by QR'; // a dollar order has no QR to fall back on
   const buttons = el('div', { class: 'ppbox__buttons', id: `pp-${ref}` });
   const msg = el('p', { class: 'ppbox__msg', role: 'status', hidden: true });
   const testChip = el('span', { class: 'ppbox__test', hidden: true, text: 'Test mode: no real money' });
@@ -364,7 +372,7 @@ function checkoutBox(info, c, onPaid) {
     fName, fNumber, el('div', { class: 'ppcard__row' }, fExpiry, fCvv), cardPay);
   const box = el('section', { class: 'ppbox', 'aria-labelledby': `pp-h-${ref}`, hidden: true },
     el('div', { class: 'ppbox__head' },
-      el('h4', { class: 'pay__label', id: `pp-h-${ref}`, text: '2. Pay with PayPal or a card' }), testChip),
+      el('h4', { class: 'pay__label', id: `pp-h-${ref}`, text: solo ? 'Pay by card or PayPal' : '2. Pay with PayPal or a card' }), testChip),
     el('p', { class: 'ppbox__amt' }, el('b', { text: money(info.amount.usd, 'USD') }), el('span', { text: ` ${info.plan?.name ? `· ${info.plan.name} plan` : ''}` })),
     buttons, card, msg,
     el('p', { class: 'ppbox__safe' }, icon(ICONS.check), el('span', { text: 'Secure checkout by PayPal. We never see your card number or PayPal password. Your plan switches on as soon as the payment goes through.' })),
@@ -419,7 +427,7 @@ function checkoutBox(info, c, onPaid) {
         createOrder: () => startOrder(),
         onApprove: async (data, actions) => ((await capture(data.orderID)) === 'retry' ? actions.restart() : undefined),
         onCancel: () => say('You closed PayPal. Nothing was paid. You can try again any time.'),
-        onError: (err) => { if (String(err?.message) !== 'paid') say('PayPal had a problem. Please try again, or pay by QR.', true); },
+        onError: (err) => { if (String(err?.message) !== 'paid') say(`PayPal had a problem. Please try again, ${orElse}.`, true); },
       }).render(buttons);
       if (cf && card.isConnected) {
         try {
@@ -439,10 +447,25 @@ function checkoutBox(info, c, onPaid) {
       }
     } catch {
       shown = false;
-      say('PayPal could not load. Check your connection, or pay by QR, or message us on WhatsApp.', true);
+      say(`PayPal could not load. Check your connection and try again, ${solo ? orElse : 'or pay by QR, or message us on WhatsApp'}.`, true);
     }
   };
   return { el: box, show };
+}
+
+/** A dollar order while card and PayPal payments are not open yet: the message, WhatsApp and email. */
+function soonView(c, info, head) {
+  const { ref, S } = c;
+  const wa = info.contact?.whatsapp || c.wa;
+  const email = info.contact?.email || '';
+  const text = `Hi Nimtto, I want to pay for order ${ref}.`;
+  return el('div', { class: 'pay' }, stepsLine(1), head,
+    el('div', { class: 'paysoon', role: 'status' },
+      el('p', { class: 'paysoon__t', text: 'Card and PayPal payments open very soon.' }),
+      el('p', { class: 'paysoon__s', text: "Message us on WhatsApp or email and we'll help you pay." }),
+      el('div', { class: 'pay__acts' },
+        wa ? el('a', { class: S.wa, href: waLink(wa, text), target: '_blank', rel: 'noopener' }, icon(ICONS.wa), el('span', { text: 'Message us on WhatsApp' })) : null,
+        email ? el('a', { class: S.line, href: `mailto:${email}?subject=${encodeURIComponent(`Payment for order ${ref}`)}&body=${encodeURIComponent(text)}` }, icon(ICONS.mail), el('span', { text: `Email ${email}` })) : null)));
 }
 
 function row(k, v, extra = null) {

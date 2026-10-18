@@ -90,7 +90,7 @@
 }
 
 /* the screenshot */
-.proof { display: grid; gap: var(--s5); }
+.payproof { display: grid; gap: var(--s5); min-width: 0; }
 .drop { position: relative; display: flex; align-items: center; gap: var(--s4); min-height: 96px; padding: var(--s4); border: 1.5px dashed var(--line-input); border-radius: var(--r-md); background: var(--white); cursor: pointer; transition: border-color 160ms var(--ease), background-color 160ms var(--ease); }
 .drop:hover { border-color: var(--wine); background: var(--soft); }
 .drop.has-file { border-style: solid; border-color: var(--wine); }
@@ -103,6 +103,11 @@
 .input-wrap { position: relative; }
 .input-pre { position: absolute; left: var(--s4); top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 15px; pointer-events: none; }
 .input-wrap .input { padding-left: 48px; }
+
+.paysoon { display: grid; gap: var(--s2); padding: var(--s5); border: 1px solid var(--blush-2); border-radius: var(--r-md); background: var(--white); }
+.paysoon__t { font-weight: 600; font-size: 17px; color: var(--ink); }
+.paysoon__s { color: var(--ink-2); }
+.paysoon .pay__acts { margin-top: var(--s2); }
 
 .pay__later { display: grid; gap: var(--s3); padding-top: var(--s5); border-top: 1px solid var(--blush-2); color: var(--ink-2); font-size: 15px; }
 

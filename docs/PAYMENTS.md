@@ -33,6 +33,12 @@ This is the primary flow. Nothing in it needs a merchant account or an API key.
    reason (the customer sees it and can send another screenshot). **Mark paid manually…** records cash or a transfer
    you saw elsewhere. **Mark refunded…** only records a refund; send the money back in the app.
 
+**Dollar orders never use the QR flow.** An order from the international site (or one priced only in USD) gets no
+QR methods (`paymentMethods: []`, `canUpload: false`, `currency: 'USD'` in the pay info) and a screenshot for it is
+refused (409 `pay_online`). It pays by PayPal Checkout; while PayPal is off, the pay step says "Card and PayPal
+payments open very soon. Message us on WhatsApp or email and we'll help you pay." with WhatsApp and email buttons
+(`contact` in the pay info, from that market's contact details).
+
 Payment statuses: `awaiting_payment` → `proof_submitted` → `confirmed` | `rejected`, and `refunded`. They are separate
 from the order's workflow stage (New, Contacted, Done, Archived). PayPal Checkout (section 5), when it is on,
 confirms the order by itself.

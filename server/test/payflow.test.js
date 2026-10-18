@@ -399,6 +399,29 @@ test('orders: the phone is checked and stored as E.164; the market is stored and
   assert.equal(list.find((o) => o.ref === b.ref).market, 'np');
 });
 
+test('pay: a dollar order never falls back to the Nepal QR codes and a screenshot', async () => {
+  const a = await newOrder({ phone: '+1 (201) 555-0123', market: 'intl' });
+  const info = await (await fetch(`${base}/api/orders/${a.ref}/pay?t=${a.payToken}`)).json();
+  assert.equal(info.currency, 'USD');
+  assert.equal(info.status, 'awaiting_payment');
+  assert.deepEqual(info.paymentMethods, []); // no Khalti, eSewa, bank or PayPal QR
+  assert.equal(info.canUpload, false);
+  assert.equal(info.paypalCheckout.enabled, false); // PayPal is off here: the page asks them to message us
+  assert.equal(typeof info.contact.email, 'string');
+  assert.match(info.contact.whatsapp, /^\d*$/);
+  // a screenshot is refused
+  const r = await proof(a.ref, a.payToken, { file: NABIL, amountPaid: '99' });
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).code, 'pay_online');
+  assert.equal((await store.getOrderByRef(a.ref)).pay?.proofs?.length ?? 0, 0);
+  // a Nepal order keeps the QR flow
+  const b = await newOrder({ phone: '980-1234567' });
+  const nb = await (await fetch(`${base}/api/orders/${b.ref}/pay?t=${b.payToken}`)).json();
+  assert.equal(nb.currency, 'NPR');
+  assert.equal(nb.canUpload, true);
+  assert.ok(nb.paymentMethods.length > 0);
+});
+
 test('orders: a custom design on the international site is an enquiry with no price and no pay token', async () => {
   const c = await newOrder({ kind: 'custom', plan: 'custom', market: 'intl', phone: '+44 7911 123456', message: 'A garden birthday for my mother' });
   assert.equal(c.enquiry, true);

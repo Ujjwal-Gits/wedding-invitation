@@ -1848,7 +1848,12 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .cu-pay .remark .input { flex: 1; min-width: 0; }
 .cu-pay .qr__tip { color: var(--ink-3); font-size: 13px; line-height: 1.5; }
 @media (min-width: 720px) { .cu-pay .qrbox__in { grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); align-items: start; padding: var(--s5); } }
-.cu-pay .proof { display: grid; gap: var(--s4); }
+.cu-pay .payproof { display: grid; gap: var(--s4); min-width: 0; padding-top: var(--s5); border-top: 1px solid var(--line); }
+.cu-pay .payproof .field { min-width: 0; }
+.cu-pay .paysoon { display: grid; gap: var(--s2); padding: var(--s4) var(--s5); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface-2); }
+.cu-pay .paysoon__t { font-weight: 600; font-size: 15px; color: var(--ink); }
+.cu-pay .paysoon__s { color: var(--ink-2); font-size: 14px; }
+.cu-pay .paysoon .pay__acts { margin-top: var(--s2); }
 .cu-pay .drop { position: relative; display: flex; align-items: center; gap: var(--s3); min-height: 80px; padding: var(--s3) var(--s4); border: 1.5px dashed var(--line-2); border-radius: var(--r-lg); background: var(--surface); cursor: pointer; transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
 .cu-pay .drop:hover { border-color: var(--ink-4); background: var(--surface-2); }
 .cu-pay .drop.has-file { border-style: solid; border-color: var(--accent); }
@@ -2202,3 +2207,4 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .blogo__acts { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 640px) { .blogo { grid-template-columns: 96px 1fr; } .blogo__acts { grid-column: 1 / -1; justify-content: flex-start; } }
 [tabindex="-1"]:focus:not(:focus-visible) { outline: none; } /* a heading focused for screen readers (e.g. "Payment received") needs no ring */
+.cu-pay .pay__title[tabindex="-1"]:focus { outline: none; } /* focused after load or a payment, never typed into: no ring even without a prior click */

@@ -44,6 +44,7 @@ export const ICONS = {
   down: ['M12 4v12', 'M7 11l5 5 5-5', 'M5 20h14'],
   play: 'M9 6.5v11l9-5.5z',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  mail: ['M4 6h16v12H4z', 'M4 7l8 6 8-6'],
 };
 
 export const str = (v, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
