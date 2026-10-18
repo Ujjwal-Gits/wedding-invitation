@@ -5,7 +5,9 @@
 //   Admin:   /api/admin/blog (perm 'content', the same as the Content page; CSRF via requirePerm): list, read, create, update, delete, preview, cover upload.
 // A post: { id, slug, site: 'np'|'intl', title, excerpt, category, body (Markdown), faq: [{ q, a }], cover, og,
 //   seoTitle, seoDesc, keyword, secondary, designs, related, status: 'draft'|'published', publishedAt (YYYY-MM-DD),
-//   updatedAt, createdAt, builtin? }.
+//   schemaType: 'BlogPosting'|'Article'|'HowTo', speakable (false leaves it out), updatedAt, createdAt, builtin? }.
+// The body stays Markdown: the studio's visual editor (src/studio/blog-editor.js) turns its document into Markdown
+// (src/studio/blog-md-out.js), and opens a post from the HTML this server renders, so old and new posts are one format.
 // The built-in posts (src/blog/posts/<site>/<slug>.md) are copied into the store the first time (and any new one later),
 // so the owner edits them like any other; a built-in the owner deleted stays deleted (doc.seeds remembers it).
 import express from 'express';
@@ -16,7 +18,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { getDoc, putDoc, withLock } from './store.js';
 import { ROOT_DIR, UPLOAD_DIR } from './env.js';
 import { readMultipart, receiving, withSlot, MAX_BYTES } from './uploads.js';
-import { plainText } from './blog-md.js';
+import { plainText, renderMarkdown } from './blog-md.js';
 import { entity, sendEntity } from './http-cache.js';
 import { preloadLinks } from './static.js';
 import { readSite } from './site.js';
@@ -27,7 +29,7 @@ import { THEMES } from '../../src/site/themes.js';
 import { INTL_THEMES, NP_DESIGNS_INTL } from '../../src/site/intl-designs.js';
 import {
   SITES, compilePost, renderIndex, renderPost, renderNotFound, renderRss, renderSitemap, llmsBlock, LLMS_START, LLMS_END,
-  shellFor, designExists, postPath, catSlug,
+  shellFor, designExists, postPath, catSlug, postSchema, schemaChecks, SCHEMA_TYPES,
 } from './blog-render.js';
 
 const KEY = 'blog';
@@ -103,6 +105,8 @@ export function cleanPost(input, prev = null) {
     seoTitle: line(x.seoTitle, LIMITS.seoTitle),
     seoDesc: line(x.seoDesc, LIMITS.seoDesc),
     keyword: line(x.keyword, LIMITS.keyword),
+    schemaType: SCHEMA_TYPES.includes(x.schemaType) ? x.schemaType : 'BlogPosting',
+    speakable: x.speakable !== false,
     secondary: (Array.isArray(x.secondary) ? x.secondary : []).map((s) => line(s, LIMITS.keyword)).filter(Boolean).slice(0, 8),
     updatedAt: validDay(String(x.updatedAt || '').slice(0, 10)) && !prev ? String(x.updatedAt).slice(0, 10) : today(),
     createdAt: prev?.createdAt || new Date().toISOString(),
@@ -368,12 +372,13 @@ export function adminRouter({ json, heavy, distDir }) {
     const { doc } = await readBlog();
     res.json({ posts: doc.posts.map(summary).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || byNewest(a, b)), categories: CATEGORIES, designs: DESIGN_LISTS, sites: Object.fromEntries(Object.entries(SITES).map(([k, s]) => [k, { base: s.base }])) });
   }));
+  r.get('/media', wrap(async (req, res) => res.json(await mediaList(distDir)))); // the media gallery (before /:id)
   r.get('/:id', wrap(async (req, res) => {
     const { doc } = await readBlog();
     const p = doc.posts.find((x) => x.id === req.params.id);
     if (!p) return res.status(404).json({ error: 'No such post.' });
     const { c } = withC(p);
-    res.json({ post: p, stamp: stampOf(p), words: c.words, minutes: c.minutes });
+    res.json({ post: p, stamp: stampOf(p), words: c.words, minutes: c.minutes, html: c.html }); // html: what the editor opens
   }));
   r.post('/', json('256kb'), wrap(async (req, res) => {
     const post = cleanPost({ ...req.body, id: undefined, builtin: false });
@@ -423,19 +428,95 @@ export function adminRouter({ json, heavy, distDir }) {
     res.locals.auditTarget = gone.title;
     res.json({ ok: true });
   }));
-  // the editor's live preview: the full page as it would be served, never stored, never indexed
+  // the editor's preview: the full page as it would be served, never stored, never indexed. `url` opens it in a tab
+  // (GET /studio/blog-preview/<token>, previewPage below) for this session only, for 30 minutes.
   r.post('/preview', json('256kb'), wrap(async (req, res) => {
     res.locals.auditSkip = true;
     let post;
-    try { post = cleanPost({ ...req.body, slug: req.body?.slug || 'preview', title: req.body?.title || 'Untitled', category: req.body?.category || 'Guide' }); } catch (err) { return res.status(400).json({ error: err.message, errors: err.errors }); }
+    try { post = draftOf(req.body); } catch (err) { return res.status(400).json({ error: err.message, errors: err.errors }); }
     const { doc } = await readBlog();
     const others = live(doc, post.site).filter((p) => p.id !== req.body?.id);
-    const html = renderPost({ post: { ...post, id: req.body?.id || post.id, c: compilePost(post) }, others, shell: shellFor(distDir, post.site), preview: true });
-    res.json({ html, words: compilePost(post).words });
+    const c = compilePost(post);
+    const html = renderPost({ post: { ...post, id: req.body?.id || post.id, c }, others, shell: shellFor(distDir, post.site), preview: true });
+    res.json({ html, words: c.words, url: `/studio/blog-preview/${keepPreview(html, req.sessionKey)}` });
+  }));
+  // Markdown -> the HTML the visual editor opens (switching back from the editor's Markdown view)
+  r.post('/render', json('256kb'), wrap(async (req, res) => {
+    res.locals.auditSkip = true;
+    res.json({ html: renderMarkdown(text(req.body?.body, LIMITS.body)).html });
+  }));
+  // the SEO and Schema panels: the search snippet and JSON-LD this post would publish, with the checks
+  r.post('/schema', json('256kb'), wrap(async (req, res) => {
+    res.locals.auditSkip = true;
+    let post;
+    try { post = draftOf(req.body); } catch (err) { return res.status(400).json({ error: err.message, errors: err.errors }); }
+    const c = compilePost(post);
+    const out = postSchema({ ...post, updatedAt: today() }, c);
+    res.json({ ...out, checks: schemaChecks(out.ld), words: c.words, minutes: c.minutes, toc: c.toc });
   }));
   r.post('/cover', heavy, wrap(uploadCover));
   return r;
 }
+/** an unsaved post for the preview and schema panels: what cleanPost keeps, with stand-ins for a missing title or link */
+const draftOf = (b) => cleanPost({ ...b, slug: b?.slug || 'preview', title: b?.title || 'Untitled', category: b?.category || 'Guide' });
+
+/* ---------------- the preview tab ---------------- */
+const previews = new Map(); // token -> { html, owner, exp }
+const PREVIEW_MS = 30 * 60 * 1000;
+function keepPreview(html, owner) {
+  const now = Date.now();
+  for (const [k, v] of previews) if (v.exp < now) previews.delete(k);
+  while (previews.size >= 40) previews.delete(previews.keys().next().value);
+  const token = randomBytes(18).toString('base64url');
+  previews.set(token, { html, owner: owner || '', exp: now + PREVIEW_MS });
+  return token;
+}
+/** GET /studio/blog-preview/<token> (server/index.js, behind requirePerm('content')): the page, for the session that made it */
+export function previewPage(req, res) {
+  const p = /^[A-Za-z0-9_-]{24}$/.test(req.params.token || '') ? previews.get(req.params.token) : null;
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Robots-Tag', 'noindex, nofollow');
+  if (!p || p.exp < Date.now() || p.owner !== (req.sessionKey || '')) {
+    return res.status(404).type('text/plain').send('This preview has expired. Press Preview in the editor again.');
+  }
+  return res.type('html').send(p.html);
+}
+
+/* ---------------- the media gallery ---------------- */
+const STILLS_FILE = resolve(ROOT_DIR, 'src', 'site', 'stills.json');
+const nameOf = (slug) => DESIGN_LISTS.np.find((d) => d.slug === slug)?.name || DESIGN_LISTS.intl.find((d) => d.slug === slug)?.name || slug;
+const pretty = (s) => s.replace(/-(?:v\d+|lg)$/, '').replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+/** The pictures a post may use: the blog's uploads (newest first), the designs' phone stills, the site's own images. */
+async function mediaList(distDir) {
+  const uploads = [];
+  try {
+    const names = await fs.readdir(BLOG_UPLOADS);
+    const ids = names.map((n) => /^([A-Za-z0-9_-]{24})-1600\.webp$/.exec(n)?.[1]).filter(Boolean);
+    const withTime = await Promise.all(ids.map(async (id) => ({ id, t: (await fs.stat(resolve(BLOG_UPLOADS, `${id}-1600.webp`))).mtimeMs })));
+    for (const { id, t } of withTime.sort((a, b) => b.t - a.t).slice(0, 300)) {
+      uploads.push({ src: `/uploads/_site/blog/${id}-1600.webp`, thumb: `/uploads/_site/blog/${id}-800.webp`, og: names.includes(`${id}-og.jpg`) ? `/uploads/_site/blog/${id}-og.jpg` : null, at: new Date(t).toISOString() });
+    }
+  } catch { /* no uploads yet */ }
+  let stills = {};
+  try { stills = JSON.parse(readFileSync(STILLS_FILE, 'utf8')); } catch { /* none */ }
+  const designs = Object.entries(stills).filter(([slug, v]) => SLUG_RE.test(slug) && (v.w || []).includes(800))
+    .map(([slug, v]) => ({ src: `/site/stills/${slug}-800.webp`, thumb: `/site/stills/${slug}-${(v.w || []).includes(480) ? 480 : 800}.webp`, name: nameOf(slug), design: slug, sites: ['np', 'intl'].filter((s) => designExists(s, slug)) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const site = [];
+  const scan = async (dir, url, re, thumbOf) => {
+    const at = [resolve(distDir, ...dir), resolve(ROOT_DIR, 'public', ...dir)].find((d) => existsSync(d));
+    if (!at) return;
+    const names = (await fs.readdir(at)).sort();
+    for (const n of names) {
+      const m = re.exec(n);
+      if (m) site.push({ src: `${url}${n}`, thumb: `${url}${thumbOf(m[1], names) || n}`, name: pretty(m[1]) });
+    }
+  };
+  await scan(['site', 'intl'], '/site/intl/', /^([a-z0-9-]{2,60})-800\.webp$/, (b, names) => (names.includes(`${b}-480.webp`) ? `${b}-480.webp` : null));
+  await scan(['photos'], '/photos/', /^([a-z0-9-]{2,60})-lg\.webp$/, (b, names) => (names.includes(`${b}-sm.webp`) ? `${b}-sm.webp` : null));
+  return { uploads, designs, site };
+}
+
 /** a post's version stamp for the editor's conflict check */
 export const stampOf = (p) => hash(JSON.stringify(p));
 

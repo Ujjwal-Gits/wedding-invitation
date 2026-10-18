@@ -366,11 +366,40 @@ export function renderPost({ post, others = [], shell, preview = false }) {
     ${closing(site)}
     ${crossband(site)}`;
 
+  const { ld: schema } = postSchema(post, c);
+  const ld = schema.map(jsonLd);
+  const extra = `
+  <meta property="article:published_time" content="${published}" />
+  <meta property="article:modified_time" content="${updated}" />
+  <meta property="article:section" content="${esc(post.category)}" />
+  <meta property="article:author" content="${s.team}" />`;
+  const title = metaTitle(post);
+  const head = headTags({ title, desc: post.seoDesc || post.excerpt, url, image: og, imageAlt: post.cover?.alt || post.title, site, type: 'article', noindex: preview || post.status !== 'published', extra, ld });
+  return fill(shell, head, main, site);
+}
+
+/** a post's <title>: its search title, or the title + " | Nimtto", in Title Case */
+export const metaTitle = (post) => titleCase(post.seoTitle || `${post.title} | Nimtto`);
+export const SCHEMA_TYPES = ['BlogPosting', 'Article', 'HowTo'];
+
+/**
+ * The JSON-LD a post page publishes (plain objects, in page order) and its search snippet: the article (BlogPosting,
+ * or Article; a "guide with steps" (HowTo) adds a HowTo with one step per H2), the breadcrumbs, and FAQPage when
+ * it has questions. post.speakable === false leaves the speakable part out. The studio's Schema panel shows the same.
+ */
+export function postSchema(post, c = post.c || compilePost(post)) {
+  const s = SITES[post.site];
+  const url = abs(postPath(post));
+  const trail = [[s.homeName, s.home], ['Blog', s.base], [post.title, postPath(post)]];
+  const og = abs(ogOf(post));
+  const published = isoDay(post.publishedAt);
+  const updated = isoDay(post.updatedAt || post.publishedAt);
+  const desc = post.seoDesc || post.excerpt;
   const author = { ...AUTHOR_LD, url: s.team, description: AUTHOR.bio };
   const images = [og, coverUrl(post) && abs(coverUrl(post))].filter(Boolean);
   const article = {
-    '@context': 'https://schema.org', '@type': 'BlogPosting', '@id': `${url}#article`, url,
-    headline: post.title.slice(0, 110), description: post.seoDesc || post.excerpt, abstract: post.excerpt,
+    '@context': 'https://schema.org', '@type': post.schemaType === 'Article' ? 'Article' : 'BlogPosting', '@id': `${url}#article`, url,
+    headline: post.title.slice(0, 110), description: desc, abstract: post.excerpt,
     image: images.map((u, i) => (i === 0 ? { '@type': 'ImageObject', url: u, width: 1200, height: 630 } : u)),
     datePublished: published, dateModified: updated,
     author, publisher: { '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'Nimtto', url: `${SITE_URL}/`, logo: { '@type': 'ImageObject', url: `${SITE_URL}/site/brand/nimtto-logo.svg` } },
@@ -378,18 +407,43 @@ export function renderPost({ post, others = [], shell, preview = false }) {
     isPartOf: { '@type': 'Blog', '@id': `${abs(s.base)}#blog`, name: s.name, url: abs(s.base) },
     wordCount: c.words, timeRequired: `PT${c.minutes}M`, articleSection: post.category, inLanguage: s.lang,
     ...(post.keyword ? { keywords: [post.keyword, ...(post.secondary || [])].join(', ') } : {}),
-    speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.bp-h1', '.bp-standfirst'] },
+    ...(post.speakable === false ? {} : { speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.bp-h1', '.bp-standfirst'] } }),
   };
-  const ld = [jsonLd(article), crumbsLd(trail)];
-  if (c.faq.length) ld.push(jsonLd({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: c.faq.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) }));
-  const extra = `
-  <meta property="article:published_time" content="${published}" />
-  <meta property="article:modified_time" content="${updated}" />
-  <meta property="article:section" content="${esc(post.category)}" />
-  <meta property="article:author" content="${s.team}" />`;
-  const title = titleCase(post.seoTitle || `${post.title} | Nimtto`);
-  const head = headTags({ title, desc: post.seoDesc || post.excerpt, url, image: og, imageAlt: post.cover?.alt || post.title, site, type: 'article', noindex: preview || post.status !== 'published', extra, ld });
-  return fill(shell, head, main, site);
+  const ld = [article, { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: trail.map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(path) })) }];
+  if (c.faq.length) ld.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: c.faq.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) });
+  if (post.schemaType === 'HowTo') {
+    const steps = c.toc.filter((t) => t.level === 2);
+    ld.push({
+      '@context': 'https://schema.org', '@type': 'HowTo', '@id': `${url}#howto`, name: post.title.slice(0, 110), description: desc, image: og,
+      totalTime: `PT${c.minutes}M`, inLanguage: s.lang,
+      step: steps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, name: t.text, text: t.text, url: `${url}#${t.id}` })),
+    });
+  }
+  return { title: metaTitle(post), desc, url, ld };
+}
+
+/** What Google needs in each block, as a list for the studio: [{ ok, text }]. */
+export function schemaChecks(ld) {
+  const out = [];
+  const add = (ok, text) => out.push({ ok: Boolean(ok), text });
+  const a = ld.find((x) => x['@type'] === 'BlogPosting' || x['@type'] === 'Article');
+  add(a, 'An article block is published');
+  if (a) {
+    add(a.headline && a.headline.length <= 110, 'Headline is set (110 characters at most)');
+    add(a.description, 'Description is set (search description or standfirst)');
+    add(Array.isArray(a.image) && a.image.length, 'Image is set');
+    add(a.author?.name && a.publisher?.name && a.publisher?.logo?.url, 'Author and publisher with logo');
+    add(/^\d{4}-\d{2}-\d{2}$/.test(a.datePublished) && /^\d{4}-\d{2}-\d{2}$/.test(a.dateModified), 'Published and modified dates');
+    add(a.wordCount > 0, 'Word count');
+    add(a.articleSection, 'Article section (category)');
+    add(a.keywords, 'Keywords (from the focus keyword)');
+  }
+  add(ld.some((x) => x['@type'] === 'BreadcrumbList'), 'Breadcrumbs');
+  const f = ld.find((x) => x['@type'] === 'FAQPage');
+  if (f) add(f.mainEntity.every((q) => q.name && q.acceptedAnswer?.text), 'Every question has an answer');
+  const h = ld.find((x) => x['@type'] === 'HowTo');
+  if (h) add(h.step.length >= 2, 'The guide has at least 2 steps (one per H2 heading)');
+  return out;
 }
 
 export function renderNotFound({ site, shell }) {
