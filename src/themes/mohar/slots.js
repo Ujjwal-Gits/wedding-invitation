@@ -27,8 +27,6 @@ export default {
     'gate.open': { shared: 'gate.open', label: 'Opening: open button', default: { en: 'Break the seal', ne: 'मोहर खोल्नुहोस्' }, max: 28 },
     'gate.quiet': { shared: 'gate.quiet', label: 'Opening: open without music', default: { en: 'Open without music', ne: 'संगीतबिना खोल्नुहोस्' }, max: 32 },
     'seal.initials': { label: 'Seal: the two letters on it (leave empty for your first letters)', default: { en: '', ne: '' }, max: 6 },
-    // the shared engine asks for it; this design has no Ganesh picture, so it stays off
-    'ganesh.show': { label: 'Ganesh picture (not part of this design)', default: { en: 'off', ne: 'off' }, max: 8 },
     'hero.invocation': { label: 'Decree: invocation (type - to remove)', default: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' }, max: 40 },
     'hero.title': { shared: 'hero.kicker', label: 'Decree: title', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 24 },
     'hero.line': { label: 'Decree: one line above the names', default: { en: 'With the blessings of both families, we announce the wedding of', ne: 'दुवै परिवारको शुभ आशीर्वादसहित हाम्रो शुभ विवाहको घोषणा' }, max: 90, multiline: true },

@@ -89,7 +89,8 @@ function fitRings() {
 function gate(ctx) {
   const L = letters(ctx);
   const half = (side) => `<span class="mo-half mo-half--${side}"><img class="mo-lac__img" src="${A}lac.webp" alt="" decoding="async" />${impression(L)}</span>`;
-  return `<div class="mo-pk" id="mo-pk">
+  return `<img class="mo-spray" src="${A}spray.webp" alt="" decoding="async" />
+    <div class="mo-pk" id="mo-pk">
       <span class="mo-silk mo-silk--l"></span><span class="mo-silk mo-silk--r"></span>
       <span class="mo-tail mo-tail--l"></span><span class="mo-tail mo-tail--r"></span>
       <div class="mo-press" id="mo-press">
@@ -143,13 +144,15 @@ function hero(ctx) {
 function pages(ctx) {
   const { bi, esc: e, txt, on, parts: P, config } = ctx;
   const out = [];
-  const head = (kicker, title, id) => `<header class="mo-ph">${kicker && on(kicker) ? `<p class="mo-k">${bi(kicker)}</p>` : ''}<h2 class="mo-h" id="${id}">${bi(title)}</h2><span class="mo-rule" aria-hidden="true"></span></header>`;
-  out.push({ id: 'pg-decree', title: txt('decree.title'), html: `${head(txt('decree.kicker'), txt('decree.title'), 'pg-decree-t')}
+  // a small painted miniature under each page's title (a pair of peacocks replaces the couple when the symbols are not Hindu)
+  const vig = (k) => (k ? `<figure class="mo-vig" aria-hidden="true">${k === 'couple' ? `<img class="mo-vig__h" src="${A}vig-couple.webp" alt="" loading="lazy" decoding="async" /><img class="mo-vig__n" src="${A}vig-peacocks.webp" alt="" loading="lazy" decoding="async" />` : `<img src="${A}vig-${k}.webp" alt="" loading="lazy" decoding="async" />`}</figure>` : '');
+  const head = (kicker, title, id, k = null) => `<header class="mo-ph">${kicker && on(kicker) ? `<p class="mo-k">${bi(kicker)}</p>` : ''}<h2 class="mo-h" id="${id}">${bi(title)}</h2><span class="mo-rule" aria-hidden="true"></span>${vig(k)}</header>`;
+  out.push({ id: 'pg-decree', title: txt('decree.title'), html: `${head(txt('decree.kicker'), txt('decree.title'), 'pg-decree-t', 'pavilion')}
     <p class="mo-lead">${bi(txt('card.line'))}</p>
     <p class="mo-hosts">${bi(config.hosts)}</p>
     ${P.cardBtn('mo-btn')}` });
 
-  out.push({ id: 'pg-fam', title: txt('families.title'), html: `${head(null, txt('families.title'), 'pg-fam-t')}
+  out.push({ id: 'pg-fam', title: txt('families.title'), html: `${head(null, txt('families.title'), 'pg-fam-t', 'couple')}
     <div class="mo-fam">${P.families.map((f, i) => `${i ? '<p class="mo-fam__and" aria-hidden="true">&amp;</p>' : ''}<div class="mo-fam__side">
       ${P.brideGroom ? `<figure class="mo-fam__pic">${ctx.imgTag(f.photo, f.person.name.en, '96px')}</figure>` : ''}
       <p class="mo-k">${bi(f.label)}</p>
@@ -163,7 +166,7 @@ function pages(ctx) {
   for (let k = 0; k < evs.length; k += per) {
     const part = evs.slice(k, k + per);
     const id = `pg-ev-${k / per}`;
-    out.push({ id, title: txt('prog.title'), html: `${head(k ? null : txt('prog.kicker'), txt('prog.title'), `${id}-t`)}
+    out.push({ id, title: txt('prog.title'), html: `${head(k ? null : txt('prog.kicker'), txt('prog.title'), `${id}-t`, k ? 'music' : 'canopy')}
       <ol class="mo-evs">${part.map((ev) => {
         const hasDress = !!(ev.dress.text?.en || ev.dress.text?.ne || ev.dress.colors.length);
         return `<li class="mo-ev" id="ev-${e(ev.id)}">
@@ -181,13 +184,13 @@ function pages(ctx) {
   const mainEv = ctx.mainEv;
   const venue = mainEv?.venue?.en || mainEv?.venue?.ne ? mainEv.venue : config.city;
   const mapQ = mainEv ? (mainEv.mapQuery || mainEv.venue?.en || '') : (config.city?.en || '');
-  out.push({ id: 'pg-venue', title: txt('venue.title'), html: `${head(null, txt('venue.title'), 'pg-venue-t')}
+  out.push({ id: 'pg-venue', title: txt('venue.title'), html: `${head(null, txt('venue.title'), 'pg-venue-t', 'gate')}
     <p class="mo-venue">${bi(venue || { en: '', ne: '' })}</p>
     ${mainEv && (config.city?.en || config.city?.ne) ? `<p class="mo-city">${bi(config.city)}</p>` : ''}
     ${mapQ ? `<a class="su-btn mo-btn mo-btn--line" href="${e(ctx.mapUrl(mapQ))}" target="_blank" rel="noopener">${bi({ en: 'Open the map', ne: 'नक्सा हेर्नुहोस्' })}<span class="sr-only"> (opens Google Maps)</span></a>` : ''}
     ${P.moreInfo()}` });
 
-  out.push({ id: 'pg-date', title: txt('count.title'), html: `${head(txt('date.kicker'), txt('count.title'), 'pg-date-t')}
+  out.push({ id: 'pg-date', title: txt('count.title'), html: `${head(txt('date.kicker'), txt('count.title'), 'pg-date-t', 'birds')}
     <div class="mo-strip">${ctx.dateStrip()}</div>
     <div class="mo-count" data-countdown>
       <ol class="su-count__grid mo-count__grid" aria-label="${e(txt('count.title').en)}">${P.countUnits.map((x) => `<li>${P.countNum(x.u, 'mo-count__n')}<span class="mo-count__l">${bi(x.label)}</span></li>`).join('')}</ol>
@@ -240,6 +243,8 @@ function page(ctx) {
 
   <section class="mo-farman" id="farman" aria-label="${e(txt('decree.kicker').en || 'The decree')}">
     <div class="mo-stage"><div class="mo-strip-3d">${farman(ctx, list)}</div></div>
+    <img class="mo-tassel mo-tassel--l" src="${A}tassel.webp" alt="" loading="lazy" decoding="async" aria-hidden="true" />
+    <img class="mo-tassel mo-tassel--r" src="${A}tassel.webp" alt="" loading="lazy" decoding="async" aria-hidden="true" />
     <p class="mo-folios" aria-hidden="true"><span class="mo-folios__n"></span></p>
   </section>
 
@@ -382,7 +387,8 @@ function openTimeline(tl, gateEl) {
     .to('.mo-silk--l', { xPercent: -112, duration: 0.85, ease: 'power3.in' }, t + 0.18)
     .to('.mo-silk--r', { xPercent: 112, duration: 0.85, ease: 'power3.in' }, t + 0.18)
     .to('.mo-tail', { opacity: 0, duration: 0.3 }, t + 0.1)
-    .to('#mo-hint', { autoAlpha: 0, duration: 0.25 }, 0);
+    .to('#mo-hint', { autoAlpha: 0, duration: 0.25 }, 0)
+    .to('.mo-spray', { autoAlpha: 0, y: -16, duration: 0.7, ease: 'power2.in' }, t + 0.2);
   t += 0.95;
   tl.set(gateEl, { autoAlpha: 0 }, t);
   // the decree unfolds: the top third swings up, then the bottom third down
@@ -439,7 +445,7 @@ function concertina(ctx) {
         const size = () => {
           const H = Math.min(window.innerHeight * 0.8, 720);
           W = Math.round(Math.min(H * 0.68, 460));
-          VW = sec.clientWidth;
+          VW = sec.querySelector('.mo-stage').clientWidth;
           sec.style.setProperty('--W', `${W}px`); sec.style.setProperty('--H', `${Math.round(H)}px`);
           fitPages(sec);
         };
@@ -536,7 +542,8 @@ function register(ctx) {
 
 const SPEC = {
   slug: 'mohar',
-  manifest,
+  // the shared engine asks for 'ganesh.show'; Mohar has no Ganesh picture, so it is set here and never shown in the studio
+  manifest: { ...manifest, texts: { ...manifest.texts, 'ganesh.show': { label: '', default: { en: 'off', ne: 'off' }, max: 8 } } },
   bell: false,
   gate: (ctx) => gate(ctx),
   hero: (ctx) => hero(ctx),

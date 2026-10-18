@@ -30,7 +30,11 @@ Market: both sites (neutral art; the invocation and शुभ विवाह fo
 rajnigandha), `table-p|l-plain` (the same without the diya, for pages whose symbols are not Hindu), `parchment`
 (decree paper with a gold-sprinkled border), `paper` (its plain middle), `seal` (brass seal top, cut out), `lac`
 (red lac pool, cut out), `frame` (brass frame, cut out, used as a 9-slice border), `cloth-red` (ledger bookcloth),
-`indigo` (a mirrored tile of the cloth). The monogram, the lal mohar ink stamp and the silk are drawn in code.
+`indigo` (a mirrored tile of the cloth), `border` (gold-leaf illuminated border with painted corner roses and
+marigolds, a 9-slice `border-image` on every farman page), `vig-*` (Rajput miniature vignettes: pavilion, couple, or
+peacocks when the symbols are not Hindu, wedding canopy, music, palace gate, lovebirds), `spray` (brass tray of
+marigolds and roses with rajnigandha, above the sealed packet), `tassel` (red silk tassels on the wide-screen table).
+On wide screens the farman lies on the landscape table, its pages in a soft-edged window between the props. The monogram, the lal mohar ink stamp and the silk are drawn in code.
 
 Type: Linden Hill, Tiro Devanagari Sanskrit (display only, never digits), Crimson Pro, Laila (Nepali text and
 digits), Kalam (the register's ink).
