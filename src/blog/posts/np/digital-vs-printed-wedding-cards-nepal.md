@@ -56,12 +56,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "mahal",
-    "alt": "The Mahal invitation design on a phone: a golden palace gate under roses, tied with an ivory satin bow",
-    "caption": "Mahal, a Nimtto design. A golden palace gate tied with a satin bow. It opens onto a palace balcony at night."
+    "type": "image",
+    "src": "/site/blog/digital-vs-printed-wedding-cards-nepal-v1",
+    "alt": "A red and gold printed wedding card and envelope beside a smartphone on a wooden table, with tea and fresh marigolds",
+    "caption": "Paper in hand or a link on the phone: most families now send both."
   },
-  "og": "/site/og/blog-digital-vs-printed-wedding-cards-nepal.jpg"
+  "og": "/site/og/blog-digital-vs-printed-wedding-cards-nepal-v2.jpg"
 }
 ---
 For most Nepali weddings today, the best answer is not one or the other. The **digital wedding card Nepal** couples now send on WhatsApp is cheaper per guest, reaches relatives abroad on the same day, and collects RSVPs for you. A printed card still carries weight with elders, who often expect a card in hand or a personal visit.

@@ -32,12 +32,14 @@ for (const site of ['np', 'intl']) {
 posts.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.title.localeCompare(b.title));
 const bySite = (s) => posts.filter((p) => p.site === s);
 const lastOf = (list) => list.reduce((m, p) => ((p.updatedAt || p.publishedAt) > m ? p.updatedAt || p.publishedAt : m), '');
-const stillOf = (p) => (p.cover?.type === 'design' ? `/site/stills/${p.cover.design}-800.webp` : null);
+// the post's own picture for the sitemap: its landscape feature image (scripts/blog-art.mjs) or a design's phone still
+const stillOf = (p) => (p.cover?.type === 'image' ? `${p.cover.src}-1600.webp` : p.cover?.type === 'design' ? `/site/stills/${p.cover.design}-800.webp` : null);
 
 /* ---------------- --og: the share images to draw ---------------- */
 if (process.argv.includes('--og')) {
   const em = (t) => { const w = t.replace(/\s*\(.*\)\s*$/, '').split(' '); const k = Math.min(2, w.length - 1); return `${w.slice(0, -k).join(' ')} <i>${w.slice(-k).join(' ')}</i>`; };
-  const out = posts.map((p) => {
+  // posts with a landscape feature image already have their share image (scripts/blog-art.mjs makes both)
+  const out = posts.filter((p) => p.cover?.type !== 'image').map((p) => {
     const phone = p.cover?.type === 'mock' ? { mock: p.cover.mock } : { src: stillOf(p) || '/site/stills/laali-800.webp' };
     return { img: `blog-${p.slug}`, market: p.site, eyebrow: `Nimtto guide · ${p.category}`, ne: '', h1: em(p.title.length > 64 ? p.title.replace(/:.*$/, '') : p.title),
       sub: p.site === 'intl' ? 'Wording, timing and etiquette, from the Nimtto team' : 'Wording, customs and timing, from the Nimtto team',

@@ -57,12 +57,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "jali",
-    "alt": "The Jali invitation design on a phone: carved emerald and gold lattice screens under lanterns",
-    "caption": "Jali, a Nimtto design. Carved emerald and gold lattice screens slide apart under hanging lanterns."
+    "type": "image",
+    "src": "/site/blog/nepali-south-asian-weddings-usa-v1",
+    "alt": "An emerald green and gold invitation suite on magenta silk, framed by fresh marigold garlands, jasmine strings and henna cones",
+    "caption": "Many events, many guests, one invitation suite that holds them all."
   },
-  "og": "/site/og/blog-nepali-south-asian-weddings-usa.jpg"
+  "og": "/site/og/blog-nepali-south-asian-weddings-usa-v2.jpg"
 }
 ---
 South Asian wedding invitations in the USA have a bigger job than most. They need to show several events, each with its own time, venue, dress note and guest list. They also need to reach relatives in Nepal, India, the UK or the Gulf, who live in other time zones and may need months to plan the trip.

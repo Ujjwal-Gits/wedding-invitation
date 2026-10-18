@@ -56,12 +56,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "garden-party",
-    "alt": "The Garden Party invitation design on a phone: a rose arbor and white chairs on a summer lawn",
-    "caption": "Garden Party, a Nimtto design. A garden ceremony under a rose arbor. The invitation slides out of its paper band."
+    "type": "image",
+    "src": "/site/blog/when-to-send-wedding-invitations-v1",
+    "alt": "A linen planner, a stack of blank save-the-date cards and envelopes, a pencil, a cup of coffee and peach roses on a white table",
+    "caption": "Save the dates first, invitations next: a simple plan keeps it calm."
   },
-  "og": "/site/og/blog-when-to-send-wedding-invitations.jpg"
+  "og": "/site/og/blog-when-to-send-wedding-invitations-v2.jpg"
 }
 ---
 The usual answer to when to send wedding invitations is six to eight weeks before a local wedding, with save the dates going out six to eight months before. Set your RSVP deadline about three to four weeks before the wedding. That is the common guidance from [Emily Post](https://emilypost.com/advice/wedding-planning-series) and The Knot.

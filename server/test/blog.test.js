@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { hash as argonHash } from '@node-rs/argon2';
 import { renderMarkdown, renderInline, safeHref } from '../lib/blog-md.js';
-import { cleanPost, loadSeeds } from '../lib/blog.js';
+import { cleanPost, loadSeeds, syncSeeds, contentHash, SEED_VERSION } from '../lib/blog.js';
 
 const DATA_ROOT = mkdtempSync(join(tmpdir(), 'nimtto-blog-'));
 const OWNER = { email: 'owner@test.local', password: 'owner-password-1' };
@@ -117,10 +117,14 @@ test('a post page carries its title, meta, canonical, Open Graph and JSON-LD', a
   assert.match(t, /<meta name="description" content="[^"]{60,155}" \/>/);
   assert.match(t, /<link rel="canonical" href="https:\/\/nimtto\.com\/blog\/wedding-invitation-wording-nepali-english\/" \/>/);
   assert.match(t, /<meta property="og:type" content="article" \/>/);
-  assert.match(t, /<meta property="og:image" content="https:\/\/nimtto\.com\/site\/og\/blog-wedding-invitation-wording-nepali-english\.jpg" \/>/);
+  assert.match(t, /<meta property="og:image" content="https:\/\/nimtto\.com\/site\/og\/blog-wedding-invitation-wording-nepali-english-v2\.jpg" \/>/);
   assert.match(t, /<meta name="twitter:card" content="summary_large_image" \/>/);
   assert.match(t, /<h1 class="bp-h1" id="bp-h">/);
   assert.match(t, /class="bp-toc"/);
+  // the classic order: H1, then the wide feature picture, then the standfirst and byline
+  assert.match(t, /<figure class="wrap bp-w bp-hero"><img src="\/site\/blog\/wedding-invitation-wording-nepali-english-v1-1600\.webp" srcset="[^"]*-2400\.webp 2400w"/);
+  assert.ok(t.indexOf('id="bp-h"') < t.indexOf('class="wrap bp-w bp-hero"') && t.indexOf('class="wrap bp-w bp-hero"') < t.indexOf('class="bp-standfirst"'));
+  assert.ok(!/class="phone"/.test(t.slice(t.indexOf('<article'), t.indexOf('bp-layout'))), 'no phone mockup above the article');
   assert.match(t, /class="copy"/);
   assert.match(t, /rel="author"/);
   assert.match(t, /index, follow/);
@@ -280,4 +284,29 @@ test('blog pages carry the Content page’s site-wide words (announcement, conta
   assert.equal(after.headers.get('cache-control'), 'no-cache');
   assert.ok(after.headers.get('etag'));
   assert.equal((await fetch(`${base}/blog/pasni-invitation-guide/`, { headers: { 'If-None-Match': after.headers.get('etag') } })).status, 304);
+});
+
+test('built-in posts update the store safely: unedited ones take the new version, edited and deleted ones are left alone', () => {
+  const seeds = loadSeeds();
+  const [a, b, c, d] = seeds;
+  const old = (s) => ({ ...s.post, cover: { type: 'design', design: s.post.site === 'intl' ? 'olive-grove' : 'kham', alt: 'old', caption: '' }, og: '/site/og/old.jpg', id: `id-${s.post.slug}`.slice(0, 20), createdAt: '2026-10-01T00:00:00.000Z' });
+  const unedited = old(a);
+  const edited = { ...old(b), title: 'The owner rewrote this title' };
+  const doc = { v: 1, seeds: seeds.filter((s) => s !== d).map((s) => s.key), posts: [unedited, edited] }; // c: deleted by the owner; d: new
+  const history = { [a.key]: [contentHash(unedited)], [b.key]: [contentHash(old(b))] };
+  assert.equal(syncSeeds(doc, seeds, history), true);
+  const pa = doc.posts.find((p) => p.slug === a.post.slug);
+  assert.equal(pa.cover.type, 'image', 'the unedited post takes the new feature image');
+  assert.equal(pa.id, unedited.id, 'and keeps its id');
+  assert.equal(pa.seedHash, contentHash(a.post));
+  assert.equal(doc.posts.find((p) => p.slug === b.post.slug).title, 'The owner rewrote this title', 'an edited post is never overwritten');
+  assert.ok(!doc.posts.some((p) => p.slug === c.post.slug), 'a deleted built-in post stays deleted');
+  assert.ok(doc.posts.some((p) => p.slug === d.post.slug), 'a new built-in post is added');
+  assert.equal(doc.seedVersion, SEED_VERSION);
+  assert.equal(syncSeeds(doc, seeds, history), false, 'nothing to do the second time');
+  // later: an edit after seeding (seedHash no longer matches) is safe from the next version too
+  pa.excerpt = 'Edited later.';
+  doc.seedVersion = SEED_VERSION - 1;
+  syncSeeds(doc, seeds, history);
+  assert.equal(doc.posts.find((p) => p.slug === a.post.slug).excerpt, 'Edited later.');
 });

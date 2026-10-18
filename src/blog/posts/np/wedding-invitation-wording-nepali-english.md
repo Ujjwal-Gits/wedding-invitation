@@ -57,12 +57,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "kham",
-    "alt": "The Kham invitation design on a phone: a handmade-paper envelope with a red wax seal",
-    "caption": "Kham, a Nimtto design. A paper envelope with a red wax seal. It opens into a clear card with all your events."
+    "type": "image",
+    "src": "/site/blog/wedding-invitation-wording-nepali-english-v1",
+    "alt": "Blank cream wedding cards and envelopes with gold edges on crimson silk, with a gold pen, a brass bowl and fresh marigolds",
+    "caption": "Good wording starts on a calm page: cards, envelopes and fresh marigolds."
   },
-  "og": "/site/og/blog-wedding-invitation-wording-nepali-english.jpg"
+  "og": "/site/og/blog-wedding-invitation-wording-nepali-english-v2.jpg"
 }
 ---
 The usual wedding invitation wording in Nepali follows a fixed order: an invocation such as ॥ श्री गणेशाय नमः ॥, the heading शुभ विवाह, the parents' names, the couple's names, the ceremony dates in Bikram Sambat, the venue, and a closing line from the family (दर्शनाभिलाषी or निवेदक, followed by सपरिवार). Keep the honorifics the same from start to finish and write the BS date first, with AD in brackets.

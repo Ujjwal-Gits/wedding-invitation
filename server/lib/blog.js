@@ -37,6 +37,8 @@ export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+){0,12}$/;
 const ID_RE = /^[A-Za-z0-9_-]{8,24}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const COVER_RE = /^\/uploads\/_site\/blog\/[A-Za-z0-9_-]{24}-1600\.webp$/;
+/** a built-in feature image: its base path (the files are <base>-2400|1600|800.webp, src/site/make-blog.mjs) */
+const IMAGE_RE = /^\/site\/blog\/[a-z0-9-]{2,90}-v\d{1,3}$/;
 const OG_RE = /^\/(?:site\/og\/[a-z0-9-]{2,80}\.jpg|uploads\/_site\/blog\/[A-Za-z0-9_-]{24}-og\.jpg)$/;
 export const CATEGORIES = {
   np: ['Wording', 'Ceremonies', 'Planning', 'Etiquette', 'Families abroad'],
@@ -86,6 +88,7 @@ export function cleanPost(input, prev = null) {
   let cover = { type: 'none' };
   if (c.type === 'design' && site && designExists(site, line(c.design, 40))) cover = { type: 'design', design: line(c.design, 40) };
   else if (c.type === 'photo' && COVER_RE.test(String(c.src || ''))) cover = { type: 'photo', src: String(c.src) };
+  else if (c.type === 'image' && IMAGE_RE.test(String(c.src || ''))) cover = { type: 'image', src: String(c.src) };
   else if (c.type === 'mock' && c.mock && typeof c.mock === 'object') cover = { type: 'mock', mock: Object.fromEntries(['ne', 'kick', 'name', 'when', 'where'].map((k) => [k, line(c.mock[k], 60)])) };
   cover.alt = line(c.alt, LIMITS.alt);
   cover.caption = line(c.caption, LIMITS.caption);
@@ -131,22 +134,59 @@ export function loadSeeds(dir = SEED_DIR) {
 
 /* ---------------- the store ---------------- */
 let seedsOnce = null;
-/** The blog document { v, seeds: [key], posts: [post] }, with any built-in post not seen before added. */
+/**
+ * The built-in posts' version. Bump it when the files in src/blog/posts change: on the next start every built-in post
+ * the owner has NOT edited takes the new file's words and pictures; an edited one is never touched. "Not edited" means
+ * the stored post still equals what was seeded: its `seedHash`, or (posts seeded before hashes were kept) one of the
+ * earlier versions of its file listed in src/blog/posts/seed-history.json.
+ */
+export const SEED_VERSION = 2;
+const SEED_HISTORY_FILE = resolve(SEED_DIR, 'seed-history.json');
+let historyOnce = null;
+const seedHistory = () => (historyOnce ??= existsSync(SEED_HISTORY_FILE) ? JSON.parse(readFileSync(SEED_HISTORY_FILE, 'utf8')) : {});
+/** What a post says and shows (not its id, dates of storage or seed bookkeeping): the "was it edited?" fingerprint. */
+const CONTENT_KEYS = ['slug', 'site', 'title', 'category', 'status', 'publishedAt', 'excerpt', 'body', 'faq', 'designs', 'related', 'cover', 'og', 'seoTitle', 'seoDesc', 'keyword', 'secondary'];
+export const contentHash = (p) => createHash('sha1').update(JSON.stringify(CONTENT_KEYS.map((k) => p[k] ?? null))).digest('hex').slice(0, 20);
+
+/** Applies the built-in posts to a blog document; returns true when it changed. */
+export function syncSeeds(d, seeds, history = {}) {
+  let changed = false;
+  for (const s of seeds) {
+    const fresh = contentHash(s.post);
+    if (!d.seeds.includes(s.key)) {
+      d.seeds.push(s.key);
+      if (!d.posts.some((p) => p.site === s.post.site && p.slug === s.post.slug)) d.posts.push({ ...s.post, seedHash: fresh });
+      changed = true;
+      continue;
+    }
+    if (d.seedVersion === SEED_VERSION) continue;
+    const i = d.posts.findIndex((p) => p.builtin && p.site === s.post.site && p.slug === s.post.slug);
+    if (i < 0) continue; // deleted by the owner: stays deleted
+    const p = d.posts[i];
+    const h = contentHash(p);
+    if (h === fresh) { if (p.seedHash !== fresh) { p.seedHash = fresh; changed = true; } continue; }
+    const untouched = p.seedHash ? h === p.seedHash : (history[s.key] || []).includes(h);
+    if (!untouched) continue; // the owner edited it: theirs
+    d.posts[i] = { ...s.post, id: p.id, createdAt: p.createdAt, seedHash: fresh };
+    changed = true;
+  }
+  if (d.seedVersion !== SEED_VERSION) { d.seedVersion = SEED_VERSION; changed = true; }
+  return changed;
+}
+
+/** The blog document { v, seeds: [key], seedVersion, posts: [post] }, with the built-in posts applied (syncSeeds). */
 async function readBlog() {
   const cur = await getDoc(KEY);
   const doc = cur?.value && Array.isArray(cur.value.posts) ? cur.value : { v: 1, seeds: [], posts: [] };
   seedsOnce ??= loadSeeds();
-  const fresh = seedsOnce.filter((s) => !doc.seeds.includes(s.key));
-  if (!fresh.length && cur) return { doc, rev: cur.rev };
-  return withLock(`kv:${KEY}:seed`, async () => {
+  const pending = !cur || doc.seedVersion !== SEED_VERSION || seedsOnce.some((s) => !doc.seeds.includes(s.key));
+  if (!pending) return { doc, rev: cur.rev };
+  return withLock(`kv:${KEY}:edit`, async () => {
     const again = await getDoc(KEY);
     const d = again?.value && Array.isArray(again.value.posts) ? structuredClone(again.value) : { v: 1, seeds: [], posts: [] };
-    for (const s of seedsOnce) {
-      if (d.seeds.includes(s.key)) continue;
-      d.seeds.push(s.key);
-      if (!d.posts.some((p) => p.site === s.post.site && p.slug === s.post.slug)) d.posts.push(s.post);
-    }
+    if (!syncSeeds(d, seedsOnce, seedHistory()) && again) return { doc: again.value, rev: again.rev };
     const rev = await putDoc(KEY, d);
+    clearCaches();
     return { doc: d, rev };
   });
 }
@@ -294,8 +334,8 @@ async function uploadCover(req, res) {
   await fs.mkdir(BLOG_UPLOADS, { recursive: true });
   await withSlot(async () => {
     const img = () => sharp(file.buffer, { limitInputPixels: MAX_PIXELS }).rotate();
-    await img().resize({ width: 1600, height: 1000, fit: 'cover', position: 'attention' }).webp({ quality: 80, effort: 3 }).toFile(resolve(BLOG_UPLOADS, `${id}-1600.webp`));
-    await img().resize({ width: 800, height: 500, fit: 'cover', position: 'attention' }).webp({ quality: 78, effort: 3 }).toFile(resolve(BLOG_UPLOADS, `${id}-800.webp`));
+    await img().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 80, effort: 3 }).toFile(resolve(BLOG_UPLOADS, `${id}-1600.webp`));
+    await img().resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true }).webp({ quality: 78, effort: 3 }).toFile(resolve(BLOG_UPLOADS, `${id}-800.webp`));
     await img().resize({ width: 1200, height: 630, fit: 'cover', position: 'attention' }).flatten({ background: '#ffffff' }).jpeg({ quality: 84, mozjpeg: true }).toFile(resolve(BLOG_UPLOADS, `${id}-og.jpg`));
   });
   res.locals.auditLabel = 'Uploaded a blog cover photo';

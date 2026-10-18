@@ -56,12 +56,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "letterpress",
-    "alt": "The Letterpress invitation design on a phone: a deckled cotton card on sage linen",
-    "caption": "Letterpress, a Nimtto design. A deckled cotton card lifts off sage linen and turns over. Simple and timeless."
+    "type": "image",
+    "src": "/site/blog/digital-wedding-invitation-etiquette-v1",
+    "alt": "A laptop and a smartphone on a white linen table beside a blank ivory invitation card, blush garden roses and eucalyptus",
+    "caption": "Online or on paper, the same courtesy carries the invitation."
   },
-  "og": "/site/og/blog-digital-wedding-invitation-etiquette.jpg"
+  "og": "/site/og/blog-digital-wedding-invitation-etiquette-v2.jpg"
 }
 ---
 **Is it OK to send wedding invitations online?** Yes, for most weddings it is. Etiquette experts now treat digital invitations as acceptable, as long as they feel personal and match the formality of your day.

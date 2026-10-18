@@ -60,18 +60,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "mock",
-    "mock": {
-      "ne": "पास्नी",
-      "kick": "Join us for the first rice of our little",
-      "name": "Aditi",
-      "when": "Sunday, 20 Jestha 2084",
-      "where": "Our home, Bhaktapur"
-    },
-    "alt": "A sample pasni invitation on a phone, with the baby’s name, the date in Bikram Sambat and an RSVP button",
-    "caption": "A sample pasni invitation. We design yours for your family and your baby’s day."
+    "type": "image",
+    "src": "/site/blog/pasni-invitation-guide-v1",
+    "alt": "A silver bowl of rice pudding on a brass plate beside a small red and gold embroidered baby outfit and fresh marigolds",
+    "caption": "The first rice and a little red outfit: the heart of a pasni."
   },
-  "og": "/site/og/blog-pasni-invitation-guide.jpg"
+  "og": "/site/og/blog-pasni-invitation-guide-v2.jpg"
 }
 ---
 A good **pasni invitation card** tells guests four things clearly: whose pasni it is, the sait date (in both BS and AD), the time of the puja and the bhoj, and where to come. Add the parents' or grandparents' names as hosts, a contact number and a simple way to reply, and you have everything a guest needs.

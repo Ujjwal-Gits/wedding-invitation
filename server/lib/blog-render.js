@@ -99,13 +99,26 @@ function mockPhone(m, site) {
       <span class="mock__when">${esc(m.when)}</span><span class="mock__where">${esc(m.where)}</span><span class="mock__btn">RSVP</span>
     </span></span>`;
 }
-/** the cover: a design's phone still, a sample card, or an uploaded photo; `big` on the post page */
+/** a landscape picture's files: a built-in feature image (<base>-2400|1600|800.webp) or an uploaded photo (-1600|-800) */
+function pictureSet(c) {
+  if (c.type === 'image' && c.src) return { src: `${c.src}-1600.webp`, set: `${c.src}-800.webp 800w, ${c.src}-1600.webp 1600w, ${c.src}-2400.webp 2400w`, w: 2400, h: 1350 };
+  if (c.type === 'photo' && c.src) { const s800 = c.src.replace(/-1600\.webp$/, '-800.webp'); return { src: c.src, set: `${s800} 800w, ${c.src} 1600w`, w: 1600, h: 1000 }; }
+  return null;
+}
+/** the post page's feature picture: a wide landscape image (none for a post without a photo) */
+function heroImage(post) {
+  const c = post.cover || {};
+  const pic = pictureSet(c);
+  if (!pic) return '';
+  return `<figure class="wrap bp-w bp-hero"><img src="${esc(pic.src)}" srcset="${esc(pic.set)}" sizes="(max-width: 1263px) calc(100vw - 2 * var(--gut, 16px)), 1200px" width="${pic.w}" height="${pic.h}" alt="${esc(c.alt || '')}" fetchpriority="high" decoding="async" />${c.caption ? `<figcaption>${escNe(c.caption)}</figcaption>` : ''}</figure>`;
+}
+/** the cover on cards and the featured post: a landscape picture, else a design's phone still or a sample card */
 function coverArt(post, { big = false, i = 0 } = {}) {
   const c = post.cover || {};
   const alt = big ? c.alt || '' : '';
-  if (c.type === 'photo' && c.src) {
-    const s800 = c.src.replace(/-1600\.webp$/, '-800.webp');
-    return `<span class="bcover bcover--photo"><img src="${esc(s800)}" srcset="${esc(s800)} 800w, ${esc(c.src)} 1600w" sizes="${big ? '(max-width: 899px) 100vw, 46vw' : '(max-width: 599px) 92vw, 30vw'}" width="1600" height="1000" alt="${esc(alt)}" ${big ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" /></span>`;
+  const pic = pictureSet(c);
+  if (pic) {
+    return `<span class="bcover bcover--photo"><img src="${esc(pic.src.replace(/-(?:1600|2400)\.webp$/, '-800.webp'))}" srcset="${esc(pic.set)}" sizes="${big ? '(max-width: 899px) 100vw, 40vw' : '(max-width: 599px) 92vw, (max-width: 1023px) 46vw, 30vw'}" width="${pic.w}" height="${pic.h}" alt="${esc(alt)}" ${big ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" /></span>`;
   }
   const d = c.type === 'design' ? designOf(post.site, c.design) : null;
   const tint = d && !d.intl && CATEGORIES[d.cat] ? CATEGORIES[d.cat].tint : tintOf(post.site, i);
@@ -120,6 +133,7 @@ const ogOf = (post) => post.og || (post.cover?.type === 'design' && post.cover.d
 const coverUrl = (post) => {
   const c = post.cover || {};
   if (c.type === 'photo' && c.src) return c.src;
+  if (c.type === 'image' && c.src) return `${c.src}-2400.webp`;
   if (c.type === 'design' && c.design) return phoneStill(STILLS, c.design, '').src || null;
   return null;
 };
@@ -248,7 +262,8 @@ function toc(c) {
   return `<aside class="bp-toc" aria-labelledby="bp-toc-h"><details class="bp-toc__box" open><summary class="bp-toc__s" id="bp-toc-h">On this page</summary>
       <ol class="bp-toc__list">${items.map((x) => `<li class="bp-toc__i bp-toc__i--${x.level}"><a href="#${esc(x.id)}">${escNe(x.text)}</a></li>`).join('')}</ol></details></aside>`;
 }
-function share(post, url) {
+/** share links; `where` keeps the two rows' ids apart ('top' under the picture, 'end' after the article) */
+function share(post, url, where = 'end') {
   const u = encodeURIComponent(url);
   const t = encodeURIComponent(post.title);
   const img = encodeURIComponent(abs(ogOf(post)));
@@ -262,7 +277,7 @@ function share(post, url) {
   };
   const ico = (k) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICO[k]}</svg>`;
   const a = (href, k, label) => `<a class="bp-share__a" href="${href}" target="_blank" rel="noopener noreferrer">${ico(k)}<span>${label}</span></a>`;
-  return `<div class="bp-share" aria-labelledby="bp-share-h"><p class="bp-share__h" id="bp-share-h">Share this guide</p><div class="bp-share__list">
+  return `<div class="bp-share bp-share--${where}" aria-labelledby="bp-share-h-${where}"><p class="bp-share__h" id="bp-share-h-${where}">${where === 'top' ? 'Share' : 'Share this guide'}</p><div class="bp-share__list">
       <button type="button" class="bp-share__a" data-copy-link="${esc(url)}">${ico('link')}<span>Copy link</span></button>
       ${a(`https://wa.me/?text=${encodeURIComponent(`${post.title} ${url}`)}`, 'wa', 'WhatsApp')}
       ${a(`https://www.facebook.com/sharer/sharer.php?u=${u}`, 'fb', 'Facebook')}
@@ -313,24 +328,24 @@ export function renderPost({ post, others = [], shell, preview = false }) {
           <div class="faq__list">${c.faq.map((x, i) => `<details class="qa"${i === 0 ? ' open' : ''}><summary class="qa__q"><span>${escNe(x.q)}</span><i aria-hidden="true"></i></summary><div class="qa__a"><p>${x.aHtml}</p></div></details>`).join('')}</div>
         </section>` : '';
   const main = `<div class="bp-progress" aria-hidden="true"><i></i></div>
-    <div class="wrap">${crumbs(trail)}</div>
+    <div class="wrap bp-w">${crumbs(trail)}</div>
     <article class="bp" aria-labelledby="bp-h">
-      <header class="wrap bp-head">
-        <div class="bp-head__txt">
-          <p class="eyebrow"><a class="bp-cat" href="${s.base}?topic=${esc(catSlug(post.category))}">${esc(post.category)}</a></p>
-          <h1 class="bp-h1" id="bp-h">${escNe(post.title)}</h1>
-          <p class="bp-standfirst" data-speak>${escNe(post.excerpt)}</p>
-          <div class="bp-by">
-            <img class="bp-by__mark" src="/favicon.svg" width="44" height="44" alt="" />
-            <div class="bp-by__txt">
-              <p class="bp-by__name">By <a href="${s.about}" rel="author">${esc(AUTHOR.name)}</a></p>
-              <p class="bp-by__meta"><span>Published <time datetime="${published}">${fmtDate(site, published)}</time></span><span>Updated <time datetime="${updated}">${fmtDate(site, updated)}</time></span><span>${c.minutes} min read</span></p>
-            </div>
-          </div>
-        </div>
-        <figure class="bp-cover">${coverArt(post, { big: true })}${post.cover?.caption ? `<figcaption>${escNe(post.cover.caption)}</figcaption>` : ''}</figure>
+      <header class="wrap bp-w bp-head">
+        <p class="eyebrow"><a class="bp-cat" href="${s.base}?topic=${esc(catSlug(post.category))}">${esc(post.category)}</a></p>
+        <h1 class="bp-h1" id="bp-h">${escNe(post.title)}</h1>
       </header>
-      <div class="wrap bp-layout">
+      ${heroImage(post)}
+      <div class="wrap bp-w bp-intro">
+        <p class="bp-standfirst" data-speak>${escNe(post.excerpt)}</p>
+        <div class="bp-intro__row">
+          <div class="bp-by">
+            <img class="bp-by__mark" src="/favicon.svg" width="38" height="38" alt="" />
+            <p class="bp-by__meta"><span class="bp-by__name">By <a href="${s.about}" rel="author">${esc(AUTHOR.name)}</a></span><span>Published <time datetime="${published}">${fmtDate(site, published)}</time></span><span>Updated <time datetime="${updated}">${fmtDate(site, updated)}</time></span><span>${c.minutes} min read</span></p>
+          </div>
+          ${share(post, url, 'top')}
+        </div>
+      </div>
+      <div class="wrap bp-w bp-layout">
         ${toc(c)}
         <div class="bp-main">
           <div class="bp-body">${c.html}</div>

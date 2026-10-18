@@ -21,6 +21,7 @@
 .bcover .mock__btn { margin-top: 3cqw; padding: 3cqw 7cqw; font-size: 4cqw; }
 .bcover--photo { aspect-ratio: 16 / 10; background: var(--blush-100); }
 .bcover--photo img { width: 100%; height: 100%; object-fit: cover; }
+.bcard .bcover { border-radius: var(--r-lg); }
 a:hover > .bcover .phone { transform: translateY(-4px); }
 
 .bl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: clamp(28px, 3vw, 40px) clamp(16px, 2vw, 28px); }
@@ -67,30 +68,34 @@ a:hover > .bcover .phone { transform: translateY(-4px); }
 .bp-progress { position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 39; height: 2px; pointer-events: none; }
 .bp-progress i { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
 
-.bp-head { display: grid; gap: 20px clamp(28px, 4vw, 64px); padding-block: clamp(12px, 2vw, 28px) clamp(24px, 3vw, 40px); align-items: start; }
-.bp-head__txt { display: grid; gap: 14px; justify-items: start; min-width: 0; }
+/* a post, top to bottom: crumbs and category, the H1, a wide feature picture, the standfirst with byline and share,
+   then the article (contents on the left, body on the right). Everything sits in one 1200px column. */
+.wrap.bp-w { max-width: calc(1200px + 2 * var(--gut)); }
+.bp-head { display: grid; gap: 10px; justify-items: start; padding-block: clamp(10px, 1.6vw, 22px) clamp(18px, 2vw, 26px); }
 .bp-cat { color: inherit; text-decoration: none; }
 .bp-cat:hover { text-decoration: underline; text-underline-offset: 4px; }
-.bp-h1 { font: 400 clamp(30px, 3.4vw, 46px)/1.08 var(--f-display); letter-spacing: -0.02em; text-wrap: balance; max-width: 22ch; }
-.bp-standfirst { font-size: clamp(17px, 1.25vw, 19px); line-height: 1.55; color: var(--ink-2); max-width: 62ch; text-wrap: pretty; }
-.bp-by { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+.bp-h1 { font: 400 clamp(30px, 3.4vw, 46px)/1.08 var(--f-display); letter-spacing: -0.02em; text-wrap: balance; max-width: 28ch; }
+.bp-hero { display: grid; gap: 8px; margin-block: 0; }
+.bp-hero img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--r-xl); background: var(--blush-100); }
+@media (min-width: 900px) { .bp-hero img { aspect-ratio: 2 / 1; } }
+@media (min-width: 1280px) { .bp-hero img { aspect-ratio: 21 / 9; } }
+.bp-hero figcaption { font-size: 13px; line-height: 1.45; color: var(--ink-3); }
+.bp-intro { display: grid; gap: 16px; padding-block: clamp(18px, 2.4vw, 28px) clamp(20px, 2.4vw, 32px); }
+.bp-standfirst { font-size: clamp(17px, 1.3vw, 20px); line-height: 1.55; color: var(--ink-2); max-width: 68ch; text-wrap: pretty; }
+.bp-intro__row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding-bottom: clamp(18px, 2vw, 24px); border-bottom: 1px solid var(--line); }
+.bp-by { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .bp-by__mark { width: 38px; height: 38px; padding: 7px; border-radius: 12px; background: var(--blush-100); flex: none; }
-.bp-by__txt { display: grid; gap: 2px; }
-.bp-by__name { font-weight: 500; }
+.bp-by__name { font-weight: 500; color: var(--ink); }
 .bp-by__name a { color: var(--ink); text-decoration-color: var(--line-2); text-underline-offset: 3px; }
 .bp-by__name a:hover { color: var(--accent); }
-.bp-by__meta { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13.5px; color: var(--ink-3); }
-.bp-cover { display: grid; gap: 8px; min-width: 0; }
-.bp-cover .bcover { aspect-ratio: 16 / 9; border-radius: var(--r-lg); }
-.bp-cover .bcover .phone { width: 20%; }
-.bp-cover figcaption { font-size: 13px; line-height: 1.45; color: var(--ink-3); }
-@media (min-width: 1024px) {
-  /* the cover is a small card beside the words, never taller than them */
-  .bp-head { grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 340px); }
-  .bp-cover { margin-top: 6px; }
-  .bp-cover .bcover { aspect-ratio: 4 / 3; }
-  .bp-cover .bcover .phone { width: 30%; }
-}
+.bp-by__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; font-size: 13.5px; color: var(--ink-3); }
+/* the share row beside the byline: icon buttons (their names stay for screen readers) */
+.bp-share.bp-share--top { margin-top: 0; position: relative; display: flex; align-items: center; gap: 10px; }
+.bp-share--top .bp-share__h { font-size: 12px; }
+.bp-share--top .bp-share__list { margin-top: 0; gap: 6px; }
+.bp-share--top .bp-share__a { width: 36px; min-height: 36px; padding: 0; justify-content: center; }
+.bp-share--top .bp-share__a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bp-share--top .bp-share__ok { position: absolute; right: 0; top: 100%; margin-top: 4px; min-height: 0; white-space: nowrap; }
 
 .bp-layout { display: grid; gap: 24px; padding-bottom: clamp(56px, 6vw, 96px); }
 .bp-main { min-width: 0; max-width: 720px; }

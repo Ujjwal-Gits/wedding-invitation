@@ -56,12 +56,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "olive-grove",
-    "alt": "The Olive Grove invitation design on a phone: a watercolor olive wreath around the couple’s names on linen",
-    "caption": "Olive Grove, a Nimtto design. A folded linen card opens and a watercolor olive wreath grows around your names."
+    "type": "image",
+    "src": "/site/blog/how-to-collect-rsvps-online-v1",
+    "alt": "Guests at a candlelit garden party table hold up smartphones among pink and peach flowers under string lights",
+    "caption": "Replies now arrive the way guests already talk: on their phones."
   },
-  "og": "/site/og/blog-how-to-collect-rsvps-online.jpg"
+  "og": "/site/og/blog-how-to-collect-rsvps-online-v2.jpg"
 }
 ---
 Here is how to collect RSVPs online: choose one place where every guest replies, and put that link and a firm reply-by date on your invitation. Ask only what your caterer and seating plan need. Then send a friendly reminder before the deadline, and call anyone who still has not answered.

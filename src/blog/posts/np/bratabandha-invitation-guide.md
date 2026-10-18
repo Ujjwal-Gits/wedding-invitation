@@ -57,18 +57,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "mock",
-    "mock": {
-      "ne": "व्रतबन्ध",
-      "kick": "You are warmly invited to the bratabandha of",
-      "name": "Aarav",
-      "when": "Wednesday, 12 Falgun 2083",
-      "where": "Our home, Lalitpur"
-    },
-    "alt": "A sample bratabandha invitation on a phone, with the boy’s name, the date in Bikram Sambat and an RSVP button",
-    "caption": "A sample bratabandha invitation. We design yours with your family’s names, sait and venue."
+    "type": "image",
+    "src": "/site/blog/bratabandha-invitation-guide-v1",
+    "alt": "A folded saffron cloth, a brass plate of rice, a marigold garland, a brass water vessel and banana leaves on a brick courtyard",
+    "caption": "The simple things of a bratabandha morning, laid out in a family courtyard."
   },
-  "og": "/site/og/blog-bratabandha-invitation-guide.jpg"
+  "og": "/site/og/blog-bratabandha-invitation-guide-v2.jpg"
 }
 ---
 A bratabandha invitation card should name the boy as your son, give the ceremony date in Bikram Sambat with the AD date beside it, list the times for the rites and the bhoj, and give the venue with a contact person. The date comes from your priest's sait, so fix that first, book the venue, and send invitations about three to four weeks before the day.

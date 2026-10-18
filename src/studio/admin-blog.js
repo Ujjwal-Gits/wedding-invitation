@@ -188,7 +188,7 @@ export function blogAdmin(ctx) {
     const designOpts = () => meta.designs[post.site] || [];
     function drawCover() {
       const c = post.cover || (post.cover = { type: 'design' });
-      const types = [['design', 'A design'], ['photo', 'A photo'], ...(c.type === 'mock' ? [['mock', 'Sample card']] : [])];
+      const types = [['photo', 'A landscape photo'], ...(c.type === 'image' ? [['image', 'Feature image (built in)']] : []), ['design', 'A design'], ...(c.type === 'mock' ? [['mock', 'Sample card']] : [])];
       const seg = h('div.seg.seg--sm', { role: 'group', 'aria-label': 'Cover' });
       segOf(seg, types, c.type, (v) => {
         if (v === 'photo' && !c.src) { fileIn.click(); return; }
@@ -204,6 +204,8 @@ export function blogAdmin(ctx) {
       } else if (c.type === 'photo') {
         pick = h('div.row', c.src ? h('img.blogx__thumb', { src: c.src.replace(/-1600\.webp$/, '-800.webp'), alt: '' }) : null,
           h('button.btn.btn--sm', { type: 'button', onclick: () => fileIn.click() }, icon('upload', 15), c.src ? 'Replace photo' : 'Upload photo'));
+      } else if (c.type === 'image') {
+        pick = h('div.row', h('img.blogx__thumb', { src: `${c.src}-800.webp`, alt: '' }), h('p.hint', 'The built-in feature picture. Upload a photo to use your own.'));
       } else pick = h('p.hint', 'A sample invitation card (built in). Choose a design or upload a photo to change it.');
       fill(coverBox, seg, pick, fileIn);
     }
@@ -325,7 +327,7 @@ export function blogAdmin(ctx) {
         h('div.field', h('label.label', { for: 'bx-slug' }, 'Link name'), h('div.blogx__slug', slugPre, slug), err.slug = h('p.field__err.blogx__err', { hidden: true, role: 'alert' })),
         fieldBox('category', 'Category', category),
         h('div.field', h('label.label', { for: 'bx-excerpt' }, 'Standfirst'), excerpt, h('p.hint', 'One or two plain sentences under the title. Also the card text on the blog page.'), counter(excerpt, 240))),
-      sec('Cover', coverBox, fieldBox('alt', 'Picture description (alt text)', coverAlt), fieldBox('caption', 'Caption', coverCap)),
+      sec('Feature picture', h('p.hint', 'A wide landscape photo (at least 1600 px wide) shown under the title and on the blog cards. A design shows only on the cards.'), coverBox, fieldBox('alt', 'Picture description (alt text)', coverAlt), fieldBox('caption', 'Caption', coverCap)),
       sec('Body', h('p.hint', 'Markdown: ## and ### headings make the table of contents. Raw HTML is shown as text.'), tools, fieldBox('body', 'Text', body)),
       sec('Questions people ask', h('p.hint', 'Shown under the post and given to Google as an FAQ. 6 to 8 real questions is a good number.'), faqBox),
       sec('Designs and related guides', h('span.label', 'Designs shown under the post (up to 4)'), designsBox, h('span.label', 'Related guides (others fill in by category)'), relatedBox),

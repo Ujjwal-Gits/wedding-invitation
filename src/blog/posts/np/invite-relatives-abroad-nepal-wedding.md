@@ -55,12 +55,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "himal",
-    "alt": "The Himal invitation design on a phone: Machhapuchhre at sunrise with the couple’s names",
-    "caption": "Himal, a Nimtto design. Sunrise over the Himalaya, then a quiet photo story of the two of you."
+    "type": "image",
+    "src": "/site/blog/invite-relatives-abroad-nepal-wedding-v1",
+    "alt": "A laptop on a table by a window at dusk beside a red wedding invitation, a cup of tea and a vase of orange marigolds",
+    "caption": "For family far away, the invitation and the call home often arrive together."
   },
-  "og": "/site/og/blog-invite-relatives-abroad-nepal-wedding.jpg"
+  "og": "/site/og/blog-invite-relatives-abroad-nepal-wedding-v2.jpg"
 }
 ---
 To **invite relatives abroad to a wedding in Nepal**, tell them early, by phone, as soon as the sait is fixed. Follow with a save the date, then the full invitation with each event's date in both BS and AD, the time marked as Nepal Time, the venue and a way to RSVP. Send it where they already talk to you: WhatsApp, Viber, Messenger or email.

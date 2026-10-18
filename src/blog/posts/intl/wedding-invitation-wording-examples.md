@@ -58,12 +58,12 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-18",
   "cover": {
-    "type": "design",
-    "design": "wax-seal",
-    "alt": "The Wax Seal invitation design on a phone: a white envelope closed with a sage wax seal",
-    "caption": "Wax Seal, a Nimtto design. Guests break a sage wax seal and the letter rises out of the envelope."
+    "type": "image",
+    "src": "/site/blog/wedding-invitation-wording-examples-v1",
+    "alt": "Blank deckled ivory cards and envelopes sealed with sage wax seals, a brass fountain pen and peach and blush garden roses on linen",
+    "caption": "Every invitation begins with a blank card and the right words."
   },
-  "og": "/site/og/blog-wedding-invitation-wording-examples.jpg"
+  "og": "/site/og/blog-wedding-invitation-wording-examples-v2.jpg"
 }
 ---
 The best wedding invitation wording examples share one plan: who is hosting, a line asking guests to come, your names, the date and time, the place, and how to reply. Formal wording spells everything out in words. Casual wording keeps the same order but sounds like you talking.
