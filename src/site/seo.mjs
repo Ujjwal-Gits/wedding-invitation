@@ -161,6 +161,7 @@ const DESIGN_SEO = {
   shagun: ['Shagun Thali Animated Nepali Wedding Invitation', 'A brass shagun thali turns as you scroll, each offering opening a part of your wedding, sealed with a sindoor tika. RSVP, maps and BS dates. From {p}.'],
   sandesh: ['Sandesh Dove Post Wedding Invitation With RSVP', 'Two doves bring a lac-sealed letter, then every ceremony arrives as a stamped postcard. RSVP, maps and Nepali dates. From {p}. Watch it fly.'],
   vasant: ['Vasant Butterfly Garden Wedding Invitation Online', 'Butterflies lift off a marigold garland, then each ceremony’s own flower blooms as you scroll. RSVP, maps and BS dates. From {p}. See it bloom.'],
+  zari: ['Zari Trousseau Trunk 3D Wedding Invitation', 'A velvet bridal trunk unlocks and its gold-thread trays lift out: the date, families, ceremonies, map and RSVP, with BS dates. From {p}. See it open.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };

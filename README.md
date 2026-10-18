@@ -39,6 +39,7 @@ dashboard to create, customise, publish and track invitations.
 | 32 | **Shagun** `/shagun/` | The brass shagun thali on a banana leaf: the silk lifts off, a sindoor thumb-tika seals the card, and the thali turns as you scroll, one offering per part of the wedding. |
 | 33 | **Sandesh** `/sandesh/` | Doves bring a lac-sealed letter to a morning rooftop; it unfolds to the names, then the doves deliver each event as a hand-stamped postcard. Both sites. |
 | 34 | **Vasant** `/vasant/` | Spring garden: butterflies lift off a marigold and rose garland; in a sticky window each ceremony's own flower blooms as its card scrolls by. |
+| 35 | **Zari** `/zari/` | A sapphire velvet trousseau trunk: the padlock drops, the lid swings back, and the trays lift out in 3D one by one, each holding a part of the day. |
 
 The showroom at `/` links every theme and the studio.
 

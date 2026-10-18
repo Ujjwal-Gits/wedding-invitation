@@ -43,6 +43,7 @@ export const THEMES = [
   ['shagun', 'Shagun', 'शगुन', 'flowers', 'A brass shagun thali turns as you scroll. Each thing on it opens a part of your wedding, sealed with a sindoor thumb-tika.', 'a brass shagun thali with marigolds, a diyo and a kalash on a banana leaf', ['hindu']],
   ['sandesh', 'Sandesh', 'सन्देश', 'cards', 'Two doves bring a lac-sealed letter to a morning rooftop. Break the seal, then each event arrives as a hand-stamped postcard.', 'two white doves on a lac-sealed letter over a rooftop of roses and bougainvillea', ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other']],
   ['vasant', 'Vasant', 'वसन्त', 'flowers', 'Butterflies lift off a fresh marigold and rose garland. As you scroll, each ceremony’s own flower opens and butterflies come to it.', 'butterflies lifting off a marigold and rose garland above the couple’s names', ['hindu', 'buddhist', 'kirat', 'other']],
+  ['zari', 'Zari', 'ज़री', 'cards', 'A sapphire velvet trousseau trunk unlocks. Its trays lift out one by one: a gold coin with the date, the families, the ceremonies, a map and your reply.', 'a sapphire velvet trousseau trunk with gold zardozi borders and a brass padlock', ['hindu', 'buddhist', 'kirat', 'other']],
 ].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));
@@ -92,7 +93,7 @@ export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शा
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
 export const TIER_LABEL = { saral: 'Standard', shubha: 'Pro', shahi: 'Pro Max' };
 const TIERS = {
-  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar', 'kalapi', 'kalpataru', 'shagun', 'sandesh', 'vasant'],
+  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar', 'kalapi', 'kalpataru', 'shagun', 'sandesh', 'vasant', 'zari'],
   saral: ['kham', 'mala', 'gurans', 'sayapatri', 'jhyal', 'chitra', 'dhaka'],
 };
 export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');
