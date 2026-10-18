@@ -88,12 +88,20 @@ body.theme-kalapi {
 .kp-g__glow { position: absolute; left: 50%; top: var(--ry); width: calc(var(--L) * 2.4); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(232, 201, 135, 0.18), rgba(232, 201, 135, 0.06) 55%, rgba(232, 201, 135, 0)); opacity: 0.55; transform: scale(0.7); pointer-events: none; }
 .kp-root--gate { top: var(--ry); }
-.kp-bird { position: absolute; left: 50%; top: var(--ry); width: 0; height: 0; }
-.kp-bird__in { position: absolute; width: calc(var(--L) * 0.58 * 0.2442); height: calc(var(--L) * 0.58); left: calc(var(--L) * -0.0708); top: calc(var(--L) * 0.235); transform-origin: 50% 40%; }
+.kp-g { cursor: pointer; }
+.kp-bird { position: absolute; left: 50%; top: var(--fy); width: 0; height: 0; }
+.kp-bird__in { position: absolute; width: calc(var(--L) * 0.8 * 0.2442); height: calc(var(--L) * 0.8); left: calc(var(--L) * -0.0977); top: calc(var(--L) * -0.8); transform-origin: 50% 100%; }
 .kp-bird__in img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
-.kp-bird__body { clip-path: inset(0 0 49% 0); }
-.kp-bird__train { clip-path: inset(40% 0 0 0); transform-origin: 50% 40%; }
-.kp-g.is-fanned .kp-bird__train { opacity: 0; }
+/* the bird stands on the painted terrace parapet (garlands and diyas), which fades into the cloth above the buttons */
+.kp-g__ground { position: absolute; left: 0; right: 0; top: calc(var(--fy) - 10px); height: 118px; pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 52%, transparent 100%); mask: linear-gradient(#000 0 52%, transparent 100%); }
+.kp-g__ground img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
+.kp-g__tap { position: absolute; left: 50%; top: calc(var(--ry) + var(--L) * 0.1); translate: -50% 0; margin: 0; display: flex; align-items: center; gap: 12px; white-space: nowrap;
+  font: 600 11px/1 var(--su-f-body); letter-spacing: 0.3em; text-transform: uppercase; color: var(--kp-gold-hi); opacity: 0.8; pointer-events: none; }
+.kp-g__tap .l-ne { font-size: 14px; }
+.kp-g__tap::before, .kp-g__tap::after { content: ''; width: 28px; height: 1px; background: linear-gradient(90deg, transparent, var(--kp-gold)); }
+.kp-g__tap::after { background: linear-gradient(90deg, var(--kp-gold), transparent); }
+.kp-g.is-fanned .kp-g__tap { display: none; }
 .kp-gnames { position: absolute; left: 50%; top: calc(var(--ry) - var(--L) * 0.03); translate: -50% -50%; font-size: calc(var(--L) * 0.128); text-align: center; pointer-events: none; }
 body.is-opening .kp-g :is(.kp-f, .kp-root, .kp-bird__in, .kp-gnames) { will-change: transform, opacity; }
 .theme-kalapi .su-gate__ui { color: var(--kp-ivory); }
@@ -112,6 +120,15 @@ body.is-opening .kp-g :is(.kp-f, .kp-root, .kp-bird__in, .kp-gnames) { will-chan
 .theme-kalapi .su-hero.kp-hero { display: block; min-height: 100svh; place-items: normal; }
 .kp-hero__cloth { position: absolute; inset: 0; z-index: -1; background: radial-gradient(80% 60% at 50% 44%, rgba(30, 106, 90, 0.38), rgba(10, 43, 46, 0) 70%), radial-gradient(120% 90% at 50% 120%, rgba(5, 25, 27, 0.6), transparent 60%); }
 .kp-hero > .kp-hem--top { position: absolute; left: 0; right: 0; top: 0; z-index: 2; }
+/* phones: the palace in the rain above the names, fading into the cloth (the crop stops above the garlands) */
+.kp-hero__art { display: none; }
+@media (max-width: 760px) {
+  .kp-hero__art { display: block; position: absolute; left: 0; right: 0; top: var(--hem); height: 44svh; z-index: 0; overflow: hidden; }
+  .kp-hero__art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; }
+  .kp-hero__art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 43, 46, 0.45) 0%, rgba(10, 43, 46, 0) 20%, rgba(15, 61, 65, 0) 62%, rgba(15, 61, 65, 0.88) 90%, var(--kp-teal) 100%); }
+  .theme-kalapi .kp-hero__in { justify-content: flex-start; padding-top: calc(var(--hem) + 42svh); padding-bottom: 72px; }
+  .kp-hero .kp-names { font-size: clamp(50px, 13.6vw, 64px); }
+}
 .kp-crest { --L: clamp(58px, 9svh, 84px); position: absolute; left: 0; right: 0; top: calc(var(--hem) + var(--L) * 0.62); height: 0; z-index: 3; }
 .kp-crest .kp-root { top: 0; }
 .kp-mono { position: absolute; left: 0; top: 0; translate: -50% -52%; display: flex; align-items: baseline; gap: 0.18em; font: 500 calc(var(--L) * 0.3)/1 var(--su-f-display); color: var(--kp-gold-hi); letter-spacing: 0.02em; white-space: nowrap; }
@@ -146,7 +163,8 @@ body.is-opening .kp-g :is(.kp-f, .kp-root, .kp-bird__in, .kp-gnames) { will-chan
 .kp-paint__img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
 .kp-over { position: absolute; z-index: 2; left: calc(var(--ox) * 100%); top: calc(var(--oy) * 100%); translate: -50% -50%; }
 .kp-over > * { transform-origin: 50% 50%; }
-.kp-tag { position: absolute; z-index: 3; left: 50%; top: 10px; translate: -50% 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px 4px 4px; white-space: nowrap;
+.kp-tags { position: absolute; left: 0; top: 50%; width: 0; height: 0; z-index: 2; }
+.kp-tag { position: absolute; left: 0; top: 0; translate: -50% -50%; display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px 4px 4px; white-space: nowrap;
   background: rgba(243, 234, 214, 0.95); color: var(--kp-ink); font: 600 10.5px/1 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .kp-tag b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; background: var(--kp-red); color: var(--kp-gold-hi); font: 600 13px/1 var(--su-f-display); letter-spacing: 0.04em; }
 .kp-tag .l-ne { font-size: 13px; }
@@ -202,7 +220,9 @@ body.is-opening .kp-g :is(.kp-f, .kp-root, .kp-bird__in, .kp-gnames) { will-chan
 .kp-mini { flex: none; width: min(76vw, 300px); }
 .kp-mini__in { position: relative; box-sizing: border-box; padding: 10px 10px 18px; text-align: center; color: var(--kp-ink); background: var(--kp-ivory); border: 6px solid var(--kp-red);
   box-shadow: inset 0 0 0 2px var(--kp-ivory), inset 0 0 0 3px var(--kp-gold), 0 18px 40px rgba(5, 20, 22, 0.42); }
-.kp-mini__vig { aspect-ratio: 16 / 9.5; box-shadow: 0 0 0 1px var(--kp-gold); }
+.kp-mini__vig { display: block; aspect-ratio: 16 / 9.5; overflow: hidden; box-shadow: 0 0 0 1px var(--kp-gold); }
+.kp-mini__vig img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; }
+.kp-mini__vig img.is-generic { object-position: 50% 60%; }
 .kp-mini__no { width: 34px; height: 34px; margin: -18px auto 4px; position: relative; display: grid; place-items: center; border-radius: 50%; background: var(--kp-red); color: var(--kp-gold-hi);
   box-shadow: 0 0 0 2px var(--kp-ivory), 0 0 0 3px var(--kp-gold); font: 600 14px/1 var(--su-f-display); letter-spacing: 0.04em; }
 .kp-mini__t { margin: 2px 8px 0; font: 600 25px/1.15 var(--su-f-display); color: var(--kp-teal); text-wrap: balance; }
@@ -261,7 +281,7 @@ body.is-opening .kp-g :is(.kp-f, .kp-root, .kp-bird__in, .kp-gnames) { will-chan
 .kp-flat .kp-over > * { scale: none !important; }
 .kp-flat .kp-moon { width: min(80vw, 360px); }
 .kp-flat .kp-arch__pic img { max-height: 64svh; }
-.kp-flat .kp-tag { display: none; }
+.kp-flat .kp-tags { display: none; }
 .kp-flat .kp-seam { display: block; width: 100%; height: 18px; }
 .kp-flat .kp-seam::before { -webkit-mask: var(--kp-hem-motif) 0 50% / auto 100% repeat-x; mask: var(--kp-hem-motif) 0 50% / auto 100% repeat-x; }
 .kp-flat .kp-seam i { width: 24px; height: 30px; }

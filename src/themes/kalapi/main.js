@@ -60,9 +60,19 @@ const cusp = (cls = '') => `<svg class="kp-cusp ${cls}" viewBox="0 0 100 130" pr
 const rule = (cls = '') => `<span class="kp-rule ${cls}" aria-hidden="true"><i></i><b></b><i></i></span>`;
 
 /** a crop of one of the paintings, centred on (cx, cy) of the picture, `z` times the window's width */
-const vignette = (n, cx, cy, z = 2.8, cls = '', flip = false) => `<span class="kp-vig ${cls}" aria-hidden="true" style="--cx:${cx};--cy:${cy};--z:${z}${flip ? ';--fx:-1' : ''}">${art(`pano-${n}`, 'pano', '(max-width: 760px) 900px, 1000px')}</span>`;
+const vignette = (n, cx0, cy, z = 2.8, cls = '', flip = false) => { const cx = Math.min(1 - 0.5 / z, Math.max(0.5 / z, cx0)); return `<span class="kp-vig ${cls}" aria-hidden="true" style="--cx:${cx};--cy:${cy};--z:${z}${flip ? ';--fx:-1' : ''}">${art(`pano-${n}`, 'pano', '(max-width: 760px) 900px, 1000px')}</span>`; };
 // a different painted detail for each ceremony's miniature (cycled)
-const VIGS = [[1, 0.5, 0.6, 2.6], [2, 0.17, 0.66, 2.6], [5, 0.55, 0.64, 2.5], [4, 0.86, 0.52, 2.6], [1, 0.14, 0.52, 2.8], [2, 0.88, 0.36, 2.8], [4, 0.22, 0.86, 2.6], [5, 0.15, 0.3, 2.8]];
+/** which ceremony is this? → its own painted miniature (ev-<kind>.webp); anything else gets the palace in the rain */
+function kindOf(e) {
+  const t = `${e.id || ''} ${e.title?.en || ''} ${e.title?.ne || ''}`.toLowerCase();
+  if (/mehe?ndi|मेहे?न्दी|henna/.test(t)) return 'mehendi';
+  if (/haldi|hardi|हल्दी|besar|बेसार|pithi/.test(t)) return 'haldi';
+  if (/recep|bhoj|भोज|रिसेप्सन|party|dinner/.test(t)) return 'reception';
+  if (/bibaha|biwaha|vivah|wedding|lagan|विवाह|बिहे|mandap|swayambar|kanyadan/.test(t)) return 'wedding';
+  if (/janti|जन्ती|baraat|barat|बरियात|procession/.test(t)) return 'janti';
+  return '';
+}
+const miniArt = (e) => { const k = kindOf(e); return k ? `<img src="${A}ev-${k}.webp" alt="" loading="lazy" decoding="async" />` : `<img class="is-generic" src="${A}pano-1-sm.webp" alt="" loading="lazy" decoding="async" />`; };
 
 // ───────── the scratch cover: a peacock-feather eye ─────────
 function paintEye(c, w, h, dpr, hint) {
@@ -128,13 +138,13 @@ function page(ctx) {
   /** a painted folio: the painting, its tag, and what sits on it (positioned in the painting's own coordinates) */
   const folio = (i, n, f, over, { id = '', label = '', cls = '' } = {}) => `<article class="kp-folio kp-folio--paint ${cls}"${id ? ` id="${id}"` : ''}${label ? ` aria-labelledby="${label}"` : ''} style="--f:${f}">
       <div class="kp-paint">${art(`pano-${n}`, 'pano', '(max-width: 760px) 1500px, 1700px', { cls: 'kp-paint__img' })}${over}</div>
-      ${tag(i)}
     </article>`;
 
   // ── first screen: the fan's crest on the cloth's border, the names ──
   const hero = `
   <section class="su-hero kp-hero" id="top" aria-label="${esc(`${c.bride.name.en} and ${c.groom.name.en}`)}">
     <div class="kp-hero__cloth" aria-hidden="true"></div>
+    <div class="kp-hero__art" aria-hidden="true"><img src="${A}hero-portrait.webp" alt="" fetchpriority="high" decoding="async" /></div>
     <div class="kp-hem kp-hem--top" aria-hidden="true"></div>
     <div class="kp-crest" aria-hidden="true"><span class="kp-root kp-root--crest">${fan('kp-fan--crest', '24px')}<span class="kp-mono su-in">${esc((c.bride.name.en || '').charAt(0))}<i>·</i>${esc((c.groom.name.en || '').charAt(0))}</span></span></div>
     <div class="kp-hero__in">
@@ -179,11 +189,10 @@ function page(ctx) {
 
   // ── III · the register: one Ragamala-style miniature per ceremony ──
   const minis = P.events.map((ev, i) => {
-    const [n, cx, cy, z] = VIGS[i % VIGS.length];
     const dress = ev.dress.colors.length || ev.dress.text?.en || ev.dress.text?.ne;
     return `<li class="kp-mini" id="ev-${esc(ev.id)}">
       <div class="kp-mini__in">
-        ${vignette(n, cx, cy, z, 'kp-mini__vig')}
+        <span class="kp-mini__vig" aria-hidden="true">${miniArt(ev.e)}</span>
         <p class="kp-mini__no" aria-hidden="true">${ROMAN[i] || i + 1}</p>
         <h3 class="kp-mini__t">${bi(ev.title)}</h3>
         <p class="kp-mini__date">${bi({ en: `${ev.ad.wd.en}, ${ev.ad.day} ${ev.ad.month.en} ${ev.ad.year}`, ne: ev.bs.month && ev.bs.year ? `${ev.ad.wd.ne}, ${ev.bs.month} ${ev.bs.day}, ${ev.bs.year}` : ev.ad.full.ne })}</p>
@@ -206,7 +215,6 @@ function page(ctx) {
         </header>
         <ol class="kp-reg__list">${minis}</ol>
       </div>
-      ${tag(2)}
     </article>` : '';
 
   // ── IV · the moonlit terrace: the countdown in the full moon ──
@@ -227,6 +235,7 @@ function page(ctx) {
       </div>` : '', { cls: 'kp-folio--end' });
 
   const folios = [f1, f2, f3, f4, f5].filter(Boolean).join(seam);
+  const tags = [0, 1, P.events.length ? 2 : -1, 3, 4].filter((i) => i >= 0).map(tag).join('');
   const plume = (k) => `<span class="kp-pl" style="--k:${k}">${art('feather', 'feather', '60px')}</span>`;
   const plumes = (cls, n) => `<div class="kp-plumes ${cls}" aria-hidden="true">${Array.from({ length: n }, (_, i) => plume(i)).join('')}</div>`;
 
@@ -238,7 +247,7 @@ function page(ctx) {
       ${plumes('kp-plumes--top', 9)}
       ${plumes('kp-plumes--bot', 9)}
     </div>
-    <div class="kp-hem kp-hem--bot" aria-hidden="true"><span class="kp-thread"></span></div>
+    <div class="kp-hem kp-hem--bot" aria-hidden="true"><span class="kp-thread"></span><div class="kp-tags">${tags}</div></div>
   </section>`;
 
   // ── the families: two facing miniature panels ──
@@ -327,7 +336,9 @@ const GATE = (ctx) => `
     <div class="kp-g__frame"></div>
     <span class="kp-g__glow"></span>
     <span class="kp-root kp-root--gate">${fan('kp-fan--gate', '(max-width: 760px) 90px, 110px')}</span>
-    <span class="kp-bird"><span class="kp-bird__in"><img class="kp-bird__train" src="${A}peacock.webp" alt="" decoding="async" /><img class="kp-bird__body" src="${A}peacock.webp" alt="" decoding="async" /></span></span>
+    <div class="kp-g__ground"><img src="${A}ground-sm.webp" srcset="${A}ground-sm.webp 1000w, ${A}ground.webp 1920w" sizes="100vw" alt="" decoding="async" /></div>
+    <span class="kp-bird"><span class="kp-bird__in"><img src="${A}peacock.webp" alt="" decoding="async" /></span></span>
+    <p class="kp-g__tap">${ctx.bi({ en: 'Tap the peacock', ne: 'मयूरलाई छुनुहोस्' })}</p>
     <div class="kp-gnames"><p class="su-names kp-names">${ctx.names('&amp;')}</p></div>
   </div>`;
 
@@ -336,12 +347,15 @@ function sizeGate() {
   const g = document.querySelector('.kp-g');
   if (!g) return;
   const vw = innerWidth; const vh = innerHeight;
-  // the fan's top stays on screen and the standing bird stays clear of the buttons (about 186px at the foot)
-  let Lf = Math.min(vw * 0.7, vh * 0.42, 440);
-  let ry = Math.min(Math.max(Lf + 36, vh * 0.46), vh - 186 - Lf * 0.815);
-  if (ry < Lf + 30) { Lf = (vh - 216) / 1.815; ry = Lf + 30; }
+  // top to bottom: the fan (its eye centred at --ry), the bird standing below it on the painted parapet (--fy = its feet),
+  // the parapet, then the buttons (about 160px). The whole stack fills the screen on any size.
+  const UI = 160; const TOP = 56; const GROUND = 100;
+  const Lf = Math.max(150, Math.min(vw * 0.66, (vh - UI - TOP - GROUND) / 2.24, 400));
+  const slack = Math.max(0, vh - UI - TOP - GROUND - 2.24 * Lf);
+  const ry = TOP + Lf + slack * 0.45;
   g.style.setProperty('--L', `${Math.round(Lf)}px`);
   g.style.setProperty('--ry', `${Math.round(ry)}px`);
+  g.style.setProperty('--fy', `${Math.round(ry + 1.24 * Lf)}px`);
 }
 
 // ───────── the cloth: vertical scroll → sideways along the pichwai ─────────
@@ -351,6 +365,7 @@ function cloth(ctx) {
   const view = C.querySelector('.kp-cloth__view');
   const track = C.querySelector('.kp-track');
   const thread = C.querySelector('.kp-thread');
+  const tagsEl = C.querySelector('.kp-tags');
   const top = C.querySelector('.kp-plumes--top');
   const bot = C.querySelector('.kp-plumes--bot');
   const body = document.body;
@@ -381,7 +396,11 @@ function cloth(ctx) {
     });
     return ok;
   };
-  const measure = () => { place(); D = Math.max(0, track.scrollWidth - innerWidth); };
+  const measure = () => {
+    place(); D = Math.max(0, track.scrollWidth - innerWidth);
+    const tg = [...tagsEl.children];
+    track.querySelectorAll(':scope > .kp-folio').forEach((f, i) => { if (tg[i]) tg[i].style.left = `${Math.round(f.offsetLeft + f.offsetWidth / 2)}px`; });
+  };
 
   function build() {
     gc?.revert(); gc = null; st = null;
@@ -393,6 +412,7 @@ function cloth(ctx) {
     gc = gsap.context(() => {
       measure();
       const setThread = gsap.quickSetter(thread, 'scaleX');
+      const setTags = gsap.quickSetter(tagsEl, 'x', 'px');
       const par = wide();
       const setTop = par ? gsap.quickSetter(top, 'x', 'px') : null;
       const setBot = par ? gsap.quickSetter(bot, 'x', 'px') : null;
@@ -403,7 +423,7 @@ function cloth(ctx) {
           onRefreshInit: measure,
           onUpdate(self) {
             const p = self.progress;
-            setThread(p);
+            setThread(p); setTags(-p * D);
             if (par) { setTop(-p * D * 0.9); setBot(-p * D * 1.1); }
           },
         },
@@ -495,10 +515,10 @@ const T = {
     const names = q('.kp-gnames .kp-names');
     const t0 = 0.2;
     // the train lifts: the folded train gathers up into the tail root as the feathers rise out of it
-    tl.to(q('.kp-bird__train'), { scaleY: 0.18, opacity: 0, duration: 0.75, ease: 'power2.in' }, t0);
+    tl.to(q('.kp-g__tap'), { opacity: 0, duration: 0.3, ease: 'power1.out' }, 0);
     // 21 feathers rotate out from the tail root, centre first, 60 ms apart to each side
     const mid = (N - 1) / 2;
-    const rise = () => parseFloat(getComputedStyle(g).getPropertyValue('--L')) * 0.45;
+    const rise = () => parseFloat(getComputedStyle(g).getPropertyValue('--L')) * 0.76; // from the bird's back
     fs.forEach((f, i) => tl.fromTo(f, { y: rise }, { y: 0, rotation: angle(i), scale: 1, opacity: 1, duration: 0.85, ease: 'back.out(1.2)' }, t0 + 0.1 + Math.abs(i - mid) * 0.06));
     // the train rattles once, as a dancing peacock's does
     tl.to(root, { keyframes: [{ rotation: 1.4, duration: 0.12, ease: 'sine.out' }, { rotation: -1.1, duration: 0.14, ease: 'sine.inOut' }, { rotation: 0.6, duration: 0.12, ease: 'sine.inOut' }, { rotation: 0, duration: 0.16, ease: 'sine.out' }] }, 1.3);
@@ -530,7 +550,7 @@ const T = {
     const bird = q('.kp-bird__in');
     tl.to(bird, { y: () => -innerHeight * 0.06, scale: 0.62, opacity: 0, duration: 1.5, ease: 'power1.in' }, tL - 0.05);
     tl.to(bird, { keyframes: [{ rotation: -3, duration: 0.18 }, { rotation: 3, duration: 0.3 }, { rotation: -3, duration: 0.3 }, { rotation: 2, duration: 0.3 }, { rotation: 0, duration: 0.2 }], ease: 'sine.inOut' }, tL - 0.05);
-    tl.to([q('.kp-g__bg'), q('.kp-g__frame'), q('.kp-g__glow')], { opacity: 0, duration: 0.7, ease: 'power1.inOut' }, tL + 0.75);
+    tl.to([q('.kp-g__bg'), q('.kp-g__frame'), q('.kp-g__glow'), q('.kp-g__ground')], { opacity: 0, duration: 0.7, ease: 'power1.inOut' }, tL + 0.75);
     tl.set(['.kp-hero .kp-names', '.kp-hero .kp-crest'], { opacity: 1 }, tL + 1.2);
     tl.to([root, q('.kp-gnames')], { opacity: 0, duration: 0.25, ease: 'none' }, tL + 1.21);
     return tL + 1.0;
@@ -547,6 +567,9 @@ const T = {
     }
     cloth(ctx);
   },
+
+  // a tap on the peacock (anywhere on the scene) opens, like the button
+  gateTap(ctx, go) { document.querySelector('.kp-g')?.addEventListener('click', go, { once: true }); },
 
   scratch: { paint: paintEye },
 };

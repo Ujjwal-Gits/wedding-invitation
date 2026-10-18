@@ -16,8 +16,9 @@ red and ivory. Type: Cormorant Upright (Latin display), Imperial Script (names o
 Mukta (all reading text and every Nepali digit; `locl` stays off through base.css).
 
 ## Opening: the peacock fans its tail (`T.open`)
-Dark teal cloth, a double gold rule, one peacock seen from behind with its train folded. Tap: the train gathers up and 21
-feathers rise out of it and rotate into the fan (centre first, 60 ms apart to each side), the train rattles once, the plain
+Dark teal cloth, a double gold rule, one peacock seen from behind with its train folded, standing on a painted marble
+parapet hung with marigold garlands; a quiet "Tap the peacock" cue (the whole scene opens on tap). Tap: 21 feathers rise
+out of its back and rotate into the fan (centre first, 60 ms apart to each side), the train rattles once, the plain
 teal eye of cloth opens in the middle and the names write themselves in (each line a transform-only wipe). Then the fan lifts
 and shrinks into the crest on the first screen's red-and-gold border, the names settle (FLIP) into the first screen and the
 bird walks away into the dark. About 4 s. `sizeGate()` keeps the fan on screen and the bird clear of the buttons on any size.
@@ -30,7 +31,7 @@ cusped jharokha arch, photo whole), III the register: one Ragamala-style miniatu
 date A.D. and B.S., time, venue and map, dress, order of the day as a slip), IV the moonlit terrace (the countdown in the
 full moon), V the rain-cloud band. Each painting is placed by its folio's focus (`--f`) and never leaves a gap; cartouches
 sit in the painting's own coordinates (`--ox`, `--oy`), always on sky, cloud or plain cloth, never on flowers. A gold thread
-on the lower border shows the way along; on wide screens feathers drift along both borders at 0.9x and 1.1x. Too-tall
+on the lower border shows the way along, and each folio's label rides on that border (clear of the buttons at the top); on wide screens feathers drift along both borders at 0.9x and 1.1x. Too-tall
 content is scaled a little; more, a screen under 540 px, reduced motion or `?still` gives the flat cloth (folios stacked,
 each painting whole with its cartouche under it). Keyboard focus off to the side brings its folio to the middle.
 
@@ -42,5 +43,8 @@ cloth (lightbox); the reply on an ivory cloth cartouche over a lotus spray; the 
 ## Art (all Canva AI, made for this theme; Canva design "Kalapi art board")
 - `public/themes/kalapi/art/pano-1|2|4|5(.webp|-sm.webp)`: the four painted folios (1920 and 1100 wide).
 - `feather`, `peacock` (seen from behind, train folded), `lotus`: cut-outs with transparency.
+- `ev-haldi|mehendi|janti|wedding|reception.webp`: one pichwai miniature per kind of ceremony (`kindOf()` in main.js; any
+  other ceremony shows the palace in the rain).
+- `hero-portrait.webp` (phone first screen) and `ground(-sm).webp` (the parapet under the gate's peacock): crops of pano-1.
 - Drawn in code: the brocade hems and seams (SVG masks), the cusped arch, the moon, the feather-eye scratch cover.
 - `public/themes/kalapi/thumb.jpg` (1200x900, the fan open), `gate.jpg`, `hero.jpg` (480x720).
