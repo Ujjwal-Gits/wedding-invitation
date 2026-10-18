@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "shagun": {
+    "kind": "hero",
+    "why": "The card with the sindoor thumb-tika beside the uncovered thali on its banana leaf."
   }
 }

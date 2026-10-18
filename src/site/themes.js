@@ -36,6 +36,7 @@ export const THEMES = [
   ['swayambar', 'Swayambar', 'स्वयम्बर', 'flowers', 'Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.', 'the bride and groom exchanging marigold garlands', ['hindu']],
   ['sindoor', 'Sindoor', 'सिन्दूर', 'cards', 'Red, white and black. The sindoor box opens and a red line carries your story.', 'a red and gold sindoor box on white with a red Ganesh drawing', ['hindu']],
   ['rangoli', 'Rangoli', 'रंगोली', 'flowers', 'A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos', ['hindu']],
+  ['shagun', 'Shagun', 'शगुन', 'flowers', 'A brass shagun thali turns as you scroll. Each thing on it opens a part of your wedding, sealed with a sindoor thumb-tika.', 'a brass shagun thali with marigolds, a diyo and a kalash on a banana leaf', ['hindu']],
 ].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));
@@ -85,7 +86,7 @@ export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शा
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
 export const TIER_LABEL = { saral: 'Standard', shubha: 'Pro', shahi: 'Pro Max' };
 const TIERS = {
-  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli'],
+  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'shagun'],
   saral: ['kham', 'mala', 'gurans', 'sayapatri', 'jhyal', 'chitra', 'dhaka'],
 };
 export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');

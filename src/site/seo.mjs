@@ -154,6 +154,7 @@ const DESIGN_SEO = {
   swayambar: ['Swayambar Garland Wedding Invitation With RSVP', 'Two fresh garlands swing apart and both families come together as you scroll. Guests RSVP to each ceremony, with Nepali dates. From {p}. Preview it.'],
   sindoor: ['Sindoor Red and White Wedding E-Card', 'Red, white and black: the sindoor box opens and a red line carries your story. A wedding e-card with RSVP and BS dates. From {p}. Preview it now.'],
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
+  shagun: ['Shagun Thali Animated Nepali Wedding Invitation', 'A brass shagun thali turns as you scroll, each offering opening a part of your wedding, sealed with a sindoor tika. RSVP, maps and BS dates. From {p}.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };
