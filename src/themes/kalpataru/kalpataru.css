@@ -44,9 +44,11 @@ html[data-lang='ne'] .kt-lede { font-size: 18px; line-height: 1.8; }
 .kt-g { position: absolute; inset: 0; overflow: hidden; }
 .kt-g__paper { position: absolute; inset: 0;
   background: radial-gradient(90% 60% at 50% 42%, #FFFBEF 0%, #FBF3DE 55%, #F1E3C2 100%); }
-.kt-g__canopy { position: absolute; left: 0; right: 0; top: 0; height: 46svh; opacity: 0.95;
-  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 96%); mask-image: linear-gradient(to bottom, #000 58%, transparent 96%); }
-.kt-g__canopy img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 74%; }
+.kt-g__canopy { position: absolute; left: 0; right: 0; bottom: 0; top: -40svh; } /* the crown's sky stays above the screen */
+.kt-g__canopy img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 68%; }
+/* a calm corner of paper under the language and music buttons */
+.kt-g::after, .kt-corner { content: ''; position: absolute; right: 0; top: 0; z-index: 4; width: 210px; height: 140px; pointer-events: none;
+  background: radial-gradient(100% 100% at 100% 0, rgba(251, 245, 229, 0.97) 0, rgba(251, 245, 229, 0.88) 38%, rgba(251, 245, 229, 0) 100%); }
 .kt-g__hang { position: absolute; left: 50%; top: 0; width: min(68vw, 38svh, 330px); translate: -50% 0; display: flex; flex-direction: column; align-items: center;
   perspective: 1400px; transform-origin: 50% 0; animation: kt-sway 6s ease-in-out infinite alternate; }
 @keyframes kt-sway { from { transform: rotate(-0.9deg); } to { transform: rotate(0.9deg); } }
@@ -74,7 +76,8 @@ html[data-lang='ne'] .kt-lede { font-size: 18px; line-height: 1.8; }
 .kt-leaf__amp { font-size: 0.6em; color: var(--su-accent); line-height: 1.3; }
 .kt-leaf__d { margin: 2px 0 0; font: 500 14px/1.4 var(--su-f-body); color: var(--kt-bark); }
 .kt-leaf__d .l-ne { font-size: 15px; }
-.theme-kalpataru .su-gate__ui { bottom: max(26px, 4.5svh); }
+.theme-kalpataru .su-gate__ui { bottom: max(22px, 4svh); padding: 18px 18px 12px; background: rgba(255, 252, 244, 0.96); border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(74, 52, 38, 0.1), 0 24px 44px -24px rgba(31, 26, 19, 0.55); }
 .theme-kalpataru .su-gate__line { font: 400 19px/1.4 var(--su-f-display); color: var(--su-ink); }
 .theme-kalpataru .su-gate__line .l-ne { font: 500 18px/1.5 var(--kt-f-deva-d); }
 .theme-kalpataru .su-quiet { color: var(--kt-bark); }
@@ -84,6 +87,9 @@ html[data-lang='ne'] .kt-lede { font-size: 18px; line-height: 1.8; }
 .kt-hero { position: relative; height: 100svh; min-height: 600px; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center;
   padding: max(64px, 8svh) 16px 0; overflow: hidden;
   background: radial-gradient(70% 55% at 50% 72%, #FFF8E4 0%, rgba(255, 248, 228, 0) 70%), var(--su-bg); }
+.kt-hero::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 260px; pointer-events: none; opacity: 0.7;
+  background: url('/themes/kalpataru/art/crown-sm.webp') 50% 0 / max(100%, 640px) auto no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 10%, transparent 92%); mask-image: linear-gradient(to bottom, #000 10%, transparent 92%); }
 .kt-hero__copy { position: relative; z-index: 2; width: 100%; max-width: 560px; padding-bottom: 6px; text-align: center; }
 .kt-hero__inv { margin: 0 0 10px; font: 500 15px/1.5 var(--kt-f-deva-d); color: var(--su-accent); }
 .kt-hero__inv .l-en { font-family: var(--kt-f-deva-d); }
@@ -115,6 +121,7 @@ html[data-lang='ne'] .kt-hero__date { font-size: 18px; }
 .theme-kalpataru .su-cue { color: var(--kt-bark); }
 @media (min-width: 900px) {
   .kt-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr; align-items: center; padding: 0 5vw; column-gap: 4vw; }
+  .kt-hero::before { display: none; }
   .kt-hero__copy { justify-self: end; text-align: left; }
   .kt-hero__names { align-items: flex-start; font-size: clamp(56px, 5.6vw, 92px); }
   .kt-hero__line { margin-left: 0; }
@@ -136,6 +143,19 @@ html[data-lang='ne'] .kt-hero__date { font-size: 18px; }
     -webkit-mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%);
     -webkit-mask-composite: source-in;
     mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%);
+    mask-composite: intersect; }
+}
+.kt-deco { position: absolute; display: block; pointer-events: none; }
+.kt-deco--strand, .kt-deco--diya { filter: drop-shadow(0 8px 6px rgba(40, 25, 10, 0.28)); }
+.kt-side { display: none; }
+@media (min-width: 900px) {
+  .kt-side { display: block; position: absolute; top: 0; z-index: 1; will-change: transform; pointer-events: none; }
+  .kt-side--l { left: 0; }
+  .kt-side--r { right: 0; }
+  .kt-side img { position: absolute; left: 0; display: block; width: 100%; height: var(--th);
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 50%, transparent 96%), linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, #000 0, #000 50%, transparent 96%), linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
     mask-composite: intersect; }
 }
 .kt-flow { position: absolute; left: 0; right: 0; top: 0; z-index: 2; display: flex; flex-direction: column-reverse; align-items: center; gap: 36svh; padding-inline: 16px; will-change: transform; }
@@ -274,7 +294,7 @@ html[data-lang='ne'] .kt-ev__date { font-size: 18px; }
 
 /* without motion: three still crops of the tree between the parts, no pin */
 .kt-climb.is-static .kt-stage { height: auto; overflow: visible; background: var(--kt-warm); }
-.kt-climb.is-static .kt-tree, .kt-climb.is-static .kt-gauge { display: none; }
+.kt-climb.is-static .kt-tree, .kt-climb.is-static .kt-gauge, .kt-climb.is-static .kt-side, .kt-climb.is-static .kt-corner { display: none; }
 .kt-climb.is-static .kt-flow { position: static; flex-direction: column; gap: 56px; padding: 56px 16px 72px; transform: none !important; }
 .kt-climb.is-static .kt-st { opacity: 1; transform: none; }
 .kt-climb.is-static .kt-crop { display: block; width: calc(100% + 32px); max-width: 900px; height: 58svh; margin: 0 -16px; overflow: hidden;

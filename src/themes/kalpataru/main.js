@@ -22,6 +22,25 @@ const PANELS = [
   { n: 'branches', s: 1.02, x: -0.01, ov: 0.42, c: 0.5 },
   { n: 'crown', s: 1.04, x: -0.02, ov: 0.48, c: 0.5 },
 ];
+// fresh wedding decoration on the tree: [panel, x (panel width), top (panel height), width (tree widths), kind, hindu?]
+const DECOR = [
+  ['roots', 0.5, 0.79, 0.96, 'petals'],
+  ['roots', 0.1, 0.04, 0.052, 'strand'], ['roots', 0.9, 0.08, 0.05, 'strand'],
+  ['trunk', 0.52, 0.12, 0.66, 'toran'],
+  ['trunk', 0.08, 0.3, 0.05, 'strand'], ['trunk', 0.93, 0.26, 0.05, 'strand'],
+  ['fork', 0.47, 0.64, 0.5, 'toran'],
+  ['fork', 0.3, 0.2, 0.06, 'diya', true],
+  ['branches', 0.14, 0.5, 0.055, 'strand'], ['branches', 0.86, 0.44, 0.055, 'strand'], ['branches', 0.32, 0.16, 0.05, 'strand'],
+  ['branches', 0.72, 0.24, 0.06, 'diya', true], ['branches', 0.22, 0.74, 0.06, 'diya', true],
+  ['crown', 0.18, 0.62, 0.05, 'strand'], ['crown', 0.82, 0.58, 0.05, 'strand'],
+];
+const DECOR_AR = { strand: 5.844, diya: 3.352, petals: 0.456, toran: 0.347 };
+const decoImg = (d, i) => {
+  const [, , , , kind, hindu] = d;
+  const set = { toran: '/themes/_nepali/toran-sm.webp 900w, /themes/_nepali/toran.webp 1800w', petals: `${ART}petals-sm.webp 520w, ${ART}petals.webp 900w` }[kind];
+  const src = kind === 'toran' ? '/themes/_nepali/toran-sm.webp' : `${ART}${kind}${kind === 'petals' ? '-sm' : ''}.webp`;
+  return `<img class="kt-deco kt-deco--${kind}" data-i="${i}" src="${src}"${set ? ` srcset="${set}" sizes="(min-width: 900px) 900px, 100vw"` : ''} alt="" decoding="async"${hindu ? ' data-hindu' : ''} />`;
+};
 const pic = (name, { cls = '', sizes = '100vw', alt = '', lazy = true, w = [640, 1152] } = {}) => `<img class="${cls}" src="${ART}${name}-sm.webp" srcset="${ART}${name}-sm.webp ${w[0]}w, ${ART}${name}.webp ${w[1]}w" sizes="${sizes}" alt="${alt}" decoding="async"${lazy ? ' loading="lazy"' : ''} />`;
 const one = (name, { cls = '', alt = '', lazy = true } = {}) => `<img class="${cls}" src="${ART}${name}.webp" alt="${alt}" decoding="async"${lazy ? ' loading="lazy"' : ''} />`;
 const reducedNow = () => document.body.classList.contains('kt-still');
@@ -198,7 +217,9 @@ function page(ctx) {
 
   <section class="kt-climb" id="kt-climb" aria-label="${esc(txt('hero.line').en || 'The invitation')}">
     <div class="kt-stage" id="kt-stage">
-      <div class="kt-tree" id="kt-tree" aria-hidden="true">${PANELS.map((p) => `<div class="kt-p kt-p--${p.n}" data-n="${p.n}">${pic(p.n, { sizes: '(min-width: 900px) 760px, 112vw', lazy: p.n !== 'roots' })}</div>`).join('')}</div>
+      <div class="kt-tree" id="kt-tree" aria-hidden="true">${PANELS.map((p) => `<div class="kt-p kt-p--${p.n}" data-n="${p.n}">${pic(p.n, { sizes: '(min-width: 900px) 1000px, 112vw', lazy: p.n !== 'roots' })}</div>`).join('')}${DECOR.map(decoImg).join('')}</div>
+      <div class="kt-side kt-side--l" aria-hidden="true"></div><div class="kt-side kt-side--r" aria-hidden="true"></div>
+      <i class="kt-corner" aria-hidden="true"></i>
       <div class="kt-flow" id="kt-flow">${stations.join('')}</div>
       <div class="kt-gauge" aria-hidden="true"><i class="kt-gauge__knot"></i></div>
     </div>
@@ -248,11 +269,14 @@ function climb(ctx) {
   if (reducedNow()) { sec.classList.add('is-static'); sts.forEach((s) => s.classList.add('is-here')); return; }
   sec.classList.add('is-live');
 
+  const DEPTH = 1.22;
+  const sideL = stage.querySelector('.kt-side--l'); const sideR = stage.querySelector('.kt-side--r');
+  let sidesOn = false; let sideBase = 0;
   let vw = 0; let vh = 0; let W = 0; let Ht = 0; let D = 1; let keys = []; let geo = {}; let centres = []; let gh = 0;
   function layout() {
     vw = stage.clientWidth; vh = stage.clientHeight;
     const wide = vw >= 900;
-    W = wide ? Math.min(820, vh * 0.92) : Math.max(vw * 1.12, 400);
+    W = wide ? Math.min(1000, vh * 1.1, vw * 0.72) : Math.max(vw * 1.12, 400);
     // stack the paintings from the roots up
     let bottom = 0; geo = {};
     PANELS.forEach((p, i) => {
@@ -269,6 +293,25 @@ function climb(ctx) {
       e.style.setProperty('--fade', `${Math.min(60, ((p.ov * W) / g.h) * 100 + 2).toFixed(1)}%`);
     });
     tree.style.height = `${Ht}px`; tree.style.width = `${W}px`;
+    // the decoration hangs from its painting's branches
+    tree.querySelectorAll('.kt-deco').forEach((el) => {
+      const [n, x, y, w, kind] = DECOR[Number(el.dataset.i)];
+      const g = geo[n]; const ww = w * W;
+      Object.assign(el.style, { left: `${g.left + x * g.w - ww / 2}px`, top: `${g.top + y * g.h}px`, width: `${ww}px`, height: `${ww * DECOR_AR[kind]}px` });
+    });
+    sidesOn = wide;
+    if (wide) {
+      // desktop: painted canopy fills the sides, a nearer layer that moves a little faster than the tree
+      const sw = Math.round((vw - W) / 2 + W * 0.2); const th = sw * (1778 / 640); const step = th * 0.8;
+      const travel = (Ht - vh) * DEPTH + vh; const n = Math.ceil(travel / step) + 1;
+      [sideL, sideR].forEach((side, k) => {
+        if (side.childElementCount !== n) side.innerHTML = Array.from({ length: n }, (_, i) => `<img src="${ART}side-${(i + k) % 2 ? 'b' : 'a'}.webp" alt="" decoding="async" style="top:${(i * step).toFixed(1)}px" />`).join('');
+        else [...side.children].forEach((im, i) => { im.style.top = `${(i * step).toFixed(1)}px`; });
+        Object.assign(side.style, { width: `${sw}px`, height: `${(n - 1) * step + th}px` });
+        side.style.setProperty('--th', `${th}px`);
+      });
+      sideBase = -((n - 1) * step + th - vh);
+    }
     // the paper side: the first and last station sit in the middle of the screen at the two ends
     const first = sts[0]; const last = sts[sts.length - 1];
     flow.style.paddingBottom = `${Math.max(24, (vh - first.offsetHeight) / 2)}px`;
@@ -309,6 +352,13 @@ function climb(ctx) {
     flow.style.transform = `translate3d(0,${yc.toFixed(1)}px,0)`;
     tree.style.transform = `translate3d(${t.x.toFixed(1)}px,${t.y.toFixed(1)}px,0)`;
     knot.style.transform = `translate3d(0,${((1 - p) * gh).toFixed(1)}px,0)`;
+    if (sidesOn) {
+      // nearer than the tree: it travels DEPTH times as far, from its bottom (the roots) to its top (the crown)
+      const f = (Ht - vh) > 0 ? (t.y + (Ht - vh)) / (Ht - vh) : 1;
+      const y = sideBase * (1 - f);
+      sideL.style.transform = `translate3d(0,${y.toFixed(1)}px,0)`;
+      sideR.style.transform = `translate3d(0,${y.toFixed(1)}px,0) scaleX(-1)`;
+    }
     for (let i = 0; i < sts.length; i++) {
       const s = centres[i] + yc;
       const near = Math.abs(s - vh / 2) < vh * 0.46;
@@ -475,7 +525,7 @@ const SPEC = {
     flock(tl, T0 + DUR - 0.25);
     tl.set(gateEl, { autoAlpha: 0 }, T0 + DUR + 0.1);
     tl.to({}, { duration: 0.01 }, T0 + DUR + 0.15);
-    return T0 + DUR - 0.2;
+    return T0 + DUR * 0.5; // the words settle in as the tree lands
   },
 
   ambient: () => {},
