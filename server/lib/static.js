@@ -24,7 +24,7 @@ export function cacheControlFor(rel) {
   if (CRAWL_FILE.test(rel)) return CRAWL;
   if (/\.html?$/i.test(rel) || /\.(?:css|js|mjs)$/i.test(rel)) return 'no-cache'; // pages and unhashed code: always revalidate
   if (/^(?:themes|photos|audio|art|site\/fonts)\//.test(rel)) return ART;
-  if (/\.(?:svg|ico|png|jpe?g|webp|avif|woff2?)$/i.test(rel)) return SMALL;
+  if (/\.(?:svg|ico|png|jpe?g|webp|avif|woff2?|webmanifest)$/i.test(rel)) return SMALL;
   return 'no-cache';
 }
 

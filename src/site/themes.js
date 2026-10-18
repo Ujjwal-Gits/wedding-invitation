@@ -3,6 +3,15 @@
 // Designs are never linked live from the website: only stills, the design pages and the watermarked showcase.
 // Categories: flowers | doors | cards | film. Religions: what the theme's slots.js declares (absent = hindu only).
 const ALL = ['hindu', 'muslim', 'christian', 'other'];
+/** As src/core/faith.js themeReligions: a design for 'other' (no religious art) suits Buddhist and Kirat too. */
+export function withNeutral(list) {
+  return list.includes('other') ? [...new Set([...list, 'buddhist', 'kirat'])] : list;
+}
+/** The Nepal site's faiths, in the order its faith section and filter show them: [id, English, Nepali]. */
+export const SITE_FAITHS = [
+  ['hindu', 'Hindu', 'हिन्दू'], ['buddhist', 'Buddhist', 'बौद्ध'], ['kirat', 'Kirat', 'किराँत'],
+  ['christian', 'Christian', 'क्रिश्चियन'], ['muslim', 'Muslim', 'मुस्लिम'], ['other', 'Other or mixed', 'अन्य वा मिश्रित'],
+];
 export const THEMES = [
   ['kham', 'Kham', 'खाम', 'cards', 'A paper envelope with a red wax seal. It opens into a clear card with all your events.', 'a handmade-paper envelope with a red wax seal', ['hindu', 'other']],
   ['dhoka', 'Dhoka', 'ढोका', 'doors', 'A clean white card. The golden door of Patan opens in 3D to show your names.', 'the golden door of Patan beside the couple’s names', ['hindu']],
@@ -31,7 +40,7 @@ export const THEMES = [
   ['swayambar', 'Swayambar', 'स्वयम्बर', 'flowers', 'Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.', 'the bride and groom exchanging marigold garlands', ['hindu', 'other']],
   ['sindoor', 'Sindoor', 'सिन्दूर', 'cards', 'Red, white and black. The sindoor box opens and a red line carries your story.', 'a red and gold sindoor box on white with a red Ganesh drawing', ['hindu']],
   ['rangoli', 'Rangoli', 'रंगोली', 'flowers', 'A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos', ['hindu']],
-].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
+].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions: withNeutral(religions), thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));
 
@@ -51,7 +60,7 @@ export const PLAN_DESC = {
   custom: 'A new design, made only for your occasion.',
 };
 
-export const RELIGION_LABEL = { hindu: 'Hindu', muslim: 'Muslim', christian: 'Christian', other: 'Other' };
+export const RELIGION_LABEL = { hindu: 'Hindu', buddhist: 'Buddhist', kirat: 'Kirat', muslim: 'Muslim', christian: 'Christian', other: 'Other' };
 
 // Shown only when GET /api/site is unavailable (the admin edits the real plans, methods and contact in the studio).
 export const FALLBACK_SITE = {

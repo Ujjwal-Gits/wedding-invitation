@@ -85,6 +85,12 @@
 .occ--lead > :not(.occ__phones) { max-width: 58%; position: relative; z-index: 1; }
 .occ--custom { background: transparent !important; border: 1.5px dashed var(--field); }
 .occs__more, .sec__more { margin-top: 32px; }
+/* the faith cards (home page): the occasion card on a white section, so it gets a hairline instead of a fill */
+.faiths__ne { margin-top: 10px; font: 400 clamp(20px, 1.8vw, 26px)/1.4 var(--f-ne); color: var(--accent); }
+.occs--faith .occ { min-height: 0; border: 1px solid var(--line-2); }
+.occs--faith .occ__line { max-width: 40ch; }
+@media (min-width: 1024px) { .occs.occs--faith { grid-template-columns: repeat(3, 1fr); } }
+.filters__link { flex: none; align-self: center; margin-left: 8px; font-size: 14px; white-space: nowrap; }
 .sec__more--center { text-align: center; }
 @media (min-width: 640px) { .occs { grid-template-columns: repeat(2, 1fr); } .occ--lead { grid-column: 1 / -1; } }
 @media (min-width: 1024px) {

@@ -1,32 +1,39 @@
 // Faith: one invitation, the couple's community (docs/PLATFORM.md "Religion"). Hindu invitations look exactly as
-// they always have. For a Muslim, Christian or other invitation, the shared layers swap the sacred parts:
-//   - the invocation line (॥ श्री गणेशाय नमः ॥ → بسم الله الرحمن الرحيم, a Bible verse, or nothing),
+// they always have. For a Buddhist, Kirat, Muslim, Christian or other invitation, the shared layers swap the sacred parts:
+//   - the invocation line (॥ श्री गणेशाय नमः ॥ → ॥ नमो बुद्धाय ॥, بسم الله الرحمن الرحيم, a Bible verse, or nothing),
 //   - the sacred image in a theme's Ganesh slot (→ a fine-line emblem drawn here, in the theme's own gold),
 //   - a few Hindu words in the designs' default texts (शुभ विवाह → निकाह / पवित्र विवाह …),
 //   - the default ceremonies and wording of a new invitation (server: lib/invitations.js starter()).
-// A personal guest link may carry its own version of the symbols (?v=neutral|hindu|muslim|christian): only the
+// Buddhist: ॥ नमो बुद्धाय ॥ ("homage to the Buddha") and a Dharma wheel on a lotus; the wording asks the blessings of
+// the Triple Gem (Buddha, Dharma, Sangha). Kirat (Rai, Limbu, Yakkha, Sunuwar): no invocation and the plain emblem,
+// wording that asks the blessings of ancestors and elders, "Sewaro" in the message to guests. Both leave their own
+// rites to the couple: the defaults stay simple and never invent a ceremony.
+// A theme for 'other' (no religious art of its own) suits Buddhist and Kirat invitations too (themeReligions).
+// A personal guest link may carry its own version of the symbols (?v=neutral|hindu|buddhist|muslim|christian): only the
 // symbol, the invocation and the card's verse change, never the couple's words.
 //
 // Plain module: no DOM access at import time, so the server imports it too. The DOM helpers (styles, the safety net
 // that wraps Arabic in its own font) are only called by src/core/data.js in the browser.
 
-export const RELIGIONS = Object.freeze(['hindu', 'muslim', 'christian', 'other']);
+export const RELIGIONS = Object.freeze(['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other']);
 /** What a guest link may ask for (`v`): 'neutral' = no religious symbol or invocation at all. */
-export const VERSIONS = Object.freeze(['neutral', 'hindu', 'muslim', 'christian']);
+export const VERSIONS = Object.freeze(['neutral', 'hindu', 'buddhist', 'muslim', 'christian']);
 export const isReligion = (v) => RELIGIONS.includes(v);
 export const religionOf = (cfg) => (isReligion(cfg?.religion) ? cfg.religion : 'hindu');
 
 export const RELIGION_LABEL = Object.freeze({
   hindu: { en: 'Hindu', ne: 'हिन्दू' },
+  buddhist: { en: 'Buddhist', ne: 'बौद्ध' },
+  kirat: { en: 'Kirat', ne: 'किराँत' },
   muslim: { en: 'Muslim', ne: 'मुस्लिम' },
   christian: { en: 'Christian', ne: 'क्रिश्चियन' },
   other: { en: 'Other / none', ne: 'अन्य' },
 });
 
-/** The symbols a page shows: the guest link's version, else the invitation's own ('other' shows none). */
+/** The symbols a page shows: the guest link's version, else the invitation's own ('other' and 'kirat' show none). */
 export function symbolsFor(religion, version) {
   if (VERSIONS.includes(version)) return version;
-  return religion === 'other' ? 'neutral' : religion;
+  return VERSIONS.includes(religion) ? religion : 'neutral';
 }
 
 // ───────── words ─────────
@@ -35,6 +42,7 @@ const BISMILLAH = 'بسم الله الرحمن الرحيم';
 /** The invocation line at the top of the opening or card. Neutral: none. */
 export const INVOCATION = Object.freeze({
   hindu: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' },
+  buddhist: { en: '॥ नमो बुद्धाय ॥', ne: '॥ नमो बुद्धाय ॥' },
   muslim: { en: BISMILLAH, ne: BISMILLAH },
   christian: { en: '“Love never fails.” 1 Cor. 13:8', ne: '“प्रेम कहिल्यै असफल हुँदैन।”' },
   neutral: { en: '', ne: '' },
@@ -42,6 +50,7 @@ export const INVOCATION = Object.freeze({
 /** The verse on the full card (config.invitation.shloka: `sa` is the original line, `en` its meaning). */
 export const SHLOKA = Object.freeze({
   hindu: null, // the invitation's own (the sample's Vakratunda shloka)
+  buddhist: { sa: '॥ नमो बुद्धाय ॥', en: 'Homage to the Buddha' },
   muslim: { sa: BISMILLAH, en: 'In the name of Allah, the Most Gracious, the Most Merciful' },
   christian: { sa: 'एक जनाभन्दा दुई जना असल हुन्छन्, किनकि तिनीहरूको परिश्रमको असल प्रतिफल हुन्छ। — उपदेशक ४:९', en: '“Two are better than one, because they have a good return for their labour.” Ecclesiastes 4:9' },
   neutral: { sa: '', en: '' },
@@ -49,6 +58,8 @@ export const SHLOKA = Object.freeze({
 /** The wedding's name where a design prints शुभ विवाह. */
 export const TITLE = Object.freeze({
   hindu: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' },
+  buddhist: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' },
+  kirat: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' },
   muslim: { en: 'Nikah', ne: 'निकाह' },
   christian: { en: 'Holy Matrimony', ne: 'पवित्र विवाह' },
   other: { en: 'Wedding Celebration', ne: 'शुभ विवाह' }, // neutral in English (international invitations of no stated faith)
@@ -79,8 +90,8 @@ const SWAPS = [
   [/^Lagan patra$/g, () => 'The date', 'word'],
   [/^लगन पत्र$/g, () => 'शुभ मिति', 'word'],
   [/Until the sacred fire is lit/g, () => 'Until the big day'],
-  [/By the grace of our family deity and the blessings of our elders/g, (r) => ({ muslim: 'By the grace of Allah and the blessings of our elders', christian: 'By the grace of God and the blessings of our elders' }[r] || 'With the blessings of our elders')],
-  [/कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले/g, (r) => ({ muslim: 'अल्लाहको असीम कृपा र गुरुजनको आशीर्वादले', christian: 'परमेश्वरको असीम अनुग्रह र गुरुजनको आशीर्वादले' }[r] || 'गुरुजनको आशीर्वादले')],
+  [/By the grace of our family deity and the blessings of our elders/g, (r) => ({ muslim: 'By the grace of Allah and the blessings of our elders', christian: 'By the grace of God and the blessings of our elders', buddhist: 'With the blessings of the Triple Gem and our elders', kirat: 'With the blessings of our ancestors and elders' }[r] || 'With the blessings of our elders')],
+  [/कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले/g, (r) => ({ muslim: 'अल्लाहको असीम कृपा र गुरुजनको आशीर्वादले', christian: 'परमेश्वरको असीम अनुग्रह र गुरुजनको आशीर्वादले', buddhist: 'त्रिरत्न र गुरुजनको आशीर्वादले', kirat: 'पितृ तथा गुरुजनको आशीर्वादले' }[r] || 'गुरुजनको आशीर्वादले')],
   [/Now we would love you beside us as we take the seven steps\./g, () => 'Now we would love you beside us as we begin our life together.'],
 ];
 /** A design's default words for this community (Hindu: unchanged). sentences: only the sample's sentences. */
@@ -157,6 +168,19 @@ const EMBLEM = {
     ${crescent(100, 130, 44, 116, 118, 38)}
     ${star(123, 109, 11, 4.6, 5, -72)}
     <g stroke-opacity=".7">${[0, 1, 2, 3, 4, 5, 6].map((i) => `<circle cx="${52 + i * 16}" cy="206" r="1.6"/>`).join('')}</g>`,
+  // a Dharma wheel (eight spokes) resting on an open lotus, a small jewel at its crown
+  buddhist: () => `
+    <circle cx="100" cy="104" r="50"/><circle cx="100" cy="104" r="43" stroke-opacity=".55"/>
+    <circle cx="100" cy="104" r="11"/><circle cx="100" cy="104" r="3.4"/>
+    ${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => {
+    const c = Math.cos((a * Math.PI) / 180); const s = Math.sin((a * Math.PI) / 180);
+    return `<path d="M${r1(100 + 11 * c)} ${r1(104 + 11 * s)}L${r1(100 + 43 * c)} ${r1(104 + 43 * s)}"/><circle cx="${r1(100 + 50 * c)}" cy="${r1(104 + 50 * s)}" r="3.2"/>`;
+  }).join('')}
+    <path d="M100 24C105 31 107 35 107 38.5A7 7 0 0 1 93 38.5C93 35 95 31 100 24Z"/><path d="M100 46V54"/>
+    <path d="M100 160V184"/>
+    <path d="M100 224C86 214 80 198 84 182C92 190 98 202 100 224C102 202 108 190 116 182C120 198 114 214 100 224Z"/>
+    <path d="M100 224C80 222 64 210 58 194C72 196 88 206 100 224C112 206 128 196 142 194C136 210 120 222 100 224Z" stroke-opacity=".75"/>
+    <path d="M100 224C74 226 50 218 38 204C56 202 80 210 100 224C120 210 144 202 162 204C150 218 126 226 100 224Z" stroke-opacity=".55"/>`,
   // two wedding rings joined under a slender cross, in an open laurel wreath
   christian: () => `
     ${laurel(100, 128, 84, 104, 236, 7, { side: 1 })}
@@ -174,7 +198,7 @@ const EMBLEM = {
     <circle cx="100" cy="124" r="40" stroke-opacity=".5"/>
     <path d="M100 206C92 214 84 218 76 216M100 206C108 214 116 218 124 216M100 206L90 222M100 206L110 222" fill="none"/>`,
 };
-const ALT = { muslim: 'A crescent and star under a pointed arch', christian: 'A cross above two joined wedding rings', neutral: 'A laurel wreath with jasmine' };
+const ALT = { buddhist: 'A Dharma wheel on an open lotus', muslim: 'A crescent and star under a pointed arch', christian: 'A cross above two joined wedding rings', neutral: 'A laurel wreath with jasmine' };
 const cache = new Map();
 
 const HEX = /^#[0-9a-f]{3,8}$/i;
@@ -220,10 +244,12 @@ export const haloFor = (manifest, themeColors, slotHalo) => (slotHalo || manifes
 
 // ───────── a theme's communities ─────────
 
-/** The communities a theme suits (its slots.js `religions`); a theme that says nothing is Hindu only. */
+/** The communities a theme suits (its slots.js `religions`); a theme that says nothing is Hindu only. A theme for
+ *  'other' (no religious art of its own) suits Buddhist and Kirat invitations too: their symbols are swapped in. */
 export function themeReligions(manifest) {
   const r = Array.isArray(manifest?.religions) ? manifest.religions.filter(isReligion) : [];
-  return r.length ? [...new Set(r)] : ['hindu'];
+  if (r.includes('other')) r.push('buddhist', 'kirat');
+  return r.length ? RELIGIONS.filter((x) => r.includes(x)) : ['hindu'];
 }
 export const suits = (manifest, religion) => themeReligions(manifest).includes(isReligion(religion) ? religion : 'hindu');
 
@@ -256,6 +282,14 @@ export const CEREMONIES = Object.freeze({
       { time: '12:00', title: { en: 'Vows and the exchange of rings', ne: 'प्रतिज्ञा तथा औँठी साटासाट' } },
     ] }),
     ev('reception', 'Reception', 'प्रीतिभोज', { en: 'Dinner, music and a great many photographs.', ne: 'रात्रिभोज, सङ्गीत र धेरै तस्बिरहरू।' }, 0, '18:30', { colors: ['#1e2a4a', '#c9963f', '#2b1a12'] }),
+  ],
+  buddhist: [
+    ev('wedding', 'Wedding ceremony', 'विवाह समारोह', { en: 'Prayers and blessings for the two of you, with both families together.', ne: 'प्रार्थना र आशीर्वादसहित, दुवै परिवारको उपस्थितिमा विवाह।' }, 0, '11:00', { colors: ['#8e1424', '#c9963f', '#f4e9d6'] }),
+    ev('reception', 'Reception', 'प्रीतिभोज', { en: 'Dinner, music and a great many photographs.', ne: 'रात्रिभोज तथा साँस्कृतिक साँझ।' }, 1, '18:30', { colors: ['#1e2a4a', '#c9963f', '#2b1a12'] }),
+  ],
+  kirat: [
+    ev('wedding', 'Wedding ceremony', 'विवाह समारोह', { en: 'The wedding in our own tradition, with both families together.', ne: 'आफ्नै परम्पराअनुसार, दुवै परिवारको उपस्थितिमा विवाह।' }, 0, '11:00', { colors: ['#8e1424', '#c9963f', '#f4e9d6'] }),
+    ev('reception', 'Reception', 'प्रीतिभोज', { en: 'Dinner, music, dance and a great many photographs.', ne: 'रात्रिभोज, गीत र नाचसहितको साँझ।' }, 1, '18:30', { colors: ['#1e2a4a', '#c9963f', '#2b1a12'] }),
   ],
   other: [
     ev('wedding', 'Wedding ceremony', 'विवाह समारोह', { en: 'The wedding, with both families together.', ne: 'दुवै परिवारको उपस्थितिमा विवाह।' }, 0, '11:00', { colors: ['#8e1424', '#c9963f', '#f4e9d6'] }),
@@ -291,6 +325,14 @@ export function startingWords(religion, { bride = '', groom = '' } = {}) {
       body: { en: `By the grace of our family deity and the blessings of our elders, the auspicious marriage of ${groom} with ${bride} has been fixed.`, ne: both ? `कुलदेवताको असीम कृपा र गुरुजनको आशीर्वादले ${groom} र ${bride}को शुभ विवाह हुने शुभ साइत जुरेको छ।` : '' },
       closing: { en: 'Your presence will be the greatest gift to us.', ne: 'हजुरको उपस्थिति नै हाम्रा लागि सबैभन्दा ठूलो उपहार हुनेछ।' },
     },
+    buddhist: {
+      body: { en: `With the blessings of the Triple Gem and our elders, ${groom} and ${bride} are to be married.`, ne: both ? `त्रिरत्न र गुरुजनको आशीर्वादले ${groom} र ${bride}को शुभ विवाह हुने भएको छ।` : '' },
+      closing: { en: 'Your presence and your blessings will be the greatest gift to us.', ne: 'हजुरको उपस्थिति र आशीर्वाद नै हाम्रा लागि सबैभन्दा ठूलो उपहार हुनेछ।' },
+    },
+    kirat: {
+      body: { en: `With the blessings of our ancestors and elders, ${groom} and ${bride} are to be married.`, ne: both ? `पितृ तथा गुरुजनको आशीर्वादले ${groom} र ${bride}को शुभ विवाह हुने भएको छ।` : '' },
+      closing: { en: 'Your presence and your blessings will be the greatest gift to us.', ne: 'हजुरको उपस्थिति र आशीर्वाद नै हाम्रा लागि सबैभन्दा ठूलो उपहार हुनेछ।' },
+    },
     muslim: {
       body: { en: `By the grace of Allah and with the blessings of our elders, the Nikah of ${groom} with ${bride} has been arranged.`, ne: both ? `अल्लाहको असीम कृपा र गुरुजनको आशीर्वादले ${groom} र ${bride}को निकाह हुने भएको छ।` : '' },
       closing: { en: 'Your presence and your duas will be the greatest gift to us.', ne: 'हजुरको उपस्थिति र दुआ नै हाम्रा लागि सबैभन्दा ठूलो उपहार हुनेछ।' },
@@ -304,14 +346,15 @@ export function startingWords(religion, { bride = '', groom = '' } = {}) {
       closing: { en: 'Your presence will be the greatest gift to us.', ne: 'हजुरको उपस्थिति नै हाम्रा लागि सबैभन्दा ठूलो उपहार हुनेछ।' },
     },
   }[isReligion(religion) ? religion : 'hindu'];
-  return { ...W2, shloka: SHLOKA[religion === 'other' ? 'neutral' : religion] || null, title: TITLE[isReligion(religion) ? religion : 'hindu'] };
+  const rel = isReligion(religion) ? religion : 'hindu';
+  return { ...W2, shloka: SHLOKA[symbolsFor(rel)] || null, title: TITLE[rel] };
 }
 
 /** The share-message greeting for the Send module (WhatsApp, Viber). */
 export function shareMessage(religion, { names, url, to = '' }) {
-  const hello = { hindu: 'Namaste', muslim: 'Assalamu Alaikum', christian: 'Greetings', other: 'Namaste' }[isReligion(religion) ? religion : 'hindu'];
-  const what = { hindu: `the wedding (Shubha Bibaha) of ${names}`, muslim: `the Nikah of ${names}`, christian: `the Holy Matrimony of ${names}`, other: `the wedding of ${names}` }[isReligion(religion) ? religion : 'hindu'];
-  const bless = { hindu: 'Your presence and blessings would mean a great deal to us.', muslim: 'Your presence and duas would mean a great deal to us.', christian: 'Your presence and prayers would mean a great deal to us.', other: 'Your presence would mean a great deal to us.' }[isReligion(religion) ? religion : 'hindu'];
+  const hello = { hindu: 'Namaste', buddhist: 'Namaste', kirat: 'Sewaro', muslim: 'Assalamu Alaikum', christian: 'Greetings', other: 'Namaste' }[isReligion(religion) ? religion : 'hindu'];
+  const what = { hindu: `the wedding (Shubha Bibaha) of ${names}`, buddhist: `the wedding of ${names}`, kirat: `the wedding of ${names}`, muslim: `the Nikah of ${names}`, christian: `the Holy Matrimony of ${names}`, other: `the wedding of ${names}` }[isReligion(religion) ? religion : 'hindu'];
+  const bless = { hindu: 'Your presence and blessings would mean a great deal to us.', buddhist: 'Your presence and blessings would mean a great deal to us.', kirat: 'Your presence and blessings would mean a great deal to us.', muslim: 'Your presence and duas would mean a great deal to us.', christian: 'Your presence and prayers would mean a great deal to us.', other: 'Your presence would mean a great deal to us.' }[isReligion(religion) ? religion : 'hindu'];
   return `${hello}${to ? ` ${to}` : ''}! You are warmly invited to ${what}. ${bless} Please open your invitation: ${url}`;
 }
 

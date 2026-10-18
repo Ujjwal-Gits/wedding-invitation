@@ -28,7 +28,7 @@ export const refUrl = (ref, size = 'sm') => {
 /** The WhatsApp / Viber text, in the couple's community's words (Namaste, Assalamu Alaikum, Greetings). */
 const message = (religion, names, url, to) => shareMessage(religion, { names, url, to });
 // A personal link's version of the religious symbols (?v=, applied by src/core/data.js; the server's /i/ keeps it).
-const VERSION_OPTIONS = [['', 'Same as the invitation'], ['neutral', 'Neutral: no religious symbol'], ['hindu', 'Hindu: Ganesh'], ['muslim', 'Muslim: Bismillah and a crescent'], ['christian', 'Christian: a verse and a cross']];
+const VERSION_OPTIONS = [['', 'Same as the invitation'], ['neutral', 'Neutral: no religious symbol'], ['hindu', 'Hindu: Ganesh'], ['buddhist', 'Buddhist: a Dharma wheel'], ['muslim', 'Muslim: Bismillah and a crescent'], ['christian', 'Christian: a verse and a cross']];
 
 export function shareButtons(getUrl, getText) {
   const enc = encodeURIComponent;

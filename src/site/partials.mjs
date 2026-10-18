@@ -4,7 +4,8 @@
 // the API. Plain module: Node runs it at build, never the browser.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { THEMES, BY_SLUG, CATEGORIES, FALLBACK_SITE, PLAN_DESC, PLAN_NE, TIER_LABEL, planForTier } from './themes.js';
+import { THEMES, BY_SLUG, CATEGORIES, FALLBACK_SITE, PLAN_DESC, PLAN_NE, TIER_LABEL, SITE_FAITHS, planForTier } from './themes.js';
+import { INTL_THEMES, INTL_PICKS, INTL_BY_SLUG, intlAsNp, designPage } from './intl-designs.js';
 import { phoneStill } from './stills.js';
 import { OCCASIONS, STEPS, FEATURES, FAQ, faqItems, faqItemsOf, SITE_URL } from './content.mjs';
 import { pageMeta } from './seo.mjs';
@@ -120,7 +121,7 @@ export const ORG_LD = {
   '@graph': [
     {
       '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: NAP.name, alternateName: NAP.nameNe, url: `${SITE_URL}/`,
-      logo: { '@type': 'ImageObject', '@id': `${SITE_URL}/#logo`, url: `${SITE_URL}/site/brand/nimtto-logo-512.png`, contentUrl: `${SITE_URL}/site/brand/nimtto-logo-512.png`, width: 512, height: 512, caption: 'Nimtto' },
+      logo: { '@type': 'ImageObject', '@id': `${SITE_URL}/#logo`, url: `${SITE_URL}/icon-512.png`, contentUrl: `${SITE_URL}/icon-512.png`, width: 512, height: 512, caption: 'Nimtto' },
       image: `${SITE_URL}/site/og/home.jpg`, email: NAP.email, telephone: NAP.tel,
       description: 'Nimtto makes animated invitation websites with RSVP, set up with you by a real designer: for Nepali weddings and family ceremonies in Nepal (nimtto.com, in rupees) and for weddings and every celebration worldwide (nimtto.com/international, in US dollars).',
       areaServed: [{ '@type': 'Country', name: 'Nepal' }, { '@type': 'Country', name: 'United States' }, { '@type': 'Country', name: 'United Kingdom' }, { '@type': 'Country', name: 'Canada' }, { '@type': 'Country', name: 'Australia' }, { '@type': 'Country', name: 'United Arab Emirates' }],
@@ -139,13 +140,21 @@ export const ORG_LD = {
     { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto International'], description: 'Animated invitation websites with RSVP: Nepali weddings and ceremonies in Nepal, and weddings and every celebration worldwide.', inLanguage: ['en', 'ne'], publisher: { '@id': `${SITE_URL}/#org` } },
   ],
 };
+/** Favicon, app icons, manifest and browser colour (scripts/make-icons.mjs draws them): crimson for Nepal, sage for
+ *  the international site. Shared by every page head, the blog shells and (copied by hand) pay/ and studio/. */
+export function iconTags(market = 'np') {
+  const intl = market === 'intl';
+  return `<meta name="theme-color" content="${intl ? '#4A7556' : '#9A1829'}" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site${intl ? '-intl' : ''}.webmanifest" />`;
+}
 function head(id = 'home') {
   const org = ORG_LD;
   return `${meta(id)}
-  <meta name="theme-color" content="#FFFFFF" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  ${iconTags(pageMeta(id).market)}
   <link rel="preload" href="/site/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/site/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
   ${jsonLd(org, ' data-cms="org"')}`;
@@ -154,7 +163,11 @@ function head(id = 'home') {
 /* ---------------- header and footer ---------------- */
 /** Terms, Privacy and Refunds: in every footer of both sites, and next to the PayPal buttons (src/site/payment.js) */
 export const LEGAL_LINKS = '<p class="foot__legal"><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a></p>';
+/** the international site's page for the same thing (the market switch opens it), else its home */
+const INTL_TWIN = { designs: 'designs/', occasions: 'occasions/', how: 'how-it-works/', features: 'features/', pricing: 'pricing/', contact: 'contact/', blog: 'blog/' };
 function header(active = '') {
+  const twin = `/international/${INTL_TWIN[active] || ''}`;
+  const mkt = (cls) => `<nav class="mkt ${cls}" aria-label="Choose your site"><a class="mkt__a" href="${twin}" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav>`;
   const links = NAV.map(([k, href, t]) => `<a href="${href}"${k === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
@@ -162,15 +175,17 @@ function header(active = '') {
       <a class="nav__logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto home" /></a>
       <nav class="nav__links" aria-label="Main">${links}</nav>
       <div class="nav__end">
-        <nav class="mkt mkt--bar" aria-label="Choose your site"><a class="mkt__a" href="/international/" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav>
+        ${mkt('mkt--bar')}
         <a class="nav__auth" href="/studio/" data-auth>Sign in</a>
         <a class="btn btn--accent btn--sm nav__order" href="/pricing/#plans" data-order>Order</a>
         <button class="nav__menu" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><span class="nav__menu-i" aria-hidden="true"><i></i><i></i></span><span class="nav__menu-t">Menu</span></button>
       </div>
     </div>
     <div class="sheet" id="menu">
-      <div class="sheet__top"><nav class="mkt mkt--sheet" aria-label="Choose your site"><a class="mkt__a" href="/international/" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav></div>
-      <nav class="sheet__links" aria-label="Main">${links}</nav>
+      <div class="sheet__top">
+        ${mkt('mkt--sheet')}
+        <nav class="sheet__links" aria-label="Main">${links}</nav>
+      </div>
       <div class="sheet__end">
         <a class="btn btn--accent" href="/pricing/#plans" data-order>Order an invitation</a>
         <a class="btn btn--ghost" href="/studio/" data-auth>Sign in</a>
@@ -353,12 +368,17 @@ function tierTag(tier) {
   const p = tierPlan(tier);
   return `<span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><span class="dcard__price" data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span>`;
 }
-function designCard(t, i) {
-  const cat = CATEGORIES[t.cat];
-  return `<li class="dcard" data-slug="${t.slug}" data-cat="${t.cat}" data-tier="${t.tier}" data-faiths="${(t.religions || []).join(' ')}">
-    <a class="dcard__pic" href="/designs/${t.slug}/" style="--tint:${cat.tint}" tabindex="-1" aria-hidden="true">${phone(t.slug, { eager: false })}</a>
+/** Every design on the Nepal site: its own, then the international ones (their pages are under /international/). */
+export const ALL_DESIGNS = [...THEMES, ...INTL_THEMES.map(intlAsNp)];
+/** the small line after a design's name: its Nepali name, or "International" */
+const subName = (t, cls = '') => (t.intl ? `<span${cls ? ` class="${cls}"` : ''}>International</span>` : `<span${cls ? ` class="${cls}"` : ''} lang="ne">${esc(t.ne)}</span>`);
+export function designCard(t, i) {
+  const cat = CATEGORIES[t.cat] || CATEGORIES.cards;
+  const href = designPage(t.slug);
+  return `<li class="dcard" data-slug="${t.slug}" data-cat="${t.cat}" data-tier="${t.tier}" data-faiths="${(t.religions || []).join(' ')}"${t.intl ? ' data-intl' : ''}>
+    <a class="dcard__pic" href="${href}" style="--tint:${cat.tint}" tabindex="-1" aria-hidden="true">${phone(t.slug, { eager: false })}</a>
     <div class="dcard__body">
-      <h3 class="dcard__name"><a href="/designs/${t.slug}/">${esc(t.name)}</a> <span class="dcard__ne" lang="ne">${esc(t.ne)}</span></h3>
+      <h3 class="dcard__name"><a href="${href}">${esc(t.name)}</a> ${subName(t, 'dcard__ne')}</h3>
       <p class="dcard__meta">${tierTag(t.tier)}</p>
       <p class="dcard__desc">${esc(t.concept)}</p>
       <div class="dcard__acts">
@@ -369,34 +389,41 @@ function designCard(t, i) {
   </li>`;
 }
 function designsGrid() {
-  return THEMES.map(designCard).join('');
+  return ALL_DESIGNS.map(designCard).join('');
 }
 function designsLd() {
   return jsonLd({
-    '@context': 'https://schema.org', '@type': 'ItemList', name: `Wedding Invitation Designs: ${THEMES.length} Nepali Digital Cards`, numberOfItems: THEMES.length,
-    itemListElement: THEMES.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}/designs/${t.slug}/`, name: `${t.name} Wedding Invitation Design` })),
+    '@context': 'https://schema.org', '@type': 'ItemList', name: `Wedding Invitation Designs: ${ALL_DESIGNS.length} Digital Cards`, numberOfItems: ALL_DESIGNS.length,
+    itemListElement: ALL_DESIGNS.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(t.slug)}`, name: `${t.name} Wedding Invitation Design` })),
   });
 }
 const RAIL = ['laali', 'gurans', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'sindoor', 'rajdwar', 'shree', 'mala'];
-function rail() {
-  return RAIL.map((s) => BY_SLUG[s]).map((t) => `<li class="rcard" data-slug="${t.slug}">
-    <a class="rcard__pic" href="/designs/${t.slug}/" style="--tint:${CATEGORIES[t.cat].tint}">${phone(t.slug, { sizes: SIZES.rail, alt: `The ${t.name} design: ${t.alt}` })}</a>
-    <p class="rcard__name"><a href="/designs/${t.slug}/">${esc(t.name)}</a> <span lang="ne">${esc(t.ne)}</span></p>
+/** a rail card (home page, landing rows, related designs): picture and name open the design's own page */
+export function railCard(t, sizes = SIZES.rail) {
+  const href = designPage(t.slug);
+  return `<li class="rcard" data-slug="${t.slug}">
+    <a class="rcard__pic" href="${href}" style="--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}">${phone(t.slug, { sizes, alt: `The ${t.name} design: ${t.alt}` })}</a>
+    <p class="rcard__name"><a href="${href}">${esc(t.name)}</a> ${subName(t)}</p>
     <p class="rcard__meta">${tierTag(t.tier)}</p>
-  </li>`).join('');
+  </li>`;
 }
-function designCount() { return String(THEMES.length); }
+/** the Nepal designs a row shows, then a few international ones (`intl` of INTL_PICKS) */
+export const withIntl = (slugs, intl = INTL_PICKS.length) => [...slugs.map((s) => BY_SLUG[s]).filter(Boolean), ...INTL_PICKS.slice(0, intl).map((s) => INTL_BY_SLUG[s]).filter(Boolean).map(intlAsNp)];
+function rail() {
+  return withIntl(RAIL).map((t) => railCard(t)).join('');
+}
+function designCount() { return String(ALL_DESIGNS.length); }
 
 /* ---------------- occasions ---------------- */
 function occasions(variant = 'full') {
   return OCCASIONS.map((o, i) => {
     const cta = o.designs
-      ? `<a class="occ__cta" href="/designs/">See ${THEMES.length} designs ${I.arrow}</a>`
+      ? `<a class="occ__cta" href="/designs/">See ${ALL_DESIGNS.length} designs ${I.arrow}</a>`
       : `<a class="occ__cta" href="/pricing/?plan=custom#plans" data-order data-plan="custom" data-occasion="${o.id}">${o.id === 'custom' ? 'Tell us your idea' : 'Ask for a design'} ${I.arrow}</a>`;
     const art = o.designs ? `<span class="occ__phones" aria-hidden="true">${phone('laali', { sizes: '140px' })}${phone('gurans', { sizes: '140px' })}${phone('mahal', { sizes: '140px' })}</span>` : '';
     // the wedding card is the big one on desktop: give it the ceremonies and a few facts (hidden on phones)
     const more = o.designs ? `<ul class="occ__chips">${[['Mehendi', 'मेहेन्दी'], ['Haldi', 'हल्दी'], ['Janti', 'जन्ती'], ['Wedding', 'विवाह'], ['Reception', 'स्वागत']].map(([en, ne]) => `<li>${en} <span lang="ne">${ne}</span></li>`).join('')}</ul>
-      <ul class="occ__facts"><li><b>${THEMES.length}</b><span>designs</span></li><li><b data-plan-price="saral">Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
+      <ul class="occ__facts"><li><b>${ALL_DESIGNS.length}</b><span>designs</span></li><li><b data-plan-price="saral">Rs 2,999</b><span>starting price</span></li><li><b>EN · <span lang="ne">ने</span></b><span>English and Nepali</span></li></ul>` : '';
     return `<li class="occ occ--${o.id}${o.designs ? ' occ--lead' : ''}" id="${variant === 'full' ? o.id : `occ-${o.id}`}">
       <p class="occ__ne" lang="ne">${esc(o.ne)}${o.alt ? `<span> · ${esc(o.alt)}</span>` : ''}</p>
       <h3 class="occ__en">${o.page ? `<a href="${o.page}">${esc(o.en)}</a>` : esc(o.en)}</h3>
@@ -461,10 +488,32 @@ function offersLd() {
 function tiers() {
   const blurb = { saral: 'In every plan.', shubha: `In ${tn('shubha')} and ${tn('shahi')}.`, shahi: `In ${tn('shahi')}.` };
   return ['saral', 'shubha', 'shahi'].map((tier) => {
-    const list = THEMES.filter((t) => t.tier === tier);
+    const list = ALL_DESIGNS.filter((t) => t.tier === tier); // Nepal's, then the international ones
     const p = tierPlan(tier);
-    return `<li class="tierrow"><div class="tierrow__h"><span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><h3>${list.length} designs</h3><p>${blurb[tier]} <span data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></div>
-      <div class="tierrow__list">${list.map((t) => `<a href="/designs/${t.slug}/">${phone(t.slug, { sizes: '82px' })}<span>${esc(t.name)}</span></a>`).join('')}</div></li>`;
+    return `<li class="tierrow" data-tier-row="${tier}"><div class="tierrow__h"><span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><h3 data-tier-count>${list.length} designs</h3><p>${blurb[tier]} <span data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></div>
+      <div class="tierrow__list">${list.map((t) => `<a href="${designPage(t.slug)}" data-slug="${t.slug}">${phone(t.slug, { sizes: '82px' })}<span>${esc(t.name)}</span></a>`).join('')}</div></li>`;
+  }).join('');
+}
+
+/* ---------------- faiths (home page): what the invitation does for each community in Nepal ---------------- */
+const FAITH_TEXT = {
+  hindu: 'Opens with <span lang="ne">॥ श्री गणेशाय नमः ॥</span> and Ganesh. Mehendi, Haldi, Janti, Swayambar and Saptapadi, then the reception, in classic <span lang="ne">शुभ विवाह</span> wording.',
+  buddhist: 'Opens with <span lang="ne">॥ नमो बुद्धाय ॥</span> and a Dharma wheel instead of Ganesh. The wording asks the blessings of the Triple Gem and your elders, and your own rites go in as you hold them.',
+  kirat: 'For Rai, Limbu, Yakkha and Sunuwar families. No Hindu symbols: a plain opening, the blessings of your ancestors and elders, and Sewaro to greet your guests.',
+  christian: 'A Bible verse, two rings and a cross. The ring ceremony, Holy Matrimony at church and the reception, with prayers in the wording.',
+  muslim: 'Bismillah in Arabic and a crescent. Mehndi, Nikah and Walima, with Assalamu Alaikum in the message to your guests.',
+  other: 'No religious symbol at all, or two traditions in one. We set the symbol and the words with you, and a guest link can show a neutral version.',
+};
+function faiths() {
+  return SITE_FAITHS.map(([id, en, ne]) => {
+    const n = ALL_DESIGNS.filter((t) => (t.religions || []).includes(id)).length;
+    return `<li class="occ occ--faith" id="faith-${id}">
+      <p class="occ__ne" lang="ne">${esc(ne)}</p>
+      <h3 class="occ__en">${esc(en)}</h3>
+      <p class="occ__line">${FAITH_TEXT[id]}</p>
+      <p class="occ__kind" data-faith-count="${id}">${n} designs</p>
+      <a class="occ__cta" href="/designs/?faith=${id}#dgrid">See ${id === 'other' ? 'these' : esc(en)} designs ${I.arrow}</a>
+    </li>`;
   }).join('');
 }
 
@@ -506,7 +555,7 @@ function crumbs(arg = '') {
   return crumbsLd(pairs);
 }
 
-export const PARTIALS = { ...TRUST_PARTIALS, head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS, ...BLOG_PARTIALS };
+export const PARTIALS = { ...TRUST_PARTIALS, head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faiths, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS, ...BLOG_PARTIALS };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {

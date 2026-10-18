@@ -250,7 +250,7 @@ export async function create(req, res) {
   const bride = nameText(b.bride);
   const groom = nameText(b.groom);
   if (!bride || !groom) throw httpError(400, 'Please enter both first names.');
-  if (b.religion != null && !isReligion(b.religion)) throw httpError(400, "religion must be 'hindu', 'muslim', 'christian' or 'other'.");
+  if (b.religion != null && !isReligion(b.religion)) throw httpError(400, "religion must be 'hindu', 'buddhist', 'kirat', 'muslim', 'christian' or 'other'.");
   const religion = b.religion || 'hindu';
   if (b.colors != null && (typeof b.colors !== 'object' || Array.isArray(b.colors) || Object.keys(b.colors).length > 12)) throw httpError(400, 'colors must be an object of colour tokens.');
   const weddingDate = typeof b.weddingDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.weddingDate) ? b.weddingDate : '';

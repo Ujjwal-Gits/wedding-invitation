@@ -1,4 +1,4 @@
-// The couple's community (Hindu / Muslim / Christian / Other) in the studio: the same four choices as the
+// The couple's community (Hindu / Buddhist / Kirat / Muslim / Christian / Other) in the studio: the same choices as the
 // New-invitation step. It sets `religion` (absent = Hindu). Designs, gates and first screens are filtered by
 // suits() (src/core/faith.js); a change the current design does not suit offers a suitable design first.
 import { h, icon, toast, openDialog } from './dom.js';
@@ -7,11 +7,15 @@ import { resolveDesign, cleanDesign } from '../core/mix-rules.js';
 
 export const FAITHS = [
   ['hindu', 'Hindu', 'Ganesh and ॥ श्री गणेशाय नमः ॥'],
+  ['buddhist', 'Buddhist', 'A Dharma wheel and ॥ नमो बुद्धाय ॥'],
+  ['kirat', 'Kirat', 'No Hindu symbols; ancestors and elders'],
   ['muslim', 'Muslim', 'Bismillah and a crescent'],
   ['christian', 'Christian', 'A verse, rings and a cross'],
   ['other', 'Other / none', 'No religious symbol'],
 ];
 const MARK = {
+  buddhist: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 4v6M12 14v6M4 12h6M14 12h6M6.3 6.3l4.3 4.3M13.4 13.4l4.3 4.3M17.7 6.3l-4.3 4.3M10.6 13.4l-4.3 4.3"/>',
+  kirat: '<path d="M12 21V9M12 9c-3-1-5-3.5-5-6.5 3 0 5 2.5 5 6.5zM12 13c3-1 5-3.5 5-6.5-3 0-5 2.5-5 6.5z"/>',
   muslim: '<path d="M15.5 4.6a8 8 0 1 0 3.9 13.3A6.6 6.6 0 0 1 15.5 4.6z"/><path d="M17.6 7.2l.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"/>',
   christian: '<path d="M12 3v18M7 8.5h10"/>',
   other: '<circle cx="12" cy="12" r="2"/><path d="M12 10c-1.5-3-1.2-5.6 0-6.5 1.2.9 1.5 3.5 0 6.5zM14 12c3-1.5 5.6-1.2 6.5 0-.9 1.2-3.5 1.5-6.5 0zM12 14c1.5 3 1.2 5.6 0 6.5-1.2-.9-1.5-3.5 0-6.5zM10 12c-3 1.5-5.6 1.2-6.5 0 .9-1.2 3.5-1.5 6.5 0z"/>',

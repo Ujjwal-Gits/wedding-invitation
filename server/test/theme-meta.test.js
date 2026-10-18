@@ -49,7 +49,8 @@ test('the olive-grove manifest declares its market and faith', async () => {
   assert.equal(m.market, 'intl');
   assert.equal(m.style, 'garden');
   assert.equal(m.faith, 'christian');
-  assert.deepEqual([...m.religions].sort(), ['christian', 'other']);
+  // its slots.js says christian and other; a design for 'other' suits Buddhist and Kirat invitations too
+  assert.deepEqual([...m.religions].sort(), ['buddhist', 'christian', 'kirat', 'other']);
   for (const id of ['hero.kicker', 'hero.line', 'rsvp.title', 'count.done']) assert.ok(m.texts[id], id);
 });
 
