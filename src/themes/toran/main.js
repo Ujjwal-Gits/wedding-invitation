@@ -250,11 +250,17 @@ function tunnel(ctx) {
       }
       const M = vw / vh >= 1 ? MANDAP.l : MANDAP.p;
       // a little larger than the screen, so seen through the sixth door it still fills the whole opening
-      const k = Math.max(vw / M.w, vh / M.h) * 1.12;
+      const k = Math.max(vw / M.w, vh / M.h) * (wide ? 1 : 1.12);
       const mw = M.w * k; const mh = M.h * k;
       l.style.width = `${mw.toFixed(1)}px`; l.style.height = `${mh.toFixed(1)}px`;
       const roomAy = S.room.top + ocy(5) * S.W * DOOR_AR;
-      S.mandap = { ax: S.room.x + (mw - vw) / 2, ay: roomAy + (mh - vh) / 2, bottom: (vh + mh) / 2, petals: mw * (944 / 1680) * 0.3 };
+      // where the painting's top-left lands at rest: centred on a phone; on a wide screen at the top left, so the
+      // whole mandap stands left of the plaques' column and the open courtyard floor lies under them (lower right)
+      const sx = wide ? -mw * 0.03 : -(mw - vw) / 2; // (its feathered edges just off screen)
+      const sy = wide ? -mh * 0.03 : -(mh - vh) / 2;
+      // the plaques' column at the mandap: on the open floor right of the painting's right pillar (x 0.6)
+      document.documentElement.style.setProperty('--to-mcol', wide ? `${Math.round(sx + mw * 0.6 + 16)}px` : '0px');
+      S.mandap = { ax: S.room.x - sx, ay: roomAy - sy, bottom: sy + mh, petals: mw * (944 / 1680) * 0.3 };
     });
   }
   const ocx = (i) => (DOORS[i].open[0] + DOORS[i].open[2]) / 2;
@@ -303,7 +309,7 @@ function tunnel(ctx) {
       const plaqueTop = abs(g) + g.offsetHeight;
       const tilt = k === 6 || !S.wide;
       // where the first plaque's top sits when the door is reached (fraction of the screen)
-      const at = k === 6 ? (S.mandap.bottom + S.mandap.petals) / S.vh : S.wide ? 0.9 : (S.room.top + S.W * DOOR_AR * DOORS[k].ground) / S.vh + 0.19;
+      const at = k === 6 ? (S.wide ? 0.6 : (S.mandap.bottom + S.mandap.petals) / S.vh) : S.wide ? 0.9 : (S.room.top + S.W * DOOR_AR * DOORS[k].ground) / S.vh + 0.19;
       const start = n === 0 ? 0 : Math.max(last, abs(room) - S.vh * 0.6);
       const end = Math.max(start + 1, plaqueTop - S.vh * at);
       keys.push([start, prev], [end, k]);

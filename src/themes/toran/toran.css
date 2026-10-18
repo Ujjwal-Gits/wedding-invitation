@@ -77,10 +77,17 @@ body.su.theme-toran {
 .to-floor--mandap { left: 0; top: 99.5%; width: 100%; height: 110%; background:
     linear-gradient(180deg, var(--floor), transparent 8%),
     linear-gradient(180deg, rgba(30, 12, 4, 0) 30%, rgba(30, 12, 4, 0.34) 85%),
-    url('/themes/toran/art/floor-a.webp') 50% 0 / 100% auto no-repeat, #bd7f36; }
+    url('/themes/toran/art/floor-a.webp') 50% 0 / 66.7% auto no-repeat, #bd7f36; }
+/* the courtyard's sunlit plaster runs on around the painting (seen past its edges while you walk in), and the
+   painting's own edges melt into it */
+.to-door--mandap::before { content: ''; position: absolute; left: -25%; right: -25%; top: -35%; bottom: 0;
+  background: url('/themes/toran/art/plaster.webp') 0 0 / 900px 900px repeat, #d2b47a; background-blend-mode: soft-light, normal; }
+.to-door--mandap::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, #d2b47a, rgba(210, 180, 122, 0) 3%, rgba(210, 180, 122, 0) 97%, #d2b47a), linear-gradient(180deg, #d2b47a, rgba(210, 180, 122, 0) 3%); }
+.to-door--mandap .to-floor--mandap { left: -25%; width: 150%; }
 .to-door--mandap picture::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 14%; background: linear-gradient(180deg, transparent, var(--floor)); }
 .to-shade { position: absolute; left: calc(var(--xl) * -1%); top: calc(var(--yt) * -1%); width: calc((var(--xl) + 100 + var(--xr)) * 1%); height: calc((var(--yt) + var(--yb) + 100) * 1%); background: #1E0D06; opacity: 0; pointer-events: none; }
-.to-door--mandap .to-shade { inset: 0; width: auto; height: auto; left: 0; top: 0; }
+.to-door--mandap .to-shade { left: -25%; top: -35%; width: 150%; height: 245%; }
 .to-floorfade { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(30, 12, 4, 0) 50%, rgba(30, 12, 4, 0.22) 68%, rgba(30, 12, 4, 0.55) 100%); }
 body.to-moved .su-cue { opacity: 0 !important; transition: opacity 240ms ease; pointer-events: none; }
 .to-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 90% at 50% 42%, rgba(30, 12, 4, 0) 58%, rgba(30, 12, 4, 0.32) 100%); }
@@ -216,6 +223,9 @@ html[data-lang='ne'] .to-close__en { display: none; }
 @media (min-width: 900px) {
   .to-room { padding: 0 5vw 0 54vw; }
   .to-plaque { margin-left: 0; width: min(100%, 480px); }
+  .to-card .to-plaque__in { padding: 26px 30px 24px; } /* sits on the courtyard floor beside the mandap: compact */
+  .to-room--last { padding-left: max(54vw, var(--to-mcol, 54vw)); padding-right: 3vw; }
+  .to-room--last .to-plaque { width: min(100%, 440px); }
   .to-gap { height: 84vh; }
   .to-plaque__in { padding: 36px 34px 32px; }
   .to-hero__wall { padding-top: 70px; gap: 6px; }

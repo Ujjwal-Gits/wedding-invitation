@@ -15,7 +15,7 @@ export const DOORS = [
   { file: 'door-6', ground: 0.947, floorArt: 'b', wall: '#bf7610', floor: '#8f5b23', floorY: 0.9602, open: [0.2849, 0.2507, 0.716, 0.864], about: 'a niche of lit diyos' },
 ];
 /** the seventh: the mandap at the heart of the house, full bleed (portrait and landscape paintings) */
-export const MANDAP = { floor: '#a5844e', p: { file: 'mandap-p', w: 944, h: 1680 }, l: { file: 'mandap-l', w: 1680, h: 944 } };
+export const MANDAP = { floor: '#ad874c', p: { file: 'mandap-p', w: 944, h: 1680 }, l: { file: 'mandap-l', w: 1680, h: 944 } };
 /** the hanging marigold strings (ladis) of the opening curtain: [width, height] of each cut-out */
 export const LADI = [[112, 1619], [111, 1613], [107, 1622], [103, 1617], [104, 1613]];
 /** the painted sandstone floor before each door (petals and two lit diyas at the threshold), and its plain stone colour */
