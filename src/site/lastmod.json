@@ -1,6 +1,6 @@
 {
  "/": {
-  "h": "cb5d2d8f55e822a2",
+  "h": "686ce6fc3904a68d",
   "d": "2026-10-18"
  },
  "/about/": {
@@ -16,11 +16,11 @@
   "d": "2026-10-18"
  },
  "/designs/": {
-  "h": "fc7e0bb15513d7c0",
+  "h": "d78e011bb56881d1",
   "d": "2026-10-18"
  },
  "/designs/agni/": {
-  "h": "c9285a37989dfa04",
+  "h": "42bf62056a114e04",
   "d": "2026-10-18"
  },
  "/designs/bagaicha/": {
@@ -52,7 +52,7 @@
   "d": "2026-10-18"
  },
  "/designs/hariyo/": {
-  "h": "4ebc0e9dbf9dc9f2",
+  "h": "443263218776e827",
   "d": "2026-10-18"
  },
  "/designs/himal/": {
@@ -60,11 +60,15 @@
   "d": "2026-10-18"
  },
  "/designs/janti/": {
-  "h": "a568df3a89eec71c",
+  "h": "d1ffcb857050880c",
   "d": "2026-10-18"
  },
  "/designs/jhyal/": {
-  "h": "1acd509818ec2389",
+  "h": "73f7360ea0a50967",
+  "d": "2026-10-18"
+ },
+ "/designs/kalpataru/": {
+  "h": "4b5b4f1aeeed1528",
   "d": "2026-10-18"
  },
  "/designs/kham/": {
@@ -72,11 +76,11 @@
   "d": "2026-10-18"
  },
  "/designs/laali/": {
-  "h": "3e2a9a34c15b3381",
+  "h": "a223b93ec4ba1abb",
   "d": "2026-10-18"
  },
  "/designs/mahal/": {
-  "h": "ed8a3de00efd3c84",
+  "h": "cceec4dcfce01c3d",
   "d": "2026-10-18"
  },
  "/designs/mala/": {
@@ -92,23 +96,23 @@
   "d": "2026-10-18"
  },
  "/designs/mehendi/": {
-  "h": "c1284224d95c6136",
+  "h": "0b9bc075893d4ae3",
   "d": "2026-10-18"
  },
  "/designs/nimantrana/": {
-  "h": "c795035b04dc4679",
+  "h": "a64196c9bfedce48",
   "d": "2026-10-18"
  },
  "/designs/pardaa/": {
-  "h": "d2bdc4a75e2cc2d2",
+  "h": "26cc92e7ee965d7e",
   "d": "2026-10-18"
  },
  "/designs/rajdwar/": {
-  "h": "8471e573f87c4bab",
+  "h": "fc0233025e089cd4",
   "d": "2026-10-18"
  },
  "/designs/rangoli/": {
-  "h": "5ab2c20c5ca85272",
+  "h": "1b894dd6474c7c27",
   "d": "2026-10-18"
  },
  "/designs/sayapatri/": {
@@ -116,15 +120,15 @@
   "d": "2026-10-18"
  },
  "/designs/shree/": {
-  "h": "7145eb09228cebe1",
+  "h": "042329d34e842372",
   "d": "2026-10-18"
  },
  "/designs/sindoor/": {
-  "h": "09dbad6e8923da20",
+  "h": "9ec7d19d85d493c0",
   "d": "2026-10-18"
  },
  "/designs/swayambar/": {
-  "h": "bb91c07f91315022",
+  "h": "7a31c8a512bab036",
   "d": "2026-10-18"
  },
  "/faq/": {
@@ -140,7 +144,7 @@
   "d": "2026-10-18"
  },
  "/international/": {
-  "h": "97ef5fc72e64a4e9",
+  "h": "0f62e1a6df72532f",
   "d": "2026-10-18"
  },
  "/international/about/": {
@@ -152,7 +156,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/": {
-  "h": "dacecc300d0630d9",
+  "h": "fd06a225d7909593",
   "d": "2026-10-18"
  },
  "/international/designs/amalfi/": {
@@ -160,7 +164,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/andalus/": {
-  "h": "00cc1bfaf364af0a",
+  "h": "21780eef05b4e239",
   "d": "2026-10-18"
  },
  "/international/designs/blush-roses/": {
@@ -168,7 +172,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/garden-party/": {
-  "h": "ec7d2cb358181930",
+  "h": "bb3b4855e0fa489d",
   "d": "2026-10-18"
  },
  "/international/designs/gold-arch/": {
@@ -176,7 +180,11 @@
   "d": "2026-10-18"
  },
  "/international/designs/jali/": {
-  "h": "d653b5aa34e9b0a2",
+  "h": "8ce613b2bdb8ea21",
+  "d": "2026-10-18"
+ },
+ "/international/designs/kalpataru/": {
+  "h": "acb92b8dce19a9dd",
   "d": "2026-10-18"
  },
  "/international/designs/letterpress/": {
@@ -188,7 +196,7 @@
   "d": "2026-10-18"
  },
  "/international/designs/olive-grove/": {
-  "h": "7b37991cc7dd9ff5",
+  "h": "16a1a8ca51b2469d",
   "d": "2026-10-18"
  },
  "/international/designs/rose-arch/": {
@@ -224,7 +232,7 @@
   "d": "2026-10-18"
  },
  "/international/occasions/": {
-  "h": "5c87804be9b0a796",
+  "h": "4b228fe44c00ce2c",
   "d": "2026-10-18"
  },
  "/international/occasions/anniversary/": {
@@ -264,7 +272,7 @@
   "d": "2026-10-18"
  },
  "/international/occasions/wedding/": {
-  "h": "12053027289d26b2",
+  "h": "80830da002cebacc",
   "d": "2026-10-18"
  },
  "/international/pricing/": {
@@ -288,11 +296,11 @@
   "d": "2026-10-18"
  },
  "/international/usa/": {
-  "h": "26f1550e9b3f74b8",
+  "h": "c3e6639c585ec4e8",
   "d": "2026-10-18"
  },
  "/international/wedding-invitation-with-rsvp/": {
-  "h": "231019f078470fc2",
+  "h": "0be0d45b8543a834",
   "d": "2026-10-18"
  },
  "/nepali-abroad/": {
@@ -300,7 +308,7 @@
   "d": "2026-10-18"
  },
  "/occasions/": {
-  "h": "61d711f6bf163fe2",
+  "h": "3cf7190447d3ec9f",
   "d": "2026-10-18"
  },
  "/occasions/birthday/": {
@@ -336,7 +344,7 @@
   "d": "2026-10-18"
  },
  "/pricing/": {
-  "h": "4663d8bc4673f462",
+  "h": "4916685fa4b902c1",
   "d": "2026-10-18"
  },
  "/privacy/": {

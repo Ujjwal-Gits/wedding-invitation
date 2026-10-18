@@ -11,7 +11,7 @@ const FAITHS = ['hindu', 'buddhist', 'kirat', 'christian', 'muslim', 'other'];
 
 /** a card for a design the build did not know (same markup as partials.mjs designCard) */
 function newCard(t) {
-  const href = designPage(t.slug);
+  const href = designPage(t.slug, 'np');
   const img = el('img', { src: STILLS[t.slug] ? `/site/stills/${t.slug}-480.webp` : t.thumb, width: 390, height: 844, alt: '', loading: 'lazy', decoding: 'async' });
   return el('li', { class: 'dcard', 'data-slug': t.slug, 'data-cat': t.cat, 'data-tier': t.tier, 'data-faiths': (t.religions || []).join(' ') },
     el('a', { class: 'dcard__pic', href, style: `--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}`, tabindex: '-1', 'aria-hidden': 'true' }, el('span', { class: 'phone' }, img)),

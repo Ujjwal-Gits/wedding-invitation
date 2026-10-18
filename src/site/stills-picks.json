@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "kalpataru": {
+    "kind": "hero",
+    "why": "The names above the whole painted tree, the moment the leaf lands in its crown: the tree the guest climbs next."
   }
 }
