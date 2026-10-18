@@ -1732,6 +1732,15 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .cu-order__id b { font-size: 15px; color: var(--ink); letter-spacing: 0.01em; }
 .cu-order__id small, .cu-order__note { color: var(--ink-3); font-size: 13px; }
 .cu-order__acts { display: flex; flex-wrap: wrap; gap: var(--s2); padding-top: var(--s3); border-top: 1px solid var(--line); }
+/* "Change plan": one row per plan, the chosen one outlined in the accent */
+.cu-plans { display: grid; gap: var(--s2); }
+.cu-plan { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px var(--s3); padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease; }
+.cu-plan:hover { border-color: var(--line-2); }
+.cu-plan:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 4%, #fff); }
+.cu-plan input { accent-color: var(--accent); margin: 0; }
+.cu-plan__name { font-weight: 600; }
+.cu-plan__price { font-variant-numeric: tabular-nums; }
+.cu-plan__now { grid-column: 2 / -1; color: var(--ink-3); font-size: 12px; }
 .cu-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s3) var(--s5); margin: 0; }
 .cu-facts dt { font-size: 12px; font-weight: 500; color: var(--ink-3); }
 .cu-facts dd { margin: 2px 0 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
@@ -2182,3 +2191,4 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .blogo__main .hint { margin: 2px 0 0; }
 .blogo__acts { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 640px) { .blogo { grid-template-columns: 96px 1fr; } .blogo__acts { grid-column: 1 / -1; justify-content: flex-start; } }
+[tabindex="-1"]:focus:not(:focus-visible) { outline: none; } /* a heading focused for screen readers (e.g. "Payment received") needs no ring */

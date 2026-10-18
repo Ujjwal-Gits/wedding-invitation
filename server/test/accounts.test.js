@@ -257,6 +257,15 @@ test('the dashboard: orders with payment status and a pay link the session opens
   assert.equal(patch.body.order.venue, 'Pokhara');
   assert.equal((await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { venue: 'x' }, csrf: false })).status, 403);
   assert.equal((await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { weddingDate: '2027-13-01' } })).status, 400);
+  // "Change plan" before paying: re-priced by the server; an unknown plan is refused; a paid order keeps its plan
+  const swap = await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { plan: 'shahi' } });
+  assert.equal(swap.status, 200, JSON.stringify(swap.body));
+  assert.equal(swap.body.order.plan.id, 'shahi');
+  assert.equal(swap.body.order.amount.npr, (await orders.allOrders()).find((x) => x.ref === o.ref).amount.npr);
+  assert.equal((await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { plan: 'nope' } })).status, 400);
+  await orders.mutateOrder(id, (x) => { x.pay.status = 'confirmed'; });
+  assert.equal((await b.req(`/api/account/orders/${o.ref}`, { method: 'PATCH', body: { plan: 'saral' } })).status, 409);
+  await orders.mutateOrder(id, (x) => { x.pay.status = 'rejected'; });
   // another customer cannot touch it
   const c2 = browser();
   await c2.signup('sunita@example.com', 'sunita-pass', { name: 'Sunita Rai' });

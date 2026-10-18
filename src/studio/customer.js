@@ -62,6 +62,39 @@ function detailsDialog(o, onSaved) {
   enhance(form);
 }
 
+/** "Change plan" before paying: the fixed-price plans of the order's website (GET /api/site), saved with
+ *  PATCH /api/account/orders/:ref { plan } (the server re-prices the order and cancels an open checkout). */
+async function planDialog(o, onSaved) {
+  const site = await api('/site').catch(() => null);
+  const usd = market === 'intl';
+  const plans = (site?.plans || []).filter((p) => p && p.id && p.from !== true && (p.markets || ['np', 'intl']).includes(market)
+    && (usd ? Number.isFinite(p.priceUsd) : Number.isInteger(p.price)));
+  if (!plans.length) { toast('Could not load the plans. Please try again.', 'error'); return; }
+  let pick = o.plan?.id || '';
+  const err = h('p.form-error', { role: 'alert' });
+  const save = h('button.btn.btn--primary', { type: 'submit', form: 'op-form' }, 'Change plan');
+  const list = h('div.cu-plans', { role: 'radiogroup', 'aria-label': 'Plan' }, plans.map((p) => h('label.cu-plan',
+    h('input', { type: 'radio', name: 'op-plan', value: p.id, checked: p.id === pick, onchange: () => { pick = p.id; } }),
+    h('span.cu-plan__name', p.name),
+    h('span.cu-plan__price', money({ npr: p.price ?? null, usd: p.priceUsd ?? null })),
+    p.id === o.plan?.id ? h('small.cu-plan__now', 'Current plan') : null)));
+  const form = h('form.stack#op-form', { novalidate: true },
+    h('p.hint', 'You can change the plan until you pay. The price updates at once.'), list, err);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    if (pick === o.plan?.id) { d.close(); return; }
+    save.disabled = true;
+    try {
+      const out = await api(`/account/orders/${o.ref}`, { method: 'PATCH', body: { plan: pick } });
+      onSaved(out.order);
+      toast(`Plan changed to ${out.order.plan?.name || 'the new plan'}`, 'success');
+      d.close();
+    } catch (ex) { err.textContent = ex.message || 'Could not change the plan.'; save.disabled = false; }
+  });
+  const d = openDialog({ title: `Change plan · ${o.ref}`, body: form, actions: [h('button.btn', { type: 'button', onclick: () => d.close() }, 'Cancel'), save] });
+}
+
 const REF_RE = /^[A-Za-z0-9_-]{3,40}$/;
 /** Waiting for payment, with a price (a Custom request waiting for our quote has no payUrl yet). */
 const payable = (o) => ['awaiting_payment', 'rejected'].includes(o.payStatus) && Boolean(o.payUrl);
@@ -88,6 +121,7 @@ function orderCard(o, meta, redraw, ro = false, onPay = () => {}) {
     ro ? null : h('div.cu-order__acts',
       canPay ? h('button.btn.btn--primary', { type: 'button', onclick: () => onPay(o.ref) }, icon('wallet', 16), o.payStatus === 'rejected' ? 'Pay again' : market === 'intl' ? 'Pay with PayPal or card' : 'Pay now') : null,
       o.payStatus === 'proof_submitted' && o.payUrl ? h('button.btn', { type: 'button', onclick: () => onPay(o.ref) }, 'See payment') : null,
+      canPay && o.kind === 'order' && o.plan && !o.plan.from ? h('button.btn.btn--quiet', { type: 'button', onclick: () => planDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('swap', 15), 'Change plan') : null,
       h('button.btn.btn--quiet', { type: 'button', onclick: () => detailsDialog(o, (n) => { Object.assign(o, n); redraw(); }) }, icon('edit', 15), o.weddingDate || o.venue ? 'Edit details' : 'Add wedding details')));
 }
 

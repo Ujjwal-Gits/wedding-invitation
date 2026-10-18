@@ -1,7 +1,7 @@
 // Customer accounts: the customer's own dashboard data (GET /api/account, ...) and the planner's account admin
 // (GET/POST/PATCH /api/admin/customers, linking invitations). Data helpers: lib/accounts.js. Sign-in: lib/auth.js.
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { EMAIL_RE, readSite } from './site.js';
+import { EMAIL_RE, readSite, planOffered } from './site.js';
 import { staffByEmail } from './staff.js';
 import { isTheme } from './catalog.js';
 import { peekInvitation, isLive, listOrders, withLock, getOrderByRef, saveOrder, SLUG_RE } from './store.js';
@@ -14,8 +14,8 @@ import { PUBLIC_ORIGINS, ADMIN_EMAIL, IS_PROD } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
 import { clientIp, originAllowed, rateLimiter } from './security.js';
 import { sendVerify, sendReset, sendSignupCode, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
-import { clean, planView, REF_RE } from './orders.js';
-import { checkPhone, countryOfPhone, customerMarket, likelyZone, isMarket, MARKET_NAME, PHONE_MSG } from './market.js';
+import { clean, planView, REF_RE, amountOf, dropOpenCheckout } from './orders.js';
+import { orderMarket, checkPhone, countryOfPhone, customerMarket, likelyZone, isMarket, MARKET_NAME, PHONE_MSG } from './market.js';
 import { marketView } from './site.js';
 /** A required phone, as E.164 ('' when missing or not a real number); `market` picks the country for a number without a code. */
 const phoneOf = (v, market) => { const r = checkPhone(typeof v === 'string' ? v : '', market === 'intl' ? 'US' : 'NP'); return r.ok ? r.e164 : ''; };
@@ -133,10 +133,28 @@ export async function patchOrder(req, res) {
     const real = m && new Date(Date.UTC(+m[1], m[2] - 1, +m[3])).toISOString().slice(0, 10) === patch.weddingDate;
     if (!real || +m[1] < 2000 || +m[1] > 2100) fields.push('weddingDate');
   }
+  // "Change plan" before paying: another plan with a fixed price on the order's website (Custom stays a request)
+  let newPlan = null;
+  if (b.plan !== undefined) {
+    if (typeof b.plan !== 'string' || !/^[a-z0-9-]{1,40}$/.test(b.plan)) fields.push('plan');
+    else newPlan = (await readSite()).plans.find((p) => p.id === b.plan) || null;
+    if (b.plan !== undefined && !newPlan) fields.push('plan');
+  }
   if (fields.length) return res.status(400).json({ error: 'Please check the form.', fields: [...new Set(fields)] });
   const order = await withLock('orders', async () => {
     const o = await getOrderByRef(ref);
     if (!o || o.customerId !== req.customer.id) throw httpError(404, 'Order not found.');
+    if (newPlan && newPlan.id !== o.plan) {
+      const market = orderMarket(o);
+      const amount = amountOf(newPlan);
+      if (o.kind !== 'order' || !['awaiting_payment', 'rejected'].includes(payStatusOf(o))) throw httpError(409, 'The plan can only be changed before the order is paid. Please message us.');
+      if (newPlan.from === true || !planOffered(newPlan, market) || (market === 'intl' ? amount.usd == null : amount.npr == null)) throw httpError(400, 'That plan cannot be chosen here. Please message us.');
+      const was = o.planName || o.plan;
+      Object.assign(o, { plan: newPlan.id, planName: newPlan.name, planFrom: false, amount });
+      dropOpenCheckout(o, 'the plan changed');
+      if (o.pay) o.pay.history = [...(o.pay.history || []), { at: new Date().toISOString(), status: o.pay.status, by: 'customer', note: `Plan changed from ${was} to ${newPlan.name}` }].slice(-50);
+      console.info(`[account] plan changed ref=${o.ref} ${was} -> ${newPlan.id}`);
+    }
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
       if (v === '' && k !== 'message') delete o[k];
