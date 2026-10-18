@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { peekInvitation, isLive, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { rsvpOptions, partyOf, mealLabel, mealTotals, guestName, LIMITS } from '../../src/core/rsvp-rules.js';
+import { activeLink, linkEvents, linkParam, linksOf } from './guest-links.js';
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -43,6 +44,10 @@ export async function submit(req, res) {
   if (!isLive(doc)) return res.status(404).json({ ok: false, error: 'Not found.' });
   const inv = doc.published;
   if (inv.rsvp.enabled === false) return res.status(403).json({ ok: false, error: 'Replies are closed for this invitation.' });
+  // a guest link (?g= on its endpoint, lib/guest-links.js): only its ceremonies can be answered; a deleted one, none
+  const g = linkParam(req);
+  const link = g ? activeLink(doc, inv, g) : null;
+  if (g && !link) return res.status(410).json({ ok: false, error: 'This link is no longer active.', code: 'link_inactive' });
 
   // Honeypot: real guests never see or fill "website". Pretend success, store nothing.
   if (typeof body.website === 'string' && body.website.trim()) return res.json({ ok: true });
@@ -55,8 +60,10 @@ export async function submit(req, res) {
   const mealIds = new Set(ask.meals.map((m) => m.id));
   const max = inv.rsvp.maxGuests || 6;
   let guests = Number(body.guests);
-  const validIds = new Set(inv.events.map((e) => e.id));
+  const validIds = new Set((link ? linkEvents(inv, link) : inv.events).map((e) => e.id));
   let events = Array.isArray(body.events) ? [...new Set(body.events.filter((e) => typeof e === 'string' && validIds.has(e)))] : [];
+  // a ceremony of this invitation that the guest's link does not show: refused, never quietly dropped
+  const hidden = link && Array.isArray(body.events) && body.events.some((e) => typeof e === 'string' && !validIds.has(e) && inv.events.some((x) => x.id === e));
 
   const errors = [];
   if (name.length < 2) errors.push('name');
@@ -64,7 +71,7 @@ export async function submit(req, res) {
   if (!attending) errors.push('attending');
   if (attending === 'no') { guests = 0; events = []; }
   else if (!Number.isInteger(guests) || guests < 1 || guests > max) errors.push('guests');
-  if (Array.isArray(body.events) && body.events.length > 20) errors.push('events');
+  if ((Array.isArray(body.events) && body.events.length > 20) || (hidden && attending === 'yes')) errors.push('events');
   // each ceremony is its own answer: a guest who comes must say which (an older form that sends no list counts for all)
   if (attending === 'yes' && Array.isArray(body.events) && body.events.length && !events.length) errors.push('events');
   if (attending === 'yes' && Array.isArray(body.events) && !body.events.length && validIds.size > 1) errors.push('events');
@@ -92,6 +99,7 @@ export async function submit(req, res) {
   if (attending === 'yes' && !events.length) events = [...validIds];
 
   const reply = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), name, phone, attending, guests, events, party };
+  if (link) reply.link = link.id;
   const diet = attending === 'yes' && ask.diet ? clean(body.diet, LIMITS.diet, true) : '';
   const song = attending === 'yes' && ask.song ? clean(body.song, LIMITS.song) : '';
   if (diet) reply.diet = diet;
@@ -103,9 +111,30 @@ export async function submit(req, res) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
-  console.info(`[rsvp] slug=${slug} attending=${attending} guests=${guests}`);
+  console.info(`[rsvp] slug=${slug} attending=${attending} guests=${guests}${link ? ` link=${link.id}` : ''}`);
   res.json({ ok: true });
 }
+
+/** Replies per guest link ('' = the full link), with the links' names (a deleted link keeps its replies). */
+function linkTotals(doc, replies) {
+  const names = new Map(linksOf(doc).map((l) => [l.id, l.name]));
+  const by = new Map([['', { id: '', name: 'Full invitation', replies: 0, guests: 0 }], ...[...names].map(([id, name]) => [id, { id, name, replies: 0, guests: 0 }])]);
+  for (const r of replies) {
+    const k = typeof r.link === 'string' ? r.link : '';
+    if (!by.has(k)) by.set(k, { id: k, name: 'Deleted link', deleted: true, replies: 0, guests: 0 });
+    const t = by.get(k);
+    t.replies += 1;
+    if (r.attending === 'yes') t.guests += r.guests;
+  }
+  return [...by.values()];
+}
+
+/** ?link= on the list and CSV: 'full' = replies through the full link, else one guest link's id. */
+const linkFilter = (req) => {
+  const v = typeof req.query?.link === 'string' ? req.query.link : '';
+  if (v === 'full') return (r) => !r.link;
+  return /^[A-Za-z0-9_-]{10}$/.test(v) ? (r) => r.link === v : null;
+};
 
 function totals(inv, replies) {
   const yes = replies.filter((r) => r.attending === 'yes');
@@ -130,13 +159,15 @@ async function loadBoth(slug) {
   const doc = await peekInvitation(slug);
   if (!doc) throw httpError(404, 'No invitation with that link name.');
   const replies = await storedReplies(slug);
-  return { inv: doc.published || doc.draft, replies };
+  return { doc, inv: doc.published || doc.draft, replies };
 }
 
 export async function listReplies(req, res) {
-  const { inv, replies } = await loadBoth(req.params.slug);
+  const { doc, inv, replies: all } = await loadBoth(req.params.slug);
+  const only = linkFilter(req);
+  const replies = only ? all.filter(only) : all;
   replies.sort((a, b) => b.at.localeCompare(a.at));
-  res.json({ replies, totals: totals(inv, replies) });
+  res.json({ replies, totals: totals(inv, replies), links: linkTotals(doc, all) });
 }
 
 export async function deleteReply(req, res) {
@@ -156,12 +187,18 @@ export function csvCell(v) {
 
 export async function exportCsv(req, res) {
   const { slug } = req.params;
-  const { inv, replies } = await loadBoth(slug);
+  const { doc, inv, replies: all } = await loadBoth(slug);
+  const only = linkFilter(req);
+  const replies = only ? all.filter(only) : all;
   replies.sort((a, b) => a.at.localeCompare(b.at));
+  // the "Guest link" column only once the couple has made guest links (older exports read exactly as before)
+  const links = linkTotals(doc, all);
+  const withLink = links.length > 1;
+  const linkName = new Map(links.map((l) => [l.id, l.name]));
   const titles = Object.fromEntries((inv?.events || []).map((e) => [e.id, e.title.en || e.title.ne || e.id]));
   const meals = rsvpOptions(inv?.rsvp).meals;
   // One row per reply; "Guest names" and "Meals" list the party in the same order, joined by " / ".
-  const header = ['Received', 'Name', 'Phone', 'Attending', 'Guests', 'Ceremonies', 'Guest names', 'Meals', 'Dietary needs', 'Song request', 'Message'];
+  const header = ['Received', 'Name', 'Phone', 'Attending', 'Guests', 'Ceremonies', 'Guest names', 'Meals', 'Dietary needs', 'Song request', 'Message', ...(withLink ? ['Guest link'] : [])];
   const rows = replies.map((r) => {
     const party = partyOf(r);
     return [
@@ -169,6 +206,7 @@ export async function exportCsv(req, res) {
       party.map((g, i) => guestName(g, i)).join(' / '),
       party.some((g) => g.meal) ? party.map((g) => mealLabel(g.meal, meals).en || '-').join(' / ') : '',
       r.diet || '', r.song || '', r.message,
+      ...(withLink ? [linkName.get(r.link || '') || ''] : []),
     ];
   });
   const csv = `﻿${[header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;

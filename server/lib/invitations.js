@@ -19,6 +19,7 @@ import { zoneOf, restamp, DEFAULT_TZ, isTimeZone } from '../../src/core/tz.js';
 import { isReligion, startingEvents, startingWords, suits } from '../../src/core/faith.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
+import { activeLink, linkParam, narrowPayload } from './guest-links.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -524,24 +525,30 @@ export async function publicData(req, res) {
   const src = preview ? doc.draft : isLive(doc) ? doc.published : null;
   if (!src) throw httpError(404, 'Not found.');
   res.vary('Cookie');
+  // a guest link (?g=, lib/guest-links.js): only its ceremonies; a deleted one shows nothing
+  const g = linkParam(req);
+  const link = g ? activeLink(doc, src, g) : null;
+  if (g && !link) throw httpError(410, 'This link is no longer active.', { code: 'link_inactive' });
   if (preview) {
     res.set('X-Invitation-Preview', 'draft');
     res.set('Cache-Control', 'no-store');
-    return res.json(publicPayload(src, slug));
+    const out = publicPayload(src, slug);
+    return res.json(link ? narrowPayload(out, link) : out);
   }
   // Guests: built once per published revision, then served from memory with an ETag (304 when unchanged).
   res.set('Cache-Control', 'no-cache');
-  return sendEntity(req, res, publishedEntity(doc, slug));
+  return sendEntity(req, res, publishedEntity(doc, slug, link));
 }
 
-/** The guests' JSON for a published invitation, built once per revision (shared by the API and the page). */
-function publishedEntity(doc, slug) {
+/** The guests' JSON for a published invitation (or one guest link of it), built once per revision (API and page). */
+function publishedEntity(doc, slug, link = null) {
   const rev = revOf(doc);
-  return publicCache.get(slug, rev) || publicCache.set(slug, rev, entity(JSON.stringify(publicPayload(doc.published, slug)), 'application/json; charset=utf-8'));
+  const key = link ? `${slug}~${link.id}` : slug; // a link change saves the doc, so the revision moves on too
+  return publicCache.get(key, rev) || publicCache.set(key, rev, entity(JSON.stringify(link ? narrowPayload(publicPayload(doc.published, slug), link) : publicPayload(doc.published, slug)), 'application/json; charset=utf-8'));
 }
 
 /** The same JSON as GET /api/invitations/:slug/public gives a guest, as text (lib/gate.js puts it in the page). */
-export const publishedJson = (doc, slug) => publishedEntity(doc, slug).buf.toString('utf8');
+export const publishedJson = (doc, slug, link = null) => publishedEntity(doc, slug, link).buf.toString('utf8');
 
 /** The page's data from a draft or published snapshot (a new object; the stored one is never changed). */
 function publicPayload(src, slug) {

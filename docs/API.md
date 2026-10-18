@@ -657,6 +657,27 @@ still counts for all). Totals in `GET /invitations/:slug/rsvps` are per ceremony
 Limits: 30 replies per IP per invitation per 10 minutes (guests on one mobile carrier can share an IP), 3000 per
 invitation per hour, 5000 per invitation in total (`507`).
 
+### Guest links (`server/lib/guest-links.js`)
+A link per group of ceremonies, so some guests are invited only to some functions. Stored on the doc outside draft and
+published: `guestLinks: [{ id (10 URL-safe chars), name (≤ 60, only the couple sees it), events: [event ids], createdAt }]`, at most 20.
+Ceremony ids are the existing stable `events[].id`.
+
+| Route (admin with `invitations`, or the couple) | Body | Response |
+|---|---|---|
+| `GET /invitations/:slug/guest-links` | – | `{ live, max, events: [{ id, title }] (published), links }` |
+| `POST /invitations/:slug/guest-links` | `{ name, events }` | `201 { link }` · `400 { errors }` · `409 code not_published \| too_many` |
+| `PATCH /invitations/:slug/guest-links/:linkId` | `{ name?, events? }` | `{ link }` · `404` deleted |
+| `DELETE /invitations/:slug/guest-links/:linkId` | – | `{ ok: true }` (the link stops working at once; its replies are kept) |
+
+A guest link is `?g=<id>` on `/i/:slug`, `/<theme>/?id=<slug>` and `GET /invitations/:slug/public`. The server filters the
+events before sending (page data block, JSON, link preview: `og:description` starts with the link's ceremonies), and sets
+`rsvp.endpoint` to `/api/invitations/<slug>/rsvp?g=<id>`. Unknown, deleted, or a link whose ceremonies were all removed →
+`410` ("This link is no longer active" page; JSON `code: 'link_inactive'`). Replies through it may name only its
+ceremonies (another of the invitation's → `400 fields: ['events']`) and are stored with `link: <id>`. `GET …/rsvps`
+adds `links: [{ id ('' = full link), name, replies, guests, deleted? }]`; `?link=<id>|full` filters the list and the CSV
+(which gets a "Guest link" column once links exist). The full link is unchanged. Note: the guest link carries the
+invitation's slug, so a guest who removes `g` sees the full invitation; it narrows what is shown, it is not a secret.
+
 ## Account emails (Brevo)
 
 Off until a Brevo key (`BREVO_API_KEY`, or `BREVO_SMTP_USER` + `BREVO_SMTP_KEY`) and `MAIL_FROM` are set (server/lib/mail.js).

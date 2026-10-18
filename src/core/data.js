@@ -19,6 +19,7 @@ import { setTimeZone } from './i18n.js';
 import './showcase.js'; // showcase mode (docs/API.md): runs first and drops ?id / ?preview, so only the demo shows
 
 const SLUG = /^[a-z0-9-]{3,64}$/;
+const LINK_ID = /^[A-Za-z0-9_-]{10}$/;
 const COLOR_NAME = /^--[a-z0-9-]+$/;
 const COLOR_HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const PREVIEW_WAIT_MS = 1500;
@@ -314,11 +315,15 @@ export async function loadInvitation() {
       problem = null;
     } else if (validId) {
       try {
-        const res = await fetch(`/api/invitations/${id}/public`, { headers: { Accept: 'application/json' } });
+        // a guest link (?g=, server/lib/guest-links.js): the server sends only that link's ceremonies
+        const g = params.get('g');
+        const q = g && LINK_ID.test(g) ? `?g=${g}` : '';
+        const res = await fetch(`/api/invitations/${id}/public${q}`, { headers: { Accept: 'application/json' } });
         if (res.ok) {
           const data = await res.json();
           if (isPlain(data) && isPlain(data.couple)) { replaceConfig(normalisePreview(data, id)); problem = null; }
-        } else if (res.status >= 500 || res.status === 429) problem = 'offline';
+        } else if (res.status === 410) problem = 'inactive';
+        else if (res.status >= 500 || res.status === 429) problem = 'offline';
       } catch (err) {
         console.warn('Could not load the invitation.', err);
         problem = 'offline';
@@ -380,11 +385,12 @@ function notAvailable(kind) {
   card.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:32px 16px;background:#fff;color:' + ink
     + ';font:400 16.5px/1.6 Geist,"Segoe UI",Arial,sans-serif;text-align:left;overflow:auto';
   const offline = kind === 'offline';
+  const gone = kind === 'inactive'; // a guest link the family deleted
   card.innerHTML = `<div style="width:min(100%,440px)">
 <a href="/" style="font:500 24px/1 Gambetta,'Iowan Old Style',Georgia,serif;letter-spacing:-.03em;color:${ink};text-decoration:none">Nimtto</a>
-<h1 style="margin:40px 0 0;font:400 clamp(30px,7vw,44px)/1.08 Gambetta,'Iowan Old Style',Georgia,serif;letter-spacing:-.028em">${offline ? 'This invitation could not load.' : 'This invitation isn’t available.'}</h1>
-<p lang="ne" style="margin:8px 0 0;color:#66636E;font-family:Mukta,'Nirmala UI',sans-serif">${offline ? 'निम्तो खुल्न सकेन। फेरि प्रयास गर्नुहोस्।' : 'यो निम्तो अहिले उपलब्ध छैन।'}</p>
-<p style="margin:16px 0 0;color:#45434C">${offline ? 'Please check your connection and try again.' : 'The link may be mistyped, or the invitation is not shared yet. Please ask the family for their link.'}</p>
+<h1 style="margin:40px 0 0;font:400 clamp(30px,7vw,44px)/1.08 Gambetta,'Iowan Old Style',Georgia,serif;letter-spacing:-.028em">${offline ? 'This invitation could not load.' : gone ? 'This link is no longer active.' : 'This invitation isn’t available.'}</h1>
+<p lang="ne" style="margin:8px 0 0;color:#66636E;font-family:Mukta,'Nirmala UI',sans-serif">${offline ? 'निम्तो खुल्न सकेन। फेरि प्रयास गर्नुहोस्।' : gone ? 'यो लिङ्क अब सक्रिय छैन।' : 'यो निम्तो अहिले उपलब्ध छैन।'}</p>
+<p style="margin:16px 0 0;color:#45434C">${offline ? 'Please check your connection and try again.' : gone ? 'The family may have sent a new link. Please ask them for the one meant for you.' : 'The link may be mistyped, or the invitation is not shared yet. Please ask the family for their link.'}</p>
 <button type="button" style="margin-top:28px;min-height:48px;padding:0 22px;border:0;border-radius:6px;background:#B3122F;color:#fff;font:500 16px/1 Geist,'Segoe UI',Arial,sans-serif;cursor:pointer">Try again</button>
 </div>`;
   card.querySelector('button').addEventListener('click', () => location.reload());

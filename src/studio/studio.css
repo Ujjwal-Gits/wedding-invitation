@@ -1043,6 +1043,16 @@ a.cell-main:hover b { text-decoration: underline; text-decoration-color: var(--l
 .sharebtn--wa svg { color: var(--wa); }
 .sharebtn--vb svg { color: #6d4aa8; }
 .sharebtn--ms svg { color: #1f6fd1; }
+/* Guest links (m-guest-links.js): the full link first, then one row per group of ceremonies */
+.glinks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.glink { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2) var(--s4); align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.glink__main { display: grid; gap: 2px; min-width: 0; }
+.glink__name { font-weight: 600; font-size: 14.5px; color: var(--ink); }
+.glink__events { font-size: 13.5px; color: var(--ink-2); }
+.glink__url { font: 400 12.5px var(--font-mono); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glink__acts { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: flex-end; }
+.glink__wa svg { color: var(--wa); }
+@media (max-width: 640px) { .glink { grid-template-columns: minmax(0, 1fr); } .glink__acts { justify-content: flex-start; } }
 .chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border: 1px solid var(--line-2); border-radius: 99px; font-size: 13.5px; font-weight: 500; cursor: pointer; background: var(--surface); }
 .chip:has(input:checked) { border-color: var(--accent-line); background: var(--accent-soft); }

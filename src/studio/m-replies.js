@@ -25,6 +25,7 @@ export function repliesView(slug, { onLoad, questions } = {}) {
   let state = null;
   let query = '';
   let filter = 'all';
+  let via = ''; // a guest link's id, 'full' (the full invitation link), or '' = every link
 
   const load = async () => {
     try {
@@ -62,6 +63,7 @@ export function repliesView(slug, { onLoad, questions } = {}) {
         facts([
           r.phone ? ['Phone', h('a', { href: `tel:${r.phone.replace(/[^\d+]/g, '')}` }, r.phone)] : null,
           r.events?.length ? ['Ceremonies', r.events.map((id) => titles[id] || id).join(', ')] : null,
+          hasLinks() ? ['Link', linkName(r)] : null,
           ['Received', when(r.at)],
         ])),
       party.length ? sect(plural(party.length, 'guest'),
@@ -72,6 +74,10 @@ export function repliesView(slug, { onLoad, questions } = {}) {
       h('div.odr__danger', h('button.btn.btn--sm.btn--danger-ghost', { type: 'button', onclick: () => remove(r, d) }, icon('trash', 15), 'Delete reply')));
     const d = openDialog({ title: r.name, body, cls: 'dialog--drawer' });
   };
+
+  // guest links (m-guest-links.js): which link a reply came through, once the couple has made any
+  const hasLinks = () => (state.links || []).length > 1;
+  const linkName = (r) => (state.links || []).find((l) => l.id === (r.link || ''))?.name || 'Deleted link';
 
   const render = () => {
     const t = state.totals;
@@ -86,6 +92,7 @@ export function repliesView(slug, { onLoad, questions } = {}) {
     const mealMax = Math.max(1, ...meals.map((m) => m.guests));
     const rows = replies.filter((r) => {
       if (filter !== 'all' && r.attending !== filter) return false;
+      if (via && (via === 'full' ? Boolean(r.link) : r.link !== via)) return false;
       if (!query) return true;
       const q = query.toLowerCase();
       const hay = [r.name, r.phone, r.message, r.diet, r.song, ...partyOf(r).map((g) => g.name)].filter(Boolean).join(' ').toLowerCase();
@@ -95,6 +102,7 @@ export function repliesView(slug, { onLoad, questions } = {}) {
       const party = partyOf(r);
       const others = party.slice(1).map((g) => g.name).filter(Boolean);
       const meta = [
+        hasLinks() ? linkName(r) : null,
         others.length ? `with ${others.join(', ')}` : null,
         mealSummary(party, meals) || null,
         r.diet ? 'Dietary note' : null,
@@ -131,10 +139,13 @@ export function repliesView(slug, { onLoad, questions } = {}) {
           h('div.seg', { role: 'group', 'aria-label': 'Show' },
             [['all', 'Everyone'], ['yes', 'Coming'], ['no', 'Can’t come']].map(([v, txt]) => h('button.seg__btn', { type: 'button', 'aria-pressed': String(filter === v), onclick: () => { filter = v; render(); } }, txt))),
           h('label.search', icon('search', 16), search),
+          hasLinks() ? h('select.input.input--sm', { 'aria-label': 'Replies through', onchange: (e) => { via = e.target.value; render(); } },
+            h('option', { value: '', selected: !via }, 'Every link'),
+            state.links.map((l) => h('option', { value: l.id || 'full', selected: via === (l.id || 'full') }, `${l.name} (${l.replies})`))) : null,
           h('div.toolbar__right',
             iconBtn('refresh', 'Refresh', load),
             questionsBtn(),
-            h('a.btn.btn--sm', { href: `/api/invitations/${encodeURIComponent(slug)}/rsvps.csv`, download: `replies-${slug}.csv` }, icon('download', 15), 'Export CSV'))),
+            h('a.btn.btn--sm', { href: `/api/invitations/${encodeURIComponent(slug)}/rsvps.csv${via ? `?link=${encodeURIComponent(via)}` : ''}`, download: `replies-${slug}.csv` }, icon('download', 15), 'Export CSV'))),
         rows.length ? list : h('p.muted.pad', 'No replies match.')));
   };
   load();

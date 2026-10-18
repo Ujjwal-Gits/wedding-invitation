@@ -14,13 +14,14 @@ import { hasStudioSession, canEdit } from './auth.js';
 import { shareInfo, withShareMeta } from './share.js';
 import { publishedJson } from './invitations.js';
 import { publicMusic } from './music.js';
+import { activeLink, linkParam, sendInactive } from './guest-links.js';
 
 const built = new Map(); // theme -> its built index.html (dist does not change while the server runs)
 /**
  * Serves the theme page with the invitation's own title and link-preview tags (the build carries neutral brand words,
  * never the demo couple's). Returns false when the page is not built (the static files answer as before).
  */
-async function sendWithMeta(req, res, distDir, theme, inv, slug, doc = null) {
+async function sendWithMeta(req, res, distDir, theme, inv, slug, doc = null, link = null) {
   let html = built.get(theme);
   if (html === undefined) {
     const file = resolve(distDir, theme, 'index.html');
@@ -28,8 +29,8 @@ async function sendWithMeta(req, res, distDir, theme, inv, slug, doc = null) {
     built.set(theme, html);
   }
   if (!html) return false;
-  html = withShareMeta(html, shareInfo(inv, req, slug));
-  if (doc) html = await withPageData(html, doc, slug);
+  html = withShareMeta(html, shareInfo(inv, req, slug, link));
+  if (doc) html = await withPageData(html, doc, slug, link);
   res.type('html').send(html);
   return true;
 }
@@ -42,10 +43,10 @@ const jsonBlock = (id, json, attrs = '') => `<script type="application/json" id=
  * return), so the design renders as soon as its code has run instead of waiting for two more round trips
  * (src/core/data.js reads them; the API stays the fallback). Data blocks are never executed, so the CSP is unchanged.
  */
-export async function withPageData(html, doc, slug) {
+export async function withPageData(html, doc, slug, link = null) {
   let music = '';
   try { music = JSON.stringify(await publicMusic()); } catch { /* the page fetches it */ }
-  const blocks = jsonBlock('nimtto-data', publishedJson(doc, slug), ` data-id="${slug}"`) + (music ? jsonBlock('nimtto-music', music) : '');
+  const blocks = jsonBlock('nimtto-data', publishedJson(doc, slug, link), ` data-id="${slug}"`) + (music ? jsonBlock('nimtto-music', music) : '');
   return html.includes('</body>') ? html.replace('</body>', () => `${blocks}\n</body>`) : html + blocks; // a function: "$" in the data stays as it is
 }
 
@@ -162,7 +163,10 @@ export function themePageGate(distDir) {
       if (await hasStudioSession(req)) { // (b) planner, (c) couple: any design, drafts included
         const doc = id && SLUG_RE.test(id) ? await getInvitation(id) : null;
         const inv = doc ? (canEdit(req, id) ? doc.draft : isLive(doc) ? doc.published : null) : null;
-        if (inv && (await sendWithMeta(req, res, distDir, theme, inv, id))) return undefined;
+        const g = inv ? linkParam(req) : '';
+        const link = g ? activeLink(doc, inv, g) : null;
+        if (g && !link) return sendInactive(res);
+        if (inv && (await sendWithMeta(req, res, distDir, theme, inv, id, null, link))) return undefined;
         return next();
       }
 
@@ -173,13 +177,17 @@ export function themePageGate(distDir) {
       const doc = SLUG_RE.test(id) ? await getInvitation(id) : null;
       const pub = isLive(doc) ? doc.published : null; // unpublished or suspended: the same answer
       if (!pub) return res.status(404).type('html').send(NOT_AVAILABLE);
+      // a guest link (?g=, lib/guest-links.js): only its ceremonies are sent; a deleted or unknown one, nothing
+      const g = linkParam(req);
+      const link = g ? activeLink(doc, pub, g) : null;
+      if (g && !link) return sendInactive(res);
       // (a) a published invitation, shown only in its own design: a guest link cannot be used to try others.
       if (pub.theme !== theme) {
         const q = new URLSearchParams();
         for (const [k, v] of Object.entries(req.query)) if (typeof v === 'string') q.set(k, v);
         return res.redirect(302, `/${encodeURIComponent(pub.theme)}/?${q}`);
       }
-      if (await sendWithMeta(req, res, distDir, theme, pub, id, doc)) return undefined;
+      if (await sendWithMeta(req, res, distDir, theme, pub, id, doc, link)) return undefined;
       return next();
     } catch (err) { return next(err); }
   };

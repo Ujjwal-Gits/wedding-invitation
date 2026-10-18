@@ -23,6 +23,7 @@ import * as handover from './lib/handover.js'; // invitations for customer accou
 import { htmlSitemap } from './lib/html-sitemap.js'; // GET /sitemap/: every public page, readable
 import { scrubDemoOnce } from './lib/migrate-demo.js';
 import * as rsvp from './lib/rsvp.js';
+import * as guestLinks from './lib/guest-links.js'; // a link per group of ceremonies (docs/API.md "Guest links")
 import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
 import * as site from './lib/site.js';
@@ -177,6 +178,12 @@ api.post('/invitations/:slug/client-link', requirePerm('invitations'), json('2kb
 api.patch('/invitations/:slug/access', requirePerm('invitations'), json('2kb'), wrap(inv.patchAccess));
 api.delete('/invitations/:slug/client-link', requirePerm('invitations'), wrap(inv.deleteClientLink));
 api.post('/invitations/:slug/unpublish', requirePerm('invitations'), wrap(inv.unpublish));
+// Guest links: the planner or the couple, for their own invitation (lib/guest-links.js)
+api.param('linkId', (req, res, next, id) => (guestLinks.LINK_ID_RE.test(id) ? next() : res.status(404).json({ error: 'That guest link was deleted.' })));
+api.get('/invitations/:slug/guest-links', editor, wrap(guestLinks.list));
+api.post('/invitations/:slug/guest-links', editor, json('4kb'), wrap(guestLinks.create));
+api.patch('/invitations/:slug/guest-links/:linkId', editor, json('4kb'), wrap(guestLinks.patch));
+api.delete('/invitations/:slug/guest-links/:linkId', editor, wrap(guestLinks.remove));
 // Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
 // cannot fill the disk.
 const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });

@@ -7,6 +7,7 @@ import { photoUrl } from './invitations.js';
 import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
 import { DEMO_PEOPLE_PHOTOS, DEMO_SHARE } from './demo.js';
 import { OCCASIONS, isOccasion } from '../../src/core/markets.js';
+import { activeLink, eventNames, linkParam, LINK_ID_RE, sendInactive } from './guest-links.js';
 
 const NEUTRAL_IMAGE = '/art/og.jpg'; // public/art/og.jpg: hands joined at a wedding (no names, no faces)
 
@@ -19,7 +20,7 @@ const originOf = (req) => PUBLIC_ORIGINS[0] || `${req.protocol}://${req.get('hos
  * What a link preview of this invitation says: its own share words, else its names, else our brand
  * ("Wedding invitation · Nimtto"). Never the demo couple's (lib/demo.js).
  */
-export function shareInfo(inv, req, slug) {
+export function shareInfo(inv, req, slug, link = null) {
   const origin = originOf(req);
   // The invitation's own words only, never the demo's (lib/demo.js); no names at all -> our brand.
   const real = (s) => (typeof s === 'string' && s.trim() && !DEMO_SHARE.has(s.trim()) ? s.trim() : '');
@@ -28,13 +29,16 @@ export function shareInfo(inv, req, slug) {
   // another occasion (a birthday, a baby shower …; src/core/markets.js) never reads "wedding"
   const occ = inv.occasion && inv.occasion !== 'wedding' && isOccasion(inv.occasion) ? OCCASIONS[inv.occasion].en : '';
   const title = real(inv.share?.title) || (names ? `${names} · ${occ || TITLE[isReligion(inv.religion) ? inv.religion : 'hindu'].en}` : occ ? `${occ} invitation · Nimtto` : 'Wedding invitation · Nimtto');
-  const description = real(inv.share?.description) || (occ ? 'You’re warmly invited.' : 'You are warmly invited to our wedding.');
+  let description = real(inv.share?.description) || (occ ? 'You’re warmly invited.' : 'You are warmly invited to our wedding.');
+  // a guest link's preview names its ceremonies ("Haldi & Mehendi · You are warmly invited …"), never the others
+  const only = link ? eventNames(inv, link) : '';
+  if (only) description = `${only} · ${description}`;
   const portrait = (inv.couple?.portraits || []).find((p) => p?.photo && !(typeof p.photo === 'string' && DEMO_PEOPLE_PHOTOS.has(p.photo)))?.photo;
   let img = photoUrl(inv.share?.image) || photoUrl(portrait);
   // No photo of their own yet: a neutral picture (joined hands), never the design's thumbnail (it shows the demo couple).
   if (!img) img = NEUTRAL_IMAGE;
   const image = img ? (img.startsWith('https://') ? img : `${origin}${img}`) : '';
-  return { title, description, image, url: `${origin}/i/${slug}` };
+  return { title, description, image, url: `${origin}/i/${slug}${link ? `?g=${link.id}` : ''}` };
 }
 
 /** The built theme page with this invitation's own title and link-preview tags (lib/gate.js, ?id=<slug>). */
@@ -57,8 +61,12 @@ export async function sharePage(req, res) {
   const doc = await getInvitation(slug);
   if (!isLive(doc)) return res.status(404).type('text/plain').send('Not found');
   const inv = doc.published;
+  const g = linkParam(req);
+  const link = g ? activeLink(doc, inv, g) : null;
+  if (g && !link) return sendInactive(res);
 
   const q = new URLSearchParams({ id: slug });
+  if (link && LINK_ID_RE.test(link.id)) q.set('g', link.id);
   const to = typeof req.query.to === 'string' ? req.query.to.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 60) : '';
   if (to) q.set('to', to);
   const ids = new Set(inv.events.map((e) => e.id));
@@ -68,7 +76,7 @@ export async function sharePage(req, res) {
   if (typeof req.query.v === 'string' && VERSIONS.includes(req.query.v)) q.set('v', req.query.v);
   const target = `/${inv.theme}/?${q}`;
 
-  const { title, description, image, url } = shareInfo(inv, req, slug);
+  const { title, description, image, url } = shareInfo(inv, req, slug, link);
   const meta = [
     ['property', 'og:type', 'website'],
     ['property', 'og:site_name', 'Nimtto'],

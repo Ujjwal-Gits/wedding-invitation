@@ -8,6 +8,7 @@ import { qrSvg, qrPng } from './qr.js';
 import { label } from './session.js';
 import { linkUrl, linkRow, resetPasswordDialog } from './admin-access.js';
 import { shareMessage, religionOf, TITLE } from '../core/faith.js';
+import { guestLinksCard } from './m-guest-links.js';
 
 /** The guest link (production has a short /i/<slug> that follows theme changes and carries the preview card). */
 export function shareUrl(meta, slug, theme, extra = {}) {
@@ -205,5 +206,6 @@ function coupleLinkCard(ctx) {
 
 export function sendModule(ctx) {
   const couple = ctx.isAdmin && ctx.session.doc.clientLink ? coupleLinkCard(ctx) : null;
-  return [publishCard(ctx), linksCard(ctx), couple, shareCardEditor(ctx), qrCard(ctx)].filter(Boolean);
+  const groups = guestLinksCard(ctx, { urlFor: (g) => shareUrl(ctx.meta, ctx.slug, ctx.m.data.theme, { g }), textFor: (url) => message(religionOf(ctx.m.data), ctx.session.names(), url) });
+  return [publishCard(ctx), linksCard(ctx), groups, couple, shareCardEditor(ctx), qrCard(ctx)].filter(Boolean);
 }
