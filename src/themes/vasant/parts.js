@@ -1,11 +1,11 @@
 // Vasant · shared pieces: the rigged butterflies, the garland they rest on, the flower each ceremony gets.
 // Butterflies are rigged, not videos: each is three cut-out parts (left wing, right wing, body) painted in Canva.
-// The wings turn about the body (rotateY), so a flap is a transform only and costs nothing to the main thread.
+// The wings fold toward the body (a 2D scaleX), so a flap is a transform only, crisp and cheap on any phone.
 
 export const ART = '/themes/vasant/art/';
 
 /** the three species, with the height/width of their cut-out */
-export const SPECIES = { lime: 463 / 560, crimson: 411 / 560, tiger: 406 / 560 };
+export const SPECIES = { lime: 744 / 900, crimson: 660 / 900, tiger: 653 / 900 };
 
 /** One rigged butterfly. `style` places it (left/top/width/rotate custom properties). Decorative: aria-hidden. */
 export function butterfly(sp, { cls = '', style = '', eager = false } = {}) {
@@ -77,5 +77,11 @@ export function flowersFor(events) {
     used.clear(); const again = ORDER[0]; used.add(again); return again;
   });
 }
+
+/** A slim gold botanical rule: a hairline with leaf pairs and a bud in the middle (decoration, aria-hidden). */
+export const RULE = `<svg class="va-rule" viewBox="0 0 240 24" aria-hidden="true" focusable="false"><path d="M10 12h88M142 12h88" fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><g fill="currentColor"><g transform="rotate(-30 70 12)"><path d="M70 12c4-6 10-8 15-7c-3 5 -8 7 -15 7z"/><path d="M70 12c4 6 10 8 15 7c-3-5 -8-7 -15-7z" opacity=".75"/></g><g transform="rotate(30 170 12)"><path d="M170 12c-4-6 -10-8 -15-7c3 5 8 7 15 7z"/><path d="M170 12c-4 6 -10 8 -15 7c3-5 8-7 15-7z" opacity=".75"/></g><g transform="rotate(-30 44 12)"><path d="M44 12c4-6 10-8 15-7c-3 5 -8 7 -15 7z"/><path d="M44 12c4 6 10 8 15 7c-3-5 -8-7 -15-7z" opacity=".75"/></g><g transform="rotate(30 196 12)"><path d="M196 12c-4-6 -10-8 -15-7c3 5 8 7 15 7z"/><path d="M196 12c-4 6 -10 8 -15 7c3-5 8-7 15-7z" opacity=".75"/></g><ellipse cx="120" cy="6.5" rx="2.6" ry="4.6"/><ellipse cx="120" cy="17.5" rx="2.6" ry="4.6"/><ellipse cx="114.5" cy="12" rx="4.6" ry="2.6"/><ellipse cx="125.5" cy="12" rx="4.6" ry="2.6"/><circle cx="120" cy="12" r="2.2" fill="#C2185B"/><circle cx="10" cy="12" r="1.5"/><circle cx="230" cy="12" r="1.5"/></g></svg>`;
+
+/** loose petals and marigold heads, laid in a gap (never behind text) */
+export const petals = (cls = '') => `<img class="va-petals ${cls}" src="${ART}petals-sm.webp" srcset="${ART}petals-sm.webp 700w, ${ART}petals.webp 1400w" sizes="(max-width: 719px) 86vw, 560px" width="1400" height="514" alt="" loading="lazy" decoding="async" aria-hidden="true" />`;
 
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];

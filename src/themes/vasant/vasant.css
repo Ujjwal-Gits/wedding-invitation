@@ -37,24 +37,23 @@ body.theme-vasant {
 .theme-vasant .su-btn--line { background: transparent; }
 .theme-vasant .su-link { color: #A3134C; }
 
-/* ───────── the butterflies (rigged: two wings that turn about the body) ───────── */
-.va-bf { position: absolute; display: block; aspect-ratio: 1 / var(--ar, 0.75); pointer-events: none; }
-.va-bf__rig { position: absolute; inset: 0; perspective: 320px; transform-style: preserve-3d; }
+/* ───────── the butterflies (rigged: two wings that fold toward the body) ─────────
+   A flap is a 2D scaleX about the body: crisp on every GPU (a 3D rotateY rasterises the cut-out at low quality on
+   many phones), and the foreshortening reads the same at this size. */
+.va-bf { position: absolute; display: block; aspect-ratio: 1 / var(--ar, 0.75); pointer-events: none; backface-visibility: hidden; }
+.va-bf__rig { position: absolute; inset: 0; }
 .va-bf__w, .va-bf__b { position: absolute; top: 0; height: 100%; display: block; max-width: none; user-select: none; }
-.va-bf__w { width: 50%; backface-visibility: visible; }
-.va-bf__w--l { left: 0; transform-origin: 100% 50%; transform: rotateY(16deg); }
-.va-bf__w--r { left: 50%; transform-origin: 0% 50%; transform: rotateY(-16deg); }
+.va-bf__w { width: 50%; transform: scaleX(0.94); }
+.va-bf__w--l { left: 0; transform-origin: 100% 50%; }
+.va-bf__w--r { left: 50%; transform-origin: 0% 50%; }
 .va-bf__b { left: 50%; width: 8.6%; translate: -50% 0; }
+.va-bf.is-fly, .va-bf.is-seen.va-perch { will-change: transform; }
 /* resting: the slow open-and-close of a basking butterfly, only while on screen */
-.va-bf.is-seen .va-bf__w--l { animation: va-rest-l var(--rest, 3.4s) cubic-bezier(0.45, 0, 0.55, 1) var(--d, 0s) infinite alternate; }
-.va-bf.is-seen .va-bf__w--r { animation: va-rest-r var(--rest, 3.4s) cubic-bezier(0.45, 0, 0.55, 1) var(--d, 0s) infinite alternate; }
-@keyframes va-rest-l { 0%, 35% { transform: rotateY(14deg); } 100% { transform: rotateY(60deg); } }
-@keyframes va-rest-r { 0%, 35% { transform: rotateY(-14deg); } 100% { transform: rotateY(-60deg); } }
+.va-bf.is-seen .va-bf__w { animation: va-rest var(--rest, 3.4s) cubic-bezier(0.45, 0, 0.55, 1) var(--d, 0s) infinite alternate; }
+@keyframes va-rest { 0%, 35% { transform: scaleX(0.96); } 100% { transform: scaleX(0.5); } }
 /* flying: quick full strokes */
-.va-bf.is-fly .va-bf__w--l { animation: va-fly-l 0.17s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
-.va-bf.is-fly .va-bf__w--r { animation: va-fly-r 0.17s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
-@keyframes va-fly-l { from { transform: rotateY(2deg); } to { transform: rotateY(78deg); } }
-@keyframes va-fly-r { from { transform: rotateY(-2deg); } to { transform: rotateY(-78deg); } }
+.va-bf.is-fly .va-bf__w { animation: va-fly 0.16s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes va-fly { from { transform: scaleX(1); } to { transform: scaleX(0.16); } }
 
 /* ───────── gate: transparent; the words over the paper, the garland seen through ───────── */
 .theme-vasant .su-gate { background: transparent; }
@@ -67,8 +66,14 @@ body.theme-vasant {
 body.su-locked .va-hero .su-in { opacity: 0; }
 
 /* ───────── first screen ───────── */
-.va-hero { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0 16px 92px; text-align: center; }
-.va-hero > .va-hero__text { flex: 1; justify-content: center; padding-bottom: 5vh; }
+.va-hero { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0 16px clamp(150px, 20vh, 200px); text-align: center;
+  background-image: radial-gradient(ellipse 62% 46% at 50% 56%, rgba(255, 253, 245, 0.95), rgba(255, 253, 245, 0) 72%), radial-gradient(ellipse 55% 38% at 0% 100%, rgba(240, 184, 45, 0.16), rgba(240, 184, 45, 0) 72%), radial-gradient(ellipse 50% 34% at 100% 100%, rgba(194, 24, 91, 0.07), rgba(194, 24, 91, 0) 72%), var(--va-noise), var(--va-noise); }
+.va-hero > .va-garland, .va-hero > .va-hero__text { position: relative; z-index: 1; }
+.va-hero__decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) 0.6s; }
+body.su-locked .va-hero__decor { opacity: 0; transition: none; }
+.va-corner-fl { position: absolute; left: -1.5%; bottom: -1%; width: min(300px, 44vw); height: auto; }
+.va-hero__petals { position: absolute; right: 1%; bottom: 4%; width: min(320px, 40vw); height: auto; rotate: -5deg; }
+.va-hero > .va-hero__text { flex: 1; justify-content: center; }
 .va-garland { position: relative; width: min(780px, 56vw); margin: 0 auto; }
 .va-garland__img { display: block; width: 100%; height: auto; }
 .va-garland__bfs { position: absolute; inset: 0; }
@@ -139,12 +144,10 @@ body.su-locked .va-hero .su-in { opacity: 0; }
 .va-cd__n .l-ne { font: 500 0.82em/1.2 var(--su-f-deva); }
 .va-cd__l { display: block; margin-top: 6px; font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--va-ink-2); }
 .va-cd__l .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
-.va-count__bf { position: relative; flex: none; width: clamp(64px, 14vw, 96px); aspect-ratio: 560 / 463; }
+.va-count__bf { position: relative; flex: none; width: clamp(64px, 14vw, 96px); aspect-ratio: 900 / 744; }
 .va-count__bf .va-bf { inset: 0; width: 100%; }
-.va-beat.is-beat .va-bf__w--l { animation: va-beat-l 0.62s cubic-bezier(0.3, 0, 0.3, 1) 1; }
-.va-beat.is-beat .va-bf__w--r { animation: va-beat-r 0.62s cubic-bezier(0.3, 0, 0.3, 1) 1; }
-@keyframes va-beat-l { 0% { transform: rotateY(16deg); } 40% { transform: rotateY(70deg); } 100% { transform: rotateY(16deg); } }
-@keyframes va-beat-r { 0% { transform: rotateY(-16deg); } 40% { transform: rotateY(-70deg); } 100% { transform: rotateY(-16deg); } }
+.va-beat.is-beat .va-bf__w { animation: va-beat 0.62s cubic-bezier(0.3, 0, 0.3, 1) 1; }
+@keyframes va-beat { 0% { transform: scaleX(0.94); } 40% { transform: scaleX(0.28); } 100% { transform: scaleX(0.94); } }
 .va-count__done { font: 400 italic 26px/1.4 var(--su-f-display); color: var(--va-leaf); }
 
 /* families: one plate, two pressed sprays, two herbarium labels */
@@ -189,7 +192,7 @@ body.su-locked .va-hero .su-in { opacity: 0; }
 .va-win__fl { font: 400 italic 21px/1.3 var(--su-f-display); color: var(--va-leaf); }
 .va-win__fl .l-ne { font: 600 18px/1.5 var(--va-deva-display); font-style: normal; }
 .va-evs { margin: 0; padding: 0 0 0 clamp(20px, 4vw, 64px); list-style: none; }
-.va-ev { display: flex; align-items: center; min-height: 88vh; min-height: 88svh; }
+.va-ev { display: flex; flex-direction: column; justify-content: center; min-height: 74vh; min-height: 74svh; }
 .va-ev__card { width: 100%; max-width: 500px; padding: clamp(26px, 3vw, 40px); background: var(--va-sheet); background-image: var(--va-noise); border: 1px solid rgba(42, 36, 21, 0.12); border-radius: 4px; box-shadow: 0 18px 40px -30px rgba(70, 52, 14, 0.5); }
 .va-ev__no { margin: 0 0 10px; font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--va-leaf); }
 .va-ev__no .l-ne { font-size: 15px; letter-spacing: 0; }
@@ -272,14 +275,17 @@ html[data-lang='ne'] .va-close__en { display: none; }
   .va-win__cap { align-items: flex-start; text-align: left; }
   .va-win__fl { font-size: 18px; }
   .va-evs { padding: 0; }
-  .va-ev { align-items: flex-start; min-height: 76svh; padding-top: 8svh; }
+  .va-ev { justify-content: flex-start; min-height: 0; padding-top: 4svh; }
   .va-ev__card { max-width: none; }
+  /* the ceremony's name stays readable just under the bloom band while its card scrolls */
+  .va-ev__head { position: sticky; top: calc(50svh + 2px); z-index: 2; margin: -6px -8px 0; padding: 6px 8px 8px; background-color: var(--va-sheet); background-image: var(--va-noise); }
+  .va-strand { display: none; }
 }
 @media (max-width: 719px) {
   .va-sec { padding: 76px 16px; }
-  .va-hero { padding: 0 16px 84px; }
+  .va-hero { padding: 54px 16px clamp(130px, 34vw, 170px); } /* the garland starts under the language and music buttons */
   .va-garland { width: 100vw; margin: 0 -16px; }
-  .va-gate { padding: 46vw 0 190px; }
+  .va-gate { padding: calc(46vw + 54px) 0 190px; }
   .va-tip__sheet { grid-template-columns: minmax(0, 1fr) 24%; padding: 20px 14px 20px 20px; gap: 10px; }
   .va-fam { grid-template-columns: 1fr; gap: 22px; padding: 22px 18px; }
   .va-fam__col { flex-direction: row; align-items: center; gap: 14px; }
@@ -300,3 +306,12 @@ body.va-still .va-bf .va-bf__w { animation: none !important; transform: none; }
   .va-bf .va-bf__w { animation: none !important; transform: none; }
   .va-plate, .va-win__cap { transition: none; }
 }
+
+/* ───────── decoration in the gaps: gold rules, petals, the hanging strand ───────── */
+.va-rule { display: block; width: min(220px, 58vw); height: auto; margin: 0 auto; color: #A8833A; }
+.va-head .va-rule { margin-bottom: 6px; }
+.va-ev__gap { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 500px; padding: 40px 0 8px; }
+.va-petals { display: block; width: min(300px, 72%); height: auto; }
+.va-strand { position: absolute; top: 0; bottom: 0; right: max(10px, calc(50% - 712px)); width: clamp(48px, 4.6vw, 70px); pointer-events: none; }
+.va-strand img { position: sticky; top: 72px; display: block; width: 100%; height: calc(100vh - 96px); object-fit: contain; object-position: 50% 0; }
+.va-bloom { position: relative; }
