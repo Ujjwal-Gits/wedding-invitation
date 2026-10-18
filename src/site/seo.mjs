@@ -157,6 +157,7 @@ const DESIGN_SEO = {
   kalapi: ['Kalapi Peacock Pichwai Wedding Invitation Online', 'A peacock fans its tail, then a painted pichwai of the monsoon scrolls by. Every ceremony, RSVP and Nepali dates. From {p}. See it open.'],
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
   sarovar: ['Sarovar Swan Lake Animated Wedding Invitation', 'A lotus opens on a living lake at dawn, two swans meet, and each ceremony rises on a stone post. RSVP, maps and BS dates. From {p}. Preview it.'],
+  kalpataru: ['Kalpataru Wish Tree Nepali Wedding Card Online', 'A leaf card turns over on your names, then guests climb a painted wish tree past both families. RSVP, maps and BS dates. From {p}. See it grow.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };
@@ -200,6 +201,7 @@ const INTL_DESIGN_SEO = {
   noor: ['Noor Rose Arch Elegant Wedding Invitation Online', 'A sage arch hung with fresh roses glows open on your names. An elegant invitation with every event, maps and RSVP. From {p}, paid once. See it.'],
   jali: ['Jali Lattice and Lantern Digital Wedding Invitation', 'Carved emerald and gold lattice screens slide apart under hanging lanterns. A multi-event invitation with RSVP for each. From {p}. Preview it.'],
   andalus: ['Andalus Courtyard Destination Wedding Website', 'Step through a horseshoe arch into a tiled courtyard with a fountain and orange trees. Travel, schedule and RSVP in one link. From {p}. See it.'],
+  kalpataru: ['Kalpataru Wish Tree Animated Wedding Invitation', 'A leaf card turns over on your names, then guests climb a painted tree to its crown and tie their RSVP like a wish. From {p}, paid once. Preview it.'],
 };
 export function intlDesignMeta(slug) {
   const d = INTL_BY_SLUG[slug];

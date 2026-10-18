@@ -1,0 +1,358 @@
+/* Kalpataru (कल्पतरु) · the wish-fulfilling tree. Sunlit cream paper, canopy green, bark, one mauli-red accent.
+   Display: Lustria (Latin), Noto Serif Devanagari (Devanagari). Reading: Hind (Latin), Mukta (Devanagari).
+   Kalam is only for the wishes guests tie on the tree. */
+body.su.theme-kalpataru {
+  --su-bg: #FBF5E5;          /* sunlit cream */
+  --su-paper: #FFFCF4;
+  --su-ink: #1F1A13;         /* 16:1 on the cream */
+  --su-ink-2: #4A3426;       /* bark: 10.6:1 on the cream */
+  --su-accent: #C42B28;      /* mauli red, the only accent: 5.3:1 on cream, 5.6:1 under the paper ink */
+  --su-accent-ink: #FFFCF4;
+  --su-gold: #A8802F;
+  --su-line: rgba(74, 52, 38, 0.18);
+  --kt-canopy: #3C6A44;      /* titles: 5.9:1 on the cream */
+  --kt-bark: #4A3426;
+  --kt-wood-ink: #2E1F12;
+  --kt-sky: #E9E2CF;
+  --kt-warm: #F2DCA6;        /* the paintings' own paper */
+  --su-f-display: 'Lustria', 'Noto Serif Devanagari', Georgia, serif;
+  --su-f-script: 'Lustria', Georgia, serif;
+  --su-f-body: 'Hind', 'Mukta', sans-serif;
+  --su-f-deva: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  --kt-f-deva-d: 'Noto Serif Devanagari', 'Mukta', serif;
+  --kt-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --kt-thread: repeating-linear-gradient(to bottom, #C42B28 0 6px, #E3A21A 6px 8px, #C42B28 8px 13px, #8E1E1C 13px 14px);
+  background: var(--su-bg);
+}
+/* Devanagari always reads in Mukta (Hind draws Devanagari digits as Latin numerals) */
+.theme-kalpataru [lang='ne'] { font-family: var(--su-f-deva); }
+.theme-kalpataru .hud__btn, .theme-kalpataru .pill { background: rgba(255, 252, 244, 0.94); color: var(--kt-bark); border-color: rgba(74, 52, 38, 0.22); }
+.theme-kalpataru .su-btn { letter-spacing: 0.12em; font-weight: 600; }
+.theme-kalpataru .su-btn--line { background: transparent; color: var(--su-accent); }
+.theme-kalpataru .su-link { color: #A3221F; }
+
+/* type */
+.kt-k { margin: 0; font: 600 12.5px/1.4 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--kt-bark); }
+.kt-k .l-ne { font: 500 15px/1.5 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.kt-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.kt-h { margin: 0; font: 400 clamp(28px, 3vw, 36px)/1.18 var(--su-f-display); color: var(--kt-canopy); text-wrap: balance; }
+.kt-h .l-ne { font: 500 0.88em/1.45 var(--kt-f-deva-d); }
+.kt-lede { max-width: 36ch; margin: 12px auto 0; text-align: center; font-size: 17px; line-height: 1.6; color: var(--kt-bark); text-wrap: balance; }
+html[data-lang='ne'] .kt-lede { font-size: 18px; line-height: 1.8; }
+
+/* ═════════ the opening: a leaf on a mauli thread ═════════ */
+.kt-g { position: absolute; inset: 0; overflow: hidden; }
+.kt-g__paper { position: absolute; inset: 0;
+  background: radial-gradient(90% 60% at 50% 42%, #FFFBEF 0%, #FBF3DE 55%, #F1E3C2 100%); }
+.kt-g__canopy { position: absolute; left: 0; right: 0; bottom: 0; top: -40svh; } /* the crown's sky stays above the screen */
+.kt-g__canopy img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 68%; }
+/* a calm corner of paper under the language and music buttons */
+.kt-g::after, .kt-corner { content: ''; position: absolute; right: 0; top: 0; z-index: 4; width: 210px; height: 140px; pointer-events: none;
+  background: radial-gradient(100% 100% at 100% 0, rgba(251, 245, 229, 0.97) 0, rgba(251, 245, 229, 0.88) 38%, rgba(251, 245, 229, 0) 100%); }
+.kt-g__hang { position: absolute; left: 50%; top: 0; width: min(68vw, 38svh, 330px); translate: -50% 0; display: flex; flex-direction: column; align-items: center;
+  perspective: 1400px; transform-origin: 50% 0; animation: kt-sway 6s ease-in-out infinite alternate; }
+@keyframes kt-sway { from { transform: rotate(-0.9deg); } to { transform: rotate(0.9deg); } }
+.kt-g__thread { display: block; width: 3px; height: clamp(90px, 19svh, 190px); background: var(--kt-thread); border-radius: 2px; box-shadow: 0 0 0 0.5px rgba(80, 20, 10, 0.25); }
+.kt-g__knot { position: relative; z-index: 2; display: block; width: 64px; height: auto; margin-top: -10px; overflow: visible; }
+.kt-g__knot path { fill: none; stroke: #C42B28; stroke-width: 2.6; stroke-linecap: round; }
+.kt-g__knot path.y { stroke: #E3A21A; stroke-width: 1.2; }
+.kt-g__knot ellipse { fill: #B3241F; } .kt-g__knot ellipse.y { fill: #F0B53A; opacity: 0.85; }
+.kt-leaf { position: relative; width: 100%; aspect-ratio: 768 / 1150; margin-top: -26px; transform-style: preserve-3d; cursor: pointer; }
+.kt-leaf__face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.kt-leaf__face img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 18px 22px rgba(70, 50, 20, 0.22)); }
+.kt-leaf__back { transform: rotateY(180deg); }
+.kt-leaf__back img { transform: scaleX(-1); }
+.kt-leaf__mono { position: absolute; left: 0; right: 0; top: 30%; margin: 0; display: flex; align-items: center; justify-content: center; gap: 14px;
+  font: 400 clamp(34px, 5svh, 48px)/1 var(--su-f-display); color: #8A6A2A; }
+.kt-leaf__mono i { width: 1px; height: 1.1em; background: rgba(138, 106, 42, 0.6); transform: rotate(18deg); }
+.kt-leaf__mono .l-ne { font-family: var(--kt-f-deva-d); }
+.kt-leaf__text { position: absolute; left: 13%; right: 13%; top: 21%; height: 42%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  background: radial-gradient(closest-side, rgba(253, 249, 238, 0.96) 55%, rgba(253, 249, 238, 0) 100%); }
+.kt-leaf__k { margin: 0; font: 600 11px/1.3 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: #8A6A2A; }
+.kt-leaf__k .l-ne { font: 500 14px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.kt-leaf__names { margin: 0; display: flex; flex-direction: column; align-items: center; font: 400 clamp(26px, 3.8svh, 34px)/1.12 var(--su-f-display); color: var(--su-ink); }
+.kt-leaf__n { display: block; white-space: nowrap; }
+.kt-leaf__n .l-ne { font: 500 0.9em/1.35 var(--kt-f-deva-d); }
+.kt-leaf__amp { font-size: 0.6em; color: var(--su-accent); line-height: 1.3; }
+.kt-leaf__d { margin: 2px 0 0; font: 500 14px/1.4 var(--su-f-body); color: var(--kt-bark); }
+.kt-leaf__d .l-ne { font-size: 15px; }
+.theme-kalpataru .su-gate__ui { bottom: max(22px, 4svh); padding: 18px 18px 12px; background: rgba(255, 252, 244, 0.96); border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(74, 52, 38, 0.1), 0 24px 44px -24px rgba(31, 26, 19, 0.55); }
+.theme-kalpataru .su-gate__line { font: 400 19px/1.4 var(--su-f-display); color: var(--su-ink); }
+.theme-kalpataru .su-gate__line .l-ne { font: 500 18px/1.5 var(--kt-f-deva-d); }
+.theme-kalpataru .su-quiet { color: var(--kt-bark); }
+
+/* ═════════ the first screen: the whole tree ═════════ */
+.theme-kalpataru .kt-top { display: block; min-height: 100svh; background: var(--su-bg); overflow: visible; }
+.kt-hero { position: relative; height: 100svh; min-height: 600px; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center;
+  padding: max(64px, 8svh) 16px 0; overflow: hidden;
+  background: radial-gradient(70% 55% at 50% 72%, #FFF8E4 0%, rgba(255, 248, 228, 0) 70%), var(--su-bg); }
+.kt-hero::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 260px; pointer-events: none; opacity: 0.7;
+  background: url('/themes/kalpataru/art/crown-sm.webp') 50% 0 / max(100%, 640px) auto no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 10%, transparent 92%); mask-image: linear-gradient(to bottom, #000 10%, transparent 92%); }
+.kt-hero__copy { position: relative; z-index: 2; width: 100%; max-width: 560px; padding-bottom: 6px; text-align: center; }
+.kt-hero__inv { margin: 0 0 10px; font: 500 15px/1.5 var(--kt-f-deva-d); color: var(--su-accent); }
+.kt-hero__inv .l-en { font-family: var(--kt-f-deva-d); }
+.kt-hero__names { margin: 10px 0 0; display: flex; flex-direction: column; align-items: center; font: 400 clamp(40px, 6.4vw, 72px)/1.04 var(--su-f-display); color: var(--su-ink); }
+.kt-hero__n { display: block; white-space: nowrap; }
+.kt-hero__n .l-ne { font: 500 0.86em/1.3 var(--kt-f-deva-d); }
+.kt-hero__amp { font-size: 0.42em; line-height: 1.6; color: var(--su-accent); }
+.kt-hero__date { margin: 14px 0 0; font: 500 17px/1.5 var(--su-f-body); color: var(--su-ink); }
+.kt-hero__bs { display: block; font-size: 15px; font-weight: 400; color: var(--kt-bark); }
+html[data-lang='ne'] .kt-hero__date { font-size: 18px; }
+.kt-hero__place { margin: 4px 0 0; font-size: 16px; color: var(--kt-bark); }
+.kt-hero__line { margin: 12px auto 0; max-width: 30ch; font: 400 italic 17px/1.5 var(--su-f-display); color: var(--kt-canopy); text-wrap: balance; }
+.kt-hero__line .l-ne { font: 500 17px/1.6 var(--kt-f-deva-d); font-style: normal; }
+.kt-hero__tree { position: relative; align-self: end; height: 100%; min-height: 300px; aspect-ratio: 1 / 2; will-change: transform; }
+.kt-hero__tree img { display: block; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12%), linear-gradient(to right, transparent 0, #000 16%, #000 84%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12%), linear-gradient(to right, transparent 0, #000 16%, #000 84%, transparent 100%);
+  mask-composite: intersect; }
+.kt-hero__mark { position: absolute; left: 62%; top: 15%; width: 7%; aspect-ratio: 768 / 1150; translate: -50% -50%; }
+.kt-flock { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.kt-bird { position: absolute; left: 0; top: 0; display: block; opacity: 0; will-change: transform, opacity; }
+.kt-bird img { display: block; width: 100%; height: auto; }
+.kt-bird__b { position: absolute; left: 0; top: 0; opacity: 0; }
+.kt-bird.is-flying .kt-bird__a { animation: kt-flap-a 0.26s steps(1, end) infinite; }
+.kt-bird.is-flying .kt-bird__b { animation: kt-flap-b 0.26s steps(1, end) infinite; }
+@keyframes kt-flap-a { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes kt-flap-b { 0% { opacity: 0; } 50% { opacity: 1; } }
+.theme-kalpataru .su-cue { color: var(--kt-bark); }
+@media (min-width: 900px) {
+  .kt-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr; align-items: center; padding: 0 5vw; column-gap: 4vw; }
+  .kt-hero::before { display: none; }
+  .kt-hero__copy { justify-self: end; text-align: left; }
+  .kt-hero__names { align-items: flex-start; font-size: clamp(56px, 5.6vw, 92px); }
+  .kt-hero__line { margin-left: 0; }
+  .kt-hero__tree { justify-self: start; align-self: end; height: 94svh; max-height: none; margin: 0; }
+}
+
+/* ═════════ the climb ═════════ */
+.kt-climb { position: relative; background: var(--kt-warm); }
+.kt-stage { position: relative; height: 100svh; overflow: hidden; isolation: isolate;
+  background: linear-gradient(to bottom, #E8DFC8 0%, #F0DFB4 38%, #F3DCA4 100%); }
+.kt-tree { position: absolute; left: 0; top: 0; will-change: transform; }
+.kt-p { position: absolute; }
+.kt-p img { display: block; width: 100%; height: 100%; }
+/* each painting melts into the one below it, and into the paper at the sides */
+.kt-p:not(.kt-p--roots) img { -webkit-mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)); mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)); }
+@media (min-width: 900px) {
+  .kt-p img { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%); }
+  .kt-p:not(.kt-p--roots) img {
+    -webkit-mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to top, transparent 0, #000 var(--fade, 20%)), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%);
+    mask-composite: intersect; }
+}
+.kt-deco { position: absolute; display: block; pointer-events: none; }
+.kt-deco--phone { display: none; }
+@media (max-width: 899px) { .kt-deco--desk { display: none; } .kt-deco--phone { display: block; } }
+.kt-deco--strand, .kt-deco--diya { filter: drop-shadow(0 8px 6px rgba(40, 25, 10, 0.28)); }
+.kt-side { display: none; }
+@media (min-width: 900px) {
+  .kt-side { display: block; position: absolute; top: 0; z-index: 1; will-change: transform; pointer-events: none; }
+  .kt-side--l { left: 0; }
+  .kt-side--r { right: 0; }
+  .kt-side img { position: absolute; left: 0; display: block; width: 100%; height: var(--th);
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 50%, transparent 96%), linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, #000 0, #000 50%, transparent 96%), linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
+    mask-composite: intersect; }
+}
+.kt-flow { position: absolute; left: 0; right: 0; top: 0; z-index: 2; display: flex; flex-direction: column-reverse; align-items: center; gap: 36svh; padding-inline: 16px; will-change: transform; }
+.kt-crop { display: none; }
+.kt-st { position: relative; width: min(100%, 440px); box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(-22px); transition: opacity 420ms var(--kt-ease), transform 520ms var(--kt-ease); }
+.kt-st.is-here { opacity: 1; transform: none; }
+@media (min-width: 900px) {
+  .kt-flow { padding-inline: 4vw; gap: 30svh; }
+  .kt-st[data-side='l'] { left: calc(-1 * min(25vw, 330px)); }
+  .kt-st[data-side='r'] { left: min(25vw, 330px); }
+  .kt-st--fork { width: min(100%, 760px); }
+}
+/* the thread every hanging thing hangs from (it runs up out of sight, into the branches) */
+.kt-hang::before, .kt-carved::before, .kt-lantern::before, .kt-board::before, .kt-print::before {
+  content: ''; position: absolute; left: 50%; bottom: 100%; width: 2px; height: 46svh; translate: -50% 0; background: var(--kt-thread); border-radius: 2px;
+  -webkit-mask-image: linear-gradient(to top, #000 60%, transparent); mask-image: linear-gradient(to top, #000 60%, transparent); }
+
+/* paper: tags, slips and cards */
+.kt-paper, .kt-slip { position: relative; box-sizing: border-box; width: 100%; background: var(--su-paper); border-radius: 6px; text-align: center;
+  box-shadow: 0 1px 0 rgba(74, 52, 38, 0.1), 0 24px 44px -26px rgba(31, 26, 19, 0.5); }
+.kt-paper { padding: 28px 22px 26px; }
+.kt-paper::after { content: ''; position: absolute; inset: 7px; border: 1px solid rgba(60, 106, 68, 0.22); border-radius: 3px; pointer-events: none; }
+.kt-slip { z-index: 3; width: auto; max-width: 100%; padding: 14px 22px 16px; }
+.kt-slip .kt-lede { margin-top: 8px; }
+.kt-hosts { margin: 12px 0 18px; color: var(--kt-bark); font-size: 16px; }
+.kt-paper .su-btn { margin-top: 6px; position: relative; z-index: 1; }
+
+/* roots: the shrine at the foot of the tree */
+.kt-shrine { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-bottom: -8px; position: relative; z-index: 1; }
+.kt-shrine__kalash { width: 74px; }
+.kt-shrine__gan img { display: block; width: 70px; height: auto; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, 0.3)); }
+.kt-shrine__diyo { width: 58px; }
+.theme-kalpataru .np-pic img { display: block; width: 100%; height: auto; }
+
+/* trunk: the couple in a carved frame */
+.kt-carved { position: relative; width: min(290px, 66vw); aspect-ratio: 908 / 1449; margin: 0 0 -6px; }
+.kt-carved__pic { position: absolute; left: 14.6%; right: 14.6%; top: 18.8%; bottom: 9.4%; overflow: hidden; background: #EFE4CB; }
+.kt-carved__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.kt-carved__frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; filter: drop-shadow(0 16px 20px rgba(40, 24, 10, 0.4)); }
+.kt-carved::before { bottom: 97%; z-index: -1; }
+
+/* the fork: the families' wooden boards */
+.kt-boards { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; margin-top: 10px; }
+.kt-board { position: relative; flex: 1 1 0; min-width: 0; max-width: 330px; }
+.kt-board--bride { margin-top: 44px; }
+.kt-board::before { bottom: 92%; height: 30svh; }
+.kt-board__cords { position: relative; display: block; aspect-ratio: 908 / 416; background-image: url('/themes/kalpataru/art/tag-top.webp'); background-size: 100% auto; background-repeat: no-repeat; }
+.kt-board__plank { position: relative; margin-top: -4%; padding: 4px 4px 10px; border: 14px solid transparent; border-top-width: 6px;
+  border-image: url('/themes/kalpataru/art/tag-plank.webp') 40 60 60 60 fill / 6px 14px 14px 14px stretch; text-align: center; color: var(--kt-wood-ink);
+  filter: drop-shadow(0 14px 16px rgba(50, 30, 10, 0.32)); }
+.kt-board__pic { width: 76px; aspect-ratio: 1; margin: 0 auto 8px; overflow: hidden; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255, 248, 230, 0.8); }
+.kt-board__pic img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.kt-board__label { margin: 0; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: #6A4A2A; }
+.kt-board__label .l-ne { font: 500 14px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.kt-board__name { margin: 4px 0 0; font: 400 clamp(19px, 5.4vw, 24px)/1.2 var(--su-f-display); }
+.kt-board__name .l-ne { font: 600 clamp(17px, 4.8vw, 21px)/1.4 var(--kt-f-deva-d); }
+.kt-board__of { margin: 8px 0 0; font-size: 14px; color: #5A3E24; }
+.kt-board__par { margin: 0; font: 500 15px/1.45 var(--su-f-body); }
+.kt-board__home { margin: 4px 0 0; font-size: 15px; color: #5A3E24; }
+html[data-lang='ne'] .kt-board__par { font-size: 17px; }
+@media (min-width: 900px) {
+  .kt-boards { gap: 60px; }
+  .kt-board__plank { padding: 6px 12px 16px; border-width: 6px 22px 22px; border-image-width: 6px 22px 22px 22px; }
+  .kt-board--bride { margin-top: 70px; }
+}
+
+/* photos: prints hung on threads */
+.kt-prints { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 14px; width: 100%; margin: 26px 0 0; padding: 0; list-style: none; }
+.kt-prints--1 { grid-template-columns: minmax(0, 260px); justify-content: center; }
+.kt-print { position: relative; transform: rotate(var(--r, 0deg)); }
+.kt-print::before { height: 22svh; }
+.kt-print:nth-child(n+3)::before { height: 26px; }
+.theme-kalpataru .kt-print__btn { display: block; width: 100%; padding: 7px 7px 20px; border: 0; border-radius: 2px; overflow: visible; background: #FFFDF8; cursor: zoom-in; box-shadow: 0 16px 26px -16px rgba(31, 26, 19, 0.55); }
+.theme-kalpataru .kt-print__btn img { display: block; width: auto; max-width: 100%; height: auto; max-height: 22svh; margin: 0 auto; }
+@media (min-width: 900px) { .theme-kalpataru .kt-print__btn img { max-height: 26svh; } }
+.theme-kalpataru .kt-more { margin-top: 18px; background: var(--su-paper); box-shadow: 0 10px 22px -14px rgba(31, 26, 19, 0.5); }
+
+/* the lanterns: one per celebration */
+.kt-lantern { position: relative; width: 46px; margin-bottom: -10px; z-index: 1; }
+.kt-lantern::before { height: 40svh; bottom: 98%; }
+.kt-lantern__img { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
+.kt-lantern__glow { position: absolute; left: -110%; right: -110%; top: 14%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 206, 120, 0.55), rgba(255, 206, 120, 0)); }
+.kt-paper--ev { text-align: left; padding: 30px 24px 24px; }
+.kt-paper--ev::before { content: ''; position: absolute; left: 50%; top: 10px; width: 9px; height: 9px; translate: -50% 0; border-radius: 50%; background: var(--kt-warm); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25); }
+.kt-ev__group { margin: 2px 0 12px; font: 400 22px/1.2 var(--su-f-display); color: var(--kt-canopy); }
+.kt-ev__group .l-ne { font: 500 20px/1.4 var(--kt-f-deva-d); }
+.kt-ev__no { margin: 0; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--su-accent); }
+.kt-ev__no .l-ne { font: 500 14px/1.4 var(--su-f-deva); letter-spacing: 0; }
+.kt-ev__title { margin: 4px 0 0; font: 400 clamp(32px, 3.4vw, 38px)/1.1 var(--su-f-display); color: var(--su-ink); }
+.kt-ev__title .l-ne { font: 600 0.84em/1.4 var(--kt-f-deva-d); }
+.kt-ev__date { margin: 10px 0 0; font: 600 17px/1.45 var(--su-f-body); color: var(--su-ink); }
+.kt-ev__alt { margin: 0; font-size: 15px; color: var(--kt-bark); }
+html[data-lang='ne'] .kt-ev__date { font-size: 18px; }
+.kt-ev__dl { display: grid; gap: 10px; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid rgba(74, 52, 38, 0.16); }
+.kt-ev__dl > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.kt-ev__dl dt { font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--kt-bark); }
+.kt-ev__dl dt .l-ne { font: 500 14px/1.5 var(--su-f-deva); letter-spacing: 0; }
+.kt-ev__dl dd { margin: 0; font-size: 16.5px; line-height: 1.5; }
+.kt-ev__dress { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.kt-ev__blurb { margin: 12px 0 0; font-size: 15.5px; color: var(--kt-bark); }
+.kt-ev__order { margin-top: 12px; }
+.kt-ev__order summary { cursor: pointer; font-weight: 600; color: var(--su-accent); }
+.kt-ev__order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.kt-ev__order li { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--su-line); font-size: 15.5px; }
+
+/* the nest and the countdown */
+.kt-nest { width: min(360px, 82vw); margin: 0 0 -26px; position: relative; z-index: 1; }
+.kt-nest img { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 14px rgba(40, 30, 10, 0.25)); }
+.kt-paper--count { padding-top: 34px; }
+.kt-count__t { font-size: clamp(24px, 2.6vw, 30px); }
+.kt-count__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 16px 0 0; padding: 0; list-style: none; }
+.kt-count__grid li { display: flex; flex-direction: column; align-items: center; padding: 8px 0; border-left: 1px solid rgba(74, 52, 38, 0.14); }
+.kt-count__grid li:first-child { border-left: 0; }
+.theme-kalpataru .kt-count__n { display: block; font: 400 clamp(34px, 4vw, 44px)/1 var(--su-f-display); color: var(--kt-canopy); font-variant-numeric: tabular-nums; }
+.theme-kalpataru .kt-count__n .l-ne { font-family: var(--su-f-deva); font-weight: 500; }
+.kt-count__l { margin-top: 6px; font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kt-bark); }
+.kt-count__l .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
+.kt-count__done { margin: 12px 0 0; font: 400 24px/1.4 var(--su-f-display); color: var(--kt-canopy); }
+.kt-count__when { margin: 14px 0 0; font-size: 16px; color: var(--kt-bark); }
+.kt-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; position: relative; z-index: 1; }
+
+/* the crown */
+.kt-paper--crown { padding: 34px 24px 30px; }
+.kt-crown__names { margin: 18px 0 20px; font: 400 clamp(30px, 3.4vw, 40px)/1.2 var(--su-f-display); color: var(--su-ink); }
+.kt-crown__names .l-ne { font: 500 0.86em/1.4 var(--kt-f-deva-d); }
+.kt-crown__names > span[aria-hidden] { color: var(--su-accent); font-size: 0.6em; }
+
+/* the climb's altitude: a thread with a knot that rises */
+.kt-gauge { display: none; }
+@media (min-width: 900px) {
+  .kt-gauge { display: block; position: absolute; z-index: 3; left: 28px; top: 20%; bottom: 20%; width: 2px; background: rgba(74, 52, 38, 0.2); border-radius: 2px; }
+  .kt-gauge__knot { position: absolute; left: 50%; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--su-accent); box-shadow: 0 0 0 4px rgba(196, 43, 40, 0.16); }
+}
+
+/* without motion: three still crops of the tree between the parts, no pin */
+.kt-climb.is-static .kt-stage { height: auto; overflow: visible; background: var(--kt-warm); }
+.kt-climb.is-static .kt-tree, .kt-climb.is-static .kt-gauge, .kt-climb.is-static .kt-side, .kt-climb.is-static .kt-corner { display: none; }
+.kt-climb.is-static .kt-flow { position: static; flex-direction: column; gap: 56px; padding: 56px 16px 72px; transform: none !important; }
+.kt-climb.is-static .kt-st { opacity: 1; transform: none; }
+.kt-climb.is-static .kt-crop { display: block; width: calc(100% + 32px); max-width: 900px; height: 58svh; margin: 0 -16px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent); }
+.kt-crop img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.kt-crop--roots img { object-position: 50% 78%; }
+.kt-crop--fork img { object-position: 50% 45%; }
+.kt-crop--crown img { object-position: 50% 30%; }
+.kt-climb.is-static .kt-hang::before, .kt-climb.is-static .kt-carved::before, .kt-climb.is-static .kt-lantern::before,
+.kt-climb.is-static .kt-board::before, .kt-climb.is-static .kt-print::before { height: 34px; }
+
+/* ═════════ the sky: the reply and the wishes ═════════ */
+.kt-sky { position: relative; padding: clamp(80px, 12svh, 130px) 16px 40px;
+  background: linear-gradient(to bottom, #E8DFC8 0%, #F4EEDD 34%, var(--su-bg) 70%); }
+.kt-reply { position: relative; max-width: 600px; margin: 0 auto; padding: 46px clamp(20px, 5vw, 40px) 32px; background: var(--su-paper); border-radius: 6px;
+  box-shadow: 0 1px 0 rgba(74, 52, 38, 0.1), 0 30px 60px -36px rgba(31, 26, 19, 0.5); }
+.kt-reply__tie { position: absolute; left: 50%; top: -30px; width: 108px; translate: -50% 0; }
+.kt-reply__tie svg { display: block; width: 100%; height: auto; overflow: visible; }
+.kt-reply__tie .r { fill: #C42B28; stroke: #8E1E1C; stroke-width: 1; }
+.kt-reply__tie .t { fill: none; stroke: #C42B28; stroke-width: 5; stroke-linecap: round; }
+.kt-reply__tie .k { fill: #A3221F; }
+.kt-reply .kt-lede { margin-bottom: 20px; }
+.theme-kalpataru .su-form { margin-top: 18px; text-align: left; }
+.theme-kalpataru .su-field input[type='text'], .theme-kalpataru .su-field input[type='tel'], .theme-kalpataru .su-field textarea, .theme-kalpataru .su-field select { background: #FBF6E9; }
+.theme-kalpataru .su .choice, .theme-kalpataru .choice { font-family: var(--su-f-body); }
+.theme-kalpataru .rsvp__status { text-align: center; color: var(--kt-canopy); font-weight: 500; }
+
+.kt-wishes { max-width: 980px; margin: clamp(64px, 10svh, 110px) auto 0; text-align: center; }
+.kt-wishes__t { margin-bottom: 4px; }
+.kt-wishes__thread { position: relative; height: 34px; }
+.kt-wishes__line { display: block; width: 100%; height: 34px; overflow: visible; }
+.kt-wishes__strip { position: absolute; width: 8px; height: var(--h, 36px); translate: -50% 0; background: var(--rib); transform: rotate(var(--r, 0deg)); transform-origin: 50% 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); }
+.kt-wishes__line path { fill: none; stroke: #C42B28; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
+.kt-ribbons { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin: -6px 0 0; padding: 0; list-style: none; }
+.kt-rib { position: relative; width: min(220px, 44vw); display: flex; flex-direction: column; align-items: center; transform: rotate(var(--r, 0deg)); transform-origin: 50% 0; }
+.kt-rib__tie { display: block; width: 10px; height: 38px; background: var(--rib, #C42B28); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); }
+.kt-rib__note { margin: -4px 0 0; width: 100%; box-sizing: border-box; padding: 14px 14px 12px; background: #FFFCF2; border-top: 3px solid var(--rib, #C42B28); box-shadow: 0 12px 20px -14px rgba(31, 26, 19, 0.5);
+  font: 400 17px/1.45 'Kalam', var(--su-f-body); color: var(--su-ink); text-align: left; overflow-wrap: anywhere; }
+.kt-rib__note .l-ne, .kt-rib__note.is-deva { font: 400 17px/1.7 var(--su-f-deva); }
+.kt-rib__by { display: block; margin-top: 6px; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kt-bark); }
+.kt-wishes__empty { margin: 44px auto 0; max-width: 36ch; color: var(--kt-bark); font-size: 16px; }
+.kt-info { max-width: 760px; margin: 56px auto 0; }
+.theme-kalpataru .su-more { background: var(--su-paper); border-radius: 6px; box-shadow: 0 1px 0 rgba(74, 52, 38, 0.1); }
+.theme-kalpataru .su-more summary, .theme-kalpataru .su-more h3 { color: var(--kt-canopy); }
+
+.kt-close { padding: clamp(64px, 10svh, 110px) 20px 28px; text-align: center; background: var(--su-bg); }
+.kt-close__ne { margin: 0 auto; max-width: 30ch; font: 500 22px/1.7 var(--kt-f-deva-d); color: var(--kt-canopy); }
+.kt-close__en { margin: 8px auto 0; max-width: 40ch; font: 400 italic 19px/1.55 var(--su-f-display); color: var(--kt-bark); }
+html[data-lang='ne'] .kt-close__en { display: none; }
+.kt-close__names { margin: 22px 0 0; font: 400 clamp(32px, 4.4vw, 46px)/1.2 var(--su-f-display); color: var(--su-ink); }
+.kt-close__names .l-ne { font: 500 0.86em/1.4 var(--kt-f-deva-d); }
+.kt-close__names > span[aria-hidden] { color: var(--su-accent); font-size: 0.6em; }
+.kt-close__tag { margin: 10px 0 18px; color: var(--kt-bark); letter-spacing: 0.06em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kt-g__hang { animation: none; }
+  .kt-st { transition: none; }
+}

@@ -173,5 +173,9 @@
   "mohar": {
     "kind": "gate",
     "why": "The sealed farman on the indigo cloth: brass seal, red silk and petals; the opening is the design."
+  },
+  "kalpataru": {
+    "kind": "hero",
+    "why": "The names above the whole painted tree, the moment the leaf lands in its crown: the tree the guest climbs next."
   }
 }

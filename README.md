@@ -35,6 +35,7 @@ dashboard to create, customise, publish and track invitations.
 | 28 | **Sarovar** `/sarovar/` | A lotus lake at dawn on living WebGL water: a bud opens, two swans meet, and you glide across the lake past stone posts (one per ceremony) to a marble pavilion. Both sites. |
 | 29 | **Mohar** `/mohar/` | The royal seal: press and hold a brass seal into red lac on a folded farman, break it, and the decree unfolds in 3D; its pages then open like a concertina. Both sites. |
 | 30 | **Kalapi** `/kalapi/` | The peacock's monsoon: a peacock fans its tail around your names, then you walk sideways along a painted Nathdwara pichwai cloth. |
+| 31 | **Kalpataru** `/kalpataru/` | The wish-fulfilling tree (both sites): a leaf card turns over on the names, then the guest climbs a painted peepal tree from its roots to its crown, past both families, the lanterns and the nest. |
 
 The showroom at `/` links every theme and the studio.
 

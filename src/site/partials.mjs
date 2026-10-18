@@ -396,14 +396,14 @@ function tierTag(tier) {
   return `<span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><span class="dcard__price" data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span>`;
 }
 /** Every design on the Nepal site: its own, then the international ones (their pages are under /international/). */
-export const ALL_DESIGNS = [...THEMES, ...INTL_THEMES.map(intlAsNp)];
+export const ALL_DESIGNS = [...THEMES, ...INTL_THEMES.filter((d) => !BY_SLUG[d.slug]).map(intlAsNp)]; // a design on both sites is listed once
 /** the small line after a design's name: its Nepali name, or "International" */
 const subName = (t, cls = '') => (t.intl ? `<span${cls ? ` class="${cls}"` : ''}>International</span>` : `<span${cls ? ` class="${cls}"` : ''} lang="ne">${esc(t.ne)}</span>`);
 /** a design card's picture: the image search words (the link itself is hidden from screen readers) */
 const cardAlt = (t) => (t.intl ? `The ${t.name} digital wedding invitation on a phone: ${t.alt}` : `The ${t.name} online wedding card design on a phone: ${t.alt}`);
 export function designCard(t, i) {
   const cat = CATEGORIES[t.cat] || CATEGORIES.cards;
-  const href = designPage(t.slug);
+  const href = designPage(t.slug, 'np');
   return `<li class="dcard" data-slug="${t.slug}" data-cat="${t.cat}" data-tier="${t.tier}" data-faiths="${(t.religions || []).join(' ')}"${t.intl ? ' data-intl' : ''}>
     <a class="dcard__pic" href="${href}" style="--tint:${cat.tint}" tabindex="-1" aria-hidden="true">${phone(t.slug, { eager: false, alt: cardAlt(t) })}</a>
     <div class="dcard__body">
@@ -423,13 +423,13 @@ function designsGrid() {
 function designsLd() {
   return jsonLd({
     '@context': 'https://schema.org', '@type': 'ItemList', name: `Wedding Invitation Designs: ${ALL_DESIGNS.length} Digital Cards`, numberOfItems: ALL_DESIGNS.length,
-    itemListElement: ALL_DESIGNS.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(t.slug)}`, name: `${t.name} Wedding Invitation Design` })),
+    itemListElement: ALL_DESIGNS.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(t.slug, 'np')}`, name: `${t.name} Wedding Invitation Design` })),
   });
 }
 const RAIL = ['laali', 'gurans', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'sindoor', 'rajdwar', 'shree', 'mala'];
 /** a rail card (home page, landing rows, related designs): picture and name open the design's own page */
 export function railCard(t, sizes = SIZES.rail) {
-  const href = designPage(t.slug);
+  const href = designPage(t.slug, 'np');
   return `<li class="rcard" data-slug="${t.slug}">
     <a class="rcard__pic" href="${href}" style="--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}">${phone(t.slug, { sizes, alt: cardAlt(t) })}</a>
     <p class="rcard__name"><a href="${href}">${esc(t.name)}</a> ${subName(t)}</p>
