@@ -12,7 +12,7 @@ import { gsap } from 'gsap';
 import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
 import { toran as kitToran, lamp, initNepali } from '../_suite/nepali.js';
-import { A, DOORS, DOOR_AR, MANDAP, LADI } from './doors.js';
+import { A, DOORS, DOOR_AR, MANDAP, LADI, FLOORS } from './doors.js';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 const NE_NUM = ['१', '२', '३', '४', '५', '६', '७'];
@@ -59,15 +59,20 @@ function hangLadis(tie = false) {
 // ═════════ the tunnel ═════════
 function doorLayer(d, i, eager) {
   const src = `${A}${d.file}.webp`; const sm = `${A}${d.file}-sm.webp`;
-  return `<div class="to-door" data-i="${i}" style="--wall:${d.wall};--floor:${d.floor};--fy:${(d.floorY * 100).toFixed(2)}%">
-      <i class="to-wall to-wall--t"></i><i class="to-wall to-wall--b"></i>
-      <i class="to-wall to-wall--l"></i><i class="to-wall to-wall--lf"></i><i class="to-wall to-wall--r"></i><i class="to-wall to-wall--rf"></i>
-      <img class="to-door__art" ${eager ? '' : 'data-'}src="${src}" ${eager ? '' : 'data-'}srcset="${sm} 640w, ${src} 1088w" sizes="(min-width: 900px) 560px, 88vw" alt="" decoding="async"${i === 0 ? ' fetchpriority="high"' : ''} />
+  const fl = FLOORS[d.floorArt];
+  // the wall (painted plaster, tinted, darker away from the door) with the door's box cut out; the painted floor
+  // from the door's ground line; a warm pool of light spilling from the opening onto that floor
+  return `<div class="to-door" data-i="${i}" style="--wall:${d.wall};--fy:${(d.ground * 100).toFixed(2)}%;--floor:${fl.color};--fl:url('${A}${fl.file}.webp');--ox:${(((d.open[0] + d.open[2]) / 2) * 100).toFixed(2)}%;--ob:${(d.open[3] * 100).toFixed(2)}%;--ow:${((d.open[2] - d.open[0]) * 100).toFixed(2)}%">
+      <i class="to-wallbg"></i>
+      <i class="to-floor"></i>
+      <img class="to-door__art" ${eager ? '' : 'data-'}src="${src}" ${eager ? '' : 'data-'}srcset="${sm} 640w, ${src} 1088w" sizes="(min-width: 900px) 560px, 100vw" alt="" decoding="async"${i === 0 ? ' fetchpriority="high"' : ''} />
+      <i class="to-light"></i>
       <i class="to-shade"></i>
     </div>`;
 }
 function mandapLayer() {
-  return `<div class="to-door to-door--mandap" data-i="6">
+  return `<div class="to-door to-door--mandap" data-i="6" style="--floor:${MANDAP.floor}">
+      <i class="to-floor to-floor--mandap"></i>
       <picture>
         <source media="(orientation: landscape)" data-srcset="${A}${MANDAP.l.file}-sm.webp 1008w, ${A}${MANDAP.l.file}.webp 1680w" sizes="110vw" />
         <img class="to-door__art" data-src="${A}${MANDAP.p.file}.webp" data-srcset="${A}${MANDAP.p.file}-sm.webp 566w, ${A}${MANDAP.p.file}.webp 944w" sizes="(orientation: portrait) 125vw, 100vw" alt="" decoding="async" />
@@ -201,7 +206,7 @@ function tunnel(ctx) {
   const layers = [...stage.querySelectorAll('.to-door')].sort((a, b) => a.dataset.i - b.dataset.i);
   const shades = layers.map((l) => l.querySelector('.to-shade'));
   const floorFade = stage.querySelector('.to-floorfade');
-  const S = { vw: 0, vh: 0, wide: false, W: 0, hero: null, room: null, mandap: null, cam: 0, target: 0, keys: [[0, 0]], raf: 0, reduced: ctx.reduced, shown: -1 };
+  const S = { vw: 0, vh: 0, wide: false, W: 0, hero: null, room: null, mandap: null, cam: 0, target: 0, pan: 0, keys: [[0, 0]], holds: [], raf: 0, reduced: ctx.reduced, shown: -1 };
 
   function measure() {
     S.vw = window.innerWidth; S.vh = window.innerHeight;
@@ -212,20 +217,44 @@ function tunnel(ctx) {
     const roomH = wide ? Math.min(vh * 0.8, vw * 0.52 * DOOR_AR) : Math.min(vh * 0.66, vw * 1.04 * DOOR_AR);
     const heroH = wide ? vh * 0.58 : Math.min(vh * 0.5, vw * 0.8 * DOOR_AR);
     S.W = roomH / DOOR_AR; // the layer's own size; the hero frame is a scale of it
-    S.room = { w: S.W, x: wide ? vw * 0.3 : vw / 2, top: wide ? (vh - roomH) / 2 : vh * 0.03 };
+    S.room = { w: S.W, x: wide ? vw * 0.33 : vw / 2, top: wide ? (vh - roomH) / 2 : vh * 0.03 };
     S.hero = { w: heroH / DOOR_AR, x: vw / 2, top: vh - heroH - (wide ? vh * 0.02 : vh * 0.025) };
+    // how far each door's painted wall and floor reach (% of the door): just enough to fill the screen whenever that
+    // door is the one you see (asymmetric on wide screens, where the door stands left of centre)
+    const E = wide ? { xl: 140, xr: 290, yt: 80, yb: 230 } : { xl: 55, xr: 55, yt: 120, yb: 290 };
+    // the painted floor: under the door on a phone; on a wide screen it also runs on under the plaques' column
+    const tot = E.xl + 100 + E.xr; const fw = wide ? 3.8 / (tot / 100) : 2.6 / (tot / 100);
+    const cx = (E.xl + 50) / tot;
+    const fcx = wide ? (E.xl + 50 + 85) / tot : cx;
+    const v = { '--xl': E.xl, '--xr': E.xr, '--yt': E.yt, '--yb': E.yb,
+      '--mw': `${(10000 / tot).toFixed(3)}%`, '--mh': `${(10000 / (E.yt + 100)).toFixed(3)}%`, '--mx': `${((E.xl / (E.xl + E.xr)) * 100).toFixed(3)}%`,
+      '--cx': `${(cx * 100).toFixed(2)}%`, '--cy': `${(((E.yt + 50) / (E.yt + 100)) * 100).toFixed(2)}%`,
+      '--rx': `${(30000 / tot).toFixed(2)}%`, '--ry': `${(22000 / (E.yt + 100)).toFixed(2)}%`,
+      '--fw': `${(fw * 100).toFixed(2)}%`, '--fx': `${(fw >= 1 ? 50 : ((fcx - fw / 2) / (1 - fw)) * 100).toFixed(2)}%` };
+    const world = stage.querySelector('.to-world');
+    Object.entries(v).forEach(([k, x]) => world.style.setProperty(k, String(x)));
     // the hero text must end above the first door's lintel
     const topDoor = S.hero.top + heroH * 0.04;
     document.documentElement.style.setProperty('--to-hero-room', `${Math.max(180, topDoor).toFixed(0)}px`);
     layers.forEach((l, i) => {
-      if (i < 6) { l.style.width = `${S.W.toFixed(1)}px`; l.style.height = `${(S.W * DOOR_AR).toFixed(1)}px`; return; }
+      if (i < 6) {
+        l.style.width = `${S.W.toFixed(1)}px`; l.style.height = `${(S.W * DOOR_AR).toFixed(1)}px`;
+        // the wall's hole: the door's opening (a hair wider; the frame covers the edge)
+        const [o0, o1, o2, o3] = DOORS[i].open; const ow = (o2 - o0 + 0.016) * 100; const oh = (o3 - o1 + 0.016) * 100;
+        const hy = E.yt + 100;
+        l.style.setProperty('--mw', `${((ow / tot) * 100).toFixed(3)}%`);
+        l.style.setProperty('--mh', `${((oh / hy) * 100).toFixed(3)}%`);
+        l.style.setProperty('--mx', `${(((E.xl + (o0 - 0.008) * 100) / (tot - ow)) * 100).toFixed(3)}%`);
+        l.style.setProperty('--my', `${(((E.yt + (o1 - 0.008) * 100) / (hy - oh)) * 100).toFixed(3)}%`);
+        return;
+      }
       const M = vw / vh >= 1 ? MANDAP.l : MANDAP.p;
       // a little larger than the screen, so seen through the sixth door it still fills the whole opening
       const k = Math.max(vw / M.w, vh / M.h) * 1.12;
       const mw = M.w * k; const mh = M.h * k;
       l.style.width = `${mw.toFixed(1)}px`; l.style.height = `${mh.toFixed(1)}px`;
       const roomAy = S.room.top + ocy(5) * S.W * DOOR_AR;
-      S.mandap = { ax: S.room.x + (mw - vw) / 2, ay: roomAy + (mh - vh) / 2 };
+      S.mandap = { ax: S.room.x + (mw - vw) / 2, ay: roomAy + (mh - vh) / 2, bottom: (vh + mh) / 2, petals: mw * (944 / 1680) * 0.3 };
     });
   }
   const ocx = (i) => (DOORS[i].open[0] + DOORS[i].open[2]) / 2;
@@ -238,10 +267,11 @@ function tunnel(ctx) {
     const oy = lerp(ocy(k0), ocy(k1), t);
     const top = lerp(S.hero.top, S.room.top, f);
     const ax = lerp(S.hero.x, S.room.x, f);
-    const ay = top + oy * w * DOOR_AR;
+    const ay = top + oy * w * DOOR_AR - S.pan; // while plaques are read the view tilts down to the floor
     const unit = w / S.W; // the hero frame is a smaller copy of the room frame
     const zc = zAt(c);
-    const far = S.wide ? 6.4 : 5;
+    // how deep the drawn doors go: beyond that the house is dark (fewer layers on a phone)
+    const far = S.wide ? 4.2 : 3.6;
     floorFade.style.opacity = (f * (1 - smooth((c - 5) * 1.2))).toFixed(3); // the floor in shade, except at the sunlit mandap
     layers.forEach((l, i) => {
       const d = Z[i] - zc + 1;
@@ -255,22 +285,43 @@ function tunnel(ctx) {
     });
   }
 
-  /** scroll y -> camera: a move per room (its gap scrolls through), a hold while its plaques are read */
+  /**
+   * scroll y -> camera: a move per room (its gap scrolls through), then a hold while its plaques are read.
+   * Where the plaques would cross the door's flowers (every room on a phone; the mandap everywhere), the first plaque
+   * arrives just below the door's floor art and the view then tilts down with the reading (pan, 1:1 with the scroll,
+   * up to PMAX), so plaques only ever lie on the floor; the next move tilts back up.
+   */
   function buildKeys() {
     const y0 = window.scrollY;
     const abs = (el) => el.getBoundingClientRect().top + y0;
     const keys = [[0, 0]];
+    const holds = [];
     let last = 0; let prev = 0;
     document.querySelectorAll('.to-room').forEach((room, n) => {
       const k = Number(room.dataset.door);
       const g = room.querySelector('.to-gap');
       const plaqueTop = abs(g) + g.offsetHeight;
+      const tilt = k === 6 || !S.wide;
+      // where the first plaque's top sits when the door is reached (fraction of the screen)
+      const at = k === 6 ? (S.mandap.bottom + S.mandap.petals) / S.vh : S.wide ? 0.9 : (S.room.top + S.W * DOOR_AR * DOORS[k].ground) / S.vh + 0.19;
       const start = n === 0 ? 0 : Math.max(last, abs(room) - S.vh * 0.6);
-      const end = Math.max(start + 1, plaqueTop - S.vh * (S.wide ? 0.9 : 0.8));
+      const end = Math.max(start + 1, plaqueTop - S.vh * at);
       keys.push([start, prev], [end, k]);
+      if (holds.length) holds[holds.length - 1].next = [start, end];
+      holds.push({ end, max: tilt ? S.vh * 1.1 : 0, next: null });
       last = end; prev = k;
     });
-    S.keys = keys;
+    S.keys = keys; S.holds = holds;
+  }
+  function panAt(y) {
+    for (let i = S.holds.length - 1; i >= 0; i--) {
+      const h = S.holds[i];
+      if (y < h.end) continue;
+      if (!h.next || y < h.next[0]) return Math.min(y - h.end, h.max);
+      const P = Math.min(h.next[0] - h.end, h.max);
+      return P * (1 - smooth((y - h.next[0]) / (0.55 * (h.next[1] - h.next[0]) || 1))); // the view tilts back up first, then walks on
+    }
+    return 0;
   }
   function camAt(y) {
     const K = S.keys;
@@ -292,6 +343,7 @@ function tunnel(ctx) {
     S.raf = 0;
     const diff = S.target - S.cam;
     S.cam = Math.abs(diff) < 0.0008 ? S.target : S.cam + diff * 0.16;
+    S.pan = panAt(window.scrollY);
     render(S.cam);
     if (S.cam !== S.target) S.raf = requestAnimationFrame(tick);
   }
@@ -301,9 +353,9 @@ function tunnel(ctx) {
     if (S.reduced) {
       // stills: the door whose plaques are in view, crossfaded in
       const k = Math.round(t);
-      if (k === S.shown) return;
+      if (k === S.shown) { S.pan = panAt(window.scrollY); render(S.cam); return; }
       S.shown = k;
-      gsap.to(stage, { opacity: 0, duration: 0.18, ease: 'power1.in', overwrite: true, onComplete: () => { S.cam = k; render(k); gsap.to(stage, { opacity: 1, duration: 0.32, ease: 'power1.out' }); } });
+      gsap.to(stage, { opacity: 0, duration: 0.18, ease: 'power1.in', overwrite: true, onComplete: () => { S.cam = k; S.pan = panAt(window.scrollY); render(k); gsap.to(stage, { opacity: 1, duration: 0.32, ease: 'power1.out' }); } });
       return;
     }
     S.target = t;

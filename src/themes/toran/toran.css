@@ -51,14 +51,35 @@ body.su.theme-toran {
 .to-door { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform, opacity; backface-visibility: hidden; }
 .to-door__art, .to-door picture { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
 .to-door picture img { display: block; width: 100%; height: 100%; }
-.to-wall { position: absolute; display: block; background: var(--wall); }
-.to-wall--t { left: -300%; top: -300%; width: 700%; height: 300.4%; }
-.to-wall--b { left: -300%; top: 99.6%; width: 700%; height: 300%; background: linear-gradient(180deg, var(--floor) 0%, color-mix(in srgb, var(--floor) 72%, #1E0D06) 22%, color-mix(in srgb, var(--floor) 55%, #1E0D06) 60%); }
-.to-wall--l, .to-wall--r { top: 0; width: 300.4%; height: var(--fy); }
-.to-wall--lf, .to-wall--rf { top: var(--fy); width: 300.4%; height: calc(100% - var(--fy)); background: var(--floor); }
-.to-wall--l, .to-wall--lf { left: -300%; }
-.to-wall--r, .to-wall--rf { left: 99.6%; }
-.to-shade { position: absolute; left: -300%; top: -300%; width: 700%; height: 700%; background: #1E0D06; opacity: 0; pointer-events: none; }
+/* the wall: painted lime plaster (one neutral texture, tinted per door by soft-light), falling off into shade away
+   from the door; the door's own box is cut out of it (the picture carries the wall near the frame) */
+/* extents (set per screen in main.js, as % of the door): only as far as a door ever needs to fill the screen,
+   so each layer stays small enough for a phone's GPU */
+.to-wallbg { position: absolute; left: calc(var(--xl) * -1%); top: calc(var(--yt) * -1%); width: calc((var(--xl) + 100 + var(--xr)) * 1%); height: calc((var(--yt) + 100) * 1%); display: block;
+  background:
+    radial-gradient(var(--rx) var(--ry) at var(--cx) var(--cy), rgba(30, 12, 4, 0) 34%, rgba(30, 12, 4, 0.14) 60%, rgba(30, 12, 4, 0.4) 100%),
+    url('/themes/toran/art/plaster.webp') 0 0 / 900px 900px repeat,
+    var(--wall);
+  background-blend-mode: normal, soft-light, normal;
+  -webkit-mask: linear-gradient(#000 0 0) var(--mx) var(--my) / var(--mw) var(--mh) no-repeat, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) var(--mx) var(--my) / var(--mw) var(--mh) no-repeat exclude, linear-gradient(#000 0 0); }
+/* the floor: a painted sandstone threshold with petals (and diyas or a small rangoli), on into plain stone, darker
+   toward the guest; a soft contact shadow where it meets the wall */
+.to-floor { position: absolute; left: calc(var(--xl) * -1%); top: var(--fy); width: calc((var(--xl) + 100 + var(--xr)) * 1%); height: calc(var(--yb) * 1%); display: block;
+  background:
+    linear-gradient(180deg, rgba(30, 12, 4, 0.34), rgba(30, 12, 4, 0) 2.5%),
+    linear-gradient(180deg, rgba(30, 12, 4, 0) 18%, rgba(30, 12, 4, 0.32) 60%, rgba(30, 12, 4, 0.48) 100%),
+    var(--fl) var(--fx) 0 / var(--fw) auto no-repeat,
+    var(--floor); }
+.to-light { position: absolute; left: var(--ox); top: var(--ob); width: calc(var(--ow) * 2.3); height: 26%; translate: -50% -42%; display: block; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 216, 150, 0.46), rgba(255, 196, 120, 0.2) 48%, rgba(255, 190, 110, 0) 100%); }
+.to-floor--mandap { left: 0; top: 99.5%; width: 100%; height: 110%; background:
+    linear-gradient(180deg, var(--floor), transparent 8%),
+    linear-gradient(180deg, rgba(30, 12, 4, 0) 30%, rgba(30, 12, 4, 0.34) 85%),
+    url('/themes/toran/art/floor-a.webp') 50% 0 / 100% auto no-repeat, #bd7f36; }
+.to-door--mandap picture::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 14%; background: linear-gradient(180deg, transparent, var(--floor)); }
+.to-shade { position: absolute; left: calc(var(--xl) * -1%); top: calc(var(--yt) * -1%); width: calc((var(--xl) + 100 + var(--xr)) * 1%); height: calc((var(--yt) + var(--yb) + 100) * 1%); background: #1E0D06; opacity: 0; pointer-events: none; }
 .to-door--mandap .to-shade { inset: 0; width: auto; height: auto; left: 0; top: 0; }
 .to-floorfade { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(30, 12, 4, 0) 50%, rgba(30, 12, 4, 0.22) 68%, rgba(30, 12, 4, 0.55) 100%); }
 body.to-moved .su-cue { opacity: 0 !important; transition: opacity 240ms ease; pointer-events: none; }
@@ -89,6 +110,7 @@ body.to-moved .su-cue { opacity: 0 !important; transition: opacity 240ms ease; p
 /* ───────── rooms and plaques ───────── */
 .to-room { position: relative; padding: 0 16px; }
 .to-gap { height: 90svh; }
+.to-room--last .to-gap { height: 135svh; } /* the mandap: arrive, then its plaques come up from the courtyard floor */
 .to-plaque { position: relative; box-sizing: border-box; width: min(100%, 460px); margin: 0 auto 26svh; background: var(--to-plaque); color: var(--su-ink);
   border-radius: 3px; box-shadow: 0 36px 70px -36px rgba(24, 8, 2, 0.85), 0 2px 0 rgba(109, 31, 26, 0.1); }
 .to-plaque::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--su-accent); border-radius: 3px 3px 0 0; }
@@ -192,7 +214,7 @@ html[data-lang='ne'] .to-close__en { display: none; }
 
 /* wide screens: the door stands left of centre, its plaques on the wall to the right */
 @media (min-width: 900px) {
-  .to-room { padding: 0 5vw 0 56vw; }
+  .to-room { padding: 0 5vw 0 54vw; }
   .to-plaque { margin-left: 0; width: min(100%, 480px); }
   .to-gap { height: 84vh; }
   .to-plaque__in { padding: 36px 34px 32px; }
