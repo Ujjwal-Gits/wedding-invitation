@@ -1559,7 +1559,7 @@ export const ADMIN_MODULES = [
   { id: 'finance', perm: 'finance', title: 'Finance', icon: 'wallet', group: 'business', render: financePage, sub: 'Money you actually received, refunds and free access. Rupees and dollars are always kept apart.' },
   { id: 'themes', perm: 'themes', title: 'Themes', icon: 'palette', group: 'business', render: themesAdmin, sub: 'Which designs each website shows, featured and in what order.' },
   { id: 'music', perm: 'music', title: 'Music library', short: 'Music', icon: 'music', group: 'business', render: musicLibrary, sub: 'Songs couples can choose for their invitation: upload MP3s, set moods and order, turn songs on or off.' },
-  { id: 'blog', perm: 'blog', title: 'Blog', icon: 'edit', group: 'business', render: blogAdmin, sub: 'Guides on both websites: write, edit and publish. Pages are rendered by the server for search engines.' },
+  { id: 'blog', perm: 'content', title: 'Blog', icon: 'edit', group: 'business', render: blogAdmin, sub: 'Guides on both websites: write, edit and publish. Pages are rendered by the server for search engines.' },
   { id: 'website', perm: 'website', title: 'Website', icon: 'globe', group: 'business', render: website, sub: 'Pricing, payment methods, contact details and headlines for the Nepal and International websites.' },
   { id: 'content', perm: 'content', title: 'Content', icon: 'edit', group: 'business', render: contentPage, sub: 'Words on both websites: titles, descriptions, headings, FAQ, contact, footer and the announcement bar.' },
   { id: 'team', perm: 'team', title: 'Team & access', short: 'Team', icon: 'shield', group: 'business', render: teamPage, sub: 'Who can sign in to the studio, and what each person can open.' },

@@ -1,4 +1,4 @@
-// The Blog module (super admin, or an admin with the 'blog' permission): every post of both websites, and an editor
+// The Blog module (super admin, or an admin with the 'content' permission, like the Content page): every post of both websites, and an editor
 // with a live preview of the real page. Server: server/lib/blog.js (/api/admin/blog); public pages are rendered there.
 //   #/blog          the list (filter by website), New post
 //   #/blog/new      a new post        #/blog/<id>   edit one
@@ -260,7 +260,7 @@ export function blogAdmin(ctx) {
         if (!loaded || !doc?.querySelector('main')) {
           loaded = true;
           frame.addEventListener('load', () => scrollPreview(follow), { once: true });
-          frame.srcdoc = r.html;
+          frame.srcdoc = r.html.replace(/<script[^>]*type="module"[^>]*><\/script>/g, '').replace(/<link[^>]*rel="modulepreload"[^>]*>/g, ''); // the frame runs no scripts
           return;
         }
         const next = new DOMParser().parseFromString(r.html, 'text/html');
@@ -280,7 +280,9 @@ export function blogAdmin(ctx) {
       if (target === 'top') el = doc.querySelector('.bp-head');
       else if (target === 'faq') el = doc.getElementById('faq');
       else el = [...doc.querySelectorAll('.bp-body h2, .bp-body h3, .bp-body h4')].find((x) => x.textContent.trim() === target);
-      el?.scrollIntoView({ block: 'start' });
+      if (!el) return;
+      el.scrollIntoView({ block: 'start' });
+      frame.contentWindow?.scrollBy(0, -88); // clear of the page's sticky header
     }
 
     async function save() {

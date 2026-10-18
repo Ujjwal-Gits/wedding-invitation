@@ -2,7 +2,7 @@
 // served as SERVER-RENDERED pages (lib/blog-render.js) so search engines read every word without JavaScript.
 //   Public:  GET /blog/, /blog/<slug>/, /blog/rss.xml, the same under /international/blog/, /sitemap-blog.xml, and
 //            /llms.txt + /llms-full.txt with the live blog part (the build writes the rest).
-//   Admin:   /api/admin/blog (perm 'blog', CSRF via requirePerm): list, read, create, update, delete, preview, cover upload.
+//   Admin:   /api/admin/blog (perm 'content', the same as the Content page; CSRF via requirePerm): list, read, create, update, delete, preview, cover upload.
 // A post: { id, slug, site: 'np'|'intl', title, excerpt, category, body (Markdown), faq: [{ q, a }], cover, og,
 //   seoTitle, seoDesc, keyword, secondary, designs, related, status: 'draft'|'published', publishedAt (YYYY-MM-DD),
 //   updatedAt, createdAt, builtin? }.
@@ -17,6 +17,11 @@ import { getDoc, putDoc, withLock } from './store.js';
 import { ROOT_DIR, UPLOAD_DIR } from './env.js';
 import { readMultipart, receiving, withSlot, MAX_BYTES } from './uploads.js';
 import { plainText } from './blog-md.js';
+import { entity, sendEntity } from './http-cache.js';
+import { preloadLinks } from './static.js';
+import { readSite } from './site.js';
+import { contentOf, viewFor } from './content.js';
+import { applyContent } from './content-render.js';
 import { notifyChanged } from './indexnow.js';
 import { THEMES } from '../../src/site/themes.js';
 import { INTL_THEMES, NP_DESIGNS_INTL } from '../../src/site/intl-designs.js';
@@ -177,80 +182,100 @@ const byNewest = (a, b) => (b.publishedAt.localeCompare(a.publishedAt) || b.upda
 /** a site's published posts, newest first; a post dated in the future waits for its day */
 const live = (doc, site) => doc.posts.filter((p) => p.site === site && p.status === 'published' && p.publishedAt <= today()).sort(byNewest).map(withC);
 
-async function cachedPage(key, make) {
-  const { doc, rev } = await readBlog();
-  if (pageCache.rev !== rev) pageCache = { rev, pages: new Map() };
-  let body = pageCache.pages.get(key);
-  if (body === undefined) {
-    body = make(doc);
-    pageCache.pages.set(key, body);
+/**
+ * The site's shell for its blog pages with the Content page's site-wide words written in (contact, footer lines, the
+ * announcement bar, the organisation JSON-LD: lib/content.js), exactly as every other built page gets them.
+ */
+function siteShell(distDir, site, contentDoc, siteDoc, day) {
+  const shell = shellFor(distDir, site);
+  try {
+    const page = { path: SITES[site].base, site, hasH1: false, hasLede: false, faq: false };
+    return applyContent(shell, { ...viewFor(page, contentOf(contentDoc), siteDoc, day), title: '', desc: '' });
+  } catch (err) {
+    console.warn('[blog] could not apply the site content to the shell:', err.message);
+    return shell;
   }
-  return body;
+}
+
+/**
+ * A rendered body, cached until the blog, the Content page, the website settings or the date (scheduled posts, the
+ * announcement's days) change. make(doc, shell) returns a string or null (shell(site): the site's shell, filled).
+ */
+async function cachedPage(key, type, make, distDir) {
+  const [{ doc, rev }, c, s] = await Promise.all([readBlog(), getDoc('content'), getDoc('site')]);
+  const day = today();
+  const stamp = `${rev}:${c?.rev ?? 0}:${s?.rev ?? 0}:${day}`;
+  if (pageCache.rev !== stamp) pageCache = { rev: stamp, pages: new Map() };
+  let e = pageCache.pages.get(key);
+  if (e === undefined) {
+    let siteDoc = null;
+    const shell = async (site) => siteShell(distDir, site, c?.value, siteDoc ??= await readSite(), day);
+    const body = await make(doc, shell);
+    e = body == null ? null : { e: entity(body, type), link: type.startsWith('text/html') ? preloadLinks(body) : '' };
+    if (pageCache.rev === stamp) pageCache.pages.set(key, e);
+  }
+  return e;
 }
 
 /* ---------------- public pages ---------------- */
-function send(req, res, type, body, status = 200) {
-  if (body == null) return false;
-  const etag = `W/"b-${hash(body)}"`;
+const HTML = 'text/html; charset=utf-8';
+/** the headers every built page gets (lib/static.js, lib/content.js): no-cache, ETag (304), its preloads as Link */
+function send(req, res, e, status = 200) {
+  if (!e) return false;
   res.set('Cache-Control', 'no-cache');
-  res.set('ETag', etag);
-  if (status === 200 && req.headers['if-none-match'] === etag) { res.status(304).end(); return true; }
-  res.status(status).type(type).send(body);
-  return true;
+  if (e.link) res.set('Link', e.link);
+  return sendEntity(req, res, e.e, { status });
 }
 
 /** Express middleware for the public blog paths (both sites), the blog sitemap and llms files. */
 export function blogPages({ distDir }) {
+  const cached = (key, type, make) => cachedPage(key, type, make, distDir);
   return async (req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
     const p = req.path;
     try {
       if (p === '/sitemap-blog.xml') {
-        return send(req, res, 'application/xml', await cachedPage('sitemap', (doc) => renderSitemap({ np: live(doc, 'np'), intl: live(doc, 'intl') })));
+        return send(req, res, await cached('sitemap', 'application/xml; charset=utf-8', (doc) => renderSitemap({ np: live(doc, 'np'), intl: live(doc, 'intl') })));
       }
       if (p === '/llms.txt' || p === '/llms-full.txt') {
         const file = resolve(distDir, p.slice(1));
         if (!existsSync(file)) return next();
         const full = p === '/llms-full.txt';
-        const body = await cachedPage(p, (doc) => {
+        return send(req, res, await cached(p, 'text/plain; charset=utf-8', (doc) => {
           const base = readFileSync(file, 'utf8');
           const bySite = Object.fromEntries(['np', 'intl'].map((s) => [s, live(doc, s).map((x) => ({ ...x, text: full ? plainText(x.body) : '' }))]));
           const block = llmsBlock(bySite, full);
           const a = base.indexOf(LLMS_START);
           const b = base.indexOf(LLMS_END);
           return a >= 0 && b > a ? base.slice(0, a) + block + base.slice(b + LLMS_END.length) : `${base.trimEnd()}\n\n${block}\n`;
-        });
-        return send(req, res, 'text/plain; charset=utf-8', body);
+        }));
       }
       const m = /^\/(international\/)?blog(?:\/(.*))?$/.exec(p);
       if (!m) return next();
       const site = m[1] ? 'intl' : 'np';
       const rest = m[2];
       const base = SITES[site].base;
-      if (rest === undefined) return res.redirect(301, base);
-      if (rest === '' || rest === 'index.html') {
-        if (rest === 'index.html') return res.redirect(301, base);
-        return send(req, res, 'html', await cachedPage(`${site}:index`, (doc) => renderIndex({ site, posts: live(doc, site), shell: shellFor(distDir, site) })));
-      }
-      if (rest === 'rss.xml') return send(req, res, 'application/rss+xml; charset=utf-8', await cachedPage(`${site}:rss`, (doc) => renderRss(site, live(doc, site))));
+      if (rest === undefined || rest === 'index.html') return res.redirect(301, base);
+      if (rest === '') return send(req, res, await cached(`${site}:index`, HTML, async (doc, shell) => renderIndex({ site, posts: live(doc, site), shell: await shell(site) })));
+      if (rest === 'rss.xml') return send(req, res, await cached(`${site}:rss`, 'application/rss+xml; charset=utf-8', (doc) => renderRss(site, live(doc, site))));
       const sm = /^([a-z0-9-]{1,80})(\/?)(?:index\.html)?$/.exec(rest);
       if (sm && SLUG_RE.test(sm[1])) {
         if (!sm[2] || rest.endsWith('index.html')) {
           const q = req.originalUrl.indexOf('?');
           return res.redirect(301, `${base}${sm[1]}/${q >= 0 ? req.originalUrl.slice(q) : ''}`);
         }
-        const html = await cachedPage(`${site}:post:${sm[1]}`, (doc) => {
+        const e = await cached(`${site}:post:${sm[1]}`, HTML, async (doc, shell) => {
           const posts = live(doc, site);
           const post = posts.find((x) => x.slug === sm[1]);
-          return post ? renderPost({ post, others: posts, shell: shellFor(distDir, site) }) : null;
+          return post ? renderPost({ post, others: posts, shell: await shell(site) }) : null;
         });
-        if (html) return send(req, res, 'html', html);
+        if (e) return send(req, res, e);
         const { doc } = await readBlog();
         const moved = live(doc, site).find((x) => (x.redirects || []).includes(sm[1]));
         if (moved) return res.redirect(301, postPath(moved));
       }
       res.set('X-Robots-Tag', 'noindex');
-      return send(req, res, 'html', renderNotFound({ site, shell: shellFor(distDir, site) }), 404);
+      return send(req, res, await cached(`${site}:404`, HTML, async (doc, shell) => renderNotFound({ site, shell: await shell(site) })), 404);
     } catch (err) { return next(err); }
   };
 }
@@ -295,7 +320,7 @@ const summary = (p) => ({
 const taken = (doc, post) => doc.posts.some((p) => p.id !== post.id && p.site === post.site && p.slug === post.slug);
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-/** The router for /api/admin/blog (server/index.js mounts it behind requirePerm('blog')). */
+/** The router for /api/admin/blog (server/index.js mounts it behind requirePerm('content')). */
 export function adminRouter({ json, heavy, distDir }) {
   const r = express.Router();
   r.param('id', (req, res, next, id) => (ID_RE.test(id) ? next() : res.status(404).json({ error: 'No such post.' })));

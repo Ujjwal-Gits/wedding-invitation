@@ -135,7 +135,7 @@ api.patch('/admin/music', requirePerm('music'), json('8kb'), wrap(music.reorder)
 api.post('/admin/music/restore', requirePerm('music'), wrap(music.restoreBuiltins));
 api.patch('/admin/music/:musicId', requirePerm('music'), json('4kb'), wrap(music.patch));
 api.delete('/admin/music/:musicId', requirePerm('music'), wrap(music.remove));
-api.use('/admin/blog', requirePerm('blog'), blog.adminRouter({ json, heavy, distDir: DIST_DIR })); // lib/blog.js
+api.use('/admin/blog', requirePerm('content'), blog.adminRouter({ json, heavy, distDir: DIST_DIR })); // lib/blog.js
 api.get('/orders', requirePerm('orders'), wrap(orders.list));
 api.get('/admin/customers', requirePerm('customers'), wrap(customers.adminList));
 api.post('/admin/customers', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminCreate));

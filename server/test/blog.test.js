@@ -157,7 +157,7 @@ test('RSS feeds and the blog sitemap list the published posts', async () => {
   assert.ok(sm.text.includes('<image:image>'));
 });
 
-test('the admin API needs a session, the blog permission and the CSRF token', async () => {
+test('the admin API needs a session, the content permission and the CSRF token', async () => {
   const anon = browser();
   assert.equal((await anon.req('/api/admin/blog')).status, 401);
   const add = async (email, perms) => {
@@ -168,12 +168,12 @@ test('the admin API needs a session, the blog permission and the CSRF token', as
   const other = await add('orders@test.local', ['orders']);
   assert.equal((await other.req('/api/admin/blog')).status, 403);
   assert.equal((await other.req('/api/admin/blog', { method: 'POST', body: { site: 'np', title: 'x', slug: 'x-y', category: 'Wording' } })).status, 403);
-  const writer = await add('writer@test.local', ['blog']);
+  const writer = await add('writer@test.local', ['content']);
   const list = await writer.req('/api/admin/blog');
   assert.equal(list.status, 200);
   assert.equal(list.body.posts.length, 10);
   const team = await owner.req('/api/admin/team');
-  assert.ok(team.body.perms.some((p) => p.key === 'blog'), 'the Team page offers the blog permission');
+  assert.ok(team.body.perms.some((p) => p.key === 'content'), 'the Team page offers the permission the blog uses');
   const noCsrf = await writer.req('/api/admin/blog', { method: 'POST', body: { site: 'np', title: 'No token', slug: 'no-token', category: 'Wording' }, csrf: false });
   assert.equal(noCsrf.status, 403);
 });
@@ -262,4 +262,22 @@ test('markdown: safe links only, raw HTML escaped, house blocks', () => {
   assert.match(r.html, /&lt;b&gt;x&lt;\/b&gt;/);
   assert.equal(renderInline('<i>x</i> [y](/z/)').html, '&lt;i&gt;x&lt;/i&gt; <a href="/z/">y</a>');
   assert.throws(() => cleanPost({ site: 'np', title: '', slug: 'x', category: '' }), /title/i);
+});
+
+test('blog pages carry the Content page’s site-wide words (announcement, contact) like every built page', async () => {
+  const before = await page('/blog/');
+  if (!before.text.includes('<!--cms:announce-->')) return; // no built shell (dist/) here: the fallback has no hooks
+  const { body: c } = await owner.req('/api/admin/content');
+  const np = c.sites.np;
+  const r = await owner.req('/api/admin/content/site/np', { method: 'PUT', body: {
+    ver: c.ver, contact: { ...np.contact, email: 'blog-test@nimtto.com' }, hours: '', social: {}, footer: { blurb: '', payLine: '' }, trust: { line: '', policy: '' },
+    announce: { on: true, text: 'Blog announcement', link: '/pricing/', linkText: 'See prices', from: c.today, to: '' },
+  } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const after = await page('/blog/pasni-invitation-guide/');
+  assert.ok(after.text.includes('Blog announcement'), 'the announcement bar');
+  assert.ok(after.text.includes('blog-test@nimtto.com'), 'the contact email');
+  assert.equal(after.headers.get('cache-control'), 'no-cache');
+  assert.ok(after.headers.get('etag'));
+  assert.equal((await fetch(`${base}/blog/pasni-invitation-guide/`, { headers: { 'If-None-Match': after.headers.get('etag') } })).status, 304);
 });
