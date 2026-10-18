@@ -71,7 +71,8 @@ test('faith mapping: explicit per design, Hindu art stays Hindu, the site lists 
   const has = (f) => Object.keys(man).filter((s) => man[s].includes(f)).sort();
   // Ganesh, Om, kalash, sindoor, Hindu rites or Hindu-dress couples in the art: Hindu only
   const hinduArt = ['agni', 'bagaicha', 'chitra', 'dhoka', 'durbar', 'ghar', 'gurans', 'hariyo', 'janti', 'laali', 'mahal', 'mala', 'mandap',
-    'mangal', 'mehendi', 'nimantrana', 'pardaa', 'rajdwar', 'rangoli', 'shree', 'sindoor', 'swayambar'];
+    'mangal', 'mehendi', 'nimantrana', 'pardaa', 'rajdwar', 'rangoli', 'shree', 'sindoor', 'swayambar',
+    'toran'];
   for (const s of hinduArt) assert.deepEqual(man[s], ['hindu'], `${s} is Hindu only`);
   assert.deepEqual(has('christian'), ['amalfi', 'blush-roses', 'dhaka', 'garden-party', 'himal', 'letterpress', 'olive-grove', 'rose-arch', 'tuscany', 'wax-seal', 'wildflower']);
   assert.deepEqual(has('muslim'), ['andalus', 'blush-roses', 'dhaka', 'garden-party', 'gold-arch', 'himal', 'jali', 'letterpress', 'noor', 'olive-grove', 'wax-seal', 'wildflower']);

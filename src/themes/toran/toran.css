@@ -1,0 +1,210 @@
+/* Toran (तोरण): seven dressed doorways. Lime-wash plaques on painted haveli walls; Kalnia for Latin display,
+   Palanquin Dark for Devanagari display, Mukta for reading. One accent: marigold, on the door numerals only. */
+body.su.theme-toran {
+  --su-bg: #F7F1E2;          /* lime-wash */
+  --to-plaque: #FFFAF0;
+  --su-paper: var(--to-plaque);
+  --su-ink: #22180F;
+  --su-ink-2: #5B4636;
+  --su-accent: #6D1F1A;      /* deep haveli red */
+  --su-accent-ink: #FFF7EA;
+  --su-gold: #B8893B;
+  --to-marigold: #EC8A1C;
+  --to-leaf: #2F5D2C;
+  --to-shadow: #D9CDB4;      /* courtyard shade */
+  --su-line: rgba(109, 31, 26, 0.18);
+  --su-f-display: 'Kalnia', Georgia, serif;
+  --su-f-script: 'Kalnia', Georgia, serif;
+  --su-f-deva: 'Mukta', sans-serif;
+  --to-f-deva-display: 'Palanquin Dark', 'Mukta', sans-serif;
+  --su-radius: 4px;
+  --to-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  background: #2A140C;
+}
+.theme-toran .hud__btn, .theme-toran .pill { background: rgba(255, 250, 240, 0.94); color: var(--su-accent); border-color: rgba(109, 31, 26, 0.2); }
+
+/* ───────── the opening: phool-ladi curtain ───────── */
+.to-gate { position: absolute; inset: 0; overflow: hidden; }
+.to-gate__back { position: absolute; inset: 0; background: radial-gradient(110% 70% at 50% 28%, #8E2C1F 0%, #651A13 50%, #3B0E09 100%); }
+.to-ladis { position: absolute; inset: 0; cursor: pointer; }
+.to-ladi { position: absolute; display: block; transform-origin: 50% 0; will-change: transform; z-index: 2; }
+.to-ladi.is-back { z-index: 1; }
+.to-ladi img { display: block; width: 100%; height: 100%; max-width: none; }
+.to-ladi img.is-flip { transform: scaleX(-1); }
+.to-ladi.is-tied { display: none; }
+.to-gate__rail { position: absolute; z-index: 4; left: 50%; top: -1.5%; width: max(160vw, 760px); translate: -50% 0; pointer-events: none; }
+.to-gate__toran { display: block; width: 100%; }
+@media (min-width: 900px) { .to-gate__rail { width: max(104vw, 1100px); top: -3%; } .to-gate__step { height: 21%; } }
+.to-gate__step { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 25%;
+  background: linear-gradient(180deg, #EFE3C6 0%, #E8DABA 40%, #DCCBA6 100%);
+  box-shadow: 0 -22px 36px -14px rgba(20, 6, 2, 0.6), inset 0 3px 0 #F8EFDA, inset 0 5px 0 #CDB88E; }
+.to-gate__rangoli { position: absolute; left: 12px; right: 12px; top: 12px; height: 0; border-top: 1px solid rgba(109, 31, 26, 0.28); }
+.theme-toran .su-gate__ui { z-index: 6; bottom: max(18px, 3.2svh); gap: 8px; }
+.theme-toran .su-gate__line { color: var(--su-ink); font: 500 18px/1.35 var(--su-f-display); }
+.theme-toran .su-gate__line .l-ne { font: 500 17px/1.5 var(--to-f-deva-display); }
+.theme-toran .su-quiet { color: var(--su-ink-2); }
+
+/* ───────── the tunnel ───────── */
+.to-tunnel { position: relative; }
+.to-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #2A140C; contain: strict; }
+.to-world { position: absolute; inset: 0; }
+.to-door { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform, opacity; backface-visibility: hidden; }
+.to-door__art, .to-door picture { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
+.to-door picture img { display: block; width: 100%; height: 100%; }
+.to-wall { position: absolute; display: block; background: var(--wall); }
+.to-wall--t { left: -300%; top: -300%; width: 700%; height: 300.4%; }
+.to-wall--b { left: -300%; top: 99.6%; width: 700%; height: 300%; background: linear-gradient(180deg, var(--floor) 0%, color-mix(in srgb, var(--floor) 72%, #1E0D06) 22%, color-mix(in srgb, var(--floor) 55%, #1E0D06) 60%); }
+.to-wall--l, .to-wall--r { top: 0; width: 300.4%; height: var(--fy); }
+.to-wall--lf, .to-wall--rf { top: var(--fy); width: 300.4%; height: calc(100% - var(--fy)); background: var(--floor); }
+.to-wall--l, .to-wall--lf { left: -300%; }
+.to-wall--r, .to-wall--rf { left: 99.6%; }
+.to-shade { position: absolute; left: -300%; top: -300%; width: 700%; height: 700%; background: #1E0D06; opacity: 0; pointer-events: none; }
+.to-door--mandap .to-shade { inset: 0; width: auto; height: auto; left: 0; top: 0; }
+.to-floorfade { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(30, 12, 4, 0) 50%, rgba(30, 12, 4, 0.22) 68%, rgba(30, 12, 4, 0.55) 100%); }
+body.to-moved .su-cue { opacity: 0 !important; transition: opacity 240ms ease; pointer-events: none; }
+.to-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 90% at 50% 42%, rgba(30, 12, 4, 0) 58%, rgba(30, 12, 4, 0.32) 100%); }
+
+.to-flow { position: relative; z-index: 1; margin-top: -100svh; }
+
+/* ───────── the first door: names on the wall above the lintel ───────── */
+.theme-toran .to-hero { display: block; min-height: 100svh; background: transparent; overflow: visible; }
+.to-hero__wall { box-sizing: border-box; height: var(--to-hero-room, 46svh); display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 4px; padding: 64px 20px 6px; text-align: center; color: var(--su-ink); }
+.to-ganesh { width: 46px; height: auto; margin-bottom: 2px; }
+.to-invoc { margin: 0; font: 500 14px/1.5 var(--to-f-deva-display); color: var(--su-accent); }
+.to-invoc .l-en, .to-invoc .l-ne { font: inherit; }
+.to-hero__title { margin: 2px 0 0; font: 500 13px/1.3 var(--su-f-display); letter-spacing: 0.32em; text-transform: uppercase; color: var(--to-leaf); }
+.to-hero__title .l-ne { font: 500 17px/1.4 var(--to-f-deva-display); letter-spacing: 0; text-transform: none; }
+.to-names { margin: 4px 0 2px; display: flex; flex-direction: column; align-items: center; font: 500 clamp(40px, 12.4vw, 84px)/0.98 var(--su-f-display); color: var(--su-accent); letter-spacing: -0.01em; max-width: 100%; }
+.to-names .su-n { display: block; white-space: nowrap; }
+.to-names .su-amp { display: block; margin: 2px 0; font: 400 0.4em/1 var(--su-f-display); color: var(--to-marigold); }
+.to-names .l-ne { font: 500 0.74em/1.3 var(--to-f-deva-display); }
+.to-hero__date { margin: 6px 0 0; font: 600 13px/1.4 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--su-ink); }
+.to-hero__date .l-ne { font-size: 16px; letter-spacing: 0; text-transform: none; }
+.to-hero__place { margin: 0; font: 500 15px/1.4 var(--su-f-body); color: var(--su-ink-2); }
+.to-hero__line { margin: 6px 0 0; font: 400 15px/1.4 var(--su-f-display); color: var(--su-ink-2); }
+.to-hero__line .l-ne { font: 400 15px/1.5 var(--su-f-body); }
+.theme-toran .su-cue { bottom: max(10px, 1.6svh); color: #FFF4E0; text-shadow: 0 1px 6px rgba(20, 8, 2, 0.7); }
+
+/* ───────── rooms and plaques ───────── */
+.to-room { position: relative; padding: 0 16px; }
+.to-gap { height: 90svh; }
+.to-plaque { position: relative; box-sizing: border-box; width: min(100%, 460px); margin: 0 auto 26svh; background: var(--to-plaque); color: var(--su-ink);
+  border-radius: 3px; box-shadow: 0 36px 70px -36px rgba(24, 8, 2, 0.85), 0 2px 0 rgba(109, 31, 26, 0.1); }
+.to-plaque::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--su-accent); border-radius: 3px 3px 0 0; }
+.to-plaque__in { margin: 9px; padding: 30px 22px 26px; border: 1px solid rgba(109, 31, 26, 0.24); text-align: center; }
+.to-room .to-plaque:last-child { margin-bottom: 30svh; }
+.to-evs .to-plaque { margin-bottom: 12svh; }
+.to-plaque--head { margin-bottom: 12svh; }
+.to-plaque--head .to-plaque__in { padding: 26px 22px 22px; }
+
+.to-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 0 18px; }
+.to-num { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 4px; font: 500 15px/1 var(--su-f-display); letter-spacing: 0.18em; color: var(--to-marigold); }
+.to-num .l-ne { font: 500 18px/1 var(--to-f-deva-display); letter-spacing: 0; }
+.to-num i { display: block; width: 26px; height: 1px; background: currentColor; opacity: 0.7; }
+.to-kicker { margin: 0; font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--su-ink-2); }
+.to-kicker .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
+.to-h2 { margin: 0; font: 500 clamp(27px, 7.2vw, 38px)/1.12 var(--su-f-display); color: var(--su-accent); text-wrap: balance; }
+.to-h2 .l-ne { font: 500 0.84em/1.45 var(--to-f-deva-display); }
+.to-lede { max-width: 34ch; margin: 16px auto 0; color: var(--su-ink-2); text-wrap: balance; }
+
+/* couple */
+.to-photo { margin: 6px 0 0; }
+.to-photo img { display: block; width: 100%; height: auto; border: 7px solid #fff; box-sizing: border-box; box-shadow: 0 14px 30px -18px rgba(40, 14, 4, 0.6); }
+
+/* families */
+.to-fam .to-h2 { margin-bottom: 18px; }
+.to-fam__grid { display: grid; gap: 6px; }
+.to-fam__side { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.to-fam__pic { width: min(150px, 42vw); margin: 0 0 10px; }
+.to-fam__pic img { display: block; width: 100%; height: auto; border: 5px solid #fff; box-shadow: 0 10px 22px -14px rgba(40, 14, 4, 0.6); }
+.to-fam__name { margin: 4px 0 0; font: 500 24px/1.25 var(--su-f-display); color: var(--su-ink); }
+.to-fam__name .l-ne { font: 500 22px/1.4 var(--to-f-deva-display); }
+.to-fam__of { margin: 8px 0 0; font-size: 14px; color: var(--su-ink-2); }
+.to-fam__par { margin: 0; font-weight: 500; }
+.to-fam__home { margin: 4px 0 0; font-size: 15px; color: var(--su-ink-2); }
+.to-fam__and { margin: 8px 0; font: 400 30px/1 var(--su-f-display); color: var(--to-marigold); }
+
+/* the ceremonies, one plaque each */
+.to-ev .to-plaque__in { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 16px; padding: 22px 18px; text-align: left; }
+.to-ev__date { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 12px 2px 10px; border: 1px solid rgba(109, 31, 26, 0.3); border-radius: 999px 999px 4px 4px; align-self: start; text-align: center; }
+.to-ev__day { font: 500 30px/1 var(--su-f-display); color: var(--su-accent); }
+.to-ev__day .l-ne { font: 500 26px/1.1 var(--to-f-deva-display); }
+.to-ev__my { margin-top: 4px; font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--su-ink-2); }
+.to-ev__my .l-ne { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.to-ev__title { margin: 0; font: 500 23px/1.2 var(--su-f-display); color: var(--su-accent); }
+.to-ev__title .l-ne { font: 500 21px/1.4 var(--to-f-deva-display); }
+.to-ev__when, .to-ev__time, .to-ev__venue, .to-ev__dress, .to-ev__blurb { margin: 4px 0 0; }
+.to-ev__time { font-weight: 600; }
+.to-ev__blurb, .to-ev__when { color: var(--su-ink-2); }
+.to-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.theme-toran .su-more { margin: 18px 0 0; padding: 12px 4px 0; background: none; border-top: 1px solid var(--su-line); border-radius: 0; text-align: left; }
+.theme-toran .su-more h3 { font: 500 18px/1.3 var(--su-f-display); }
+
+/* the date, under a scratch cover */
+.to-date__face { box-sizing: border-box; padding: 26px 12px 22px; background: #fff; border: 1px solid rgba(109, 31, 26, 0.16); }
+.to-date__place { margin: 12px 0 0; font-weight: 500; }
+.theme-toran .su-strip__month { font: 500 17px/1.2 var(--su-f-display); letter-spacing: 0.14em; text-transform: uppercase; }
+.theme-toran .su-strip__month .l-ne, .theme-toran .su-strip__year .l-ne { font-family: var(--to-f-deva-display); letter-spacing: 0; text-transform: none; }
+.theme-toran .su-strip__day { font: 500 clamp(54px, 15vw, 72px)/1 var(--su-f-display); }
+.theme-toran .su-strip__day .l-ne { font-family: var(--to-f-deva-display); }
+.theme-toran .su-strip__side { border-color: var(--to-marigold); }
+
+/* photos */
+.to-gal__grid { columns: 2; column-gap: 8px; }
+.to-gal__ph { break-inside: avoid; margin: 0 0 8px; }
+.to-gal__ph .su-gal__btn { border-radius: 0; }
+
+/* the countdown, in the diyo niche */
+.to-count .to-plaque__in { padding-top: 40px; }
+.to-count__lamps { position: absolute; left: 0; right: 0; top: -44px; display: flex; justify-content: space-between; padding: 0 22px; pointer-events: none; }
+.to-count .np-lamp.to-lamp { width: 40px; }
+.to-count__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.to-count__cell { padding: 12px 2px 10px; border-top: 1px solid rgba(109, 31, 26, 0.25); border-bottom: 1px solid rgba(109, 31, 26, 0.25); }
+.to-count__n { display: block; font: 500 clamp(30px, 9vw, 42px)/1 var(--su-f-display); color: var(--su-accent); font-variant-numeric: tabular-nums; }
+.to-count__n .l-ne { font-family: var(--to-f-deva-display); }
+.to-count__l { display: block; margin-top: 6px; font: 600 10.5px/1.2 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--su-ink-2); }
+.to-count__l .l-ne { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.to-count__done { font: 500 22px/1.4 var(--su-f-display); color: var(--su-accent); }
+
+/* the card, the reply, the blessing */
+.to-card__line { margin: 0; font: 400 21px/1.5 var(--su-f-display); text-wrap: balance; }
+.to-card__line .l-ne { font: 500 19px/1.6 var(--to-f-deva-display); }
+.to-card__hosts { margin: 14px 0 20px; color: var(--su-ink-2); }
+.to-rsvp .to-plaque__in { text-align: left; }
+.to-rsvp .to-head { text-align: center; }
+.theme-toran .su-field input[type='text'], .theme-toran .su-field input[type='tel'], .theme-toran .su-field textarea, .theme-toran .su-field select { background: #fff; }
+.to-close__ne { margin: 0; font: 500 21px/1.6 var(--to-f-deva-display); color: var(--su-ink); }
+.to-close__en { margin: 6px 0 0; font: 400 18px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+html[data-lang='ne'] .to-close__en { display: none; }
+.to-close__names { margin: 16px 0 0; font: 500 clamp(30px, 8vw, 40px)/1.15 var(--su-f-display); color: var(--su-accent); }
+.to-close__names .su-n, .to-close__names .su-amp { display: inline; }
+.to-close__names .su-amp { color: var(--to-marigold); padding: 0 0.2em; font-size: 0.7em; }
+.to-close__names .l-ne { font: 500 0.8em/1.4 var(--to-f-deva-display); }
+.to-close__tag { margin: 8px 0 0; color: var(--su-ink-2); }
+.theme-toran .su-close { padding: 0; overflow: visible; text-align: center; }
+.to-room--last .to-close { margin-bottom: 8svh; }
+.to-made { padding: 0 0 24px; text-align: center; color: #FFF1DC; }
+.to-made a { color: inherit; }
+
+.theme-toran .su-modal__title, .theme-toran .su-modal__shloka { font-family: var(--su-f-display); }
+.theme-toran .su-modal__title .l-ne, .theme-toran .su-modal__shloka { font-family: var(--to-f-deva-display); }
+
+/* wide screens: the door stands left of centre, its plaques on the wall to the right */
+@media (min-width: 900px) {
+  .to-room { padding: 0 5vw 0 56vw; }
+  .to-plaque { margin-left: 0; width: min(100%, 480px); }
+  .to-gap { height: 84vh; }
+  .to-plaque__in { padding: 36px 34px 32px; }
+  .to-hero__wall { padding-top: 70px; gap: 6px; }
+  .to-ganesh { width: 58px; }
+  .to-names { font-size: clamp(56px, 6.4vw, 92px); }
+  .to-names .su-n { display: inline; }
+  .to-names { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 0.3em; }
+  .to-names .su-amp { display: inline; font-size: 0.5em; }
+}
+
+/* reduced motion: stills, crossfaded; the garlands hang already parted */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toran .su-rise { opacity: 1; transform: none; transition: none; }
+}

@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "toran": {
+    "kind": "hero",
+    "why": "The names on the wall over the first toran door, with the next doorways seen through it."
   }
 }
