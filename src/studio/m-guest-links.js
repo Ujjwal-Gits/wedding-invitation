@@ -23,7 +23,7 @@ function qrDialog(url, name, slug) {
 }
 
 /** The name + ceremonies form, in a dialog. Resolves { name, events } or null. */
-function linkForm({ title, confirm, events, link = null }) {
+function linkForm({ title, confirm, events, link = null, named = true, hint = 'Guests with this link see only these ceremonies, and can reply only for them.' }) {
   return new Promise((resolve) => {
     let result = null;
     const nameId = `gl-name-${Math.random().toString(36).slice(2, 7)}`;
@@ -32,18 +32,18 @@ function linkForm({ title, confirm, events, link = null }) {
     const err = h('p.notice.notice--error', { hidden: true, role: 'alert' });
     const submit = (ev) => {
       ev.preventDefault();
-      const name = nameIn.value.trim();
+      const name = named ? nameIn.value.trim() : '-';
       const chosen = picks.filter((p) => p.checked).map((p) => p.value);
       const problem = !name ? 'Give the link a name, so you know who it is for.' : !chosen.length ? 'Choose at least one ceremony.' : '';
       if (problem) { fill(err, icon('alert', 16), h('span', problem)); err.hidden = false; (name ? picks[0] : nameIn)?.focus(); return; }
-      result = { name, events: chosen };
+      result = named ? { name, events: chosen } : { events: chosen };
       d.close();
     };
     const form = h('form.stack', { onsubmit: submit, id: `${nameId}-f` },
-      h('div.field', h('label.label', { for: nameId }, 'Name (only you see it)'), nameIn),
-      h('fieldset.field', h('legend.label', 'Ceremonies this link shows'),
+      named ? h('div.field', h('label.label', { for: nameId }, 'Name (only you see it)'), nameIn) : null,
+      h('fieldset.field', h('legend.label', named ? 'Ceremonies this link shows' : 'Events on the main link'),
         h('div.chips', events.map((e, i) => h('label.chip', picks[i], h('span', label(e.title, e.id))))),
-        h('p.hint', 'Guests with this link see only these ceremonies, and can reply only for them.')),
+        h('p.hint', hint)),
       err);
     const d = openDialog({
       title,
@@ -54,7 +54,7 @@ function linkForm({ title, confirm, events, link = null }) {
       ],
       onClose: () => resolve(result),
     });
-    setTimeout(() => nameIn.focus(), 0);
+    setTimeout(() => (named ? nameIn : picks[0])?.focus(), 0);
   });
 }
 
@@ -64,7 +64,7 @@ function linkForm({ title, confirm, events, link = null }) {
  */
 export function guestLinksCard(ctx, { urlFor, textFor }) {
   const body = h('div.stack', skeleton(3));
-  const box = card('Guest links', 'Invite some guests only to some ceremonies. Each link shows only the ceremonies you choose; the full link shows everything.', body);
+  const box = card('Guest links', 'Invite some guests only to some ceremonies. Each link shows only the ceremonies you choose; the main link shows every ceremony unless you narrow it.', body);
   let state = null;
 
   const load = async () => {
@@ -81,14 +81,26 @@ export function guestLinksCard(ctx, { urlFor, textFor }) {
     h('a.btn.btn--sm.glink__wa', { href: `https://wa.me/?text=${enc(textFor(url))}`, target: '_blank', rel: 'noopener' }, icon('chat', 15), 'WhatsApp'),
     iconBtn('qr', `QR code for ${name}`, () => qrDialog(url, name, ctx.slug), 'btn--sm btn--icon-sm')];
 
-  const create = async () => {
-    const v = await linkForm({ title: 'New guest link', confirm: 'Create link', events: state.events });
+  const create = async (preset = null) => {
+    const v = preset || await linkForm({ title: 'New guest link', confirm: 'Create link', events: state.events });
     if (!v) return;
     try {
       const { link } = await api(`/invitations/${enc(ctx.slug)}/guest-links`, { method: 'POST', body: v });
       state.links.push(link);
       draw();
       toast('Guest link created', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+  };
+
+  // the main link (no g=): which ceremonies it shows, so a guest who strips g= from a group link sees only these
+  const editMain = async () => {
+    const v = await linkForm({ title: 'Events on the main link', confirm: 'Save', events: state.events, link: { events: state.main }, named: false,
+      hint: 'The link without a group, and what anyone sees who removes the group part of their link. Give family who should see everything an “All events” link.' });
+    if (!v) return;
+    try {
+      ({ main: state.main } = await api(`/invitations/${enc(ctx.slug)}/guest-links/main`, { method: 'PUT', body: v }));
+      draw();
+      toast('Main link saved', 'success');
     } catch (err) { toast(err.message, 'error'); }
   };
 
@@ -125,8 +137,9 @@ export function guestLinksCard(ctx, { urlFor, textFor }) {
     const full = urlFor('');
     const rows = [
       h('li.glink.glink--full',
-        h('div.glink__main', h('b.glink__name', 'Full invitation'), h('span.glink__events', 'Every ceremony'), h('span.glink__url', full)),
-        h('div.glink__acts', actions(full, 'Full invitation'))),
+        h('div.glink__main', h('b.glink__name', 'Main link'),
+          h('span.glink__events', state.main.length >= events.length ? 'Every ceremony' : eventsText(state.main, events)), h('span.glink__url', full)),
+        h('div.glink__acts', actions(full, 'Main link'), iconBtn('edit', 'Events on the main link', editMain, 'btn--sm btn--icon-sm'))),
       ...state.links.map((l) => {
         const url = urlFor(l.id);
         const shown = eventsText(l.events, events);
@@ -142,7 +155,8 @@ export function guestLinksCard(ctx, { urlFor, textFor }) {
     fill(body,
       h('ul.glinks', rows),
       h('div.row',
-        h('button.btn', { type: 'button', disabled: full20, onclick: create }, icon('plus', 16), 'New guest link'),
+        h('button.btn', { type: 'button', disabled: full20, onclick: () => create() }, icon('plus', 16), 'New guest link'),
+        h('button.btn.btn--quiet', { type: 'button', disabled: full20, onclick: () => create({ name: 'All events', events: events.map((e) => e.id) }) }, 'All events link'),
         h('span.hint', full20 ? `That is the most (${state.max}). Delete a link you no longer use to make another.` : `${state.links.length} of ${state.max} guest links`)));
   };
 

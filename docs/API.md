@@ -668,6 +668,7 @@ Ceremony ids are the existing stable `events[].id`.
 | `POST /invitations/:slug/guest-links` | `{ name, events }` | `201 { link }` · `400 { errors }` · `409 code not_published \| too_many` |
 | `PATCH /invitations/:slug/guest-links/:linkId` | `{ name?, events? }` | `{ link }` · `404` deleted |
 | `DELETE /invitations/:slug/guest-links/:linkId` | – | `{ ok: true }` (the link stops working at once; its replies are kept) |
+| `PUT /invitations/:slug/guest-links/main` | `{ events }` (≥ 1) | `{ main }`: what the plain link (no `g`, "Main link") shows; all = the default (`plainLinkEvents` removed) |
 
 A guest link is `?g=<id>` on `/i/:slug`, `/<theme>/?id=<slug>` and `GET /invitations/:slug/public`. The server filters the
 events before sending (page data block, JSON, link preview: `og:description` starts with the link's ceremonies), and sets
@@ -675,8 +676,10 @@ events before sending (page data block, JSON, link preview: `og:description` sta
 `410` ("This link is no longer active" page; JSON `code: 'link_inactive'`). Replies through it may name only its
 ceremonies (another of the invitation's → `400 fields: ['events']`) and are stored with `link: <id>`. `GET …/rsvps`
 adds `links: [{ id ('' = full link), name, replies, guests, deleted? }]`; `?link=<id>|full` filters the list and the CSV
-(which gets a "Guest link" column once links exist). The full link is unchanged. Note: the guest link carries the
-invitation's slug, so a guest who removes `g` sees the full invitation; it narrows what is shown, it is not a secret.
+(which gets a "Guest link" column once links exist). Without `g`, guests get the main link's ceremonies
+(`doc.plainLinkEvents`, absent = every one, as before; ignored if none of them is still published) in the same places:
+page, data block, `/public`, OG meta, `/i/` (and its `e=`), RSVP validation. The planner's and the couple's own studio
+session see everything. So a guest who strips `g` from a Haldi link sees only the main link's ceremonies.
 
 ## Account emails (Brevo)
 

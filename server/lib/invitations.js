@@ -19,7 +19,7 @@ import { zoneOf, restamp, DEFAULT_TZ, isTimeZone } from '../../src/core/tz.js';
 import { isReligion, startingEvents, startingWords, suits } from '../../src/core/faith.js';
 import { changedAreas, AREA_IDS } from '../../src/core/draft-areas.js';
 import { PUBLIC_ORIGINS, ROOT_DIR, IS_PROD } from './env.js';
-import { activeLink, linkParam, narrowPayload } from './guest-links.js';
+import { activeLink, guestView, linkParam, narrowPayload } from './guest-links.js';
 
 const httpError = (status, message, extra) => Object.assign(new Error(message), { status, expose: true, ...extra });
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -525,9 +525,10 @@ export async function publicData(req, res) {
   const src = preview ? doc.draft : isLive(doc) ? doc.published : null;
   if (!src) throw httpError(404, 'Not found.');
   res.vary('Cookie');
-  // a guest link (?g=, lib/guest-links.js): only its ceremonies; a deleted one shows nothing
+  // a guest link (?g=, lib/guest-links.js): only its ceremonies; a deleted one shows nothing. Without g=, guests get
+  // what the main link shows (doc.plainLinkEvents); the planner's and the couple's own preview, everything.
   const g = linkParam(req);
-  const link = g ? activeLink(doc, src, g) : null;
+  const link = g ? activeLink(doc, src, g) : preview ? null : guestView(doc, src, '').link;
   if (g && !link) throw httpError(410, 'This link is no longer active.', { code: 'link_inactive' });
   if (preview) {
     res.set('X-Invitation-Preview', 'draft');
@@ -543,7 +544,7 @@ export async function publicData(req, res) {
 /** The guests' JSON for a published invitation (or one guest link of it), built once per revision (API and page). */
 function publishedEntity(doc, slug, link = null) {
   const rev = revOf(doc);
-  const key = link ? `${slug}~${link.id}` : slug; // a link change saves the doc, so the revision moves on too
+  const key = link ? `${slug}~${link.id || 'main'}` : slug; // a link change saves the doc, so the revision moves on too
   return publicCache.get(key, rev) || publicCache.set(key, rev, entity(JSON.stringify(link ? narrowPayload(publicPayload(doc.published, slug), link) : publicPayload(doc.published, slug)), 'application/json; charset=utf-8'));
 }
 

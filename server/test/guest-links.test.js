@@ -154,6 +154,43 @@ test('links: names and ceremonies are checked, published invitations only, at mo
   assert.deepEqual(res.body.link, { ...first, name: 'Close family', events: ['haldi', 'reception'] });
 });
 
+test('the main link can be narrowed: a guest who strips g= sees only its ceremonies, everywhere it renders', async () => {
+  const slug = 'gl-main';
+  await publishDoc(slug, 'agni');
+  const put = (evs) => call(gl.putMain, parsed(fakeReq({ slug, body: { events: evs } }))).catch((err) => ({ statusCode: err.status }));
+  assert.equal((await put([])).statusCode, 400, 'at least one ceremony stays on the main link');
+  assert.equal((await put(['nope'])).statusCode, 400);
+  const set = await put(['reception', 'wedding']);
+  assert.deepEqual(set.body.main, ['wedding', 'reception']);
+  const { link } = (await createLink(slug, 'Haldi guests', ['haldi'])).body;
+
+  // the page (the URL a Haldi guest gets by removing g=), its data, the JSON, the preview and the short link
+  const { res } = await openPage('agni', { id: slug });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(dataBlock(res.body).events.map((e) => e.id), ['wedding', 'reception']);
+  for (const hidden of ['Haldi', 'Mehendi', '"id":"haldi"']) assert.equal(res.body.includes(hidden), false, `${hidden} is not on the main link`);
+  assert.equal(dataBlock(res.body).rsvp.endpoint, `/api/invitations/${slug}/rsvp`);
+  const doc = await store.peekInvitation(slug); // GET /public itself: the real-server test below
+  assert.deepEqual(JSON.parse(publishedJson(doc, slug, gl.guestView(doc, doc.published, '').link)).events.map((e) => e.id), ['wedding', 'reception']);
+  const share = await call(sharePage, fakeReq({ params: { slug }, query: { e: 'haldi,wedding' } }));
+  assert.equal(share.body.includes('Haldi'), false, 'the preview never names a hidden ceremony');
+  assert.match(share.body, /&amp;e=wedding/, 'a personal link keeps only ceremonies the main link shows');
+  // the group link still shows its own ceremony
+  assert.deepEqual(dataBlock((await openPage('agni', { id: slug, g: link.id })).res.body).events.map((e) => e.id), ['haldi']);
+
+  // replies on the plain endpoint: only the main link's ceremonies
+  const reply = (evs) => ({ name: 'Ana Smith', phone: '', attending: 'yes', guests: 1, events: evs, party: [{ name: 'Ana Smith', meal: 'veg' }], message: '', website: '' });
+  assert.equal((await call(rsvp.submit, fakeReq({ slug, body: reply(['haldi']) }))).statusCode, 400);
+  assert.equal((await call(rsvp.submit, fakeReq({ slug, body: reply(['wedding']) }))).statusCode, 200);
+  assert.equal((await call(rsvp.submit, fakeReq({ slug, body: reply(['haldi']), query: { g: link.id } }))).statusCode, 200);
+
+  // every ceremony again: stored as the default (nothing narrowed)
+  const all = await put(events.map((e) => e.id));
+  assert.equal(all.body.main.length, 4);
+  assert.equal((await store.peekInvitation(slug)).plainLinkEvents, undefined);
+  assert.equal(dataBlock((await openPage('agni', { id: slug })).res.body).events.length, 4);
+});
+
 test('replies through a guest link: only its ceremonies, with the link kept; the list shows and filters by link', async () => {
   const slug = 'gl-rsvp';
   const { link } = (await createLink(slug, 'Haldi guests', ['haldi'])).body;
@@ -314,6 +351,16 @@ test('only the invitation’s planner or couple manage its guest links; guests g
   const short = await guest.req(`/i/${slug}?g=nOtALink00`);
   assert.equal(short.status, 410);
   assert.match(short.body, /This link is no longer active/);
+
+  // the main link narrowed: guests see only its ceremony; the planner's and the couple's own preview, everything
+  assert.equal((await owner.req(`${path}/main`, { method: 'PUT', body: { events: [evIds[1]] } })).status, 200);
+  assert.deepEqual((await guest.req(`/api/invitations/${slug}/public`)).body.events.map((e) => e.id), [evIds[1]]);
+  assert.equal((await owner.req(`/api/invitations/${slug}/public`)).body.events.length, evIds.length, 'staff preview: everything');
+  assert.equal((await couple.req(`/api/invitations/${slug}/public`)).body.events.length, evIds.length, 'the couple’s preview: everything');
+  assert.equal((await other.req(`/api/invitations/${slug}/public`)).body.events.length, 1, 'another couple is a guest here');
+  assert.equal((await other.req(`${path}/main`, { method: 'PUT', body: { events: [evIds[0]] } })).status, 403);
+  assert.equal((await stranger.req(`${path}/main`, { method: 'PUT', body: { events: [evIds[0]] } })).status, 401);
+  assert.deepEqual((await couple.req(path)).body.main, [evIds[1]]);
 
   assert.equal((await owner.req(`${path}/${id}`, { method: 'DELETE' })).status, 200);
   assert.equal((await guest.req(`/api/invitations/${slug}/public?g=${id}`)).status, 410, 'deleted: disabled at once');

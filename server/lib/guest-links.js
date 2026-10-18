@@ -1,9 +1,10 @@
 // Guest links: one link per group of ceremonies (docs/API.md "Guest links"). The couple invites some guests only to
 // some functions: "Haldi guests" open a link that shows the Haldi alone, "Family" one with Haldi + Mehendi, and the
-// full link (/i/<slug>, /<theme>/?id=<slug>) still shows everything.
+// plain link (/i/<slug>, /<theme>/?id=<slug>, "Main link") shows everything unless doc.plainLinkEvents narrows it.
 //
 // Stored on the invitation doc, outside draft/published (saving or publishing never touches it):
 //   guestLinks: [{ id, name, events: [eventId], createdAt }]   (at most MAX_LINKS)
+//   plainLinkEvents?: [eventId]   (what the plain link shows; absent = every ceremony)
 // A guest link is ?g=<id> on the usual URLs. The server filters the events BEFORE anything is sent (the page's data
 // block, GET /public, the link preview), so a hidden ceremony is never in that guest's HTML or JSON. Replies through
 // it may only name its ceremonies and carry its id. An unknown or deleted id gets "This link is no longer active".
@@ -32,6 +33,26 @@ export function activeLink(doc, inv, id) {
   return l && linkEvents(inv, l).length ? l : null;
 }
 
+/**
+ * The plain link (no g=, "Main link" in the studio): doc.plainLinkEvents, when set, narrows what it shows, so a guest
+ * who strips g= from a Haldi link sees only the main link's ceremonies. Returns a view like a link ({ id: null, events })
+ * or null when it shows everything (the default; also when none of the chosen ceremonies is still published).
+ */
+export function plainView(doc, inv) {
+  const ids = Array.isArray(doc?.plainLinkEvents) ? doc.plainLinkEvents : null;
+  if (!ids) return null;
+  const view = { id: null, events: ids };
+  const shown = linkEvents(inv, view).length;
+  return shown && shown < (inv?.events || []).length ? view : null;
+}
+
+/** What a guest sees for this g= value ('' = the plain link): { ok, link } (link null = everything). */
+export function guestView(doc, inv, g) {
+  if (!g) return { ok: true, link: plainView(doc, inv) };
+  const link = activeLink(doc, inv, g);
+  return { ok: Boolean(link), link };
+}
+
 /** The g= value of a request ('' when absent). */
 export const linkParam = (req) => (typeof req.query?.g === 'string' ? req.query.g : '');
 
@@ -47,7 +68,7 @@ export function linkEvents(inv, link) {
  */
 export function narrowPayload(out, link) {
   out.events = linkEvents(out, link);
-  if (out.rsvp) out.rsvp.endpoint = `${out.rsvp.endpoint}?g=${link.id}`;
+  if (out.rsvp && link.id) out.rsvp.endpoint = `${out.rsvp.endpoint}?g=${link.id}`;
   return out;
 }
 
@@ -99,8 +120,34 @@ export async function list(req, res) {
     live: doc.status === 'published' && Boolean(doc.published),
     max: MAX_LINKS,
     events: liveEvents(doc).map(({ id, title }) => ({ id, title })),
+    main: mainEvents(doc),
     links: linksOf(doc).map(out),
   });
+}
+
+/** The ceremonies the main (plain) link shows, as ids of the published ones. */
+const mainEvents = (doc) => {
+  const inv = doc.published || doc.draft;
+  const v = plainView(doc, inv);
+  return (v ? linkEvents(inv, v) : liveEvents(doc)).map((e) => e.id);
+};
+
+/** PUT /api/invitations/:slug/guest-links/main { events }: what the plain link shows (at least one; all = the default). */
+export async function putMain(req, res) {
+  const { slug } = req.params;
+  const main = await withLock(`inv:${slug}`, async () => {
+    const cur = await getInvitation(slug);
+    if (!cur) throw httpError(404, 'No invitation with that link name.');
+    if (cur.status !== 'published' || !cur.published) throw httpError(409, 'Guest links work once the invitation is published. Publish it first.', { code: 'not_published' });
+    const { events } = input({ events: req.body?.events }, cur, { partial: true });
+    if (!events) throw httpError(400, 'Please check the guest link.', { errors: [{ path: 'events', message: 'choose at least one ceremony' }] });
+    if (events.length === liveEvents(cur).length) delete cur.plainLinkEvents; // everything: as before
+    else cur.plainLinkEvents = events;
+    await saveInvitation(cur);
+    return mainEvents(cur);
+  });
+  console.info(`[studio] main link events slug=${slug} events=${main.length}`);
+  res.json({ main });
 }
 
 /** POST /api/invitations/:slug/guest-links { name, events }: a new link (published invitations only). */

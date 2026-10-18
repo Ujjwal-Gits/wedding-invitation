@@ -184,6 +184,7 @@ api.get('/invitations/:slug/guest-links', editor, wrap(guestLinks.list));
 api.post('/invitations/:slug/guest-links', editor, json('4kb'), wrap(guestLinks.create));
 api.patch('/invitations/:slug/guest-links/:linkId', editor, json('4kb'), wrap(guestLinks.patch));
 api.delete('/invitations/:slug/guest-links/:linkId', editor, wrap(guestLinks.remove));
+api.put('/invitations/:slug/guest-links/main', editor, json('4kb'), wrap(guestLinks.putMain)); // what the plain link shows
 // Uploads per invitation: generous for a planner adding a whole album, but bounded so a leaked couple link
 // cannot fill the disk.
 const uploadLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 300 });

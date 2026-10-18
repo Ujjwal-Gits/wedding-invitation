@@ -7,7 +7,7 @@ import { photoUrl } from './invitations.js';
 import { VERSIONS, TITLE, isReligion } from '../../src/core/faith.js';
 import { DEMO_PEOPLE_PHOTOS, DEMO_SHARE } from './demo.js';
 import { OCCASIONS, isOccasion } from '../../src/core/markets.js';
-import { activeLink, eventNames, linkParam, LINK_ID_RE, sendInactive } from './guest-links.js';
+import { eventNames, guestView, linkEvents, linkParam, LINK_ID_RE, sendInactive } from './guest-links.js';
 
 const NEUTRAL_IMAGE = '/art/og.jpg'; // public/art/og.jpg: hands joined at a wedding (no names, no faces)
 
@@ -38,7 +38,7 @@ export function shareInfo(inv, req, slug, link = null) {
   // No photo of their own yet: a neutral picture (joined hands), never the design's thumbnail (it shows the demo couple).
   if (!img) img = NEUTRAL_IMAGE;
   const image = img ? (img.startsWith('https://') ? img : `${origin}${img}`) : '';
-  return { title, description, image, url: `${origin}/i/${slug}${link ? `?g=${link.id}` : ''}` };
+  return { title, description, image, url: `${origin}/i/${slug}${link?.id ? `?g=${link.id}` : ''}` };
 }
 
 /** The built theme page with this invitation's own title and link-preview tags (lib/gate.js, ?id=<slug>). */
@@ -61,15 +61,15 @@ export async function sharePage(req, res) {
   const doc = await getInvitation(slug);
   if (!isLive(doc)) return res.status(404).type('text/plain').send('Not found');
   const inv = doc.published;
-  const g = linkParam(req);
-  const link = g ? activeLink(doc, inv, g) : null;
-  if (g && !link) return sendInactive(res);
+  const view = guestView(doc, inv, linkParam(req)); // without g=, what the main link shows
+  if (!view.ok) return sendInactive(res);
+  const { link } = view;
 
   const q = new URLSearchParams({ id: slug });
-  if (link && LINK_ID_RE.test(link.id)) q.set('g', link.id);
+  if (link?.id && LINK_ID_RE.test(link.id)) q.set('g', link.id);
   const to = typeof req.query.to === 'string' ? req.query.to.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 60) : '';
   if (to) q.set('to', to);
-  const ids = new Set(inv.events.map((e) => e.id));
+  const ids = new Set((link ? linkEvents(inv, link) : inv.events).map((e) => e.id));
   const e = typeof req.query.e === 'string' ? req.query.e.split(',').filter((x) => ids.has(x)).slice(0, 12) : [];
   if (e.length) q.set('e', e.join(','));
   // a personal link's version of the religious symbols (docs/PLATFORM.md "Religion"): only the known values

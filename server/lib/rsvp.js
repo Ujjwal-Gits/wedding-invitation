@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { peekInvitation, isLive, listReplies as storedReplies, addReply, deleteReply as dropReply } from './store.js';
 import { rateLimiter, originAllowed, clientIp } from './security.js';
 import { rsvpOptions, partyOf, mealLabel, mealTotals, guestName, LIMITS } from '../../src/core/rsvp-rules.js';
-import { activeLink, linkEvents, linkParam, linksOf } from './guest-links.js';
+import { guestView, linkEvents, linkParam, linksOf } from './guest-links.js';
 
 const httpError = (status, message) => Object.assign(new Error(message), { status, expose: true });
 const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g;
@@ -44,10 +44,11 @@ export async function submit(req, res) {
   if (!isLive(doc)) return res.status(404).json({ ok: false, error: 'Not found.' });
   const inv = doc.published;
   if (inv.rsvp.enabled === false) return res.status(403).json({ ok: false, error: 'Replies are closed for this invitation.' });
-  // a guest link (?g= on its endpoint, lib/guest-links.js): only its ceremonies can be answered; a deleted one, none
-  const g = linkParam(req);
-  const link = g ? activeLink(doc, inv, g) : null;
-  if (g && !link) return res.status(410).json({ ok: false, error: 'This link is no longer active.', code: 'link_inactive' });
+  // a guest link (?g= on its endpoint, lib/guest-links.js): only its ceremonies can be answered; a deleted one, none.
+  // The plain endpoint: the main link's ceremonies (doc.plainLinkEvents; every one by default).
+  const view = guestView(doc, inv, linkParam(req));
+  const { link } = view;
+  if (!view.ok) return res.status(410).json({ ok: false, error: 'This link is no longer active.', code: 'link_inactive' });
 
   // Honeypot: real guests never see or fill "website". Pretend success, store nothing.
   if (typeof body.website === 'string' && body.website.trim()) return res.json({ ok: true });
@@ -99,7 +100,7 @@ export async function submit(req, res) {
   if (attending === 'yes' && !events.length) events = [...validIds];
 
   const reply = { id: randomBytes(9).toString('base64url'), at: new Date().toISOString(), name, phone, attending, guests, events, party };
-  if (link) reply.link = link.id;
+  if (link?.id) reply.link = link.id;
   const diet = attending === 'yes' && ask.diet ? clean(body.diet, LIMITS.diet, true) : '';
   const song = attending === 'yes' && ask.song ? clean(body.song, LIMITS.song) : '';
   if (diet) reply.diet = diet;
@@ -111,14 +112,14 @@ export async function submit(req, res) {
     if (err.expose) return res.status(err.status).json({ ok: false, error: err.message });
     throw err;
   }
-  console.info(`[rsvp] slug=${slug} attending=${attending} guests=${guests}${link ? ` link=${link.id}` : ''}`);
+  console.info(`[rsvp] slug=${slug} attending=${attending} guests=${guests}${link?.id ? ` link=${link.id}` : ''}`);
   res.json({ ok: true });
 }
 
 /** Replies per guest link ('' = the full link), with the links' names (a deleted link keeps its replies). */
 function linkTotals(doc, replies) {
   const names = new Map(linksOf(doc).map((l) => [l.id, l.name]));
-  const by = new Map([['', { id: '', name: 'Full invitation', replies: 0, guests: 0 }], ...[...names].map(([id, name]) => [id, { id, name, replies: 0, guests: 0 }])]);
+  const by = new Map([['', { id: '', name: 'Main link', replies: 0, guests: 0 }], ...[...names].map(([id, name]) => [id, { id, name, replies: 0, guests: 0 }])]);
   for (const r of replies) {
     const k = typeof r.link === 'string' ? r.link : '';
     if (!by.has(k)) by.set(k, { id: k, name: 'Deleted link', deleted: true, replies: 0, guests: 0 });

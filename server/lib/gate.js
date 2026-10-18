@@ -14,7 +14,7 @@ import { hasStudioSession, canEdit } from './auth.js';
 import { shareInfo, withShareMeta } from './share.js';
 import { publishedJson } from './invitations.js';
 import { publicMusic } from './music.js';
-import { activeLink, linkParam, sendInactive } from './guest-links.js';
+import { guestView, linkParam, sendInactive } from './guest-links.js';
 
 const built = new Map(); // theme -> its built index.html (dist does not change while the server runs)
 /**
@@ -162,10 +162,13 @@ export function themePageGate(distDir) {
       const id = typeof req.query.id === 'string' ? req.query.id : '';
       if (await hasStudioSession(req)) { // (b) planner, (c) couple: any design, drafts included
         const doc = id && SLUG_RE.test(id) ? await getInvitation(id) : null;
-        const inv = doc ? (canEdit(req, id) ? doc.draft : isLive(doc) ? doc.published : null) : null;
+        const own = Boolean(doc) && canEdit(req, id);
+        const inv = doc ? (own ? doc.draft : isLive(doc) ? doc.published : null) : null;
         const g = inv ? linkParam(req) : '';
-        const link = g ? activeLink(doc, inv, g) : null;
-        if (g && !link) return sendInactive(res);
+        // the planner's and the couple's own view of the plain link shows everything; anyone else, what guests see
+        const view = inv && (g || !own) ? guestView(doc, inv, g) : { ok: true, link: null };
+        if (!view.ok) return sendInactive(res);
+        const link = view.link;
         if (inv && (await sendWithMeta(req, res, distDir, theme, inv, id, null, link))) return undefined;
         return next();
       }
@@ -178,9 +181,10 @@ export function themePageGate(distDir) {
       const pub = isLive(doc) ? doc.published : null; // unpublished or suspended: the same answer
       if (!pub) return res.status(404).type('html').send(NOT_AVAILABLE);
       // a guest link (?g=, lib/guest-links.js): only its ceremonies are sent; a deleted or unknown one, nothing
-      const g = linkParam(req);
-      const link = g ? activeLink(doc, pub, g) : null;
-      if (g && !link) return sendInactive(res);
+      // without g=, what the main link shows (doc.plainLinkEvents; everything by default)
+      const view = guestView(doc, pub, linkParam(req));
+      if (!view.ok) return sendInactive(res);
+      const { link } = view;
       // (a) a published invitation, shown only in its own design: a guest link cannot be used to try others.
       if (pub.theme !== theme) {
         const q = new URLSearchParams();
