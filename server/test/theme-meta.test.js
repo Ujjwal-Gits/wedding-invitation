@@ -73,8 +73,8 @@ test('faith mapping: explicit per design, Hindu art stays Hindu, the site lists 
   const hinduArt = ['agni', 'bagaicha', 'chitra', 'dhoka', 'durbar', 'ghar', 'gurans', 'hariyo', 'janti', 'laali', 'mahal', 'mala', 'mandap',
     'mangal', 'mehendi', 'nimantrana', 'pardaa', 'rajdwar', 'rangoli', 'shree', 'sindoor', 'swayambar'];
   for (const s of hinduArt) assert.deepEqual(man[s], ['hindu'], `${s} is Hindu only`);
-  assert.deepEqual(has('christian'), ['amalfi', 'blush-roses', 'dhaka', 'garden-party', 'himal', 'letterpress', 'olive-grove', 'rose-arch', 'tuscany', 'wax-seal', 'wildflower']);
-  assert.deepEqual(has('muslim'), ['andalus', 'blush-roses', 'dhaka', 'garden-party', 'gold-arch', 'himal', 'jali', 'letterpress', 'noor', 'olive-grove', 'wax-seal', 'wildflower']);
+  assert.deepEqual(has('christian'), ['amalfi', 'blush-roses', 'dhaka', 'garden-party', 'himal', 'letterpress', 'olive-grove', 'rose-arch', 'sandesh', 'tuscany', 'wax-seal', 'wildflower']);
+  assert.deepEqual(has('muslim'), ['andalus', 'blush-roses', 'dhaka', 'garden-party', 'gold-arch', 'himal', 'jali', 'letterpress', 'noor', 'olive-grove', 'sandesh', 'wax-seal', 'wildflower']);
   // the Muslim designs are for Muslim weddings only; no Christian chapel or wine label in the Muslim list
   for (const s of ['andalus', 'gold-arch', 'jali', 'noor']) assert.deepEqual(man[s], ['muslim'], s);
   // 'other' = genuinely neutral art only, and every neutral design also suits Buddhist and Kirat weddings

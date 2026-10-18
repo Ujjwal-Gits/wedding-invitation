@@ -331,7 +331,7 @@ function ld(id) {
   if (l.designs) {
     const list = l.designs.list === 'art' ? INTL_THEMES : l.market === 'intl' ? l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean) : withIntl(l.designs.list, 4);
     out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'ItemList', name: l.designs.title, numberOfItems: list.length,
-      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug)}` })) }));
+      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug, l.market === 'intl' ? 'intl' : 'np')}` })) }));
   }
   return out.join('\n  ');
 }

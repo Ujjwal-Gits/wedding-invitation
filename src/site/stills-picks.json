@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "sandesh": {
+    "kind": "hero",
+    "why": "The opened letter on the morning rooftop: the two doves on its edge, the names and the vermilion postmark."
   }
 }

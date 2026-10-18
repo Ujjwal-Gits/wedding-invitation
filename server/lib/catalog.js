@@ -36,6 +36,7 @@ const KNOWN = {
   swayambar: { name: 'Swayambar', concept: 'Fresh garlands part on the jaimala; the bride’s and groom’s sides come together' },
   sindoor: { name: 'Sindoor', concept: 'Minimal red, white and black; the sindoor box opens and a red parting line runs through the story' },
   rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
+  sandesh: { name: 'Sandesh', concept: 'Doves bring a lac-sealed letter to a morning rooftop, then deliver each event as a hand-stamped postcard' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
@@ -71,6 +72,8 @@ const META = {
   noor: { market: 'intl', style: 'romantic', faith: M, occasions: NIKAH },
   jali: { market: 'intl', style: 'classic', faith: M, occasions: NIKAH },
   andalus: { market: 'intl', style: 'destination', faith: M, occasions: NIKAH },
+  // on both sites (neutral art: doves, a rooftop, roses, postage stamps)
+  sandesh: { market: 'both', style: 'romantic', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
 };
 const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
 /** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
@@ -92,6 +95,7 @@ const DEFAULT_TIERS = {
   // Canva-painted designs
   mahal: 'shahi', rajdwar: 'shahi', laali: 'shahi', mehendi: 'shahi', hariyo: 'shahi', shree: 'shahi',
   pardaa: 'shahi', agni: 'shahi', janti: 'shahi', swayambar: 'shahi', sindoor: 'shahi', rangoli: 'shahi',
+  sandesh: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards

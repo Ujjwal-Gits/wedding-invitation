@@ -120,7 +120,7 @@ function updateTiers() {
     const shown = state.themes.filter((t) => t.tier === row.dataset.tierRow);
     if (!list || !shown.length) continue;
     const have = new Map($$('a[data-slug]', list).map((a) => [a.dataset.slug, a]));
-    const links = shown.map((t) => have.get(t.slug) || el('a', { href: designPage(t.slug), 'data-slug': t.slug },
+    const links = shown.map((t) => have.get(t.slug) || el('a', { href: designPage(t.slug, 'np'), 'data-slug': t.slug },
       el('span', { class: 'phone' }, el('img', { src: STILLS[t.slug] ? `/site/stills/${t.slug}-200.webp` : t.thumb, width: 390, height: 844, alt: '', loading: 'lazy', decoding: 'async' })),
       el('span', { text: t.name })));
     list.replaceChildren(...links);

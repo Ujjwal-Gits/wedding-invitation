@@ -36,6 +36,7 @@ export const THEMES = [
   ['swayambar', 'Swayambar', 'स्वयम्बर', 'flowers', 'Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.', 'the bride and groom exchanging marigold garlands', ['hindu']],
   ['sindoor', 'Sindoor', 'सिन्दूर', 'cards', 'Red, white and black. The sindoor box opens and a red line carries your story.', 'a red and gold sindoor box on white with a red Ganesh drawing', ['hindu']],
   ['rangoli', 'Rangoli', 'रंगोली', 'flowers', 'A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos', ['hindu']],
+  ['sandesh', 'Sandesh', 'सन्देश', 'cards', 'Two doves bring a lac-sealed letter to a morning rooftop. Break the seal, then each event arrives as a hand-stamped postcard.', 'two white doves on a lac-sealed letter over a rooftop of roses and bougainvillea', ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other']],
 ].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
 
 export const BY_SLUG = Object.fromEntries(THEMES.map((t) => [t.slug, t]));

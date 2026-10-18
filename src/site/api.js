@@ -128,7 +128,7 @@ export function normaliseThemes(api, site, { ordered = false } = {}) {
         featured: t.featured === true,
       };
     })
-    : [...THEMES, ...INTL_THEMES.map(intlAsNp)].filter((t) => !hidden.has(t.slug));
+    : [...THEMES, ...INTL_THEMES.filter((d) => !BY_SLUG[d.slug]).map(intlAsNp)].filter((t) => !hidden.has(t.slug)); // a design on both sites: once
   if (ordered && rows.length) return list;
   const featured = (site.featuredThemes || []).filter((s) => list.some((t) => t.slug === s));
   if (featured.length) {

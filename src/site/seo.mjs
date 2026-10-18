@@ -154,6 +154,7 @@ const DESIGN_SEO = {
   swayambar: ['Swayambar Garland Wedding Invitation With RSVP', 'Two fresh garlands swing apart and both families come together as you scroll. Guests RSVP to each ceremony, with Nepali dates. From {p}. Preview it.'],
   sindoor: ['Sindoor Red and White Wedding E-Card', 'Red, white and black: the sindoor box opens and a red line carries your story. A wedding e-card with RSVP and BS dates. From {p}. Preview it now.'],
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
+  sandesh: ['Sandesh Dove Post Wedding Invitation With RSVP', 'Two doves bring a lac-sealed letter, then every ceremony arrives as a stamped postcard. RSVP, maps and Nepali dates. From {p}. Watch it fly.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };
@@ -197,6 +198,7 @@ const INTL_DESIGN_SEO = {
   noor: ['Noor Rose Arch Elegant Wedding Invitation Online', 'A sage arch hung with fresh roses glows open on your names. An elegant invitation with every event, maps and RSVP. From {p}, paid once. See it.'],
   jali: ['Jali Lattice and Lantern Digital Wedding Invitation', 'Carved emerald and gold lattice screens slide apart under hanging lanterns. A multi-event invitation with RSVP for each. From {p}. Preview it.'],
   andalus: ['Andalus Courtyard Destination Wedding Website', 'Step through a horseshoe arch into a tiled courtyard with a fountain and orange trees. Travel, schedule and RSVP in one link. From {p}. See it.'],
+  sandesh: ['Sandesh Dove Postcard Animated Wedding Invitation', 'Doves deliver your invitation: break the red wax seal, then each event lands as a stamped postcard. Schedule, maps and RSVP. From {p}. See it fly.'],
 };
 export function intlDesignMeta(slug) {
   const d = INTL_BY_SLUG[slug];

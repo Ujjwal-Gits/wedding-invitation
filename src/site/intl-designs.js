@@ -60,6 +60,8 @@ export const INTL_THEMES = [
   { slug: 'noor', cat: 'doors', faith: 'muslim', religions: ['muslim'], name: 'Noor', style: 'romantic', tier: 'shahi', occasions: N, line: 'A sage arch hung with fresh roses glows open on your names.', alt: 'a sage arch framed with fresh roses' },
   { slug: 'jali', cat: 'doors', faith: 'muslim', religions: ['muslim'], name: 'Jali', style: 'classic', tier: 'saral', occasions: N, line: 'Carved emerald and gold lattice screens slide apart under hanging lanterns.', alt: 'carved emerald and gold lattice screens under lanterns' },
   { slug: 'andalus', cat: 'doors', faith: 'muslim', religions: ['muslim'], name: 'Andalus', style: 'destination', tier: 'shahi', occasions: N, line: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees.', alt: 'a tiled courtyard with a fountain and orange trees through an arch' },
+  // on both sites (market 'both'): also a Nepal design in src/site/themes.js
+  { slug: 'sandesh', cat: 'cards', faith: '', religions: ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other'], name: 'Sandesh', style: 'romantic', tier: 'shahi', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'], line: 'Two doves deliver your invitation: guests break a red wax seal, then each event arrives as a hand-stamped postcard.', alt: 'two white doves on a wax-sealed letter over a sunny rooftop of roses' },
 ].map((d) => ({ ...d, id: d.slug, mini: `/site/thumbs/${d.slug}-480.webp`, art: false }));
 /** The international designs the Nepal site's rows show after its own (the home rail, landing rows); every one of
  *  them is in its designs page, pricing tiers and order form. */
@@ -72,7 +74,7 @@ export const intlAsNp = (d) => ({
 export const INTL_BY_SLUG = Object.fromEntries(INTL_THEMES.map((d) => [d.slug, d]));
 /** a design's page: the international ones have their own under /international/designs/, the Nepal ones /designs/;
  *  a design new to the catalog and without a page yet opens its watermarked showcase */
-export const designPage = (slug) => (INTL_BY_SLUG[slug] ? `/international/designs/${slug}/` : BY_SLUG[slug] ? `/designs/${slug}/` : `/${slug}/?showcase=1`);
+export const designPage = (slug, market = 'intl') => (INTL_BY_SLUG[slug] && (market === 'intl' || !BY_SLUG[slug]) ? `/international/designs/${slug}/` : BY_SLUG[slug] ? `/designs/${slug}/` : `/${slug}/?showcase=1`);
 
 const TIERS = ['saral', 'shubha', 'shahi'];
 const isIntl = (m) => m === 'intl' || m === 'both' || (Array.isArray(m) && m.includes('intl')); // GET /api/themes: market 'np' | 'intl' | 'both'
