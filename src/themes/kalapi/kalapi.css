@@ -84,7 +84,7 @@ body.theme-kalapi {
 .kp-g__bg { position: absolute; inset: 0;
   background: repeating-linear-gradient(104deg, rgba(232, 201, 135, 0.028) 0 1px, transparent 1px 9px), var(--kp-cloth),
     radial-gradient(70% 55% at 50% var(--ry), #175257 0%, var(--kp-teal) 52%, var(--kp-deep) 100%); }
-.kp-g__frame { position: absolute; inset: 12px; pointer-events: none; border: 1px solid rgba(198, 154, 62, 0.55); box-shadow: inset 0 0 0 5px transparent, inset 0 0 0 6px rgba(198, 154, 62, 0.28); }
+.kp-g__frame { position: absolute; inset: 12px; z-index: 1; pointer-events: none; border: 1px solid rgba(198, 154, 62, 0.55); box-shadow: inset 0 0 0 5px transparent, inset 0 0 0 6px rgba(198, 154, 62, 0.28); }
 .kp-g__glow { position: absolute; left: 50%; top: var(--ry); width: calc(var(--L) * 2.4); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(232, 201, 135, 0.18), rgba(232, 201, 135, 0.06) 55%, rgba(232, 201, 135, 0)); opacity: 0.55; transform: scale(0.7); pointer-events: none; }
 .kp-root--gate { top: var(--ry); }
@@ -93,9 +93,13 @@ body.theme-kalapi {
 .kp-bird__in { position: absolute; width: calc(var(--L) * 0.8 * 0.2442); height: calc(var(--L) * 0.8); left: calc(var(--L) * -0.0977); top: calc(var(--L) * -0.8); transform-origin: 50% 100%; }
 .kp-bird__in img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; }
 /* the bird stands on the painted terrace parapet (garlands and diyas), which fades into the cloth above the buttons */
-.kp-g__ground { position: absolute; left: 0; right: 0; top: calc(var(--fy) - 10px); height: 118px; pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 52%, transparent 100%); mask: linear-gradient(#000 0 52%, transparent 100%); }
-.kp-g__ground img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
+.kp-g__ground { position: absolute; left: 0; right: 0; top: calc(var(--fy) - 10px); bottom: 0; pointer-events: none;
+  /* the parapet's marble face runs on to the foot of the screen and falls into evening shadow, so the buttons read on it
+     and nothing below the garlands is empty cloth */
+  background: linear-gradient(180deg, rgba(12, 40, 42, 0.62) 0, rgba(10, 36, 38, 0.86) 48px, rgba(8, 32, 34, 0.93) 100%) 0 116px / 100% calc(100% - 116px) no-repeat,
+    url('/themes/kalapi/art/plinth.webp') 50% 116px / max(100%, 1156px) calc(100% - 116px) no-repeat; }
+.kp-g__ground img { display: block; width: 100%; height: 118px; object-fit: cover; object-position: 50% 0; }
+.kp-g__ground::after { content: ''; position: absolute; left: 0; right: 0; top: 116px; height: 10px; background: linear-gradient(rgba(30, 22, 10, 0.4), transparent); }
 .kp-g__tap { position: absolute; left: 50%; top: calc(var(--ry) + var(--L) * 0.1); translate: -50% 0; margin: 0; display: flex; align-items: center; gap: 12px; white-space: nowrap;
   font: 600 11px/1 var(--su-f-body); letter-spacing: 0.3em; text-transform: uppercase; color: var(--kp-gold-hi); opacity: 0.8; pointer-events: none; }
 .kp-g__tap .l-ne { font-size: 14px; }
