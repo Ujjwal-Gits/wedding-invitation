@@ -80,7 +80,8 @@ test('a built page reads back its own words, and comes out unchanged when nothin
   assert.ok(faq.faqGrouped && faq.faq.length >= 10 && faq.faq[0].group, 'the FAQ page: grouped questions');
   assert.match(faq.h1, /<em>/);
   assert.equal(pageOf(built('international/faq/index.html'), '/international/faq/').site, 'intl');
-  assert.equal(pageOf(built('terms/index.html'), '/terms/').site, 'both');
+  assert.equal(pageOf(built('terms/index.html'), '/terms/').site, 'np'); // each site has its own legal pages
+  assert.equal(pageOf(built('international/terms/index.html'), '/international/terms/').site, 'intl');
 });
 
 test('every page of the built site (dist/) comes out unchanged with nothing edited', { skip: !existsSync(resolve(ROOT, 'dist', 'faq', 'index.html')) && 'no build' }, async () => {

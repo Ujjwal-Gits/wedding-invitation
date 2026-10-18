@@ -94,7 +94,7 @@ export const PAGES = {
   },
 };
 
-/** The legal pages: one neutral set for both sites (market 'both'). */
+/** The legal pages: the Nepal site's (here) and the international site's twins (below). */
 export const LEGAL = {
   terms: {
     path: '/terms/', img: 'home', type: 'WebPage', ogType: 'website', market: 'both',
@@ -115,6 +115,11 @@ export const LEGAL = {
     alt: 'Nimtto refund policy',
   },
 };
+// the same pages on the international site (its header, footer and colours; make-landing-pages.mjs writes them)
+for (const [k, m] of Object.entries({ ...LEGAL })) {
+  m.market = 'np';
+  LEGAL[`intl-${k}`] = { ...m, path: `/international${m.path}`, market: 'intl', title: m.title.replace('| Nimtto', '| Nimtto International') };
+}
 
 /** One line per design for its description (plain English); `{p}` is the plan price the design starts at. */
 const LEAD = {

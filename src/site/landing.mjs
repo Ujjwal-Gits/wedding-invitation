@@ -2,7 +2,6 @@
 // stage, the bento, rail cards, steps, FAQ, closing) in each site's palette. Partials:
 //   <!--@landing:<id>-->      the page body          <!--@land-ld:<id>-->   its JSON-LD (breadcrumbs, offers, designs)
 //   <!--@crossband:np|intl-->  "Living abroad?" on Nepal pages, "Getting married in Nepal?" on international pages
-//   <!--@legal-header-->, <!--@legal-footer-->      the neutral header and footer of the legal pages
 // Plain module: Node runs it at build, never the browser.
 import { guideLinks } from './blog-links.mjs';
 import { LANDINGS } from './landings.mjs';
@@ -350,28 +349,6 @@ function crossband(kind = 'np') {
 }
 
 /* ---------------- the legal pages' neutral header and footer ---------------- */
-function legalHeader() {
-  return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
-  <header class="nav" id="nav">
-    <div class="wrap nav__in">
-      <a class="nav__logo" href="/"><img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto home" /></a>
-      <nav class="nav__links" aria-label="Legal"><a href="/terms/">Terms</a><a href="/privacy/">Privacy</a><a href="/refunds/">Refunds</a></nav>
-      <div class="nav__end">
-        <nav class="mkt mkt--bar mkt--legal" aria-label="Choose your site"><a class="mkt__a" href="/international/" hreflang="en">International</a><a class="mkt__a" href="/" hreflang="en-NP">Nepal</a></nav>
-        <a class="nav__auth" href="/studio/" data-auth>Sign in</a>
-      </div>
-    </div>
-  </header>`;
-}
-function legalFooter() {
-  return `<footer class="foot foot--min">
-    <div class="wrap foot__base">
-      <p><a href="/">Nimtto Nepal</a> · <a href="/international/">Nimtto International</a> · <a href="/contact/">Contact</a></p>
-      ${LEGAL_LINKS}
-      <p>© <span data-year>2026</span> Nimtto</p>
-    </div>
-  </footer>`;
-}
 
 /** A landing page's words as plain text, section by section (llms-full.txt and the word counts in docs/SEO-KEYWORDS.md). */
 export function landingText(id) {
@@ -392,4 +369,4 @@ export function landingText(id) {
   return out.join('\n\n');
 }
 
-export const LANDING_PARTIALS = { landing: body, 'land-ld': ld, crossband, 'legal-header': legalHeader, 'legal-footer': legalFooter };
+export const LANDING_PARTIALS = { landing: body, 'land-ld': ld, crossband };

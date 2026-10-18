@@ -3,29 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <!--@meta:credits-->
-  <meta name="theme-color" content="#FFFFFF" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" />
+  <!--@head:credits-->
+  <!--@crumbs:Credits|/credits/-->
+  <script type="module" src="/src/site/site.js"></script>
   <link rel="stylesheet" href="/src/credits/credits.css" />
 </head>
-<body>
-  <main class="wrap" id="main">
-    <header class="head">
-      <p class="kicker"><a href="/">Nimtto</a> · Credits</p>
-      <h1 data-cms="h1">With thanks</h1>
+<body data-page="credits">
+  <!--@header-->
+  <main id="main">
+    <header class="wrap pagehead">
+      <p class="eyebrow">Credits</p>
+      <h1 class="display" data-cms="h1">With thanks</h1>
       <p class="lede" data-cms="lede">Nimtto's themes are built from photographs, flowers and music that their makers shared under open licences. Each one is listed here with its author, licence and source.</p>
-      <nav class="toc" aria-label="Sections" id="toc"></nav>
+      <nav class="cr-toc" aria-label="Sections" id="toc"></nav>
     </header>
-    <div id="groups"><noscript><p class="lede">This list needs JavaScript.</p></noscript></div>
-    <footer class="foot">
-      <p>Drawn work (paper, borders, brass, weaves, bells and lamps) is made in code for Nimtto. The couples' own photographs belong to them.</p>
-      <p><a href="/">Back to the themes</a></p>
-    </footer>
+    <div class="wrap credits" id="groups"><noscript><p class="lede">This list needs JavaScript.</p></noscript></div>
+    <div class="wrap cr-note"><p>Drawn work (paper, borders, brass, weaves, bells and lamps) is made in code for Nimtto. The couples' own photographs belong to them.</p></div>
   </main>
+  <!--@footer-->
   <script type="module" src="/src/credits/main.js"></script>
 </body>
 </html>

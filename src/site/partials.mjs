@@ -162,9 +162,26 @@ function head(id = 'home') {
 
 /* ---------------- header and footer ---------------- */
 /** Terms, Privacy and Refunds: in every footer of both sites, and next to the PayPal buttons (src/site/payment.js) */
-export const LEGAL_LINKS = '<p class="foot__legal"><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a></p>';
+export const legalLinks = (base = '') => `<p class="foot__legal"><a href="${base}/terms/">Terms</a> · <a href="${base}/privacy/">Privacy</a> · <a href="${base}/refunds/">Refunds</a></p>`;
+export const LEGAL_LINKS = legalLinks();
+/** The legal pages' side column (desktop): the three policies, "On this page" (filled from the headings by
+ *  src/site/site.js) and how to ask. `intl/<id>` on the international site. */
+function legalSide(arg = 'terms') {
+  const intl = arg.startsWith('intl/');
+  const id = intl ? arg.slice(5) : arg;
+  const base = intl ? '/international' : '';
+  const pol = [['terms', 'Terms of service'], ['privacy', 'Privacy policy'], ['refunds', 'Refund policy']]
+    .map(([k, t]) => `<a href="${base}/${k}/"${k === id ? ' aria-current="page"' : ''}>${t}</a>`).join('');
+  return `<aside class="legal__side" aria-label="Policies">
+      <div class="legal__card">
+        <div><p class="legal__side-h">Policies</p><nav class="legal__pol" aria-label="Policies">${pol}</nav></div>
+        <div><p class="legal__side-h">On this page</p><nav class="legal__toc" id="legal-toc" aria-label="On this page"></nav></div>
+        <p class="legal__ask">A question about this page? <a data-contact="email" href="mailto:${CONTACT.email}">Email us</a></p>
+      </div>
+    </aside>`;
+}
 /** the international site's page for the same thing (the market switch opens it), else its home */
-const INTL_TWIN = { designs: 'designs/', occasions: 'occasions/', how: 'how-it-works/', features: 'features/', pricing: 'pricing/', contact: 'contact/', blog: 'blog/' };
+const INTL_TWIN = { terms: 'terms/', privacy: 'privacy/', refunds: 'refunds/', designs: 'designs/', occasions: 'occasions/', how: 'how-it-works/', features: 'features/', pricing: 'pricing/', contact: 'contact/', blog: 'blog/' };
 function header(active = '') {
   const twin = `/international/${INTL_TWIN[active] || ''}`;
   const mkt = (cls) => `<nav class="mkt ${cls}" aria-label="Choose your site"><a class="mkt__a" href="${twin}" hreflang="en">International</a><a class="mkt__a" href="/" aria-current="page">Nepal</a></nav>`;
@@ -555,7 +572,7 @@ function crumbs(arg = '') {
   return crumbsLd(pairs);
 }
 
-export const PARTIALS = { ...TRUST_PARTIALS, head, meta, header, footer, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faiths, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS, ...BLOG_PARTIALS };
+export const PARTIALS = { ...TRUST_PARTIALS, head, meta, header, footer, 'legal-side': legalSide, dialogs, lotus, designs: designsGrid, 'designs-ld': designsLd, rail, count: designCount, occasions, steps, features, plans, tiers, 'offers-ld': offersLd, faiths, faq, crumbs, qr, ...INTL_PARTIALS, ...LANDING_PARTIALS, ...BLOG_PARTIALS };
 
 /** Replaces every <!--@name--> / <!--@name:arg--> in a page. */
 export function renderPartials(html) {

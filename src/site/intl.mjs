@@ -10,7 +10,7 @@ import { INTL_PAGES, EVENTS, FAQ_SETS, faqList, fillUsd, STEPS, INTL_BASE } from
 import { STYLES, STYLE_LABEL, V, artSrc, artSrcset, INTL_THEMES, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
 import { LANDINGS } from './landings.mjs';
 import { PAGES } from './seo.mjs';
-import { jsonLd, faqBlock, faqGroups, cmsSlot, LEGAL_LINKS, phone, pic } from './partials.mjs';
+import { jsonLd, faqBlock, faqGroups, cmsSlot, legalLinks, phone, pic } from './partials.mjs';
 import { SITE_URL } from './content.mjs';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -36,13 +36,14 @@ const NAV = [
   ['intl/features', 'Features'], ['intl/pricing', 'Pricing'], ['intl/contact', 'Contact'],
 ];
 /** the page a partial argument names: an INTL_PAGES id or land/<id> */
-const pageOf = (arg) => (arg?.startsWith('land/') ? LANDINGS[arg.slice(5)] : arg === 'intl/about' ? { np: 'about' } : INTL_PAGES[arg]) || null;
+const pageOf = (arg) => (arg?.startsWith('land/') ? LANDINGS[arg.slice(5)] : arg?.startsWith('legal/') ? { npPath: `/${arg.slice(6)}/` }
+  : arg === 'intl/about' ? { np: 'about' } : INTL_PAGES[arg]) || null;
 /** International | Nepal. Nepal opens the Nepal site's page for the same thing (else its home). */
 const market = (cls, nepal) => `<nav class="mkt ${cls}" aria-label="Choose your site"><a class="mkt__a" href="${INTL_BASE}" aria-current="page">International</a><a class="mkt__a" href="${nepal}" hreflang="en-NP">Nepal</a></nav>`;
 function header(arg = '') {
   const pg = pageOf(arg);
   const active = arg.startsWith('land/') ? pg?.parent || '' : arg;
-  const nepal = (pg?.np === 'about' ? '/about/' : pg?.np && PAGES[pg.np]?.path) || '/';
+  const nepal = pg?.npPath || (pg?.np === 'about' ? '/about/' : pg?.np && PAGES[pg.np]?.path) || '/';
   const links = NAV.map(([id, t]) => `<a href="${INTL_PAGES[id].path}"${id === active ? ' aria-current="page"' : ''}>${t}</a>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>${cmsSlot('announce')}
   <header class="nav" id="nav">
@@ -87,7 +88,7 @@ function footer() {
           <li><a href="/studio/" data-auth>Sign in</a></li>
         </ul></div>
       </div>
-      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto</p>${LEGAL_LINKS}<p data-cms="foot-pay">Pay by card or PayPal, in US dollars</p>${cmsSlot('trust')}</div>
+      <div class="foot__base"><p>© <span data-year>2026</span> Nimtto</p>${legalLinks('/international')}<p data-cms="foot-pay">Pay by card or PayPal, in US dollars</p>${cmsSlot('trust')}</div>
     </div>
   </footer>`;
 }

@@ -10,6 +10,11 @@ import { intlCatalog, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
 import STILLS from './stills.json';
 
 const page = document.body.dataset.page || '';
+// the legal pages: "On this page" in the side column (partials.mjs legalSide), from the page's own headings
+if (page === 'legal') {
+  const toc = $('#legal-toc');
+  if (toc) [...$$('.legal h2')].forEach((h, i) => { h.id ||= `s${i + 1}`; toc.append(el('a', { href: `#${h.id}`, text: h.textContent.replace(/^\d+\.\s*/, '') })); });
+}
 // the designs the order form offers: Nepal's on nimtto.com; on the international site its own catalog, or (its
 // Nepali and South Asian wedding pages, body[data-catalog="np"]) the Nepal designs without religious images
 const npCatalog = document.body.dataset.catalog === 'np';

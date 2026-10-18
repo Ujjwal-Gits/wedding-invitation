@@ -82,23 +82,10 @@ Plans: Standard: A ready-made design, Your names, date and venue, Guest replies 
 - [Terms of Service](https://nimtto.com/terms/): The terms for Nimtto online invitations: your account, orders and payment, what we deliver and when, your content and how long invitations stay online.
 - [Privacy Policy](https://nimtto.com/privacy/): What Nimtto collects (name, email, phone, event details, photos, guest replies), why, who processes it, that we never sell it, and how to delete it.
 - [Refund Policy](https://nimtto.com/refunds/): Nimtto refund policy: payments are final. In a critical case you can ask for a refund, and we may approve a full or partial one.
+- [Terms of Service | Nimtto International](https://nimtto.com/international/terms/): The terms for Nimtto online invitations: your account, orders and payment, what we deliver and when, your content and how long invitations stay online.
+- [Privacy Policy | Nimtto International](https://nimtto.com/international/privacy/): What Nimtto collects (name, email, phone, event details, photos, guest replies), why, who processes it, that we never sell it, and how to delete it.
+- [Refund Policy | Nimtto International](https://nimtto.com/international/refunds/): Nimtto refund policy: payments are final. In a critical case you can ask for a refund, and we may approve a full or partial one.
 
 ## More
 - Every page's words in plain text: https://nimtto.com/llms-full.txt
 - Sitemap: https://nimtto.com/sitemap.xml
-
-<!-- blog:start -->
-## Blog: Nepal site
-- [Bratabandha Invitation: Customs, Timeline and Wording](https://nimtto.com/blog/bratabandha-invitation-guide/): What happens at a bratabandha, how the priest's sait sets your invitation timeline, and copy-ready Nepali and English wording for the card and WhatsApp.
-- [Digital vs Printed Wedding Cards in Nepal: Cost, Etiquette and What Families Prefer](https://nimtto.com/blog/digital-vs-printed-wedding-cards-nepal/): An honest look at printed cards and online invitations for a Nepali wedding: what each really costs, what elders expect, and how to send a link without seeming careless.
-- [How to Invite Relatives Abroad to a Wedding in Nepal](https://nimtto.com/blog/invite-relatives-abroad-nepal-wedding/): A practical guide for families in Nepal with relatives in the USA, UK, Australia, the Gulf and beyond: when to tell them, how to write dates and times, and what to send.
-- [Pasni (Annaprashan) Invitation Guide: Wording, Date and What to Include](https://nimtto.com/blog/pasni-invitation-guide/): Everything to put on a pasni (annaprashan) invitation, from the sait and the bhoj time to copy-ready wording in Nepali and English for cards, WhatsApp and reminders.
-- [Wedding Invitation Wording in Nepali and English (Copy-Ready Examples)](https://nimtto.com/blog/wedding-invitation-wording-nepali-english/): Copy-ready Nepali and English wording for a wedding card, from the invocation line to the RSVP, plus short messages to send with your invitation link.
-
-## Blog: International site
-- [Digital Wedding Invitation Etiquette: Is It OK to Send Wedding Invitations Online?](https://nimtto.com/international/blog/digital-wedding-invitation-etiquette/): Yes, for most weddings. Here is what etiquette experts say, when to add paper for some guests, and the exact wording to send with your link.
-- [How to Collect RSVPs Online: A Simple Guide for Couples](https://nimtto.com/international/blog/how-to-collect-rsvps-online/): Pick one place for replies, ask only what you need, and follow up kindly. Here is how to set up online RSVPs, with a tool comparison and wording you can copy.
-- [Nepali and South Asian Weddings in the USA: Invitations for Families Near and Far](https://nimtto.com/international/blog/nepali-south-asian-weddings-usa/): Several events, two scripts and family spread across time zones. Here is how to write one invitation that works for guests in the USA, Nepal, India and beyond.
-- [Wedding Invitation Wording Examples for Every Situation](https://nimtto.com/international/blog/wedding-invitation-wording-examples/): Nineteen copy-ready wording examples, from classic formal lines to a courthouse wedding with a party later, plus the simple rules that keep any invitation clear and correct.
-- [When to Send Wedding Invitations and Save the Dates (Timeline)](https://nimtto.com/international/blog/when-to-send-wedding-invitations/): A clear month-by-month wedding invitation timeline, with the extra lead time destination, holiday and international guests need, plus reminder wording you can copy.
-<!-- blog:end -->

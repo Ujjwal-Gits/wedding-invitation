@@ -405,7 +405,6 @@ a.ctab:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .mkt--sheet .mkt__a[aria-current='page'] { background: var(--accent); color: #fff; box-shadow: none; }
 .sheet__top { display: grid; }
 @media (min-width: 1080px) { .mkt--bar { display: inline-flex; margin-right: 4px; } }
-@media (min-width: 640px) { .mkt--legal { display: inline-flex; } }
 
 /* ---------------- landing pages (src/site/landing.mjs): the design page's stage and info, then plain sections ---------------- */
 .lp__ne { margin-left: 6px; letter-spacing: 0; text-transform: none; font-size: 15px; }
@@ -467,7 +466,24 @@ a.ctab:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .faq__gh { margin-bottom: 16px; }
 
 /* ---------------- legal pages ---------------- */
-.legal { max-width: 760px; padding-block: clamp(40px, 6vw, 96px) var(--sec); }
+.legal-wrap { display: grid; gap: 48px; padding-block: clamp(40px, 6vw, 96px) var(--sec); }
+.legal { max-width: 760px; }
+.legal h2 { scroll-margin-top: 96px; }
+.legal__side { display: none; }
+@media (min-width: 1000px) {
+  .legal-wrap { grid-template-columns: minmax(0, 760px) 272px; justify-content: space-between; }
+  .legal__side { display: block; }
+  .legal .legal__see { display: none; }
+}
+.legal__card { position: sticky; top: 104px; display: grid; gap: 24px; padding: 24px; border: 1px solid var(--line-2); border-radius: 20px; background: #fff; }
+.legal__side-h { margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.legal__pol, .legal__toc { display: grid; }
+.legal__pol a, .legal__toc a { display: block; padding: 6px 0 6px 12px; border-left: 2px solid var(--line-2); color: var(--ink-2); text-decoration: none; font-size: 14px; line-height: 1.35; transition: color 0.2s var(--ease), border-color 0.2s var(--ease); }
+.legal__pol a:hover, .legal__toc a:hover { color: var(--accent); }
+.legal__pol a[aria-current='page'] { border-color: var(--accent); color: var(--accent); font-weight: 500; }
+.legal__toc { max-height: 40vh; overflow-y: auto; }
+.legal__ask { font-size: 14px; color: var(--ink-3); }
+.legal__ask a { color: var(--accent); }
 .legal__head { display: grid; gap: 14px; margin-bottom: 40px; }
 .legal__h { font-size: clamp(42px, 5vw, 72px); }
 .legal__date { font-size: 14px; color: var(--ink-3); }
