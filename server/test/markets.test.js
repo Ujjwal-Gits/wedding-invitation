@@ -15,6 +15,7 @@ const OWNER = { email: 'owner@test.local', password: 'owner-password-1' };
 let child;
 let base;
 let owner;
+let log = ''; // the server's output (a sign-up code is printed there while mail is off outside production)
 
 const freePort = () => new Promise((ok, fail) => {
   const s = createServer();
@@ -34,7 +35,7 @@ before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  let log = '';
+  log = '';
   await new Promise((ok, fail) => {
     const t = setTimeout(() => fail(new Error(`server did not start:\n${log}`)), 30_000);
     const on = (d) => { log += d; if (log.includes('[studio] API on')) { clearTimeout(t); ok(); } };
@@ -167,8 +168,13 @@ test('orders carry their market: list filter, account market, phone edit and the
   const madeNp = await owner.req(`/api/orders/${npOrder.id}/invitation`, { method: 'POST', body: {} });
   assert.equal(madeNp.body.data.timeZone || 'Asia/Kathmandu', 'Asia/Kathmandu');
   // sign-up from the International website keeps the market on the account
-  const s = await browser().req('/api/auth/signup', { method: 'POST', body: { name: 'Ava Stone', email: 'ava@example.com', password: 'ava-pass-12', phone: '+977 980-6393298', market: 'intl' } });
-  assert.equal(s.status, 201);
+  const ab = browser();
+  const start = await ab.req('/api/auth/signup/start', { method: 'POST', body: { name: 'Ava Stone', email: 'ava@example.com', password: 'ava-pass-12', phone: '+977 980-6393298', market: 'intl' } });
+  assert.equal(start.status, 200, JSON.stringify(start.body));
+  const codeRe = /sign-up code for ava@example\.com is (\d{6})/;
+  for (let i = 0; i < 100 && !codeRe.test(log); i++) await new Promise((r) => setTimeout(r, 20));
+  const s = await ab.req('/api/auth/signup', { method: 'POST', body: { email: 'ava@example.com', code: codeRe.exec(log)?.[1] } });
+  assert.equal(s.status, 201, JSON.stringify(s.body));
   assert.equal(s.body.market, 'intl');
   const ava = (await owner.req('/api/admin/customers')).body.customers.find((x) => x.email === 'ava@example.com');
   assert.deepEqual([ava.market, ava.marketSet, ava.country, ava.phone], ['intl', true, 'NP', '+9779806393298']);

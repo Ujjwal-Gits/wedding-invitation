@@ -319,7 +319,7 @@ function dialogs(variant = '') {
       <div class="om__body">
         <p class="oa-lede" id="oa-lede">Your account keeps your order and payment in one place. Later you edit your invitation and read guest replies there.</p>
         <p class="om-signed" id="oa-note" role="status" hidden></p>
-        <div class="oa-grid">
+        <div class="oa-grid" id="oa-fields">
           <div class="field oa-up">
             <label for="oa-name">Your name <span class="req" aria-hidden="true">*</span></label>
             <input id="oa-name" name="name" type="text" autocomplete="name" maxlength="80" required />
@@ -343,6 +343,16 @@ function dialogs(variant = '') {
             <p class="field__err" id="oa-password-err" hidden>Please choose a password of 8 or more characters.</p>
             <p class="oa-forgot oa-in" hidden><a class="link" href="/studio/forgot">Forgot password?</a></p>
           </div>
+        </div>
+        <div class="oa-grid" id="oa-code" hidden>
+          <p class="oa-lede oa-code__lede" id="oa-code-lede">We sent a 6-digit code to <b id="oa-code-email"></b>. Enter it to make your account.</p>
+          <div class="field">
+            <label for="oa-code-input">6-digit code <span class="req" aria-hidden="true">*</span></label>
+            <input class="oa-code__input" id="oa-code-input" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" aria-describedby="oa-code-hint" />
+            <p class="field__hint" id="oa-code-hint">It works for 15 minutes. Not there? Check your spam folder.</p>
+            <p class="field__err" id="oa-code-err" hidden>Enter the 6-digit code from the email.</p>
+          </div>
+          <p class="oa-switch oa-code__links"><button type="button" class="oa-switch__btn" id="oa-resend">Send again</button> <span aria-hidden="true">·</span> <button type="button" class="oa-switch__btn" id="oa-change">Change email</button></p>
         </div>
       </div>
       <footer class="om__foot oa__foot">

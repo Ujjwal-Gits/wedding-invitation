@@ -251,7 +251,7 @@ A Custom design (`kind: 'custom'`, or a plan with `from`) is an **enquiry**: it 
 "We'll reply within 1 business day with a price"). The planner sends a quote and converts it into an order with its
 own pay link (lib/enquiries.js); until then the customer's dashboard shows no pay link for it.
 
-**Account on order.** The website (src/site/order.js) signs the visitor up or in first (`POST /auth/signup` or
+**Account on order.** The website (src/site/order.js) signs the visitor up or in first (`POST /auth/signup/start`, then `POST /auth/signup` with the emailed code, or
 `/auth/login` in its account step) and then orders as that customer, sending no email or password; signed in as the
 planner, its form only points to the studio. The older body below still works. For `kind: 'order'` from a browser not signed in as a customer, `email` and `password` (8-128) are required:
 the order creates the account (`name`, `phone` from the form) and signs the browser in (customer session cookie on the `201`).
@@ -667,7 +667,8 @@ Off until a Brevo key (`BREVO_API_KEY`, or `BREVO_SMTP_USER` + `BREVO_SMTP_KEY`)
 Emails carry a 6-digit code in the subject ("123456 is your Nimtto code"), so Gmail and phones offer "Copy code".
 Only a hash is stored; a code is used once, and 5 wrong tries end it. Confirm: 30 min. Reset: 15 min.
 
-- `POST /api/auth/signup { name, email, phone?, password }`: makes the account, signs in, emails the confirm code. 5 per IP per hour.
+- `POST /api/auth/signup/start { name, email, phone, password, market? }`: checks the details (409 `account_exists` for a taken email), keeps them in memory for 15 min (password hashed) and emails a 6-digit sign-up code; no account yet. Again = "Send again" (3 per email, 10 per IP per hour). Mail off outside production: the code is printed in the server log.
+- `POST /api/auth/signup { email, code }`: the right code makes the account (`emailVerified: true`), signs in, `201 { role, name, email, csrf, market }`. 5 wrong codes end the sign-up. 5 accounts per IP per hour.
 - `POST /api/account/verify` (customer): emails a new confirm code (3 per hour).
 - `POST /api/account/verify/confirm { code }` (customer): confirms the email.
 - `POST /api/auth/forgot { email }`: `{ ok, mail }`, the same for unknown emails; `mail: false` = email is off (WhatsApp instead).

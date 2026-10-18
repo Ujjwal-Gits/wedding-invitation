@@ -1,4 +1,5 @@
-// Account emails (Brevo stubbed): sign-up sends a 6-digit "Confirm your email" code (in the subject, for "Copy code");
+// Account emails (Brevo stubbed): sign-up emails a 6-digit code first (in the subject, for "Copy code") and only the
+// right code makes the account (email confirmed); old unconfirmed accounts still confirm with "Confirm your email";
 // "Forgot password" sends a one-use code; the code alone is checked first (a short-lived reset ticket back), then the
 // ticket sets the new password and signs in; the same answer for unknown emails.
 import { test, before, after } from 'node:test';
@@ -36,6 +37,7 @@ before(() => {
   const json = express.json({ limit: '8kb' });
   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
   api.post('/auth/login', json, wrap(auth.login));
+  api.post('/auth/signup/start', json, wrap(customers.signupStart));
   api.post('/auth/signup', json, wrap(customers.signup));
   api.post('/auth/forgot', json, wrap(customers.forgot));
   api.post('/auth/reset/check', json, wrap(customers.checkResetCode));
@@ -70,41 +72,114 @@ function browser() {
   };
   return b;
 }
-const codeIn = (mail) => /^(\d{6}) is your Nimtto code$/.exec(mail.body.subject)?.[1];
+const codeIn = (mail) => /^(\d{6}) is your Nimtto (?:sign-up )?code$/.exec(mail.body.subject)?.[1];
 const until = async (fn) => { for (let i = 0; i < 50 && !fn(); i++) await new Promise((r) => setTimeout(r, 10)); };
+const other = (code) => (code === '000000' ? '111111' : '000000');
+const ASHA = { name: 'Asha Rai', email: 'Asha@Example.com', phone: '+977 9801234567', password: 'first-pass-1' };
 
-test('sign-up emails a 6-digit code (in the subject); the code confirms the email; wrong codes run out', async () => {
+test('sign-up: a code is emailed first; no account until the right code; then made (email confirmed) and signed in', async () => {
   const b = browser();
   // the phone (with its country code) is required, and stored as E.164
   for (const phone of [undefined, '', '555-1234', '+1 555 123 4567']) {
-    const bad = await b.req('/auth/signup', { method: 'POST', body: { name: 'Asha Rai', email: 'Asha@Example.com', phone, password: 'first-pass-1' } });
+    const bad = await b.req('/auth/signup/start', { method: 'POST', body: { ...ASHA, phone } });
     assert.equal(bad.status, 400, String(phone));
     assert.deepEqual(bad.data.fields, ['phone']);
     assert.equal(bad.data.error, 'Enter a valid phone number with country code.');
   }
-  const r = await b.req('/auth/signup', { method: 'POST', body: { name: 'Asha Rai', email: 'Asha@Example.com', phone: '+977 9801234567', password: 'first-pass-1' } });
-  assert.equal(r.status, 201);
-  assert.equal(store.customerStore.byEmail('asha@example.com').phone, '+9779801234567');
-  assert.equal(r.data.verifySent, true);
+  const n = sent.length;
+  const r = await b.req('/auth/signup/start', { method: 'POST', body: ASHA });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.data, { ok: true, email: 'asha@example.com', expiresIn: 900 });
+  assert.equal(sent.length, n + 1);
+  assert.ok(!store.customerStore.byEmail('asha@example.com'), 'no account before the code');
+  assert.equal(b.cookie, '', 'not signed in yet');
   const mail = sent.at(-1);
   assert.equal(mail.headers['api-key'], 'test-key');
   assert.deepEqual(mail.body.to, [{ email: 'asha@example.com', name: 'Asha Rai' }]);
-  assert.deepEqual(mail.body.tags, ['verify-email']);
+  assert.deepEqual(mail.body.tags, ['signup-code']);
+  assert.match(mail.body.subject, /^\d{6} is your Nimtto sign-up code$/);
   const code = codeIn(mail);
   assert.ok(code, 'the code is in the subject');
   assert.ok(mail.body.textContent.includes(code));
-  assert.equal((await b.req('/account')).data.customer.emailVerified, false);
-  const wrong = code === '000000' ? '111111' : '000000';
-  assert.equal((await b.req('/account/verify/confirm', { method: 'POST', body: { code: wrong } })).status, 400);
+  // a wrong code: still no account
+  const wrong = await b.req('/auth/signup', { method: 'POST', body: { email: 'asha@example.com', code: other(code) } });
+  assert.equal(wrong.status, 400);
+  assert.equal(wrong.data.code, 'code_wrong');
+  assert.ok(!store.customerStore.byEmail('asha@example.com'));
+  assert.equal((await b.req('/auth/signup', { method: 'POST', body: { email: 'asha@example.com', code: '12345' } })).status, 400);
+  assert.equal((await b.req('/auth/signup', { method: 'POST', body: { email: 'bina@example.com', code } })).status, 400, 'the code belongs to its email');
+  // the right code (spaces are fine, any case of email): the account, confirmed, signed in
+  const ok = await b.req('/auth/signup', { method: 'POST', body: { email: 'ASHA@example.com', code: `${code.slice(0, 3)} ${code.slice(3)}` } });
+  assert.equal(ok.status, 201, JSON.stringify(ok.data));
+  assert.equal(ok.data.role, 'customer');
+  assert.equal(ok.data.email, 'asha@example.com');
+  assert.equal(ok.data.name, 'Asha Rai');
+  assert.ok(ok.data.csrf);
+  const c = store.customerStore.byEmail('asha@example.com');
+  assert.equal(c.phone, '+9779801234567');
+  assert.equal(c.emailVerified, true);
+  assert.equal(JSON.stringify(c).includes(ASHA.password), false, 'only the password hash is kept');
+  assert.equal((await b.req('/account')).data.customer.emailVerified, true, 'no "confirm your email" banner');
+  assert.equal((await b.req('/auth/signup', { method: 'POST', body: { email: 'asha@example.com', code } })).status, 400, 'the code is used up');
+  assert.equal((await browser().req('/auth/login', { method: 'POST', body: { email: 'asha@example.com', password: ASHA.password } })).status, 200);
+  // an email with an account: 409 account_exists, and no code is sent
+  const m = sent.length;
+  const again = await browser().req('/auth/signup/start', { method: 'POST', body: ASHA });
+  assert.equal(again.status, 409);
+  assert.equal(again.data.code, 'account_exists');
+  assert.equal(sent.length, m);
+});
+
+test('sign-up: five wrong codes end it; an expired code makes no account; Send again sends a new code', async () => {
+  const b = browser();
+  const BINA = { name: 'Bina Lama', email: 'bina@example.com', phone: '+1 201 555 0123', password: 'first-pass-1' };
+  await b.req('/auth/signup/start', { method: 'POST', body: BINA });
+  const code = codeIn(sent.at(-1));
+  for (let i = 0; i < 5; i++) assert.equal((await b.req('/auth/signup', { method: 'POST', body: { email: BINA.email, code: other(code) } })).status, 400);
+  const late = await b.req('/auth/signup', { method: 'POST', body: { email: BINA.email, code } });
+  assert.equal(late.status, 400);
+  assert.equal(late.data.code, 'code_expired');
+  assert.ok(!store.customerStore.byEmail(BINA.email));
+  // expired after 15 minutes
+  await b.req('/auth/signup/start', { method: 'POST', body: BINA });
+  const code2 = codeIn(sent.at(-1));
+  const now = Date.now;
+  Date.now = () => now() + 16 * 60 * 1000;
+  let r;
+  try { r = await b.req('/auth/signup', { method: 'POST', body: { email: BINA.email, code: code2 } }); } finally { Date.now = now; }
+  assert.equal(r.status, 400);
+  assert.equal(r.data.code, 'code_expired');
+  assert.ok(!store.customerStore.byEmail(BINA.email));
+  // Send again: a new code, and only the newest one works
+  await b.req('/auth/signup/start', { method: 'POST', body: BINA });
+  const code3 = codeIn(sent.at(-1));
+  assert.equal((await b.req('/auth/signup/start', { method: 'POST', body: BINA })).status, 429, 'three codes per email per hour');
+  assert.equal((await b.req('/auth/signup', { method: 'POST', body: { email: BINA.email, code: code3 } })).status, 201);
+  assert.equal(store.customerStore.byEmail(BINA.email).emailVerified, true);
+});
+
+test('an old account that never confirmed its email still confirms with a code; wrong codes run out', async () => {
+  const accounts = await import('../lib/accounts.js');
+  const passwordHash = await auth.hashAccountPassword('old-pass-12');
+  await accounts.createCustomer({ email: 'old@example.com', name: 'Old Timer', phone: '+9779801234500', passwordHash });
+  const b = browser();
+  assert.equal((await b.req('/auth/login', { method: 'POST', body: { email: 'old@example.com', password: 'old-pass-12' } })).status, 200);
+  assert.equal((await b.req('/account')).data.customer.emailVerified, false, 'the banner shows');
+  assert.equal((await b.req('/account/verify', { method: 'POST' })).status, 200);
+  const mail = sent.at(-1);
+  assert.deepEqual(mail.body.tags, ['verify-email']);
+  const code = codeIn(mail);
+  assert.equal((await b.req('/account/verify/confirm', { method: 'POST', body: { code: other(code) } })).status, 400);
   assert.equal((await b.req('/account/verify/confirm', { method: 'POST', body: { code: `${code.slice(0, 3)} ${code.slice(3)}` } })).status, 200, 'spaces are fine');
   assert.equal((await b.req('/account')).data.customer.emailVerified, true);
 
   // five wrong tries and a code is gone, even the right one
+  await accounts.createCustomer({ email: 'old2@example.com', name: 'Old Two', phone: '+9779801234501', passwordHash });
   const b2 = browser();
-  await b2.req('/auth/signup', { method: 'POST', body: { name: 'Bina Lama', email: 'bina@example.com', phone: '+1 201 555 0123', password: 'first-pass-1' } });
+  await b2.req('/auth/login', { method: 'POST', body: { email: 'old2@example.com', password: 'old-pass-12' } });
+  await b2.req('/account/verify', { method: 'POST' });
   const code2 = codeIn(sent.at(-1));
-  const w2 = code2 === '000000' ? '111111' : '000000';
-  for (let i = 0; i < 5; i++) await b2.req('/account/verify/confirm', { method: 'POST', body: { code: w2 } });
+  for (let i = 0; i < 5; i++) await b2.req('/account/verify/confirm', { method: 'POST', body: { code: other(code2) } });
   assert.equal((await b2.req('/account/verify/confirm', { method: 'POST', body: { code: code2 } })).status, 400);
 });
 

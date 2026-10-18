@@ -435,7 +435,10 @@ function signupMarket() {
   return undefined;
 }
 
-/** "Create an account": name, email, phone (optional), password. Signed in at once; lands on My dashboard. */
+/**
+ * "Create an account": name, email, phone, password -> a 6-digit code by email (POST /auth/signup/start) -> the code
+ * (POST /auth/signup) makes the account, email confirmed, and signs in; lands on My dashboard. No account before that.
+ */
 function signupPage() {
   teardown();
   document.title = 'Create an Account · Nimtto Studio';
@@ -466,16 +469,11 @@ function signupPage() {
     const miss = !name.value.trim() ? name : !email.value.trim() ? email : !phoneOk ? phone : pw.input.value.length < 8 ? pw.input : null;
     if (miss) { err.textContent = miss === pw.input ? 'The password needs at least 8 characters.' : miss === phone ? 'Enter a valid phone number with country code.' : 'Please enter your name and email.'; miss.setAttribute('aria-invalid', 'true'); miss.focus(); return; }
     btn.disabled = true;
-    btn.textContent = 'Creating your account…';
+    btn.textContent = 'Sending your code…';
+    const details = { name: name.value, email: email.value, phone: ph ? ph.e164() : phone.value, password: pw.input.value, market: signupMarket() };
     try {
-      const me = await api('/auth/signup', { method: 'POST', body: { name: name.value, email: email.value, phone: ph ? ph.e164() : phone.value, password: pw.input.value, market: signupMarket() } });
-      coupleFlag(false);
-      seenFlag(true);
-      setMe(me);
-      S.meta = null;
-      setCsrf(me.csrf);
-      toast(me.verifySent ? 'Welcome! We sent you an email to confirm your address.' : 'Welcome to Nimtto', 'success');
-      go('#/account');
+      const out = await api('/auth/signup/start', { method: 'POST', body: details });
+      codeStep(details, out.email || email.value.trim());
     } catch (ex) {
       err.textContent = ex.message;
       const f = byField[ex.body?.fields?.[0]];
@@ -485,10 +483,93 @@ function signupPage() {
       btn.textContent = 'Create account';
     }
   });
+  const LEDE = 'Order a design, pay, and edit your invitation, all in one place.';
+  const lede = h('p.auth__lede', LEDE);
+  const title = h('h1.auth__title', 'Create an account');
+  const holder = h('div', form);
   const toLogin = (e) => { e.preventDefault(); setUrl('#/login'); loginPage(); };
-  fill(app, authLayout(h('h1.auth__title', 'Create an account'), h('p.auth__lede', 'Order a design, pay, and edit your invitation, all in one place.'), form,
-    h('p.auth__small.auth__switch', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.')));
+  const sw = h('p.auth__small.auth__switch', 'Already have an account? ', h('a', { href: '#/login', onclick: toLogin }, 'Sign in'), '.');
+  fill(app, authLayout(title, lede, holder, sw));
   name.focus();
+
+  // Step 2: the 6-digit code from the email. Only the right code makes the account (POST /auth/signup) and signs in.
+  function codeStep(body, addr) {
+    document.title = 'Check Your Email · Nimtto Studio';
+    title.textContent = 'Check your email';
+    fill(lede, 'We sent a 6-digit code to ', h('b', addr), '. Enter it to make your account.');
+    sw.hidden = true;
+    const err2 = h('p.form-error', { role: 'alert' });
+    const code = codeInput('su-code');
+    const confirm = h('button.btn.btn--primary.btn--lg.btn--block', { type: 'submit' }, 'Confirm');
+    let wait = 0;
+    let timer = 0;
+    const again = h('button.link', { type: 'button' }, 'Send again');
+    const tick = () => {
+      if (!again.isConnected && timer) { clearInterval(timer); return; }
+      if (wait <= 0) { clearInterval(timer); again.disabled = false; again.textContent = 'Send again'; return; }
+      again.disabled = true;
+      again.textContent = `Send again in ${wait}s`;
+      wait -= 1;
+    };
+    const startWait = () => { clearInterval(timer); wait = 60; tick(); timer = setInterval(tick, 1000); };
+    again.addEventListener('click', async () => {
+      if (wait > 0) return;
+      again.disabled = true;
+      err2.textContent = '';
+      try {
+        await api('/auth/signup/start', { method: 'POST', body });
+        toast(`A new code is on its way to ${addr}`, 'success');
+        code.value = '';
+        code.focus();
+        startWait();
+      } catch (ex) { err2.textContent = ex.message; again.disabled = false; }
+    });
+    const change = h('button.link', { type: 'button', onclick: () => {
+      clearInterval(timer);
+      document.title = 'Create an Account · Nimtto Studio';
+      title.textContent = 'Create an account';
+      fill(lede, LEDE);
+      sw.hidden = false;
+      fill(holder, form);
+      email.focus();
+      email.select();
+    } }, 'Change email');
+    const f = h('form.auth__form', { novalidate: true },
+      h('div.field', h('label.label', { for: 'su-code' }, 'Code from the email'), code), h('p.hint', 'It works for 15 minutes. Not there? Check your spam folder.'),
+      err2, confirm, h('p.auth__small', 'No email? ', again, ' · ', change));
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err2.textContent = '';
+      code.removeAttribute('aria-invalid');
+      if (code.value.length !== 6) { err2.textContent = 'Enter the 6-digit code from the email.'; code.setAttribute('aria-invalid', 'true'); code.focus(); return; }
+      confirm.disabled = true;
+      confirm.textContent = 'Making your account…';
+      try {
+        const me = await api('/auth/signup', { method: 'POST', body: { email: addr, code: code.value } });
+        clearInterval(timer);
+        pw.input.value = '';
+        coupleFlag(false);
+        seenFlag(true);
+        setMe(me);
+        S.meta = null;
+        setCsrf(me.csrf);
+        toast('Welcome to Nimtto', 'success');
+        go('#/account');
+      } catch (ex) {
+        if (ex.status === 409 && ex.body?.code === 'account_exists') { clearInterval(timer); toast(ex.message, 'error'); go('#/login'); return; }
+        err2.textContent = ex.message;
+        code.setAttribute('aria-invalid', 'true');
+        if (ex.body?.code === 'code_expired') { wait = 0; tick(); } // a new code can be sent at once
+        code.select();
+      } finally {
+        confirm.disabled = false;
+        confirm.textContent = 'Confirm';
+      }
+    });
+    fill(holder, f);
+    startWait();
+    code.focus();
+  }
 }
 
 /** A 6-digit code box: digits only, and the phone/Gmail "Copy code" pastes straight in (one-time-code). */
