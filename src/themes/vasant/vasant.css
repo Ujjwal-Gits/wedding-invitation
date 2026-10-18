@@ -72,7 +72,7 @@ body.su-locked .va-hero .su-in { opacity: 0; }
 .va-hero__decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) 0.6s; }
 body.su-locked .va-hero__decor { opacity: 0; transition: none; }
 .va-corner-fl { position: absolute; left: -1.5%; bottom: -1%; width: min(300px, 44vw); height: auto; }
-.va-hero__petals { position: absolute; right: 1%; bottom: 4%; width: min(320px, 40vw); height: auto; rotate: -5deg; }
+.va-hero__scatter { position: absolute; right: 0; bottom: 1%; width: min(380px, 50vw); height: min(190px, 30vw); overflow: hidden; }
 .va-hero > .va-hero__text { flex: 1; justify-content: center; }
 .va-garland { position: relative; width: min(780px, 56vw); margin: 0 auto; }
 .va-garland__img { display: block; width: 100%; height: auto; }
@@ -311,7 +311,10 @@ body.va-still .va-bf .va-bf__w { animation: none !important; transform: none; }
 .va-rule { display: block; width: min(220px, 58vw); height: auto; margin: 0 auto; color: #A8833A; }
 .va-head .va-rule { margin-bottom: 6px; }
 .va-ev__gap { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 500px; padding: 40px 0 8px; }
-.va-petals { display: block; width: min(300px, 72%); height: auto; }
+.va-scatter { position: relative; }
+.va-pc { position: absolute; width: calc(var(--pc, 50px) * var(--s, 1) * var(--f, 1)); height: auto; translate: -50% -50%; }
+.va-gap__scatter { width: 100%; height: 120px; overflow: hidden; }
+@media (max-width: 719px) { .va-pc { --pc: 44px; } .va-gap__scatter { height: 100px; } }
 .va-strand { position: absolute; top: 0; bottom: 0; right: max(10px, calc(50% - 712px)); width: clamp(48px, 4.6vw, 70px); pointer-events: none; }
 .va-strand img { position: sticky; top: 72px; display: block; width: 100%; height: calc(100vh - 96px); object-fit: contain; object-position: 50% 0; }
 .va-bloom { position: relative; }

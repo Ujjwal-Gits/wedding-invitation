@@ -11,7 +11,7 @@
 import manifest from './slots.js';
 import { mountSuite } from '../_suite/suite.js';
 import './vasant.css'; // after the suite's CSS, so the theme wins ties
-import { ART, SPECIES, butterfly, garland, FLOWERS, flowersFor, ROMAN, RULE, petals } from './parts.js';
+import { ART, SPECIES, butterfly, garland, FLOWERS, flowersFor, ROMAN, RULE, scatter } from './parts.js';
 
 const isPhone = () => window.matchMedia('(max-width: 899px)').matches;
 
@@ -23,7 +23,7 @@ function hero(ctx) {
     ${garland()}
     <div class="va-hero__decor" aria-hidden="true">
       <img class="va-corner-fl" src="${ART}corner-sm.webp" srcset="${ART}corner-sm.webp 700w, ${ART}corner.webp 1300w" sizes="(max-width: 719px) 46vw, 300px" width="1300" height="1372" alt="" decoding="async" />
-      <img class="va-hero__petals" src="${ART}petals-sm.webp" srcset="${ART}petals-sm.webp 700w, ${ART}petals.webp 1400w" sizes="(max-width: 719px) 52vw, 340px" width="1400" height="514" alt="" decoding="async" />
+      ${scatter(3, { n: 7, side: 'right', cls: 'va-hero__scatter' })}
     </div>
     <div class="va-hero__text">
       ${on(txt('hero.title')) ? `<p class="va-kicker su-in">${bi(txt('hero.title'))}</p>` : ''}
@@ -229,15 +229,15 @@ function page(ctx) {
       <li class="va-ev" id="ev-${esc(v.id)}" data-i="${i}">
         <article class="va-ev__card">
           <header class="va-ev__head"><p class="va-ev__no">${bi({ en: `Plate ${ROMAN[i] || i + 1} · ${FLOWERS[keys[i]].name.en}`, ne: `चित्र ${ctx.neNum(String(i + 1))} · ${FLOWERS[keys[i]].name.ne}` })}</p>
-          <h3 class="va-ev__title">${bi(v.title)}</h3></header>
+          <h3 class="va-ev__title">${bi(v.title)}</h3>
           <p class="va-ev__when"><span class="va-ev__ad">${bi({ en: v.ad.full.en, ne: v.bs.full.ne })}</span><span class="va-ev__bs">${bi({ en: v.bs.full.en, ne: v.ad.full.ne })}</span></p>
-          <p class="va-ev__time">${bi(v.time)}</p>
+          <p class="va-ev__time">${bi(v.time)}</p></header>
           ${v.blurb ? `<p class="va-ev__blurb">${bi(v.blurb)}</p>` : ''}
           <p class="va-ev__venue">${bi(v.venue)} <a class="su-link" href="${esc(v.map)}" target="_blank" rel="noopener">${bi(P.UI.map)}<span aria-hidden="true"> ↗</span><span class="sr-only"> (opens Google Maps)</span></a></p>
           ${v.dress.colors.length || v.dress.text?.en || v.dress.text?.ne ? `<p class="va-ev__dress">${v.dress.colors.length ? `<span class="su-sw" aria-hidden="true">${v.dress.colors.map((col) => `<i style="background:${col}"></i>`).join('')}</span>` : ''}<span>${bi(v.dress.text?.en || v.dress.text?.ne ? v.dress.text : P.UI.wear)}</span></p>` : ''}
           ${v.rituals.length ? `<details class="va-order"><summary>${bi(P.UI.order)}</summary><ol>${v.rituals.map((r) => `<li><span>${bi(r.time)}</span><span>${bi(r.title)}</span></li>`).join('')}</ol></details>` : ''}
         </article>
-        ${i < P.events.length - 1 ? `<div class="va-ev__gap" aria-hidden="true">${RULE}${petals()}</div>` : ''}
+        ${i < P.events.length - 1 ? `<div class="va-ev__gap" aria-hidden="true">${RULE}${scatter(11 + i * 5, { n: 5, side: 'left', cls: 'va-gap__scatter' })}</div>` : ''}
       </li>`).join('');
   const progSec = `
   <section class="su-sec va-sec va-bloom" id="programme" aria-labelledby="prog-title">

@@ -82,6 +82,28 @@ export function flowersFor(events) {
 export const RULE = `<svg class="va-rule" viewBox="0 0 240 24" aria-hidden="true" focusable="false"><path d="M10 12h88M142 12h88" fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round"/><g fill="currentColor"><g transform="rotate(-30 70 12)"><path d="M70 12c4-6 10-8 15-7c-3 5 -8 7 -15 7z"/><path d="M70 12c4 6 10 8 15 7c-3-5 -8-7 -15-7z" opacity=".75"/></g><g transform="rotate(30 170 12)"><path d="M170 12c-4-6 -10-8 -15-7c3 5 8 7 15 7z"/><path d="M170 12c-4 6 -10 8 -15 7c3-5 8-7 15-7z" opacity=".75"/></g><g transform="rotate(-30 44 12)"><path d="M44 12c4-6 10-8 15-7c-3 5 -8 7 -15 7z"/><path d="M44 12c4 6 10 8 15 7c-3-5 -8-7 -15-7z" opacity=".75"/></g><g transform="rotate(30 196 12)"><path d="M196 12c-4-6 -10-8 -15-7c3 5 8 7 15 7z"/><path d="M196 12c-4 6 -10 8 -15 7c3-5 8-7 15-7z" opacity=".75"/></g><ellipse cx="120" cy="6.5" rx="2.6" ry="4.6"/><ellipse cx="120" cy="17.5" rx="2.6" ry="4.6"/><ellipse cx="114.5" cy="12" rx="4.6" ry="2.6"/><ellipse cx="125.5" cy="12" rx="4.6" ry="2.6"/><circle cx="120" cy="12" r="2.2" fill="#C2185B"/><circle cx="10" cy="12" r="1.5"/><circle cx="230" cy="12" r="1.5"/></g></svg>`;
 
 /** loose petals and marigold heads, laid in a gap (never behind text) */
-export const petals = (cls = '') => `<img class="va-petals ${cls}" src="${ART}petals-sm.webp" srcset="${ART}petals-sm.webp 700w, ${ART}petals.webp 1400w" sizes="(max-width: 719px) 86vw, 560px" width="1400" height="514" alt="" loading="lazy" decoding="async" aria-hidden="true" />`;
+// the separate petals and marigold heads of one painted scatter (petal-<k>.webp, [width, height])
+const PIECES = [[217, 220], [220, 211], [220, 214], [220, 210], [213, 220], [206, 220], [220, 209], [216, 220], [216, 220], [220, 213], [220, 216], [204, 196], [120, 192], [116, 192], [192, 132], [152, 172], [148, 164], [92, 196], [104, 188]];
+const rng = (seed) => { let s = (seed * 7919 + 13) % 2147483647; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+/** An organic petal drift: a few loose pieces of varied size and turn, thinning out toward one edge and slipping
+ *  past it (the container clips them). Deterministic per seed, so the page looks the same on every visit. */
+export function scatter(seed, { n = 6, side = 'right', cls = '' } = {}) {
+  const r = rng(seed);
+  const pool = PIECES.map((_, k) => k);
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const k = pool.splice(Math.floor(r() * pool.length), 1)[0];
+    const t = n > 1 ? i / (n - 1) : 0.5;
+    const along = 26 + t * 80 + (r() - 0.5) * 8; // evenly drifting toward the edge, the last one past it
+    const x = side === 'right' ? along : 100 - along;
+    const y = (i % 2 ? 62 : 30) + (r() - 0.5) * 22; // alternate high and low so no two pieces touch
+    const s = (0.5 + r() * 0.55) * (1.1 - 0.35 * t);
+    const rot = Math.round((r() - 0.5) * 150);
+    const [w, h] = PIECES[k];
+    const f = w / Math.max(w, h); // size by the longer side, so a slim petal is not drawn huge
+    html += `<img class="va-pc" src="${ART}petal-${k}.webp" width="${w}" height="${h}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;--s:${s.toFixed(2)};--f:${f.toFixed(2)};rotate:${rot}deg" alt="" loading="lazy" decoding="async" />`;
+  }
+  return `<div class="va-scatter ${cls}" aria-hidden="true">${html}</div>`;
+}
 
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
