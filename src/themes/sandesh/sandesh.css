@@ -44,7 +44,7 @@ body.theme-sandesh {
   color: var(--sd-ink);
   font-family: var(--sd-f-body);
 }
-@media (min-width: 900px) { body.theme-sandesh { --dw: 118px; } }
+@media (min-width: 900px) { body.theme-sandesh { --dw: 150px; } }
 .theme-sandesh .l-ne { font-family: var(--sd-f-body); }
 /* paper: warm cotton with a faint fibre, the only warm ground on the page */
 .theme-sandesh .sd-paper, .theme-sandesh .sd-face, .theme-sandesh .sd-post, .theme-sandesh .sd-full__sheet, .theme-sandesh .sd-reply__card, .theme-sandesh .sd-rc__btn, .theme-sandesh .su-more, .theme-sandesh .su-gate__ui {
@@ -138,7 +138,9 @@ body.theme-sandesh {
 @keyframes sd-flap { 0%, 100% { transform: rotate(0deg) scaleY(1); } 50% { transform: rotate(-20deg) scaleY(-0.42); } }
 @keyframes sd-flap-far { 0%, 100% { transform: translate(8%, -1%) scaleX(0.86) rotate(0deg) scaleY(1); } 50% { transform: translate(8%, -1%) scaleX(0.86) rotate(-17deg) scaleY(-0.36); } }
 @keyframes sd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5%); } }
-.sd-perch { position: absolute; left: 0; top: 0; display: block; width: calc(var(--dw) * 1.62); height: auto; pointer-events: none; }
+.sd-perch { position: absolute; left: 0; top: 0; display: block; width: calc(var(--dw) * 1.62); height: auto; pointer-events: none; filter: drop-shadow(7px 12px 7px rgba(36, 48, 62, 0.26)); }
+/* the doves' soft shadow on the wall (the flapping layer re-rasterises with it; two small birds only) */
+.sd-flight .sd-fly { filter: drop-shadow(10px 18px 9px rgba(36, 48, 62, 0.24)); }
 .sd-perch--hero { z-index: 4; transform-origin: 50% 100%; }
 .sd-carry { position: absolute; left: 0; top: 0; width: 100%; height: 0; transform: translateZ(8px); pointer-events: none; }
 .sd-carry .sd-fly { opacity: 1; }
@@ -151,10 +153,23 @@ body.theme-sandesh {
 .theme-sandesh .su-cue { bottom: 14px; padding: 7px 14px 6px; border-radius: 3px; background: rgba(255, 251, 243, 0.92); color: var(--sd-ink); }
 
 /* ───────── the wall ───────── */
-.sd-wall { position: relative; padding: clamp(72px, 12vh, 120px) 16px 40px; overflow: hidden; }
+.sd-wall { position: relative; padding: clamp(72px, 12vh, 120px) 16px 60px; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(ellipse 80% 520px at 18% 0, rgba(255, 249, 232, 0.7), rgba(255, 249, 232, 0) 70%),
+    linear-gradient(90deg, rgba(52, 74, 96, 0.13), rgba(52, 74, 96, 0) 16%, rgba(52, 74, 96, 0) 84%, rgba(52, 74, 96, 0.13)),
+    url('/themes/sandesh/art/wall-sm.webp') 0 0 / 100% auto repeat-y,
+    #DDE5E7;
+  background-blend-mode: normal, normal, multiply, normal; }
+@media (min-width: 700px) { .sd-wall { background-image:
+    radial-gradient(ellipse 80% 620px at 18% 0, rgba(255, 249, 232, 0.7), rgba(255, 249, 232, 0) 70%),
+    linear-gradient(90deg, rgba(52, 74, 96, 0.13), rgba(52, 74, 96, 0) 16%, rgba(52, 74, 96, 0) 84%, rgba(52, 74, 96, 0.13)),
+    url('/themes/sandesh/art/wall.webp'); } }
 .sd-flight { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .sd-flight .sd-perch { opacity: 0; will-change: transform, opacity; }
-.sd-bougain { position: absolute; right: -8px; top: -6px; z-index: 1; width: min(30vw, 250px); height: auto; pointer-events: none; }
+.sd-bougain { position: absolute; top: -8px; z-index: 1; height: auto; pointer-events: none; filter: drop-shadow(10px 16px 10px rgba(40, 52, 66, 0.22)); }
+.sd-bougain--r { right: -10px; width: min(32vw, 300px); }
+.sd-bougain--l { left: -10px; width: 280px; display: none; }
+@media (min-width: 1000px) { .sd-bougain--l { display: block; } }
 .sd-wall__head { position: relative; z-index: 2; max-width: min(64%, 620px); margin: 0 auto 96px; padding-right: 0; text-align: left; }
 @media (min-width: 900px) { .sd-wall__head { text-align: center; max-width: 560px; margin-bottom: 150px; } }
 .sd-kicker { margin: 0 0 8px; font: 700 12px/1.4 var(--sd-f-mark); letter-spacing: 0.22em; text-transform: uppercase; color: var(--sd-lac); }
@@ -166,26 +181,50 @@ body.theme-sandesh {
 .sd-head { text-align: center; }
 
 .sd-post { position: relative; z-index: 2; box-sizing: border-box; width: min(94%, 560px); margin: 0 auto 92px; border-radius: 2px; rotate: var(--r, 0deg);
-  box-shadow: 0 1px 1px rgba(42, 30, 26, 0.1), 0 18px 34px -18px rgba(42, 30, 26, 0.42); }
+  box-shadow: 0 1px 1px rgba(42, 30, 26, 0.14), 0 3px 6px -2px rgba(42, 30, 26, 0.14), 10px 26px 30px -16px rgba(36, 48, 62, 0.42); }
+/* washi tape: a strip of kraft paper tape holding each card to the wall (away from where the doves sit) */
+.sd-post::before { content: ''; position: absolute; z-index: 4; top: -13px; left: 9%; width: 92px; height: 26px; rotate: -5deg; pointer-events: none;
+  background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.16) 0 5px, rgba(255, 255, 255, 0) 5px 10px), rgba(206, 184, 140, 0.62);
+  box-shadow: 0 1px 2px rgba(42, 30, 26, 0.16);
+  clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 88% 0, 92% 10%, 96% 0, 100% 8%, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 12% 100%, 8% 90%, 4% 100%, 0 92%); }
+.sd-post[data-side='r']::before { left: auto; right: 9%; rotate: 4deg; }
 .sd-post[data-side='l'] { margin-left: 0; }
 .sd-post[data-side='r'] { margin-right: 0; }
 @media (min-width: 900px) {
-  .sd-post { width: 660px; margin-bottom: 130px; }
-  .sd-post[data-side='l'] { margin-left: max(5vw, calc(50% - 520px)); }
-  .sd-post[data-side='r'] { margin-right: max(5vw, calc(50% - 520px)); }
+  .sd-post { width: 560px; margin-bottom: 40px; margin-top: -92px; }
+  .sd-wall__head + .sd-post { margin-top: 0; }
+  .sd-post.sd-pic { max-width: 560px; }
+  .sd-post[data-side='l'] { margin-left: max(4vw, calc(50% - 600px)); }
+  .sd-post[data-side='r'] { margin-right: max(4vw, calc(50% - 600px)); }
 }
 .sd-post.is-carried { will-change: transform, opacity; }
 .sd-prog { position: static; }
 /* desktop: a stone ledge with roses, a spray of bougainvillea, in the margin beside a postcard */
 .sd-deco { display: none; }
+.sd-deco__in { pointer-events: none; }
+.sd-niche { display: block; width: 160px; height: auto; mix-blend-mode: multiply; }
+.sd-pair { display: flex; align-items: flex-start; gap: 34px; }
+.sd-pair .sd-niche { width: 190px; margin-top: 60px; }
+.sd-ledge { display: block; width: 176px; padding: 0 14px; border-bottom: 13px solid #D6D9D6; box-shadow: 0 18px 16px -12px rgba(36, 48, 62, 0.4); }
+.sd-ledge img { display: block; width: 128px; height: auto; margin: 0 auto -1px; filter: drop-shadow(8px 6px 6px rgba(36, 48, 62, 0.22)); }
+.sd-strings { display: flex; align-items: flex-start; gap: 26px; filter: drop-shadow(8px 12px 8px rgba(36, 48, 62, 0.25)); }
+.sd-strings img { display: block; width: 40px; height: auto; }
+/* each string hangs from a brass nail */
+.sd-strings { position: relative; padding-top: 6px; }
+.sd-strings::before, .sd-strings::after { content: ''; position: absolute; top: 0; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #F3D79A, #A57F37 60%, #6B4E1C); box-shadow: 2px 3px 3px rgba(36, 48, 62, 0.35); }
+.sd-strings::before { left: 16px; }
+.sd-strings::after { left: 80px; top: 26px; }
+.sd-strings img + img { width: 36px; margin-top: 26px; }
+/* phones: one niche between two cards, in the flow */
+@media (max-width: 1099px) {
+  .sd-deco[data-phone] { display: flex; justify-content: center; margin: -40px 0 52px; }
+  .sd-deco[data-phone] .sd-niche { width: 128px; }
+}
 @media (min-width: 1100px) {
-  .sd-deco { display: block; position: relative; height: 0; }
-  .sd-deco > * { position: absolute; bottom: 150px; }
-  .sd-deco[data-side='l'] > * { left: max(6vw, calc(50% - 470px)); }
-  .sd-deco[data-side='r'] > * { right: max(6vw, calc(50% - 470px)); }
-  .sd-ledge { display: block; width: 210px; padding: 0 18px; border-bottom: 14px solid #DCD7CB; box-shadow: 0 18px 18px -14px rgba(42, 30, 26, 0.35); }
-  .sd-ledge img { display: block; width: 150px; height: auto; margin: 0 auto -1px; }
-  .sd-deco--bougain img { width: 230px; height: auto; bottom: 40px; rotate: 6deg; }
+  .sd-deco { display: block; position: relative; height: 1px; }
+  .sd-deco__in { position: absolute; bottom: calc(100% + 120px); }
+  .sd-deco[data-side='l'] .sd-deco__in { left: calc(max(4vw, 50% - 600px) + 120px); translate: -50% 0; }
+  .sd-deco[data-side='r'] .sd-deco__in { right: calc(max(4vw, 50% - 600px) + 120px); translate: 50% 0; }
 }
 
 /* stamps: a perforated paper edge (holes cut by a mask), the picture, a printed band */

@@ -145,10 +145,27 @@ function page(ctx) {
   let side = 0;
   const nextSide = () => (side++ % 2 ? 'r' : 'l');
   const tilt = () => ((side % 3) - 1) * 1.1 + (side % 2 ? 0.6 : -0.6);
-  const post = (id, cls, inner, extra = '') => { const sd = nextSide(); return `<article class="sd-post ${cls}" id="${id}" data-post data-side="${sd}" style="--r:${tilt().toFixed(2)}deg"${extra}>${inner}</article>`; };
+  let k = 0;
+  const post = (id, cls, inner, extra = '') => {
+    const sd = nextSide();
+    const html = `<article class="sd-post ${cls}" id="${id}" data-post data-side="${sd}" style="--r:${tilt().toFixed(2)}deg"${extra}>${inner}</article>`;
+    // the kinds by the room each card leaves beside it: tall cards get the niche or the marigold strings
+    const kind = k === 0 ? 'both' : k === 1 ? 'niche' : k === 2 ? 'lota' : ['niche', 'strings', 'lota'][(k - 3) % 3];
+    return html + deco(kind, k++ === 1);
+  };
   const posts = [];
   // desktop only: a little of the rooftop in the empty margin beside a postcard (never under words)
-  const deco = (kind) => `<div class="sd-deco sd-deco--${kind}" data-side="${side % 2 ? 'r' : 'l'}" aria-hidden="true">${kind === 'lota' ? `<span class="sd-ledge"><img src="${ART}lota.webp" width="460" height="618" alt="" loading="lazy" decoding="async" /></span>` : `<img src="${ART}bougainvillea.webp" width="720" height="960" alt="" loading="lazy" decoding="async" />`}</div>`;
+  // a little of the rooftop in the pocket of wall beside a postcard (desktop; one niche between cards on phones).
+  // Never under words: guardDecor() hides any piece that would touch a card.
+  const deco = (kind, phone = false) => {
+    const lazy = 'alt="" loading="lazy" decoding="async"';
+    const inner = kind === 'lota' ? `<span class="sd-ledge"><img src="${ART}lota.webp" width="460" height="618" ${lazy} /></span>`
+      : kind === 'niche' ? `<img class="sd-niche" src="${ART}niche.webp" width="520" height="693" ${lazy} />`
+      : '';
+    const strings = `<span class="sd-strings"><img src="${ART}marigold-string.webp" width="220" height="1106" ${lazy} /><img src="${ART}marigold-string.webp" width="220" height="1106" ${lazy} /></span>`;
+    const body = kind === 'strings' ? strings : kind === 'both' ? `<span class="sd-pair"><img class="sd-niche" src="${ART}niche.webp" width="520" height="693" ${lazy} />${strings}</span>` : inner;
+    return `<div class="sd-deco sd-deco--${kind}" data-side="${side % 2 ? 'r' : 'l'}"${phone ? ' data-phone' : ''} aria-hidden="true"><div class="sd-deco__in">${body}</div></div>`;
+  };
 
   if (P.lead) {
     posts.push(post('couple', 'sd-pic', `
@@ -174,7 +191,6 @@ function page(ctx) {
         ${(f.person.home?.en || f.person.home?.ne) ? `<p class="sd-fam__home">${bi(f.person.home)}</p>` : ''}
       </div>`;
     }).join('<span class="sd-fam__and" aria-hidden="true">&amp;</span>')}</div>`));
-  posts.push(deco('lota'));
 
   // the countdown: a sheet of four stamps, the numbers as their values
   posts.push(post('date', 'sd-sheet', `
@@ -211,7 +227,7 @@ function page(ctx) {
           <li><span class="sd-pc__k">${bi(P.UI.time)}</span><span>${bi(ev.time)}</span></li>
           <li><span class="sd-pc__k">${bi(P.UI.venue)}</span><span>${bi(ev.venue)} <a class="su-link" href="${esc(ev.map)}" target="_blank" rel="noopener">${bi(P.UI.map)}<span aria-hidden="true"> ↗</span><span class="sr-only"> (opens Google Maps)</span></a></span></li>
         </ul>
-      </div>`) + (n === 1 ? deco('lota') : '');
+      </div>`);
   });
 
   const rack = P.photos.length ? `
@@ -234,7 +250,8 @@ function page(ctx) {
 
   <section class="su-sec sd-wall" id="wall" aria-labelledby="wall-title">
     <div class="sd-flight" aria-hidden="true">${flyer('sd-fly--a')}${flyer('sd-fly--b')}${perched('sd-perch--wall', false)}</div>
-    <img class="sd-bougain" src="${ART}bougainvillea.webp" width="720" height="960" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+    <img class="sd-bougain sd-bougain--l" src="${ART}bougainvillea.webp" width="720" height="960" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+    <img class="sd-bougain sd-bougain--r" src="${ART}bougainvillea-2.webp" width="720" height="1055" alt="" aria-hidden="true" loading="lazy" decoding="async" />
     <header class="sd-wall__head">
       <p class="sd-kicker">${bi(txt('wall.kicker'))}</p>
       <h2 class="sd-h2" id="wall-title">${bi(txt('wall.title'))}</h2>
@@ -451,6 +468,19 @@ function replyPost(ctx) {
   }).observe(status, { childList: true });
 }
 
+/** hide any wall decoration that would touch a postcard (layout boxes, not the delivery transforms) */
+function guardDecor(wall) {
+  const box = (el) => { let x = 0; let y = 0; let n = el; while (n && n !== wall) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } return { x, y, w: el.offsetWidth, h: el.offsetHeight }; };
+  const cards = [...wall.querySelectorAll('[data-post], .sd-wall__head')].map(box);
+  wall.querySelectorAll('.sd-deco__in').forEach((d) => {
+    d.style.visibility = '';
+    if (!d.offsetWidth) return;
+    const r = box(d);
+    const hit = cards.some((c) => r.x < c.x + c.w + 12 && r.x + r.w > c.x - 12 && r.y < c.y + c.h + 12 && r.y + r.h > c.y - 12);
+    if (hit) d.style.visibility = 'hidden';
+  });
+}
+
 let flight = null;
 function scroll(ctx) {
   const wall = document.getElementById('wall');
@@ -459,6 +489,8 @@ function scroll(ctx) {
   flight = createFlight(wall, posts, { reduced: ctx.reduced, scrollY: () => (lenis ? lenis.scroll : window.scrollY) });
   rackScroll(ctx);
   replyPost(ctx);
+  guardDecor(wall);
+  new ResizeObserver(() => guardDecor(wall)).observe(wall);
   // pictures and fonts that arrive later move the posts: measure again
   wall.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', () => flight.measure(), { once: true }); });
   document.fonts?.ready.then(() => flight.measure());
