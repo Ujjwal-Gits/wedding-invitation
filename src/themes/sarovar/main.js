@@ -310,7 +310,10 @@ function glide(ctx) {
       const d = o.z - camZ; const a = fadeOf(d);
       if (a <= 0) { o.el.style.visibility = 'hidden'; return; }
       const s = proj(d);
-      const x = W / 2 + o.x * (W / 2) * s; const y = yAt(H * 1.04, s);
+      // wide screens: never behind the post's edges; keep clear of its resting width (a continuous push outward)
+      let dx = o.x * (W / 2) * s;
+      if (W > 700 && plq[0]) dx = Math.sign(o.x) * Math.max(Math.abs(dx), (plq[0].w * plq[0].fit) / 2 + (o.w * s) / 2 + 28);
+      const x = W / 2 + dx; const y = yAt(H * 1.04, s);
       o.el.style.visibility = 'visible';
       o.el.style.opacity = a.toFixed(3);
       o.el.style.zIndex = String(Math.round(100 - d * 20));
@@ -347,7 +350,7 @@ function glide(ctx) {
       const s = proj(wide ? 0.14 : 1.05);
       const x = wide ? W / 2 + side * W * 0.3 : W / 2 + side * 1.5 * (W / 2) * s; const y = yAt(H * 1.03, s);
       m.parentElement.style.zIndex = wide ? '300' : '40';
-      const show = Math.min(1, Math.max(0, (camZ - 0.25) * 2.5), Math.max(0, (N + 0.3 - camZ) * 3));
+      const show = Math.min(1, Math.max(0, (camZ - 0.25) * 2.5), Math.max(0, (N + 0.35 - camZ) * 4)); // whole at every stop, gone before the pavilion
       m.style.opacity = show.toFixed(3);
       m.style.transform = `translate3d(${(x - mw[i] / 2).toFixed(1)}px,${(y - mh[i]).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
     });
@@ -365,6 +368,8 @@ function glide(ctx) {
     cam.style.transformOrigin = `${cx} calc(${cy} - 4%)`;
   };
   size(); setOrigin();
+  // a picture that arrives after the first measure (a swan, a lotus cluster, a post) changes its box: measure again
+  stage.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', () => { size(); render(); }, { once: true }); });
   const proxy = { z: 0 };
   let st = null;
   ctx.gsap.to(proxy, {
