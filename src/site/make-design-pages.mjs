@@ -11,7 +11,7 @@ import { resolve } from 'node:path';
 import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill, STILL_SIZES } from './stills.js';
 import { esc, phone, rs, SIZES, railCard as npRailCard } from './partials.mjs';
-import { pageMeta } from './seo.mjs';
+import { pageMeta, CAT_KEYWORD } from './seo.mjs';
 import { INTL_THEMES, STYLE_LABEL, intlAsNp } from './intl-designs.js';
 import { planOf, railCard } from './intl.mjs';
 import { usdText } from './intl-plans.js';
@@ -55,7 +55,7 @@ function related(t) {
 function relatedHtml(x) {
   if (x.intl) return npRailCard(x, SIZES.rail);
   const p = planForTier(FALLBACK_SITE.plans, x.tier);
-  return `<li class="rcard"><a class="rcard__pic" href="/designs/${x.slug}/" style="--tint:${CATEGORIES[x.cat].tint}" tabindex="-1" aria-hidden="true">${phone(x.slug, { sizes: SIZES.rail })}</a>`
+  return `<li class="rcard"><a class="rcard__pic" href="/designs/${x.slug}/" style="--tint:${CATEGORIES[x.cat].tint}" tabindex="-1" aria-hidden="true">${phone(x.slug, { sizes: SIZES.rail, alt: `The ${x.name} Nepali wedding card design: ${x.alt}` })}</a>`
     + `<p class="rcard__name"><a href="/designs/${x.slug}/">${esc(x.name)}</a> <span lang="ne">${esc(x.ne)}</span></p>`
     + `<p class="rcard__meta"><span class="tier tier--${x.tier}" data-tier-tag="${x.tier}">${TIER_LABEL[x.tier]}</span><span data-tier-price="${x.tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></li>`;
 }
@@ -89,11 +89,11 @@ for (const t of THEMES) {
     SLUG: t.slug,
     NAME: esc(t.name),
     NE: esc(t.ne),
-    DESC: esc(t.concept),
+    DESC: esc(`${t.concept} A ${CAT_KEYWORD[t.cat]}, with RSVP, maps and Nepali dates in one link.`),
     ALT: esc(t.alt),
     CAT: t.cat,
     CAT_LABEL: esc(CATEGORIES[t.cat].label),
-    CAT_ONE: esc(CATEGORIES[t.cat].one),
+    CAT_ONE: esc(`Online wedding card · ${CATEGORIES[t.cat].one}`),
     TINT: CATEGORIES[t.cat].tint,
     NE_LINE: t.ne ? `<p class="dp__ne" lang="ne">${esc(t.ne)}</p>` : '',
     TIER: t.tier,

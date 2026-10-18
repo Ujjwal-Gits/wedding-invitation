@@ -38,9 +38,9 @@ export const INTL_PAGES = {
     title: 'Animated Wedding Invitation Website With RSVP | Nimtto',
     desc: 'One link for your animated invitation, event website and RSVP, made with a real designer. Pay once from $49. For the USA, UK, Canada, Australia and UAE.',
     alt: 'Nimtto animated wedding invitation website: the Olive Grove invitation on a phone among other designs',
-    eyebrow: 'Weddings and every celebration',
-    h1: 'Your invitation, event website and RSVP, <em>in one link.</em>',
-    lede: 'Weddings first, and every party after. Pick a design and a real designer makes it yours: an animated invitation, a page with every detail and RSVPs, in one link you send by text or email. Paid once, from {usd:saral}.',
+    eyebrow: 'Nimtto International · Wedding invitation websites',
+    h1: 'Your wedding invitation, website and RSVP, <em>in one link.</em>',
+    lede: 'Nimtto International makes digital wedding invitations, and invitations for every party after. Pick a design and a real designer makes it yours: an animated invitation, a page with every detail and RSVPs, in one link you send by text or email. Paid once, from {usd:saral}.',
   },
   'intl/designs': {
     path: `${INTL_BASE}designs/`, img: 'intl-designs', type: 'CollectionPage', ogType: 'website', np: 'designs',
@@ -48,7 +48,7 @@ export const INTL_PAGES = {
     desc: 'Browse animated wedding invitation designs in five styles: garden, romantic, classic, modern and destination. Each with RSVP and a website. From $49.',
     alt: 'Nimtto animated wedding invitation designs on phones: an olive wreath, a rose arch and a wax seal',
     eyebrow: 'Designs',
-    h1: 'Animated invitation designs, <em>made with you.</em>',
+    h1: 'Animated wedding invitation designs, <em>made with you.</em>',
     lede: 'Every design opens like a real card and comes with a matching event website and RSVP. Narrow them down by style, then order the one you love, and a real designer sets it up with you. Want something else? We design one for your occasion.',
   },
   'intl/occasions': {
@@ -57,7 +57,7 @@ export const INTL_PAGES = {
     desc: 'Digital invitations with RSVP for weddings, birthdays of any age, baby and bridal showers, engagements, anniversaries, graduations and company events.',
     alt: 'Nimtto digital invitations for weddings, birthdays, showers, anniversaries and more',
     eyebrow: 'Occasions',
-    h1: 'Every celebration <em>deserves an invitation.</em>',
+    h1: 'Digital invitations <em>for every celebration.</em>',
     lede: 'Weddings have ready-made designs. For birthdays of any age, baby and bridal showers, engagement parties, anniversaries, graduations, housewarmings, dinners and company events, we design an invitation for your occasion, with an event page and RSVP.',
   },
   'intl/features': {
@@ -66,7 +66,7 @@ export const INTL_PAGES = {
     desc: 'A wedding RSVP website in your invitation: replies per event, the schedule with maps, travel and hotels, your story, your song and a live stream link.',
     alt: 'A Nimtto wedding RSVP website on a phone with the schedule, RSVP and music',
     eyebrow: 'Features',
-    h1: 'More than a card. <em>A whole event page.</em>',
+    h1: 'More than a card. <em>A wedding RSVP website.</em>',
     lede: 'Your invitation opens like a real card, then guests scroll down for the schedule, maps, travel notes and the RSVP. You read every reply in your dashboard and download the list. There is no app for anyone.',
   },
   'intl/how': {
@@ -84,7 +84,7 @@ export const INTL_PAGES = {
     desc: 'One-time pricing for digital invitations: $49, $99 or $149, custom designs from $199. No subscription and no fee per guest. Pay by card or PayPal.',
     alt: 'Nimtto prices: three plans at $49, $99 and $149, paid once',
     eyebrow: 'Pricing',
-    h1: 'One price. <em>Paid once.</em>',
+    h1: 'Digital wedding invitation cost. <em>Paid once.</em>',
     lede: 'A Nimtto digital invitation costs {usd:saral}, {usd:shubha} or {usd:shahi}, paid once in US dollars by card or PayPal. There are no monthly fees, no subscriptions and no charge per guest. A design made just for your occasion starts at {usd:custom}.',
   },
   'intl/faq': {
@@ -93,7 +93,7 @@ export const INTL_PAGES = {
     desc: 'Answers about digital invitations: how guests RSVP, what it costs, if it is a subscription, timing, refunds, privacy and the occasions we design.',
     alt: 'Questions and answers about Nimtto digital invitations',
     eyebrow: 'FAQ',
-    h1: 'Questions, <em>answered.</em>',
+    h1: 'Digital invitation questions, <em>answered.</em>',
     lede: 'Short, clear answers about how Nimtto works, what it costs, how guests reply and how we look after your details. Can’t find yours? Email us and a real person replies, usually within one business day.',
   },
   'intl/contact': {

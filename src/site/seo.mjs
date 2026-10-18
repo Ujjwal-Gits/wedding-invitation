@@ -39,19 +39,19 @@ export const titleCase = (s) => {
 export const PAGES = {
   home: {
     path: '/', img: 'home', type: 'WebPage', ogType: 'website', speak: true,
-    title: 'Digital Wedding Invitation in Nepal With RSVP | Nimtto',
-    desc: 'Animated wedding invitation website with RSVP, maps and Nepali dates, made with a real designer. Pay once from Rs 2,999 by eSewa, Khalti or bank QR.',
-    alt: 'Nimtto digital wedding invitations for Nepal: three invitation designs on phones, in white and blush',
+    title: 'Nimtto: Online Wedding Invitation Card in Nepal With RSVP',
+    desc: 'Nimtto makes online wedding invitation cards in Nepal: a digital wedding card with RSVP, maps and Nepali dates in one link. Pay once from Rs 2,999.',
+    alt: 'Nimtto online wedding invitation cards for Nepal: three digital wedding card designs on phones, in white and blush',
   },
   designs: {
     path: '/designs/', img: 'designs', type: 'CollectionPage', ogType: 'website',
-    title: 'Nepali Wedding Card Designs and Animated Invites | Nimtto',
-    desc: `Browse ${N} premium Nepali wedding card designs with animation, music and RSVP. Pick one and our designer personalises it for you. From Rs 2,999, paid once.`,
+    title: `Wedding Card Designs: ${N} Animated Nepali Templates | Nimtto`,
+    desc: `${N} Nepali wedding card designs that open like a real card: doors, wax seals, flower gates and 3D films. Each with RSVP and Nepali dates. From Rs 2,999.`,
     alt: `${N} Nimtto Nepali wedding card designs on phones: a sealed envelope, a temple door and a garden pavilion`,
   },
   occasions: {
     path: '/occasions/', img: 'occasions', type: 'CollectionPage', ogType: 'website',
-    title: 'Invitation Cards for Every Nepali Occasion | Nimtto',
+    title: 'Online Invitation Cards for Nepali Ceremonies | Nimtto',
     desc: 'Online invitation cards for maagni, bratabandha, gunyo cholo, pasni, nwaran, birthdays, janku and bhoj, in English and Nepali with RSVP and maps.',
     alt: 'Nimtto invitations for every Nepali occasion: bratabandha, pasni and gunyu cholo, beside an invitation on a phone',
   },
@@ -63,21 +63,21 @@ export const PAGES = {
   },
   features: {
     path: '/features/', img: 'features', type: 'WebPage', ogType: 'website',
-    title: 'Wedding RSVP Website and Invitation Features | Nimtto',
-    desc: 'RSVP tracking, every ceremony with Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, all in one invitation link on WhatsApp.',
+    title: 'Wedding Website With RSVP for Nepal: Features | Nimtto',
+    desc: 'A wedding website inside your invitation: RSVP per ceremony, Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, in one link.',
     alt: 'A Nimtto wedding RSVP website on a phone with a Nepali date, guest replies and music',
   },
   pricing: {
     path: '/pricing/', img: 'pricing', type: 'WebPage', ogType: 'website',
-    title: 'Digital Invitation Price in Nepal From Rs 2,999 | Nimtto',
+    title: 'Digital Wedding Card Price in Nepal From Rs 2,999 | Nimtto',
     // no plan names here: the planner renames plans in the studio, and meta tags are only built, never refreshed
     desc: 'Plans at Rs 2,999, Rs 4,999 and Rs 6,999, custom designs from Rs 11,111. Pay once by Khalti, eSewa or bank QR, or PayPal from abroad. No monthly fee.',
     alt: 'Nimtto prices: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, paid once, beside an invitation on a phone',
   },
   faq: {
     path: '/faq/', img: 'faq', type: 'WebPage', ogType: 'website', speak: true,
-    title: 'Digital Wedding Card FAQ for Nepal: Price and RSVP | Nimtto',
-    desc: 'Answers on price, eSewa and Khalti payment, timing, changes, RSVP, wording and sharing on WhatsApp for Nepali digital invitations, and guests abroad.',
+    title: 'E-Invitation FAQ for Nepal: Cost, RSVP and Wording | Nimtto',
+    desc: 'What an e-invitation costs in Nepal, paying by eSewa or Khalti, timing, RSVP, Nepali card wording and sharing on WhatsApp or Viber, answered in short.',
     alt: 'Questions and answers about Nimtto digital invitations in Nepal',
   },
   contact: {
@@ -121,37 +121,44 @@ for (const [k, m] of Object.entries({ ...LEGAL })) {
   LEGAL[`intl-${k}`] = { ...m, path: `/international${m.path}`, market: 'intl', title: m.title.replace('| Nimtto', '| Nimtto International') };
 }
 
-/** One line per design for its description (plain English); `{p}` is the plan price the design starts at. */
-const LEAD = {
-  kham: 'Kham online wedding invitation: a paper envelope with a red wax seal opens into a clear card of every event. RSVP and Nepali dates, from {p}. Preview it.',
-  dhoka: 'Dhoka wedding invitation design: the golden door of Patan opens in 3D to show your names on a white card. RSVP and Nepali dates, from {p}. See it open.',
-  mala: 'Mala wedding invitation design: red silk, marigold strings and brass kalash frame your mandap. An online card with RSVP and Nepali dates, from {p}.',
-  durbar: 'Durbar online wedding invitation: a 3D morning walk through Bhaktapur Durbar Square under flower arches. RSVP and Nepali dates, from {p}. Preview it.',
-  gurans: 'Phoolbari wedding invitation design: a gate of fresh roses and marigold opens on शुभ विवाह, then a calm card with RSVP. From {p}. See it open.',
-  dhaka: 'Dhaka online wedding invitation: break the wax seal, slide off the Dhaka band and your names rise among flowers. RSVP and Nepali dates, from {p}.',
-  sayapatri: 'Sayapatri wedding invitation design: marigold strings lift from a doorway to open a calm ivory card with RSVP and maps. From {p}. Preview it now.',
-  himal: 'Himal online wedding invitation: sunrise over the Himalaya, then a quiet photo story of the two of you, with RSVP and Nepali dates. From {p}. Preview it.',
-  chitra: 'Chitra wedding invitation design: a Mithila art picture book of the janti, the garlands and the seven rounds. RSVP and Nepali dates, from {p}. See it.',
-  mandap: 'Mandap online wedding invitation: a 3D mandap on a bright morning where the couple exchange garlands and walk seven rounds. With RSVP, from {p}.',
-  bagaicha: 'Bagaicha wedding invitation design: a 3D garden wedding through a rose arch, around the sacred fire, on to the reception. With RSVP, from {p}.',
-  ghar: 'Ghar online wedding invitation: a warm evening walk through a Newar house, room by room, like a film. Every event and RSVP, from {p}. Preview it.',
-  mangal: 'Mangal wedding invitation design: a red temple door with garlands and bells swings open on शुभ विवाह. An online card with RSVP, from {p}. See it open.',
-  nimantrana: 'Nimantrana online wedding invitation: a red and gold card unfolds in 3D with Ganesh, the couple and the programme. With RSVP, from {p}. Preview it.',
-  jhyal: 'Jhyal wedding invitation design: the shutters of a carved Newari window open on शुभ विवाह. An online card with RSVP and maps, from {p}. See it open.',
-  mahal: 'Mahal online wedding invitation: untie the satin bow and a golden palace gate opens onto a balcony at night. RSVP and Nepali dates, from {p}. See it.',
-  laali: 'Laali wedding invitation design: blush pink and gold, with lanterns that drop in as an arched card draws itself. RSVP and Nepali dates, from {p}.',
-  mehendi: 'Mehendi online wedding invitation: a henna pattern draws itself on ivory, then two hennaed hands come together. RSVP and Nepali dates, from {p}.',
-  hariyo: 'Hariyo wedding invitation design: green watercolour leaves part to show a white pavilion and two peacocks. An online card with RSVP, from {p}. See it.',
-  shree: 'Shree online wedding invitation: deep plum and gold, where a gold lotus opens on Ganesh as two diyas come down. RSVP and Nepali dates, from {p}.',
-  pardaa: 'Pardaa wedding invitation design: red velvet curtains open on a mandap with a living fire, each event in its own colours. With RSVP, from {p}. See it.',
-  rajdwar: 'Rajdwar online wedding invitation: untie the bow and walk through a painted gold palace gate to a red and gold card. RSVP and Nepali dates, from {p}.',
-  agni: 'Agni wedding invitation design: tap to light the sacred fire at night, then the couple walk the seven rounds. An online card with RSVP, from {p}. See it.',
-  janti: "Janti online wedding invitation: walk with the Naumati Baja band and the doli down an old Newari street to the bride's door. With RSVP, from {p}.",
-  swayambar: 'Swayambar wedding invitation design: two fresh garlands swing apart and both families come together as you scroll. RSVP and Nepali dates, from {p}.',
-  sindoor: 'Sindoor online wedding invitation: red, white and black, the sindoor box opens and a red line carries your story. RSVP and Nepali dates, from {p}.',
-  rangoli: 'Rangoli wedding invitation design: a flower rangoli on a brick courtyard comes together and the diyo lights up. An online card with RSVP, from {p}.',
+/** Each design's search title (before " | Nimtto") and description. The title leads with the design's name, then a
+ *  real search phrase matched to how the design looks, varied across designs so each page covers its own query
+ *  (online wedding card, Nepali wedding card design, digital wedding invitation, e-card, wedding invitation video,
+ *  biha card ...). The description says what it looks like and does, the benefit, a price hook (`{p}`: the plan price
+ *  it starts at) and a call to action. Keyword map: docs/SEO-KEYWORDS.md. */
+const DESIGN_SEO = {
+  kham: ['Kham Envelope Online Wedding Card With Wax Seal', 'A paper envelope with a red wax seal opens into a clean card of every event. RSVP, maps and Nepali dates, shared on WhatsApp. From {p}. Preview it.'],
+  dhoka: ['Dhoka 3D Door Wedding Invitation, Patan Style', 'The golden door of Patan swings open in 3D to show your names. Every ceremony with a map, RSVP and BS dates, on any phone. From {p}. See it open.'],
+  mala: ['Mala Marigold Mandap Nepali Wedding Card', 'A mandap of red silk, marigold strings and brass kalash frames your names. Nepali dates, maps and RSVP in one WhatsApp link. From {p}. Preview it.'],
+  durbar: ['Durbar Square 3D Wedding Invitation Video', 'Walk through Bhaktapur Durbar Square at dawn, like a short film, to your wedding programme. RSVP, maps and BS dates. From {p}. Watch it play.'],
+  gurans: ['Phoolbari Flower Gate Wedding E-Card', 'A gate of fresh roses and marigold opens on शुभ विवाह, then a calm card with every event, maps and RSVP. Send it on Viber or WhatsApp. From {p}.'],
+  dhaka: ['Dhaka Envelope Wedding E-Invitation for Every Faith', 'Break the seal and slide off the Dhaka band; your names rise among flowers. RSVP and Nepali dates, for weddings of every faith. From {p}. Preview it.'],
+  sayapatri: ['Sayapatri Marigold Doorway Digital Wedding Card', 'Marigold strings lift from a doorway to open a calm ivory wedding card. Every ceremony with Google Maps, RSVP and BS dates. From {p}. Preview it.'],
+  himal: ['Himal Mountain Sunrise Photo Wedding Invitation', 'Sunrise over Machhapuchhre, then a photo story of the two of you. Nepali dates, maps and RSVP, easy for guests abroad. From {p}. Preview it now.'],
+  chitra: ['Chitra Mithila Art Wedding Invitation Card', 'A Mithila art picture book of the janti, the garlands and the seven rounds. An online biha card with RSVP and Nepali dates. From {p}. See it.'],
+  mandap: ['Mandap 3D Animated Wedding Invitation, Seven Rounds', 'A bright 3D mandap where the couple exchange garlands and walk the seven rounds. RSVP, maps and BS dates in one link. From {p}. Watch it play.'],
+  bagaicha: ['Bagaicha 3D Garden Wedding Invitation', 'A 3D garden wedding: through a rose arch, around the sacred fire, on to the reception. RSVP and a map for each event. From {p}. Preview it now.'],
+  ghar: ['Ghar Newari House Cinematic Wedding Invitation', 'An evening walk through a Newar house, room by room, like a film. Every event with time, place and RSVP, shared on WhatsApp. From {p}. Preview it.'],
+  mangal: ['Mangal Temple Door Shubha Bibaha Card Online', 'A red temple door hung with garlands and bells swings open on शुभ विवाह. Nepali dates, maps and guest replies in one link. From {p}. See it open.'],
+  nimantrana: ['Nimantrana Traditional Red and Gold Biha Card', 'A traditional red and gold wedding card that unfolds in 3D: Ganesh, the couple, then the programme. With RSVP and BS dates. From {p}. Preview it.'],
+  jhyal: ['Jhyal Newari Window Nepali Wedding Card Design', 'The shutters of a carved Newari window open on शुभ विवाह. A Nepali wedding card with every ceremony, maps and RSVP. From {p}. See it open.'],
+  mahal: ['Mahal Royal Palace Gate Wedding Invitation', 'Untie the satin bow and a golden palace gate opens onto a night balcony. A royal wedding invitation with RSVP and Nepali dates. From {p}. See it.'],
+  laali: ['Laali Blush Pink Digital Wedding Invitation Nepal', 'Blush pink and gold: lanterns drop in as an arched card draws itself. A digital wedding invitation with RSVP, maps and BS dates. From {p}. Preview it.'],
+  mehendi: ['Mehendi Henna Wedding Invitation Card Online', 'A henna pattern draws itself on ivory, then two hennaed hands meet. Mehendi, haldi and the wedding, each with a map and RSVP. From {p}. See it.'],
+  hariyo: ['Hariyo Green Watercolour Wedding Card With Peacocks', 'Green watercolour leaves part to show a white pavilion and two peacocks. A fresh online wedding card with RSVP and Nepali dates. From {p}. See it.'],
+  shree: ['Shree Ganesh Wedding Card in Plum and Gold', 'Deep plum and gold: a gold lotus opens on Ganesh as two diyas come down. Every ceremony, RSVP and BS dates in one link. From {p}. Preview it.'],
+  pardaa: ['Pardaa Curtain Reveal Wedding Invitation Online', 'Red velvet curtains open on a mandap with a living fire, each event in its own colours. Maps, RSVP and Nepali dates. From {p}. See it open.'],
+  rajdwar: ['Rajdwar Gold Palace Gate Nepali Wedding Card', 'Untie the bow and walk through a painted gold palace gate to a red and gold card. RSVP, maps and BS dates, sent on WhatsApp. From {p}. See it.'],
+  agni: ['Agni Sacred Fire Animated Wedding Invitation', 'Tap to light the sacred fire at night, then the couple walk the seven rounds. An animated wedding card with RSVP and maps. From {p}. Watch it play.'],
+  janti: ['Janti Procession Wedding Invitation Video', 'Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door. Every event with RSVP. From {p}. Watch it play.'],
+  swayambar: ['Swayambar Garland Wedding Invitation With RSVP', 'Two fresh garlands swing apart and both families come together as you scroll. Guests RSVP to each ceremony, with Nepali dates. From {p}. Preview it.'],
+  sindoor: ['Sindoor Red and White Wedding E-Card', 'Red, white and black: the sindoor box opens and a red line carries your story. A wedding e-card with RSVP and BS dates. From {p}. Preview it now.'],
+  rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
 };
-/** the second half of a design title, by category (the longest that keeps the title within 60 characters) */
+/** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
+export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };
+
+/** a new design without a DESIGN_SEO entry yet: the second half of its title, by category (the longest within 60) */
 const CAT_TAIL = { flowers: ['Floral Online Card', 'Floral E-Card'], doors: ['Opening Door Card', 'Door E-Card'], cards: ['Digital Card', 'E-Card'], film: ['Cinematic Online Card', 'Cinematic E-Card', 'Film E-Card'] };
 
 export function designMeta(slug) {
@@ -159,26 +166,47 @@ export function designMeta(slug) {
   if (!t) throw new Error(`seo: no design ${slug}`);
   const plan = planForTier(FALLBACK_SITE.plans, t.tier);
   const base = `${t.name} Wedding Invitation Design`;
-  const title = [...CAT_TAIL[t.cat], null].map((x) => (x ? `${base}: ${x} | Nimtto` : `${base} | Nimtto`)).find((s) => s.length <= 60);
+  const own = DESIGN_SEO[slug];
+  const title = own ? `${own[0]} | Nimtto`
+    : [...CAT_TAIL[t.cat], null].map((x) => (x ? `${base}: ${x} | Nimtto` : `${base} | Nimtto`)).find((s) => s.length <= 60);
   return {
     path: `/designs/${slug}/`, img: `design-${slug}`, type: 'ItemPage', ogType: 'product',
     title, name: `${t.name} Wedding Invitation Design`,
-    desc: (LEAD[slug] || `${t.name} online wedding invitation: ${t.concept} RSVP and Nepali dates, from {p}. Preview it now.`).replace('{p}', plan ? rs(plan.price) : 'Rs 2,999'),
-    alt: `The ${t.name} online wedding invitation design by Nimtto on a phone: ${t.alt}`,
+    desc: (own?.[1] || `${t.name} online wedding invitation: ${t.concept} RSVP and Nepali dates, from {p}. Preview it now.`).replace('{p}', plan ? rs(plan.price) : 'Rs 2,999'),
+    alt: `The ${t.name} ${CAT_KEYWORD[t.cat] || 'online wedding card'} by Nimtto on a phone: ${t.alt}`,
   };
 }
 
 /** An international design's page (/international/designs/<slug>/): the style in the title, the US dollar price in
  *  the description. Its share image is public/site/og/intl-design-<slug>.jpg (scripts/og-list.mjs). */
 const STYLE_WORD = { garden: 'Garden', romantic: 'Romantic', classic: 'Classic', modern: 'Modern', destination: 'Destination' };
+/** Each international design's search title (before " | Nimtto") and description, US English, no religion words:
+ *  the name first, then a US search phrase (wedding invitation website, digital or animated wedding invitation,
+ *  online wedding invitation with RSVP, e-invite ...), varied across designs. `{p}`: the dollar price it starts at. */
+const INTL_DESIGN_SEO = {
+  'olive-grove': ['Olive Grove Animated Wedding Invitation With RSVP', 'A linen card opens and a watercolor olive wreath grows around your names. Your wedding website and RSVP in one link. From {p}, paid once. Preview it.'],
+  'rose-arch': ['Rose Arch Garden Wedding Invitation Website', 'Guests walk through a stone arch of climbing roses into the garden, then find your schedule, maps and RSVP. From {p}, paid once. See it open.'],
+  'blush-roses': ['Blush Roses Digital Wedding Invitation, Gold Frame', 'A thin gold frame draws itself as blush roses bloom in the corners. A classic digital invitation with RSVP and a wedding website. From {p}. Preview it.'],
+  'gold-arch': ['Gold Arch Modern Online Wedding Invitation', 'A fine gold arch draws itself under an eight-point star on a clean page. A modern online invitation with RSVP, sent by text. From {p}. Preview it.'],
+  amalfi: ['Amalfi Destination Wedding Invitation Website', 'A lemon-branch postcard from the Amalfi Coast turns over for your weekend by the sea, with travel, hotels and RSVP. From {p}, paid once. See it.'],
+  'garden-party': ['Garden Party Wedding E-Invite With RSVP', 'A garden ceremony under a rose arbor: the invitation slides out of its paper band. Guests RSVP per event, no app. From {p}, paid once. Preview it.'],
+  wildflower: ['Wildflower Meadow Animated Wedding Invitation', 'Pink and peach wildflowers grow up the page with butterflies. A summer wedding invitation with a website and RSVP. From {p}, paid once. See it.'],
+  letterpress: ['Letterpress Classic Digital Wedding Invitation', 'A deckled cotton card lifts off sage linen and turns over. Simple, timeless and sent by text or email, with RSVP. From {p}, paid once. Preview it.'],
+  'wax-seal': ['Wax Seal Envelope Online Wedding Invitation', 'Guests break a sage wax seal and your letter rises out of the envelope. An online invitation with RSVP and a website. From {p}, paid once. See it.'],
+  tuscany: ['Tuscany Vineyard Destination Wedding Invite', 'Golden hour over the vineyard hills, with an invitation dressed like a wine label. Travel notes, hotels and RSVP in one link. From {p}. Preview it.'],
+  noor: ['Noor Rose Arch Elegant Wedding Invitation Online', 'A sage arch hung with fresh roses glows open on your names. An elegant invitation with every event, maps and RSVP. From {p}, paid once. See it.'],
+  jali: ['Jali Lattice and Lantern Digital Wedding Invitation', 'Carved emerald and gold lattice screens slide apart under hanging lanterns. A multi-event invitation with RSVP for each. From {p}. Preview it.'],
+  andalus: ['Andalus Courtyard Destination Wedding Website', 'Step through a horseshoe arch into a tiled courtyard with a fountain and orange trees. Travel, schedule and RSVP in one link. From {p}. See it.'],
+};
 export function intlDesignMeta(slug) {
   const d = INTL_BY_SLUG[slug];
   if (!d) throw new Error(`seo: no international design ${slug}`);
   const p = intlPlans(FALLBACK_SITE.plans).find((x) => x.id === d.tier);
   const from = p ? usdText(p.usd) : '$49';
   const kind = `${STYLE_WORD[d.style] || 'Animated'} Wedding Invitation`;
-  const title = [`${d.name}: Animated ${kind} | Nimtto`, `${d.name}: ${kind} | Nimtto`].find((x) => x.length <= 60);
-  const desc = [`${d.name} animated wedding invitation: ${d.line} With an event website and RSVP, from ${from}, paid once.`,
+  const own = INTL_DESIGN_SEO[slug];
+  const title = own ? `${own[0]} | Nimtto` : [`${d.name}: Animated ${kind} | Nimtto`, `${d.name}: ${kind} | Nimtto`].find((x) => x.length <= 60);
+  const desc = own ? own[1].replace('{p}', from) : [`${d.name} animated wedding invitation: ${d.line} With an event website and RSVP, from ${from}, paid once.`,
     `${d.name} wedding invitation: ${d.line} With RSVP, from ${from}.`, `${d.name} animated wedding invitation with RSVP, from ${from}, paid once.`].find((x) => x.length <= 155);
   return {
     path: `/international/designs/${slug}/`, img: `intl-design-${slug}`, type: 'ItemPage', ogType: 'product', market: 'intl',
@@ -212,8 +240,11 @@ export const ALL_PAGE_IDS = [
 export function checkLengths() {
   const out = [];
   const seen = new Map();
-  for (const id of ALL_PAGE_IDS) {
+  const descs = new Map();
+  for (const id of [...ALL_PAGE_IDS, ...THEMES.map((t) => `design/${t.slug}`)]) {
     const m = pageMeta(id);
+    if (descs.has(m.desc) && LEGAL[id]?.market !== 'intl') out.push(`${id}: same description as ${descs.get(m.desc)}`);
+    descs.set(m.desc, id); // the international legal pages mirror the Nepal ones word for word
     if (m.title.length > 60) out.push(`${id}: title ${m.title.length} > 60: ${m.title}`);
     if (m.desc.length > 155) out.push(`${id}: description ${m.desc.length} > 155`);
     if (seen.has(m.title)) out.push(`${id}: same title as ${seen.get(m.title)}`);

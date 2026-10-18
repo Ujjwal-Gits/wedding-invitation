@@ -120,7 +120,7 @@ export const ORG_LD = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: NAP.name, alternateName: NAP.nameNe, url: `${SITE_URL}/`,
+      '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: NAP.name, alternateName: [NAP.nameNe, ...NAP.alt], url: `${SITE_URL}/`,
       logo: { '@type': 'ImageObject', '@id': `${SITE_URL}/#logo`, url: `${SITE_URL}/icon-512.png`, contentUrl: `${SITE_URL}/icon-512.png`, width: 512, height: 512, caption: 'Nimtto' },
       image: `${SITE_URL}/site/og/home.jpg`, email: NAP.email, telephone: NAP.tel,
       description: 'Nimtto makes animated invitation websites with RSVP, set up with you by a real designer: for Nepali weddings and family ceremonies in Nepal (nimtto.com, in rupees) and for weddings and every celebration worldwide (nimtto.com/international, in US dollars).',
@@ -137,7 +137,7 @@ export const ORG_LD = {
       ...(FOUNDED ? { foundingDate: FOUNDED } : {}),
       ...(OWNER.name ? { founder: { '@id': `${SITE_URL}/about/#owner` } } : {}),
     },
-    { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: ['निम्तो', 'Nimtto International'], description: 'Animated invitation websites with RSVP: Nepali weddings and ceremonies in Nepal, and weddings and every celebration worldwide.', inLanguage: ['en', 'ne'], publisher: { '@id': `${SITE_URL}/#org` } },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, url: `${SITE_URL}/`, name: 'Nimtto', alternateName: [NAP.nameNe, ...NAP.alt, 'Nimtto International'], description: 'Animated invitation websites with RSVP: Nepali weddings and ceremonies in Nepal, and weddings and every celebration worldwide.', inLanguage: ['en', 'ne'], publisher: { '@id': `${SITE_URL}/#org` } },
   ],
 };
 /** Favicon, app icons, manifest and browser colour (scripts/make-icons.mjs draws them): crimson for Nepal, sage for
@@ -218,11 +218,11 @@ function footer() {
       <div class="foot__top">
         <div class="foot__brand">
           <img src="/site/brand/nimtto-logo.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
-          <p data-cms="foot-blurb">Online invitations for Nepali weddings and every family occasion. Made in Nepal, in English and Nepali.</p>
+          <p data-cms="foot-blurb">Nimtto, online wedding invitations made in Nepal: digital wedding cards and invitation websites for every family occasion, in English and Nepali.</p>
           <p class="foot__ne" lang="ne">निम्तो, मायाले पठाइएको</p>${cmsSlot('foot-extra')}
         </div>
-        ${col('Invitations', [['/wedding-invitation-nepal/', 'Wedding cards'], ['/designs/', 'All designs'], ['/occasions/', 'Occasions'], ['/occasions/bratabandha/', 'Bratabandha'], ['/occasions/pasni/', 'Pasni'], ['/occasions/gunyu-cholo/', 'Gunyu Cholo'], ['/nepali-abroad/', 'For families abroad']])}
-        ${col('Nimtto', [['/about/', 'About us'], ['/how-it-works/', 'How it works'], ['/features/', 'Features'], ['/pricing/', 'Pricing'], ['/faq/', 'FAQ'], ['/blog/', 'Blog'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
+        ${col('Invitations', [['/wedding-invitation-nepal/', 'Nepali wedding cards'], ['/designs/', 'Wedding card designs'], ['/wedding-invitation-video-nepal/', 'Wedding invitation video'], ['/occasions/', 'Invitation cards by occasion'], ['/occasions/bratabandha/', 'Bratabandha cards'], ['/occasions/pasni/', 'Pasni cards'], ['/occasions/gunyu-cholo/', 'Gunyu cholo cards'], ['/nepali-abroad/', 'For families abroad']])}
+        ${col('Nimtto', [['/about/', 'About Nimtto'], ['/how-it-works/', 'How it works'], ['/features/', 'RSVP and features'], ['/pricing/', 'Prices'], ['/faq/', 'FAQ'], ['/blog/', 'Blog'], ['/contact/', 'Contact'], ['/international/', 'Nimtto International'], ['/credits/', 'Credits']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
@@ -389,11 +389,13 @@ function tierTag(tier) {
 export const ALL_DESIGNS = [...THEMES, ...INTL_THEMES.map(intlAsNp)];
 /** the small line after a design's name: its Nepali name, or "International" */
 const subName = (t, cls = '') => (t.intl ? `<span${cls ? ` class="${cls}"` : ''}>International</span>` : `<span${cls ? ` class="${cls}"` : ''} lang="ne">${esc(t.ne)}</span>`);
+/** a design card's picture: the image search words (the link itself is hidden from screen readers) */
+const cardAlt = (t) => (t.intl ? `The ${t.name} digital wedding invitation on a phone: ${t.alt}` : `The ${t.name} online wedding card design on a phone: ${t.alt}`);
 export function designCard(t, i) {
   const cat = CATEGORIES[t.cat] || CATEGORIES.cards;
   const href = designPage(t.slug);
   return `<li class="dcard" data-slug="${t.slug}" data-cat="${t.cat}" data-tier="${t.tier}" data-faiths="${(t.religions || []).join(' ')}"${t.intl ? ' data-intl' : ''}>
-    <a class="dcard__pic" href="${href}" style="--tint:${cat.tint}" tabindex="-1" aria-hidden="true">${phone(t.slug, { eager: false })}</a>
+    <a class="dcard__pic" href="${href}" style="--tint:${cat.tint}" tabindex="-1" aria-hidden="true">${phone(t.slug, { eager: false, alt: cardAlt(t) })}</a>
     <div class="dcard__body">
       <h3 class="dcard__name"><a href="${href}">${esc(t.name)}</a> ${subName(t, 'dcard__ne')}</h3>
       <p class="dcard__meta">${tierTag(t.tier)}</p>
@@ -419,7 +421,7 @@ const RAIL = ['laali', 'gurans', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehen
 export function railCard(t, sizes = SIZES.rail) {
   const href = designPage(t.slug);
   return `<li class="rcard" data-slug="${t.slug}">
-    <a class="rcard__pic" href="${href}" style="--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}">${phone(t.slug, { sizes, alt: `The ${t.name} design: ${t.alt}` })}</a>
+    <a class="rcard__pic" href="${href}" style="--tint:${(CATEGORIES[t.cat] || CATEGORIES.cards).tint}">${phone(t.slug, { sizes, alt: cardAlt(t) })}</a>
     <p class="rcard__name"><a href="${href}">${esc(t.name)}</a> ${subName(t)}</p>
     <p class="rcard__meta">${tierTag(t.tier)}</p>
   </li>`;

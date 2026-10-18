@@ -341,7 +341,7 @@ function crossband(kind = 'np') {
   const B = {
     np: ['Living abroad?', 'Inviting family in Nepal from the USA, the UK, Australia or the Gulf? Pay by card or PayPal and send one link home.', [['For families abroad', '/nepali-abroad/'], ['Nimtto International', '/international/']]],
     'np-abroad': ['Getting married outside Nepal?', 'Our international site has designs and prices in US dollars, with Nepali wedding invitations for families in the USA.', [['Nepali wedding invitations, USA', '/international/nepali-wedding-invitations/'], ['Nimtto International', '/international/']]],
-    intl: ['Getting married in Nepal?', 'Our Nepal site has wedding cards and ceremony invitations priced in rupees, paid by Khalti, eSewa or bank QR.', [['Wedding invitation cards in Nepal', '/wedding-invitation-nepal/'], ['Nimtto Nepal', '/']]],
+    intl: ['Getting married in Nepal?', 'Our Nepal site has wedding cards and ceremony invitations priced in rupees, paid by Khalti, eSewa or bank QR.', [['Nepali wedding cards online', '/wedding-invitation-nepal/'], ['Nimtto Nepal', '/']]],
   }[kind] || null;
   if (!B) return '';
   const [h, p, links] = B;

@@ -12,9 +12,9 @@ const ld = (o) => `<script type="application/ld+json">${JSON.stringify(o).replac
 
 const COPY = {
   np: {
-    eyebrow: 'About us',
-    h1: 'Invitations made <em>with you,</em> in Nepal.',
-    lede: 'Nimtto (<span lang="ne">निम्तो</span>, “invitation” in Nepali) makes animated invitation websites with RSVP. A real designer sets up each one with the family, and guests open it from one link.',
+    eyebrow: 'About Nimtto',
+    h1: 'Nimtto: invitations made <em>with you,</em> in Nepal.',
+    lede: 'Nimtto (<span lang="ne">निम्तो</span>, “invitation” in Nepali) makes online wedding invitations and animated invitation websites with RSVP. A real designer sets up each one with the family, and guests open it from one link.',
     what: [
       'An invitation that opens like a real card, then a small website for the event: every ceremony with its time and a Google Maps pin, travel notes, your story, photos, music and a reply form for each event.',
       'Everything can be in English and Nepali, with dates in Bikram Sambat and AD. Guests need no app and no account; it works on any phone.',
@@ -28,8 +28,8 @@ const COPY = {
     links: { how: '/how-it-works/', pricing: '/pricing/', contact: '/contact/', faq: '/faq/' },
   },
   intl: {
-    eyebrow: 'About us',
-    h1: 'A real designer <em>for every invitation.</em>',
+    eyebrow: 'About Nimtto International',
+    h1: 'Nimtto International: <em>a real designer for every invitation.</em>',
     lede: 'Nimtto makes animated invitations with an event website and RSVP. We are based in Nepal and work online with couples and hosts in the USA, the UK, Canada, Australia, the UAE and beyond.',
     what: [
       'An invitation that opens like a real card, then your event website: the schedule with maps, travel and hotel notes, your story, photos, your song and an RSVP for each event.',

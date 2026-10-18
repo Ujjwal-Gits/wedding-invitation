@@ -9,6 +9,7 @@ import { SITE_URL } from './content.mjs';
 export const NAP = {
   name: 'Nimtto',
   nameNe: 'निम्तो',
+  alt: ['Nimto'], // the common misspelling, and the romanised निम्तो
   email: 'nimttoz@gmail.com',
   phone: '+977 980-6393298', // as shown
   tel: '+977-980-6393298', // schema.org / E.164 with dashes
@@ -79,7 +80,7 @@ export const EQUIVALENTS = {
 export const TRUST_PAGES = {
   about: {
     path: '/about/', img: 'home', type: 'AboutPage', ogType: 'website', market: 'np',
-    title: 'About Nimtto: Online Invitations Made in Nepal',
+    title: 'About Nimtto: Online Wedding Invitations Made in Nepal',
     desc: 'Who we are and how we work: Nimtto, based in Nepal, designs animated invitation websites with RSVP for Nepali weddings and family occasions.',
     alt: 'Nimtto online invitations for Nepal: three invitation designs on phones, in white and blush',
   },

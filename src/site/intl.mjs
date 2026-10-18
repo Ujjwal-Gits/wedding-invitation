@@ -78,10 +78,10 @@ function footer() {
       <div class="foot__top">
         <div class="foot__brand">
           <img src="/site/brand/nimtto-logo-intl.svg" width="146" height="34" alt="Nimtto" loading="lazy" />
-          <p data-cms="foot-blurb">Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>${cmsSlot('foot-extra')}
+          <p data-cms="foot-blurb">Nimtto International: animated wedding invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>${cmsSlot('foot-extra')}
         </div>
-        ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'All designs'], [INTL_PAGES['intl/occasions'].path, 'All occasions'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
-        ${col('Nimtto', [['/international/about/', 'About us'], [INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], ['/international/blog/', 'Blog'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
+        ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'Wedding invitation designs'], [LANDINGS['i-rsvp'].path, 'Wedding invitation with RSVP'], [INTL_PAGES['intl/occasions'].path, 'Invitations by occasion'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
+        ${col('Nimtto', [['/international/about/', 'About Nimtto'], [INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'RSVP website features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], ['/international/blog/', 'Blog'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>
@@ -126,7 +126,7 @@ export const tierRow = (tier, cls = 'rcard__meta') => `<p class="${cls}"><span c
 export function railCard(d, i = 0, sizes = '(max-width: 599px) 56vw, 260px') {
   const href = designPage(d.slug);
   return `<li class="rcard" data-style="${d.style}" data-slug="${esc(d.slug)}">
-    <a class="rcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}">${phone(d.slug, { sizes, alt: `The ${d.name} design: ${d.alt}` })}</a>
+    <a class="rcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}">${phone(d.slug, { sizes, alt: `The ${d.name} animated wedding invitation: ${d.alt}` })}</a>
     <p class="rcard__name"><a href="${href}">${esc(d.name)}</a> <span>${STYLE_LABEL[d.style] || ''}</span></p>
     ${tierRow(d.tier)}
   </li>`;
@@ -137,7 +137,7 @@ function gallery() { return intlList(4).map((d, i) => railCard(d, i)).join(''); 
 export function designCard(d, i = 0) {
   const href = designPage(d.slug);
   return `<li class="dcard" id="d-${esc(d.slug)}" data-slug="${esc(d.slug)}" data-style="${d.style}" data-tier="${d.tier}">
-    <a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true">${phone(d.slug)}</a>
+    <a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true">${phone(d.slug, { alt: `The ${d.name} digital wedding invitation on a phone: ${d.alt}` })}</a>
     <div class="dcard__body">
       <h3 class="dcard__name"><a href="${href}">${esc(d.name)}</a> <span class="dcard__ne">${STYLE_LABEL[d.style] || ''}</span></h3>
       ${tierRow(d.tier, 'dcard__meta')}

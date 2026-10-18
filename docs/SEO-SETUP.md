@@ -68,6 +68,22 @@ Edit `src/site/seo-site.mjs`, then run `node src/site/make-landing-pages.mjs` an
 Keep the name, email and WhatsApp number identical everywhere you list Nimtto (Instagram bio, Facebook page,
 directories): Nimtto, nimttoz@gmail.com, +977 980-6393298.
 
+### TODO(owner): brand profiles, so a search for "nimtto" shows us first
+
+A brand search ranks the site first once Google sees the same name, logo and link in several places. Create
+these profiles under the name **Nimtto**, with the logo, `https://nimtto.com/` in the bio or website field and
+the same email and WhatsApp number, then add each full URL to `SAME_AS` in `src/site/seo-site.mjs`:
+
+- [ ] Facebook page
+- [ ] Instagram
+- [ ] TikTok
+- [ ] YouTube channel (post a few design openings as Shorts)
+- [ ] LinkedIn company page
+- [ ] Google Business Profile: only if Nimtto becomes eligible (see section 4); otherwise skip it.
+
+The Organization and WebSite data already name Nimtto, निम्तो and the common misspelling "Nimto", with the logo,
+url and contact points. Link the profiles back to each other too.
+
 ## 7. Watching rankings
 
 - Weekly, Search Console -> Performance -> Search results: filter Country = Nepal, then United States; Page

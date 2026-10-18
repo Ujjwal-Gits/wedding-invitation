@@ -7,19 +7,22 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import '../src/site/partials.mjs'; // first: it and landing.mjs import each other
 import { pageMeta } from '../src/site/seo.mjs';
+import { THEMES } from '../src/site/themes.js';
+import { INTL_THEMES } from '../src/site/intl-designs.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** id -> [primary, ...secondary] */
 const KW = {
-  home: ['digital wedding invitation Nepal', 'online nimto card', 'wedding invitation website Nepal', 'animated wedding invitation Nepal', 'e-invitation on WhatsApp Nepal'],
-  designs: ['Nepali wedding card designs', 'wedding card design Nepal', 'animated wedding invitation designs', 'Nepali invitation templates'],
-  occasions: ['invitation cards for Nepali ceremonies', 'online invitation card Nepal', 'bratabandha, pasni and gunyu cholo invitations'],
+  home: ['online wedding invitation card Nepal', 'Nimtto (brand; Nimto)', 'digital wedding card Nepal', 'e invitation card Nepal', 'विवाह निम्तो', 'online nimto card'],
+  designs: ['wedding card design Nepal', 'Nepali wedding invitation template', 'animated wedding card designs', 'one page per design: name + phrase'],
+  occasions: ['online invitation cards for Nepali ceremonies', 'online invitation card Nepal', 'bratabandha, pasni and gunyu cholo invitations'],
   'how-it-works': ['how to make a digital wedding invitation in Nepal', 'send e-invitation on WhatsApp Nepal', 'online nimto kasari banaune'],
-  features: ['wedding RSVP website Nepal', 'invitation with Google Maps', 'Bikram Sambat date on invitation', 'invitation with music'],
-  pricing: ['wedding invitation website price Nepal', 'digital wedding card price Nepal', 'eSewa Khalti invitation'],
-  faq: ['digital wedding card FAQ Nepal', 'is e-invitation acceptable in Nepal', 'what to write on a Nepali wedding card', 'when to send wedding cards Nepal'],
+  features: ['wedding website with RSVP Nepal', 'invitation with Google Maps', 'Bikram Sambat date on invitation', 'invitation with music'],
+  pricing: ['digital wedding card price Nepal', 'online wedding invitation cost Nepal', 'eSewa Khalti invitation'],
+  faq: ['e-invitation FAQ Nepal', 'is e-invitation acceptable in Nepal', 'what to write on a Nepali wedding card', 'when to send wedding cards Nepal'],
   contact: ['Nimtto (brand)'],
-  'land/np-wedding': ['wedding invitation card online Nepal', 'bihe ko nimto online', 'बिहेको निम्तो', 'Nepali wedding card wording', 'Nepali wedding card design', 'wedding invitation with RSVP Nepal', 'digital vs printed wedding card Nepal'],
+  'land/np-wedding': ['Nepali wedding card online', 'bihe ko card', 'बिहेको कार्ड', 'बिहेको निम्तो', 'Nepali wedding card wording', 'wedding invitation with RSVP Nepal', 'digital vs printed wedding card Nepal'],
+  'land/np-video': ['wedding invitation video Nepal', 'animated wedding invitation Nepal', 'video invitation for WhatsApp', 'बिहेको भिडियो निम्तो', 'invitation video vs link'],
   'land/np-engagement': ['maagni invitation card online', 'tika invitation', 'engagement invitation Nepal', 'माग्नी', 'ring ceremony (औंठी) invitation', 'maagni invitation wording'],
   'land/np-bratabandha': ['bratabandha invitation card online', 'bratabandha nimto card', 'bratabandha invitation wording', 'व्रतबन्ध', 'chudakarma', 'sacred thread ceremony invitation'],
   'land/np-gunyu': ['gunyo cholo invitation card', 'gunyu cholo nimto', 'gunyo choli ceremony', 'गुन्यू चोलो', 'girl coming-of-age ceremony Nepal'],
@@ -67,7 +70,13 @@ const rows = Object.entries(KW).map(([id, [primary, ...sec]]) => {
   const m = pageMeta(id);
   return `| ${m.path} | ${cell(primary)} | ${cell(sec.join('; '))} | ${cell(m.title)} (${m.title.length}) | ${cell(m.desc)} (${m.desc.length}) | ${words(m.path)} |`;
 });
-const table = `| Path | Primary keyword | Secondary | Title | Description | Words |\n|---|---|---|---|---|---|\n${rows.join('\n')}`;
+// the design pages, both sites: each one's own title (name + search phrase) and description
+const designRows = [...THEMES.map((t) => `design/${t.slug}`), ...INTL_THEMES.map((d) => `intl-design/${d.slug}`)].map((id) => {
+  const m = pageMeta(id);
+  return `| ${m.path} | ${cell(m.title)} (${m.title.length}) | ${cell(m.desc)} (${m.desc.length}) |`;
+});
+const table = `| Path | Primary keyword | Secondary | Title | Description | Words |\n|---|---|---|---|---|---|\n${rows.join('\n')}`
+  + `\n\nDesign pages (src/site/seo.mjs DESIGN_SEO and INTL_DESIGN_SEO):\n\n| Path | Title | Description |\n|---|---|---|\n${designRows.join('\n')}`;
 const DOC = resolve(ROOT, 'docs', 'SEO-KEYWORDS.md');
 const doc = readFileSync(DOC, 'utf8');
 const A = '<!-- KEYWORDS:START (scripts/seo-keyword-table.mjs) -->';
