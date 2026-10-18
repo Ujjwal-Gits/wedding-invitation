@@ -11,7 +11,7 @@ export default {
   // Made for Muslim weddings: the Bismillah, the verse and the crescent emblem show only when the invitation's faith is
   // Muslim (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show none of them.
   faith: 'muslim',
-  religions: ['muslim', 'other'],
+  religions: ['muslim'],
   faithInk: '--ga-gold',
   images: {
     'hero.rose': { label: 'Rose and eucalyptus (first screen, closing)', kind: 'detail', default: { lg: '/themes/gold-arch/art/rose.webp', sm: '/themes/gold-arch/art/rose-sm.webp', w: 682, h: 999, alt: '' }, note: 'A transparent watercolor corner spray that sits on the arch’s lower right. Leave as is unless you have your own art.' },

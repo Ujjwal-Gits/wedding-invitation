@@ -2,7 +2,7 @@
 // The static fallback (themes.js) covers an API that is down. In development only, while the server does not
 // speak the payment contract yet (no `paymentMethods` in /api/site), orders and payments run against a small
 // mock kept in this browser's localStorage, so the whole flow can be built and tested. Production never mocks.
-import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, PLAN_NE, tierOf, withNeutral } from './themes.js';
+import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, PLAN_NE, tierOf } from './themes.js';
 import { INTL_THEMES, INTL_BY_SLUG, intlAsNp } from './intl-designs.js';
 import { SLUG_RE, str, localPath } from './common.js';
 
@@ -121,7 +121,7 @@ export function normaliseThemes(api, site, { ordered = false } = {}) {
         cat: local.cat || 'cards',
         concept: local.concept || str(t.concept, 240),
         alt: local.alt || `${str(t.name, 60) || t.slug} design`,
-        religions: withNeutral(rel && rel.length ? rel : (local.religions || ['hindu'])),
+        religions: rel && rel.length ? rel : (local.religions || ['hindu']),
         thumb: localPath(t.thumb, local.thumb || `/themes/${t.slug}/thumb.jpg`),
         tier: TIER_RANK[t.tier] ? t.tier : (own ? tierOf(t.slug) : local.tier || 'shubha'),
         intl: !own && (intlOnly(t.market) || Boolean(INTL_BY_SLUG[t.slug])),

@@ -2,7 +2,7 @@
 // Invitation data (names, parents, dates, events, card wording, gallery, RSVP, closing) lives in the studio sections.
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the jaimala (garland exchange) is the design; the kit lamps, kalash and ganthi leave.
-  religions: ["hindu", "other"],
+  religions: ['hindu'],
   faithInk: "--sw-wine", // the emblem that replaces Ganesh for other communities is drawn in this colour
   "theme": "swayambar",
   "images": {

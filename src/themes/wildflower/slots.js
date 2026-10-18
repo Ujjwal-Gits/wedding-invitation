@@ -13,7 +13,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'meadow.back': { label: 'Meadow: back layer (opening, first screen, last screen)', kind: 'detail', default: A('meadow-back', 1200, 760), note: 'Transparent watercolor, the top of the meadow. Leave as is unless you have your own art.' },

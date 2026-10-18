@@ -4,7 +4,7 @@
 // `shared` points an entry at src/core/slot-vocab.js so content entered in any theme appears here too.
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: a mango-leaf toran (Hindu auspicious decor); the words swap.
-  religions: ['hindu', 'other'],
+  religions: ['hindu', 'buddhist'],
   theme: 'sayapatri',
   images: {
     'hero.photo': { label: 'Welcome: feature photo of the couple', kind: 'couple', default: { portrait: 0 }, note: 'The couple together. Any shape; shown whole beside the names.' },

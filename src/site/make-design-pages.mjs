@@ -8,7 +8,7 @@
 // Run after adding a theme or changing the template:  node src/site/make-thumbs.mjs && node src/site/make-design-pages.mjs
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier, withNeutral } from './themes.js';
+import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier } from './themes.js';
 import { phoneStill, STILL_SIZES } from './stills.js';
 import { esc, phone, rs, SIZES, railCard as npRailCard } from './partials.mjs';
 import { pageMeta } from './seo.mjs';
@@ -31,7 +31,7 @@ function religionsOf(t) {
   const m = readFileSync(f, 'utf8').match(/religions\s*:\s*\[([^\]]*)\]/);
   if (!m) return ['hindu'];
   const list = [...m[1].matchAll(/['"]([a-z]+)['"]/g)].map((x) => x[1]).filter((r) => RELIGION_LABEL[r]);
-  return list.length ? withNeutral(list) : ['hindu']; // a design for 'other' suits Buddhist and Kirat weddings too
+  return list.length ? list : ['hindu']; // explicit per design (docs/FAITH-DESIGNS.md)
 }
 
 const thumbSrc = (slug) => (thumbs.has(slug) ? `/site/thumbs/${slug}-480.webp` : `/themes/${slug}/thumb.jpg`);

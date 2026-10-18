@@ -14,7 +14,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.lemons': { label: 'Lemon branches (top of the first screen)', kind: 'detail', default: art('lemons', 1200, 801), note: 'A transparent watercolor branch across the top. Leave as is unless you have your own art.' },

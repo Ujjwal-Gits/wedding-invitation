@@ -11,7 +11,7 @@ const gallery = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`gallery.${n}`
 
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. The kalash and the closing diyos leave with the Hindu symbols.
-  religions: ['hindu', 'muslim', 'christian', 'other'],
+  religions: ['hindu'],
   faithInk: '--mh-gold-lt', faithHalo: '--mg-red', // the emblem that replaces Ganesh: light gold with a red halo (gold crest and night sky)
   theme: 'mahal',
   images: {

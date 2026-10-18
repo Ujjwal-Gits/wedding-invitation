@@ -12,7 +12,7 @@ export default {
   // Muslim (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show none of them.
   // The painted crescent was retouched out of the arch art: the emblem is drawn by the engine, so it can switch off.
   faith: 'muslim',
-  religions: ['muslim', 'other'],
+  religions: ['muslim'],
   faithInk: '--nr-gold',
   images: {
     'hero.arch': { label: 'Mihrab arch (opening and first screen)', kind: 'detail', default: { lg: '/themes/noor/art/arch.webp', sm: '/themes/noor/art/arch-sm.webp', w: 1200, h: 2400, alt: '' }, note: 'A tall 1:2 painting with an open arch in the middle. The carved doors are fitted to the default art.' },

@@ -13,7 +13,7 @@ const album = Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`album.${n}`, {
 
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: the endless knot (shrivatsa) is the seal and the motif.
-  religions: ['hindu', 'other'],
+  religions: ['hindu', 'buddhist'],
   theme: 'kham',
   images: {
     'hero.print': {

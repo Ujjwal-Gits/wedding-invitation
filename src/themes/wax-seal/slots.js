@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'gate.linen': { label: 'Linen (opening and first screen background)', kind: 'detail', default: { lg: '/themes/wax-seal/art/linen.webp', sm: '/themes/wax-seal/art/linen-sm.webp', w: 1200, h: 1060, alt: '' }, note: 'A soft white linen texture. Keep it light: the words sit on it.' },

@@ -186,4 +186,11 @@ test('under every post: designs and guides fill in when the writer picked none',
   const html = renderPost({ post: { ...post, id: 'post12345' }, others: [{ ...other, c: compilePost(other) }], shell: '<!--blog:head--><!--blog:main-->' });
   assert.match(html, /class="sec sec--blush bp-designs"/);
   assert.match(html, /Related <em>guides/);
+  // "Keep reading" first, then the designs, on the website's own design card (plan badge, price, Order, Preview)
+  assert.ok(html.indexOf('Related <em>guides') < html.indexOf('bp-designs'), 'guides before designs');
+  const block = html.slice(html.indexOf('bp-designs'));
+  assert.equal((block.match(/<li class="dcard bp-dcard"/g) || []).length, 4);
+  assert.match(block, /class="tier tier--/);
+  assert.match(block, /data-preview="/);
+  assert.match(block, /Designs for this <em>occasion/);
 });

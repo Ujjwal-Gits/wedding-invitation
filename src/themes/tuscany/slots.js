@@ -13,7 +13,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem (on the wine label) and the verse (at the close) show only
   // when the invitation's faith is Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.art': { label: 'Vineyard painting (opening and first screen)', kind: 'scene', default: A('vineyard', 1200, 2400, 'A watercolor of a Tuscan vineyard at golden hour'), note: 'A tall painting (1:2) with open sky over the top 60%. The opening shows a pale copy of it, then the colour.' },

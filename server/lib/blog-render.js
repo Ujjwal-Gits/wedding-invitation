@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import { ROOT_DIR } from './env.js';
 import { renderMarkdown, renderInline } from './blog-md.js';
 import { BY_SLUG, CATEGORIES, THEMES, FALLBACK_SITE, planForTier, tierName as planTierName } from '../../src/site/themes.js';
-import { INTL_BY_SLUG, INTL_THEMES, NP_DESIGNS_INTL } from '../../src/site/intl-designs.js';
+import { INTL_BY_SLUG, INTL_THEMES, NP_DESIGNS_INTL, STYLE_LABEL } from '../../src/site/intl-designs.js';
 import { intlPlans, usdText, INTL_NAME } from '../../src/site/intl-plans.js';
 import { tierOf as siteTierOf, themeMarketOf, featuredOf, orderedFor } from './site.js';
 import { phoneStill } from '../../src/site/stills.js';
@@ -295,7 +295,7 @@ function anyDesign(slug) {
   const t = BY_SLUG[slug];
   if (t) return { slug, name: t.name, ne: t.ne, line: t.concept, alt: t.alt, cat: t.cat, words: `${(t.religions || []).join(' ')} ${t.cat}`, intl: false, page: `/designs/${slug}/` };
   const d = INTL_BY_SLUG[slug];
-  if (d) return { slug, name: d.name, ne: '', line: d.line, alt: d.alt, cat: d.cat, words: `${d.faith || ''} ${d.style || ''} ${d.cat || ''}`, intl: true, page: `/international/designs/${slug}/` };
+  if (d) return { slug, name: d.name, ne: '', style: d.style, line: d.line, alt: d.alt, cat: d.cat, words: `${d.faith || ''} ${d.style || ''} ${d.cat || ''}`, intl: true, page: `/international/designs/${slug}/` };
   return null;
 }
 /**
@@ -364,18 +364,34 @@ export function relatedDesigns(post, siteDoc = null, { exclude = [], n = 4 } = {
   return out;
 }
 
+const EYE = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+/** the small line under a design's name, as on the website's own design cards: its Nepali name ("International" for
+ *  an international design on the Nepal site); on the international site its style ("Nepali" for a Nepal design) */
+const subOf = (site, d) => (site === 'intl' ? esc(d.intl ? (STYLE_LABEL[d.style] || '') : 'Nepali') : d.intl ? 'International' : `<span lang="ne">${esc(d.ne || '')}</span>`);
+/** The designs under a post (after "Keep reading"): the website's own design card (src/site/partials.mjs and
+ *  src/site/intl.mjs designCard): the picture with the plan badge in its frame, the name, its second line, the price
+ *  in the visitor's currency, one short line, Order and Preview. Four in a row, two by two on tablets and phones. */
 function designsBlock(post, siteDoc, inBody = []) {
   const list = relatedDesigns(post, siteDoc, { exclude: inBody }).map((s) => [s, designFor(post.site, s, siteDoc)]);
   if (!list.length) return '';
+  const intl = post.site === 'intl';
   const all = SITES[post.site].designs;
+  const pricing = intl ? '/international/pricing/' : '/pricing/';
   return `<section class="sec sec--blush bp-designs" aria-labelledby="bp-d-h">
-      <div class="wrap">
-        <header class="shead shead--split"><div><p class="eyebrow">Designs for this</p><h2 class="h2" id="bp-d-h">See it as an <em>invitation.</em></h2></div>
-          <div class="rail__side"><p class="lede">Each design opens like a real card, with every event, a map and RSVP.</p><a class="btn btn--ghost" href="${all}">See all designs</a></div></header>
-        <ul class="bp-dgrid">${list.map(([slug, d], i) => `<li class="rcard bp-dcard">
-          <a class="rcard__pic" href="${d.page}" style="--tint:${!d.intl && CATEGORIES[d.cat] ? CATEGORIES[d.cat].tint : tintOf(post.site, i)}">${phoneImg(slug, { sizes: '(max-width: 599px) 40vw, 220px', alt: `The ${d.name} design: ${d.alt || ''}` })}</a>
-          <p class="rcard__name"><a href="${d.page}">${esc(d.name)}</a>${!d.intl && d.ne ? ` <span lang="ne">${esc(d.ne)}</span>` : ''}</p>
-          <p class="bp-dcard__l">${esc(d.line || '')}</p></li>`).join('')}</ul>
+      <div class="wrap bp-w">
+        <header class="bp-designs__head"><div><p class="eyebrow">Made for this</p><h2 class="h2" id="bp-d-h">Designs for this <em>occasion.</em></h2></div>
+          <a class="bp-designs__all" href="${all}">See all designs ${ARROW}</a></header>
+        <ul class="bp-dgrid">${list.map(([slug, d], i) => `<li class="dcard bp-dcard" data-slug="${slug}">
+          <a class="dcard__pic" href="${d.page}" style="--tint:${!d.intl && CATEGORIES[d.cat] ? CATEGORIES[d.cat].tint : tintOf(post.site, i)}" tabindex="-1" aria-hidden="true">${phoneImg(slug, { sizes: '(max-width: 599px) 40vw, (max-width: 1023px) 30vw, 200px', alt: '' })}</a>
+          <div class="dcard__body">
+            <h3 class="dcard__name"><a href="${d.page}">${esc(d.name)}</a> <span class="dcard__ne">${subOf(post.site, d)}</span></h3>
+            <p class="dcard__meta">${priceBits(post.site, slug, siteDoc)}</p>
+            <p class="dcard__desc bp-dcard__l">${esc(d.line || '')}</p>
+            <div class="dcard__acts">
+              <a class="btn btn--accent btn--sm" href="${pricing}?design=${slug}#plans" data-order data-design="${slug}" aria-label="Order ${esc(d.name)}">Order</a>
+              <a class="btn btn--ghost btn--sm" href="/${slug}/?showcase=1${intl ? '&amp;m=intl' : ''}" data-preview="${slug}" aria-label="Preview ${esc(d.name)}">${EYE}Preview</a>
+            </div>
+          </div></li>`).join('')}</ul>
       </div>
     </section>`;
 }
@@ -436,11 +452,11 @@ export function renderPost({ post, others = [], shell, preview = false, siteDoc 
         </div>
       </div>
     </article>
-    ${designsBlock(post, siteDoc, c.designs || [])}
     ${rel.length ? `<section class="sec bp-rel" aria-labelledby="bp-rel-h"><div class="wrap">
         <header class="shead"><p class="eyebrow">Keep reading</p><h2 class="h2" id="bp-rel-h">Related <em>guides.</em></h2></header>
         <ul class="bl-grid">${rel.map((p, i) => card(p, p.c || compilePost(p), i)).join('')}</ul>
       </div></section>` : ''}
+    ${designsBlock(post, siteDoc, c.designs || [])}
     ${closing(site)}
     ${crossband(site)}`;
 

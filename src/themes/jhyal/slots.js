@@ -10,7 +10,7 @@ const photo = (n) => [`photos.${n}`, {
 
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. The sill diyos and the pillar kalash leave with the Hindu symbols.
-  religions: ['hindu', 'muslim', 'christian', 'other'],
+  religions: ['hindu', 'buddhist'],
   theme: 'jhyal',
   images: {
     'couple.lead': {
