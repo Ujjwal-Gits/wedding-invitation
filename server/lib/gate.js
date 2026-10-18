@@ -127,6 +127,12 @@ function gatedNames(distDir) {
   return set;
 }
 
+/** A design's public page: /designs/<slug>/ (Nepal) or /international/designs/<slug>/, else the designs list. */
+function designPageOf(distDir, theme) {
+  for (const p of [`/designs/${theme}/`, `/international/designs/${theme}/`]) if (existsSync(resolve(distDir, `.${p}`, 'index.html'))) return p;
+  return '/designs/';
+}
+
 /** Express middleware for the production static setup (place it before express.static). */
 export function themePageGate(distDir) {
   return async (req, res, next) => {
@@ -149,7 +155,10 @@ export function themePageGate(distDir) {
         return next();
       }
 
-      if (!id) return res.redirect(302, '/#designs');
+      // the bare design (an old search result, a shared link): its own design page, permanently, so search engines
+      // replace the sample invitation ("Aarati & Sameer") with the design's page and title. no-store above keeps a
+      // planner who signs in later from being sent there by a cached redirect.
+      if (!id) return res.redirect(301, designPageOf(distDir, theme));
       const doc = SLUG_RE.test(id) ? await getInvitation(id) : null;
       const pub = doc?.status === 'published' ? doc.published : null;
       if (!pub) return res.status(404).type('html').send(NOT_AVAILABLE);
