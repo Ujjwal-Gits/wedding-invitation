@@ -1308,13 +1308,16 @@ function themesAdmin(ctx) {
   return root;
 }
 
+/** The Website page's parts: each opens on its own (#/website?s=<id>), one Save for all of them. */
+const WEB_PARTS = [['plans', 'Plans and prices'], ['payments', 'Payment methods'], ['contact', 'Contact and headline'], ['intl', 'International'], ['branding', 'Branding']];
 function website(ctx) {
   const root = h('div', rowsSkel(6));
+  let part = WEB_PARTS.some(([v]) => v === ctx.params?.get('s')) ? ctx.params.get('s') : 'plans';
   loadSite().then((site) => {
     let dirty = false;
     const saveBtn = h('button.btn.btn--primary', { type: 'button', disabled: true, onclick: async () => {
       const err = validate();
-      if (err) { toast(err, 'error'); [...root.querySelectorAll('input[id^="pl-name-"]')].find((x) => !x.value.trim())?.focus(); return; }
+      if (err) { toast(err, 'error'); if (/plan|price/i.test(err) && part !== 'plans') { part = 'plans'; setUrl('#/website'); draw(); } else if (/payment method/i.test(err) && part !== 'payments') { part = 'payments'; setUrl('#/website?s=payments'); draw(); } [...root.querySelectorAll('input[id^="pl-name-"]')].find((x) => !x.value.trim())?.focus(); return; }
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
       try { const out = await putSite(site); Object.assign(site, out); dirty = false; setBrandLogo(site.branding?.logos?.site); toast('Website updated', 'success'); draw(); } catch (ex) { toast(ex.status === 404 ? 'Saving is not available yet.' : ex.message, 'error'); saveBtn.disabled = false; }
@@ -1533,27 +1536,30 @@ function website(ctx) {
         h('ul.blogos', LOGO_SLOTS.map(logoRow)));
     };
     const draw = () => {
+      const tabs = ftabs(WEB_PARTS, part, (v) => { part = v; setUrl(v === 'plans' ? '#/website' : `#/website?s=${v}`); draw(); }, 'Website settings');
+      const only = (id, el) => (part === id ? el : null);
       fill(root,
+        tabs.el,
         site.missing ? h('div.banner', icon('info', 16), h('span', 'The website settings are not available on the server yet. You can prepare them; saving will work once it is.')) : null,
-        setting('Pricing plans', 'Shown on the public website in this order. Leave a price empty to show “Ask for price”.',
+        only('plans', setting('Pricing plans', 'Shown on the public website in this order. Leave a price empty to show “Ask for price”.',
           h('div.plans', site.plans.map(planCard)),
-          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, priceUsd: null, from: false, currency: 'NPR', note: '', features: [], highlight: false, markets: ['np', 'intl'] }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null),
-        setting('Payment methods', 'QR codes customers scan after ordering, in this order. Each order’s code has the amount and remark inside where the app allows it; otherwise the pay page tells them what to type.',
+          site.plans.length < 8 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.plans.push({ id: '', name: '', price: null, priceUsd: null, from: false, currency: 'NPR', note: '', features: [], highlight: false, markets: ['np', 'intl'] }); touch(); draw(); root.querySelectorAll('.plan').item(site.plans.length - 1)?.querySelector('input')?.focus(); } }, icon('plus', 16), 'Add a plan') : null)),
+        only('payments', setting('Payment methods', 'QR codes customers scan after ordering, in this order. Each order’s code has the amount and remark inside where the app allows it; otherwise the pay page tells them what to type.',
           h('ul.pms', site.paymentMethods.map(methodRow)),
           site.paymentMethods.length < 12 ? h('button.btn.btn--add', { type: 'button', onclick: () => { site.paymentMethods.push({ id: '', label: '', kind: 'other', currency: 'NPR', accountName: '', accountHint: '', qr: '', note: '', enabled: true, order: site.paymentMethods.length, autoAmount: false, paypalMe: '' }); touch(); draw(); root.querySelectorAll('.pm').item(site.paymentMethods.length - 1)?.querySelector('input[id^="pm-label-"]')?.focus(); } }, icon('plus', 16), 'Add a payment method') : null,
-          fieldIn('pay-remark', 'Payment remark', site.payRemark, (v) => { site.payRemark = v; }, { max: 40, cls: 'field--narrow', hint: 'Put in each QR as the remark where the app allows, or shown for the customer to type, so you can match the payment to the order. Use {ref} (required), {plan}, {name}. Plain letters only; at most 25 characters once filled in.' })),
-        setting('Contact details', 'Nepal website: in the footer and contact section. Customers message this WhatsApp number after ordering.',
+          fieldIn('pay-remark', 'Payment remark', site.payRemark, (v) => { site.payRemark = v; }, { max: 40, cls: 'field--narrow', hint: 'Put in each QR as the remark where the app allows, or shown for the customer to type, so you can match the payment to the order. Use {ref} (required), {plan}, {name}. Plain letters only; at most 25 characters once filled in.' }))),
+        only('contact', setting('Contact details', 'Nepal website: in the footer and contact section. Customers message this WhatsApp number after ordering.',
           h('div.pair',
             fieldIn('ct-phone', 'Phone', site.contact.phone, (v) => { site.contact.phone = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' }),
             fieldIn('ct-wa', 'WhatsApp', site.contact.whatsapp, (v) => { site.contact.whatsapp = v; }, { type: 'tel', inputmode: 'tel', max: 20, placeholder: '+977 98…' })),
           h('div.pair',
             fieldIn('ct-email', 'Email', site.contact.email, (v) => { site.contact.email = v; }, { type: 'email', max: 254 }),
-            fieldIn('ct-addr', 'Address', site.contact.address, (v) => { site.contact.address = v; }, { max: 300 }))),
-        setting('Website headline', 'Nepal website home page. Optional: leave empty to keep the built-in words. Content → Pages can set other words for the home page, and every other page’s heading.',
+            fieldIn('ct-addr', 'Address', site.contact.address, (v) => { site.contact.address = v; }, { max: 300 })))),
+        only('contact', setting('Website headline', 'Nepal website home page. Optional: leave empty to keep the built-in words. Content → Pages can set other words for the home page, and every other page’s heading.',
           fieldIn('hero-title', 'Headline', site.hero?.title, (v) => { site.hero = { ...site.hero, title: v }; }, { max: 120 }),
-          fieldIn('hero-sub', 'Line under it', site.hero?.subtitle, (v) => { site.hero = { ...site.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 })),
-        intlSetting(),
-        brandingSetting(),
+          fieldIn('hero-sub', 'Line under it', site.hero?.subtitle, (v) => { site.hero = { ...site.hero, subtitle: v }; }, { max: 300, multiline: true, rows: 2 }))),
+        only('intl', intlSetting()),
+        only('branding', brandingSetting()),
         bar);
       saveBtn.disabled = !dirty;
       bar.hidden = !dirty;
@@ -1586,7 +1592,7 @@ function paymentsCard() {
       h('p.hint', icon('info', 14), 'The PayPal keys are set in the server environment (Coolify), never here. When it is on, customers abroad can also pay by card with PayPal Checkout, and the order is confirmed by itself. Steps: docs/PAYMENTS.md.'));
   }).catch((err) => fill(body, quietEmpty('alert', err.status === 404 ? 'Payments are not available on this server yet' : 'Could not load the payment status', err.status === 404 ? '' : err.message)));
   return setting('Payments', 'Customers pay by scanning a QR code (Website → Payment methods) and upload a screenshot that you confirm in Orders. Optional extra: PayPal Checkout in US dollars, off until the server has its keys.',
-    h('p', h('a.btn.btn--sm', { href: '#/website' }, 'Payment methods and prices'), ' ', h('a.btn.btn--sm.btn--quiet', { href: '#/orders?pay=check' }, 'Payments to check')), body);
+    h('p', h('a.btn.btn--sm', { href: '#/website?s=payments' }, 'Payment methods and prices'), ' ', h('a.btn.btn--sm.btn--quiet', { href: '#/orders?pay=check' }, 'Payments to check')), body);
 }
 
 function settings(ctx) {
