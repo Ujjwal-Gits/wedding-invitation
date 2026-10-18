@@ -32,6 +32,7 @@ dashboard to create, customise, publish and track invitations.
 | 25 | **Swayambar** `/swayambar/` | Two fresh garlands swing apart on the jaimala; the bride's and groom's sides converge as you scroll. |
 | 26 | **Sindoor** `/sindoor/` | Minimal red, white and black: the sindoor box opens in a bloom of red and a parting line threads the story. |
 | 27 | **Rangoli** `/rangoli/` | A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day. |
+| 28 | **Vasant** `/vasant/` | Spring garden: butterflies lift off a marigold and rose garland; in a sticky window each ceremony's own flower blooms as its card scrolls by. |
 
 The showroom at `/` links every theme and the studio.
 

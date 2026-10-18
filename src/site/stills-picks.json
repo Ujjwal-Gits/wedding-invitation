@@ -161,5 +161,9 @@
   "andalus": {
     "kind": "hero",
     "why": "International design: its opening card reads best."
+  },
+  "vasant": {
+    "kind": "hero",
+    "why": "The names under the marigold garland, with the butterflies that stayed after the rest flew off."
   }
 }

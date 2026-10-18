@@ -65,6 +65,7 @@ default text.
 | sayapatri | Hindu, Buddhist | Marigold and mango-leaf toran: Hindu and Newar Buddhist festive decor, no deity |
 | dhaka | All six | Ivory envelope, Dhaka band, wax seal, roses: no religious art, no figures |
 | himal | All six | Machhapuchhre at sunrise and the couple's own photos |
+| vasant | Hindu, Buddhist, Kirat, Other | Botanical flower plates, butterflies and a marigold-and-rose garland; no deity, no ritual object (Ganesh only on the full card, off by default) |
 | blush-roses | Buddhist, Kirat, Muslim, Christian, Other | Peach roses in a gold frame; cross only on a Christian invitation |
 | garden-party | Buddhist, Kirat, Muslim, Christian, Other | Garden arbor and lawn, no figures |
 | letterpress | Buddhist, Kirat, Muslim, Christian, Other | Deckled cotton card on linen |
