@@ -153,6 +153,7 @@ const DESIGN_SEO = {
   janti: ['Janti Procession Wedding Invitation Video', 'Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door. Every event with RSVP. From {p}. Watch it play.'],
   swayambar: ['Swayambar Garland Wedding Invitation With RSVP', 'Two fresh garlands swing apart and both families come together as you scroll. Guests RSVP to each ceremony, with Nepali dates. From {p}. Preview it.'],
   sindoor: ['Sindoor Red and White Wedding E-Card', 'Red, white and black: the sindoor box opens and a red line carries your story. A wedding e-card with RSVP and BS dates. From {p}. Preview it now.'],
+  mohar: ['Mohar Royal Seal Wedding Invitation, 3D Unfolding', 'Press a brass seal into red lac and a royal decree unfolds page by page in 3D. RSVP register, maps and BS dates. From {p}. See it open.'],
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
   sarovar: ['Sarovar Swan Lake Animated Wedding Invitation', 'A lotus opens on a living lake at dawn, two swans meet, and each ceremony rises on a stone post. RSVP, maps and BS dates. From {p}. Preview it.'],
 };

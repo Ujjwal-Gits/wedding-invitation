@@ -1,0 +1,342 @@
+/* Mohar (मोहर): parchment, kohl ink, one lac red, antique brass, an indigo cloth.
+   Type: Linden Hill (engraved display), Tiro Devanagari Sanskrit (Devanagari display, never with digits),
+   Crimson Pro (reading), Laila (Devanagari reading and every Nepali digit), Kalam (the register's ink). */
+body.su.theme-mohar {
+  --mo-parch: #F1E6CE;
+  --mo-kohl: #1B1512;
+  --mo-ink2: #5A4A3A;
+  --mo-brass: #AE8840;
+  --mo-indigo: var(--su-bg);
+  --su-bg: #1E2A44;
+  --su-paper: #F4EBD6;
+  --su-ink: #1B1512;
+  --su-ink-2: #5A4A3A;
+  --su-accent: #8E1B1B;
+  --su-accent-ink: #F6EEDC;
+  --su-gold: #AE8840;
+  --su-line: rgba(27, 21, 18, 0.22);
+  --su-f-display: 'Linden Hill', 'Crimson Pro', Georgia, serif;
+  --su-f-script: 'Linden Hill', 'Crimson Pro', Georgia, serif;
+  --su-f-body: 'Crimson Pro', Georgia, serif;
+  --su-f-deva: 'Laila', 'Mukta', sans-serif;
+  --mo-f-deva-d: 'Tiro Devanagari Sanskrit', 'Laila', serif;
+  --su-radius: 4px;
+  --mo-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --mo-cloth: url('/themes/mohar/art/indigo.webp');
+  --mo-paper: url('/themes/mohar/art/paper.webp');
+  background: var(--mo-indigo) var(--mo-cloth) center / 560px repeat;
+  color: var(--mo-parch);
+  font-size: 18px;
+}
+html[data-lang='ne'] body.su.theme-mohar { font-size: 18px; }
+.theme-mohar .l-ne { font-feature-settings: 'locl' 0; }
+.theme-mohar .hud__btn, .theme-mohar .pill { background: rgba(20, 28, 46, 0.86); color: var(--mo-parch); border-color: rgba(241, 230, 206, 0.28); }
+.theme-mohar .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* shared bits */
+.mo-k { margin: 0; font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--mo-ink2); }
+.mo-k .l-ne { font: 500 15px/1.5 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-h { margin: 6px 0 0; font: 400 clamp(30px, 3.2vw, 40px)/1.12 var(--su-f-display); color: var(--su-accent); text-wrap: balance; }
+.mo-h .l-ne { font: 400 0.92em/1.35 var(--mo-f-deva-d); }
+.mo-h--cloth { color: var(--mo-parch); }
+.mo-rule { display: block; width: 74px; height: 9px; margin: 12px auto 0;
+  background: radial-gradient(circle, var(--mo-brass) 0 2.4px, transparent 2.8px) center / 9px 9px no-repeat,
+    linear-gradient(var(--mo-brass), var(--mo-brass)) left center / 30px 1px no-repeat,
+    linear-gradient(var(--mo-brass), var(--mo-brass)) right center / 30px 1px no-repeat; }
+.theme-mohar .mo-btn { background: var(--su-accent); border-color: var(--su-accent); color: var(--su-accent-ink); border-radius: 3px; font-family: var(--su-f-body); font-weight: 600; letter-spacing: 0.16em; }
+.theme-mohar .mo-btn--line { background: transparent; color: var(--su-accent); }
+.theme-mohar .mo-btn .l-ne { font-family: var(--su-f-deva); font-weight: 500; }
+.theme-mohar .su-link { color: var(--su-accent); }
+
+/* ───────── the decree on the cloth (first screen) ───────── */
+.mo-hero { min-height: 100svh; perspective: 1500px; perspective-origin: 50% 50%; background: #1A2440; }
+.mo-table { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.mo-table img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (orientation: portrait) { .mo-table img { transform: scale(1.3); } }
+.mo-sheet { --sw: min(88vw, 560px); position: relative; width: var(--sw); height: min(72svh, 800px, calc(var(--sw) * 2)); display: grid; grid-template-rows: 1fr 1fr 1fr; transform-style: preserve-3d; color: var(--mo-kohl); }
+.mo-fold { position: relative; transform-style: preserve-3d; }
+.mo-fold > .mo-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px clamp(22px, 6%, 40px); text-align: center;
+  background: url('/themes/mohar/art/parchment.webp') no-repeat; background-size: 100% 300%; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.mo-fold--top > .mo-face { background-position: 50% 0; }
+.mo-fold--mid > .mo-face { background-position: 50% 50%; }
+.mo-fold--bot > .mo-face { background-position: 50% 100%; }
+/* the folds stay in the paper as soft creases */
+.mo-fold--mid > .mo-face::before, .mo-fold--mid > .mo-face::after { content: ''; position: absolute; left: 0; right: 0; height: 10px; pointer-events: none; }
+.mo-fold--mid > .mo-face::before { top: 0; background: linear-gradient(rgba(96, 66, 30, 0.1), rgba(96, 66, 30, 0)); }
+.mo-fold--mid > .mo-face::after { bottom: 0; background: linear-gradient(rgba(96, 66, 30, 0), rgba(96, 66, 30, 0.08)); }
+.mo-fold--top > .mo-face::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 12px; background: linear-gradient(rgba(255, 250, 235, 0), rgba(255, 250, 235, 0.35)); }
+.mo-fold > .mo-back { position: absolute; inset: 0; background: linear-gradient(rgba(118, 86, 44, 0.16), rgba(118, 86, 44, 0.08)), var(--mo-paper) center / cover; transform: rotateX(180deg); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+/* the sheet's shadow on the cloth: one soft shadow under each third, so a folded packet throws only its own */
+.mo-fold::before { content: ''; position: absolute; inset: 4px 2px -2px; z-index: -1; box-shadow: 0 18px 34px rgba(5, 8, 20, 0.5), 0 3px 8px rgba(5, 8, 20, 0.35); transform: translateZ(-1px); }
+.mo-sheet.is-folded .mo-fold--top::before, .mo-sheet.is-folded .mo-fold--bot::before { box-shadow: none; }
+.mo-fit { width: 100%; transform-origin: 50% 50%; }
+.mo-lal { display: block; color: #A3201C; mix-blend-mode: multiply; }
+.mo-lal text { fill: currentColor; }
+.mo-lal--hero { width: clamp(64px, 17vw, 92px); height: auto; margin: 0 auto 6px; rotate: -4deg; opacity: 0.9; }
+.mo-inv { margin: 0; font: 400 14px/1.5 var(--su-f-deva); color: var(--mo-ink2); }
+.mo-inv .l-en:not([lang='ne']) { font: italic 400 15px/1.5 var(--su-f-body); }
+.mo-title { margin: 2px 0 0; font: 400 clamp(30px, 8.2vw, 46px)/1.1 var(--su-f-display); color: var(--su-accent); letter-spacing: 0.02em; }
+.mo-title .l-ne, .mo-title [lang='ne'] { font: 400 clamp(32px, 8.8vw, 48px)/1.3 var(--mo-f-deva-d); letter-spacing: 0; }
+.mo-line { max-width: 30ch; margin: 0 auto 6px; font: italic 400 clamp(14.5px, 3.8vw, 17px)/1.4 var(--su-f-body); color: var(--mo-ink2); text-wrap: balance; }
+.mo-line .l-ne { font: 400 clamp(14px, 3.7vw, 16px)/1.55 var(--su-f-deva); font-style: normal; }
+.mo-names { margin: 0; display: flex; flex-direction: column; align-items: center; font: 400 clamp(38px, 11.4vw, 60px)/1.02 var(--su-f-display); color: var(--mo-kohl); }
+.mo-names .l-ne { font: 400 clamp(36px, 10.4vw, 54px)/1.25 var(--mo-f-deva-d); }
+.mo-n { display: block; white-space: nowrap; }
+.mo-amp { display: block; margin: 0.02em 0; font: italic 400 0.52em/1 var(--su-f-body); color: var(--mo-brass); }
+.mo-when { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.mo-when__wd { font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.3em; text-transform: uppercase; color: var(--mo-ink2); }
+.mo-when__wd .l-ne { font: 500 15px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-when__d { font: 400 clamp(23px, 6.4vw, 32px)/1.15 var(--su-f-display); color: var(--su-accent); }
+.mo-when__d .l-ne { font: 500 clamp(21px, 5.8vw, 28px)/1.4 var(--su-f-deva); }
+.mo-when__alt { margin: 4px 0 0; font: 400 15px/1.4 var(--su-f-body); color: var(--mo-ink2); }
+.mo-when__alt .l-ne { font: 400 15px/1.5 var(--su-f-deva); }
+.mo-place { margin: 6px 0 0; font: italic 400 16px/1.35 var(--su-f-body); color: var(--mo-kohl); }
+.mo-place .l-ne { font: 500 15.5px/1.5 var(--su-f-deva); font-style: normal; }
+.mo-hero .su-cue { color: var(--mo-parch); }
+
+/* ───────── the opening: silk, lac and the brass seal on the folded packet ───────── */
+.theme-mohar .su-gate { --px: 50vw; --py: 40vh; --pw: 300px; --ph: 200px; background: transparent; touch-action: none; }
+/* a brass tray of fresh marigolds and roses above the packet: the opening's still life */
+.mo-spray { position: absolute; left: 50%; bottom: calc(100% - var(--py) + 10px); width: min(86vw, 540px); max-height: calc(var(--py) - 70px); object-fit: contain; object-position: 50% 100%; translate: -50% 0; pointer-events: none; filter: drop-shadow(6px 12px 12px rgba(3, 5, 14, 0.55)); }
+.mo-pk { position: absolute; left: var(--px); top: var(--py); width: var(--pw); height: var(--ph); }
+.mo-silk { position: absolute; top: 50%; height: clamp(22px, 6.4vw, 30px); translate: 0 -50%;
+  background: linear-gradient(180deg, #4E0A0B 0%, #8A1A1A 16%, #C2463C 33%, #A22421 48%, #74120F 66%, #A8302A 82%, #4C0909 100%);
+  box-shadow: 0 2px 5px rgba(10, 4, 4, 0.38); }
+.mo-silk::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(100deg, rgba(255, 255, 255, 0) 0 7px, rgba(255, 220, 210, 0.05) 7px 8px); }
+.mo-silk--l { left: -4px; width: calc(50% + 4px); }
+.mo-silk--r { right: -4px; width: calc(50% + 4px); }
+.mo-tail { position: absolute; left: 50%; top: 50%; width: clamp(16px, 4.4vw, 22px); height: clamp(64px, 18vw, 92px); transform-origin: 50% 0;
+  background: linear-gradient(90deg, #5A0B0C, #B23A32 40%, #8A1A18 70%, #4E0A0B); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.mo-tail--l { rotate: 24deg; translate: -40% 0; }
+.mo-tail--r { rotate: -30deg; translate: -60% 0; }
+.mo-press { --d: clamp(108px, 31vw, 156px); position: absolute; left: 50%; top: 50%; width: var(--d); height: var(--d); translate: -50% -50%; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.mo-shadow { position: absolute; inset: 6%; border-radius: 50%; background: radial-gradient(closest-side, rgba(4, 6, 14, 0.75), rgba(4, 6, 14, 0.35) 55%, rgba(4, 6, 14, 0) 100%); }
+.mo-lac { position: absolute; inset: 0; }
+.mo-half { position: absolute; inset: 0; }
+.mo-half--l { clip-path: polygon(0 0, 53% 0, 47% 17%, 55% 33%, 45% 51%, 54% 68%, 47% 85%, 52% 100%, 0 100%); }
+.mo-half--r { clip-path: polygon(53% 0, 100% 0, 100% 100%, 52% 100%, 47% 85%, 54% 68%, 45% 51%, 55% 33%, 47% 17%); }
+.mo-lac__img { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 4px rgba(10, 2, 2, 0.45)); }
+.mo-imp { position: absolute; left: 14%; top: 12.5%; width: 69.5%; height: 69.5%; }
+.mo-sheen { position: absolute; left: 15%; top: 13.5%; width: 67%; height: 67%; border-radius: 50%; overflow: hidden; pointer-events: none; mix-blend-mode: screen; }
+.mo-sheen b { position: absolute; inset: -10% 30%; background: linear-gradient(100deg, rgba(255, 210, 200, 0), rgba(255, 210, 200, 0.42), rgba(255, 210, 200, 0)); opacity: 0; }
+.mo-seal { position: absolute; inset: 3%; }
+.mo-seal img { display: block; width: 100%; height: auto; filter: drop-shadow(0 2px 2px rgba(30, 18, 2, 0.45)); }
+.mo-hint { position: absolute; left: 50%; top: calc(var(--py) + var(--ph) + 12px); translate: -50% 0; margin: 0; white-space: nowrap; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: rgba(241, 230, 206, 0.8); }
+.mo-hint .l-ne { font: 500 15px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-hint__b { display: none; }
+.is-stamped .mo-hint__a { display: none; }
+.is-stamped .mo-hint__b { display: inline; }
+.theme-mohar .su-gate__ui { top: calc(var(--py) + var(--ph) + 46px); bottom: auto; gap: 8px; color: var(--mo-parch); }
+.theme-mohar .su-gate__line { max-width: 270px; font: italic 400 18px/1.35 var(--su-f-body); }
+.theme-mohar .su-gate__line .l-ne { font: 400 17px/1.5 var(--su-f-deva); font-style: normal; }
+.theme-mohar .su-btn--open { background: var(--su-accent); border-color: rgba(241, 230, 206, 0.35); color: var(--su-accent-ink); border-radius: 3px; box-shadow: 0 6px 18px rgba(6, 8, 20, 0.4); }
+.theme-mohar .su-quiet { color: rgba(241, 230, 206, 0.85); }
+/* still (reduced motion): the cloth and the sealed packet as a picture; the open decree waits beneath */
+.theme-mohar .su-gate.is-still { background: #1A2440 url('/themes/mohar/art/table-p-sm.webp') center / cover; }
+@media (orientation: landscape) { .theme-mohar .su-gate.is-still { background-image: url('/themes/mohar/art/table-l-sm.webp'); } }
+html[data-symbols]:not([data-symbols='hindu']) .theme-mohar .su-gate.is-still { background-image: url('/themes/mohar/art/table-p-plain-sm.webp'); }
+@media (orientation: landscape) { html[data-symbols]:not([data-symbols='hindu']) .theme-mohar .su-gate.is-still { background-image: url('/themes/mohar/art/table-l-plain-sm.webp'); } }
+.is-still .mo-pk { background: linear-gradient(rgba(118, 86, 44, 0.14), rgba(118, 86, 44, 0.06)), var(--mo-paper) center / cover; box-shadow: 0 18px 34px rgba(5, 8, 20, 0.5); }
+
+/* ───────── the farman: a concertina of pages ───────── */
+.mo-farman { position: relative; padding: clamp(56px, 9vh, 96px) 0 clamp(72px, 10vh, 110px); }
+.mo-stage { width: min(92vw, 580px); margin: 0 auto; }
+.mo-pan { position: relative; }
+.mo-leaf { position: relative; }
+.mo-farman .mo-face { position: relative; display: block; padding: 22px clamp(8px, 2.5vw, 22px) 20px; border: clamp(42px, 12vw, 56px) solid transparent; border-image: url("/themes/mohar/art/border.webp") 164 fill / clamp(42px, 12vw, 56px) stretch; text-align: center; color: var(--mo-kohl);
+  background: none; }
+.mo-farman .mo-face::after { content: none; }
+.mo-farman .mo-face::before { content: none; }
+.mo-pan[data-i='0'] > .mo-leaf > .mo-face::before { display: none; }
+.mo-shade { position: absolute; inset: calc(-1 * clamp(42px, 12vw, 56px)); z-index: 3; background: linear-gradient(rgba(28, 18, 8, 0.85), rgba(28, 18, 8, 0.6)); opacity: 0; pointer-events: none; }
+.mo-farman .mo-back { display: none; }
+.mo-stage { filter: drop-shadow(0 18px 30px rgba(4, 7, 18, 0.45)); }
+.mo-folio { position: relative; display: block; width: 58px; height: 58px; margin: 0 auto 10px; }
+.mo-folio img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 2px rgba(20, 4, 4, 0.35)); }
+.mo-folio b { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 2px 3px 0; font: 400 19px/1 var(--su-f-display); color: #4A0608; text-shadow: 1px 1.2px 0 rgba(255, 176, 160, 0.75), -0.8px -0.9px 0 rgba(20, 0, 0, 0.8); }
+.mo-folio b .l-ne { font: 600 19px/1 var(--su-f-deva); }
+.mo-ph { margin: 0 0 18px; }
+/* the painted miniature under a page's title: an oval in a fine gold ring */
+.mo-vig { width: 104px; height: 124px; margin: 14px auto 0; padding: 3px; border-radius: 50%; background: linear-gradient(150deg, #E3C47C, #A57F33 45%, #7A5A1E 70%, #D5B064); box-shadow: 0 3px 8px rgba(60, 38, 8, 0.3); }
+.mo-vig img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.mo-vig__n { display: none !important; }
+html[data-symbols]:not([data-symbols='hindu']) .mo-vig__h { display: none !important; }
+html[data-symbols]:not([data-symbols='hindu']) .mo-vig__n { display: block !important; }
+.is-h .mo-vig { width: 86px; height: 102px; margin-top: 10px; }
+.mo-lead { max-width: 30ch; margin: 0 auto; font: 400 clamp(20px, 2vw, 23px)/1.45 var(--su-f-body); color: var(--mo-kohl); text-wrap: balance; }
+.mo-lead .l-ne { font: 400 clamp(18px, 1.8vw, 20px)/1.7 var(--su-f-deva); }
+.mo-lead--sm { font-size: 18px; margin-top: 16px; }
+.mo-hosts, .mo-sign { margin: 16px 0 22px; font: italic 400 17px/1.4 var(--su-f-body); color: var(--mo-ink2); }
+.mo-hosts .l-ne, .mo-sign .l-ne { font: 500 16px/1.5 var(--su-f-deva); font-style: normal; }
+.mo-sign { margin-bottom: 0; }
+/* families */
+.mo-fam { display: grid; gap: 4px; }
+.mo-fam__side { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.mo-fam__pic { width: 88px; margin: 0 0 8px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px var(--mo-parch), 0 0 0 4.5px var(--mo-brass); }
+.mo-fam__pic img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.mo-fam__name { margin: 4px 0 0; font: 400 clamp(25px, 2.5vw, 30px)/1.2 var(--su-f-display); }
+.mo-fam__name .l-ne { font: 400 0.92em/1.4 var(--mo-f-deva-d); }
+.mo-fam__of { margin: 8px 0 0; font: italic 400 15px/1.3 var(--su-f-body); color: var(--mo-ink2); }
+.mo-fam__of .l-ne { font: 400 14px/1.4 var(--su-f-deva); font-style: normal; }
+.mo-fam__par { margin: 0; font: 500 17px/1.4 var(--su-f-body); }
+.mo-fam__par .l-ne { font: 500 16px/1.5 var(--su-f-deva); }
+.mo-fam__home { margin: 2px 0 0; font-size: 15px; color: var(--mo-ink2); }
+.mo-fam__and { margin: 10px 0; font: italic 400 30px/1 var(--su-f-body); color: var(--mo-brass); }
+/* ceremonies */
+.mo-evs { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.mo-ev { padding: 16px 0; }
+.mo-ev + .mo-ev { border-top: 1px solid rgba(174, 136, 64, 0.55); }
+.mo-ev__t { margin: 0; font: 400 clamp(25px, 2.5vw, 30px)/1.15 var(--su-f-display); color: var(--su-accent); }
+.mo-ev__t .l-ne { font: 400 0.9em/1.4 var(--mo-f-deva-d); }
+.mo-ev__d { margin: 6px 0 0; font: 600 13px/1.4 var(--su-f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mo-ink2); }
+.mo-ev__d .l-ne { font: 500 15px/1.5 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-ev__time { margin: 2px 0 0; font: 500 17px/1.4 var(--su-f-body); }
+.mo-ev__time .l-ne { font: 500 16px/1.5 var(--su-f-deva); }
+.mo-ev__b { margin: 6px auto 0; max-width: 34ch; font: italic 400 16px/1.45 var(--su-f-body); color: var(--mo-ink2); }
+.mo-ev__b .l-ne { font: 400 15px/1.6 var(--su-f-deva); font-style: normal; }
+.mo-ev__v { margin: 6px 0 0; font-size: 16.5px; }
+.mo-ev__dress { margin: 6px 0 0; font-size: 15.5px; color: var(--mo-ink2); }
+.mo-order { margin-top: 8px; }
+.mo-order summary { cursor: pointer; font: 600 14px/1.4 var(--su-f-body); letter-spacing: 0.08em; color: var(--su-accent); }
+.mo-order ol { margin: 8px auto 0; padding: 0; max-width: 340px; list-style: none; text-align: left; }
+.mo-order li { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px dashed rgba(90, 74, 58, 0.3); font-size: 15.5px; }
+/* venue */
+.mo-venue { margin: 0; font: 400 clamp(26px, 2.6vw, 32px)/1.2 var(--su-f-display); }
+.mo-venue .l-ne { font: 500 0.82em/1.5 var(--su-f-deva); }
+.mo-city { margin: 6px 0 18px; font: italic 400 17px/1.4 var(--su-f-body); color: var(--mo-ink2); }
+.mo-city .l-ne { font: 400 16px/1.5 var(--su-f-deva); font-style: normal; }
+.mo-face .su-more { margin: 22px auto 0; padding: 14px 4px 0; background: none; border-top: 1px solid rgba(174, 136, 64, 0.55); border-radius: 0; text-align: left; }
+.mo-face .su-more summary { text-align: center; font-weight: 600; color: var(--su-accent); }
+.mo-face .su-more h3 { font: 400 20px/1.3 var(--su-f-display); color: var(--su-accent); }
+.mo-face .su-more__grid { grid-template-columns: 1fr; }
+/* countdown */
+.mo-strip .su-strip__month { color: var(--su-accent); font-family: var(--su-f-display); }
+.mo-strip .su-strip__day { color: var(--su-accent); }
+.mo-strip .su-strip__side { border-color: var(--mo-brass); color: var(--mo-ink2); }
+.mo-strip .su-strip__alt { color: var(--mo-ink2); }
+.mo-count { margin: 18px auto 0; }
+.mo-count__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; max-width: 380px; margin: 0 auto; padding: 0; list-style: none; }
+.mo-count__grid li { padding: 6px 2px; }
+.mo-count__grid li + li { border-left: 1px solid rgba(174, 136, 64, 0.6); }
+.mo-count__n { display: block; font: 400 clamp(30px, 3vw, 38px)/1 var(--su-f-display); color: var(--mo-kohl); font-variant-numeric: lining-nums tabular-nums; }
+.mo-count__n .l-ne { font: 500 0.9em/1.1 var(--su-f-deva); }
+.mo-count__l { display: block; margin-top: 6px; font: 600 10.5px/1.2 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mo-ink2); }
+.mo-count__l .l-ne { font: 500 13px/1.3 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-count__done { margin: 10px 0 0; font: 400 24px/1.3 var(--su-f-display); color: var(--su-accent); }
+.mo-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+/* the brass frames */
+.mo-frame { margin: 0; border: 22px solid transparent; border-image: url('/themes/mohar/art/frame.webp') 60 round; background: #1A140E; box-shadow: 8px 14px 22px rgba(3, 5, 14, 0.55); }
+.mo-frame img { display: block; width: 100%; height: auto; }
+.mo-frame__btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.mo-frame--lead { width: min(58vw, 240px); margin: 4px auto 0; border-width: 18px; box-shadow: 4px 8px 14px rgba(40, 26, 8, 0.35); }
+
+/* horizontal (wide screens): the pages hinge on each other in 3D */
+.mo-farman.is-h { height: 100svh; padding: 0; overflow: hidden; }
+.is-h .mo-stage { position: absolute; inset: 0; width: auto; perspective: 1700px; perspective-origin: 50% 48%; filter: none; }
+.is-h .mo-strip-3d { position: absolute; left: 0; top: 50%; transform-style: preserve-3d; will-change: transform; }
+.is-h .mo-pan { width: var(--W, 420px); height: var(--H, 640px); transform-style: preserve-3d; }
+.is-h .mo-pan .mo-pan { position: absolute; left: 100%; top: 0; transform-origin: 0 50%; }
+.is-h .mo-leaf { position: absolute; inset: 0; transform-style: preserve-3d; }
+.is-h .mo-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px 10px; border-width: 40px; border-image-width: 40px; -webkit-backface-visibility: hidden; backface-visibility: hidden; box-shadow: 0 24px 40px rgba(4, 7, 18, 0.35); }
+.is-h .mo-shade { inset: -40px; }
+.is-h .mo-back { display: block; position: absolute; inset: 0; background: linear-gradient(rgba(118, 86, 44, 0.18), rgba(118, 86, 44, 0.1)), var(--mo-paper) center / cover; transform: rotateY(180deg); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.is-h .mo-back::after { content: ''; position: absolute; inset: 10px; border: 3px double rgba(174, 136, 64, 0.5); }
+.is-h .mo-back::before { content: ''; position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; translate: -50% -50%; border-radius: 50%; border: 1.5px solid rgba(163, 32, 28, 0.16); box-shadow: inset 0 0 0 7px rgba(241, 230, 206, 0), inset 0 0 0 8.5px rgba(163, 32, 28, 0.12); }
+.is-h .mo-fit { transform-origin: 50% 50%; }
+/* wide screens: the farman lies on the same table as the decree, its props at the sides, the pages in a soft window */
+.mo-farman.is-h { background: #1A2440 url('/themes/mohar/art/table-l.webp') center / cover no-repeat; }
+html[data-symbols]:not([data-symbols='hindu']) .mo-farman.is-h { background-image: url('/themes/mohar/art/table-l-plain.webp'); }
+.is-h .mo-stage { inset: 0 auto 0 50%; width: min(50vw, calc(var(--W, 420px) * 1.55)); translate: -50% 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent); }
+.mo-tassel { display: none; }
+.is-h .mo-tassel { display: block; position: absolute; top: 3vh; width: 46px; height: auto; pointer-events: none; filter: drop-shadow(4px 8px 8px rgba(3, 5, 14, 0.5)); }
+.is-h .mo-tassel--l { left: calc(50% - min(25vw, calc(var(--W, 420px) * 0.775)) - 52px); rotate: 14deg; }
+.is-h .mo-tassel--r { right: calc(50% - min(25vw, calc(var(--W, 420px) * 0.775)) - 52px); rotate: -18deg; }
+.mo-folios { display: none; }
+.is-h .mo-folios { display: block; position: absolute; left: 50%; bottom: 3.5vh; translate: -50% 0; margin: 0; font: 400 15px/1 var(--su-f-display); letter-spacing: 0.3em; color: rgba(241, 230, 206, 0.75); }
+.is-h .mo-folios .l-ne { font: 500 15px/1 var(--su-f-deva); letter-spacing: 0.1em; }
+
+/* ───────── portraits on the cloth ───────── */
+.mo-gal { padding: clamp(64px, 10vh, 110px) 18px clamp(56px, 8vh, 96px); }
+.mo-gal__head { text-align: center; margin-bottom: clamp(30px, 5vh, 52px); }
+.mo-gal__grid { columns: 2 150px; column-gap: clamp(16px, 3vw, 36px); max-width: 1040px; margin: 0 auto; }
+.mo-por { break-inside: avoid; margin: 0 0 clamp(18px, 3vw, 36px); rotate: var(--tilt, 0deg); }
+@media (min-width: 900px) { .mo-gal__grid { columns: 3 240px; } }
+
+/* ───────── the bahi-khata (RSVP) ───────── */
+.mo-rsvp { padding: clamp(56px, 9vh, 100px) 14px clamp(72px, 10vh, 110px); }
+.mo-khata { position: relative; max-width: 580px; margin: 0 auto; }
+.mo-khata__page { position: relative; padding: 52px clamp(18px, 5vw, 40px) 34px clamp(54px, 13vw, 84px); color: var(--mo-kohl); border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent calc(clamp(54px, 13vw, 84px) - 16px), rgba(142, 27, 27, 0.5) calc(clamp(54px, 13vw, 84px) - 16px) calc(clamp(54px, 13vw, 84px) - 15px), transparent calc(clamp(54px, 13vw, 84px) - 15px) calc(clamp(54px, 13vw, 84px) - 11px), rgba(142, 27, 27, 0.5) calc(clamp(54px, 13vw, 84px) - 11px) calc(clamp(54px, 13vw, 84px) - 10px), transparent calc(clamp(54px, 13vw, 84px) - 10px)),
+    repeating-linear-gradient(transparent 0 37px, rgba(34, 48, 78, 0.12) 37px 38px),
+    linear-gradient(rgba(255, 250, 236, 0.2), rgba(255, 250, 236, 0.2)), var(--mo-paper) center / cover;
+  box-shadow: 0 22px 40px rgba(4, 7, 18, 0.5); }
+.mo-khata__page::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 22px; border-radius: 3px 3px 0 0; background: url('/themes/mohar/art/cloth-red.webp') center / 320px; box-shadow: 0 2px 4px rgba(40, 10, 6, 0.3); }
+.mo-khata__head { margin-bottom: 18px; }
+.mo-khata__head .mo-h { margin-top: 4px; }
+.mo-khata__by { margin: 6px 0 0; font: italic 400 16px/1.4 var(--su-f-body); color: var(--mo-ink2); }
+.mo-khata__by .l-ne { font: 400 15px/1.5 var(--su-f-deva); font-style: normal; }
+.mo-entry { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 22px; padding: 0 76px 8px 0; min-height: 56px; border-bottom: 1px solid rgba(34, 48, 78, 0.3); }
+.mo-entry__l { font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--mo-ink2); }
+.mo-entry__l .l-ne { font: 500 14px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.mo-entry__ink { position: relative; display: inline-block; min-width: 120px; min-height: 1.3em; font: 400 27px/1.2 'Kalam', cursive; color: #22304E; }
+.mo-entry__mask { position: absolute; inset: -4px -6px; background: #EEE2C6; transform-origin: 100% 50%; transform: scaleX(1); }
+.mo-entry:not(.is-signed) .mo-entry__ink::after { content: ''; position: absolute; left: 0; right: 0; bottom: 6px; border-bottom: 2px dotted rgba(34, 48, 78, 0.35); }
+.mo-lal--entry { position: absolute; right: 0; bottom: 2px; width: 72px; height: 72px; opacity: 0; rotate: -8deg; }
+.mo-entry.is-signed .mo-lal--entry { opacity: 0.92; }
+.mo-entry:not(.is-signed) .mo-entry__mask { opacity: 0; }
+.theme-mohar .mo-khata .gstep { border-color: rgba(34, 48, 78, 0.35); background: rgba(255, 252, 242, 0.4); border-radius: 3px; }
+.theme-mohar .mo-khata .gstep__b { border-radius: 2px; background: var(--su-accent); color: var(--su-accent-ink); font: 500 22px/1 var(--su-f-body); }
+.theme-mohar .mo-khata .gstep__b:disabled { background: rgba(90, 74, 58, 0.25); color: rgba(27, 21, 18, 0.5); }
+.theme-mohar .mo-khata .gstep__v { font: 400 22px/1 'Kalam', cursive; color: #22304E; }
+@media (prefers-reduced-motion: reduce) { .mo-entry.is-signed .mo-entry__mask { display: none; } }
+.theme-mohar .mo-khata .su-form { gap: 16px; }
+.theme-mohar .mo-khata .su-field > label, .mo-khata .su-field > legend { font: 600 12.5px/1.4 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--mo-ink2); }
+.theme-mohar .mo-khata .su-field > label .l-ne, .mo-khata .su-field > legend .l-ne { font: 500 14.5px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.theme-mohar .mo-khata .su-field input[type='text'], .mo-khata .su-field input[type='tel'], .mo-khata .su-field textarea, .mo-khata .su-field select {
+  min-height: 44px; padding: 8px 2px; border: 0; border-bottom: 1.5px solid rgba(34, 48, 78, 0.45); border-radius: 0; background: transparent; font: 400 21px/1.3 'Kalam', var(--su-f-deva), cursive; color: #22304E; }
+.theme-mohar .mo-khata .su-field select { font: 500 17px/1.3 var(--su-f-body); }
+.theme-mohar .mo-khata .su-field input:focus-visible, .mo-khata .su-field textarea:focus-visible, .mo-khata .su-field select:focus-visible { outline: 2px solid var(--su-accent); outline-offset: 2px; }
+.theme-mohar .mo-khata .choice { border-radius: 3px; border-color: rgba(34, 48, 78, 0.35); background: rgba(255, 252, 242, 0.4); font-size: 17px; }
+.theme-mohar .mo-khata .choice .l-ne { font-family: var(--su-f-deva); }
+.theme-mohar .mo-khata #rsvp-submit { justify-self: start; background: var(--su-accent); border-color: var(--su-accent); color: var(--su-accent-ink); border-radius: 3px; }
+.theme-mohar .mo-khata .rsvp__status { font: italic 400 17px/1.4 var(--su-f-body); color: var(--mo-kohl); }
+.mo-khata__cover { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; border-radius: 3px;
+  background: radial-gradient(ellipse at 40% 35%, rgba(255, 190, 170, 0.12), rgba(0, 0, 0, 0) 60%), url('/themes/mohar/art/cloth-red.webp') center / cover; box-shadow: 0 22px 40px rgba(4, 7, 18, 0.5), inset 0 0 40px rgba(40, 6, 4, 0.45);
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.mo-khata__cover::before { content: ''; position: absolute; inset: 14px; border: 1.5px dashed rgba(244, 214, 160, 0.5); border-radius: 2px; }
+.mo-khata__plate { position: relative; padding: 12px 26px; border-radius: 2px; background: linear-gradient(160deg, #D9B66A, #AE8840 45%, #8E6C2C 70%, #C9A45A); color: #3A2A0E; font: 400 26px/1.1 var(--su-f-display); box-shadow: 0 2px 5px rgba(30, 10, 0, 0.5), inset 0 1px 0 rgba(255, 240, 200, 0.6); }
+.mo-khata__plate .l-ne { font: 400 26px/1.3 var(--mo-f-deva-d); }
+.mo-khata__tie { position: absolute; left: -8px; right: -8px; top: 64%; height: 3px; background: linear-gradient(#F3E6C8, #CDBB92); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.mo-khata.is-open .mo-khata__cover { visibility: hidden; }
+
+/* ───────── the foot ───────── */
+.mo-close { padding: clamp(56px, 9vh, 96px) 20px 28px; text-align: center; color: var(--mo-parch); }
+.mo-close__seal { position: relative; display: block; width: 116px; margin: 0 auto 18px; }
+.mo-close__seal img { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(3, 4, 12, 0.5)); }
+.mo-close__ne { margin: 0; font: 400 22px/1.65 var(--su-f-deva); }
+.mo-close__en { margin: 6px auto 0; max-width: 34ch; font: italic 400 19px/1.5 var(--su-f-body); color: rgba(241, 230, 206, 0.82); }
+html[data-lang='ne'] .mo-close__en { display: none; }
+.mo-close__names { margin: 22px 0 0; font: 400 clamp(36px, 5vw, 52px)/1.2 var(--su-f-display); color: var(--mo-parch); }
+.mo-close__names .su-n, .mo-close__names .su-amp { display: inline; }
+.mo-close__names .su-amp { margin: 0 0.25em; font-family: var(--su-f-body); font-style: italic; color: var(--mo-brass); }
+.mo-close__names .l-ne { font: 400 0.82em/1.4 var(--mo-f-deva-d); }
+.mo-close__tag { margin: 10px 0 0; letter-spacing: 0.08em; color: rgba(241, 230, 206, 0.75); }
+.theme-mohar .madewith, .theme-mohar .madewith a { color: rgba(241, 230, 206, 0.7); }
+
+/* the full card */
+.theme-mohar .su-modal__panel { background: linear-gradient(rgba(255, 248, 230, 0.15), rgba(255, 248, 230, 0.15)), var(--mo-paper) center / cover; color: var(--mo-kohl); border-radius: 3px; }
+.theme-mohar .su-modal__panel::after { content: ''; position: absolute; inset: 10px; border: 3px double rgba(174, 136, 64, 0.7); pointer-events: none; }
+.theme-mohar .su-modal__title .l-ne { font-family: var(--mo-f-deva-d); }
+
+@media (min-width: 700px) {
+  .mo-fam { grid-template-columns: 1fr auto 1fr; align-items: start; }
+  .mo-fam__and { align-self: center; }
+}
+@media (max-width: 699px) {
+  .mo-face .su-strip__day { font-size: 54px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mo-shade { display: none; }
+}
