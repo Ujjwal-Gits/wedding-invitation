@@ -12,7 +12,7 @@ export default {
   // Made for Muslim weddings: the Bismillah, the verse and the crescent emblem show only when the invitation's faith is
   // Muslim (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show none of them.
   faith: 'muslim',
-  religions: ['muslim', 'other'],
+  religions: ['muslim'],
   faithInk: '--vw-accent',
   images: {
     'couple.lead': { label: 'Main photo', kind: 'couple', default: { portrait: 0 }, note: 'Shown whole in the story tile. Portrait or landscape.' },

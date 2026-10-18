@@ -13,7 +13,7 @@ const album = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`album.${i
 
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped.
-  religions: ['hindu', 'muslim', 'christian', 'other'],
+  religions: ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other'],
   theme: 'himal',
   images: {
     'hero.dawn': {

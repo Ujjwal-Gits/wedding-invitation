@@ -10,7 +10,7 @@ const album = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`album.${i
 
 export default {
   // Faith (docs/PLATFORM.md "Religion"): the communities this design suits once its symbols and words are swapped. Not for others: brass purna kalash with coconut and mango leaves are painted into the gate.
-  religions: ['hindu', 'other'],
+  religions: ['hindu'],
   theme: 'gurans',
   images: {
     'hero.photo': {

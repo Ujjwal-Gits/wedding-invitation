@@ -49,9 +49,37 @@ test('the olive-grove manifest declares its market and faith', async () => {
   assert.equal(m.market, 'intl');
   assert.equal(m.style, 'garden');
   assert.equal(m.faith, 'christian');
-  // its slots.js says christian and other; a design for 'other' suits Buddhist and Kirat invitations too
-  assert.deepEqual([...m.religions].sort(), ['buddhist', 'christian', 'kirat', 'other']);
+  // neutral art (an olive wreath; the cross shows only on a Christian invitation): every community but Hindu
+  assert.deepEqual([...m.religions].sort(), ['buddhist', 'christian', 'kirat', 'muslim', 'other']);
   for (const id of ['hero.kicker', 'hero.line', 'rsvp.title', 'count.done']) assert.ok(m.texts[id], id);
+});
+
+// docs/FAITH-DESIGNS.md: each design's communities, judged from its own art; nothing is inferred
+test('faith mapping: explicit per design, Hindu art stays Hindu, the site lists agree with the manifests', async () => {
+  const { THEMES } = await import('../../src/site/themes.js');
+  const { INTL_THEMES, intlAsNp } = await import('../../src/site/intl-designs.js');
+  const { themeReligions } = await import('../../src/core/faith.js');
+  // 'other' no longer brings Buddhist and Kirat with it
+  assert.deepEqual(themeReligions({ religions: ['christian', 'other'] }), ['christian', 'other']);
+  assert.deepEqual(themeReligions({}), ['hindu']);
+  const site = [...THEMES, ...INTL_THEMES.map(intlAsNp)];
+  const man = {};
+  for (const t of site) {
+    man[t.slug] = (await loadManifest(t.slug)).religions;
+    assert.deepEqual([...t.religions].sort(), [...man[t.slug]].sort(), `${t.slug}: site list = slots.js`);
+  }
+  const has = (f) => Object.keys(man).filter((s) => man[s].includes(f)).sort();
+  // Ganesh, Om, kalash, sindoor, Hindu rites or Hindu-dress couples in the art: Hindu only
+  const hinduArt = ['agni', 'bagaicha', 'chitra', 'dhoka', 'durbar', 'ghar', 'gurans', 'hariyo', 'janti', 'laali', 'mahal', 'mala', 'mandap',
+    'mangal', 'mehendi', 'nimantrana', 'pardaa', 'rajdwar', 'rangoli', 'shree', 'sindoor', 'swayambar'];
+  for (const s of hinduArt) assert.deepEqual(man[s], ['hindu'], `${s} is Hindu only`);
+  assert.deepEqual(has('christian'), ['amalfi', 'blush-roses', 'dhaka', 'garden-party', 'himal', 'letterpress', 'olive-grove', 'rose-arch', 'tuscany', 'wax-seal', 'wildflower']);
+  assert.deepEqual(has('muslim'), ['andalus', 'blush-roses', 'dhaka', 'garden-party', 'gold-arch', 'himal', 'jali', 'letterpress', 'noor', 'olive-grove', 'wax-seal', 'wildflower']);
+  // the Muslim designs are for Muslim weddings only; no Christian chapel or wine label in the Muslim list
+  for (const s of ['andalus', 'gold-arch', 'jali', 'noor']) assert.deepEqual(man[s], ['muslim'], s);
+  // 'other' = genuinely neutral art only, and every neutral design also suits Buddhist and Kirat weddings
+  for (const s of has('other')) assert.ok(man[s].includes('buddhist') && man[s].includes('kirat') && !hinduArt.includes(s), s);
+  assert.deepEqual(has('buddhist').filter((s) => !man[s].includes('other')), ['jhyal', 'kham', 'sayapatri']);
 });
 
 test('markets helpers', () => {

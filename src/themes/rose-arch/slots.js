@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings (a chapel-garden mood): the cross-and-rings emblem and the verse show only when the
   // invitation's faith is Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['christian'],
   faithInk: '--vw-accent',
   images: {
     'gate.arch': { label: 'Rose arch (opening)', kind: 'detail', default: { lg: '/themes/rose-arch/art/gate.webp', sm: '/themes/rose-arch/art/gate-sm.webp', w: 1200, h: 2400, alt: '' }, note: 'The watercolor arch guests walk through. The opening is fitted to its doorway: leave as is unless your art has the same shape (1:2, doorway in the middle).' },

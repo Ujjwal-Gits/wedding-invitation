@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem (debossed on the card) and the verse show only when the
   // invitation's faith is Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.card': { label: 'Cotton card (opening, first screen, every card of the suite)', kind: 'detail', default: { lg: '/themes/letterpress/art/card.webp', sm: '/themes/letterpress/art/card-sm.webp', w: 1098, h: 1598, alt: '' }, note: 'A blank deckled cotton card on a transparent ground, portrait 1098 × 1598. Leave as is unless you have your own.' },

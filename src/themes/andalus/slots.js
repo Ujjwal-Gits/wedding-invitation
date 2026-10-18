@@ -11,7 +11,7 @@ export default {
   // Made for Muslim weddings: the Bismillah, the verse and the crescent emblem show only when the invitation's faith is
   // Muslim (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) and ?v=neutral show none of them.
   faith: 'muslim',
-  religions: ['muslim', 'other'],
+  religions: ['muslim'],
   faithInk: '--vw-accent',
   images: {
     'hero.court': { label: 'Courtyard painting (first screen)', kind: 'detail', default: { lg: '/themes/andalus/art/court.webp', sm: '/themes/andalus/art/court-sm.webp', w: 1100, h: 1750, alt: 'A watercolor courtyard seen through a horseshoe arch, with a fountain and two orange trees' }, note: 'A transparent watercolor scene, tall. Leave as is unless you have your own art.' },

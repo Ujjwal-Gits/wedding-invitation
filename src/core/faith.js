@@ -8,7 +8,8 @@
 // the Triple Gem (Buddha, Dharma, Sangha). Kirat (Rai, Limbu, Yakkha, Sunuwar): no invocation and the plain emblem,
 // wording that asks the blessings of ancestors and elders, "Sewaro" in the message to guests. Both leave their own
 // rites to the couple: the defaults stay simple and never invent a ceremony.
-// A theme for 'other' (no religious art of its own) suits Buddhist and Kirat invitations too (themeReligions).
+// Which designs suit which community is explicit in each theme's slots.js `religions`, judged from the design's own
+// art (docs/FAITH-DESIGNS.md); nothing is inferred ('other' means a genuinely neutral design, nothing more).
 // A personal guest link may carry its own version of the symbols (?v=neutral|hindu|buddhist|muslim|christian): only the
 // symbol, the invocation and the card's verse change, never the couple's words.
 //
@@ -244,11 +245,9 @@ export const haloFor = (manifest, themeColors, slotHalo) => (slotHalo || manifes
 
 // ───────── a theme's communities ─────────
 
-/** The communities a theme suits (its slots.js `religions`); a theme that says nothing is Hindu only. A theme for
- *  'other' (no religious art of its own) suits Buddhist and Kirat invitations too: their symbols are swapped in. */
+/** The communities a theme suits: exactly its slots.js `religions` (docs/FAITH-DESIGNS.md); none = Hindu only. */
 export function themeReligions(manifest) {
   const r = Array.isArray(manifest?.religions) ? manifest.religions.filter(isReligion) : [];
-  if (r.includes('other')) r.push('buddhist', 'kirat');
   return r.length ? RELIGIONS.filter((x) => r.includes(x)) : ['hindu'];
 }
 export const suits = (manifest, religion) => themeReligions(manifest).includes(isReligion(religion) ? religion : 'hindu');

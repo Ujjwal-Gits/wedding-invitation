@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.wreath': { label: 'Olive wreath (opening and first screen)', kind: 'detail', default: { lg: '/themes/olive-grove/art/wreath.webp', sm: '/themes/olive-grove/art/wreath-sm.webp', w: 1200, h: 1536, alt: '' }, note: 'A transparent watercolor wreath, open at the top. Leave as is unless you have your own art.' },

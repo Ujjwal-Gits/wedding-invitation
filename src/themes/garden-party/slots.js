@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.sky': { label: 'Sky (top of the first screen)', kind: 'detail', default: { lg: '/themes/garden-party/art/sky.webp', sm: '/themes/garden-party/art/sky-sm.webp', w: 1200, h: 440, alt: '' }, note: 'A wide, soft sky that fades to white at the bottom. Leave as is unless you have your own art.' },

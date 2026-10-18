@@ -11,7 +11,7 @@ export default {
   // Made for Christian weddings: the cross-and-rings emblem and the verse show only when the invitation's faith is
   // Christian (src/core/faith.js) and 'faith.show' is not "off"; 'other' (no faith) shows neither.
   faith: 'christian',
-  religions: ['christian', 'other'],
+  religions: ['buddhist', 'kirat', 'muslim', 'christian', 'other'],
   faithInk: '--vw-accent',
   images: {
     'hero.roses': { label: 'Roses, top-left corner (opening, first screen, invitation card)', kind: 'detail', default: { lg: '/themes/blush-roses/art/corner-tl.webp', sm: '/themes/blush-roses/art/corner-tl-sm.webp', w: 794, h: 973, alt: '' }, note: 'A transparent watercolor corner that fills its top-left edge. Leave as is unless you have your own art.' },
