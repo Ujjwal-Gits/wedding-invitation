@@ -86,7 +86,7 @@ async function liveCatalog() {
     li.className = 'dcard';
     li.id = `d-${d.slug}`;
     Object.assign(li.dataset, { slug: d.slug, style: d.style, tier: d.tier });
-    const href = designPage(d.slug); // the design's own page (Nepal designs: their /designs/ page)
+    const href = designPage(d.slug, 'intl'); // the design's own page (Nepal designs: their /designs/ page)
     li.innerHTML = `<a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true"><span class="phone"><img src="${esc(d.mini)}" width="390" height="844" alt="" loading="lazy" decoding="async" /></span></a>
       <div class="dcard__body"><h3 class="dcard__name"><a href="${href}">${esc(d.name)}</a> <span class="dcard__ne">${esc(STYLE_LABEL[d.style])}</span></h3>
       <p class="dcard__meta"><span class="tier tier--${esc(d.tier)}">${esc(INTL_NAME[d.tier] || '')}</span><span class="dcard__price" data-usd-from="${esc(d.tier)}"></span></p>

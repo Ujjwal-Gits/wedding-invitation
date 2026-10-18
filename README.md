@@ -37,6 +37,7 @@ dashboard to create, customise, publish and track invitations.
 | 30 | **Kalapi** `/kalapi/` | The peacock's monsoon: a peacock fans its tail around your names, then you walk sideways along a painted Nathdwara pichwai cloth. |
 | 31 | **Kalpataru** `/kalpataru/` | The wish-fulfilling tree (both sites): a leaf card turns over on the names, then the guest climbs a painted peepal tree from its roots to its crown, past both families, the lanterns and the nest. |
 | 32 | **Shagun** `/shagun/` | The brass shagun thali on a banana leaf: the silk lifts off, a sindoor thumb-tika seals the card, and the thali turns as you scroll, one offering per part of the wedding. |
+| 33 | **Sandesh** `/sandesh/` | Doves bring a lac-sealed letter to a morning rooftop; it unfolds to the names, then the doves deliver each event as a hand-stamped postcard. Both sites. |
 
 The showroom at `/` links every theme and the studio.
 

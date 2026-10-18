@@ -38,6 +38,7 @@ const KNOWN = {
   rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
   kalapi: { name: 'Kalapi', concept: 'A peacock fans its tail; then walk sideways along a painted pichwai cloth of the monsoon' },
   shagun: { name: 'Shagun', concept: 'A brass shagun thali on a banana leaf turns as you scroll; each offering opens a part of the wedding' },
+  sandesh: { name: 'Sandesh', concept: 'Doves bring a lac-sealed letter to a morning rooftop, then deliver each event as a hand-stamped postcard' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
@@ -84,6 +85,8 @@ const META = {
   mohar: { market: 'both', style: 'classic', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
   // both sites: a painted tree with birds; the Hindu shrine at its roots shows only on Hindu invitations
   kalpataru: { market: 'both', style: 'garden', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
+  // on both sites (neutral art: doves, a rooftop, roses, postage stamps)
+  sandesh: { market: 'both', style: 'romantic', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
 };
 const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
 /** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
@@ -107,6 +110,7 @@ const DEFAULT_TIERS = {
   pardaa: 'shahi', agni: 'shahi', janti: 'shahi', swayambar: 'shahi', sindoor: 'shahi', rangoli: 'shahi',
   kalapi: 'shahi',
   shagun: 'shahi',
+  sandesh: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards

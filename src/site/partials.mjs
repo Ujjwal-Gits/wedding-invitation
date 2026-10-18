@@ -520,7 +520,7 @@ function tiers() {
     const list = ALL_DESIGNS.filter((t) => t.tier === tier); // Nepal's, then the international ones
     const p = tierPlan(tier);
     return `<li class="tierrow" data-tier-row="${tier}"><div class="tierrow__h"><span class="tier tier--${tier}" data-tier-tag="${tier}">${TIER_LABEL[tier]}</span><h3 data-tier-count>${list.length} designs</h3><p>${blurb[tier]} <span data-tier-price="${tier}">${p ? `from ${rs(p.price)}` : ''}</span></p></div>
-      <div class="tierrow__list">${list.map((t) => `<a href="${designPage(t.slug)}" data-slug="${t.slug}">${phone(t.slug, { sizes: '82px' })}<span>${esc(t.name)}</span></a>`).join('')}</div></li>`;
+      <div class="tierrow__list">${list.map((t) => `<a href="${designPage(t.slug, 'np')}" data-slug="${t.slug}">${phone(t.slug, { sizes: '82px' })}<span>${esc(t.name)}</span></a>`).join('')}</div></li>`;
   }).join('');
 }
 

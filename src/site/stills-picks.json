@@ -181,5 +181,9 @@
   "shagun": {
     "kind": "hero",
     "why": "The card with the sindoor thumb-tika beside the uncovered thali on its banana leaf."
+  },
+  "sandesh": {
+    "kind": "hero",
+    "why": "The opened letter on the morning rooftop: the two doves on its edge, the names and the vermilion postmark."
   }
 }

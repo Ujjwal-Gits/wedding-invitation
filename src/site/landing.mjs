@@ -138,7 +138,7 @@ function wording(l, items) {
 function figure(l, f) {
   if (f.design && BY_SLUG[f.design]) {
     const t = BY_SLUG[f.design];
-    return `<figure class="lp-fig"><a class="lp-fig__pic" href="${l.market === 'intl' ? designPage(f.design) : `/designs/${f.design}/`}" style="--tint:${CATEGORIES[t.cat].tint}">${phone(f.design, { sizes: '(max-width: 899px) 60vw, 280px', alt: f.alt || `The ${t.name} design on a phone: ${t.alt}` })}</a>${f.cap ? `<figcaption class="lp-fig__cap">${inline(l, f.cap)}</figcaption>` : ''}</figure>`;
+    return `<figure class="lp-fig"><a class="lp-fig__pic" href="${l.market === 'intl' ? designPage(f.design, 'intl') : `/designs/${f.design}/`}" style="--tint:${CATEGORIES[t.cat].tint}">${phone(f.design, { sizes: '(max-width: 899px) 60vw, 280px', alt: f.alt || `The ${t.name} design on a phone: ${t.alt}` })}</a>${f.cap ? `<figcaption class="lp-fig__cap">${inline(l, f.cap)}</figcaption>` : ''}</figure>`;
   }
   if (f.art) {
     return `<figure class="lp-fig"><span class="lp-fig__pic" style="--tint:#EAF1E7"><span class="phone"><img src="${artSrc(f.art, 800)}" srcset="${artSrc(f.art, 480)} 480w, ${artSrc(f.art, 800)} 800w" sizes="(max-width: 899px) 60vw, 280px" width="390" height="844" alt="${esc(f.alt || '')}" loading="lazy" decoding="async" /></span></span>${f.cap ? `<figcaption class="lp-fig__cap">${inline(l, f.cap)}</figcaption>` : ''}</figure>`;
@@ -331,7 +331,7 @@ function ld(id) {
   if (l.designs) {
     const list = l.designs.list === 'art' ? INTL_THEMES : l.market === 'intl' ? l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean) : withIntl(l.designs.list, 4);
     out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'ItemList', name: l.designs.title, numberOfItems: list.length,
-      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug)}` })) }));
+      itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug, l.market === 'intl' ? 'intl' : 'np')}` })) }));
   }
   return out.join('\n  ');
 }

@@ -7,7 +7,7 @@
 import { FALLBACK_SITE, TIER_LABEL, BY_SLUG } from './themes.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { INTL_PAGES, EVENTS, FAQ_SETS, faqList, fillUsd, STEPS, INTL_BASE } from './intl-content.mjs';
-import { STYLES, STYLE_LABEL, V, artSrc, artSrcset, INTL_THEMES, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
+import { STYLES, STYLE_LABEL, V, artSrc, artSrcset, INTL_THEMES, INTL_BY_SLUG, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
 import { LANDINGS } from './landings.mjs';
 import { PAGES } from './seo.mjs';
 import { jsonLd, faqBlock, faqGroups, cmsSlot, legalLinks, phone, pic } from './partials.mjs';
@@ -116,15 +116,16 @@ function styleChips() {
 }
 /** a Nepal design as an international card ({ slug, name, style: 'nepali', tier, line, alt }) */
 export const npAsIntl = (slug) => { const t = BY_SLUG[slug]; return t && { slug, id: slug, name: t.name, style: 'nepali', tier: t.tier, line: t.concept, alt: t.alt }; };
-/** the cards the build shows: the international designs, then the Nepal ones this site offers (`np` of them) */
-export const intlList = (np = NP_DESIGNS_INTL.length) => [...INTL_THEMES, ...NP_DESIGNS_INTL.slice(0, np).map(npAsIntl).filter(Boolean)];
+/** the cards the build shows: the international designs, then the Nepal ones this site offers (`np` of them); a
+ *  design on both sites is listed once */
+export const intlList = (np = NP_DESIGNS_INTL.length) => [...INTL_THEMES, ...NP_DESIGNS_INTL.filter((s) => !INTL_BY_SLUG[s]).slice(0, np).map(npAsIntl).filter(Boolean)]; // a design on both sites: once
 const ICON_EYE = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 /** the plan badge and "from $X" of a card (src/site/intl.js keeps the price live) */
 export const tierRow = (tier, cls = 'rcard__meta') => `<p class="${cls}"><span class="tier tier--${tier}">${esc(planOf(tier)?.name || '')}</span><span class="dcard__price" data-usd-from="${tier}">${fromPrice(tier)}</span></p>`;
 /** a rail card (home page, landing pages, related designs): picture and name open the design's own page; the
  *  style sits on its own line under the name, then the plan and price */
 export function railCard(d, i = 0, sizes = '(max-width: 599px) 56vw, 260px') {
-  const href = designPage(d.slug);
+  const href = designPage(d.slug, 'intl');
   return `<li class="rcard" data-style="${d.style}" data-slug="${esc(d.slug)}">
     <a class="rcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}">${phone(d.slug, { sizes, alt: `The ${d.name} animated wedding invitation: ${d.alt}` })}</a>
     <p class="rcard__name"><a href="${href}">${esc(d.name)}</a> <span>${STYLE_LABEL[d.style] || ''}</span></p>
@@ -135,7 +136,7 @@ export function railCard(d, i = 0, sizes = '(max-width: 599px) 56vw, 260px') {
 function gallery() { return intlList(4).map((d, i) => railCard(d, i)).join(''); }
 /** one card on the designs page (src/site/intl.js builds the same card for designs from the catalog API) */
 export function designCard(d, i = 0) {
-  const href = designPage(d.slug);
+  const href = designPage(d.slug, 'intl');
   return `<li class="dcard" id="d-${esc(d.slug)}" data-slug="${esc(d.slug)}" data-style="${d.style}" data-tier="${d.tier}">
     <a class="dcard__pic" href="${href}" style="--tint:${TINTS[i % TINTS.length]}" tabindex="-1" aria-hidden="true">${phone(d.slug, { alt: `The ${d.name} digital wedding invitation on a phone: ${d.alt}` })}</a>
     <div class="dcard__body">
@@ -154,7 +155,7 @@ function designsLd() {
   const list = intlList();
   return jsonLd({
     '@context': 'https://schema.org', '@type': 'ItemList', name: 'Animated wedding invitation designs', numberOfItems: list.length,
-    itemListElement: list.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(d.slug)}`, name: `${d.name} invitation design`, image: `${SITE_URL}${pic(d.slug).src}` })),
+    itemListElement: list.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${designPage(d.slug, 'intl')}`, name: `${d.name} invitation design`, image: `${SITE_URL}${pic(d.slug).src}` })),
   });
 }
 

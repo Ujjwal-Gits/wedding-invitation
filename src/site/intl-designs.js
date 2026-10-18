@@ -62,6 +62,8 @@ export const INTL_THEMES = [
   { slug: 'andalus', cat: 'doors', faith: 'muslim', religions: ['muslim'], name: 'Andalus', style: 'destination', tier: 'shahi', occasions: N, line: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees.', alt: 'a tiled courtyard with a fountain and orange trees through an arch' },
   // on both sites (also in THEMES): the Nepal site links its own page, this site this one
   { slug: 'kalpataru', cat: 'flowers', faith: '', religions: ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other'], name: 'Kalpataru', style: 'garden', tier: 'shahi', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'], line: 'A leaf card turns over on your names, then guests climb a great painted tree from its roots to its crown.', alt: 'a leaf card hanging from a red and yellow thread in a painted tree' },
+  // on both sites (market 'both'): also a Nepal design in src/site/themes.js
+  { slug: 'sandesh', cat: 'cards', faith: '', religions: ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other'], name: 'Sandesh', style: 'romantic', tier: 'shahi', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'], line: 'Two doves deliver your invitation: guests break a red wax seal, then each event arrives as a hand-stamped postcard.', alt: 'two white doves on a wax-sealed letter over a sunny rooftop of roses' },
 ].map((d) => ({ ...d, id: d.slug, mini: `/site/thumbs/${d.slug}-480.webp`, art: false }));
 /** The international designs the Nepal site's rows show after its own (the home rail, landing rows); every one of
  *  them is in its designs page, pricing tiers and order form. */
@@ -72,10 +74,15 @@ export const intlAsNp = (d) => ({
   religions: d.religions || [d.faith || 'christian'], tier: d.tier, thumb: d.mini, intl: true,
 });
 export const INTL_BY_SLUG = Object.fromEntries(INTL_THEMES.map((d) => [d.slug, d]));
-/** a design's page: the international ones have their own under /international/designs/, the Nepal ones /designs/;
- *  a design new to the catalog and without a page yet opens its watermarked showcase */
-export const designPage = (slug, site = 'intl') => ((site === 'np' && BY_SLUG[slug]) ? `/designs/${slug}/` // a design on both sites: the Nepal site's own page
-  : INTL_BY_SLUG[slug] ? `/international/designs/${slug}/` : BY_SLUG[slug] ? `/designs/${slug}/` : `/${slug}/?showcase=1`);
+/** a design's page on a site ('np' the Nepal site, 'intl' the international one, the default): the international
+ *  ones have their own under /international/designs/, the Nepal ones /designs/; a design on both sites (in THEMES and
+ *  INTL_THEMES) has a page on each and each site links its own; a design new to the catalog and without a page yet
+ *  opens its watermarked showcase */
+export const designPage = (slug, site = 'intl') => {
+  if (site === 'np' && BY_SLUG[slug]) return `/designs/${slug}/`;
+  if (INTL_BY_SLUG[slug]) return `/international/designs/${slug}/`;
+  return BY_SLUG[slug] ? `/designs/${slug}/` : `/${slug}/?showcase=1`;
+};
 
 const TIERS = ['saral', 'shubha', 'shahi'];
 const isIntl = (m) => m === 'intl' || m === 'both' || (Array.isArray(m) && m.includes('intl')); // GET /api/themes: market 'np' | 'intl' | 'both'
