@@ -6,7 +6,7 @@
 // Everyone else is sent to the website's gallery (no id) or gets a small "not available" page (unknown or
 // unpublished id: the same answer for both, so it never tells whether a draft exists).
 // Static files (/assets, /themes art, thumbs, fonts) stay public: invitations need them.
-import { existsSync, readdirSync, promises as fs } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, promises as fs } from 'node:fs';
 import { resolve } from 'node:path';
 import { SLUG_RE, peekInvitation as getInvitation } from './store.js'; // read-only, cached
 import { listThemes } from './catalog.js';
@@ -52,6 +52,17 @@ export async function withPageData(html, doc, slug) {
 // Pages under dist/ that are not designs.
 // about: the About page; blog: the blog (docs/SEO-AUDIT.md), listed ahead so it is public as soon as it is built.
 const OPEN_PAGES = new Set(['studio', 'credits', 'international', 'terms', 'privacy', 'refunds', 'faq', 'wedding-invitation-nepal', 'nepali-abroad', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art', 'about', 'blog']);
+
+/** Top-level folders of every public page in the built sitemaps (a new landing page is open without a list edit). */
+function sitemapPages(distDir) {
+  const out = new Set();
+  for (const f of ['sitemap-pages-np.xml', 'sitemap-pages-intl.xml']) {
+    let xml = '';
+    try { xml = readFileSync(resolve(distDir, f), 'utf8'); } catch { continue; }
+    for (const m of xml.matchAll(/<loc>https?:\/\/[^/<]+\/([^/<]+)\/[^<]*<\/loc>/g)) out.add(m[1].toLowerCase());
+  }
+  return out;
+}
 
 let distPages = null;
 /** Top-level dist folders with an index.html (every built page), read once: dist does not change at runtime. */
@@ -122,7 +133,7 @@ function gatedNames(distDir) {
   const list = listThemes();
   if (gated.list === list) return gated.set;
   const set = new Set([...list.map((t) => t.slug), ...builtPages(distDir)]);
-  for (const p of OPEN_PAGES) set.delete(p);
+  for (const p of [...OPEN_PAGES, ...sitemapPages(distDir)]) set.delete(p);
   gated = { list, set };
   return set;
 }
