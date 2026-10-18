@@ -68,3 +68,6 @@ art-src/stills/
 
 # agent worktrees
 .claude/worktrees/
+
+# Office lock files
+~$*
