@@ -139,11 +139,15 @@ function railOne(mm, sec) {
   const head = $('.rail__head', sec);
   const fit = () => {
     const cs = getComputedStyle(sec);
+    // the text under each card (name, style line, plan + price), measured, so every card is seen whole
+    const card = $('.rcard', track) || $('.dcard', track);
+    const pic = card && ($('.rcard__pic', card) || $('.dcard__pic', card));
+    const under = card && pic ? Math.max(60, card.offsetHeight - pic.offsetHeight) + 12 : 96;
     const avail = window.innerHeight - navH() - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-      - head.offsetHeight - parseFloat(getComputedStyle(head).marginBottom) - 84; // 84 = name + price under each card
-    sec.style.setProperty('--rail-w', `${Math.round(Math.max(150, Math.min(236, avail / 1.6)))}px`);
+      - head.offsetHeight - parseFloat(getComputedStyle(head).marginBottom) - under;
+    sec.style.setProperty('--rail-w', `${Math.round(Math.max(130, Math.min(236, avail / 1.6)))}px`);
   };
-  mm.add('(min-width: 1024px)', () => {
+  mm.add('(min-width: 1024px) and (min-height: 680px)', () => {
     sec.classList.add('js-rail');
     fit();
     ScrollTrigger.addEventListener('refreshInit', fit);

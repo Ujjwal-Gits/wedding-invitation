@@ -104,6 +104,8 @@
 .rail__track { display: flex; gap: clamp(12px, 1.6vw, 24px); width: max-content; padding-bottom: 8px; }
 .rcard { width: min(clamp(160px, 40vw, 236px), calc((100svh - 170px) / 1.62)); scroll-snap-align: start; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
 .rcard__pic { display: grid; place-items: center; padding: 12% 16%; border-radius: var(--r-xl); background: var(--tint, var(--blush-100)); overflow: hidden; }
+.rcard > *, .rcard__pic .phone { min-width: 0; } /* the picture never grows past its card (images differ in shape) */
+.rcard__pic .phone img { width: 100%; height: 100%; object-fit: cover; }
 .rcard__pic .phone { width: 100%; transition: transform 0.5s var(--ease); }
 .rcard__pic:hover .phone { transform: translateY(-6px); }
 /* every card the same: the name on one line, the style (or Nepali name) on the next, then the plan and price */
