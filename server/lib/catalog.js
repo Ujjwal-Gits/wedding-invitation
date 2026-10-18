@@ -50,6 +50,8 @@ const KNOWN = {
   noor: { name: 'Noor', concept: 'A sage mihrab arch with fresh roses; the arch glows open on the Bismillah and your names' },
   jali: { name: 'Jali', concept: 'Carved emerald-and-gold lattice screens slide apart under hanging lanterns' },
   andalus: { name: 'Andalus', concept: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees' },
+  // Both sites (bilingual in Nepal, English abroad; no religious image)
+  sarovar: { name: 'Sarovar', concept: 'A lotus lake at dawn: a bud opens, two swans meet, and you glide across living water to a marble pavilion' },
 };
 // Market, style and occasions (src/core/markets.js). Absent = a Nepal wedding design. A manifest may override them.
 const INTL_WEDDING = ['wedding', 'engagement', 'anniversary', 'vow-renewal', 'rehearsal-dinner'];
@@ -71,6 +73,8 @@ const META = {
   noor: { market: 'intl', style: 'romantic', faith: M, occasions: NIKAH },
   jali: { market: 'intl', style: 'classic', faith: M, occasions: NIKAH },
   andalus: { market: 'intl', style: 'destination', faith: M, occasions: NIKAH },
+  // on both sites
+  sarovar: { market: 'both', style: 'romantic', faith: '', occasions: ['wedding'] },
 };
 const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
 /** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
@@ -100,6 +104,7 @@ const DEFAULT_TIERS = {
   'blush-roses': 'saral', letterpress: 'saral', 'wax-seal': 'saral', jali: 'saral',
   'olive-grove': 'shubha', 'gold-arch': 'shubha', 'garden-party': 'shubha', wildflower: 'shubha', tuscany: 'shubha',
   'rose-arch': 'shahi', amalfi: 'shahi', noor: 'shahi', andalus: 'shahi',
+  sarovar: 'shahi',
 };
 /** A theme's tier before any override (an unknown theme: shubha). */
 export const defaultTier = (slug) => DEFAULT_TIERS[slug] || 'shubha';
