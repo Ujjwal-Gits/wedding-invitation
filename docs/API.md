@@ -118,7 +118,7 @@ Deleting an invitation unlinks it from every account and drops its pending links
 ## Design tiers
 
 Every theme has `tier: 'saral' | 'shubha' | 'shahi'`: the **minimum plan that includes it** (Saral ⊂ Shubha ⊂ Shahi; Custom includes all).
-Defaults: **shahi** mahal, rajdwar, laali, mehendi, hariyo, shree, pardaa, agni, janti, swayambar, sindoor, rangoli; **shubha** bagaicha,
+Defaults: **shahi** mahal, rajdwar, laali, mehendi, hariyo, shree, pardaa, agni, janti, swayambar, sindoor, rangoli, shagun; **shubha** bagaicha,
 durbar, mandap, ghar, dhoka, himal, mangal, nimantrana; **saral** kham, mala, gurans, sayapatri, jhyal, chitra, dhaka; any other theme: shubha.
 The admin overrides them with `Site.themeTiers: { [slug]: tier }` (`PUT /site`; unknown slugs and tiers dropped/refused).
 

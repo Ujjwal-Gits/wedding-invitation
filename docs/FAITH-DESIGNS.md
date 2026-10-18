@@ -52,6 +52,7 @@ default text.
 | pardaa | Hindu | Mandap with the living fire and kalash |
 | rajdwar | Hindu | Ganesh on the gate; Mangal temple card with kalash and diyos |
 | rangoli | Hindu | Ganesh shrine and diyos ring the rangoli |
+| shagun | Hindu | Puja thali with sindoor, kalash, diyo and Ganesh |
 | shree | Hindu | Gold Ganesh in a lotus, hanging diyas |
 | sindoor | Hindu | The sindoor box is the design; red Ganesh drawing |
 | gurans (Phoolbari) | Hindu | Brass purna kalash with coconut and mango leaves painted into the gate; शुभ विवाह crest |

@@ -311,7 +311,7 @@ the same way as for MP3. If the API fails to load, fall back to the bundled trac
   A safety net swaps any hard-coded Ganesh invocation left in a design. Hindu pages run nothing new.
 - Every `slots.js` has `religions`. Muslim / Christian: dhaka, hariyo, himal, jhyal, laali, mahal, mehendi. Other adds
   gurans (Phoolbari), kham, sayapatri, swayambar. Hindu only: agni, bagaicha, chitra, dhoka, durbar, ghar, janti, mala,
-  mandap, mangal, nimantrana, pardaa, rajdwar, rangoli, shree, sindoor.
+  mandap, mangal, nimantrana, pardaa, rajdwar, rangoli, shagun, shree, sindoor.
 - New invitations (`POST /invitations { religion, colors }`) start with the community's ceremonies, each its own event
   (Hindu: Mehendi, Haldi, Janti, Shubha Bibaha, Reception; Muslim: Mehndi, Nikah, Walima, Reception; Christian:
   Engagement & Ring Ceremony, Holy Matrimony, Reception; Other: Wedding ceremony, Reception) and wording.

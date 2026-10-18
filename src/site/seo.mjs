@@ -158,6 +158,7 @@ const DESIGN_SEO = {
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
   sarovar: ['Sarovar Swan Lake Animated Wedding Invitation', 'A lotus opens on a living lake at dawn, two swans meet, and each ceremony rises on a stone post. RSVP, maps and BS dates. From {p}. Preview it.'],
   kalpataru: ['Kalpataru Wish Tree Nepali Wedding Card Online', 'A leaf card turns over on your names, then guests climb a painted wish tree past both families. RSVP, maps and BS dates. From {p}. See it grow.'],
+  shagun: ['Shagun Thali Animated Nepali Wedding Invitation', 'A brass shagun thali turns as you scroll, each offering opening a part of your wedding, sealed with a sindoor tika. RSVP, maps and BS dates. From {p}.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
 export const CAT_KEYWORD = { flowers: 'floral online wedding card', doors: 'Nepali wedding card that opens like a door', cards: 'digital wedding card', film: 'wedding invitation that plays like a video' };

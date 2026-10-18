@@ -37,6 +37,7 @@ const KNOWN = {
   sindoor: { name: 'Sindoor', concept: 'Minimal red, white and black; the sindoor box opens and a red parting line runs through the story' },
   rangoli: { name: 'Rangoli', concept: 'A flower rangoli on a courtyard brick floor, ringed by diyos with living flames' },
   kalapi: { name: 'Kalapi', concept: 'A peacock fans its tail; then walk sideways along a painted pichwai cloth of the monsoon' },
+  shagun: { name: 'Shagun', concept: 'A brass shagun thali on a banana leaf turns as you scroll; each offering opens a part of the wedding' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
@@ -105,6 +106,7 @@ const DEFAULT_TIERS = {
   mahal: 'shahi', rajdwar: 'shahi', laali: 'shahi', mehendi: 'shahi', hariyo: 'shahi', shree: 'shahi',
   pardaa: 'shahi', agni: 'shahi', janti: 'shahi', swayambar: 'shahi', sindoor: 'shahi', rangoli: 'shahi',
   kalapi: 'shahi',
+  shagun: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards
