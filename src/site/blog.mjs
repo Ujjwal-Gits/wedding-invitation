@@ -4,13 +4,10 @@
 //   <!--@blog-head-->  the head tags every page shares (icons, font preloads, the organisation JSON-LD), without the
 //                      page's own title and meta (the server writes those per page).
 // Plain module: Node runs it at build, never the browser.
-import { ORG_LD, jsonLd } from './partials.mjs';
+import { ORG_LD, jsonLd, iconTags } from './partials.mjs';
 
-function blogHead() {
-  return `<meta name="theme-color" content="#FFFFFF" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+function blogHead(site) {
+  return `${iconTags(site === 'intl' ? 'intl' : 'np')}
   <link rel="preload" href="/site/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/site/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
   ${jsonLd(ORG_LD)}`;

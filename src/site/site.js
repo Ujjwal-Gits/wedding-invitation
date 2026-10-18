@@ -6,13 +6,15 @@ import { $, $$, el, reduced, SLUG_RE, MARKET, initHeader, initAuth, initReveal, 
 import { loadSite, getJson, normaliseThemes, plansFor } from './api.js';
 import { BY_SLUG, FALLBACK_SITE } from './themes.js';
 import { renderPlans, applyPlanNames } from './plans.js';
-import { intlCatalog, NP_DESIGNS_INTL } from './intl-designs.js';
+import { intlCatalog, NP_DESIGNS_INTL, designPage } from './intl-designs.js';
+import STILLS from './stills.json';
 
 const page = document.body.dataset.page || '';
 // the designs the order form offers: Nepal's on nimtto.com; on the international site its own catalog, or (its
 // Nepali and South Asian wedding pages, body[data-catalog="np"]) the Nepal designs without religious images
 const npCatalog = document.body.dataset.catalog === 'np';
-const designsFrom = (raw, site) => (MARKET !== 'intl' ? normaliseThemes(raw, site)
+// (Nepal: every design, its own first and then the international ones, in the planner's order for this site)
+const designsFrom = (raw, site) => (MARKET !== 'intl' ? normaliseThemes(raw, site, { ordered: true })
   : npCatalog ? normaliseThemes(raw, site).filter((t) => NP_DESIGNS_INTL.includes(t.slug)) : intlCatalog(raw));
 const state = { site: null, themes: designsFrom(null, FALLBACK_SITE), me: undefined, wa: '' };
 let order = null; // the order module, once loaded
@@ -97,7 +99,30 @@ function sharpenLater() {
   ['scroll', 'pointerdown', 'keydown'].forEach((t) => window.addEventListener(t, go, { passive: true, once: true }));
 }
 
-function updateCounts() { for (const c of $$('.js-count')) c.textContent = String(state.themes.length); }
+function updateCounts() {
+  for (const c of $$('.js-count')) c.textContent = String(state.themes.length);
+  // the faith cards (home page): how many designs suit each community
+  for (const c of $$('[data-faith-count]')) {
+    const n = state.themes.filter((t) => (t.religions || []).includes(c.dataset.faithCount)).length;
+    c.textContent = `${n} ${n === 1 ? 'design' : 'designs'}`;
+  }
+}
+
+/** the pricing page's "designs in each plan": every design (the international ones too) in the planner's tiers */
+function updateTiers() {
+  for (const row of $$('[data-tier-row]')) {
+    const list = row.querySelector('.tierrow__list');
+    const shown = state.themes.filter((t) => t.tier === row.dataset.tierRow);
+    if (!list || !shown.length) continue;
+    const have = new Map($$('a[data-slug]', list).map((a) => [a.dataset.slug, a]));
+    const links = shown.map((t) => have.get(t.slug) || el('a', { href: designPage(t.slug), 'data-slug': t.slug },
+      el('span', { class: 'phone' }, el('img', { src: STILLS[t.slug] ? `/site/stills/${t.slug}-200.webp` : t.thumb, width: 390, height: 844, alt: '', loading: 'lazy', decoding: 'async' })),
+      el('span', { text: t.name })));
+    list.replaceChildren(...links);
+    const n = row.querySelector('[data-tier-count]');
+    if (n) n.textContent = `${shown.length} designs`;
+  }
+}
 
 async function boot() {
   setYear();
@@ -123,9 +148,10 @@ async function boot() {
   for (const box of $$('[data-plans]')) renderPlans(box, { ...site, plans: plansFor(site, site.buyerMarket) });
   applyPlanNames(site); // the planner's plan names and prices everywhere the page names a plan
   // the international catalog comes in the planner's order for that market (GET /api/themes?market=intl)
-  const raw = await getJson(MARKET === 'intl' && !npCatalog ? '/api/themes?market=intl' : '/api/themes', 4000);
+  const raw = await getJson(MARKET === 'intl' ? (npCatalog ? '/api/themes' : '/api/themes?market=intl') : '/api/themes?market=np', 4000);
   state.themes = designsFrom(raw, site);
   updateCounts();
+  if (MARKET !== 'intl' && Array.isArray(raw) && raw.length) updateTiers();
   if (order) order.setOrderData(state);
   if (pageMod) (await pageMod).init?.(state);
   orderFromUrl();

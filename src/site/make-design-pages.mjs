@@ -8,11 +8,11 @@
 // Run after adding a theme or changing the template:  node src/site/make-thumbs.mjs && node src/site/make-design-pages.mjs
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier } from './themes.js';
+import { THEMES, CATEGORIES, RELIGION_LABEL, FALLBACK_SITE, TIER_LABEL, planForTier, withNeutral } from './themes.js';
 import { phoneStill, STILL_SIZES } from './stills.js';
-import { esc, phone, rs, SIZES } from './partials.mjs';
+import { esc, phone, rs, SIZES, railCard as npRailCard } from './partials.mjs';
 import { pageMeta } from './seo.mjs';
-import { INTL_THEMES, STYLE_LABEL } from './intl-designs.js';
+import { INTL_THEMES, STYLE_LABEL, intlAsNp } from './intl-designs.js';
 import { planOf, railCard } from './intl.mjs';
 import { usdText } from './intl-plans.js';
 
@@ -31,7 +31,7 @@ function religionsOf(t) {
   const m = readFileSync(f, 'utf8').match(/religions\s*:\s*\[([^\]]*)\]/);
   if (!m) return ['hindu'];
   const list = [...m[1].matchAll(/['"]([a-z]+)['"]/g)].map((x) => x[1]).filter((r) => RELIGION_LABEL[r]);
-  return list.length ? list : ['hindu'];
+  return list.length ? withNeutral(list) : ['hindu']; // a design for 'other' suits Buddhist and Kirat weddings too
 }
 
 const thumbSrc = (slug) => (thumbs.has(slug) ? `/site/thumbs/${slug}-480.webp` : `/themes/${slug}/thumb.jpg`);
@@ -45,12 +45,15 @@ const suitsText = (rel) => {
   return `${list} weddings`;
 };
 
+/** three Nepal designs like this one, then one of the international designs (the Nepal site shows every design) */
 function related(t) {
   const i = THEMES.findIndex((x) => x.slug === t.slug);
   const rot = [...THEMES.slice(i + 1), ...THEMES.slice(0, i)];
-  return [...rot.filter((x) => x.cat === t.cat), ...rot.filter((x) => x.cat !== t.cat)].slice(0, 4);
+  const intl = intlAsNp(INTL_THEMES[i % INTL_THEMES.length]);
+  return [...[...rot.filter((x) => x.cat === t.cat), ...rot.filter((x) => x.cat !== t.cat)].slice(0, 3), intl];
 }
 function relatedHtml(x) {
+  if (x.intl) return npRailCard(x, SIZES.rail);
   const p = planForTier(FALLBACK_SITE.plans, x.tier);
   return `<li class="rcard"><a class="rcard__pic" href="/designs/${x.slug}/" style="--tint:${CATEGORIES[x.cat].tint}" tabindex="-1" aria-hidden="true">${phone(x.slug, { sizes: SIZES.rail })}</a>`
     + `<p class="rcard__name"><a href="/designs/${x.slug}/">${esc(x.name)}</a> <span lang="ne">${esc(x.ne)}</span></p>`
@@ -101,7 +104,8 @@ for (const t of THEMES) {
     OPEN_PRELOAD: pic.srcset ? ` imagesrcset="${pic.srcset}" imagesizes="${GALLERY}"` : '',
     OPEN_ALT: `${firstView(t.slug)} ${esc(t.name)} design: ${esc(t.alt)}`,
     SUITS: esc(suitsText(rel)),
-    FAITH_NOTE: allFaiths ? ' Muslim, Christian and other weddings get their own events and words.' : '',
+    FAITH_NOTE: allFaiths ? ' Buddhist, Kirat, Muslim, Christian and other weddings get their own symbol, events and words.'
+      : rel.includes('other') ? ' Buddhist, Kirat and other weddings get their own symbol and words.' : '',
     RELATED: related(t).map(relatedHtml).join(''),
     JSONLD: jsonLd(ld),
   };

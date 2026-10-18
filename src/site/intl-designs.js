@@ -9,7 +9,7 @@
 //
 // NP_DESIGNS_INTL: the Nepal designs the international site's Nepali and South Asian wedding pages show and offer in
 // their order form (no religious images on the international site).
-import { BY_SLUG } from './themes.js';
+import { BY_SLUG, withNeutral } from './themes.js';
 
 export const NP_DESIGNS_INTL = ['laali', 'mahal', 'swayambar', 'dhaka', 'hariyo', 'mehendi', 'kham', 'gurans', 'sindoor', 'rangoli'];
 
@@ -40,24 +40,34 @@ export const ARTWORK = [
  * The international designs, in the catalog's order. tier and style follow server/lib/catalog.js (the planner can
  * change the tier; the live list wins in the browser). occasions: what the design reads naturally for (src/core/markets.js).
  * line/alt: plain US English, no religion words (this site has no religion labels).
+ * cat and faith are for the Nepal site only (its look and faith filters, which list every design): cat is one of its
+ * looks (flowers | doors | cards | film), faith the community the art is made for (as the design's slots.js).
  */
 const W = ['wedding', 'engagement', 'anniversary', 'vow-renewal', 'rehearsal-dinner'];
 const N = ['wedding', 'engagement', 'anniversary'];
 export const INTL_THEMES = [
-  { slug: 'olive-grove', name: 'Olive Grove', style: 'garden', tier: 'shubha', occasions: [...W, 'bridal-shower', 'dinner-party'], line: 'A folded linen card opens and a watercolor olive wreath grows around your names.', alt: 'a watercolor olive wreath around the couple’s names on linen' },
-  { slug: 'rose-arch', name: 'Rose Arch', style: 'romantic', tier: 'shahi', occasions: W, line: 'Guests walk through a stone arch of climbing garden roses into the green garden beyond.', alt: 'a stone arch covered in climbing garden roses' },
-  { slug: 'blush-roses', name: 'Blush Roses', style: 'classic', tier: 'saral', occasions: [...W, 'bridal-shower', 'baby-shower'], line: 'A thin gold frame draws itself while blush garden roses bloom in the corners.', alt: 'blush garden roses in the corners of a thin gold frame' },
-  { slug: 'gold-arch', name: 'Gold Arch', style: 'modern', tier: 'shubha', occasions: [...N, 'dinner-party'], line: 'A fine gold arch draws itself under an eight-point star, on a clean and modern page.', alt: 'a fine gold arch under an eight-point star on ivory' },
-  { slug: 'amalfi', name: 'Amalfi', style: 'destination', tier: 'shahi', occasions: [...W, 'birthday'], line: 'A lemon-branch postcard from the Amalfi Coast turns over for a weekend by the sea.', alt: 'a postcard of lemon branches above the Amalfi Coast' },
-  { slug: 'garden-party', name: 'Garden Party', style: 'garden', tier: 'shubha', occasions: [...W, 'bridal-shower', 'birthday', 'dinner-party'], line: 'A garden ceremony under a rose arbor. The invitation slides out of its paper band.', alt: 'a rose arbor and white chairs on a summer lawn' },
-  { slug: 'wildflower', name: 'Wildflower', style: 'romantic', tier: 'shubha', occasions: [...W, 'bridal-shower', 'baby-shower', 'birthday'], line: 'A summer meadow of pink and peach wildflowers grows up the page, with butterflies.', alt: 'a summer meadow of pink and peach wildflowers' },
-  { slug: 'letterpress', name: 'Letterpress', style: 'classic', tier: 'saral', occasions: [...W, 'graduation', 'dinner-party'], line: 'A deckled cotton card lifts off sage linen and turns over. Simple and timeless.', alt: 'a deckled cotton card on sage linen' },
-  { slug: 'wax-seal', name: 'Wax Seal', style: 'modern', tier: 'saral', occasions: [...W, 'birthday', 'graduation', 'housewarming'], line: 'Guests break a sage wax seal and the letter rises out of the envelope.', alt: 'a white envelope closed with a sage wax seal' },
-  { slug: 'tuscany', name: 'Tuscany', style: 'destination', tier: 'shubha', occasions: [...W, 'dinner-party'], line: 'Golden hour over the vineyard hills, with an invitation dressed like a wine label.', alt: 'vineyard hills in Tuscany at golden hour' },
-  { slug: 'noor', name: 'Noor', style: 'romantic', tier: 'shahi', occasions: N, line: 'A sage arch hung with fresh roses glows open on your names.', alt: 'a sage arch framed with fresh roses' },
-  { slug: 'jali', name: 'Jali', style: 'classic', tier: 'saral', occasions: N, line: 'Carved emerald and gold lattice screens slide apart under hanging lanterns.', alt: 'carved emerald and gold lattice screens under lanterns' },
-  { slug: 'andalus', name: 'Andalus', style: 'destination', tier: 'shahi', occasions: N, line: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees.', alt: 'a tiled courtyard with a fountain and orange trees through an arch' },
+  { slug: 'olive-grove', cat: 'cards', faith: 'christian', name: 'Olive Grove', style: 'garden', tier: 'shubha', occasions: [...W, 'bridal-shower', 'dinner-party'], line: 'A folded linen card opens and a watercolor olive wreath grows around your names.', alt: 'a watercolor olive wreath around the couple’s names on linen' },
+  { slug: 'rose-arch', cat: 'doors', faith: 'christian', name: 'Rose Arch', style: 'romantic', tier: 'shahi', occasions: W, line: 'Guests walk through a stone arch of climbing garden roses into the green garden beyond.', alt: 'a stone arch covered in climbing garden roses' },
+  { slug: 'blush-roses', cat: 'flowers', faith: 'christian', name: 'Blush Roses', style: 'classic', tier: 'saral', occasions: [...W, 'bridal-shower', 'baby-shower'], line: 'A thin gold frame draws itself while blush garden roses bloom in the corners.', alt: 'blush garden roses in the corners of a thin gold frame' },
+  { slug: 'gold-arch', cat: 'doors', faith: 'muslim', name: 'Gold Arch', style: 'modern', tier: 'shubha', occasions: [...N, 'dinner-party'], line: 'A fine gold arch draws itself under an eight-point star, on a clean and modern page.', alt: 'a fine gold arch under an eight-point star on ivory' },
+  { slug: 'amalfi', cat: 'cards', faith: 'christian', name: 'Amalfi', style: 'destination', tier: 'shahi', occasions: [...W, 'birthday'], line: 'A lemon-branch postcard from the Amalfi Coast turns over for a weekend by the sea.', alt: 'a postcard of lemon branches above the Amalfi Coast' },
+  { slug: 'garden-party', cat: 'flowers', faith: 'christian', name: 'Garden Party', style: 'garden', tier: 'shubha', occasions: [...W, 'bridal-shower', 'birthday', 'dinner-party'], line: 'A garden ceremony under a rose arbor. The invitation slides out of its paper band.', alt: 'a rose arbor and white chairs on a summer lawn' },
+  { slug: 'wildflower', cat: 'flowers', faith: 'christian', name: 'Wildflower', style: 'romantic', tier: 'shubha', occasions: [...W, 'bridal-shower', 'baby-shower', 'birthday'], line: 'A summer meadow of pink and peach wildflowers grows up the page, with butterflies.', alt: 'a summer meadow of pink and peach wildflowers' },
+  { slug: 'letterpress', cat: 'cards', faith: 'christian', name: 'Letterpress', style: 'classic', tier: 'saral', occasions: [...W, 'graduation', 'dinner-party'], line: 'A deckled cotton card lifts off sage linen and turns over. Simple and timeless.', alt: 'a deckled cotton card on sage linen' },
+  { slug: 'wax-seal', cat: 'cards', faith: 'christian', name: 'Wax Seal', style: 'modern', tier: 'saral', occasions: [...W, 'birthday', 'graduation', 'housewarming'], line: 'Guests break a sage wax seal and the letter rises out of the envelope.', alt: 'a white envelope closed with a sage wax seal' },
+  { slug: 'tuscany', cat: 'cards', faith: 'christian', name: 'Tuscany', style: 'destination', tier: 'shubha', occasions: [...W, 'dinner-party'], line: 'Golden hour over the vineyard hills, with an invitation dressed like a wine label.', alt: 'vineyard hills in Tuscany at golden hour' },
+  { slug: 'noor', cat: 'doors', faith: 'muslim', name: 'Noor', style: 'romantic', tier: 'shahi', occasions: N, line: 'A sage arch hung with fresh roses glows open on your names.', alt: 'a sage arch framed with fresh roses' },
+  { slug: 'jali', cat: 'doors', faith: 'muslim', name: 'Jali', style: 'classic', tier: 'saral', occasions: N, line: 'Carved emerald and gold lattice screens slide apart under hanging lanterns.', alt: 'carved emerald and gold lattice screens under lanterns' },
+  { slug: 'andalus', cat: 'doors', faith: 'muslim', name: 'Andalus', style: 'destination', tier: 'shahi', occasions: N, line: 'Through a horseshoe arch into a tiled courtyard with a fountain and orange trees.', alt: 'a tiled courtyard with a fountain and orange trees through an arch' },
 ].map((d) => ({ ...d, id: d.slug, mini: `/site/thumbs/${d.slug}-480.webp`, art: false }));
+/** The international designs the Nepal site's rows show after its own (the home rail, landing rows); every one of
+ *  them is in its designs page, pricing tiers and order form. */
+export const INTL_PICKS = ['olive-grove', 'rose-arch', 'noor', 'blush-roses', 'gold-arch', 'wildflower'];
+/** An international design as a Nepal-site design ({ slug, name, ne, cat, concept, alt, religions, tier, thumb, intl }). */
+export const intlAsNp = (d) => ({
+  slug: d.slug, name: d.name, ne: '', cat: d.cat || 'cards', concept: d.line, alt: d.alt,
+  religions: withNeutral([d.faith || 'christian', 'other']), tier: d.tier, thumb: d.mini, intl: true,
+});
 export const INTL_BY_SLUG = Object.fromEntries(INTL_THEMES.map((d) => [d.slug, d]));
 /** a design's page: the international ones have their own under /international/designs/, the Nepal ones /designs/;
  *  a design new to the catalog and without a page yet opens its watermarked showcase */

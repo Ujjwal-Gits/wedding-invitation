@@ -87,6 +87,8 @@ const NOT_AVAILABLE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Invitation not available · Nimtto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root{--ink:#121116;--ink-2:#45434C;--ink-3:#66636E;--line:#C9CDD4;--crimson:#B3122F;--crimson-deep:#8E0E25}
 *{box-sizing:border-box}

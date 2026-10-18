@@ -12,7 +12,7 @@ import { fillUsd, INTL_PAGES, INTL_BASE } from './intl-content.mjs';
 import { ARTWORK, artSrc } from './intl-designs.js';
 import { intlPlans, usdText } from './intl-plans.js';
 import { PAGES } from './seo.mjs';
-import { esc, jsonLd, phone, faqBlock, cmsSlot, crumbsLd, rs, ICON, LEGAL_LINKS } from './partials.mjs';
+import { esc, jsonLd, phone, faqBlock, cmsSlot, crumbsLd, rs, ICON, LEGAL_LINKS, withIntl, railCard as npRailCard } from './partials.mjs';
 import { railCard, npAsIntl } from './intl.mjs';
 import { INTL_THEMES, designPage } from './intl-designs.js';
 
@@ -103,10 +103,8 @@ function designRow(l) {
     const list = l.designs.list === 'art' ? INTL_THEMES : l.designs.list.map(npAsIntl).filter(Boolean);
     cards = list.map((d, i) => railCard(d, i, SZ)).join('');
   } else {
-    cards = l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean).map((t) => `<li class="rcard" data-slug="${t.slug}">
-      <a class="rcard__pic" href="/designs/${t.slug}/" style="--tint:${CATEGORIES[t.cat].tint}">${phone(t.slug, { sizes: SZ, alt: `The ${t.name} design: ${t.alt}` })}</a>
-      <p class="rcard__name"><a href="/designs/${t.slug}/">${esc(t.name)}</a> <span lang="ne">${esc(t.ne)}</span></p>
-      <p class="rcard__meta"><span class="tier tier--${t.tier}"><span data-tier-name="${t.tier}">${esc(TIER_LABEL[t.tier])}</span></span><span class="dcard__price" data-tier-price="${t.tier}">from ${rs(planForTier(NP_PLANS, t.tier)?.price ?? 2999)}</span></p></li>`).join('');
+    // the Nepal designs the page names, then a few international ones (every design shows on the Nepal site)
+    cards = withIntl(l.designs.list, 4).map((t) => npRailCard(t, SZ)).join('');
   }
   const all = intl ? (l.catalog === 'np' ? '' : `<a class="btn btn--ghost" href="${INTL_PAGES['intl/designs'].path}">See all designs</a>`) : '<a class="btn btn--ghost" href="/designs/">See all designs</a>';
   return `<section class="sec" id="lp-designs" aria-labelledby="lp-d-h">
@@ -332,7 +330,7 @@ function ld(id) {
       step: l.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.t, text: s.d, url: `${url}#lp-how` })) }));
   }
   if (l.designs) {
-    const list = l.designs.list === 'art' ? INTL_THEMES : l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean);
+    const list = l.designs.list === 'art' ? INTL_THEMES : l.market === 'intl' ? l.designs.list.map((s) => BY_SLUG[s]).filter(Boolean) : withIntl(l.designs.list, 4);
     out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'ItemList', name: l.designs.title, numberOfItems: list.length,
       itemListElement: list.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: `${t.name} invitation design`, url: `${SITE_URL}${designPage(t.slug)}` })) }));
   }

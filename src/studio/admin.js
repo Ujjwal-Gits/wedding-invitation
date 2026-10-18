@@ -83,12 +83,16 @@ const searchBox = (placeholder, onInput) => h('label.search', icon('search', 15)
 const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
 // tiny marks for the four choices (constant markup); Hindu shows ॐ as a glyph
 const FAITH_MARK = {
+  buddhist: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 4v6M12 14v6M4 12h6M14 12h6M6.3 6.3l4.3 4.3M13.4 13.4l4.3 4.3M17.7 6.3l-4.3 4.3M10.6 13.4l-4.3 4.3"/>',
+  kirat: '<path d="M12 21V9M12 9c-3-1-5-3.5-5-6.5 3 0 5 2.5 5 6.5zM12 13c3-1 5-3.5 5-6.5-3 0-5 2.5-5 6.5z"/>',
   muslim: '<path d="M15.5 4.6a8 8 0 1 0 3.9 13.3A6.6 6.6 0 0 1 15.5 4.6z"/><path d="M17.6 7.2l.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"/>',
   christian: '<path d="M12 3v18M7 8.5h10"/>',
   other: '<circle cx="12" cy="12" r="2"/><path d="M12 10c-1.5-3-1.2-5.6 0-6.5 1.2.9 1.5 3.5 0 6.5zM14 12c3-1.5 5.6-1.2 6.5 0-.9 1.2-3.5 1.5-6.5 0zM12 14c1.5 3 1.2 5.6 0 6.5-1.2-.9-1.5-3.5 0-6.5zM10 12c-3 1.5-5.6 1.2-6.5 0 .9-1.2 3.5-1.5 6.5 0z"/>',
 };
 const FAITHS = [
   ['hindu', 'Hindu', 'Ganesh and ॥ श्री गणेशाय नमः ॥'],
+  ['buddhist', 'Buddhist', 'A Dharma wheel, ॥ नमो बुद्धाय ॥; Triple Gem wording'],
+  ['kirat', 'Kirat', 'No Hindu symbols; ancestors and elders; Sewaro'],
   ['muslim', 'Muslim', 'Bismillah, a crescent; Nikah and Walima'],
   ['christian', 'Christian', 'A verse, rings and cross; Holy Matrimony'],
   ['other', 'Other / none', 'No religious symbol'],
@@ -188,7 +192,7 @@ export function newInvitation(ctx, prefill = {}) {
     }
     if (n > st.step && st.step === 2 && !st.theme) { err.textContent = 'Choose a design first.'; return; }
     st.step = Math.max(1, Math.min(3, n));
-    if (st.step === 2) { drawGrid(); step2.firstChild.textContent = st.religion === 'hindu' ? 'Every design suits a Hindu wedding. You can switch later.' : `Designs made for ${st.religion === 'other' ? 'a wedding without religious symbols' : `a ${FAITHS.find((f) => f[0] === st.religion)[1]} wedding`}. The pictures show the sample card; yours shows ${({ muslim: 'Bismillah, a crescent and Nikah', christian: 'a verse, the rings and cross, and Holy Matrimony', other: 'a flower emblem and no invocation' })[st.religion]} instead of Ganesh.`; }
+    if (st.step === 2) { drawGrid(); step2.firstChild.textContent = st.religion === 'hindu' ? 'Every design suits a Hindu wedding. You can switch later.' : `Designs made for ${st.religion === 'other' ? 'a wedding without religious symbols' : `a ${FAITHS.find((f) => f[0] === st.religion)[1]} wedding`}. The pictures show the sample card; yours shows ${({ buddhist: 'a Dharma wheel and ॥ नमो बुद्धाय ॥', kirat: 'a flower emblem and no invocation', muslim: 'Bismillah, a crescent and Nikah', christian: 'a verse, the rings and cross, and Holy Matrimony', other: 'a flower emblem and no invocation' })[st.religion]} instead of Ganesh.`; }
     if (st.step === 3) { auto(); drawColors(); }
     fill(rail, steps.map(([name], i) => h('li', { class: i + 1 === st.step ? 'is-on' : i + 1 < st.step ? 'is-done' : '' }, h('span', String(i + 1)), name)));
     fill(pane, steps[st.step - 1][1], err);

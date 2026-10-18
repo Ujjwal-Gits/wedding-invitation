@@ -2,7 +2,8 @@
 // The static fallback (themes.js) covers an API that is down. In development only, while the server does not
 // speak the payment contract yet (no `paymentMethods` in /api/site), orders and payments run against a small
 // mock kept in this browser's localStorage, so the whole flow can be built and tested. Production never mocks.
-import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, PLAN_NE, tierOf } from './themes.js';
+import { FALLBACK_SITE, THEMES, BY_SLUG, TIER_RANK, PLAN_NE, tierOf, withNeutral } from './themes.js';
+import { INTL_THEMES, INTL_BY_SLUG, intlAsNp } from './intl-designs.js';
 import { SLUG_RE, str, localPath } from './common.js';
 
 export const REF_RE = /^[A-Za-z0-9_-]{3,40}$/;
@@ -97,16 +98,22 @@ export async function loadSite() {
   };
 }
 
-/** The design list: the API's (minus hidden), enriched from the static list; the static list when the API is down. */
-export function normaliseThemes(api, site) {
+const FAITH_IDS = ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other'];
+/**
+ * The design list: the API's (minus hidden), enriched from the static lists; the static lists when the API is down.
+ * Every design, the international ones after Nepal's (`intl: true`, their page is /international/designs/<slug>/).
+ * `ordered`: the API answered for this site (?market=np), already in the planner's order, so it is kept as is.
+ */
+export function normaliseThemes(api, site, { ordered = false } = {}) {
   const hidden = new Set(site.hiddenThemes || []);
   // every design shows on both sites: on the Nepal site its own designs first, the international ones after them
   const intlOnly = (m) => m === 'intl' || (Array.isArray(m) && m.includes('intl') && !m.includes('np'));
   const rows = Array.isArray(api) ? api.filter((t) => isObj(t) && SLUG_RE.test(t.slug) && !hidden.has(t.slug)) : [];
   let list = rows.length
     ? [...rows.filter((t) => !intlOnly(t.market)), ...rows.filter((t) => intlOnly(t.market))].map((t) => {
-      const local = BY_SLUG[t.slug] || {};
-      const rel = Array.isArray(t.religions) ? t.religions.filter((r) => ['hindu', 'muslim', 'christian', 'other'].includes(r)) : null;
+      const own = BY_SLUG[t.slug];
+      const local = own || (INTL_BY_SLUG[t.slug] ? intlAsNp(INTL_BY_SLUG[t.slug]) : {});
+      const rel = Array.isArray(t.religions) ? t.religions.filter((r) => FAITH_IDS.includes(r)) : null;
       return {
         slug: t.slug,
         name: str(t.name, 60) || local.name || t.slug,
@@ -114,12 +121,15 @@ export function normaliseThemes(api, site) {
         cat: local.cat || 'cards',
         concept: local.concept || str(t.concept, 240),
         alt: local.alt || `${str(t.name, 60) || t.slug} design`,
-        religions: rel && rel.length ? rel : (local.religions || ['hindu']),
+        religions: withNeutral(rel && rel.length ? rel : (local.religions || ['hindu'])),
         thumb: localPath(t.thumb, local.thumb || `/themes/${t.slug}/thumb.jpg`),
-        tier: TIER_RANK[t.tier] ? t.tier : tierOf(t.slug),
+        tier: TIER_RANK[t.tier] ? t.tier : (own ? tierOf(t.slug) : local.tier || 'shubha'),
+        intl: !own && (intlOnly(t.market) || Boolean(INTL_BY_SLUG[t.slug])),
+        featured: t.featured === true,
       };
     })
-    : THEMES.filter((t) => !hidden.has(t.slug));
+    : [...THEMES, ...INTL_THEMES.map(intlAsNp)].filter((t) => !hidden.has(t.slug));
+  if (ordered && rows.length) return list;
   const featured = (site.featuredThemes || []).filter((s) => list.some((t) => t.slug === s));
   if (featured.length) {
     const rank = (s) => { const i = featured.indexOf(s); return i < 0 ? Infinity : i; };
