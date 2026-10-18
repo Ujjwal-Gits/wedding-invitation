@@ -40,6 +40,7 @@ const KNOWN = {
   shagun: { name: 'Shagun', concept: 'A brass shagun thali on a banana leaf turns as you scroll; each offering opens a part of the wedding' },
   sandesh: { name: 'Sandesh', concept: 'Doves bring a lac-sealed letter to a morning rooftop, then deliver each event as a hand-stamped postcard' },
   vasant: { name: 'Vasant', concept: 'Butterflies lift off a fresh flower garland; each ceremony’s own flower opens as you scroll' },
+  toran: { name: 'Toran', concept: 'Part the marigold strings, then walk deeper through seven dressed doorways to the mandap' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
@@ -118,6 +119,7 @@ const DEFAULT_TIERS = {
   shagun: 'shahi',
   sandesh: 'shahi',
   vasant: 'shahi',
+  toran: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards
