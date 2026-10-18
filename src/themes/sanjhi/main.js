@@ -17,14 +17,14 @@ const PHONE = '(max-width: 760px)';
 // `hang` layers (the toran) hang from the top edge and drop down instead of standing up.
 const SPREADS = {
   grove: [
-    ['grove-kadamba', { w: 84, b: 16 }, { w: 112, b: 27 }],
+    ['grove-kadamba', { w: 84, b: 11 }, { w: 112, b: 27 }],
     ['grove-mango', { w: 118, b: 5 }, { w: 104, b: 8.5 }],
     ['grove-cows', { w: 100, b: -1 }, { w: 150, b: 0 }],
     ['toran-band', { w: 101, t: -0.5, hang: true }, { w: 104, t: 5.5, hang: true }],
-    ['toran-l', { w: 17, t: 1.5, l: 9, hang: true }, null],
-    ['toran-r', { w: 17, t: 1.5, l: 91, hang: true }, null],
-    ['ladi-rose', { w: 4.2, t: 7, l: 2.6, hang: true }, null, true],
-    ['ladi-marigold', { w: 4.8, t: 7, l: 97.3, hang: true }, null, true],
+    ['garland-l', { w: 24, t: 8, l: 12, hang: true }, null],
+    ['garland-r', { w: 24, t: 8, l: 88, hang: true }, null],
+    ['ladi-rose', { w: 4.2, t: 30, l: 2.6, hang: true }, null, true],
+    ['ladi-marigold', { w: 4.6, t: 30, l: 97.4, hang: true }, null, true],
   ],
   homes: [
     ['village', { w: 86, b: 24 }, { w: 124, b: 36 }],
@@ -52,11 +52,11 @@ const SPREADS = {
 // corners of a wide page, its centre across a phone's), and hanging strings of marigolds and of roses ending in a lotus.
 // They hang below the corner buttons and beside the words, never behind them. `same`: one file for both widths.
 const GARNISH = (flip) => [
-  ['garland-l', { w: 26, t: 0, l: 13, hang: true }, null],
-  ['garland-r', { w: 26, t: 0, l: 87, hang: true }, null],
+  ['garland-l', { w: 27, t: 0, l: 13.5, hang: true }, null],
+  ['garland-r', { w: 27, t: 0, l: 86.5, hang: true }, null],
   ['garland', null, { w: 98, t: 4.5, hang: true }, false, 'garland-m'],
-  [flip ? 'ladi-rose' : 'ladi-marigold', { w: 4.2, t: 21, l: 2.6, hang: true }, { w: 11, t: 15, l: 7, hang: true }, true],
-  [flip ? 'ladi-marigold' : 'ladi-rose', { w: 4.2, t: 21, l: 97.4, hang: true }, { w: 11, t: 15, l: 93, hang: true }, true],
+  [flip ? 'ladi-rose' : 'ladi-marigold', { w: 4.2, t: 27, l: 2.6, hang: true }, { w: 11, t: 15, l: 7, hang: true }, true],
+  [flip ? 'ladi-marigold' : 'ladi-rose', { w: 4.2, t: 27, l: 97.4, hang: true }, { w: 11, t: 15, l: 93, hang: true }, true],
 ];
 ['homes', 'pond', 'river', 'mandap'].forEach((k, i) => SPREADS[k].push(...GARNISH(i % 2 === 1)));
 
@@ -144,7 +144,7 @@ function gate(ctx) {
       </div>
       <p class="sj-cover__names">${ctx.names('&amp;')}</p>
       <p class="sj-cover__date">${bi({ en: `${ctx.AD.day} ${ctx.AD.month.en} ${ctx.AD.year}`, ne: ctx.BS.day ? `${ctx.BS.month} ${ctx.BS.day}, ${ctx.BS.year}` : ctx.AD.full.ne })}</p>
-      <div class="sj-cover__pond"><img class="sj-cover__lotus" src="${ART}lotus-m.webp" alt="" decoding="async" /><img class="sj-cover__leaves" src="${ART}pond-front-m.webp" alt="" decoding="async" /></div>
+      <div class="sj-cover__pond"><img class="sj-cover__lotus" src="${ART}lotus.webp" alt="" decoding="async" /><img class="sj-cover__leaves" src="${ART}pond-front.webp" alt="" decoding="async" /></div>
       </div>
     </div>
   </div>`;

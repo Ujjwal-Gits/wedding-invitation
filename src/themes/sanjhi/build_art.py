@@ -153,8 +153,7 @@ for name, col, mode, keep in LAYERS:
 
 
 def toran():
-    """the toran: its lace band runs across the top of page one; on a wide page its two outer marigold swags with
-    their bells hang in the corners (the words stand between them, never on the flowers)"""
+    """the toran: its lace band runs across the top of page one"""
     a = load_alpha('toran')
     h, w = a.shape
     rows = np.nonzero((a > 0.5).sum(1) > 4)[0]
@@ -164,9 +163,6 @@ def toran():
     col = '#E7882A'
     save(paper(band, col), 'toran-band', 1600)
     save(paper(phone(band, 'mid', 0.6), col), 'toran-band-m', 1100)
-    cut = int(w * 0.255)
-    save(paper(a[:, :cut], col), 'toran-l', 520)
-    save(paper(a[:, w - cut:], col), 'toran-r', 520)
 
 
 def multicolour(a, colmap):
@@ -214,9 +210,18 @@ def garlands():
         save(multicolour(both, cm), 'garland', 1600)
         x0 = int(w * 0.19)  # the phone band: the centre of the garland
         save(multicolour(both[:, x0:w - x0], cm[:, x0:w - x0]), 'garland-m', 1100)
-        cut = int(w * 0.46)  # a wide page: the two outer halves, hung in the corners
-        save(multicolour(both[:, :cut], cm[:, :cut]), 'garland-l', 800)
-        save(multicolour(both[:, w - cut:], cm[:, w - cut:]), 'garland-r', 800)
+    # a wide page: a whole corner garland in each top corner, each swag ending in its own tassel of buds
+    for side in ('l', 'r'):
+        if not (RAW / f'corner-{side}.png').exists():
+            continue
+        a = load_alpha(f'corner-{side}')
+        ys, xs = np.nonzero(a > 0.5)
+        a = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        back = shift(a, 6, 6)
+        both = np.maximum(a, back)
+        cm = np.ones(a.shape + (3,), np.float32) * hexrgb('#D94A6A')
+        cm[a > 0.5] = hexrgb('#E7882A')
+        save(multicolour(both, cm), f'garland-{side}', 900)
 
 
 def stencil():

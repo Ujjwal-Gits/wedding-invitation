@@ -27,7 +27,7 @@ page under the pop-up (`.sj-sheet`, the same cream paper) scrolls on with the de
 `will-change` only while the opening runs (`body.sj-moving`). Built with `gsap.matchMedia` so a phone/desktop switch
 rebuilds the timelines.
 1. Page one (hero): kadamba trees, two mango trees with peacocks, grazing cows, a lace toran band (and on a wide page
-   two marigold swags with bells in the corners, never behind the words). Under it: the couple's photograph tipped in
+   corner garlands of marigolds and roses, each ending in a tassel, never behind the words). Under it: the couple's photograph tipped in
    with paper corners, and the date under coloured powder (the scratch cover is the coloured Sanjhi plate).
 2. Two homes (families): a far village, two houses facing each other, a lotus-lattice fence.
 3. By the lotus pond (programme): a lakeside pavilion, pink lotuses, a lotus-leaf border; each ceremony on its own paper tag.
