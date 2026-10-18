@@ -542,6 +542,7 @@ a.ctab:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 
 .lp-g, #lp-how, #lp-price, #faq, #lp-designs { scroll-margin-top: calc(var(--nav-h) + 16px); }
 .lp-g__in { display: grid; gap: clamp(20px, 2.4vw, 36px); }
+.lp-g__in > * { min-width: 0; } /* a wide table scrolls inside its box instead of widening the column */
 .lp-g__h { max-width: 18ch; }
 .lp-g__body { display: grid; gap: 16px; max-width: 66ch; color: var(--ink-2); font-size: clamp(16px, 1.1vw, 18px); line-height: 1.65; }
 .lp-g__body strong { color: var(--ink); font-weight: 600; }

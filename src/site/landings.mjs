@@ -86,7 +86,7 @@ export const LANDINGS = {
       { id: 'write', toc: 'What to write', h: 'What to write on a Nepali wedding card',
         p: ['Traditional Nepali cards are sent by the family, not by the couple, and each family usually sends its own. The bride’s card lists the kanyadan; the groom’s card lists the janti departure and the bride’s welcome. These are the parts most cards include.'],
         check: ['**An opening blessing**, often {ne:॥ श्री गणेशाय नमः ॥}, or one from your own tradition', '**The couple’s names** with the honorifics your family uses, such as {ne:चि.} for the groom and {ne:सौ.} for the bride', '**The parents’ names** and, often, the grandparents’', '**The date in Bikram Sambat**, with the day of the week, and the AD date for guests abroad', '**The auspicious time** ({ne:शुभ साइत}) of the main rite', '**Each ceremony** with its time and venue', '**The preetibhoj** on its own line, as it often falls on another day or at another place', '**The hosts** after {ne:निमन्त्रक} or {ne:विनीत}, and a contact number', '**A reply line**, so you know numbers for the bhoj'] },
-      { id: 'wording', toc: 'Wording examples', h: 'Nepali wedding card wording (बिहेको निम्तो नमुना)',
+      { id: 'wording', toc: 'Wording examples', h: 'Nepali wedding card wording ({ne:बिहेको निम्तो नमुना})',
         p: ['Copy a sample, then change the names, dates and places. Your elders or family priest may prefer their own phrasing, and we set whatever words you send.'],
         wording: [
           { label: 'Bride’s family, formal', ne: '॥ श्री गणेशाय नमः ॥\nहाम्री सुपुत्री सौ. प्रिया\nर चि. आरवको शुभ विवाहको पावन अवसरमा\nतपाईं सपरिवार उपस्थित भइदिनु हुन\nहार्दिक निमन्त्रणा गर्दछौं।\n\nमिति: शनिबार, ८ फागुन २०८३\nकन्यादान: बिहान ११ बजे\n\nनिमन्त्रक\nथापा परिवार' },
@@ -208,7 +208,7 @@ export const LANDINGS = {
       { id: 'include', toc: 'What to put on the card', h: 'What to put on a bratabandha card',
         p: ['Most guests come for the bhoj in the evening, while close family is there from the morning. A good card makes that clear, so nobody arrives at the wrong time.'],
         check: ['**An opening blessing** in your family’s style', '**The boy’s name** (or both brothers’ names) and the parents’ names', '**The date in Bikram Sambat and AD**, with the day of the week', '**The programme with times**: chudakarma, guru mantra, bhiksha and the bhoj', '**The venue**, whether home, a temple or a party venue, with a map', '**The mama’s name**, if your family includes it', '**The hosts** after {ne:निमन्त्रक} and a contact number', '**A reply line**, with numbers for the bhoj'] },
-      { id: 'wording', toc: 'Wording examples', h: 'Bratabandha card wording (व्रतबन्धको निम्तो)',
+      { id: 'wording', toc: 'Wording examples', h: 'Bratabandha card wording ({ne:व्रतबन्धको निम्तो})',
         wording: [
           { label: 'Nepali, formal', ne: '॥ श्री गणेशाय नमः ॥\nहाम्रा सुपुत्र चि. आरवको\nचूडाकर्म तथा व्रतबन्ध संस्कारको शुभ अवसरमा\nतपाईंको सपरिवार उपस्थितिको कामना गर्दछौं।\n\nमिति: बिहिबार, २८ माघ २०८३\nभोज: बेलुका ६ बजेदेखि\nस्थान: निज निवास, ललितपुर\n\nनिमन्त्रक\nशर्मा परिवार' },
           { label: 'Two brothers', ne: 'हाम्रा सुपुत्रहरू चि. आरव र चि. आयुषको\nव्रतबन्ध संस्कारमा आशीर्वाद दिन\nअवश्य आइदिनुहोला।' },
@@ -312,7 +312,7 @@ export const LANDINGS = {
         note: 'Sources: [Wikipedia, Annaprashana](https://en.wikipedia.org/wiki/Annaprashana) and a family account on [Nepali Australian](https://nepaliaustralian.com/2015/09/04/pasni-puja-for-chhori/).' },
       { id: 'include', toc: 'What to put on the card', h: 'What to put on a pasni card',
         check: ['**Your baby’s name** and a photo', '**The parents’ names**, and grandparents’ if your family likes', '**The date in Bikram Sambat and AD**, with the day of the week', '**The programme**: puja, the first rice and the bhoj, each with a time', '**The venue**, with a map and parking', '**A note on lunch or dinner**, such as “lunch will be served”', '**A reply line**, with numbers for the feast'] },
-      { id: 'wording', toc: 'Wording examples', h: 'Pasni card wording (पास्नीको निम्तो)',
+      { id: 'wording', toc: 'Wording examples', h: 'Pasni card wording ({ne:पास्नीको निम्तो})',
         wording: [
           { label: 'Nepali, for a son', ne: 'हाम्रा छोरा सिद्धार्थको\nअन्नप्राशन (पास्नी) को शुभ अवसरमा\nआशीर्वाद दिन आउनु हुन सादर अनुरोध गर्दछौं।\n\nमिति: शनिबार, १८ बैशाख २०८४\nसमय: दिउँसो १२ बजेदेखि\nभोजनको व्यवस्था गरिएको छ।' },
           { label: 'Nepali, for a daughter', ne: 'हाम्री छोरी मीराको पास्नीको खुसियालीमा\nतपाईं सपरिवार पाल्नुहुन\nहार्दिक निमन्त्रणा गर्दछौं।' },

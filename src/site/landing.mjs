@@ -323,8 +323,6 @@ function ld(id) {
   };
   const url = `${SITE_URL}${l.path}`;
   const out = [crumbsLd(trail(l)), jsonLd(service)];
-  // the same WebPage node as the head's (one @id): when it was last checked, and what it is about
-  if (l.updated) out.push(jsonLd({ '@context': 'https://schema.org', '@type': 'WebPage', '@id': `${url}#webpage`, dateModified: l.updated, ...(l.about ? { about: l.about.map((name) => ({ '@type': 'Thing', name })) } : {}) }));
   // the visible four steps, as a HowTo
   if (l.steps?.length) {
     const from = offers[0];
