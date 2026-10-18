@@ -62,23 +62,32 @@ const Q = {
   whatsapp: ['Can I send it on WhatsApp and Viber?', 'Yes. Your invitation is one link: share it on WhatsApp, Viber, Messenger or SMS. The preview shows your names and a picture. Guests open it in their phone browser, with no app, and everyone sees the same up-to-date details.'],
   outside: ['Do you serve outside Kathmandu?', 'Yes. Nimtto works online across Nepal: Kathmandu, Lalitpur, Bhaktapur, Pokhara, Butwal, Chitwan, Dharan, Biratnagar, Birgunj and everywhere else. We make your invitation with you on WhatsApp, and you pay by QR, so it does not matter where you live.'],
   acceptable: ['Is an e-invitation acceptable in Nepal?', 'Yes. More Nepali families now send their invitation on WhatsApp or Viber, often with a few printed cards for elders. Guests like having the date, the venue and a map on their phone, and relatives abroad can open it anywhere.'],
+  wording: ['What should I write on a Nepali wedding card?', 'Most cards open with a blessing, name the couple and both sets of parents, give the date in Bikram Sambat with the day and the AD date, the sait of the main rite, each ceremony with its time and venue, and the preetibhoj. They close with the hosts after निमन्त्रक or विनीत. Our wedding card page has samples in Nepali and English.'],
+  when: ['When should I send the wedding card?', 'We suggest sending the online card three to four weeks before the wedding to guests in Nepal, and six to eight weeks before to relatives abroad, who need time to travel. Order your design a few weeks before that, so there is time for changes.'],
+  bs: ['Can the date be in Bikram Sambat?', 'Yes. Every invitation shows the date in Bikram Sambat beside the AD date, with the day of the week, so elders and friends abroad read the same day. If your family uses the tithi or Nepal Sambat, tell us and we add it.'],
+  print: ['Can I also print cards?', 'Yes. Many families send the online card to everyone and take a few printed cards to close elders by hand. Nimtto makes the online invitation; a local press can print matching cards if you show them your design.'],
+  guests: ['Is there a limit on guests?', 'No. You pay once for your plan and can send the link to as many guests as you like, in Nepal and abroad. There is no charge per guest and no charge per reply.'],
+  online: ['How long does the invitation stay online?', 'Your invitation stays online for at least one year after the event date, so guests can look back at the details and photos. If you would like it online for longer, ask us.'],
+  privacy: ['Who can see my invitation and the replies?', 'Only the people you send the link to can open your invitation; we do not list it anywhere. Guest replies are shown only to you and our team. We never sell your data, and you can ask us to delete it at any time.'],
+  refund: ['Can I get a refund?', 'Payments are final. In a critical case you can ask us, and we may approve a full or partial refund. If anything is wrong with your invitation, we fix it for you free. Our refund policy page has the details.'],
 };
 
 export const FAQ = {
-  home: ['what', 'cost', 'rsvp', 'whatsapp', 'time', 'esewa', 'occasions', 'outside'],
-  designs: ['difference', 'nepali', 'app', 'change', 'custom'],
-  occasions: ['occasions', 'custom', 'time', 'nepali', 'cost'],
-  how: ['how', 'time', 'pay', 'account', 'change', 'whatsapp'],
-  features: ['rsvp', 'nepali', 'app', 'change', 'abroad'],
-  pricing: ['cost', 'difference', 'esewa', 'abroad', 'custom', 'account', 'outside'],
+  home: ['what', 'cost', 'rsvp', 'whatsapp', 'acceptable', 'time', 'esewa', 'occasions', 'outside', 'when'],
+  designs: ['difference', 'nepali', 'bs', 'app', 'change', 'custom', 'print'],
+  occasions: ['occasions', 'custom', 'time', 'nepali', 'cost', 'abroad'],
+  how: ['how', 'time', 'when', 'pay', 'account', 'change', 'whatsapp', 'wording'],
+  features: ['rsvp', 'nepali', 'bs', 'app', 'change', 'abroad', 'privacy', 'online'],
+  pricing: ['cost', 'difference', 'guests', 'esewa', 'abroad', 'custom', 'account', 'refund', 'outside'],
   contact: ['where', 'time', 'pay', 'abroad', 'outside'],
   design: ['difference', 'how', 'change', 'app'],
   // the FAQ page: every question, in groups
   faq: [
     ['About Nimtto', ['what', 'where', 'outside', 'occasions', 'custom']],
-    ['Price and payment', ['cost', 'difference', 'esewa', 'pay', 'abroad']],
-    ['Making and sharing', ['how', 'time', 'account', 'change', 'whatsapp']],
-    ['For your guests', ['acceptable', 'rsvp', 'nepali', 'app']],
+    ['Price and payment', ['cost', 'difference', 'guests', 'esewa', 'pay', 'abroad', 'refund']],
+    ['Making and sharing', ['how', 'time', 'when', 'account', 'change', 'whatsapp']],
+    ['Wording and dates', ['wording', 'bs', 'nepali', 'print']],
+    ['For your guests', ['acceptable', 'rsvp', 'app', 'privacy', 'online']],
   ],
 };
 

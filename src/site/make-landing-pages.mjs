@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { LANDINGS } from './landings.mjs';
+import './partials.mjs'; // first: partials.mjs and landing.mjs import each other, and partials must be the one that starts
 import { landingText } from './landing.mjs';
 import { pageMeta, checkLengths, PAGES, LEGAL } from './seo.mjs';
 import { INTL_PAGES, FAQ_SETS, faqList, fillUsd, EVENTS } from './intl-content.mjs';

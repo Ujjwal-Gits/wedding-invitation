@@ -41,8 +41,8 @@ export const LANDINGS = {
   /* ======================= NEPAL ======================= */
   'np-wedding': {
     market: 'np', path: '/wedding-invitation-nepal/', img: 'wedding-invitation-nepal', name: 'Wedding invitation card online',
-    title: 'Wedding Invitation Card Online in Nepal | Nimtto',
-    desc: 'Create a Nepali wedding invitation website: animation, RSVP, map and schedule in one link. Designer-made, from Rs 2,999.',
+    title: 'Wedding Invitation Card Online in Nepal, With RSVP | Nimtto',
+    desc: 'Create a Nepali wedding invitation card online: every ceremony with maps, BS and AD dates, RSVP and Nepali wording. Designer-made, from Rs 2,999.',
     alt: 'The Laali wedding invitation card online, on a phone',
     eyebrow: 'Wedding invitation card online', ne: 'बिहेको निम्तो',
     h1: 'Wedding invitation cards online, <em>made for Nepali weddings.</em>',
@@ -182,7 +182,7 @@ export const LANDINGS = {
   },
   'np-bratabandha': {
     market: 'np', path: '/occasions/bratabandha/', img: 'occ-bratabandha', name: 'Bratabandha', parent: 'occasions',
-    title: 'Bratabandha Invitation Card Online | Nimtto',
+    title: 'Bratabandha Invitation Card Online, Nepali Wording | Nimtto',
     desc: 'Bratabandha invitation card online in English and Nepali: the full programme, the date in BS and AD, a map and replies. Designed for your family.',
     alt: 'A sample bratabandha invitation card online on a phone',
     eyebrow: 'Bratabandha invitation card', ne: 'ब्रतबन्ध',
@@ -238,7 +238,7 @@ export const LANDINGS = {
   },
   'np-gunyu': {
     market: 'np', path: '/occasions/gunyu-cholo/', img: 'occ-gunyu-cholo', name: 'Gunyu cholo', parent: 'occasions',
-    title: 'Gunyo Cholo Invitation Card Online | Nimtto',
+    title: 'Gunyo Cholo Invitation Card Online and Wording | Nimtto',
     desc: 'Gunyo cholo (gunyu cholo) invitation card online, in English and Nepali, with the programme, the date in BS and AD, a map and replies. Designed for you.',
     alt: 'A sample gunyo cholo invitation card online on a phone',
     eyebrow: 'Gunyo cholo invitation card', ne: 'गुन्यू चोलो',
@@ -287,7 +287,7 @@ export const LANDINGS = {
   },
   'np-pasni': {
     market: 'np', path: '/occasions/pasni/', img: 'occ-pasni', name: 'Pasni', parent: 'occasions',
-    title: 'Pasni Invitation Card Online in Nepal | Nimtto',
+    title: 'Pasni Invitation Card Online in Nepal, With Wording | Nimtto',
     desc: 'Pasni (annaprashan) invitation card online: your baby’s name, photos, the date in BS and AD, the feast, a map and replies. In English and Nepali.',
     alt: 'A sample pasni invitation card online on a phone',
     eyebrow: 'Pasni invitation card', ne: 'पास्नी · अन्नप्राशन',
@@ -337,7 +337,7 @@ export const LANDINGS = {
   },
   'np-nwaran': {
     market: 'np', path: '/occasions/nwaran/', img: 'occ-nwaran', name: 'Nwaran', parent: 'occasions',
-    title: 'Nwaran Naming Ceremony Invitation Card | Nimtto',
+    title: 'Nwaran Naming Ceremony Invitation Card Online | Nimtto',
     desc: 'Nwaran naming ceremony invitation card online: the new name revealed as guests open it, the date in BS and AD, a map and replies. In English and Nepali.',
     alt: 'A sample nwaran naming ceremony invitation card on a phone',
     eyebrow: 'Nwaran invitation card', ne: 'न्वारन',
@@ -387,7 +387,7 @@ export const LANDINGS = {
   },
   'np-birthday': {
     market: 'np', path: '/occasions/birthday/', img: 'occ-birthday', name: 'Birthday', parent: 'occasions',
-    title: 'Digital Birthday Invitation in Nepal | Nimtto',
+    title: 'Birthday Invitation Card Online in Nepal, Any Age | Nimtto',
     desc: 'Digital birthday invitation for Nepal, for any age, from a first birthday to an 84th. English and Nepali, with a map and replies. Pay by eSewa or Khalti.',
     alt: 'A sample digital birthday invitation on a phone',
     eyebrow: 'Birthday invitation card', ne: 'जन्मदिन',
@@ -439,7 +439,7 @@ export const LANDINGS = {
   },
   'np-janku': {
     market: 'np', path: '/occasions/janku/', img: 'occ-janku', name: 'Janku', parent: 'occasions',
-    title: 'Janku Invitation Card Online | Nimtto',
+    title: 'Janku Invitation Card Online: Bhimratha and More | Nimtto',
     desc: 'Janku invitation card online for the Newar old-age rites, from Bhimratha at 77: the programme, the date in BS and AD, a map and replies. Designed for you.',
     alt: 'A sample janku invitation card online on a phone',
     eyebrow: 'Janku invitation card', ne: 'जंकु',
@@ -509,13 +509,37 @@ export const LANDINGS = {
       ['Should the reception be on the wedding card or its own card?', 'Both work. If you order a wedding design, the reception is one of the events on the same card. If you only host a reception, or want a separate card for office friends, we design a reception card just for it.'],
     ],
     ideasTitle: 'Parties we design for', ideas: ['Wedding reception', 'Preetibhoj', 'Family bhoj', 'Office party', 'Welcome home party'],
-    steps: NP_STEPS,
-    faq: [
-      ['How much does a reception invitation card cost?', 'A reception on its own is designed for you on the Custom plan, from {price:custom}; on a wedding card it is included. We reply within one business day with a price. Pay by Khalti, eSewa, bank QR or PayPal.'],
-      ['Can I see how many guests are coming?', 'Yes. Every reply shows in your dashboard with the number of people, and you can download the list.'],
-      ['Can I share it on Viber and Messenger?', 'Yes. It is one link that works on WhatsApp, Viber, Messenger and SMS.'],
+    steps: NP_STEPS, howName: 'How to order a reception or bhoj invitation card online with Nimtto',
+    about: ['Wedding reception', 'Preetibhoj', 'Bhoj'],
+    guide: [
+      { id: 'what', toc: 'Reception and bhoj', h: 'Reception, preetibhoj and bhoj: what each one is',
+        lead: 'A bhoj ({ne:भोज}) is a feast a family hosts for relatives, neighbours and friends. After a wedding it is called preetibhoj ({ne:प्रीतिभोज}), the reception, and it is often the event with the biggest guest list.',
+        p: ['Families hold the reception in different ways. Some host it on the wedding day, some the day after at the groom’s home or a party palace, and some families hold a separate reception for each side. Many Nepali families feel they must invite every relative, neighbour and friend, which is why numbers matter so much. Weddings and receptions are also moving from homes to party palaces and banquet halls, as [Republica](https://myrepublica.nagariknetwork.com/news/do-changing-nepali-wedding-practices-indicate-acculturation) has reported, and the venue needs a head count.',
+          'A bhoj also follows many other ceremonies: a bratabandha, a pasni, a janku. On all of them, the evening feast is when most guests come.'] },
+      { id: 'numbers', toc: 'Getting the numbers right', h: 'Plan the food on real numbers',
+        p: ['Party palaces and caterers price by the plate, so a wrong guess costs money either way. An online card with replies gives you a real count instead of a guess.'],
+        ol: ['Send the card with a clear reply line, such as “please reply by 15 Magh”.', 'Guests reply on the card with the number of people coming.', 'Your dashboard adds them up; download the list any time.', 'A few days before, call the people who have not replied, and give the caterer your number.'] },
+      { id: 'include', toc: 'What to put on the card', h: 'What to put on a reception card',
+        check: ['**The hosts**: the couple, or the family, the way you write it', '**The occasion**, such as preetibhoj after the wedding of…', '**The date in Bikram Sambat and AD**, with the day of the week', '**The time**, “from 6 PM” style, as guests come and go', '**The venue**, with a map and parking notes', '**A reply line** and the date to reply by', '**A contact number** for the family'] },
+      { id: 'wording', toc: 'Wording examples', h: 'Reception and bhoj card wording',
+        wording: [
+          { label: 'Preetibhoj, in Nepali', ne: 'हाम्रा सुपुत्र चि. रोहन र सौ. अञ्जलीको\nशुभ विवाहको उपलक्ष्यमा आयोजित\nप्रीतिभोजमा तपाईं सपरिवार उपस्थित भइदिनु हुन\nहार्दिक निमन्त्रणा गर्दछौं।\n\nमिति: आइतबार, २४ माघ २०८३\nसमय: बेलुका ६ बजेदेखि\nस्थान: सोल्टी होटल, काठमाडौं' },
+          { label: 'English', en: 'Please join us for the wedding reception of\nAnjali and Rohan\nSunday, 7 February 2027 (24 Magh 2083)\nFrom 6:00 PM · Soaltee Hotel, Kathmandu\nKindly reply by 31 January' },
+          { label: 'For office friends', en: 'We got married! Join us for dinner and music\nto celebrate with friends and colleagues.\nSunday, 7 February · from 6:00 PM' },
+        ],
+        note: 'The Nepali sample is our own wording in the usual style of Nepali cards. Change it freely.' },
     ],
-    related: ['np-wedding', 'np-engagement', 'np-birthday'], cross: 'abroad',
+    faq: [
+      ['How much does a reception invitation card cost?', 'A reception on its own is designed for you on the Custom plan, from {price:custom}; on a wedding card it is included as one of the events. We reply within one business day with a price. Pay by Khalti, eSewa, bank QR or PayPal.'],
+      ['Can I see how many guests are coming?', 'Yes. Every reply shows in your dashboard with the number of people, and you can download the list. That gives your party palace or caterer a real number instead of a guess.'],
+      ['Should the reception be on the wedding card?', 'If you order a wedding design, the reception is one of the events on the same card, with its own date, time and map. If you only host a reception, or want a separate card for office friends, we design a reception card just for it.'],
+      ['Can the bride’s and groom’s sides hold separate receptions?', 'Yes. Each side can list its own reception with its own venue and time. Tell us how your families are doing it, and we set up the card so each guest sees the right event.'],
+      ['Can I share it on Viber and Messenger?', 'Yes. It is one link that works on WhatsApp, Viber, Messenger and SMS. The preview shows your names and a picture, and guests open it in their phone browser.'],
+      ['When should I send reception cards?', 'Send reception cards with the wedding card, or three to four weeks before the reception if it is separate. Set a reply date about a week before, so you can give the caterer your numbers in time.'],
+      ['Can I add parking and directions?', 'Yes. The venue shows with Google Maps, and you can add a note about parking, the gate to use or the floor of the hall.'],
+      ['Do guests need an app?', 'No. The card opens in any phone browser, also on slow mobile data, and guests reply on it in a minute.'],
+    ],
+    related: ['np-wedding', 'np-engagement', 'np-birthday', 'np-abroad'], cross: 'abroad',
   },
   'np-abroad': {
     market: 'np', path: '/nepali-abroad/', img: 'nepali-abroad', name: 'For families abroad',
@@ -535,11 +559,38 @@ export const LANDINGS = {
       ['Can I pay from abroad?', 'Yes. On the payment page, pay by card or PayPal in US dollars: Standard is {usd:saral}, Pro is {usd:shubha} and Pro Max is {usd:shahi}. Your plan switches on as soon as the payment goes through. Family in Nepal can also pay by Khalti, eSewa or bank QR.'],
     ],
     ideasTitle: 'Weddings we plan with families abroad', ideas: ['Wedding in Nepal, family abroad', 'NRN weddings', 'Reception in Kathmandu', 'Two receptions, two countries', 'Live stream for those who can’t travel'],
-    steps: PLAN_STEPS_NP,
+    steps: PLAN_STEPS_NP, howName: 'How to make a Nepali wedding invitation from abroad with Nimtto',
+    about: ['Nepali wedding', 'Non-resident Nepali', 'Wedding invitation'],
+    guide: [
+      { id: 'plan', toc: 'Planning from abroad', h: 'Planning a wedding in Nepal while you live abroad',
+        lead: 'Many non-resident Nepali (NRN) families plan the wedding from the USA, the UK, Australia, Canada or the Gulf, while the ceremonies happen at home. The invitation is the part you can do fully online.',
+        p: ['Your parents or relatives in Nepal usually handle the venue, the priest and the cooks. You handle the guest list abroad, your own travel and, often, the invitation. With Nimtto you choose the design, pay by card or PayPal in US dollars, and work with your designer on WhatsApp or email, writing when it suits your time zone. Family in Nepal can join the same WhatsApp chat to check the Nepali wording.'],
+        sub: [{ h: 'Who does what', list: ['**You (abroad):** pick the design, send names, photos and the guest list, pay online.', '**Family in Nepal:** confirm the lagan and sait with the priest, the venues and the programme.', '**Nimtto:** set up the card in English and Nepali, with both calendars and maps, and make changes.', '**Everyone:** share the one link with their own contacts.'] }] },
+      { id: 'times', toc: 'Time zones and dates', h: 'Time zones, two calendars and travel dates',
+        p: ['Every time on the card is shown in Nepal time, because the ceremonies are in Nepal, and the date shows in Bikram Sambat beside the AD date. Friends abroad who add an event to their phone calendar see it converted to their own time.'],
+        table: { cap: 'A timeline for a wedding in Nepal planned from abroad', head: ['When', 'What to do'], rows: [
+          ['As soon as the lagan is fixed', 'Share the date with friends abroad so they can book flights and leave'],
+          ['3 to 4 months before', 'Choose your design and order, so there is time for changes across time zones'],
+          ['6 to 8 weeks before', 'Send the link to guests abroad'],
+          ['3 to 4 weeks before', 'Send the link to relatives in Nepal; family can take printed cards to close elders'],
+          ['1 week before', 'Check replies and give the numbers for the bhoj to the family in Nepal'],
+        ] } },
+      { id: 'elders', toc: 'For elders at home', h: 'Making it easy for elders in Nepal',
+        p: ['Some elders will not open a link from someone they rarely message. The usual answer is both: send the link to everyone, and ask family in Nepal to take a few printed cards, or simply visit, to the elders who matter most. Nimtto makes the online card; a local press can print matching cards from your design.'],
+        list: ['Elders can switch the card to Nepali with one tap.', 'The BS date and the ceremony names are in Devanagari.', 'A cousin or a neighbour can reply on their behalf.', 'The card opens on older phones and slow mobile data.'],
+        fig: { design: 'mahal', alt: 'The Mahal Nepali wedding invitation on a phone: a golden palace gate opening onto a balcony at night', cap: 'The [Mahal](/designs/mahal/) design, sent from abroad to family at home.' } },
+      { id: 'pay', toc: 'Paying from abroad', h: 'Paying from abroad, in US dollars',
+        p: ['On the payment page, choose card or PayPal. You pay once in US dollars: Standard {usd:saral}, Pro {usd:shubha} or Pro Max {usd:shahi}. Your plan switches on as soon as the payment goes through, and your invitation appears in your dashboard. If family in Nepal would rather pay, they can pay in rupees by Khalti, eSewa or bank QR instead.'] },
+    ],
     faq: [
+      ['How do I invite relatives in Nepal from abroad?', 'Make your invitation online and send the link to relatives on WhatsApp, Viber or Messenger. It opens on any phone in Nepal, in English or Nepali, with the date in Bikram Sambat and AD, every ceremony with a map, and a reply form. You read the replies wherever you are.'],
+      ['Can I pay from abroad?', 'Yes. Pay by card or PayPal in US dollars: Standard is {usd:saral}, Pro is {usd:shubha} and Pro Max is {usd:shahi}, paid once. Your plan switches on as soon as the payment goes through. Family in Nepal can also pay by Khalti, eSewa or bank QR.'],
+      ['Can you work in my time zone?', 'We talk on WhatsApp and email, so you can write when it suits you. We usually reply within one business day, and your family in Nepal can join the same chat to check the Nepali wording.'],
+      ['Which time do the events show?', 'Every event shows in Nepal time, because the ceremonies are in Nepal, with the BS and AD dates. Guests abroad who add an event to their phone calendar see it in their own time zone.'],
+      ['Can relatives in Nepal open it on older phones?', 'Yes. The invitation is a light website that opens in any phone browser, also on slow mobile data, with no app. Elders can switch it to Nepali with one tap.'],
+      ['Can friends abroad watch the wedding?', 'Yes. Add a live stream link to the ceremony for friends and relatives who cannot travel to Nepal. The same invitation shows the schedule, so they know when to watch.'],
       ['Is there an English-first site for weddings abroad?', 'Yes. If your wedding is in the USA, the UK or elsewhere, our international site shows designs and prices in US dollars, with Nepali wedding invitations for families abroad.'],
-      ['Can you work in my time zone?', 'We talk on WhatsApp and email, so you can write when it suits you. We usually reply within one business day.'],
-      ['Can relatives in Nepal open it on older phones?', 'Yes. The invitation is a light website that opens in any phone browser, also on slow mobile data, with no app.'],
+      ['Can we print a few cards too?', 'Yes. Many families send the link to everyone and have a few printed cards taken to close elders in Nepal. Show your design to a local press and they can print matching cards.'],
     ],
     links: [['Nepali wedding invitations for families in the USA', '/international/nepali-wedding-invitations/']],
     related: ['np-wedding', 'np-reception', 'np-engagement'], cross: 'intl',
@@ -549,7 +600,7 @@ export const LANDINGS = {
   'i-nepali': {
     market: 'intl', path: '/international/nepali-wedding-invitations/', img: 'intl-nepali', name: 'Nepali wedding invitations', catalog: 'np',
     title: 'Nepali Wedding Invitation Website for the USA | Nimtto',
-    desc: 'Nepali-style animated wedding invitations in English and Nepali, with RSVP. Designer-made, pay once from $49 by card or PayPal.',
+    desc: 'Nepali wedding invitations for families in the USA: English and Nepali, Bikram Sambat dates, every event and RSVP. Designer-made, from $49, paid once.',
     alt: 'The Swayambar Nepali wedding invitation on a phone',
     eyebrow: 'Nepali wedding invitations',
     h1: 'Nepali wedding invitations <em>for families in the USA.</em>',
@@ -623,7 +674,7 @@ export const LANDINGS = {
   'i-southasian': {
     market: 'intl', path: '/international/south-asian-wedding-invitation-website/', img: 'intl-south-asian', name: 'South Asian wedding invitation website', catalog: 'np',
     title: 'South Asian Wedding Invitation Website, USA | Nimtto',
-    desc: 'South Asian wedding e-invites with multi-day events, RSVP and an animated opening. Designer-made, from $49, paid once by card or PayPal.',
+    desc: 'South Asian wedding invitation websites: mehendi, sangeet and reception, each with its own RSVP and dress code. Designer-made, from $49, paid once.',
     alt: 'The Mehendi wedding invitation on a phone',
     eyebrow: 'South Asian weddings',
     h1: 'Wedding invitation websites <em>for South Asian weddings.</em>',
@@ -767,7 +818,7 @@ export const LANDINGS = {
   },
   'i-usa': {
     market: 'intl', path: '/international/usa/', img: 'intl-usa', name: 'USA',
-    title: 'Digital Wedding Invitations in the USA | Nimtto',
+    title: 'Digital Wedding Invitations in the USA, Paid Once | Nimtto',
     desc: 'Digital wedding invitations for couples in the USA: animated invitation, wedding website and RSVP, priced in US dollars and paid once by card or PayPal.',
     alt: 'The Garden Party wedding invitation on a phone',
     eyebrow: 'For couples in the USA',
@@ -925,7 +976,7 @@ const custom = (id, o) => ({
 Object.assign(LANDINGS, {
   'i-birthday': custom('birthday', {
     name: 'Birthday', event: 'birthday',
-    title: 'Digital Birthday Invitation With RSVP | Nimtto',
+    title: 'Digital Birthday Invitation With RSVP, Any Age | Nimtto',
     desc: 'A digital birthday invitation with RSVP for any age: 30th, 40th, 50th or a first birthday. Designed for you, with a map and replies. Custom from $199.',
     alt: 'A sample digital birthday invitation with RSVP on a phone',
     eyebrow: 'Birthday invitations',
@@ -986,7 +1037,7 @@ Object.assign(LANDINGS, {
   }),
   'i-baby-shower': custom('baby-shower', {
     name: 'Baby shower', event: 'baby-shower',
-    title: 'Baby Shower Invitation Website With RSVP | Nimtto',
+    title: 'Baby Shower Invitation Website, RSVP and Wording | Nimtto',
     desc: 'A baby shower invitation website with RSVP, a map and a registry note, designed for you. For showers, sprinkles and gender reveals. Custom from $199.',
     alt: 'A sample baby shower invitation website on a phone',
     eyebrow: 'Baby shower invitations',
@@ -1098,7 +1149,7 @@ Object.assign(LANDINGS, {
   }),
   'i-engagement': custom('engagement-party', {
     name: 'Engagement party', event: 'engagement',
-    title: 'Engagement Party Invitation Online | Nimtto',
+    title: 'Engagement Party Invitation Online, With Wording | Nimtto',
     desc: 'Engagement party invitation online, designed for you, with the party details, a map and RSVP in one link. It can match your wedding. From $199.',
     alt: 'A sample engagement party invitation online on a phone',
     eyebrow: 'Engagement party invitations',
@@ -1212,7 +1263,7 @@ Object.assign(LANDINGS, {
   }),
   'i-graduation': custom('graduation', {
     name: 'Graduation', event: 'graduation',
-    title: 'Digital Graduation Party Invitation | Nimtto',
+    title: 'Digital Graduation Party Invitation and Open House | Nimtto',
     desc: 'Digital graduation party invitation, designed for the graduate: school colors, a photo, the party details, a map and RSVP in one link. Custom from $199.',
     alt: 'A sample digital graduation party invitation on a phone',
     eyebrow: 'Graduation party invitations',
@@ -1320,7 +1371,7 @@ Object.assign(LANDINGS, {
   }),
   'i-dinner': custom('dinner-party', {
     name: 'Dinner party', event: 'dinner',
-    title: 'Dinner Party Invitation Online With RSVP | Nimtto',
+    title: 'Dinner Party Invitation Online With RSVP and Menu | Nimtto',
     desc: 'A dinner party invitation online with RSVP, the menu, dietary notes and a map, designed for you and sent in one link by text or email. Custom from $199.',
     alt: 'A sample dinner party invitation online on a phone',
     eyebrow: 'Dinner party invitations',
@@ -1428,6 +1479,15 @@ Object.assign(LANDINGS, {
     related: ['i-dinner', 'i-graduation', 'i-anniversary', 'i-rsvp'],
   }),
 });
+
+/* Every page: the day its facts were last checked (shown under "On this page" and as the WebPage dateModified), and
+   relatedPosts, the hook for the blog: [[title, path], ...] of guides about the same occasion. It stays empty until
+   the blog fills it (a page shows "Guides and ideas" only when it has some). */
+export const CONTENT_CHECKED = '2026-10-18';
+for (const l of Object.values(LANDINGS)) {
+  l.updated ??= CONTENT_CHECKED;
+  l.relatedPosts ??= [];
+}
 
 /** The landing pages of one market, in the order above. */
 export const landingsOf = (market) => Object.entries(LANDINGS).filter(([, l]) => l.market === market).map(([id, l]) => ({ id, ...l }));

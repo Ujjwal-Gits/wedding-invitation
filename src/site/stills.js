@@ -11,10 +11,13 @@ export const STILL_SIZES = {
   related: '(max-width: 599px) calc(58vw - 40px), 240px', // "You may also love" cards
 };
 
-/** { src, srcset } for a design's still; `fallback` when the design has none yet. */
+/** { src, srcset } for a design's still; `fallback` when the design has none yet. make-thumbs.mjs also writes a
+ *  200px mini of every still, so small slots (the plan tiers, the order form) never download the 480. The plain
+ *  `src` is the smallest listed width: browsers pick from srcset, and anything that reads only src stays light. */
 export function phoneStill(stills, slug, fallback = '') {
   const s = stills[slug];
   if (!s || !Array.isArray(s.w) || !s.w.length) return { src: fallback, srcset: '' };
   const url = (w) => `/site/stills/${slug}-${w}.webp`;
-  return { src: url(s.w[Math.min(1, s.w.length - 1)]), srcset: s.w.map((w) => `${url(w)} ${w}w`).join(', ') };
+  const ws = [200, ...s.w.filter((w) => w > 200)];
+  return { src: url(s.w[0]), srcset: ws.map((w) => `${url(w)} ${w}w`).join(', ') };
 }

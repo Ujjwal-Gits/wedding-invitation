@@ -39,14 +39,14 @@ export const titleCase = (s) => {
 export const PAGES = {
   home: {
     path: '/', img: 'home', type: 'WebPage', ogType: 'website', speak: true,
-    title: 'Digital Wedding Invitation Nepal | Nimtto',
-    desc: 'Animated wedding invitation website with RSVP, made with a real designer. Pay once from Rs 2,999 via eSewa, Khalti or bank QR.',
+    title: 'Digital Wedding Invitation in Nepal With RSVP | Nimtto',
+    desc: 'Animated wedding invitation website with RSVP, maps and Nepali dates, made with a real designer. Pay once from Rs 2,999 by eSewa, Khalti or bank QR.',
     alt: 'Nimtto digital wedding invitations for Nepal: three invitation designs on phones, in white and blush',
   },
   designs: {
     path: '/designs/', img: 'designs', type: 'CollectionPage', ogType: 'website',
     title: 'Nepali Wedding Card Designs and Animated Invites | Nimtto',
-    desc: `Browse ${N} premium Nepali wedding card designs with animation, music and RSVP. Pick one and our designer personalises it. From Rs 2,999.`,
+    desc: `Browse ${N} premium Nepali wedding card designs with animation, music and RSVP. Pick one and our designer personalises it for you. From Rs 2,999, paid once.`,
     alt: `${N} Nimtto Nepali wedding card designs on phones: a sealed envelope, a temple door and a garden pavilion`,
   },
   occasions: {
@@ -57,39 +57,39 @@ export const PAGES = {
   },
   'how-it-works': {
     path: '/how-it-works/', img: 'how-it-works', type: 'WebPage', ogType: 'article',
-    title: 'How to Make a Digital Invitation in Nepal | Nimtto',
-    desc: 'Choose a design, pay once by eSewa, Khalti or bank QR, review it with your designer on WhatsApp, then send one link. Ready in days.',
+    title: 'How to Make a Digital Wedding Invitation in Nepal | Nimtto',
+    desc: 'Choose a design, pay once by eSewa, Khalti or bank QR, review it with your designer on WhatsApp, then send one link to every guest. Ready in days.',
     alt: 'The four Nimtto steps, choose, order and pay, make it together and share one link, beside an invitation on a phone',
   },
   features: {
     path: '/features/', img: 'features', type: 'WebPage', ogType: 'website',
     title: 'Wedding RSVP Website and Invitation Features | Nimtto',
-    desc: 'RSVP tracking, every ceremony with Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, in one invitation link.',
+    desc: 'RSVP tracking, every ceremony with Google Maps, Bikram Sambat and AD dates, English and Nepali, music and photos, all in one invitation link on WhatsApp.',
     alt: 'A Nimtto wedding RSVP website on a phone with a Nepali date, guest replies and music',
   },
   pricing: {
     path: '/pricing/', img: 'pricing', type: 'WebPage', ogType: 'website',
     title: 'Digital Invitation Price in Nepal From Rs 2,999 | Nimtto',
     // no plan names here: the planner renames plans in the studio, and meta tags are only built, never refreshed
-    desc: 'Rs 2,999, 4,999 and 6,999 plans, custom from Rs 11,111. Pay once with Khalti, eSewa or bank QR. PayPal from abroad.',
+    desc: 'Plans at Rs 2,999, Rs 4,999 and Rs 6,999, custom designs from Rs 11,111. Pay once by Khalti, eSewa or bank QR, or PayPal from abroad. No monthly fee.',
     alt: 'Nimtto prices: three plans at Rs 2,999, Rs 4,999 and Rs 6,999, paid once, beside an invitation on a phone',
   },
   faq: {
     path: '/faq/', img: 'faq', type: 'WebPage', ogType: 'website', speak: true,
-    title: 'Digital Invitation FAQ for Nepal | Nimtto',
-    desc: 'Answers on price, payment, timing, changes, RSVP and sharing for Nepali digital invitations, from eSewa and Khalti to guests abroad.',
+    title: 'Digital Wedding Card FAQ for Nepal: Price and RSVP | Nimtto',
+    desc: 'Answers on price, eSewa and Khalti payment, timing, changes, RSVP, wording and sharing on WhatsApp for Nepali digital invitations, and guests abroad.',
     alt: 'Questions and answers about Nimtto digital invitations in Nepal',
   },
   contact: {
     path: '/contact/', img: 'contact', type: 'ContactPage', ogType: 'website',
-    title: 'Contact Nimtto to Order a Digital Invitation',
-    desc: 'Talk to a designer on WhatsApp or email. Tell us your date and we will suggest a design. WhatsApp +977 980-6393298, in English or Nepali.',
+    title: 'Contact Nimtto to Order a Digital Invitation in Nepal',
+    desc: 'Talk to a designer on WhatsApp or email. Tell us your date and we suggest a design. WhatsApp +977 980-6393298, in English or Nepali. We reply in a day.',
     alt: 'Contact Nimtto on WhatsApp at +977 980-6393298, beside a wedding invitation on a phone',
   },
   credits: {
     path: '/credits/', img: 'home', type: 'WebPage', ogType: 'website',
     title: 'Credits: Photos, Flowers, Art and Music Licences | Nimtto',
-    desc: 'Credits for the photographs, flowers, art and music used in Nimtto\'s online wedding invitation designs, with each author and licence.',
+    desc: 'Credits for the photographs, flowers, art and music used in Nimtto\'s online wedding invitation designs, with each author, source and licence named.',
     alt: 'Nimtto online invitation maker: three wedding invitation designs on phones, in white and blush',
   },
 };
