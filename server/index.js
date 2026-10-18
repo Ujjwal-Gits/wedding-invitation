@@ -247,6 +247,8 @@ app.use('/uploads', (req, res) => res.status(404).end());
 // The blog (/blog/, /international/blog/, their posts and feeds, /sitemap-blog.xml, llms*.txt): server-rendered into
 // the built shells (dist/blog/index.html), so search engines read every post; lib/blog.js.
 app.use(blog.blogPages({ distDir: DIST_DIR }));
+// The Blog editor's Preview tab: a page rendered by POST /api/admin/blog/preview, for the session that made it (30 min).
+app.get('/studio/blog-preview/:token', requirePerm('content'), blog.previewPage);
 
 if (IS_PROD) {
   if (!existsSync(DIST_DIR)) console.warn('[studio] dist/ not found: run `npm run build` in the project root.');

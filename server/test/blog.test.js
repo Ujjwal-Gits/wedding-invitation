@@ -281,3 +281,42 @@ test('blog pages carry the Content page’s site-wide words (announcement, conta
   assert.ok(after.headers.get('etag'));
   assert.equal((await fetch(`${base}/blog/pasni-invitation-guide/`, { headers: { 'If-None-Match': after.headers.get('etag') } })).status, 304);
 });
+
+test('the editor endpoints: post HTML to open, Markdown view, schema panel, media gallery, preview tab', async () => {
+  const { body: list } = await owner.req('/api/admin/blog');
+  const pasni = list.posts.find((p) => p.slug === 'pasni-invitation-guide');
+  const one = await owner.req(`/api/admin/blog/${pasni.id}`);
+  assert.match(one.body.html, /<h2 id="[^"]+">/); // the editor opens this
+  const r = await owner.req('/api/admin/blog/render', { method: 'POST', body: { body: '## Hi\n\n<script>x</script>\n\n| a | b |\n| --- | --- |\n| 1 | 2 |' } });
+  assert.equal(r.status, 200);
+  assert.match(r.body.html, /<h2 id="hi">Hi<\/h2>/);
+  assert.match(r.body.html, /&lt;script&gt;/);
+  assert.match(r.body.html, /<div class="tbl"/);
+  assert.equal((await owner.req('/api/admin/blog/render', { method: 'POST', body: { body: 'x' }, csrf: false })).status, 403);
+  const s = await owner.req('/api/admin/blog/schema', { method: 'POST', body: { site: 'np', title: 'A guide', slug: 'a-guide', category: 'Planning', excerpt: 'Short.', keyword: 'guide', schemaType: 'HowTo', body: '## One\n\nx\n\n## Two\n\ny' } });
+  assert.equal(s.status, 200);
+  assert.equal(s.body.url, 'https://nimtto.com/blog/a-guide/');
+  assert.ok(s.body.ld.some((x) => x['@type'] === 'HowTo' && x.step.length === 2));
+  assert.ok(Array.isArray(s.body.checks) && s.body.checks.length > 5);
+  const m = await owner.req('/api/admin/blog/media');
+  assert.equal(m.status, 200);
+  assert.ok(Array.isArray(m.body.uploads) && m.body.designs.length > 10 && m.body.designs.every((d) => /^\/site\/stills\/[a-z0-9-]+-800\.webp$/.test(d.src)));
+  // the preview tab: for this session only, never indexed
+  const p = await owner.req('/api/admin/blog/preview', { method: 'POST', body: { site: 'np', title: 'Tab preview', slug: 'tab-preview', category: 'Planning', body: '## Tab\n\nText.' } });
+  assert.match(p.body.url, /^\/studio\/blog-preview\/[A-Za-z0-9_-]{24}$/);
+  const tab = await owner.req(p.body.url);
+  assert.equal(tab.status, 200);
+  assert.match(tab.body, /Tab preview/);
+  assert.match(tab.headers.get('x-robots-tag'), /noindex/);
+  assert.equal(tab.headers.get('cache-control'), 'no-store');
+  assert.equal((await page(p.body.url)).status, 401); // no session
+  const other = await browser().login(OWNER.email, OWNER.password);
+  assert.equal((await other.req(p.body.url)).status, 404); // another session
+  assert.equal((await owner.req('/studio/blog-preview/AAAAAAAAAAAAAAAAAAAAAAAA')).status, 404);
+  // the new options are kept and checked
+  const c = await owner.req('/api/admin/blog', { method: 'POST', body: { site: 'np', title: 'Options', slug: 'options-test', category: 'Planning', body: 'x', schemaType: 'Article', speakable: false } });
+  assert.equal(c.status, 201);
+  assert.equal(c.body.post.schemaType, 'Article');
+  assert.equal(c.body.post.speakable, false);
+  await owner.req(`/api/admin/blog/${c.body.post.id}`, { method: 'DELETE' });
+});
