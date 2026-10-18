@@ -295,6 +295,10 @@ dialog { color: var(--ink); }
 .oa__submit { width: 100%; justify-self: stretch; }
 .oa-switch { text-align: center; font-size: 15px; color: var(--ink-2); }
 .oa-switch__btn { padding: 4px 2px; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.oa-switch__btn:disabled { color: var(--ink-3); cursor: default; text-decoration: none; }
+/* the email code step: no account until the code is right (server/lib/customers.js signupStart / signup) */
+.oa-code__lede { padding-top: 0; }
+.oa-code__input { font-variant-numeric: tabular-nums; letter-spacing: 0.3em; }
 .om-signed--admin { background: #FFF3E6; color: #7A3B00; }
 .om-signed a { color: var(--accent); font-weight: 600; }
 @media (min-width: 760px) {

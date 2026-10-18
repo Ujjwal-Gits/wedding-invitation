@@ -25,12 +25,13 @@ export const listCustomers = () => customerStore.all();
 export const linkOf = (c, slug) => (Array.isArray(c?.invitations) ? c.invitations.find((l) => l.slug === slug) || null : null);
 
 /** Creates an account; 409 (code account_exists) when the email is taken. */
-export function createCustomer({ email, name, phone = '', passwordHash, market }) {
+export function createCustomer({ email, name, phone = '', passwordHash, market, emailVerified = false }) {
   return withLock('customers', async () => {
     if (customerStore.byEmail(email)) throw httpError(409, 'This email already has an account. Sign in, or enter that account’s password.', { code: 'account_exists' });
     const now = new Date().toISOString();
     const c = { id: randomBytes(9).toString('base64url'), email, name, phone, passwordHash, createdAt: now, updatedAt: now, disabled: false, invitations: [] };
     if (isMarket(market)) c.market = market;
+    if (emailVerified === true) c.emailVerified = true; // sign-up confirmed the email with a code first
     await customerStore.put(c);
     return c;
   });

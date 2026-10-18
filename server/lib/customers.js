@@ -1,6 +1,6 @@
 // Customer accounts: the customer's own dashboard data (GET /api/account, ...) and the planner's account admin
 // (GET/POST/PATCH /api/admin/customers, linking invitations). Data helpers: lib/accounts.js. Sign-in: lib/auth.js.
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { EMAIL_RE, readSite } from './site.js';
 import { staffByEmail } from './staff.js';
 import { isTheme } from './catalog.js';
@@ -10,10 +10,10 @@ import {
   CUSTOMER_ID_RE, ACCOUNT_PASSWORD_MIN, ACCOUNT_PASSWORD_MAX,
 } from './accounts.js';
 import { syncOrderDetails, prefillFromCustomer } from './handover.js';
-import { PUBLIC_ORIGINS, ADMIN_EMAIL } from './env.js';
+import { PUBLIC_ORIGINS, ADMIN_EMAIL, IS_PROD } from './env.js';
 import { hashAccountPassword, revokeCustomerSessions, permsOf, checkCustomer, signInCustomer, loginThrottle } from './auth.js';
 import { clientIp, originAllowed, rateLimiter } from './security.js';
-import { sendVerify, sendReset, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
+import { sendVerify, sendReset, sendSignupCode, useCode, CODE_RE, MAIL_ON } from './account-mail.js';
 import { clean, planView, REF_RE } from './orders.js';
 import { checkPhone, countryOfPhone, customerMarket, likelyZone, isMarket, MARKET_NAME, PHONE_MSG } from './market.js';
 import { marketView } from './site.js';
@@ -205,13 +205,35 @@ export async function adminList(req, res) {
 }
 
 const signupLimiter = rateLimiter({ windowMs: 60 * 60 * 1000, max: 5 }); // new accounts per IP per hour
+const signupSendIp = rateLimiter({ windowMs: 60 * 60 * 1000, max: 10 }); // sign-up code emails per IP per hour
+const signupSendEmail = rateLimiter({ windowMs: 60 * 60 * 1000, max: 3 }); // sign-up code emails per address per hour
+const signupCodeIp = rateLimiter({ windowMs: 15 * 60 * 1000, max: 20 }); // sign-up code tries per IP
+
+// Sign-ups waiting for their email code, in memory only (a restart drops them; the person asks for a new code).
+// No account exists until the code is right. Keyed by the normalised email; only a hash of the code is kept.
+const SIGNUP_TTL = 15 * 60 * 1000;
+const SIGNUP_TRIES = 5;
+const SIGNUP_MAX = 5000;
+const pendingSignups = new Map(); // email -> { name, email, phone, market, passwordHash, codeHash, exp, tries }
+const signupHash = (email, code) => createHash('sha256').update(`signup:${email}:${code}`).digest();
+function keepPending(p) {
+  const now = Date.now();
+  for (const [k, v] of pendingSignups) if (!(v.exp > now)) pendingSignups.delete(k);
+  pendingSignups.delete(p.email); // re-inserted at the end (newest)
+  while (pendingSignups.size >= SIGNUP_MAX) pendingSignups.delete(pendingSignups.keys().next().value);
+  pendingSignups.set(p.email, p);
+}
+const accountExists = { error: 'This email already has an account. Please sign in instead.', code: 'account_exists', fields: ['email'] };
+// a team member's email signs in as the team member (lib/auth.js), so it cannot be a customer account too
+const emailTaken = (email) => Boolean(customerByEmail(email) || staffByEmail(email) || email === ADMIN_EMAIL);
 
 /**
- * POST /api/auth/signup { name, email, phone, password }: anyone can make an account from the sign-in page. The phone
- * (with its country code) is required and stored as E.164 (lib/phone.js).
- * The browser is signed in at once. Invitations waiting for this email still need the owner's "Link now".
+ * POST /api/auth/signup/start { name, email, phone, password, market? }: step 1 of making an account (sign-in page and
+ * the order form). Checks the details, keeps them (password hashed with argon2id) as a pending sign-up for 15 minutes
+ * and emails a 6-digit sign-up code. No account is made yet. Calling it again ("Send again") sends a new code.
+ * The phone (with its country code) is required and stored as E.164 (lib/phone.js).
  */
-export async function signup(req, res) {
+export async function signupStart(req, res) {
   if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
   const b = req.body || {};
   const email = normEmail(b.email).slice(0, 254);
@@ -230,20 +252,60 @@ export async function signup(req, res) {
     const error = only === 'password' ? PASSWORD_MSG : only === 'phone' ? PHONE_MSG : `Please enter ${fields.map((f) => f === 'password' ? 'a password of 8+ characters' : what[f]).join(', ')}.`;
     return res.status(400).json({ error, fields });
   }
-  const lim = signupLimiter.hit(clientIp(req));
+  const lim = signupSendIp.hit(clientIp(req));
+  if (lim.ok && !signupLimiter.peek(clientIp(req)).ok) Object.assign(lim, signupLimiter.peek(clientIp(req)));
   if (!lim.ok) { res.set('Retry-After', String(lim.retryAfter)); return res.status(429).json({ error: 'Too many new accounts from here. Please try again later.' }); }
-  const exists = { error: 'This email already has an account. Please sign in instead.', code: 'account_exists', fields: ['email'] };
-  // a team member's email signs in as the team member (lib/auth.js), so it cannot be a customer account too
-  if (customerByEmail(email) || staffByEmail(email) || email === ADMIN_EMAIL) return res.status(409).json(exists);
+  if (emailTaken(email)) return res.status(409).json(accountExists);
+  if (!MAIL_ON && IS_PROD) return res.status(503).json({ error: 'Email is not set up yet, so new accounts cannot be made just now. Please try again later.' });
+  const per = signupSendEmail.hit(email);
+  if (!per.ok) { res.set('Retry-After', String(per.retryAfter)); return res.status(429).json({ error: 'We sent a few codes to this email already. Please check your inbox and spam folder, or try again later.', code: 'too_many_codes' }); }
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const passwordHash = await hashAccountPassword(String(b.password).normalize('NFC'));
+  keepPending({ name, email, phone, market, passwordHash, codeHash: signupHash(email, code), exp: Date.now() + SIGNUP_TTL, tries: 0 });
+  if (MAIL_ON) {
+    const sent = await sendSignupCode({ email, name, code, minutes: SIGNUP_TTL / 60000 }).catch(() => false);
+    if (!sent) { pendingSignups.delete(email); return res.status(502).json({ error: 'We could not send the email just now. Please try again in a moment.' }); }
+  } else {
+    console.info(`[account] mail is off (not production): sign-up code for ${email} is ${code}`); // dev only, never in production
+  }
+  res.json({ ok: true, email, expiresIn: SIGNUP_TTL / 1000 });
+}
+
+/**
+ * POST /api/auth/signup { email, code }: step 2. A right code makes the account (email confirmed) and signs this
+ * browser in, answering { role, name, email, csrf, market }. 5 wrong codes and the pending sign-up is gone.
+ * Invitations waiting for this email still need the owner's "Link now".
+ */
+export async function signup(req, res) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'Cross-site request refused.' });
+  const ip = clientIp(req);
+  if (!signupCodeIp.hit(ip).ok) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' });
+  const b = req.body || {};
+  const email = normEmail(b.email).slice(0, 254);
+  const code = String(b.code ?? '').replace(/\s+/g, '');
+  if (!CODE_RE.test(code)) return res.status(400).json({ error: 'Enter the 6-digit code from the email.', fields: ['code'] });
+  const p = pendingSignups.get(email);
+  const expired = { error: 'This code has expired. Click Send again for a new one.', fields: ['code'], code: 'code_expired' };
+  if (!p || !(p.exp > Date.now()) || p.tries >= SIGNUP_TRIES) { if (p) pendingSignups.delete(email); return res.status(400).json(expired); }
+  const got = signupHash(email, code);
+  if (!(got.length === p.codeHash.length && timingSafeEqual(got, p.codeHash))) {
+    p.tries += 1;
+    if (p.tries < SIGNUP_TRIES) return res.status(400).json({ error: 'That code is not right. Check the email and try again.', fields: ['code'], code: 'code_wrong' });
+    pendingSignups.delete(email);
+    return res.status(400).json({ error: 'Too many wrong codes. Click Send again for a new one.', fields: ['code'], code: 'code_expired' });
+  }
+  pendingSignups.delete(email); // used up
+  if (emailTaken(email)) return res.status(409).json(accountExists);
+  const lim = signupLimiter.hit(ip);
+  if (!lim.ok) { res.set('Retry-After', String(lim.retryAfter)); return res.status(429).json({ error: 'Too many new accounts from here. Please try again later.' }); }
   let c;
-  try { c = await createCustomer({ email, name, phone, market, passwordHash: await hashAccountPassword(String(b.password).normalize('NFC')) }); } catch (err) {
-    if (err.code === 'account_exists') return res.status(409).json(exists);
+  try { c = await createCustomer({ email, name: p.name, phone: p.phone, market: p.market, passwordHash: p.passwordHash, emailVerified: true }); } catch (err) {
+    if (err.code === 'account_exists') return res.status(409).json(accountExists);
     throw err;
   }
-  console.info(`[account] signed up id=${c.id} ip=${clientIp(req)}`);
+  console.info(`[account] signed up id=${c.id} ip=${ip}`);
   const s = await signInCustomer(req, res, c);
-  const mailed = await sendVerify(req, c).catch(() => false);
-  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf, verifySent: mailed, market: customerMarket(c, []) });
+  res.status(201).json({ role: 'customer', name: c.name || '', email: c.email, csrf: s.csrf, market: customerMarket(c, []) });
 }
 
 const forgotIp = rateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });

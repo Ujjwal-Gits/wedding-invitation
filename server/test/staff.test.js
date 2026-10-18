@@ -107,7 +107,7 @@ test('the owner adds, lists, changes and removes team members; the owner is list
   assert.equal((await owner.req(`/api/admin/team/${gone.id}`, { method: 'DELETE' })).status, 200);
   assert.equal((await owner.req(`/api/admin/team/${gone.id}`, { method: 'DELETE' })).status, 404);
   // a team email cannot also be a customer account
-  assert.equal((await browser().req('/api/auth/signup', { method: 'POST', body: { name: 'Rina', email: 'rina@test.local', phone: '+9779801234567', password: 'customer-pass-1' } })).status, 409);
+  assert.equal((await browser().req('/api/auth/signup/start', { method: 'POST', body: { name: 'Rina', email: 'rina@test.local', phone: '+9779801234567', password: 'customer-pass-1' } })).status, 409);
 });
 
 test('an admin only reaches the areas they were given; team and audit are for super admins', async () => {

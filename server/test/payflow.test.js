@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, relative, isAbsolute } from 'node:path';
 import { hash as argonHash } from '@node-rs/argon2';
 import sharp from 'sharp';
+import { placeOrder } from './_order-as.js';
 
 const DATA_ROOT = mkdtempSync(join(tmpdir(), 'nimtto-payflow-'));
 process.env.DATA_ROOT = DATA_ROOT;
@@ -75,7 +76,7 @@ const asAdmin = (path, { method = 'GET', body } = {}) => fetch(base + path, {
 });
 const ORDER = { kind: 'order', plan: 'shubha', name: 'Sita Sharma', phone: '9800000000', bride: 'Sita', groom: 'Ram', weddingDate: '2026-12-01', email: 'sita@example.com', password: 'sita-pass-123', website: '' };
 async function newOrder(extra = {}) {
-  const r = await post('/api/orders', { ...ORDER, ...extra });
+  const r = await placeOrder(base, { ...ORDER, ...extra });
   assert.equal(r.status, 201);
   return r.json();
 }
@@ -152,7 +153,7 @@ test('site: public answer has the four plans and enabled methods only, no admin 
 });
 
 test('orders: prices come from the server, the token is returned once and only its hash is stored', async () => {
-  const r = await post('/api/orders', { ...ORDER, amount: { npr: 1, usd: 1 }, price: 1 });
+  const r = await placeOrder(base, { ...ORDER, amount: { npr: 1, usd: 1 }, price: 1 });
   assert.equal(r.status, 201);
   const o = await r.json();
   assert.match(o.ref, /^NM-\d{5,6}$/);
@@ -167,8 +168,8 @@ test('orders: prices come from the server, the token is returned once and only i
   assert.equal(stored.payTokenHash.length, 64);
   assert.equal(stored.pay.status, 'awaiting_payment');
   // a plan is required for an order; an unknown plan is refused
-  assert.equal((await post('/api/orders', { ...ORDER, plan: undefined })).status, 400);
-  assert.equal((await post('/api/orders', { ...ORDER, plan: 'gold' })).status, 400);
+  assert.equal((await placeOrder(base, { ...ORDER, plan: undefined })).status, 400);
+  assert.equal((await placeOrder(base, { ...ORDER, plan: 'gold' })).status, 400);
   assert.equal((await post('/api/orders', ORDER, 'https://evil.example')).status, 403);
   // a custom request without a plan is an enquiry on the Custom plan: no price yet and no payment page
   const c = await newOrder({ kind: 'custom', plan: undefined, message: 'Peacock colours please' });
@@ -371,7 +372,7 @@ test('admin QR upload: a screenshot is cropped to just the code, decoded, and wi
 test('orders: the phone is checked and stored as E.164; the market is stored and comes back on the pay page', async () => {
   // no phone, a fake number, a number without a real area code: refused with one clear message
   for (const phone of [undefined, '', '12345', '+1 555 123 4567']) {
-    const r = await post('/api/orders', { ...ORDER, phone });
+    const r = await placeOrder(base, { ...ORDER, phone });
     assert.equal(r.status, 400, String(phone));
     const d = await r.json();
     assert.deepEqual(d.fields, ['phone']);
@@ -391,7 +392,7 @@ test('orders: the phone is checked and stored as E.164; the market is stored and
   assert.equal(b.market, 'np');
   assert.equal((await store.getOrderByRef(b.ref)).phone, '+9779801234567');
   // an unknown market is refused
-  assert.equal((await post('/api/orders', { ...ORDER, market: 'mars' })).status, 400);
+  assert.equal((await placeOrder(base, { ...ORDER, market: 'mars' })).status, 400);
   // the admin sees both
   const list = (await (await asAdmin('/api/orders')).json()).orders;
   assert.equal(list.find((o) => o.ref === a.ref).market, 'intl');

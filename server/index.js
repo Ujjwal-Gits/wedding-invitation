@@ -75,7 +75,8 @@ api.param('slug', (req, res, next, slug) => (SLUG_RE.test(slug) ? next() : res.s
 // Expensive routes (argon2, scans, image work) are refused with 503 while the process is overloaded (lib/guard.js).
 const heavy = shedWhenOverloaded;
 api.post('/auth/login', heavy, json('4kb'), wrap(login));
-api.post('/auth/signup', heavy, json('4kb'), wrap(customers.signup)); // a customer account from the sign-in page
+api.post('/auth/signup/start', heavy, json('4kb'), wrap(customers.signupStart)); // sign-up step 1: details -> an emailed code
+api.post('/auth/signup', heavy, json('1kb'), wrap(customers.signup)); // step 2: the right code -> the account, signed in
 api.post('/auth/forgot', heavy, json('2kb'), wrap(customers.forgot)); // emails a 6-digit code (Brevo, lib/account-mail.js)
 api.post('/auth/reset/check', heavy, json('2kb'), wrap(customers.checkResetCode)); // step 1: the code -> a reset ticket
 api.post('/auth/reset', heavy, json('2kb'), wrap(customers.resetPassword)); // step 2: the ticket + the new password

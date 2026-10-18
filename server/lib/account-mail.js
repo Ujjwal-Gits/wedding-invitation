@@ -13,7 +13,7 @@ export const CODE_RE = /^\d{6}$/;
 const hashOf = (cid, code) => createHash('sha256').update(`${cid}:${code}`).digest('hex');
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function codeEmail({ name, code, what, minutes }) {
+function codeEmail({ name, code, what, minutes, subject }) {
   const hi = name ? `Namaste ${name.split(' ')[0]},` : 'Namaste,';
   const text = `${hi}\n\nYour Nimtto code is: ${code}\n\nEnter it to ${what}. It works for ${minutes} minutes.\nIf you did not ask for this, ignore this email.\n\nNimtto · nimtto.com`;
   const html = `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Helvetica,Arial,sans-serif;color:#16181d">
@@ -24,7 +24,7 @@ function codeEmail({ name, code, what, minutes }) {
 <tr><td style="padding:20px 0"><div style="display:inline-block;font-size:34px;font-weight:700;letter-spacing:8px;font-family:'Courier New',monospace;background:#f6f7f9;border-radius:12px;padding:14px 22px;user-select:all">${code}</div></td></tr>
 <tr><td style="font-size:13px;line-height:1.6;color:#5b606b">It works for ${minutes} minutes. If you did not ask for this, ignore this email.</td></tr>
 </table><p style="font-size:12px;color:#8a8f99">Nimtto · Online invitations · nimtto.com</p></td></tr></table></body></html>`;
-  return { subject: `${code} is your Nimtto code`, text, html };
+  return { subject: subject || `${code} is your Nimtto code`, text, html };
 }
 
 async function issue(c, field, ttl, what, tag) {
@@ -37,6 +37,14 @@ async function issue(c, field, ttl, what, tag) {
 export async function sendVerify(req, c) {
   if (!MAIL_ON || c.emailVerified === true) return false;
   return issue(c, 'verify', VERIFY_TTL, 'confirm your email', 'verify-email');
+}
+
+/**
+ * Emails "Your Nimtto sign-up code" for a sign-up that is not an account yet (lib/customers.js signupStart).
+ * Resolves true when Brevo accepted it, false when mail is off or the send failed.
+ */
+export function sendSignupCode({ email, name, code, minutes }) {
+  return sendMail({ to: email, name, tag: 'signup-code', ...codeEmail({ name, code, what: 'make your account', minutes, subject: `${code} is your Nimtto sign-up code` }) });
 }
 
 /** Emails a "Forgot password" code if the email has an active account. No account = no email (same answer). */

@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hash as argonHash } from '@node-rs/argon2';
+import { placeOrder } from './_order-as.js';
 
 const DATA_ROOT = mkdtempSync(join(tmpdir(), 'nimtto-finance-'));
 process.env.DATA_ROOT = DATA_ROOT;
@@ -176,10 +177,7 @@ const asAdmin = (path, { method = 'GET', body } = {}) => fetch(base + path, {
 let n = 0;
 async function newOrder(extra = {}) {
   n += 1;
-  const r = await fetch(`${base}/api/orders`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base },
-    body: JSON.stringify({ kind: 'order', plan: 'shubha', name: 'Gita Rai', phone: '9800000000', email: `gita${n}@example.com`, password: 'gita-pass-123', website: '', ...extra }),
-  });
+  const r = await placeOrder(base, { kind: 'order', plan: 'shubha', name: 'Gita Rai', phone: '9800000000', email: `gita${n}@example.com`, password: 'gita-pass-123', website: '', ...extra });
   assert.equal(r.status, 201);
   const out = await r.json();
   return { ...out, id: (await store.getOrderByRef(out.ref)).id };
