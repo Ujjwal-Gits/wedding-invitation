@@ -227,7 +227,7 @@ const byNewest = (a, b) => (b.publishedAt.localeCompare(a.publishedAt) || b.upda
 const live = (doc, site) => doc.posts.filter((p) => p.site === site && p.status === 'published' && p.publishedAt <= today()).sort(byNewest).map(withC);
 /** The live blog sitemap XML (for the readable /sitemap/ page, lib/html-sitemap.js). */
 export async function blogSitemapXml() {
-  const doc = await readBlog();
+  const { doc } = await readBlog();
   return renderSitemap({ np: live(doc, 'np'), intl: live(doc, 'intl') });
 }
 
