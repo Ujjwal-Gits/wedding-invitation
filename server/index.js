@@ -25,6 +25,7 @@ import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
 import * as orders from './lib/orders.js';
 import * as site from './lib/site.js';
+import * as content from './lib/content.js'; // the Content page: page words, FAQ, contact, footer (docs/API.md "Content")
 import * as music from './lib/music.js'; // the site-wide music library (docs/API.md "Music library")
 import { sharePage } from './lib/share.js';
 import { themePageGate } from './lib/gate.js';
@@ -120,6 +121,10 @@ api.get('/admin/markets', requireAnyPerm('orders', 'finance'), wrap(marketStats)
 api.put('/site', requireAnyPerm('website', 'themes'), json('32kb'), wrap(site.putSite)); // each changes only its part (lib/site.js)
 api.get('/admin/site', requireAnyPerm('website', 'themes', 'orders', 'finance'), wrap(site.getAdminSite)); // plans and payment methods
 api.post('/admin/pay/qr', requirePerm('website'), heavy, wrap(manualPay.uploadQr));
+// The website's words without a rebuild (lib/content.js; docs/API.md "Content"): pages, FAQ, contact, footer, announcement
+api.get('/admin/content', requirePerm('content'), wrap(content.adminContent(DIST_DIR)));
+api.put('/admin/content/page', requirePerm('content'), json('96kb'), wrap(content.putPage(DIST_DIR)));
+api.put('/admin/content/site/:market', requirePerm('content'), json('16kb'), wrap(content.putSiteContent(DIST_DIR)));
 api.param('musicId', (req, res, next, id) => (/^[A-Za-z0-9_-]{2,40}$/.test(id) ? next() : res.status(404).json({ error: 'No such song.' })));
 api.get('/admin/music', requirePerm('music'), wrap(music.adminList));
 api.post('/admin/music', requirePerm('music'), heavy, wrap(music.upload));
@@ -258,6 +263,8 @@ if (IS_PROD) {
   });
   app.use(showcaseGate(DIST_DIR)); // public watermarked showcase /<theme>/?showcase=1 (lib/showcase.js)
   app.use(themePageGate(DIST_DIR));
+  // the website's pages with the studio's Content edits written in (cached per revision; untouched pages fall through)
+  app.use(content.contentPages(DIST_DIR));
   // dist/ with build-time brotli/gzip and the caching policy (lib/static.js; Cloudflare rules in docs/OPERATIONS.md)
   app.use(staticFiles(DIST_DIR));
 }

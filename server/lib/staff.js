@@ -22,6 +22,7 @@ export const PERMS = [
   { key: 'orders', label: 'Orders', help: 'Orders, enquiries and quotes, payment checks, figures by market' },
   { key: 'finance', label: 'Finance', help: 'Money pages, per market' },
   { key: 'website', label: 'Website', help: 'Both websites: plans per market, payment methods, contact, headlines' },
+  { key: 'content', label: 'Content', help: 'Page titles and descriptions, headings, FAQ, contact, footer and the announcement bar' },
   { key: 'themes', label: 'Themes', help: 'Designs per market: shown, featured, order, style' },
   { key: 'music', label: 'Music', help: 'The music library' },
 ];

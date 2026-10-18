@@ -20,6 +20,8 @@ const LABELS = {
   'POST /clear-cache': 'Cleared the browser cache',
   'PUT /site': 'Saved the website settings',
   'POST /admin/pay/qr': 'Uploaded a payment QR',
+  'PUT /admin/content/page': 'Changed the words of a page (Content)',
+  'PUT /admin/content/site/:market': 'Changed contact, footer or announcement (Content)',
   'POST /admin/music': 'Uploaded a song',
   'PATCH /admin/music': 'Reordered the music library',
   'POST /admin/music/restore': 'Restored the built-in songs',

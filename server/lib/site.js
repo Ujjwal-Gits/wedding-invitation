@@ -452,6 +452,27 @@ export async function putSite(req, res) {
 }
 
 /**
+ * One website's contact lines (email, phone, WhatsApp, address) from the studio's Content page, validated exactly as
+ * PUT /api/site (400 with `errors` under `contact.` or `intl.contact.`). Nothing is written when nothing changed.
+ */
+export async function saveContact(market, c) {
+  const cur = await readSite();
+  const o = c && typeof c === 'object' && !Array.isArray(c) ? c : {};
+  const next = { phone: o.phone ?? '', whatsapp: o.whatsapp ?? '', email: o.email ?? '', address: o.address ?? '' };
+  const draft = structuredClone(cur);
+  if (market === 'intl') draft.intl = { ...draft.intl, contact: next };
+  else draft.contact = next;
+  const clean = sanitizeSite(draft);
+  const before = JSON.stringify(market === 'intl' ? cur.intl?.contact : cur.contact);
+  const after = JSON.stringify(market === 'intl' ? clean.intl.contact : clean.contact);
+  if (before === after) return clean;
+  await putDoc('site', clean);
+  siteEntity = { rev: -1, e: null };
+  themesEntity = { rev: -1, at: 0, e: {} };
+  return clean;
+}
+
+/**
  * GET /api/themes (public): ready themes for the website gallery, minus hiddenThemes. No page URLs: the theme
  * pages themselves are only served to the studios and to guests of a published invitation (lib/gate.js).
  */
