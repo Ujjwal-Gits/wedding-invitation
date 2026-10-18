@@ -347,7 +347,7 @@ function glide(ctx) {
       const s = proj(wide ? 0.14 : 1.05);
       const x = wide ? W / 2 + side * W * 0.3 : W / 2 + side * 1.5 * (W / 2) * s; const y = yAt(H * 1.03, s);
       m.parentElement.style.zIndex = wide ? '300' : '40';
-      const show = Math.min(1, Math.max(0, (camZ - 0.25) * 2.5), Math.max(0, (N + 0.6 - camZ) * 2));
+      const show = Math.min(1, Math.max(0, (camZ - 0.25) * 2.5), Math.max(0, (N + 0.3 - camZ) * 3));
       m.style.opacity = show.toFixed(3);
       m.style.transform = `translate3d(${(x - mw[i] / 2).toFixed(1)}px,${(y - mh[i]).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
     });
