@@ -35,6 +35,7 @@ export const THEMES = [
   ['janti', 'Janti', 'जन्ती', 'film', 'Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door.', 'the Naumati Baja band and a red doli in a golden Newari street', ['hindu']],
   ['swayambar', 'Swayambar', 'स्वयम्बर', 'flowers', 'Two fresh garlands swing apart. The bride’s side and the groom’s side come together as you scroll.', 'the bride and groom exchanging marigold garlands', ['hindu']],
   ['sindoor', 'Sindoor', 'सिन्दूर', 'cards', 'Red, white and black. The sindoor box opens and a red line carries your story.', 'a red and gold sindoor box on white with a red Ganesh drawing', ['hindu']],
+  ['kalapi', 'Kalapi', 'कलापी', 'film', 'A peacock fans its tail to show your names. Then you walk sideways along a painted pichwai of the monsoon.', 'a peacock fan around the couple’s names on monsoon-teal cloth', ['hindu']],
   ['rangoli', 'Rangoli', 'रंगोली', 'flowers', 'A flower rangoli on a brick courtyard. The rings come together and the diyo in the middle lights up.', 'a round marigold and rose rangoli on a brick courtyard with lit diyos', ['hindu']],
   ['sarovar', 'Sarovar', 'सरोवर', 'flowers', 'A lotus lake at dawn. A bud opens, two swans meet, and you glide across the water to a marble pavilion.', 'two white swans on a pink lotus lake at dawn before a marble pavilion', ['hindu', 'buddhist', 'kirat', 'christian', 'muslim', 'other']],
   ['mohar', 'Mohar', 'मोहर', 'cards', 'Press the brass seal into red lac. The sealed decree unfolds page by page in 3D.', 'a folded parchment decree tied with red silk and a brass seal on indigo cloth', ['hindu', 'buddhist', 'kirat', 'muslim', 'christian', 'other']],
@@ -87,7 +88,7 @@ export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शा
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
 export const TIER_LABEL = { saral: 'Standard', shubha: 'Pro', shahi: 'Pro Max' };
 const TIERS = {
-  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar'],
+  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar', 'kalapi'],
   saral: ['kham', 'mala', 'gurans', 'sayapatri', 'jhyal', 'chitra', 'dhaka'],
 };
 export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');

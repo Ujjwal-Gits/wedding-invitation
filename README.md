@@ -34,6 +34,7 @@ dashboard to create, customise, publish and track invitations.
 | 27 | **Rangoli** `/rangoli/` | A flower rangoli on a courtyard brick floor: its rings assemble, the centre diyo lights, and the floor tells the day. |
 | 28 | **Sarovar** `/sarovar/` | A lotus lake at dawn on living WebGL water: a bud opens, two swans meet, and you glide across the lake past stone posts (one per ceremony) to a marble pavilion. Both sites. |
 | 29 | **Mohar** `/mohar/` | The royal seal: press and hold a brass seal into red lac on a folded farman, break it, and the decree unfolds in 3D; its pages then open like a concertina. Both sites. |
+| 30 | **Kalapi** `/kalapi/` | The peacock's monsoon: a peacock fans its tail around your names, then you walk sideways along a painted Nathdwara pichwai cloth. |
 
 The showroom at `/` links every theme and the studio.
 
