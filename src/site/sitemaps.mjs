@@ -83,7 +83,6 @@ export function writeSitemap(file, entries, { images = false } = {}) {
     return `  <url><loc>${xmlEsc(abs(e.path))}</loc><lastmod>${e.lastmod}</lastmod>${imgs}</url>`;
   }).join('\n');
   writeFileSync(resolve(PUBLIC, file), `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${images ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"' : ''}>
 ${body}
 </urlset>
@@ -100,7 +99,6 @@ export function writeSitemapIndex() {
     return `  <sitemap><loc>${SITE_URL}/${f}</loc>${dates.length ? `<lastmod>${dates[dates.length - 1]}</lastmod>` : ''}</sitemap>`;
   });
   writeFileSync(resolve(PUBLIC, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${items.join('\n')}
 </sitemapindex>

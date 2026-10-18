@@ -20,6 +20,7 @@ import * as audit from './lib/audit.js'; // the admin audit log (docs/API.md "Au
 import * as customers from './lib/customers.js'; // customer accounts (docs/API.md "Customer accounts")
 import * as inv from './lib/invitations.js';
 import * as handover from './lib/handover.js'; // invitations for customer accounts (docs/API.md "Invitations for an account")
+import { htmlSitemap } from './lib/html-sitemap.js'; // GET /sitemap/: every public page, readable
 import { scrubDemoOnce } from './lib/migrate-demo.js';
 import * as rsvp from './lib/rsvp.js';
 import { handleUpload } from './lib/uploads.js';
@@ -251,6 +252,8 @@ app.use('/uploads', (req, res) => res.status(404).end());
 // The blog (/blog/, /international/blog/, their posts and feeds, /sitemap-blog.xml, llms*.txt): server-rendered into
 // the built shells (dist/blog/index.html), so search engines read every post; lib/blog.js.
 app.use(blog.blogPages({ distDir: DIST_DIR }));
+// A readable list of every public page (the XML sitemaps stay plain for search engines); lib/html-sitemap.js.
+app.get(['/sitemap', '/sitemap/'], (req, res, next) => (req.path === '/sitemap' ? res.redirect(301, '/sitemap/') : next()), htmlSitemap(blog.blogSitemapXml));
 // The Blog editor's Preview tab: a page rendered by POST /api/admin/blog/preview, for the session that made it (30 min).
 app.get('/studio/blog-preview/:token', requirePerm('content'), blog.previewPage);
 

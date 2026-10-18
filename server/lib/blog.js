@@ -225,6 +225,11 @@ function withC(p) {
 const byNewest = (a, b) => (b.publishedAt.localeCompare(a.publishedAt) || b.updatedAt.localeCompare(a.updatedAt) || a.title.localeCompare(b.title));
 /** a site's published posts, newest first; a post dated in the future waits for its day */
 const live = (doc, site) => doc.posts.filter((p) => p.site === site && p.status === 'published' && p.publishedAt <= today()).sort(byNewest).map(withC);
+/** The live blog sitemap XML (for the readable /sitemap/ page, lib/html-sitemap.js). */
+export async function blogSitemapXml() {
+  const doc = await readBlog();
+  return renderSitemap({ np: live(doc, 'np'), intl: live(doc, 'intl') });
+}
 
 /**
  * The site's shell for its blog pages with the Content page's site-wide words written in (contact, footer lines, the
