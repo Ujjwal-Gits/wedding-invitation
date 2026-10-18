@@ -69,6 +69,7 @@ default text.
 | sarovar | All six | Lotus lake, swans and a marble pavilion; the floating diyas become floating candles unless the invitation is Hindu or Buddhist |
 | mohar | All six | Brass seal, red lac, parchment and an indigo cloth; the painted diya in the table art is swapped for petals when the symbols are not Hindu |
 | kalpataru | All six | A painted peepal tree with parakeets, threads and fresh flowers, no figures; the brass Ganesh, kalash and diyo at its roots show only on Hindu invitations (`data-hindu`, the Ganesh slot swaps to the emblem) |
+| vasant | Hindu, Buddhist, Kirat, Other | Botanical flower plates, butterflies and a marigold-and-rose garland; no deity, no ritual object (Ganesh only on the full card, off by default) |
 | blush-roses | Buddhist, Kirat, Muslim, Christian, Other | Peach roses in a gold frame; cross only on a Christian invitation |
 | garden-party | Buddhist, Kirat, Muslim, Christian, Other | Garden arbor and lawn, no figures |
 | letterpress | Buddhist, Kirat, Muslim, Christian, Other | Deckled cotton card on linen |

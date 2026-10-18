@@ -39,6 +39,7 @@ const KNOWN = {
   kalapi: { name: 'Kalapi', concept: 'A peacock fans its tail; then walk sideways along a painted pichwai cloth of the monsoon' },
   shagun: { name: 'Shagun', concept: 'A brass shagun thali on a banana leaf turns as you scroll; each offering opens a part of the wedding' },
   sandesh: { name: 'Sandesh', concept: 'Doves bring a lac-sealed letter to a morning rooftop, then deliver each event as a hand-stamped postcard' },
+  vasant: { name: 'Vasant', concept: 'Butterflies lift off a fresh flower garland; each ceremony’s own flower opens as you scroll' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
   'rose-arch': { name: 'Rose Arch', concept: 'Walk through a stone arch of climbing garden roses into the green beyond' },
@@ -87,6 +88,8 @@ const META = {
   kalpataru: { market: 'both', style: 'garden', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
   // on both sites (neutral art: doves, a rooftop, roses, postage stamps)
   sandesh: { market: 'both', style: 'romantic', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
+  // sold on both sites (botanical plates and butterflies, no religious marks)
+  vasant: { market: 'both', style: 'garden', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
 };
 const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
 /** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
@@ -111,6 +114,7 @@ const DEFAULT_TIERS = {
   kalapi: 'shahi',
   shagun: 'shahi',
   sandesh: 'shahi',
+  vasant: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards

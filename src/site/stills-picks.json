@@ -185,5 +185,9 @@
   "sandesh": {
     "kind": "hero",
     "why": "The opened letter on the morning rooftop: the two doves on its edge, the names and the vermilion postmark."
+  },
+  "vasant": {
+    "kind": "hero",
+    "why": "The names under the marigold garland, with the butterflies that stayed after the rest flew off."
   }
 }

@@ -1,0 +1,318 @@
+/* Vasant (वसन्त) · the spring garden of butterflies. A botanical book: haldi-cream cotton paper, leaf-green type,
+   rani pink as the one accent (buttons, the ampersand). Only transform and opacity ever move. */
+body.theme-vasant {
+  --va-paper: #FFF7E6;
+  --va-sheet: #FFFCF4;
+  --va-plate: #F8EEDB;
+  --va-leaf: #3B6B35;
+  --va-ink: #2A2415;
+  --va-ink-2: #5A5036;
+  --va-sage: #E6EEDC;
+  --va-turmeric: #F0B82D;
+  --va-hair: rgba(59, 107, 53, 0.24);
+  --va-deva-display: 'Halant', 'Mukta', serif;
+  --va-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .40  0 0 0 0 .31  0 0 0 0 .14  0 0 0 .075 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --su-bg: var(--va-paper);
+  --su-paper: var(--va-sheet);
+  --su-ink: var(--va-ink);
+  --su-ink-2: var(--va-ink-2);
+  --su-accent: #C2185B;
+  --su-accent-ink: #FFFFFF;
+  --su-gold: var(--va-leaf);
+  --su-line: rgba(42, 36, 21, 0.16);
+  --su-f-display: 'Ibarra Real Nova', Georgia, serif;
+  --su-f-script: 'Ibarra Real Nova', Georgia, serif;
+  --su-f-body: 'Hind', 'Mukta', sans-serif;
+  --su-f-deva: 'Mukta', sans-serif;
+  --f-deva: 'Mukta', 'Noto Serif Devanagari', sans-serif;
+  --f-deva-display: var(--va-deva-display);
+  --su-radius: 6px;
+  --su-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  background-color: var(--va-paper);
+  background-image: var(--va-noise);
+  font-size: 17px;
+  line-height: 1.65;
+}
+.theme-vasant .su-btn { border-radius: 999px; letter-spacing: 0.12em; }
+.theme-vasant .su-btn--line { background: transparent; }
+.theme-vasant .su-link { color: #A3134C; }
+
+/* ───────── the butterflies (rigged: two wings that fold toward the body) ─────────
+   A flap is a 2D scaleX about the body: crisp on every GPU (a 3D rotateY rasterises the cut-out at low quality on
+   many phones), and the foreshortening reads the same at this size. */
+.va-bf { position: absolute; display: block; aspect-ratio: 1 / var(--ar, 0.75); pointer-events: none; backface-visibility: hidden; }
+.va-bf__rig { position: absolute; inset: 0; }
+.va-bf__w, .va-bf__b { position: absolute; top: 0; height: 100%; display: block; max-width: none; user-select: none; }
+.va-bf__w { width: 50%; transform: scaleX(0.94); }
+.va-bf__w--l { left: 0; transform-origin: 100% 50%; }
+.va-bf__w--r { left: 50%; transform-origin: 0% 50%; }
+.va-bf__b { left: 50%; width: 8.6%; translate: -50% 0; }
+.va-bf.is-fly, .va-bf.is-seen.va-perch { will-change: transform; }
+/* resting: the slow open-and-close of a basking butterfly, only while on screen */
+.va-bf.is-seen .va-bf__w { animation: va-rest var(--rest, 3.4s) cubic-bezier(0.45, 0, 0.55, 1) var(--d, 0s) infinite alternate; }
+@keyframes va-rest { 0%, 35% { transform: scaleX(0.96); } 100% { transform: scaleX(0.5); } }
+/* flying: quick full strokes */
+.va-bf.is-fly .va-bf__w { animation: va-fly 0.16s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes va-fly { from { transform: scaleX(1); } to { transform: scaleX(0.16); } }
+
+/* ───────── gate: transparent; the words over the paper, the garland seen through ───────── */
+.theme-vasant .su-gate { background: transparent; }
+.va-gate { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: calc(min(780px, 56vw) * 0.46) 0 190px; cursor: pointer; }
+.va-gate__mono { display: flex; align-items: center; gap: 22px; margin: 0; font: 400 italic clamp(64px, 16vw, 112px)/1 var(--su-f-display); color: var(--va-leaf); }
+.va-gate__mono i { display: block; width: 1px; height: 0.9em; background: var(--va-hair); rotate: 18deg; }
+.theme-vasant .su-gate__line { color: var(--va-ink); font: 500 italic 20px/1.4 var(--su-f-display); }
+.theme-vasant .su-gate__line .l-ne { font: 600 19px/1.6 var(--va-deva-display); }
+.theme-vasant .su-quiet { color: var(--va-ink-2); }
+body.su-locked .va-hero .su-in { opacity: 0; }
+
+/* ───────── first screen ───────── */
+.va-hero { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0 16px clamp(150px, 20vh, 200px); text-align: center;
+  background-image: radial-gradient(ellipse 62% 46% at 50% 56%, rgba(255, 253, 245, 0.95), rgba(255, 253, 245, 0) 72%), radial-gradient(ellipse 55% 38% at 0% 100%, rgba(240, 184, 45, 0.16), rgba(240, 184, 45, 0) 72%), radial-gradient(ellipse 50% 34% at 100% 100%, rgba(194, 24, 91, 0.07), rgba(194, 24, 91, 0) 72%), var(--va-noise), var(--va-noise); }
+.va-hero > .va-garland, .va-hero > .va-hero__text { position: relative; z-index: 1; }
+.va-hero__decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) 0.6s; }
+body.su-locked .va-hero__decor { opacity: 0; transition: none; }
+.va-corner-fl { position: absolute; left: -1.5%; bottom: -1%; width: min(300px, 44vw); height: auto; }
+.va-hero__scatter { position: absolute; right: 0; bottom: 1%; width: min(380px, 50vw); height: min(190px, 30vw); overflow: hidden; }
+.va-hero > .va-hero__text { flex: 1; justify-content: center; }
+.va-garland { position: relative; width: min(780px, 56vw); margin: 0 auto; }
+.va-garland__img { display: block; width: 100%; height: auto; }
+.va-garland__bfs { position: absolute; inset: 0; }
+.va-perch { left: var(--x); top: var(--y); width: min(var(--w), 92px); translate: -50% -50%; rotate: var(--r); }
+.va-hero__text { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 760px; margin-top: clamp(4px, 1.5vh, 18px); }
+.va-kicker { margin: 0; font: 600 12.5px/1.4 var(--su-f-body); letter-spacing: 0.3em; text-transform: uppercase; color: var(--va-leaf); }
+.va-kicker .l-ne { font: 600 17px/1.5 var(--va-deva-display); letter-spacing: 0; }
+.va-names { display: flex; flex-direction: column; align-items: center; margin: 8px 0 4px; font: 500 clamp(52px, 6.4vw, 92px)/1.02 var(--su-f-display); color: var(--va-ink); letter-spacing: -0.01em; }
+.va-names__n { display: block; text-wrap: balance; }
+.va-names .l-ne { font: 600 0.78em/1.35 var(--va-deva-display); letter-spacing: 0; }
+.va-names__amp { display: block; margin: 0.04em 0 0.02em; font: 400 italic 0.62em/1 var(--su-f-display); color: var(--su-accent); }
+.va-hero__line { max-width: 30ch; margin: 6px 0 0; font: 400 italic clamp(19px, 1.7vw, 23px)/1.45 var(--su-f-display); color: var(--va-ink-2); text-wrap: balance; }
+.va-hero__line .l-ne { font: 500 19px/1.7 var(--su-f-deva); font-style: normal; }
+.va-hero__date { display: flex; flex-direction: column; gap: 2px; margin: 14px 0 0; padding: 12px 22px; border-block: 1px solid var(--va-hair); }
+.va-hero__ad { font: 600 15px/1.4 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--va-ink); }
+.va-hero__ad .l-ne { font: 500 18px/1.5 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
+.va-hero__bs { font: 400 15px/1.5 var(--su-f-body); color: var(--va-ink-2); }
+.va-hero__bs .l-ne { font-size: 16px; }
+.va-hero__place { margin: 8px 0 0; font: 500 16px/1.5 var(--su-f-body); color: var(--va-ink-2); }
+.va-dot { color: var(--va-leaf); padding: 0 4px; }
+.theme-vasant .su-cue { color: var(--va-leaf); }
+
+/* ───────── the book's sections ───────── */
+.va-sec { padding: clamp(84px, 12vh, 136px) 20px; }
+.va-head { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 680px; margin: 0 auto clamp(32px, 5vh, 56px); text-align: center; }
+.va-h2 { margin: 0; font: 500 clamp(34px, 4.4vw, 54px)/1.12 var(--su-f-display); color: var(--va-leaf); text-wrap: balance; }
+.va-h2 .l-ne { font: 600 0.86em/1.4 var(--va-deva-display); }
+.va-sheet { position: relative; background-color: var(--va-sheet); background-image: var(--va-noise); border: 1px solid rgba(42, 36, 21, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 22px 44px -30px rgba(70, 52, 14, 0.45), 0 2px 6px -3px rgba(70, 52, 14, 0.18); }
+.va-spray { display: block; height: auto; max-width: 100%; }
+/* photo corners: little paper triangles that hold a photograph on the sheet */
+.va-corner { position: absolute; z-index: 2; width: 28px; height: 28px; background: #E7D9B6; filter: drop-shadow(0 1px 1px rgba(60, 44, 10, 0.25)); }
+.va-corner--tl { left: -7px; top: -7px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.va-corner--tr { right: -7px; top: -7px; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.va-corner--bl { left: -7px; bottom: -7px; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.va-corner--br { right: -7px; bottom: -7px; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+/* couple: tipped onto a sheet beside a pressed spray */
+.va-tip { margin: 0 auto; max-width: 640px; }
+.va-tip__sheet { display: grid; grid-template-columns: minmax(0, 1fr) 30%; align-items: end; gap: 18px; padding: 30px 24px 30px 32px; rotate: -0.6deg; }
+.va-tip__photo { position: relative; }
+.va-tip__photo img { display: block; width: 100%; height: auto; }
+.va-tip__spray { width: 100%; rotate: 8deg; translate: 6% 4%; }
+.va-tip__cap { max-width: 34ch; margin: 26px auto 0; text-align: center; font: 400 italic 20px/1.5 var(--su-f-display); color: var(--va-ink-2); text-wrap: balance; }
+.va-tip__cap .l-ne { font: 400 18px/1.75 var(--su-f-deva); font-style: normal; }
+
+/* the date under a wing, the wingbeat countdown */
+.va-date__card { width: min(440px, 100%); margin: 0 auto; }
+.va-scratch .su-scratch__foil { border-radius: 10px; }
+.va-datecard { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 34px 20px 30px; text-align: center; background: var(--va-sheet); border: 1px solid var(--va-hair); border-radius: 10px; outline: 1px solid var(--va-hair); outline-offset: -8px; }
+.va-datecard__wd { font: 600 13px/1.4 var(--su-f-body); letter-spacing: 0.28em; text-transform: uppercase; color: var(--va-leaf); }
+.va-datecard__wd .l-ne { font-size: 17px; letter-spacing: 0; }
+.va-datecard__day { font: 500 clamp(88px, 22vw, 120px)/0.95 var(--su-f-display); color: var(--va-ink); }
+.va-datecard__day .l-ne { font: 500 0.8em/1.15 var(--su-f-deva); }
+.va-datecard__my { font: 400 italic 24px/1.3 var(--su-f-display); color: var(--va-ink); }
+.va-datecard__my .l-ne { font: 500 22px/1.5 var(--su-f-deva); font-style: normal; }
+.va-datecard__alt { margin-top: 8px; font-size: 16px; color: var(--va-ink-2); }
+.va-datecard__time { margin-top: 2px; font: 600 14px/1.4 var(--su-f-body); letter-spacing: 0.14em; color: var(--su-accent); }
+.va-datecard__time .l-ne { font-size: 17px; letter-spacing: 0; }
+.va-date__place { margin: 18px auto 0; text-align: center; font: 500 17px/1.5 var(--su-f-body); }
+.va-count { margin: clamp(48px, 8vh, 72px) auto 0; text-align: center; }
+.va-count__title { margin: 0 0 18px; font: 400 italic 24px/1.35 var(--su-f-display); color: var(--va-leaf); }
+.va-count__title .l-ne { font: 500 20px/1.6 var(--su-f-deva); font-style: normal; }
+.va-count__row { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 2.4vw, 22px); }
+.va-cd { display: flex; gap: clamp(6px, 2vw, 18px); margin: 0; padding: 0; list-style: none; }
+.va-cd__cell { width: clamp(66px, 17vw, 96px); padding: 12px 2px 10px; border-top: 1px solid var(--va-hair); border-bottom: 1px solid var(--va-hair); }
+.va-cd__n { display: block; font: 500 clamp(36px, 6vw, 52px)/1 var(--su-f-display); color: var(--va-ink); font-variant-numeric: tabular-nums; }
+.va-cd__n .l-ne { font: 500 0.82em/1.2 var(--su-f-deva); }
+.va-cd__l { display: block; margin-top: 6px; font: 600 11px/1.2 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--va-ink-2); }
+.va-cd__l .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
+.va-count__bf { position: relative; flex: none; width: clamp(64px, 14vw, 96px); aspect-ratio: 900 / 744; }
+.va-count__bf .va-bf { inset: 0; width: 100%; }
+.va-beat.is-beat .va-bf__w { animation: va-beat 0.62s cubic-bezier(0.3, 0, 0.3, 1) 1; }
+@keyframes va-beat { 0% { transform: scaleX(0.94); } 40% { transform: scaleX(0.28); } 100% { transform: scaleX(0.94); } }
+.va-count__done { font: 400 italic 26px/1.4 var(--su-f-display); color: var(--va-leaf); }
+
+/* families: one plate, two pressed sprays, two herbarium labels */
+.va-fam { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: clamp(16px, 3vw, 36px); max-width: 900px; margin: 0 auto; padding: clamp(28px, 4vw, 48px); }
+.va-fam__col { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.va-fam__spray { width: min(170px, 60%); }
+.va-fam__spray--bride { rotate: -9deg; }
+.va-fam__spray--groom { rotate: 8deg; }
+.va-fam__pic { position: relative; width: min(160px, 70%); margin: 0; }
+.va-fam__pic img { display: block; width: 100%; height: auto; }
+.va-fam__amp { align-self: center; font: 400 italic 52px/1 var(--su-f-display); color: var(--su-accent); }
+.va-label { width: 100%; max-width: 330px; padding: 16px 18px 14px; text-align: left; background: #FFFEF8; border: 1px solid rgba(42, 36, 21, 0.28); box-shadow: 3px 3px 0 rgba(59, 107, 53, 0.12); }
+.va-label p { margin: 0; }
+.va-label__k { font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--va-leaf); padding-bottom: 6px; margin-bottom: 8px !important; border-bottom: 1px dashed rgba(42, 36, 21, 0.25); }
+.va-label__k .l-ne { font-size: 15px; letter-spacing: 0; }
+.va-label__name { font: 500 clamp(22px, 2.4vw, 27px)/1.25 var(--su-f-display); color: var(--va-ink); }
+.va-label__name .l-ne { font: 600 0.9em/1.45 var(--va-deva-display); }
+.va-label__of { margin-top: 10px !important; font: 400 italic 15px/1.4 var(--su-f-display); color: var(--va-ink-2); }
+.va-label__of .l-ne { font: 400 15px/1.6 var(--su-f-deva); font-style: normal; }
+.va-label__parents { font-weight: 500; }
+.va-label__home { margin-top: 6px !important; font-size: 15px; color: var(--va-ink-2); }
+
+/* ───────── the bloom window (the signature scroll) ───────── */
+.va-bloom { padding-bottom: clamp(60px, 8vh, 100px); }
+.va-bloom__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+.va-win { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; place-items: center; }
+.va-win__in { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.va-win__frame { position: relative; height: min(70vh, 660px); aspect-ratio: 3 / 4; background: var(--va-plate);
+  box-shadow: 0 0 0 10px var(--va-sheet), 0 0 0 11px rgba(42, 36, 21, 0.14), 0 34px 60px -34px rgba(70, 52, 14, 0.55); }
+.va-plate__art { position: absolute; inset: 0; overflow: hidden; }
+.va-plate { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
+.va-plate.is-on { opacity: 1; }
+.va-plate__s { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform-origin: var(--head, 50% 30%); }
+.va-plate__s[data-s='0'] { opacity: 1; }
+.va-lander { left: var(--x); top: var(--y); width: var(--w); translate: -50% -50%; rotate: var(--r); opacity: 0; visibility: hidden; }
+.va-win.is-still .va-lander { opacity: 1; visibility: visible; }
+.va-win__caps { display: grid; text-align: center; }
+.va-win__cap { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0; opacity: 0; transition: opacity 0.4s ease; }
+.va-win__cap.is-on { opacity: 1; }
+.va-win__no { font: 600 11.5px/1.3 var(--su-f-body); letter-spacing: 0.26em; text-transform: uppercase; color: var(--va-ink-2); }
+.va-win__no .l-ne { font-size: 14px; letter-spacing: 0; }
+.va-win__fl { font: 400 italic 21px/1.3 var(--su-f-display); color: var(--va-leaf); }
+.va-win__fl .l-ne { font: 600 18px/1.5 var(--va-deva-display); font-style: normal; }
+.va-evs { margin: 0; padding: 0 0 0 clamp(20px, 4vw, 64px); list-style: none; }
+.va-ev { display: flex; flex-direction: column; justify-content: center; min-height: 74vh; min-height: 74svh; }
+.va-ev__card { width: 100%; max-width: 500px; padding: clamp(26px, 3vw, 40px); background: var(--va-sheet); background-image: var(--va-noise); border: 1px solid rgba(42, 36, 21, 0.12); border-radius: 4px; box-shadow: 0 18px 40px -30px rgba(70, 52, 14, 0.5); }
+.va-ev__no { margin: 0 0 10px; font: 600 11.5px/1.4 var(--su-f-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--va-leaf); }
+.va-ev__no .l-ne { font-size: 15px; letter-spacing: 0; }
+.va-ev__title { margin: 0; font: 500 clamp(34px, 3.4vw, 46px)/1.1 var(--su-f-display); color: var(--va-ink); }
+.va-ev__title .l-ne { font: 600 0.86em/1.4 var(--va-deva-display); }
+.va-ev__when { display: flex; flex-direction: column; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--va-hair); }
+.va-ev__ad { font: 600 16px/1.5 var(--su-f-body); }
+.va-ev__ad .l-ne { font: 500 18px/1.6 var(--su-f-deva); }
+.va-ev__bs { font-size: 15.5px; color: var(--va-ink-2); }
+.va-ev__time { margin: 4px 0 0; font: 600 16px/1.5 var(--su-f-body); color: #A3134C; }
+.va-ev__blurb { margin: 10px 0 0; color: var(--va-ink-2); }
+.va-ev__venue { margin: 10px 0 0; font-weight: 500; }
+.va-ev__dress { margin: 8px 0 0; color: var(--va-ink-2); }
+.va-order { margin-top: 12px; }
+.va-order summary { cursor: pointer; font-weight: 600; color: var(--va-leaf); }
+.va-order ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.va-order li { display: grid; grid-template-columns: 84px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--su-line); }
+.va-prog__foot { display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: 760px; margin: 24px auto 0; }
+.va-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.theme-vasant .su-more { width: 100%; box-sizing: border-box; background: var(--va-sheet); border: 1px solid rgba(42, 36, 21, 0.1); }
+.theme-vasant .su-more h3 { color: var(--va-leaf); }
+
+/* ───────── photographs: herbarium plates ───────── */
+.va-herb__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px 40px; max-width: 1060px; margin: 0 auto; align-items: start; }
+.va-herb__plate { display: grid; grid-template-columns: minmax(0, 1fr) 24%; align-items: end; gap: 16px; margin: 0; padding: 26px 22px 24px 28px; }
+.va-herb__plate.is-alt { margin-top: 90px; }
+.va-herb__photo { position: relative; }
+.va-herb__btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.va-herb__btn img { display: block; width: 100%; height: auto; }
+.va-herb__side { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.va-herb__spray { width: 100%; }
+.va-herb__no { font: 400 italic 15px/1 var(--su-f-display); color: var(--va-ink-2); }
+
+/* ───────── the card slip ───────── */
+.va-slip { position: relative; max-width: 620px; margin: 0 auto; padding: 30px clamp(22px, 5vw, 56px) 44px; text-align: center; background: var(--va-sheet); background-image: var(--va-noise);
+  border: 1px solid var(--va-hair); outline: 1px solid var(--va-hair); outline-offset: -9px; }
+.va-slip .va-slip__bf { position: relative; display: block; width: 76px; margin: 0 auto 14px; }
+.va-slip__line { margin: 0; font: 400 clamp(23px, 2.6vw, 29px)/1.45 var(--su-f-display); color: var(--va-ink); text-wrap: balance; }
+.va-slip__line .l-ne { font: 500 22px/1.75 var(--su-f-deva); }
+.va-slip__hosts { margin: 18px 0 26px; color: var(--va-ink-2); }
+
+/* ───────── reply: a seed packet ───────── */
+.va-packet { position: relative; max-width: 640px; margin: 0 auto; background: var(--va-sage); border-radius: 4px 4px 12px 12px; box-shadow: 0 26px 50px -34px rgba(40, 60, 30, 0.6); overflow: hidden; }
+.va-packet__top { position: relative; height: 176px; background: #D6E3C6; clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%); }
+.va-packet__top::after { content: ''; position: absolute; inset: 10px 10px auto; height: 1px; background: rgba(59, 107, 53, 0.35); }
+.va-packet__window { position: absolute; left: 50%; top: 22px; width: 104px; height: 132px; translate: -50% 0; overflow: hidden; border-radius: 50%; border: 3px solid var(--va-sheet); box-shadow: 0 0 0 1px rgba(59, 107, 53, 0.3); }
+.va-packet__window img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; transform: scale(1.35); transform-origin: 50% 32%; }
+.va-packet__body { padding: 26px clamp(18px, 5vw, 46px) 40px; text-align: center; }
+.va-packet__body .va-h2 { margin: 6px 0 4px; }
+.va-packet__by { margin: 6px 0 22px; color: var(--va-ink-2); }
+.va-packet .su-form { text-align: left; }
+.va-packet .su-field input[type='text'], .va-packet .su-field input[type='tel'], .va-packet .su-field textarea, .va-packet .su-field select { background: var(--va-sheet); border-color: rgba(42, 36, 21, 0.2); }
+.va-packet .choice { background: rgba(255, 252, 244, 0.6); }
+.va-packet .su-btn { width: 100%; }
+
+/* ───────── closing ───────── */
+.va-close { position: relative; padding: clamp(76px, 12vh, 130px) 20px 28px; text-align: center; }
+.va-close__in { max-width: 600px; margin: 0 auto; }
+.va-close .va-close__bf { position: relative; display: block; width: 92px; margin: 0 auto 18px; }
+.va-close__ne { margin: 0; font: 500 24px/1.7 var(--va-deva-display); color: var(--va-leaf); }
+.va-close__en { margin: 6px 0 0; font: 400 italic 21px/1.5 var(--su-f-display); color: var(--va-ink-2); }
+html[data-lang='ne'] .va-close__en { display: none; }
+.va-close__names { margin: 22px 0 0; font: 500 clamp(40px, 5vw, 58px)/1.15 var(--su-f-display); color: var(--va-ink); }
+.va-close__names .l-ne { font: 600 0.8em/1.4 var(--va-deva-display); }
+.va-close__amp { margin: 0 0.25em; font-style: italic; color: var(--su-accent); }
+.va-close__tag { margin: 10px 0 0; color: var(--va-ink-2); letter-spacing: 0.06em; }
+
+/* the full card and lightbox in the theme's paper */
+.theme-vasant .su-modal__panel { background: var(--va-sheet); background-image: var(--va-noise); }
+.theme-vasant .su-modal__title { color: var(--va-leaf); }
+
+/* ───────── phone ───────── */
+@media (max-width: 899px) {
+  .va-bloom__grid { display: block; }
+  .va-win { top: 0; z-index: 3; height: 40svh; margin: 0 -20px; padding: 58px 20px 8px; background-color: var(--va-paper); background-image: var(--va-noise); }
+  .va-win::after { content: ''; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px; background: linear-gradient(var(--va-paper), rgba(255, 247, 230, 0)); pointer-events: none; }
+  .va-win__in { flex-direction: row; gap: 14px; height: 100%; width: 100%; justify-content: center; }
+  .va-win__frame { height: calc(40svh - 78px); box-shadow: 0 0 0 6px var(--va-sheet), 0 0 0 7px rgba(42, 36, 21, 0.14), 0 22px 40px -26px rgba(70, 52, 14, 0.5); }
+  .va-win__caps { width: 92px; }
+  .va-win__cap { align-items: flex-start; text-align: left; }
+  .va-win__fl { font-size: 18px; }
+  .va-evs { padding: 0; }
+  .va-ev { justify-content: flex-start; min-height: 0; padding-top: 4svh; }
+  .va-ev__card { max-width: none; }
+  .va-strand { display: none; }
+}
+@media (max-width: 719px) {
+  .va-sec { padding: 76px 16px; }
+  .va-hero { padding: 54px 16px clamp(130px, 34vw, 170px); } /* the garland starts under the language and music buttons */
+  .va-garland { width: 100vw; margin: 0 -16px; }
+  .va-gate { padding: calc(46vw + 54px) 0 190px; }
+  .va-tip__sheet { grid-template-columns: minmax(0, 1fr) 24%; padding: 20px 14px 20px 20px; gap: 10px; }
+  .va-fam { grid-template-columns: 1fr; gap: 22px; padding: 22px 18px; }
+  .va-fam__col { flex-direction: row; align-items: center; gap: 14px; }
+  .va-fam__col--groom { flex-direction: row-reverse; }
+  .va-fam__spray, .va-fam__pic { flex: none; width: 26%; }
+  .va-fam__amp { justify-self: center; font-size: 40px; }
+  .va-label { flex: 1; min-width: 0; }
+  .va-herb__list { grid-template-columns: 1fr; gap: 30px; }
+  .va-herb__plate { padding: 18px 12px 18px 18px; gap: 10px; }
+  .va-herb__plate.is-alt { margin-top: 0; grid-template-columns: 24% minmax(0, 1fr); padding: 18px 18px 18px 12px; }
+  .va-herb__plate.is-alt .va-herb__side { order: -1; }
+  .va-cd__cell { width: 64px; }
+}
+
+/* ───────── still: every butterfly rests, every flower is open ───────── */
+body.va-still .va-bf .va-bf__w { animation: none !important; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .va-bf .va-bf__w { animation: none !important; transform: none; }
+  .va-plate, .va-win__cap { transition: none; }
+}
+
+/* ───────── decoration in the gaps: gold rules, petals, the hanging strand ───────── */
+.va-rule { display: block; width: min(220px, 58vw); height: auto; margin: 0 auto; color: #A8833A; }
+.va-head .va-rule { margin-bottom: 6px; }
+.va-ev__gap { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 500px; padding: 40px 0 8px; }
+.va-scatter { position: relative; }
+.va-pc { position: absolute; width: calc(var(--pc, 50px) * var(--s, 1) * var(--f, 1)); height: auto; translate: -50% -50%; }
+.va-gap__scatter { width: 100%; height: 120px; overflow: hidden; }
+@media (max-width: 719px) { .va-pc { --pc: 44px; } .va-gap__scatter { height: 100px; } }
+.va-strand { position: absolute; top: 0; bottom: 0; right: max(10px, calc(50% - 712px)); width: clamp(48px, 4.6vw, 70px); pointer-events: none; }
+.va-strand img { position: sticky; top: 72px; display: block; width: 100%; height: calc(100vh - 96px); object-fit: contain; object-position: 50% 0; }
+.va-bloom { position: relative; }
