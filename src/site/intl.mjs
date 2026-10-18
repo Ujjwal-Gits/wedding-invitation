@@ -80,7 +80,7 @@ function footer() {
           <p>Animated invitations with an event website and RSVP, made with you by a real designer. Weddings first, and every celebration after.</p>
         </div>
         ${col('Invitations', [[INTL_PAGES['intl/designs'].path, 'All designs'], [INTL_PAGES['intl/occasions'].path, 'All occasions'], ...occ, [LANDINGS['i-nepali'].path, 'Nepali weddings'], [LANDINGS['i-southasian'].path, 'South Asian weddings']])}
-        ${col('Nimtto', [[INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
+        ${col('Nimtto', [[INTL_PAGES['intl/how'].path, 'How it works'], [INTL_PAGES['intl/features'].path, 'Features'], [INTL_PAGES['intl/pricing'].path, 'Pricing'], [INTL_PAGES['intl/faq'].path, 'FAQ'], ['/international/blog/', 'Blog'], [INTL_PAGES['intl/contact'].path, 'Contact'], ['/', 'Nimtto Nepal']])}
         <div class="foot__col"><p class="foot__h">Talk to us</p><ul>
           <li><a data-contact="email" href="mailto:${CONTACT.email}"><span data-contact="email-text">${CONTACT.email}</span></a></li>
           <li><a data-contact="wa" href="https://wa.me/${CONTACT.wa}" target="_blank" rel="noopener">WhatsApp <span data-contact="wa-text">${CONTACT.phone}</span></a></li>

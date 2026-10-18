@@ -50,7 +50,7 @@ export async function withPageData(html, doc, slug) {
 }
 
 // Pages under dist/ that are not designs.
-const OPEN_PAGES = new Set(['studio', 'credits', 'international', 'terms', 'privacy', 'refunds', 'faq', 'wedding-invitation-nepal', 'nepali-abroad', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
+const OPEN_PAGES = new Set(['studio', 'credits', 'international', 'terms', 'privacy', 'refunds', 'faq', 'wedding-invitation-nepal', 'nepali-abroad', 'designs', 'occasions', 'how-it-works', 'features', 'pricing', 'contact', 'pay', 'blog', 'assets', 'themes', 'site', 'photos', 'audio', 'art']);
 
 let distPages = null;
 /** Top-level dist folders with an index.html (every built page), read once: dist does not change at runtime. */

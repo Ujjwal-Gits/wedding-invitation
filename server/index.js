@@ -35,6 +35,7 @@ import * as manualPay from './lib/payments/manual.js'; // order -> pay by QR -> 
 import { financeRouter } from './lib/finance-admin.js'; // earnings, refunds, free access (docs/API.md "Finance")
 import * as enquiries from './lib/enquiries.js'; // Custom requests: quote, quote sent, turn into an order (docs/API.md "Enquiries")
 import { marketStats } from './lib/market-stats.js'; // Overview figures per market (docs/API.md "Markets")
+import * as blog from './lib/blog.js'; // the blog of both websites: server-rendered pages + the studio's Blog module
 
 assertConfigured();
 openStore();
@@ -127,6 +128,7 @@ api.patch('/admin/music', requirePerm('music'), json('8kb'), wrap(music.reorder)
 api.post('/admin/music/restore', requirePerm('music'), wrap(music.restoreBuiltins));
 api.patch('/admin/music/:musicId', requirePerm('music'), json('4kb'), wrap(music.patch));
 api.delete('/admin/music/:musicId', requirePerm('music'), wrap(music.remove));
+api.use('/admin/blog', requirePerm('blog'), blog.adminRouter({ json, heavy, distDir: DIST_DIR })); // lib/blog.js
 api.get('/orders', requirePerm('orders'), wrap(orders.list));
 api.get('/admin/customers', requirePerm('customers'), wrap(customers.adminList));
 api.post('/admin/customers', requirePerm('customers'), heavy, json('2kb'), wrap(customers.adminCreate));
@@ -232,7 +234,12 @@ app.get(/^\/uploads\/_site\/music\/([A-Za-z0-9_-]{24}\.mp3)$/, (req, res, next) 
     else if (err) next(err);
   });
 });
+app.get(/^\/uploads\/_site\/blog\//, blog.blogUpload); // blog cover photos (lib/blog.js): random names only
 app.use('/uploads', (req, res) => res.status(404).end());
+
+// The blog (/blog/, /international/blog/, their posts and feeds, /sitemap-blog.xml, llms*.txt): server-rendered into
+// the built shells (dist/blog/index.html), so search engines read every post; lib/blog.js.
+app.use(blog.blogPages({ distDir: DIST_DIR }));
 
 if (IS_PROD) {
   if (!existsSync(DIST_DIR)) console.warn('[studio] dist/ not found: run `npm run build` in the project root.');

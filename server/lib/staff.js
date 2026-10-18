@@ -24,6 +24,7 @@ export const PERMS = [
   { key: 'website', label: 'Website', help: 'Both websites: plans per market, payment methods, contact, headlines' },
   { key: 'themes', label: 'Themes', help: 'Designs per market: shown, featured, order, style' },
   { key: 'music', label: 'Music', help: 'The music library' },
+  { key: 'blog', label: 'Blog', help: 'Blog posts on both websites: write, edit, publish' },
 ];
 export const PERM_KEYS = PERMS.map((p) => p.key);
 /** Only super admins: managing the team, and reading the audit log. */

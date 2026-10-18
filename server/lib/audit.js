@@ -121,7 +121,7 @@ export function auditTrail(req, res, next) {
     try {
       const pattern = seen.pattern || patternOf(req.originalUrl.split('?')[0], params);
       const key = `${req.method} ${pattern}`;
-      if (SKIP.has(key)) return;
+      if (SKIP.has(key) || res.locals.auditSkip) return;
       const used = seen.pattern ? seen.params : params || {};
       const target = res.locals.auditTarget || Object.values(used).filter((v) => typeof v === 'string').join(' · ').slice(0, 160) || null;
       const gap = COALESCE.get(key);
