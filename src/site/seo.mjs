@@ -153,6 +153,7 @@ const DESIGN_SEO = {
   janti: ['Janti Procession Wedding Invitation Video', 'Walk with the Naumati Baja band and the doli down an old Newari street to the bride’s door. Every event with RSVP. From {p}. Watch it play.'],
   swayambar: ['Swayambar Garland Wedding Invitation With RSVP', 'Two fresh garlands swing apart and both families come together as you scroll. Guests RSVP to each ceremony, with Nepali dates. From {p}. Preview it.'],
   sindoor: ['Sindoor Red and White Wedding E-Card', 'Red, white and black: the sindoor box opens and a red line carries your story. A wedding e-card with RSVP and BS dates. From {p}. Preview it now.'],
+  kalapi: ['Kalapi Peacock Pichwai Wedding Invitation Online', 'A peacock fans its tail, then a painted pichwai of the monsoon scrolls by. Every ceremony, RSVP and Nepali dates. From {p}. See it open.'],
   rangoli: ['Rangoli Flower and Diyo Wedding Invitation Card', 'A flower rangoli on a brick courtyard comes together and the diyo lights up. Every ceremony with maps and RSVP. From {p}. Preview it now.'],
 };
 /** A short keyword phrase per category, for the design page's eyebrow and the line after its summary. */
