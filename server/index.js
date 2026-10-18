@@ -35,6 +35,7 @@ import * as manualPay from './lib/payments/manual.js'; // order -> pay by QR -> 
 import { financeRouter } from './lib/finance-admin.js'; // earnings, refunds, free access (docs/API.md "Finance")
 import * as enquiries from './lib/enquiries.js'; // Custom requests: quote, quote sent, turn into an order (docs/API.md "Enquiries")
 import { marketStats } from './lib/market-stats.js'; // Overview figures per market (docs/API.md "Markets")
+import * as indexnow from './lib/indexnow.js'; // tells Bing & co. that public pages changed (docs/SEO-SETUP.md)
 
 assertConfigured();
 openStore();
@@ -120,6 +121,7 @@ api.get('/admin/markets', requireAnyPerm('orders', 'finance'), wrap(marketStats)
 api.put('/site', requireAnyPerm('website', 'themes'), json('32kb'), wrap(site.putSite)); // each changes only its part (lib/site.js)
 api.get('/admin/site', requireAnyPerm('website', 'themes', 'orders', 'finance'), wrap(site.getAdminSite)); // plans and payment methods
 api.post('/admin/pay/qr', requirePerm('website'), heavy, wrap(manualPay.uploadQr));
+api.post('/admin/seo/indexnow', requirePerm('website'), json('64kb'), wrap(indexnow.adminSubmit)); // { urls } or { all: true }
 api.param('musicId', (req, res, next, id) => (/^[A-Za-z0-9_-]{2,40}$/.test(id) ? next() : res.status(404).json({ error: 'No such song.' })));
 api.get('/admin/music', requirePerm('music'), wrap(music.adminList));
 api.post('/admin/music', requirePerm('music'), heavy, wrap(music.upload));
@@ -284,6 +286,8 @@ app.use((err, req, res, next) => {
 
 const server = app.listen(PORT, () => {
   setTimeout(() => handover.activateMissed().catch((err) => console.warn('[activate] catch-up failed:', err.message)), 5000).unref();
+  // a deploy's new or changed pages (sitemap <lastmod>) go to IndexNow once, a minute after start (production only)
+  setTimeout(() => indexnow.submitChangedOnBoot().then((r) => { if (r.sent || !r.ok) console.info('[indexnow] after deploy:', JSON.stringify(r)); }).catch(() => {}), 60_000).unref();
   resetLag();
   console.info(`[studio] API on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'}; store ${STORE_KIND}; depth maps ${DEPTH_ENABLED ? 'on' : 'off'})`);
 });

@@ -60,16 +60,31 @@ const PAGE_CSP = [
 
 const API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
+// CF_WEB_ANALYTICS=1: Cloudflare Web Analytics (cookieless; docs/SEO-SETUP.md). Its beacon script and the endpoint it
+// reports to are allowed; nothing else changes.
+const CSP_WITH_ANALYTICS = PAGE_CSP
+  .replace("script-src 'self'", "script-src 'self' https://static.cloudflareinsights.com")
+  .replace("connect-src 'self'", "connect-src 'self' https://cloudflareinsights.com");
+const pageCsp = () => (process.env.CF_WEB_ANALYTICS === '1' ? CSP_WITH_ANALYTICS : PAGE_CSP);
+
+/**
+ * Private areas: never indexed, whatever links to them (robots.txt also keeps crawlers out; the header covers the
+ * crawlers that ignore it and any URL found before the rule). /uploads/ holds couples' photos, /i/ guests' link
+ * previews, /go the How it works QR's redirect.
+ */
+export const PRIVATE_PATH = /^\/(?:api|studio|pay|i|preview|clients|uploads)(?:\/|$)|^\/(?:go|healthz)$/i;
+
 /** Express middleware: headers for every response. */
 export function securityHeaders(req, res, next) {
   const isApi = req.path.startsWith('/api/');
+  if (PRIVATE_PATH.test(req.path)) res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   res.setHeader('X-Frame-Options', isApi ? 'DENY' : 'SAMEORIGIN');
-  res.setHeader('Content-Security-Policy', isApi ? API_CSP : PAGE_CSP);
+  res.setHeader('Content-Security-Policy', isApi ? API_CSP : pageCsp());
   if (IS_PROD) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   if (isApi) res.setHeader('Cache-Control', 'no-store');
   next();
