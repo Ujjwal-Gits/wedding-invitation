@@ -42,6 +42,7 @@ dashboard to create, customise, publish and track invitations.
 | 35 | **Zari** `/zari/` | A sapphire velvet trousseau trunk: the padlock drops, the lid swings back, and the trays lift out in 3D one by one, each holding a part of the day. |
 | 36 | **Toran** `/toran/` | Marigold ladis part on a dressed doorway; scrolling dollies through seven haveli doorways, each with its own toran, to the mandap. |
 | 37 | **Sanjhi** `/sanjhi/` | A hand-cut paper pop-up book at dusk: colour powder sifts through a Vrindavan stencil, the cover opens and every page stands up in paper layers. |
+| 38 | **Sawari** `/sawari/` | The ride: the bride on a dressed white horse, the groom leading her by the rope. The page pins and the guest travels a painted road through Nepal in depth layers (home, mustard terraces, a suspension bridge, a chautari, a temple at sunset, the toran at dusk) to the lamp-lit mandap. |
 
 The showroom at `/` links every theme and the studio.
 

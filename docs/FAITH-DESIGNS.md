@@ -61,6 +61,7 @@ default text.
 | mahal | Hindu | Ganesh in the crest medallion and in the moon (previews show him large); kalash with a sindoor swastika |
 | mehendi | Hindu | Its thumbnail is a bride applying sindoor; Ganesh above the names |
 | swayambar | Hindu | The Swayambar garland exchange is the design; Ganesh medallion |
+| sawari | Hindu | A Hindu wedding procession: the bride on a white horse led by the groom to a mandap with the sacred fire and kalash; Ganesh above the names; the seven steps |
 | toran | Hindu | Ganesh over the first door, kalash with coconuts at the doorways, the mandap with its havan kunda |
 | kham | Hindu, Buddhist | Paper envelope with the endless knot (shrivatsa) as the seal: shared Hindu and Buddhist auspicious sign, not neutral |
 | jhyal | Hindu, Buddhist | Carved Newari window with a marigold toran (Newar Hindu and Buddhist); kalash and diyos leave for non-Hindu |

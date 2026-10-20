@@ -62,6 +62,8 @@ const KNOWN = {
   // both sites (Nepal and international)
   kalpataru: { name: 'Kalpataru', concept: 'A leaf turns over on your names, then you climb a great painted tree from its roots to its crown' },
   zari: { name: 'Zari', concept: 'A sapphire velvet trousseau trunk unlocks and its gold-thread trays lift out one by one' },
+  // Nepal only
+  sawari: { name: 'Sawari', concept: 'The bride rides a dressed white horse, the groom leads her, and you travel a painted road through Nepal to the mandap' },
 };
 // Market, style and occasions (src/core/markets.js). Absent = a Nepal wedding design. A manifest may override them.
 const INTL_WEDDING = ['wedding', 'engagement', 'anniversary', 'vow-renewal', 'rehearsal-dinner'];
@@ -95,6 +97,8 @@ const META = {
   vasant: { market: 'both', style: 'garden', faith: '', occasions: ['wedding', 'engagement', 'anniversary', 'vow-renewal'] },
   // both websites (a Nepali design with no religious art)
   zari: { market: 'both', style: 'classic', faith: '', occasions: ['wedding', 'engagement', 'anniversary'] },
+  // Nepal only: a Hindu procession to the mandap
+  sawari: { market: 'np', style: 'romantic', faith: '', occasions: ['wedding'] },
 };
 const NP_META = { market: 'np', style: '', faith: '', occasions: ['wedding'] };
 /** { market, style, faith, occasions } of a design, from the catalog (a manifest's own values win in metaOf). */
@@ -134,6 +138,7 @@ const DEFAULT_TIERS = {
   mohar: 'shahi',
   kalpataru: 'shahi',
   zari: 'shahi',
+  sawari: 'shahi',
 };
 /** A theme's tier before any override (an unknown theme: shubha). */
 export const defaultTier = (slug) => DEFAULT_TIERS[slug] || 'shubha';

@@ -45,6 +45,7 @@ export const THEMES = [
   ['vasant', 'Vasant', 'वसन्त', 'flowers', 'Butterflies lift off a fresh marigold and rose garland. As you scroll, each ceremony’s own flower opens and butterflies come to it.', 'butterflies lifting off a marigold and rose garland above the couple’s names', ['hindu', 'buddhist', 'kirat', 'other']],
   ['zari', 'Zari', 'ज़री', 'cards', 'A sapphire velvet trousseau trunk unlocks. Its trays lift out one by one: a gold coin with the date, the families, the ceremonies, a map and your reply.', 'a sapphire velvet trousseau trunk with gold zardozi borders and a brass padlock', ['hindu', 'buddhist', 'kirat', 'other']],
   ['toran', 'Toran', 'तोरण', 'doors', 'Marigold strings part on a dressed doorway. Scroll and walk through seven doorways, each with its own toran, to the mandap.', 'a carved haveli doorway hung with a mango-leaf and marigold toran, more doorways beyond', ['hindu']],
+  ['sawari', 'Sawari', 'सवारी', 'flowers', 'The bride rides a dressed white horse and the groom leads her. Scroll and travel a painted road through Nepal, from her home to the lamp-lit mandap.', 'a bride in a red sari on a white horse dressed with marigolds, the groom leading her by a red rope', ['hindu']],
   ['sanjhi', 'Sanjhi', 'साँझी', 'cards', 'A hand-cut paper pop-up book at dusk. Colour sifts through a stencil, then each page stands up in paper layers.', 'a cut-paper pop-up of peacocks in a mango grove at dusk', ['hindu']],
 ].map(([slug, name, ne, cat, concept, alt, religions]) => ({ slug, name, ne, cat, concept, alt, religions, thumb: `/themes/${slug}/thumb.jpg` }));
 
@@ -95,7 +96,7 @@ export const PLAN_NE = { saral: 'सरल', shubha: 'शुभ', shahi: 'शा
 export const TIER_RANK = { saral: 1, shubha: 2, shahi: 3 };
 export const TIER_LABEL = { saral: 'Standard', shubha: 'Pro', shahi: 'Pro Max' };
 const TIERS = {
-  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar', 'kalapi', 'kalpataru', 'shagun', 'sandesh', 'vasant', 'zari', 'toran', 'sanjhi'],
+  shahi: ['mahal', 'rajdwar', 'laali', 'mehendi', 'hariyo', 'shree', 'pardaa', 'agni', 'janti', 'swayambar', 'sindoor', 'rangoli', 'sarovar', 'mohar', 'kalapi', 'kalpataru', 'shagun', 'sandesh', 'vasant', 'zari', 'toran', 'sanjhi', 'sawari'],
   saral: ['kham', 'mala', 'gurans', 'sayapatri', 'jhyal', 'chitra', 'dhaka'],
 };
 export const tierOf = (slug) => (TIERS.shahi.includes(slug) ? 'shahi' : TIERS.saral.includes(slug) ? 'saral' : 'shubha');
