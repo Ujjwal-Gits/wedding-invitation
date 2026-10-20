@@ -8,7 +8,7 @@ body.su.theme-palki {
   --su-ink-2: #5B4E57;
   --su-accent: #1E4A37;
   --su-accent-ink: #FFFFFF;
-  --su-gold: #C9721A;
+  --su-gold: var(--pk-marigold);
   --su-line: rgba(38, 32, 45, 0.18);
   --su-f-display: 'Brygada 1918', Georgia, serif;
   --su-f-script: 'Brygada 1918', Georgia, serif;
@@ -16,11 +16,19 @@ body.su.theme-palki {
   --su-f-deva: 'Mukta', sans-serif;
   --pk-deva-display: 'Rozha One', 'Mukta', serif;
   --pk-marigold: #C9721A;
-  --pk-marigold-ink: #8A4310; /* marigold as small text on the silk: 6:1 */
+  /* marigold as small text on the silk (6:1 with the default); follows the studio's marigold */
+  --pk-marigold-ink: #8A4310;
+  --pk-marigold-ink: color-mix(in srgb, var(--pk-marigold) 69%, #000);
   --pk-night: #171A3A;
   --pk-diyo: #F2C46B;
   --pk-silk: #F7E7E4;
   --su-radius: 4px;
+  /* core tokens (the music sheet): a dawn-silk panel with dark ink */
+  --bg-2: #FBF1EF;
+  --hair: rgba(38, 32, 45, 0.16);
+  --ink-dim: #5B4E57;
+  --accent-2: #26202D;
+  --pk-banner-top: calc(env(safe-area-inset-top, 0px) + 66px);
   --f-display: var(--su-f-body);
   --f-body: var(--su-f-body);
   --paper-accent: var(--su-accent);
@@ -30,6 +38,9 @@ body.su.theme-palki {
 }
 html:has(body.theme-palki) { background: #1B2238; }
 body.theme-palki .hud__btn, body.theme-palki .pill { background: rgba(251, 241, 239, 0.94); color: var(--su-ink); }
+body.theme-palki .sheet__list button { color: var(--su-ink); border-bottom-color: rgba(138, 67, 16, 0.18); }
+body.theme-palki .sheet__list button[aria-checked='true'] { background: rgba(201, 114, 26, 0.12); }
+body.theme-palki .sheet .eyebrow { color: var(--pk-marigold-ink); }
 
 /* ───────── the world behind the page ───────── */
 .pk-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #1B2238; contain: strict; }
@@ -51,12 +62,15 @@ body.theme-palki .hud__btn, body.theme-palki .pill { background: rgba(251, 241, 
 .pk-proc[data-light='dawn'] img { filter: brightness(0.78) contrast(0.96) saturate(0.82); }
 .pk-proc[data-light='sunrise'] img { filter: brightness(0.96) sepia(0.12) saturate(1.04); }
 .pk-proc[data-light='dusk'] img { filter: brightness(0.82) sepia(0.28) saturate(1.05); }
+.pk-proc[data-light='night'] img { filter: brightness(0.7) sepia(0.4) saturate(1.15); }
+.pk-proc[data-light='night'] .pk-proc__shadow, .pk-proc[data-light='dusk'] .pk-proc__shadow { opacity: 0.8; }
 
 /* fresh marigolds and roses close to the camera, on the day scenes only */
-.pk-near { position: absolute; inset: 0; z-index: 4; opacity: 0; --nk: 1; }
+.pk-near { position: absolute; inset: 0; z-index: 4; opacity: 0; --nk: 1; --no: 0; }
 .pk-near img { position: absolute; bottom: -7vh; width: clamp(220px, 30vw, 520px); height: auto; max-width: none; }
-.pk-near__l { left: -7vw; transform-origin: 0 100%; transform: scale(var(--nk)); }
-.pk-near__r { right: -7vw; transform-origin: 100% 100%; transform: scale(var(--nk)) scaleX(-1); }
+/* --no: the camera passes them (they slide out of the frame, outward and down) */
+.pk-near__l { left: -7vw; transform-origin: 0 100%; transform: translate(calc(var(--no) * -70%), calc(var(--no) * 45%)) scale(var(--nk)); }
+.pk-near__r { right: -7vw; transform-origin: 100% 100%; transform: translate(calc(var(--no) * 70%), calc(var(--no) * 45%)) scale(var(--nk)) scaleX(-1); }
 
 /* the mist the camera passes through between two places */
 .pk-veil { position: absolute; left: -20%; top: 0; z-index: 5; width: 140%; height: 100%; object-fit: cover; max-width: none; opacity: 0; will-change: transform, opacity; }
@@ -110,7 +124,7 @@ html[data-lang='ne'] .pk-lede { font-size: 18px; line-height: 1.8; }
 /* ───────── the first screen: the banner over the dawn ───────── */
 .pk-top { min-height: 100svh; display: block; overflow: visible; isolation: auto; }
 .pk-top .su-cue { color: #F7EEE9; text-shadow: 0 1px 8px rgba(10, 10, 30, 0.6); }
-.pk-banner { position: absolute; z-index: 2; top: clamp(10px, 3svh, 28px); right: clamp(20px, 6vw, 110px); width: min(440px, 36vw); container-type: inline-size; }
+.pk-banner { position: absolute; z-index: 2; top: var(--pk-banner-top); right: clamp(20px, 6vw, 110px); width: min(440px, 36vw); container-type: inline-size; }
 .pk-banner__rod { position: relative; z-index: 2; display: block; width: 112cqw; margin-left: -6cqw; height: auto; max-width: none; filter: drop-shadow(0 8px 8px rgba(10, 10, 30, 0.45)); }
 .pk-banner__cloth { position: relative; margin-top: -6.6cqw; padding: clamp(30px, 9cqw, 46px) clamp(16px, 6cqw, 34px) clamp(30px, 8cqw, 44px); text-align: center; transform-origin: 50% 0;
   background: url('/themes/palki/art/silk-blush.webp') center / 640px auto, var(--pk-silk);
@@ -129,7 +143,7 @@ html[data-lang='ne'] .pk-lede { font-size: 18px; line-height: 1.8; }
 .pk-banner__date > span { display: block; font-size: 15px; color: var(--su-ink-2); }
 .pk-banner__place { margin: 6px 0 0; font: 600 13px/1.5 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--pk-marigold-ink); }
 .pk-banner__place .l-ne { font-size: 15px; letter-spacing: 0; text-transform: none; }
-.pk-banner__line { margin: 12px auto 0; max-width: 30ch; font: italic 400 17px/1.5 var(--su-f-display); color: var(--su-ink-2); }
+.pk-banner__line { margin: 12px auto 0; max-width: 30ch; text-wrap: balance; font: italic 400 17px/1.5 var(--su-f-display); color: var(--su-ink-2); }
 .pk-banner__line .l-ne { font: 400 17px/1.7 var(--su-f-body); font-style: normal; }
 /* under the closed gate the banner is still rolled on its pole */
 body.pk-rolled .pk-banner { opacity: 0; }
@@ -140,7 +154,7 @@ body.pk-rolled .pk-banner { opacity: 0; }
 .pk-g__mist { position: absolute; left: -15%; width: 130%; height: 70%; object-fit: cover; max-width: none; opacity: 0.95; will-change: transform, opacity; }
 .pk-g__mist--a { bottom: -6%; }
 .pk-g__mist--b { top: -4%; transform: scale(-1, -1); opacity: 0.7; }
-.pk-g__roll { position: absolute; top: clamp(10px, 3svh, 28px); right: clamp(20px, 6vw, 110px); width: min(440px, 36vw); container-type: inline-size; cursor: pointer; pointer-events: auto; }
+.pk-g__roll { position: absolute; top: var(--pk-banner-top); right: clamp(20px, 6vw, 110px); width: min(440px, 36vw); container-type: inline-size; cursor: pointer; pointer-events: auto; }
 .pk-g__rod { position: relative; z-index: 2; display: block; width: 112cqw; margin-left: -6cqw; height: auto; max-width: none; filter: drop-shadow(0 8px 8px rgba(10, 10, 30, 0.45)); }
 .pk-g__band { position: relative; margin: -6.6cqw 2cqw 0; padding: 30px 12px 22px; background: url('/themes/palki/art/silk-blush.webp') center / 520px auto, var(--pk-silk);
   box-shadow: inset 0 -14px 14px -10px rgba(90, 40, 30, 0.35), 0 18px 30px -16px rgba(8, 8, 30, 0.75); }
@@ -235,9 +249,9 @@ body.pk-rolled .pk-banner { opacity: 0; }
 .pk-day__wd { margin: 0; font: 600 13px/1.4 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--pk-marigold-ink); }
 .pk-day__wd .l-ne { font-size: 16px; letter-spacing: 0; }
 .pk-day__big { margin: 2px 0; font: 500 clamp(72px, 16cqw, 96px)/1 var(--su-f-display); color: var(--su-accent); }
-.pk-day__big .l-ne { font-family: var(--pk-deva-display); }
+.pk-day__big .l-ne { font-family: var(--su-f-deva); font-weight: 600; }
 .pk-day__my { margin: 0; font: italic 500 22px/1.3 var(--su-f-display); }
-.pk-day__my .l-ne { font: 400 21px/1.5 var(--pk-deva-display); font-style: normal; }
+.pk-day__my .l-ne { font: 500 21px/1.5 var(--su-f-deva); font-style: normal; }
 .pk-day__alt { margin: 6px 0 0; font-size: 15px; color: var(--su-ink-2); }
 .pk-day__time { margin: 10px 0 0; font: 600 16px/1.4 var(--su-f-body); }
 .pk-day__place { margin: 4px 0 0; font-size: 15.5px; color: var(--su-ink-2); }
@@ -248,7 +262,7 @@ body.pk-rolled .pk-banner { opacity: 0; }
 .pk-count__grid li { display: flex; flex-direction: column; align-items: center; padding: 8px 0; border-left: 1px solid rgba(138, 67, 16, 0.3); }
 .pk-count__grid li:first-child { border-left: 0; }
 .pk-count__n { font: 500 clamp(34px, 9cqw, 48px)/1 var(--su-f-display); color: var(--su-accent); font-variant-numeric: tabular-nums; }
-.pk-count__n .l-ne { font-family: var(--pk-deva-display); }
+.pk-count__n .l-ne { font-family: var(--su-f-deva); font-weight: 600; }
 .pk-count__l { margin-top: 6px; font: 600 11.5px/1.2 var(--su-f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--su-ink-2); }
 .pk-count__l .l-ne { font-size: 14px; letter-spacing: 0; text-transform: none; }
 .pk-count__done { margin: 0; font: italic 500 24px/1.4 var(--su-f-display); color: var(--su-accent); }
@@ -261,28 +275,28 @@ body.pk-rolled .pk-banner { opacity: 0; }
 .pk-vows li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: baseline; padding: 8px 0; border-top: 1px solid rgba(242, 196, 107, 0.22); font-size: 16.5px; line-height: 1.6; }
 .pk-vows li:first-child { border-top: 0; }
 .pk-vows__n { font: italic 500 22px/1 var(--su-f-display); color: var(--pk-diyo); text-align: center; }
-.pk-vows__n .l-ne { font-family: var(--pk-deva-display); font-style: normal; }
+.pk-vows__n .l-ne { font-family: var(--su-f-deva); font-style: normal; }
 .pk-cloth--rsvp .su-form { margin-top: 22px; text-align: left; }
 .pk-cloth--rsvp .su-field > label, .pk-cloth--rsvp .su-field > legend { color: #F6EEE3; }
 .pk-cloth--rsvp .su-field input[type='text'], .pk-cloth--rsvp .su-field input[type='tel'], .pk-cloth--rsvp .su-field textarea, .pk-cloth--rsvp .su-field select {
   background: rgba(255, 252, 248, 0.97); color: var(--su-ink); border: 1px solid rgba(242, 196, 107, 0.6); border-radius: 2px; }
 .pk-cloth--rsvp .choice { border-color: rgba(242, 196, 107, 0.45); color: #F6EEE3; }
 .theme-palki .pk-cloth--rsvp .choice:has(input:checked) { border-color: var(--pk-diyo); box-shadow: inset 0 0 0 1px var(--pk-diyo); }
-.pk-cloth--rsvp { --paper-accent: var(--pk-diyo); }
+.pk-cloth--rsvp { --paper-accent: var(--pk-diyo); --err: #FFB4A8; }
 .pk-cloth--rsvp .choice { font: 500 16.5px/1.3 var(--su-f-body); }
 .theme-palki .pk-cloth--rsvp .gstep { color: #F6EEE3; border-color: rgba(242, 196, 107, 0.5); }
 .theme-palki .pk-cloth--rsvp .gstep__b { color: #F6EEE3; background: rgba(255, 255, 255, 0.1); }
 .pk-cloth--rsvp .su-btn { width: 100%; background: var(--pk-diyo); border-color: var(--pk-diyo); color: #1B1C33; }
 .pk-cloth--rsvp .rsvp__status { color: #F6EEE3; }
-.pk-cloth--rsvp .su-err { color: #FFB4A8; }
+.pk-cloth--rsvp .su-err, body.theme-palki .pk-cloth--rsvp .rsvp__status.is-error, .pk-cloth--rsvp .field__err { color: #FFB4A8; }
 .pk-cloth--night :focus-visible { outline-color: var(--pk-diyo); }
 
 /* the blessing, under the lamps */
 .pk-close { position: relative; z-index: 1; padding: 12svh 20px 40px; text-align: center; color: #F6EEE3; background: linear-gradient(180deg, rgba(14, 14, 36, 0), rgba(14, 14, 36, 0.86) 34%, #12122A); }
 .pk-close__lamps { display: flex; justify-content: center; gap: 60px; margin-bottom: 18px; }
 .pk-close__diyo { width: 64px; }
-.pk-close__ne { margin: 0 auto; max-width: 34ch; font: 400 22px/1.7 var(--pk-deva-display); color: var(--pk-diyo); }
-.pk-close__en { margin: 10px auto 0; max-width: 40ch; font: italic 400 19px/1.6 var(--su-f-display); }
+.pk-close__ne { margin: 0 auto; max-width: 34ch; text-wrap: balance; font: 400 22px/1.7 var(--pk-deva-display); color: var(--pk-diyo); }
+.pk-close__en { margin: 10px auto 0; max-width: 40ch; text-wrap: balance; font: italic 400 19px/1.6 var(--su-f-display); }
 .pk-close__names { margin: 22px 0 0; font: 500 clamp(30px, 4vw, 44px)/1.2 var(--su-f-display); color: #FFF7EC; }
 .pk-close__names .l-ne { font-family: var(--pk-deva-display); }
 .pk-close__tag { margin: 10px 0 0; font-size: 15px; letter-spacing: 0.08em; color: #E2D3C2; }
@@ -314,6 +328,29 @@ body.pk-rolled .pk-banner { opacity: 0; }
   .pk-cloth, .pk-ev .pk-cloth, .pk-cloth--title, .pk-cloth--slip { width: min(460px, calc(100vw - 48px)); }
   .pk-near img { width: clamp(180px, 46vw, 300px); bottom: -4vh; }
 }
+/* short phones: a more compact banner, so the doli waiting at the door stays in view below it */
+@media (max-width: 899px) and (max-height: 800px) {
+  body.su.theme-palki { --pk-banner-top: calc(env(safe-area-inset-top, 0px) + 58px); }
+  .pk-banner__cloth { padding-top: 18px; padding-bottom: 24px; }
+  .pk-banner__gan { width: 30px; }
+  .pk-names { font-size: clamp(32px, 10cqw, 40px); }
+  .pk-banner__date { font-size: 15.5px; line-height: 1.4; }
+  .pk-banner__date > span { font-size: 14px; }
+  .pk-banner__line { max-width: none; margin-top: 6px; font-size: 15px; }
+}
+/* phones held sideways: the banner hangs on the right, clear of the house and the doli at its door */
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 520px) {
+  .pk-banner, .pk-g__roll { left: auto; right: max(28px, env(safe-area-inset-right, 0px)); translate: none; width: min(360px, 44vw); }
+  .pk-banner__inv { margin-bottom: 0; }
+  .pk-names { flex-direction: row; justify-content: center; flex-wrap: wrap; column-gap: 10px; font-size: clamp(28px, 9cqw, 34px); }
+  .pk-names__amp { margin: 0; align-self: center; }
+  .pk-banner__cloth { padding-top: 14px; padding-bottom: 22px; }
+  /* photographs sized to the short screen: each one seen whole */
+  .pk-window { width: min(250px, 32vw); }
+  .pk-album { grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(620px, 100%); }
+  .pk-album__ph:nth-child(2n) { margin-top: 0; }
+  .pk-album__ph:nth-child(3n + 2) { margin-top: 24px; }
+}
 @media (max-width: 420px) {
   .pk-cloth__body { padding-left: 16px; padding-right: 16px; }
   .pk-ev__dl > div { grid-template-columns: 1fr; gap: 0; }
@@ -325,3 +362,16 @@ body.pk-rolled .pk-banner { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .pk-window__cur, .pk-cloth__body, .pk-album__ph, .pk-tag { transition: none !important; }
 }
+
+/* focus on the painted world (the opening, the buttons hung over the scene): a light ring that reads on dawn and night */
+.theme-palki .su-gate :focus-visible, .theme-palki .pk-btns :focus-visible, .theme-palki .pk-more:focus-visible, .theme-palki .su-cue:focus-visible, .theme-palki .pk-close :focus-visible {
+  outline: 2px solid #FFF3E6; outline-offset: 3px; }
+
+/* photographs keep a portrait place until they arrive (the beats below them stay where they are: no jumps) */
+.pk-window__pic img, .pk-album__btn img, .pk-fam__pic img { aspect-ratio: auto 4 / 5; }
+
+/* the Devanagari display face (Rozha One): stated with the theme's weight, so the suite's reading face for .l-ne
+   (loaded after this file) does not take it back. Never on numbers: Rozha One draws ०-९ as Latin 0-9, so dates and
+   counts stay in Mukta. */
+body.theme-palki :is(.pk-names, .pk-h, .pk-tag__t, .pk-fam__name, .pk-ev__title, .pk-count__t, .pk-g__mono, .pk-close__names) .l-ne,
+body.theme-palki .pk-close__ne { font-family: var(--pk-deva-display); }

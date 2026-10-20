@@ -33,13 +33,14 @@ const SCENES = [
   { n: 's4', light: 'day', alt: 'A suspension bridge hung with marigolds over a turquoise river, a pagoda temple on the far bank, a snow peak above',
     L: { fx: 0.45, fy: 0.6, path: [[0.47, 0.75, 0.08], [0.4, 0.86, 0.2], [0.34, 1.0, 0.48]] },
     P: { fx: 0.5, fy: 0.6, path: [[0.47, 0.74, 0.07], [0.47, 0.86, 0.17], [0.5, 1.0, 0.32]] } },
-  { n: 's5', light: 'dusk', alt: 'A welcome gate of banana stems and marigold garlands at dusk, brass kalash, a petal rangoli and rows of lit diyos',
-    // the procession has gone in under the gate: the lamps are lit and the gate waits for the guests
-    L: { fx: 0.5, fy: 0.6, path: null },
-    P: { fx: 0.5, fy: 0.6, path: null } },
-  { n: 's6', light: 'night', alt: 'A mandap dressed in marigolds and roses under the night sky, the sacred fire lit, hundreds of diyos around it',
-    L: { fx: 0.5, fy: 0.55, path: null },
-    P: { fx: 0.5, fy: 0.6, path: null } },
+  { n: 's5', light: 'dusk', stop: true, alt: 'A welcome gate of banana stems and marigold garlands at dusk, brass kalash, a petal rangoli and rows of lit diyos',
+    // the procession comes through the welcome gate and stops at the edge of the rangoli, where the guests wait
+    L: { fx: 0.5, fy: 0.6, path: [[0.47, 0.585, 0.075], [0.47, 0.68, 0.15], [0.47, 0.795, 0.27]] },
+    P: { fx: 0.5, fy: 0.6, path: [[0.5, 0.615, 0.05], [0.5, 0.65, 0.1], [0.5, 0.69, 0.18]] } },
+  { n: 's6', light: 'night', stop: true, alt: 'A mandap dressed in marigolds and roses under the night sky, the sacred fire lit, hundreds of diyos around it',
+    // the doli is carried in beside the mandap and set down there, clear of the sacred fire
+    L: { fx: 0.5, fy: 0.55, path: [[0.12, 0.68, 0.15], [0.18, 0.74, 0.21], [0.24, 0.81, 0.29]] },
+    P: { fx: 0.5, fy: 0.6, path: [[0.27, 0.64, 0.08], [0.31, 0.69, 0.12], [0.35, 0.74, 0.17]] } },
 ];
 
 const pic = (s, eager) => {
@@ -263,7 +264,7 @@ function journey(ctx) {
   };
   load(0); load(1);
 
-  let vw = 0; let vh = 0; let ori = 'L'; let geo = []; let A = []; let base = 1000;
+  let vw = 0; let vh = 0; let ori = 'L'; let geo = []; let A = []; let base = 1000; let closeTop = Infinity;
   function layout() {
     vw = window.innerWidth; vh = window.innerHeight;
     ori = window.matchMedia(PORTRAIT_Q).matches ? 'P' : 'L';
@@ -287,6 +288,8 @@ function journey(ctx) {
     proc.dataset.ori = ori;
     // where each chapter's beat begins and ends on the page
     A = beats.map((b) => { const r = b.getBoundingClientRect(); const top = r.top + window.scrollY; return { a: top, b: top + b.offsetHeight }; });
+    const close = document.querySelector('.pk-close');
+    closeTop = close ? close.getBoundingClientRect().top + window.scrollY : Infinity;
   }
 
   // a scene point after the scene's push-in scale s
@@ -299,7 +302,7 @@ function journey(ctx) {
     const u = (1 - t) * (1 - t) * f[0] + 2 * (1 - t) * t * m[0] + t * t * nr[0];
     let v = (1 - t) * (1 - t) * f[1] + 2 * (1 - t) * t * m[1] + t * t * nr[1];
     let h = f[2] * (nr[2] / f[2]) ** t;
-    if (qq > 1) { const e = qq - 1; v += e * 0.55; h *= 1 + e * 1.3; } // past the camera
+    if (qq > 1) { const e = qq - 1; v += e * 2.6; h *= 1 + e * 1.2; } // past the camera: they sink out under the lens
     return { u, v, h };
   };
 
@@ -338,7 +341,7 @@ function journey(ctx) {
   function render() {
     const y = window.scrollY;
     if (reduced) {
-      // still: the chapter in view shows its painting (a fade), the procession stands half-way down its trail
+      // still: the chapter in view shows its painting (a fade), the procession stands on its trail (arrived, at the end)
       let i = 0; for (let k = 0; k < A.length; k++) if (y >= A[k].a - vh * 0.5) i = k;
       const key = `${i}|${ori}|${vw}x${vh}`;
       if (key === lastKey) return;
@@ -346,7 +349,7 @@ function journey(ctx) {
       setScene(i);
       scenes.forEach((sc, k) => sc.classList.toggle('is-on', k === i));
       plates.forEach((pl) => { pl.style.transform = 'none'; });
-      place(i, 0.72, 1, 1);
+      place(i, SCENES[i].stop ? 1 : i === 0 ? 0 : 0.55, 1, 1); // home: at the door; on the road: mid-way, whole in view
       return;
     }
     // which scenes are on screen: chapter i takes over as its beat comes up (the camera passes through the mist)
@@ -377,14 +380,21 @@ function journey(ctx) {
 
     // the procession: down this scene's trail toward the camera, then past it
     const B = A[i];
-    const W0 = i === 0 ? 0 : B.a - vh * 0.1; const W1 = B.b - vh * 1.0;
-    const q = (y - W0) / Math.max(1, W1 - W0);
-    const alpha = clamp((q + 0.12) / 0.12) * (1 - clamp((q - 1.04) / 0.22)) * (i > 0 ? clamp((k - 0.55) / 0.3) : 1);
+    const stop = !!SCENES[i].stop; // the last two places: the procession arrives and stays
+    const W0 = i === 0 ? 0 : B.a - vh * 0.1; const W1 = B.b - vh * (stop ? 1.15 : 1.0);
+    const q0 = (y - W0) / Math.max(1, W1 - W0);
+    const q = stop ? Math.min(1, q0) : q0;
+    let alpha = clamp((q0 + 0.12) / 0.12) * (i > 0 ? clamp((k - 0.55) / 0.3) : 1);
+    if (!stop) alpha *= 1 - clamp((q - 1.1) / 0.12); // mostly below the frame by then: no ghosts over the scene
+    else if (A[i + 1]) alpha *= 1 - clamp((y - (A[i + 1].a - vh * 1.25)) / (vh * 0.5)); // gone before the next place
+    else alpha *= 1 - clamp((y - (closeTop - vh * 0.9)) / (vh * 0.5)); // the last place: gone before the blessing
     const s = (1 + 0.07 * (1 - ke)) * (1 + 0.05 * life(i));
     place(i, q, s, alpha);
-    // the near flowers frame the walk on the day scenes, then step aside for the words
-    const fl = SCENES[i].light === 'day' || SCENES[i].light === 'sunrise' ? clamp(q * 4 + 0.2) * (1 - clamp((q - 0.9) / 0.25)) * (i > 0 ? ke : 1) : 0;
+    // the near flowers frame the walk on the day scenes; as the procession reaches the camera they slide out past the
+    // lens (never fade over the bearers)
+    const fl = SCENES[i].light === 'day' || SCENES[i].light === 'sunrise' ? clamp(q * 4 + 0.2) * (i > 0 ? ke : 1) : 0;
     near.style.opacity = fl.toFixed(3);
+    near.style.setProperty('--no', smooth(clamp((q - 0.8) / 0.4)).toFixed(3));
     near.style.setProperty('--nk', (1 + 0.25 * clamp(q)).toFixed(3));
   }
 
@@ -458,6 +468,26 @@ function fitNames() {
   for (let i = 0; i < 14 && [...h.querySelectorAll('.pk-names__n')].some((n) => n.scrollWidth > max); i++) { fs *= 0.93; h.style.fontSize = `${fs}px`; }
 }
 
+// the studio edits the names in place (a live patch): fit them again and keep the rolled banner's initials in step
+function watchNames() {
+  const h = document.querySelector('.pk-names');
+  if (!h || !('MutationObserver' in window)) return;
+  const firstOf = (t) => { const v = String(t || '').trim(); if (!v) return ''; try { return [...new Intl.Segmenter('ne', { granularity: 'grapheme' }).segment(v)][0].segment; } catch { return v.charAt(0); } };
+  let raf = 0;
+  new MutationObserver(() => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      fitNames();
+      const names = [...h.querySelectorAll('.pk-names__n')];
+      const mono = [...document.querySelectorAll('.pk-g__mono > span')];
+      names.forEach((n, i) => ['l-en', 'l-ne'].forEach((c) => {
+        const to = mono[i]?.querySelector(`.${c}`); const from = n.querySelector(`.${c}`);
+        if (to && from) { const v = firstOf(from.textContent); if (to.textContent !== v) to.textContent = v; }
+      }));
+    });
+  }).observe(h, { subtree: true, characterData: true, childList: true });
+}
+
 let J = null;
 const SPEC = {
   slug: 'palki',
@@ -472,6 +502,7 @@ const SPEC = {
     initNepali();
     fitNames();
     document.fonts?.ready.then(fitNames);
+    watchNames();
     let rw = window.innerWidth;
     window.addEventListener('resize', () => { if (window.innerWidth === rw) return; rw = window.innerWidth; fitNames(); });
     J = journey(ctx);

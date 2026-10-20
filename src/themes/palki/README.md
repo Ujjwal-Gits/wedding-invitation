@@ -27,7 +27,7 @@ painting, sized to cover with a focal point. As the guest scrolls, the processio
 on the horse) walks each scene's trail from the far distance toward the camera with perspective (geometric growth along
 a curve, a step bob tied to the distance walked), then past it. Between scenes the camera pushes on: the old painting
 scales up and fades, mist passes the lens, the next painting settles in. Day scenes get fresh marigold and rose bushes
-close to the lens. Transform and opacity only; the cut-outs are lit per scene (dawn, sunrise, day, dusk).
+close to the lens. Transform and opacity only; the cut-outs are lit per scene (dawn, sunrise, day, dusk, night).
 
 Chapters (`.pk-beat` = the walk, then the chapter's cloths):
 1. Home at dawn: the elders' blessing, the card line, hosts, kalash and diyo, the full card.
@@ -35,11 +35,17 @@ Chapters (`.pk-beat` = the walk, then the chapter's cloths):
 3. The chautari (a pipal and a bar tree side by side): the two families on two cloths, the ganthi bandhan between.
 4. Across the river (suspension bridge, pagoda temple): one cloth per celebration (AD + B.S., time, venue + map, dress,
    order of the day), calendar and share, travel/stays/contacts.
-5. Arriving at dusk (the welcome gate, rangoli, diyos): the day under a dawn mist you scratch away, the countdown.
-6. The mandap on the night of lamps: the seven steps (saptapadi), the reply on indigo silk, the blessing with two diyos.
+5. Arriving at dusk (the welcome gate, rangoli, diyos): the procession comes in under the gate and stops at the rangoli;
+   the day under a dawn mist you scratch away, the countdown.
+6. The mandap on the night of lamps: the doli is carried in beside the mandap and set down, clear of the sacred fire;
+   the seven steps (saptapadi), the reply on indigo silk, the blessing with two diyos.
+
+In the first four places the procession walks toward the camera and sinks out under the lens; in the last two it
+arrives and stays (`stop: true`), then fades before the next place. The near flowers slide out of the frame as the
+procession reaches the camera (never fade over the bearers).
 
 Reduced motion / `?still`: the world swaps paintings with a fade as each chapter comes up; the procession stands still
-half-way down the trail; no walking, no push-in, no mist; the opening is a plain fade.
+(at the door at home, half-way down the trail on the road, arrived at the gate and the mandap); no walking, no push-in, no mist; the opening is a plain fade.
 
 ## Slots (`slots.js`)
 Images: `hero.ganesh`, `couple.lead`, `gallery.1`–`6`, `families.bride|groom`. Texts: gate line/buttons, Ganesh on/off,
