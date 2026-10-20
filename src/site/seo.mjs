@@ -163,6 +163,7 @@ const DESIGN_SEO = {
   vasant: ['Vasant Butterfly Garden Wedding Invitation Online', 'Butterflies lift off a marigold garland, then each ceremony’s own flower blooms as you scroll. RSVP, maps and BS dates. From {p}. See it bloom.'],
   zari: ['Zari Trousseau Trunk 3D Wedding Invitation', 'A velvet bridal trunk unlocks and its gold-thread trays lift out: the date, families, ceremonies, map and RSVP, with BS dates. From {p}. See it open.'],
   toran: ['Toran Doorway Animated Wedding Card, Seven Doors', 'Marigold strings part and you walk through seven dressed doorways to the mandap. RSVP, maps and Nepali dates. From {p}. See it.'],
+  sawari: ['Sawari Bride on Horse Nepali Wedding Invitation', 'The bride rides a dressed white horse as the groom leads her through Nepal to the mandap. RSVP, maps and BS dates. From {p}. Ride along.'],
   sanjhi: ['Sanjhi Paper Pop-Up Book Wedding Invitation', 'A cut-paper pop-up book at dusk: peacocks, a lotus pond and a mandap rise page by page. RSVP, maps and BS dates. From {p}. Open it.'],
   palki: ['Palki Doli Procession Animated Wedding Invitation', 'Mist lifts at dawn and a doli travels through Nepal, over hills and a river, to a mandap of lamps. RSVP, maps and BS dates. From {p}. Walk with it.'],
 };
