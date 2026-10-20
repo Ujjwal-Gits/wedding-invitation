@@ -91,18 +91,30 @@ html[data-lang='ne'] .sw-lede { font-size: 17.5px; line-height: 1.8; }
 .sw-ride__shadow { position: absolute; left: 6%; right: 4%; bottom: -3%; height: 10%; border-radius: 50%; background: radial-gradient(closest-side, rgba(40, 24, 10, 0.42), rgba(40, 24, 10, 0)); }
 .sw-fg { position: absolute; z-index: 3; left: 0; top: 0; width: 1px; height: 100%; will-change: transform; pointer-events: none; }
 .sw-plant { position: absolute; bottom: -2.2svh; display: block; max-width: none; }
-.sw-flow { position: absolute; z-index: 4; left: 0; top: 0; height: 100%; display: flex; will-change: transform; }
+.sw-flow { position: absolute; left: 0; top: 0; height: 100%; display: flex; }
 .sw-stop { position: relative; flex: 0 0 100vw; width: 100vw; height: 100%; }
-.sw-card { position: absolute; left: 16px; right: 16px; top: calc(64px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.sw-card { position: absolute; z-index: 4; left: 16px; right: 16px; top: calc(64px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; will-change: transform; }
+.sw-card:empty { display: none; }
+/* the things that stand by the road: behind the procession and the flowers, moving with the road */
+.sw-prop { position: absolute; z-index: 1; left: 0; top: 0; margin: 0; will-change: transform; }
+.sw-prop::after { content: ''; position: absolute; z-index: -1; left: 4%; right: 4%; bottom: -2.5%; height: 7%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(40, 24, 10, 0.5), rgba(40, 24, 10, 0)); }
+.sw-prop.is-sunset img:not(.sw-frame__img):not(.su-img) { filter: brightness(0.94) sepia(0.12) saturate(1.05); }
+.sw-prop.is-dusk img:not(.sw-frame__img):not(.su-img) { filter: brightness(0.84) sepia(0.26) saturate(1.08) hue-rotate(-6deg); }
 .sw-pc { display: none; }
 
 /* the route: seven places, a gold bead where we are */
 .sw-route { position: absolute; z-index: 5; left: 18px; top: calc(28px + env(safe-area-inset-top, 0px)); width: min(150px, 34vw); height: 10px; pointer-events: none; }
 .sw-route__line { position: absolute; left: 0; right: 0; top: 4px; height: 2px; border-radius: 2px; background: rgba(255, 251, 242, 0.75); box-shadow: 0 0 0 1px rgba(60, 35, 15, 0.18); }
 .sw-route__pip { position: absolute; top: 2px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #FFFBF2; box-shadow: 0 0 0 1px rgba(60, 35, 15, 0.35); }
-.sw-route__me { position: absolute; top: -1px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--sw-gold); box-shadow: 0 0 0 2px #FFFBF2, 0 2px 6px rgba(60, 35, 15, 0.4); }
-.sw-cue { z-index: 5; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); color: #FFF8EC; text-shadow: 0 1px 6px rgba(40, 20, 5, 0.6); }
-body.sw-journeying .sw-cue { opacity: 0 !important; transition: opacity 0.3s; }
+.sw-route__me { position: absolute; left: 0; top: -1px; will-change: transform; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--sw-gold); box-shadow: 0 0 0 2px #FFFBF2, 0 2px 6px rgba(60, 35, 15, 0.4); }
+/* the scroll cue sits under the route bar (the bottom of the screen belongs to the procession) and points along the road */
+.sw-stage .sw-cue { z-index: 5; left: 14px; top: calc(44px + env(safe-area-inset-top, 0px)); bottom: auto; translate: none; flex-direction: row; gap: 8px; padding: 4px 11px;
+  border-radius: 999px; background: rgba(255, 248, 236, 0.82); color: #3A2210; text-shadow: none; box-shadow: 0 4px 12px -6px rgba(40, 20, 5, 0.45); }
+.sw-stage .sw-cue i { width: 18px; height: 1px; background: linear-gradient(to right, currentColor, transparent); }
+body.is-open .sw-stage .sw-cue i { animation-name: sw-cue; }
+@keyframes sw-cue { 0%, 100% { transform: translateX(0); opacity: 1; } 50% { transform: translateX(6px); opacity: 0.45; } }
+body.sw-journeying .sw-cue { opacity: 0 !important; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; } /* (and out of the tab order) */
 
 /* the paper slips: handmade lokta */
 .sw-slip { position: relative; width: min(100%, 440px); box-sizing: border-box; padding: 16px 20px 18px; background: var(--sw-paper); background-size: 160px; border-radius: 3px;
@@ -117,51 +129,53 @@ body.sw-journeying .sw-cue { opacity: 0 !important; transition: opacity 0.3s; }
 .sw-hero__gan { display: block; width: 46px; line-height: 0; }
 .sw-hero__gan img { width: 100%; height: auto; }
 .sw-hero__inv { margin: 0; font: 500 15px/1.5 var(--sw-f-deva-d); color: var(--su-accent); }
-.sw-names { margin: 2px 0; display: flex; flex-direction: column; align-items: center; font: 500 italic clamp(38px, 11.5vw, 70px)/1.06 var(--su-f-display); color: var(--su-ink); }
+.sw-names { margin: 2px 0; display: flex; flex-flow: row wrap; justify-content: center; align-items: baseline; column-gap: 0.22em; font: 500 italic clamp(38px, 11.5vw, 70px)/1.1 var(--su-f-display); color: var(--su-ink); }
 .sw-names .l-ne { font: 700 normal 0.84em/1.38 var(--sw-f-deva-d); }
 .sw-names__n { display: block; white-space: nowrap; }
-.sw-names__amp { display: block; margin: -2px 0; font: 400 0.52em/1.2 var(--su-f-display); color: var(--su-accent); }
+.sw-names__amp { display: inline; font: 400 0.6em/1.2 var(--su-f-display); color: var(--su-accent); }
 .sw-hero__date { margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px; font: 600 16px/1.45 var(--su-f-body); color: var(--su-ink); }
 .sw-hero__bs { font-weight: 500; font-size: 14.5px; color: var(--su-ink-2); }
 .sw-hero__place { margin: 0; font: 500 15px/1.4 var(--su-f-body); letter-spacing: 0.06em; color: var(--sw-green); }
 
-/* 3 · the couple in the carved frame (the easel's legs stay out of the picture) */
-.sw-frame { position: relative; margin: 0; width: clamp(150px, min(50vw, calc((var(--gy, 80svh) - var(--ch, 25svh) - 250px) * 0.72)), 280px); aspect-ratio: 760 / 1058; overflow: hidden; }
-.sw-frame__pic { position: absolute; left: 18.9%; top: 28.5%; width: 62.7%; height: 57.9%; display: grid; place-items: center; overflow: hidden; background: #2B1B10; }
+/* 3 · the couple in the carved frame, standing on its easel in the field */
+.sw-frame { width: 220px; aspect-ratio: 760 / 1230; }
+.sw-frame__pic { position: absolute; left: 18.9%; top: 24.5%; width: 62.7%; height: 49.8%; display: grid; place-items: center; overflow: hidden; background: #2B1B10; }
 .sw-frame__img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
-.sw-frame__wood { position: absolute; left: 0; top: 0; display: block; width: 100%; height: auto; max-width: none; pointer-events: none; }
+.sw-frame__wood { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; max-width: none; pointer-events: none; }
+.sw-frame::after { left: 10%; right: 10%; bottom: -2%; height: 5%; }
 .sw-slip--couple { width: min(100%, 380px); }
 
 /* 4 · our story, on little milestones */
 .sw-story { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; text-align: left; }
-.sw-story__i { display: grid; grid-template-columns: 34px auto; grid-template-rows: auto auto; column-gap: 12px; align-items: start; }
-.sw-story__stone { grid-row: 1 / span 2; width: 34px; line-height: 0; }
-.sw-story__stone img { width: 100%; height: auto; }
-.sw-story__y { font: 600 15px/1.3 var(--su-f-display); color: var(--su-accent); }
-.sw-story__t { margin: 2px 0 0; font-size: 15px; line-height: 1.55; color: var(--su-ink); }
+.sw-story__i { display: grid; grid-template-columns: 52px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
+.sw-story__i > :only-child { grid-column: 1 / -1; }
+.sw-story__y { font: 600 15px/1.3 var(--su-f-display); color: var(--su-accent); font-variant-numeric: lining-nums; }
+.sw-story__t { margin: 0; font-size: 15px; line-height: 1.55; color: var(--su-ink); }
+.sw-marks { display: flex; align-items: flex-end; justify-content: space-between; }
+.sw-marks::after { display: none; }
+.sw-mark { position: relative; flex: 0 0 var(--pw, 72px); width: var(--pw, 72px); aspect-ratio: 640 / 871; rotate: var(--t); transform-origin: 50% 100%; }
+.sw-mark:nth-child(2n) { translate: 0 -3px; }
+.sw-mark::after { content: ''; position: absolute; z-index: -1; left: 0; right: 0; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, rgba(40, 24, 10, 0.45), rgba(40, 24, 10, 0)); }
+.sw-mark__img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sw-mark__y { position: absolute; left: 18%; width: 60%; top: 31%; text-align: center; font: 600 calc(var(--pw, 72px) * 0.2)/1.1 var(--su-f-display); color: #5A2A12; font-variant-numeric: lining-nums; }
+.sw-mark__y .l-ne { font: 700 calc(var(--pw, 72px) * 0.2)/1.3 var(--sw-f-deva-d); }
 html[data-lang='ne'] .sw-story__t { font-size: 16px; line-height: 1.75; }
 
-/* 5 · the families on their milestones */
-.sw-stop--fam { flex-basis: auto; width: auto; display: flex; }
-.sw-stop--fam .sw-card { position: static; display: contents; }
-.sw-slip--fam { position: absolute; z-index: 1; left: 50vw; padding: 10px 16px 12px; top: calc(64px + env(safe-area-inset-top, 0px)); translate: -50% 0; width: min(calc(100vw - 32px), 440px); text-align: center; }
-.sw-stones { display: flex; }
-.sw-stone { position: relative; flex: 0 0 100vw; width: 100vw; height: 100%;
-  --st: calc(64px + 64px + env(safe-area-inset-top, 0px));
-  --sw-sw: max(200px, min(300px, 80vw, calc((var(--gy, 80svh) - var(--ch, 25svh) * 0.78 - var(--st) - 6px) / 1.361))); }
-.sw-stone__box { position: absolute; left: 50%; top: var(--st); width: var(--sw-sw); aspect-ratio: 640 / 871; translate: -50% 0; }
-.sw-stone__img { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 16px 20px rgba(40, 20, 5, 0.35)); }
+/* 5 · the families, one milestone on each bank of the river */
+.sw-slip--fam { padding: 10px 16px 12px; text-align: center; }
+.sw-stone { width: 240px; aspect-ratio: 640 / 871; }
+.sw-stone__img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sw-stone__cap { position: absolute; left: 17%; width: 60%; top: 7.5%; text-align: center;
   font: 600 11.5px/1.25 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: #FFF4E2; }
 .sw-stone__cap .l-ne { font: 600 15px/1.4 var(--su-f-deva); letter-spacing: 0; text-transform: none; }
-.sw-stone__face { position: absolute; left: 20%; width: 56%; top: 25.5%; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--su-ink); }
+.sw-stone__face { transform-origin: 50% 0; position: absolute; left: 20%; width: 56%; top: 25.5%; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--su-ink); }
 .sw-stone__pic { width: 64px; margin: 0 0 6px; line-height: 0; }
 .sw-stone__pic img { width: 100%; height: auto; border-radius: 4px; }
-.sw-stone__name { margin: 0; font: 600 clamp(17px, 4.6vw, 21px)/1.25 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
+.sw-stone__name { margin: 0; font: 600 clamp(16px, calc(var(--pw, 240px) * 0.078), 21px)/1.25 var(--su-f-display); color: var(--su-ink); text-wrap: balance; }
 .sw-stone__name .l-ne { font: 700 0.92em/1.5 var(--sw-f-deva-d); }
 .sw-stone__of { margin: 6px 0 0; font-size: 13px; letter-spacing: 0.06em; color: var(--su-ink-2); }
 .sw-stone__of .l-ne { font-size: 14.5px; letter-spacing: 0; }
-.sw-stone__par { margin: 0; font: 500 14.5px/1.45 var(--su-f-body); color: var(--su-ink); text-wrap: balance; }
+.sw-stone__par { margin: 0; font: 500 clamp(13.5px, calc(var(--pw, 240px) * 0.058), 15px)/1.45 var(--su-f-body); color: var(--su-ink); text-wrap: balance; }
 html[data-lang='ne'] .sw-stone__par { font-size: 15px; line-height: 1.6; }
 .sw-stone__home { margin: 6px 0 0; font-size: 13.5px; color: var(--sw-green); font-weight: 600; }
 
@@ -174,9 +188,15 @@ html[data-lang='ne'] .sw-stone__par { font-size: 15px; line-height: 1.6; }
 .sw-more { margin-top: 2px; }
 
 /* 7 · the celebrations, on painted signboards (red frame, gold corners, cream face) */
-.sw-board { position: relative; width: min(100%, 460px); box-sizing: border-box; padding: 6px 4px 8px; text-align: center; color: var(--su-ink);
-  border: 34px solid transparent; border-image: url('/themes/sawari/art/board-clean.webp') 150 fill / 34px / 0 stretch;
+.sw-board { position: relative; width: min(100%, 460px); box-sizing: border-box; margin-top: 10px; padding: 40px 4px 8px; text-align: center; color: var(--su-ink);
+  --bw: 34px; border: var(--bw) solid transparent; border-image: url('/themes/sawari/art/board-clean.webp') 150 fill / var(--bw) / 0 stretch;
   filter: drop-shadow(0 16px 22px rgba(40, 20, 5, 0.38)); }
+/* dressed for the wedding: a fresh marigold toran along the top, a clump of marigolds and roses at its foot (both on
+   the painted frame, clear of the words) */
+.sw-board::before { content: ''; position: absolute; left: calc(-1 * var(--bw) - 8px); right: calc(-1 * var(--bw) - 8px); top: calc(-1 * var(--bw) - 8px); height: 72px; pointer-events: none;
+  background: url('/themes/_nepali/toran-sm.webp') 50% 0 / auto 100% round no-repeat; }
+.sw-board::after { content: ''; position: absolute; right: calc(-1 * var(--bw) - 20px); bottom: calc(-1 * var(--bw) - 14px); width: 124px; height: 56px; pointer-events: none;
+  background: url('/themes/sawari/art/flowers-sm.webp') 50% 100% / contain no-repeat; }
 .sw-board__k { margin-bottom: 4px; color: var(--sw-gold-ink); }
 .sw-board__no { margin: 0; font: 600 12px/1.3 var(--su-f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--su-ink-2); }
 .sw-board__no .l-ne { font-size: 14px; letter-spacing: 0; }
@@ -199,22 +219,22 @@ html[data-lang='ne'] .sw-board__dl dd { font-size: 16px; line-height: 1.7; }
 /* 8 · the milestone that counts the days */
 .sw-slip--count { width: auto; padding: 10px 18px 8px; }
 .sw-slip--count .sw-sign { margin: 0; }
-.sw-mile { position: relative; width: clamp(180px, min(62vw, calc((var(--gy, 80svh) - var(--ch, 25svh) - 210px) * 0.735)), 270px); aspect-ratio: 640 / 871; }
-.sw-mile__img { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 16px 20px rgba(40, 20, 5, 0.35)); }
+.sw-mile { width: 240px; aspect-ratio: 640 / 871; }
+.sw-mile__img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sw-mile__cap { position: absolute; left: 17%; width: 60%; top: 7%; margin: 0; text-align: center; font: 600 13px/1.2 var(--su-f-body); letter-spacing: 0.22em; text-transform: uppercase; color: #FFF4E2; }
 .sw-mile__cap .l-ne { font: 700 17px/1.3 var(--sw-f-deva-d); letter-spacing: 0; text-transform: none; }
-.sw-mile__face { position: absolute; left: 20%; width: 56%; top: 25%; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--su-ink); }
+.sw-mile__face { transform-origin: 50% 0; position: absolute; left: 20%; width: 56%; top: 25%; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--su-ink); }
 .sw-mile__days { margin: 0; display: flex; flex-direction: column; align-items: center; }
-.sw-mile__n { font: 500 clamp(44px, 13vw, 62px)/1 var(--su-f-display); color: var(--su-accent); font-variant-numeric: tabular-nums; }
+.sw-mile__n { font: 500 clamp(44px, calc(var(--pw, 240px) * 0.24), 66px)/1 var(--su-f-display); color: var(--su-accent); font-variant-numeric: tabular-nums; }
 .sw-mile__n .l-ne { font-family: var(--sw-f-deva-d); font-weight: 700; }
 .sw-mile__unit { font: 600 12px/1.4 var(--su-f-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--su-ink-2); }
 .sw-mile__unit .l-ne { font-size: 15px; letter-spacing: 0; text-transform: none; }
 .sw-mile__to { margin: 0; font: 500 italic 15px/1.3 var(--su-f-display); color: var(--su-ink-2); }
 .sw-mile__to .l-ne { font: 500 15px/1.5 var(--su-f-deva); font-style: normal; }
-.sw-mile__hms { display: flex; gap: 6px; margin: 8px 0 0; padding: 6px 0 0; list-style: none; border-top: 1px solid rgba(185, 131, 39, 0.5); }
+.sw-mile__hms { display: flex; gap: clamp(6px, calc(var(--pw, 240px) * 0.03), 10px); margin: 8px 0 0; padding: 6px 0 0; list-style: none; border-top: 1px solid rgba(185, 131, 39, 0.5); }
 .sw-mile__hms li { display: flex; flex-direction: column; align-items: center; }
-.sw-mile__s { font: 500 18px/1 var(--su-f-display); color: var(--su-ink); font-variant-numeric: tabular-nums; }
-.sw-mile__hms span { font: 600 10px/1.4 var(--su-f-body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--su-ink-2); }
+.sw-mile__s { font: 500 clamp(18px, calc(var(--pw, 240px) * 0.085), 24px)/1 var(--su-f-display); color: var(--su-ink); font-variant-numeric: tabular-nums; }
+.sw-mile__hms span { font: 600 11px/1.4 var(--su-f-body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--su-ink-2); }
 .sw-mile__hms span .l-ne { font-size: 11.5px; letter-spacing: 0; }
 .sw-mile__done { margin: 0; font: 500 18px/1.3 var(--su-f-display); color: var(--su-accent); }
 .sw-mile.is-done .sw-mile__days, .sw-mile.is-done .sw-mile__to, .sw-mile.is-done .sw-mile__hms { display: none; }
@@ -235,6 +255,9 @@ html[data-lang='ne'] .sw-board__dl dd { font-size: 16px; line-height: 1.7; }
 .sw-day__alt, .sw-day__t { margin: 0; font-size: 14px; color: var(--su-ink-2); }
 .sw-day__t { font-weight: 600; color: var(--su-ink); }
 .sw-scratch .su-scratch__btn { min-height: 44px; }
+/* the card sits on the road the guest scrolls along: an up-or-down swipe that starts on the gold still moves the page
+   (sideways rubs scratch), so a thumb that lands on it is never stuck */
+.sw-scratch .su-scratch__foil { touch-action: pan-y !important; }
 
 /* desktop: the words stand in the sky to the left or right of the procession */
 @media (min-width: 760px) and (min-aspect-ratio: 19/20) {
@@ -242,18 +265,12 @@ html[data-lang='ne'] .sw-board__dl dd { font-size: 16px; line-height: 1.7; }
   .sw-stop[data-side='l'] .sw-card, .sw-stop[data-side='c'] .sw-card { left: 6vw; }
   .sw-stop[data-side='r'] .sw-card { right: 6vw; }
   .sw-route { left: 28px; top: 32px; width: 180px; }
+  .sw-stage .sw-cue { left: 22px; top: 52px; }
   .sw-hero { padding: 6px 0 10px; }
   .sw-names { font-size: clamp(48px, 5vw, 78px); }
-  .sw-slip--fam { top: 9vh; }
-  .sw-stone { --st: calc(9vh + 112px); --sw-sw: max(200px, min(290px, calc((var(--gy, 80svh) - var(--ch, 25svh) * 0.62 - var(--st) - 6px) / 1.361))); }
-  .sw-slip--fam { width: min(440px, 34vw); }
-  .sw-names { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 0.22em; }
-  .sw-names__amp { display: inline; margin: 0; font-size: 0.6em; }
-  .sw-mile { width: clamp(220px, calc((var(--gy, 80svh) - var(--ch, 25svh) - 9vh - 170px) * 0.735), 300px); }
   .sw-print:nth-child(3) { display: block; }
   .sw-prints--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 440px); }
-  .sw-board { border-width: 40px; border-image-width: 40px; }
-  .sw-frame { width: clamp(170px, calc((var(--gy, 80svh) - 9vh - 210px) * 0.7), 300px); }
+  .sw-board { --bw: 40px; padding-top: 34px; }
 }
 
 /* ═════════ after the road: the seven steps by lamplight ═════════ */
@@ -319,22 +336,29 @@ html[data-lang='ne'] .sw-close__en { display: none; }
 body.sw-still .sw-stage { height: auto; overflow: visible; background: var(--sw-night); contain: none; }
 body.sw-still .sw-sky, body.sw-still .sw-world, body.sw-still .sw-ride, body.sw-still .sw-fg, body.sw-still .sw-route, body.sw-still .sw-cue { display: none; }
 body.sw-still .sw-flow { position: static; display: block; transform: none !important; }
-body.sw-still .sw-stop, body.sw-still .sw-stone { position: relative; width: auto; height: auto; flex: none; padding: 0 0 44px; }
-body.sw-still .sw-card { position: static; margin: -12px auto 0; padding: 0 16px; width: auto; max-width: 560px; }
+body.sw-still .sw-stop { position: relative; width: auto; height: auto; flex: none; padding: 0 0 44px; }
+body.sw-still .sw-card { position: static; margin: -12px auto 0; padding: 0 16px; box-sizing: border-box; width: 100%; max-width: 560px; transform: none !important; }
 body.sw-still .sw-pc { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 70svh; overflow: hidden; container-type: size; margin: 0;
   background: linear-gradient(#A9BDCC, #F0D29C); }
 body.sw-still .sw-pc--sunset { background: linear-gradient(#4E4372, #E9885A); }
 body.sw-still .sw-pc--dusk { background: linear-gradient(#0F1B2E, #4A3A5A); }
 body.sw-still .sw-pc::after { content: ''; position: absolute; inset: auto 0 0 0; height: 30%; background: linear-gradient(to bottom, rgba(22, 36, 58, 0), var(--sw-night)); }
-.sw-pc__pan { position: absolute; top: 0; height: 100cqh; width: auto; max-width: none; left: calc(50cqw - var(--f) * 198.2cqh); }
-.sw-pc__ride { position: absolute; left: 50%; translate: -50% 0; height: 34cqh; width: auto; max-width: none; bottom: calc((1 - var(--g)) * 100cqh); }
-body.sw-still .sw-stop--fam { display: block; }
-body.sw-still .sw-stop--fam .sw-card { display: block; }
-body.sw-still .sw-slip--fam { position: relative; left: auto; top: auto; translate: none; margin: -12px auto 18px; }
-body.sw-still .sw-stones { position: static; display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
-body.sw-still .sw-stone { width: min(300px, 80vw); padding: 0; --sw-sw: min(300px, 80vw); }
-body.sw-still .sw-stone__box { position: relative; left: auto; top: auto; translate: none; }
-body.sw-still .sw-frame, body.sw-still .sw-mile { width: min(280px, 70vw); }
+/* the painting fills the postcard whatever its shape (it is 1.982 wide for 1 high), its trail at the right height */
+.sw-pc__pan { --ph: max(100cqh, 50.46cqw); position: absolute; bottom: 0; height: var(--ph); width: auto; max-width: none;
+  left: clamp(calc(100cqw - var(--ph) * 1.982), calc(50cqw - var(--f) * var(--ph) * 1.982), 0px); }
+.sw-pc__ride { --ph: max(100cqh, 50.46cqw); position: absolute; left: 50%; translate: -50% 0; height: 34cqh; width: auto; max-width: none; bottom: calc((1 - var(--g)) * var(--ph)); }
+body.sw-still .sw-stop { display: flex; flex-direction: column; align-items: center; }
+body.sw-still .sw-pc { align-self: stretch; }
+/* (!important: a phone turned on its side switches modes live, over the journey's inline sizes) */
+body.sw-still .sw-prop { position: relative; left: auto !important; top: auto !important; transform: none !important; opacity: 1 !important; visibility: visible !important; margin: 18px auto 0; }
+body.sw-still .sw-frame { width: min(240px, 62vw) !important; height: auto !important; }
+body.sw-still .sw-stone, body.sw-still .sw-mile { width: min(270px, 72vw) !important; height: auto !important; --pw: min(270px, 72vw) !important; }
+body.sw-still .sw-marks { width: min(380px, 86vw) !important; height: auto !important; gap: 12px; justify-content: center; --pw: min(80px, 19vw) !important; }
+body.sw-still .sw-stop--fam2 .sw-pc { display: none; }
+body.sw-still .sw-stop--count .sw-card { display: contents; }
+body.sw-still .sw-stop--count .sw-slip--count { margin-top: -12px; }
+body.sw-still .sw-stop--count .sw-mile { order: 3; }
+body.sw-still .sw-stop--count .sw-btns { order: 4; margin-top: 16px; }
 @media (min-width: 900px) { body.sw-still .sw-pc { aspect-ratio: 1.95; max-height: none; } }
 
 @media (prefers-reduced-motion: reduce) {

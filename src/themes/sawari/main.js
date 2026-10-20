@@ -16,6 +16,7 @@ import { lamp, initNepali } from '../_suite/nepali.js';
 import { goldFoil } from '../_suite/scratch.js';
 
 const ART = '/themes/sawari/art/';
+const PREVIEW = new URLSearchParams(location.search).get('preview') === '1';
 const PANEL_AR = 1776 / 896;
 const COUPLE_AR = 1100 / 737;
 // the road, left to right: each painting, where its trail runs (fraction of its height, under the hooves), and the
@@ -59,9 +60,13 @@ function gate(ctx) {
 function page(ctx) {
   const { bi, esc, txt, on, parts: P, c, config, AD, BS, placeLine } = ctx;
   const sign = (id) => `<p class="sw-sign"><i aria-hidden="true"></i>${bi(txt(id))}</p>`;
-  const stop = (key, anchor, side, inner, { id = '', extra = '', at = anchor } = {}) => `<article class="sw-stop sw-stop--${key}" data-side="${side}"${anchor ? ` data-anchor="${anchor}"` : ''}${id ? ` id="${id}"` : ''}${extra}>
+  // (the id goes on the words, which move, so the studio's "show me" lands on the stop)
+  // a stop: its words (in the sky) and, for some, a thing that stands on the roadside ground (a prop: it moves with the
+  // road, not with the words; it stands behind the procession on phones and beside it on wide screens)
+  const stop = (key, anchor, side, inner, { id = '', extra = '', at = anchor, prop = '' } = {}) => `<article class="sw-stop sw-stop--${key}" data-side="${side}"${anchor ? ` data-anchor="${anchor}"` : ''}${extra}>
       ${still(at)}
-      <div class="sw-card">${inner}</div>
+      <div class="sw-card"${id ? ` id="${id}"` : ''}>${inner}</div>
+      ${prop}
     </article>`;
   // the still postcard of a stop, shown only without motion
   const still = (anchor) => {
@@ -101,41 +106,47 @@ function page(ctx) {
 
   // 3 · the terraces: the couple, framed and garlanded by the road
   if (P.lead) {
-    stops.push(stop('couple', 'terraces:0.42', 'l', `
-      <figure class="sw-frame">
-        <div class="sw-frame__pic">${ctx.imgTag(P.lead.photo, P.lead.alt, '(min-width: 900px) 260px, 46vw', { cls: 'sw-frame__img' })}</div>
-        ${pic('frame', { cls: 'sw-frame__wood', sizes: '(min-width: 900px) 360px, 64vw', w: [440, 760] })}
-      </figure>
-      <div class="sw-slip sw-slip--couple">${sign('stop.fields')}<h2 class="sw-h">${bi(txt('couple.title'))}</h2>${on(txt('couple.line')) ? `<p class="sw-lede">${bi(txt('couple.line'))}</p>` : ''}</div>`, { id: 'couple' }));
+    stops.push(stop('couple', 'terraces:0.36', 'l', `
+      <div class="sw-slip sw-slip--couple">${sign('stop.fields')}<h2 class="sw-h">${bi(txt('couple.title'))}</h2>${on(txt('couple.line')) ? `<p class="sw-lede">${bi(txt('couple.line'))}</p>` : ''}</div>`, {
+      id: 'couple',
+      // the carved frame on its easel, standing in the field by the road
+      prop: `<figure class="sw-prop sw-frame" data-prop="frame">
+        <div class="sw-frame__pic">${ctx.imgTag(P.lead.photo, P.lead.alt, '(min-width: 900px) 190px, 40vw', { cls: 'sw-frame__img' })}</div>
+        ${pic('frame', { cls: 'sw-frame__wood', sizes: '(min-width: 900px) 300px, 56vw', w: [440, 760] })}
+      </figure>`,
+    }));
   }
 
   // 4 · our story: milestones already passed
   const story = (config.story || []).filter((s) => s?.text?.en || s?.text?.ne);
   if (story.length && on(txt('story.title'))) {
-    stops.push(stop('story', 'terraces:0.85', 'r', `
+    const told = story.slice(0, 4);
+    const yr = (s) => s.year?.en || s.year?.ne;
+    stops.push(stop('story', 'terraces:0.6', 'r', `
       <div class="sw-slip sw-slip--story" id="story">
         <h2 class="sw-h">${bi(txt('story.title'))}</h2>
-        <ol class="sw-story">${story.slice(0, 4).map((s) => `<li class="sw-story__i"><span class="sw-story__stone" aria-hidden="true">${pic('milestone', { cls: '', sizes: '44px', w: [380, 640] })}</span><span class="sw-story__y">${bi(s.year || { en: '', ne: '' })}</span><p class="sw-story__t">${bi(s.text)}</p></li>`).join('')}</ol>
-      </div>`));
+        <ol class="sw-story">${told.map((s) => `<li class="sw-story__i">${yr(s) ? `<span class="sw-story__y">${bi(s.year)}</span>` : ''}<p class="sw-story__t">${bi(s.text)}</p></li>`).join('')}</ol>
+      </div>`, {
+      // the years, carved on milestones already passed (the words above say the same, so these are pictures)
+      prop: told.some(yr) ? `<div class="sw-prop sw-marks" data-prop="marks" aria-hidden="true">${told.filter(yr).map((s, i) => `<span class="sw-mark" style="--t:${[-1.6, 1.2, -0.6, 1.8][i]}deg">${pic('milestone', { cls: 'sw-mark__img', sizes: '96px', w: [380, 640] })}<b class="sw-mark__y">${bi(s.year)}</b></span>`).join('')}</div>` : '',
+    }));
   }
 
   // 5 · the bridge: the two families, one on each bank, on their milestones
-  const fam = (f, anchor) => `<div class="sw-stone sw-stone--${f.key}" data-anchor="${anchor}"${f.key === 'groom' ? ' id="families"' : ''}>
-      <div class="sw-stone__box">
-        ${pic('milestone', { cls: 'sw-stone__img', sizes: '(min-width: 900px) 300px, 74vw', w: [380, 640] })}
-        <div class="sw-stone__cap">${bi(f.label)}</div>
-        <div class="sw-stone__face">
-          ${P.brideGroom ? `<figure class="sw-stone__pic">${ctx.imgTag(f.photo, f.person.name.en, '84px')}</figure>` : ''}
-          <p class="sw-stone__name">${bi(f.person.fullName)}</p>
-          ${(f.person.parents?.en || f.person.parents?.ne) ? `<p class="sw-stone__of">${bi(f.of)}</p><p class="sw-stone__par">${bi(f.person.parents)}</p>` : ''}
-          ${(f.person.home?.en || f.person.home?.ne) ? `<p class="sw-stone__home">${bi(f.person.home)}</p>` : ''}
-        </div>
+  const fam = (f) => `<div class="sw-prop sw-stone sw-stone--${f.key}" data-prop="stone">
+      ${pic('milestone', { cls: 'sw-stone__img', sizes: '(min-width: 900px) 280px, 66vw', w: [380, 640] })}
+      <div class="sw-stone__cap">${bi(f.label)}</div>
+      <div class="sw-stone__face">
+        ${P.brideGroom ? `<figure class="sw-stone__pic">${ctx.imgTag(f.photo, f.person.name.en, '84px')}</figure>` : ''}
+        <p class="sw-stone__name">${bi(f.person.fullName)}</p>
+        ${(f.person.parents?.en || f.person.parents?.ne) ? `<p class="sw-stone__of">${bi(f.of)}</p><p class="sw-stone__par">${bi(f.person.parents)}</p>` : ''}
+        ${(f.person.home?.en || f.person.home?.ne) ? `<p class="sw-stone__home">${bi(f.person.home)}</p>` : ''}
       </div>
     </div>`;
   const groom = P.families.find((f) => f.key === 'groom'); const bride = P.families.find((f) => f.key === 'bride');
-  stops.push(stop('fam', '', 'c', `
-    <div class="sw-slip sw-slip--fam">${sign('stop.bridge')}<h2 class="sw-h" id="fam-title">${bi(txt('families.title'))}</h2></div>
-    <div class="sw-stones">${fam(groom, 'bridge:0.36')}${fam(bride, 'bridge:0.64')}</div>`, { at: 'bridge:0.5' }));
+  // his family's stone on this bank of the river, hers across the bridge
+  stops.push(stop('fam', 'bridge:0.14', 'l', `<div class="sw-slip sw-slip--fam">${sign('stop.bridge')}<h2 class="sw-h" id="fam-title">${bi(txt('families.title'))}</h2></div>`, { id: 'families', prop: fam(groom) }));
+  stops.push(stop('fam2', 'bridge:0.9', 'r', '', { prop: fam(bride) }));
 
   // 6 · the chautari: a few photographs, propped up while they rest
   if (P.photos.length) {
@@ -175,7 +186,8 @@ function page(ctx) {
   // 8 · under the toran: the milestone that counts the days to the mandap
   stops.push(stop('count', 'toran:0.6', 'r', `
     <div class="sw-slip sw-slip--count">${sign('stop.toran')}</div>
-    <div class="sw-mile" data-countdown>
+    <div class="sw-btns">${P.calendarBtn()}${P.shareBtn()}</div>`, { id: 'countdown', prop: `
+    <div class="sw-prop sw-mile" data-prop="mile" data-countdown>
       ${pic('milestone', { cls: 'sw-mile__img', sizes: '(min-width: 900px) 280px, 62vw', w: [380, 640] })}
       <p class="sw-mile__cap">${bi({ en: 'Mandap', ne: 'मण्डप' })}</p>
       <div class="sw-mile__face">
@@ -184,8 +196,7 @@ function page(ctx) {
         <ol class="sw-mile__hms" aria-label="${esc(txt('count.title').en)}">${[['h', { en: 'hrs', ne: 'घण्टा' }], ['m', { en: 'min', ne: 'मिनेट' }], ['s', { en: 'sec', ne: 'सेकेन्ड' }]].map(([u, l]) => `<li>${P.countNum(u, 'sw-mile__s')}<span>${bi(l)}</span></li>`).join('')}</ol>
         <p class="sw-mile__done" data-count-done hidden></p>
       </div>
-    </div>
-    <div class="sw-btns">${P.calendarBtn()}${P.shareBtn()}</div>`, { id: 'countdown' }));
+    </div>` }));
 
   // 9 · the mandap: scratch for the day
   const face = `<div class="sw-day">
@@ -286,12 +297,78 @@ function journey(ctx) {
   const skySunset = sky.querySelector('.sw-sky--sunset');
   const skyDusk = sky.querySelector('.sw-sky--dusk');
   const pans = [...world.querySelectorAll('.sw-pan')];
+  // the words ride with the scroll, one transform each (the flow itself stays put, so the things standing on the
+  // ground can sit behind the procession while the words stay in front of it)
+  const cards = [...flow.querySelectorAll('.sw-card')];
+  const props = [...flow.querySelectorAll('.sw-prop')].map((el) => ({ el, stop: el.closest('.sw-stop'), kind: el.dataset.prop }));
   // focus must never scroll the stage itself (the road moves by transform only)
   stage.addEventListener('scroll', () => { stage.scrollLeft = 0; stage.scrollTop = 0; });
   let vw = 0; let vh = 0; let phone = false; let H = 0; let Wp = 0; let gy = 0; let ch = 0; let cw = 0;
   let geo = []; let worldW = 0; let D = 1; let keys = []; let skyTravel = 0; let todKeys = []; let plants = [];
-  let enter = 0; let wx = 0; let anchors = [];
+  let enter = 0; let wx = 0; let anchors = []; let routeW = 0; let fgWas = '';
   const byName = (n) => geo.find((g) => g.n === n);
+  const MS_AR = 640 / 871; const FR_AR = 760 / 1230;
+
+  // the things by the road: sized and set on the ground for this screen, at their own stop
+  function placeProps() {
+    const procTop = gy - ch * 0.985; const procL = (vw - cw) / 2;
+    const groundY = gy - H * 0.035; // the near verge, a step behind the hooves
+    for (const pr of props) {
+      const { el, stop, kind } = pr;
+      pr.k = keys.find((k) => k.el === stop);
+      pr.off = stop.offsetLeft;
+      const card = stop.querySelector('.sw-card');
+      const cb = card && card.children.length ? card.offsetTop + card.offsetHeight : 40;
+      el.style.removeProperty('--pw');
+      let w; let top; let left;
+      if (kind === 'marks') {
+        // a row of small stones, the years on their faces
+        const n = el.children.length;
+        w = phone ? Math.min(78, (vw - 48) / n - 10) : Math.min(92, (procL - 40) / n - 14);
+        const S = w / MS_AR;
+        el.style.setProperty('--pw', `${w.toFixed(1)}px`);
+        const rowW = n * w + (n - 1) * (phone ? 12 : 16);
+        if (phone) { top = procTop - 4 - S * 0.5; left = (vw - rowW) / 2; } else {
+          top = groundY - S;
+          left = stop.dataset.side === 'r' ? vw - procL / 2 - rowW / 2 : procL / 2 - rowW / 2;
+        }
+        Object.assign(el.style, { left: `${left.toFixed(1)}px`, top: `${top.toFixed(1)}px`, width: `${rowW.toFixed(1)}px`, height: `${S.toFixed(1)}px` });
+      } else {
+        const ar = kind === 'frame' ? FR_AR : MS_AR;
+        const face = el.querySelector('.sw-stone__face, .sw-mile__face');
+        // how much of it must show (the photo, or the words carved on the stone), as a share of its height
+        const need = (S) => (kind === 'frame' ? 0.745 * S : face ? (face.offsetTop + face.getBoundingClientRect().height + 8) : 0.8 * S);
+        // the carved words stay on the stone's face, clear of the grass and marigolds at its foot (Nepali runs taller;
+        // on a phone the foot hides behind the procession, so the words end a little higher)
+        const fr = phone ? 0.75 : 0.8;
+        const roomy = (ww) => { set(ww); let g = ww; const top = phone ? Math.min(300, vw - 32) : lim[1] + 40; while (face && face.offsetTop + face.offsetHeight > fr * (g / ar) && g < top) { g += 8; set(g); } fitFace(el, fr); return g; };
+        const lim = phone ? { frame: [150, 220], stone: [200, 250], mile: [190, 250] }[kind] : { frame: [170, 290], stone: [210, 280], mile: [220, 290] }[kind];
+        const set = (ww) => { el.style.width = `${ww.toFixed(1)}px`; el.style.height = `${(ww / ar).toFixed(1)}px`; el.style.setProperty('--pw', `${ww.toFixed(1)}px`); };
+        if (phone) {
+          // behind the procession, on the far side of the road: what matters stays above the bride's head
+          const room = procTop - 6 - (cb + 14);
+          w = roomy(clamp(room / 0.8 * ar, lim[0], Math.min(lim[1], vw - 40)));
+          top = Math.max(cb + 10, procTop - 6 - need(w / ar));
+          left = (vw - w) / 2;
+        } else {
+          // beside the procession, standing on the verge with its feet in the grass
+          const col = Math.max(lim[0], procL - 24);
+          w = Math.min(lim[1], col, (groundY - (cb + 18)) * ar);
+          w = roomy(Math.max(lim[0], w));
+          top = groundY - w / ar;
+          const cx = stop.dataset.side === 'r' ? vw - procL / 2 + 6 : procL / 2 - 6;
+          left = clamp(cx - w / 2, 12, vw - w - 12);
+        }
+        el.style.left = `${left.toFixed(1)}px`; el.style.top = `${top.toFixed(1)}px`;
+      }
+      // the light where it stands
+      const rx = (pr.k ? -pr.k.x : 0) + left + el.offsetWidth / 2;
+      const tod = todAt(rx);
+      el.classList.toggle('is-sunset', tod > 0.55 && tod <= 1.35);
+      el.classList.toggle('is-dusk', tod > 1.35);
+      pr.x0 = left; pr.x1 = left + el.offsetWidth;
+    }
+  }
 
   function layout() {
     vw = stage.clientWidth; vh = stage.clientHeight;
@@ -318,20 +395,17 @@ function journey(ctx) {
     ch = phone ? Math.min(vh * 0.27, (vw * 0.9) / COUPLE_AR) : Math.min(vh * 0.37, (vw * 0.34) / COUPLE_AR);
     cw = ch * COUPLE_AR;
     Object.assign(ride.style, { width: `${cw.toFixed(1)}px`, height: `${ch.toFixed(1)}px`, left: `${((vw - cw) / 2).toFixed(1)}px`, top: `${(gy - ch * 0.985).toFixed(1)}px` });
-    stage.style.setProperty('--gy', `${gy.toFixed(1)}px`);
-    stage.style.setProperty('--ch', `${ch.toFixed(1)}px`);
+    routeW = me.parentElement.clientWidth;
     // the sky: wide enough to drift a little the whole way
     const skyW = Math.max(vw * 1.3, vh * 2.05);
     sky.style.width = `${skyW}px`;
     skyTravel = skyW - vw;
     // the cards: every [data-anchor] is a key frame where the road shows its own place behind the procession
-    const fr = flow.getBoundingClientRect();
     D = Math.max(1, flow.scrollWidth - vw);
     anchors = [...flow.querySelectorAll('[data-anchor]')];
     const minX = vw - worldW; const maxX = 0;
     keys = anchors.map((el) => {
-      const r = el.getBoundingClientRect();
-      const c = r.left - fr.left + r.width / 2;
+      const c = el.offsetLeft + el.offsetWidth / 2;
       const [n, f] = el.dataset.anchor.split(':');
       const g = byName(n);
       return { p: clamp((c - vw / 2) / D, 0, 1), x: clamp(vw / 2 - (g.left + Number(f) * g.w), minX, maxX), el };
@@ -340,6 +414,7 @@ function journey(ctx) {
     if (keys.length) { keys.unshift({ p: 0, x: keys[0].x }); keys.push({ p: 1, x: keys[keys.length - 1].x }); }
     // the light: a time of day at the middle of each painting
     todKeys = geo.map((g) => ({ at: g.mid, tod: g.tod }));
+    placeProps();
     plantLayout();
   }
 
@@ -350,13 +425,16 @@ function journey(ctx) {
     const out = [];
     let x = -vw * 0.2; let k = 0;
     const holds = keys.map((kf) => kf.x * FG);
+    const hx0 = (pr) => pr.k.x * FG;
     while (x < span) {
       const kind = k % 3 === 1 ? 'grass' : 'flowers';
       const ar = kind === 'grass' ? 1100 / 519 : 1100 / 497;
       const s = (0.78 + ((k * 37) % 23) / 60);
       const h = hgt * s; const w = h * ar;
       // its centre on screen at every stop
-      const blocked = holds.some((hx) => Math.abs(hx + x + w / 2 - vw / 2) < cw * 0.3 + w * 0.25);
+      const blocked = holds.some((hx) => Math.abs(hx + x + w / 2 - vw / 2) < cw * 0.3 + w * 0.25)
+        // nor in front of the words carved on a roadside stone (wide screens: the stones stand beside the procession)
+        || (!phone && props.some((pr) => pr.k && pr.x1 > pr.x0 && hx0(pr) + x + w * 0.78 > pr.x0 - 6 && hx0(pr) + x + w * 0.22 < pr.x1 + 6));
       if (!blocked) {
         // where on the road it is (for dusk colouring): screen centre ↔ road position at the moment it passes the middle
         const roadAt = (vw / 2 - (vw / 2 - (x + w / 2)) / FG);
@@ -367,8 +445,10 @@ function journey(ctx) {
       k++;
     }
     plants = out;
-    const html = out.map((p) => `<img class="sw-plant" src="${ART}${p.kind}${p.dusk ? '-dusk' : ''}-sm.webp" srcset="${srcset(`${p.kind}${p.dusk ? '-dusk' : ''}`, [620, 1100])}" sizes="${Math.round(p.w)}px" alt="" decoding="async" style="left:${p.x.toFixed(1)}px;width:${p.w.toFixed(1)}px;height:${p.h.toFixed(1)}px;${p.flip ? 'transform:scaleX(-1);' : ''}" />`).join('');
-    fg.innerHTML = html;
+    // one size for every clump on this screen (mixing sizes would fetch both files of each painting)
+    const big = Math.max(...out.map((p) => p.w), 0) * (window.devicePixelRatio || 1) > 900 && !phone;
+    const html = out.map((p) => `<img class="sw-plant" src="${ART}${p.kind}${p.dusk ? '-dusk' : ''}${big ? '' : '-sm'}.webp" alt="" decoding="async" style="left:${p.x.toFixed(1)}px;width:${p.w.toFixed(1)}px;height:${p.h.toFixed(1)}px;${p.flip ? 'transform:scaleX(-1);' : ''}" />`).join('');
+    if (html !== fgWas) { fg.innerHTML = html; fgWas = html; } // (unchanged: keep the decoded images)
   }
 
   function todAt(rx) {
@@ -381,12 +461,16 @@ function journey(ctx) {
     return todKeys[todKeys.length - 1].tod;
   }
 
+  // where the road and the words are for a scroll position: between two stops both glide together, and at each
+  // stop they hold still for a moment (a short stretch of scroll), so the words can be read and a jump lands true
+  const HOLD = 0.1;
   function worldAt(p) {
-    if (keys.length < 2) return 0;
+    if (keys.length < 2) return { x: 0, c: p };
     let i = 1; while (i < keys.length - 1 && keys[i].p < p) i++;
     const a = keys[i - 1]; const b = keys[i];
     const t = b.p > a.p ? clamp((p - a.p) / (b.p - a.p), 0, 1) : 1;
-    return a.x + (b.x - a.x) * smooth(t);
+    const e = smooth(clamp((t - HOLD) / (1 - 2 * HOLD), 0, 1));
+    return { x: a.x + (b.x - a.x) * e, c: a.p + (b.p - a.p) * e };
   }
 
   // load each painting a little before it comes into view
@@ -404,18 +488,28 @@ function journey(ctx) {
     if (document.body.style.position === 'fixed') return;
     if (!force && Math.abs(p - lastP) < 1e-6) return;
     lastP = p;
-    wx = worldAt(p);
-    flow.style.transform = `translate3d(${(-D * p).toFixed(1)}px,0,0)`;
+    const at = worldAt(p);
+    wx = at.x;
+    const fx = `translate3d(${(-D * at.c).toFixed(1)}px,0,0)`;
+    for (const c of cards) c.style.transform = fx;
+    // the roadside things move with the road
+    // (each shows fully at its own stop and fades with its words as the guest rides on, so the next stop is never
+    // crowded: gone halfway to the next stop)
+    for (const pr of props) {
+      if (!pr.k) continue;
+      pr.el.style.transform = `translate3d(${(wx - pr.k.x - pr.off).toFixed(1)}px,0,0)`;
+      const o = Math.round(clamp(1 - (Math.abs(at.c - pr.k.p) * D - vw * 0.14) / (vw * 0.34), 0, 1) * 100) / 100;
+      if (o !== pr.o) { pr.o = o; pr.el.style.opacity = String(o); pr.el.style.visibility = o > 0 ? '' : 'hidden'; }
+    }
     world.style.transform = `translate3d(${wx.toFixed(1)}px,0,0)`;
     fg.style.transform = `translate3d(${(wx * FG).toFixed(1)}px,0,0)`;
     const f = worldW > vw ? clamp(-wx / (worldW - vw), 0, 1) : 0;
     sky.style.transform = `translate3d(${(-skyTravel * f).toFixed(1)}px,0,0)`;
-    me.style.left = `${(f * 100).toFixed(2)}%`;
+    me.style.transform = `translate3d(${(f * routeW).toFixed(1)}px,0,0)`;
     const tod = todAt(vw / 2 - wx);
     skySunset.style.opacity = clamp(tod, 0, 1).toFixed(3);
     skyDusk.style.opacity = clamp(tod - 1, 0, 1).toFixed(3);
     rideDusk.style.opacity = clamp((tod - 1) / 0.85, 0, 1).toFixed(3);
-    stage.style.setProperty('--tod', tod.toFixed(3));
     document.body.classList.toggle('sw-journeying', p > 0.012);
     step();
     wake(wx);
@@ -442,20 +536,31 @@ function journey(ctx) {
 function startJourney(ctx, J) {
   const { ScrollTrigger } = ctx;
   let trig = null;
-  const st = ScrollTrigger.create({
-    trigger: J.sec, start: 'top top', end: () => `+=${Math.round(J.D)}`, pin: J.stage, pinSpacing: true, scrub: true, anticipatePin: 1,
-    invalidateOnRefresh: true,
-    onRefreshInit: () => { J.layout(); },
-    onRefresh: (self) => { trig = self; J.render(self.progress, true); },
-    onUpdate: (self) => J.render(self.progress),
-  });
-  trig = st;
-  J.render(0, true);
-  const relayout = () => { J.layout(); ScrollTrigger.refresh(); };
+  const make = () => {
+    trig = ScrollTrigger.create({
+      trigger: J.sec, start: 'top top', end: () => `+=${Math.round(J.D)}`, pin: J.stage, pinSpacing: true, scrub: true, anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onRefreshInit: () => { J.layout(); },
+      onRefresh: (self) => { trig = self; J.render(self.progress, true); },
+      onUpdate: (self) => J.render(self.progress),
+      // in the studio's preview the page is moved for the client ("show me this"): there it always comes to rest at a
+      // stop, so words standing beside the procession on wide screens land where they belong
+      ...(PREVIEW ? { snap: { snapTo: (v) => J.keys.filter((k) => k.el).reduce((m, k) => (Math.abs(k.p - v) < Math.abs(m - v) ? k.p : m), 0), duration: { min: 0.2, max: 0.6 }, delay: 0.12, ease: 'power2.inOut', directional: false } } : {}),
+    });
+    J.render(0, true);
+  };
+  make();
+  // a refresh lifts the pinned road out of its spacer and back (a DOM move), which drops keyboard focus inside it:
+  // give the focus back
+  let held = null;
+  ScrollTrigger.addEventListener('refreshInit', () => { const a = document.activeElement; held = a && a !== document.body && J.stage.contains(a) ? a : null; });
+  ScrollTrigger.addEventListener('refresh', () => { if (held && held.isConnected && document.activeElement !== held) held.focus({ preventScroll: true }); held = null; });
+  const relayout = () => { if (!trig) return; J.layout(); ScrollTrigger.refresh(); };
   document.fonts?.ready.then(relayout);
   J.flow.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', () => { clearTimeout(relayout.t); relayout.t = setTimeout(relayout, 160); }, { once: true }); });
   J.flow.querySelectorAll('details').forEach((d) => d.addEventListener('toggle', () => { clearTimeout(relayout.t); relayout.t = setTimeout(relayout, 60); }));
   const goP = (p, immediate = false) => {
+    if (!trig) return;
     const y = trig.start + (trig.end - trig.start) * p;
     const l = ctx.lenis?.();
     if (l) l.scrollTo(y, { immediate, force: true, duration: 1.6 }); else window.scrollTo({ top: y, behavior: immediate ? 'auto' : 'smooth' });
@@ -477,6 +582,11 @@ function startJourney(ctx, J) {
     const ks = () => J.keys.filter((x) => x.el);
     window.__sw = { n: () => ks().length, go: (i) => goP(ks()[i].p, true), at: (p) => goP(p, true), keys: ks };
   }
+  return {
+    // a phone turned on its side: the road is too low for the words, so the stops become still postcards (and back)
+    stop: () => { trig?.kill(true); trig = null; },
+    again: () => { if (trig) return; J.layout(); make(); ScrollTrigger.refresh(); },
+  };
 }
 
 // ───────── the scratch cover: gold leaf with marigold petals ─────────
@@ -508,7 +618,29 @@ function fit(sel, part) {
 }
 const fitAll = () => { fit('.sw-names', '.sw-names__n'); fit('.sw-g__names', '.sw-g__n'); };
 
-let J = null;
+let J = null; let road = null; let opened = null;
+// a stone's words never run down into the grass at its foot: shrink them a little if they must
+function fitFace(el, fr = 0.8) {
+  const face = el.querySelector('.sw-stone__face, .sw-mile__face');
+  if (!face) return;
+  face.style.transform = '';
+  const room = el.offsetHeight * fr - face.offsetTop;
+  if (room > 0 && face.offsetHeight > room) face.style.transform = `scale(${Math.max(0.8, room / face.offsetHeight).toFixed(3)})`;
+}
+const fitFaces = () => document.querySelectorAll('.sw-stone, .sw-mile').forEach(fitFace);
+// too little height for the words above the road (a phone on its side): the still postcards instead
+const tooLow = () => window.innerHeight < 500 && window.innerWidth > window.innerHeight * 1.2;
+function setStill(on) {
+  if (on === document.body.classList.contains('sw-still')) return;
+  if (on) road?.stop();
+  document.body.classList.toggle('sw-still', on);
+  document.body.classList.toggle('sw-live', !on);
+  if (!on) {
+    J.layout(); J.render(0, true);
+    if (road) road.again(); else if (opened) road = startJourney(opened, J);
+  }
+  opened?.ScrollTrigger.refresh();
+}
 const SPEC = {
   slug: 'sawari',
   manifest,
@@ -518,17 +650,31 @@ const SPEC = {
   scratch: { paint: paintCover },
 
   ready: (ctx) => {
-    if (ctx.reduced) document.body.classList.add('sw-still');
+    if (ctx.reduced || tooLow()) document.body.classList.add('sw-still');
     initNepali();
     fitAll();
-    document.fonts?.ready.then(fitAll);
+    document.fonts?.ready.then(() => { fitAll(); if (reducedNow()) fitFaces(); });
+    if (reducedNow()) fitFaces();
+    // the other language changes every height: fit again, and set the road again
+    document.addEventListener('langchange', () => requestAnimationFrame(() => {
+      fitAll();
+      if (reducedNow() || !road) fitFaces();
+      if (!reducedNow() && J) { J.layout(); if (road) opened.ScrollTrigger.refresh(); else J.render(0, true); }
+    }));
     let rw = window.innerWidth;
-    window.addEventListener('resize', () => { if (window.innerWidth === rw) return; rw = window.innerWidth; fitAll(); });
-    if (!reducedNow()) {
-      document.body.classList.add('sw-live');
+    window.addEventListener('resize', () => {
+      if (window.innerWidth === rw) return;
+      rw = window.innerWidth;
+      fitAll();
+      if (J) setStill(tooLow());
+    });
+    if (!ctx.reduced) {
       J = journey(ctx);
-      J.layout();
-      J.render(0, true);
+      if (!reducedNow()) {
+        document.body.classList.add('sw-live');
+        J.layout();
+        J.render(0, true);
+      }
     }
   },
 
@@ -547,7 +693,7 @@ const SPEC = {
       .to([art, veil], { opacity: 0, duration: 0.9, ease: 'power1.inOut' }, 0.7);
     tl.set(gateEl, { pointerEvents: 'none' }, 0.7);
     // 3 · the procession walks in from the left and stops at the family home
-    if (J) {
+    if (J && !reducedNow()) {
       const s = { x: -J.vw * 0.75 };
       J.setEnter(s.x);
       tl.to(s, { x: 0, duration: 2.4, ease: 'power2.out', onUpdate: () => J.setEnter(s.x) }, 0.9);
@@ -559,7 +705,8 @@ const SPEC = {
 
   ambient: () => {},
   scroll: (ctx) => {
-    if (J) { J.layout(); startJourney(ctx, J); }
+    opened = ctx;
+    if (J && !reducedNow()) { J.layout(); road = startJourney(ctx, J); }
   },
 };
 mountSuite(SPEC);

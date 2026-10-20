@@ -24,11 +24,20 @@ distance walked).
   fades in after sunset). Its bob and sway are tied to the distance walked, so it stands still when the road stops;
 - **flowers** (near, 1.32× faster): marigold, rose and mustard clumps placed so none stands in front of the procession
   at a stop;
-- **words** (1:1 with the scroll): one stop per screen, in the sky above the road.
+- **words**: one stop per screen, in the sky above the road. Words and road glide together between stops and hold
+  still for a short stretch of scroll at each stop (`HOLD`), so the words can be read and a jump lands true;
+- **props** (things standing by the road: the carved frame on its easel, the story's year stones, one family
+  milestone on each bank of the river, the countdown milestone): they move with the road, not the words, and sit under
+  the procession. Phones: centred behind the procession on the far verge (the foot hidden behind the horse, the carved
+  words above the bride's head). Wide screens: beside the procession, feet on the verge, flowers kept off them at their
+  stop. Sized per screen in `placeProps()`; carved words are fitted to the stone's face (`fitFace`), so Nepali never
+  runs into the grass at its foot. Each fades out halfway to the next stop.
 
-Stops: names (home) · the elders' blessing and the full card (home) · the couple in a carved garlanded frame
-(terraces) · our story on little milestones (terraces) · the two families on roadside milestones (bridge, one stone
-each) · photographs propped at the chautari · one red-and-gold painted signboard per celebration (temple to toran) ·
+Stops: names (home) · the elders' blessing and the full card (home) · the couple in a carved garlanded frame on its
+easel (terraces) · our story, the years on little milestones by the road (terraces) · the two families, his stone on
+this bank and hers across the bridge · photographs propped at the chautari · one red-and-gold painted signboard per
+celebration, dressed with the fresh marigold toran from the Nepali kit and a clump of marigolds and roses on its frame
+(temple to toran) ·
 the milestone that counts the days to the mandap, with calendar and share (toran) · scratch the gold leaf for the day
 (mandap). A route bar (top left) shows where on the road you are. Keyboard focus inside a stop rides to it.
 
@@ -36,8 +45,11 @@ After the road (vertical, Himalayan dusk): the seven steps by live diyo light, t
 in hand before the mandap), the reply letter on lokta paper beside the couple's photo, travel/stays/contacts, the
 blessing.
 
-**Reduced motion / `?still`:** no pin: every stop becomes a still painted postcard (its painting, the procession on
-its trail) above its words, one under the other. `?debug`: `window.__su` (opening) and `window.__sw.go(i)` (stops).
+**Reduced motion / `?still` / a phone on its side** (under 500px tall and landscape; switches live on rotation): no
+pin: every stop becomes a still painted postcard (its painting, the procession on its trail) above its words, one under
+the other. `?debug`: `window.__su` (opening) and `window.__sw.go(i)` (stops). In the studio preview (`?preview=1`) the
+road snaps to the nearest stop when it comes to rest, so "show me" lands side-standing words where they belong; the
+ids (`#couple`, `#families`, `#photos`, `#countdown`, `#date`) sit on the moving words, not on the stop.
 
 ## Slots (`slots.js`)
 Images: `hero.ganesh` (sacred), `couple.lead` (the carved frame), `gallery.1`–`6`, `finale.photo` (beside the reply),
