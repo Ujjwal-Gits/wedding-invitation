@@ -201,5 +201,9 @@
   "toran": {
     "kind": "hero",
     "why": "The names on the wall over the first toran door, with the next doorways seen through it."
+  },
+  "palki": {
+    "kind": "hero",
+    "why": "The names on a silk banner over the village at misty dawn, the doli and the groom on his white horse at the door below."
   }
 }

@@ -41,6 +41,7 @@ const KNOWN = {
   sandesh: { name: 'Sandesh', concept: 'Doves bring a lac-sealed letter to a morning rooftop, then deliver each event as a hand-stamped postcard' },
   vasant: { name: 'Vasant', concept: 'Butterflies lift off a fresh flower garland; each ceremony’s own flower opens as you scroll' },
   toran: { name: 'Toran', concept: 'Part the marigold strings, then walk deeper through seven dressed doorways to the mandap' },
+  palki: { name: 'Palki', concept: 'The mist lifts at dawn, then the doli and the groom on his horse travel through Nepal to the mandap as you scroll' },
   sanjhi: { name: 'Sanjhi', concept: 'A hand-cut paper pop-up book at dusk: a stencil fills with colour, then every page stands up in layers' },
   // International (English-first; nine for Christian, four for Muslim weddings; src/themes/_vow engine)
   'olive-grove': { name: 'Olive Grove', concept: 'A folded linen card opens and a watercolor olive wreath grows around your names' },
@@ -122,6 +123,7 @@ const DEFAULT_TIERS = {
   vasant: 'shahi',
   toran: 'shahi',
   sanjhi: 'shahi',
+  palki: 'shahi',
   // 3D, film and the richer cards
   bagaicha: 'shubha', durbar: 'shubha', mandap: 'shubha', ghar: 'shubha', dhoka: 'shubha', himal: 'shubha', mangal: 'shubha', nimantrana: 'shubha',
   // the simple, calm cards
