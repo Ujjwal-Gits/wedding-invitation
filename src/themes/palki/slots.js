@@ -1,0 +1,82 @@
+// Palki (पाल्की) · the doli procession from home at dawn to the mandap at night: every theme image and text,
+// replaceable from the studio. Plain data, no imports (the server loads this file). Invitation data (names, parents,
+// dates, events, vows, card wording, gallery, RSVP, closing) lives in the studio sections. The six painted scenes and
+// the procession are the design itself, so they are not slots.
+const couple = (n) => ({ label: `Photos: photo ${n}`, kind: 'couple', default: { portrait: n }, note: 'The couple. Shown whole, never cropped. Repeats are skipped.' });
+export default {
+  // Faith (docs/PLATFORM.md "Religion"): Ganesh, the kalash, the sacred fire and the saptapadi: a Hindu design.
+  religions: ['hindu'],
+  faithInk: '--su-accent',
+  market: 'np',
+  occasions: ['wedding'],
+  theme: 'palki',
+  images: {
+    'hero.ganesh': {
+      label: 'Ganesh (over the names on the first banner)',
+      kind: 'detail',
+      default: { lg: '/themes/_nepali/ganesh-brass.webp', sm: '/themes/_nepali/ganesh-brass-sm.webp', w: 1000, h: 1000, alt: 'Shri Ganesh in brass' },
+      note: 'A cut-out picture with a transparent background works best. Type off in the Ganesh line to hide him.',
+    },
+    'couple.lead': {
+      label: 'Main photo of the couple (behind the doli curtains)',
+      kind: 'couple',
+      default: { portrait: 0 },
+      note: 'Portrait works best. Shown whole between two red doli curtains, never cropped.',
+    },
+    'gallery.1': couple(1),
+    'gallery.2': couple(2),
+    'gallery.3': couple(3),
+    'gallery.4': couple(4),
+    'gallery.5': couple(5),
+    'gallery.6': couple(6),
+    'families.bride': { label: 'Bride portrait (on her family’s cloth)', kind: 'bride', default: null, note: 'Shown only when bride and groom both have their own photo.' },
+    'families.groom': { label: 'Groom portrait (on his family’s cloth)', kind: 'groom', default: null, note: 'Shown only when bride and groom both have their own photo.' },
+  },
+  texts: {
+    'gate.line': { shared: 'gate.line', label: 'Opening: line on the rolled banner', default: { en: 'The doli sets out at dawn', ne: 'बिहानै डोली निस्कँदैछ' }, max: 48 },
+    'gate.open': { shared: 'gate.open', label: 'Opening: open button', default: { en: 'Open the invitation', ne: 'निम्तो खोल्नुहोस्' }, max: 28 },
+    'gate.quiet': { shared: 'gate.quiet', label: 'Opening: open without music', default: { en: 'Open without music', ne: 'संगीतबिना खोल्नुहोस्' }, max: 32 },
+    'ganesh.show': { label: 'Ganesh on the first banner (type off to hide him)', default: { en: 'on', ne: 'on' }, max: 8 },
+    'hero.invocation': { label: 'Invocation above the names (type - to remove)', default: { en: '॥ श्री गणेशाय नमः ॥', ne: '॥ श्री गणेशाय नमः ॥' }, max: 40 },
+    'hero.title': { shared: 'hero.kicker', label: 'First banner: small title', default: { en: 'Shubha Bibaha', ne: 'शुभ विवाह' }, max: 24 },
+    'hero.line': { label: 'First banner: one line under the names', default: { en: 'Walk with the doli, from home to the mandap', ne: 'घरदेखि मण्डपसम्म, डोलीसँगै हिँडौं' }, max: 70 },
+    'home.kicker': { label: 'Chapter 1 (home at dawn): small label', default: { en: 'At dawn, from home', ne: 'बिहानै, घरबाट' }, max: 32 },
+    'home.title': { label: 'Chapter 1: title', default: { en: 'With the blessings of our elders', ne: 'गुरुजनको आशीर्वादसहित' }, max: 44 },
+    'card.line': { shared: 'hero.line', label: 'Card wording: the one line of invitation', default: { en: 'We joyfully invite you and your family to bless the couple with your presence.', ne: 'शुभ विवाहमा सपरिवार पधारी आशीर्वाद दिनुहुन हार्दिक अनुरोध छ।' }, max: 100, multiline: true },
+    'card.button': { shared: 'card.button', label: 'Button: read the full card', default: { en: 'Read the full invitation', ne: 'निमन्त्रणा पत्र पढ्नुहोस्' }, max: 36 },
+    'hills.kicker': { label: 'Chapter 2 (the hills at sunrise): small label', default: { en: 'Over the hills at sunrise', ne: 'घामसँगै डाँडा काट्दै' }, max: 32 },
+    'couple.title': { shared: 'couple.title', label: 'Chapter 2: title over the couple’s photo', default: { en: 'The two of us', ne: 'हामी दुई' }, max: 28 },
+    'couple.line': { shared: 'couple.line', label: 'Chapter 2: one line (type - to remove)', default: { en: 'Soon to be married, with the blessings of both families.', ne: 'दुवै परिवारको आशीर्वादसहित, चाँडै विवाह बन्धनमा।' }, max: 90, multiline: true },
+    'gallery.title': { shared: 'gallery.title', label: 'Photos: title', default: { en: 'Through the doli window', ne: 'डोलीको झ्यालबाट' }, max: 32 },
+    'chautari.kicker': { label: 'Chapter 3 (the chautari): small label', default: { en: 'A rest at the chautari', ne: 'चौतारीमा बिसौनी' }, max: 32 },
+    'families.title': { label: 'Chapter 3: title', default: { en: 'Two trees, one shade', ne: 'दुई रूख, एउटै छहारी' }, max: 40 },
+    'families.line': { label: 'Chapter 3: one line (type - to remove)', default: { en: 'At the chautari the pipal and the bar grow side by side, as our two families now will.', ne: 'चौतारीमा पिपल र बर सँगै हुर्कन्छन्, हाम्रा दुई परिवार पनि अब यसरी नै।' }, max: 110, multiline: true },
+    'bridge.kicker': { label: 'Chapter 4 (across the river): small label', default: { en: 'Across the river', ne: 'खोला तरेर' }, max: 32 },
+    'prog.title': { shared: 'events.title', label: 'Chapter 4: title of the programme', default: { en: 'The celebrations', ne: 'कार्यक्रम' }, max: 32 },
+    'arrive.kicker': { label: 'Chapter 5 (arriving at dusk): small label', default: { en: 'Arriving at dusk', ne: 'साँझपख आइपुग्दा' }, max: 32 },
+    'date.title': { label: 'Chapter 5: date title', default: { en: 'The auspicious day', ne: 'शुभ दिन' }, max: 32 },
+    'scratch.hint': { label: 'Scratch card: line on the mist', default: { en: 'Clear the mist to see the day', ne: 'कुहिरो हटाएर दिन हेर्नुहोस्' }, max: 36 },
+    'scratch.button': { label: 'Scratch card: button that reveals it at once', default: { en: 'Tap to reveal', ne: 'थिचेर हेर्नुहोस्' }, max: 24 },
+    'count.title': { label: 'Countdown: title', default: { en: 'The lamps are almost lit', ne: 'दियो बल्न अब केही बेर' }, max: 40 },
+    'mandap.kicker': { label: 'Chapter 6 (the mandap at night): small label', default: { en: 'The night of lamps', ne: 'दियो बलेको रात' }, max: 32 },
+    'vows.title': { shared: 'rite.saptapadi.title', label: 'Chapter 6: the seven vows title', default: { en: 'Seven steps around the fire', ne: 'अग्निको सात फेरा' }, max: 40 },
+    'rsvp.title': { shared: 'reply.title', label: 'RSVP: title', default: { en: 'Will you join us?', ne: 'हजुर आउनुहुन्छ?' }, max: 32 },
+    'rsvp.send': { label: 'RSVP: send button', default: { en: 'Send my reply', ne: 'जवाफ पठाउनुहोस्' }, max: 32 },
+  },
+  // colours the client may change (docs/PLATFORM.md); applied inline on <body>
+  colors: {
+    '--su-accent': { label: 'Deep green (buttons, titles)', default: '#1E4A37' },
+    '--pk-marigold': { label: 'Marigold (rules, numbers)', default: '#C9721A' },
+    '--pk-night': { label: 'Night indigo (the last chapter)', default: '#171A3A' },
+  },
+  // Mix (docs/MIX.md): the opening and the first screen are the first painted scene of the procession.
+  parts: {
+    gate: false, hero: false, hostGate: false, hostHero: false,
+    why: {
+      gate: 'The mist lifts off this design’s own painted dawn, and its banner unrolls into the first screen.',
+      hero: 'The first screen is the first scene of the procession, where the doli sets out.',
+      hostGate: 'The opening unrolls this design’s own banner: it lands in its own first screen.',
+      hostHero: 'The procession needs its own first scene as the first screen.',
+    },
+  },
+};

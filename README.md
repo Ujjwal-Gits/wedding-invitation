@@ -42,6 +42,7 @@ dashboard to create, customise, publish and track invitations.
 | 35 | **Zari** `/zari/` | A sapphire velvet trousseau trunk: the padlock drops, the lid swings back, and the trays lift out in 3D one by one, each holding a part of the day. |
 | 36 | **Toran** `/toran/` | Marigold ladis part on a dressed doorway; scrolling dollies through seven haveli doorways, each with its own toran, to the mandap. |
 | 37 | **Sanjhi** `/sanjhi/` | A hand-cut paper pop-up book at dusk: colour powder sifts through a Vrindavan stencil, the cover opens and every page stands up in paper layers. |
+| 39 | **Palki** `/palki/` | The doli procession: the mist lifts off a village at dawn, then two bearers carry the bride's doli and the groom rides beside her through six painted scenes of Nepal (the hills, a chautari, a river bridge, the gate at dusk) to the mandap on the night of lamps. |
 
 The showroom at `/` links every theme and the studio.
 
